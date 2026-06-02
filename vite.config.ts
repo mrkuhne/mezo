@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -34,5 +35,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
+    // Playwright parity specs (tests/parity/*.spec.ts) import @playwright/test
+    // and must not be collected by Vitest — they only run via `pnpm parity`.
+    exclude: [...configDefaults.exclude, 'tests/parity/**'],
   },
 })
