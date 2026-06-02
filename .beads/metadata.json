@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "mezo",
+  "project_id": "c60575f1-bea8-45a0-88e5-6004a9bfb2ae"
+}
