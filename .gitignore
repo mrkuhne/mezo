@@ -10,6 +10,10 @@ out/
 target/
 *.tsbuildinfo
 
+# tsc -b composite emit artifacts (regenerated from *.ts configs)
+vite.config.js
+vite.config.d.ts
+
 # Environment & secrets
 .env
 .env.*
