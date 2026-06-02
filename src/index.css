@@ -1,1 +1,44 @@
 @import "tailwindcss";
+@import "./styles/prototype.css";
+
+/* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.
+   `inline` => utilities emit var(--…) refs, so [data-theme="light"] flips them live. */
+@theme inline {
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-core: var(--brand-core);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-glow: var(--brand-glow);
+  --color-brand-tint: var(--brand-tint);
+
+  --color-canvas: var(--canvas);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-quaternary: var(--text-quaternary);
+  --color-text-inverse: var(--text-inverse);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-info: var(--info);
+
+  --color-cat-physiology: var(--cat-physiology);
+  --color-cat-preference: var(--cat-preference);
+  --color-cat-trigger: var(--cat-trigger);
+  --color-cat-response: var(--cat-response);
+  --color-cat-tendency: var(--cat-tendency);
+  --color-cat-goal-state: var(--cat-goal-state);
+
+  --color-anchor-canvas: var(--anchor-canvas);
+  --color-anchor-surface: var(--anchor-surface);
+  --color-anchor-accent: var(--anchor-accent);
+  --color-anchor-text: var(--anchor-text);
+
+  --font-display: var(--ff-display);
+  --font-body: var(--ff-body);
+  --font-mono: var(--ff-mono);
+}
