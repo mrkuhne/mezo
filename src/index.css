@@ -42,3 +42,5 @@
   --font-body: var(--ff-body);
   --font-mono: var(--ff-mono);
 }
+
+.briefing-body strong{color:var(--brand-glow);font-weight:500}
