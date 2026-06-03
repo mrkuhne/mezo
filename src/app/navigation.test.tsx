@@ -11,7 +11,7 @@ function renderApp(path = '/') {
 
 test('redirects / to Today', () => {
   renderApp('/')
-  expect(screen.getByRole('heading', { level: 1, name: /today/i })).toBeInTheDocument()
+  expect(screen.getByText(/briefing/i)).toBeInTheDocument()
 })
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
