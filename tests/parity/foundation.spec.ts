@@ -75,3 +75,37 @@ test('prototype — default (Today)', async ({ page }) => {
     await new Promise<void>((resolve) => server.close(() => resolve()))
   }
 })
+
+const TODAY_VARIANTS: Array<[string, string]> = [
+  ['today-default', '/today'],
+  ['today-good', '/today?day=good'],
+  ['today-rough-anchor', '/today?day=rough'],
+  ['today-niggle-off', '/today?niggle=off'],
+  ['today-vulnerable', '/today?vulnerable=on'],
+]
+for (const [name, path] of TODAY_VARIANTS) {
+  test(`our app — ${name}`, async ({ page }) => {
+    await page.goto(`http://localhost:4317${path}`)
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: `tests/parity/__shots__/app-${name}.png` })
+  })
+}
+
+test('our app — checkin sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/today')
+  await page.waitForTimeout(400)
+  // the "now" check-in slot shows "tap"
+  await page.getByText('tap', { exact: true }).click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-checkin-sheet.png' })
+})
+
+test('our app — quickinput sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/today')
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'Gyors rögzítés' }).click()
+  await page.waitForTimeout(400)
+  await page.screenshot({
+    path: 'tests/parity/__shots__/app-quickinput-sheet.png',
+  })
+})
