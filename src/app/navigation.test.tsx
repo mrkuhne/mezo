@@ -21,9 +21,9 @@ test('navigates between tabs by clicking the bottom nav', async () => {
 test('FAB opens and the sheet closes again', async () => {
   renderApp('/today')
   await userEvent.click(screen.getByRole('button', { name: 'Gyors rögzítés' }))
-  expect(screen.getByText(/QuickInput placeholder/i)).toBeInTheDocument()
+  expect(screen.getByText(/Mi van veled/)).toBeInTheDocument()
   await userEvent.keyboard('{Escape}')
-  expect(screen.queryByText(/QuickInput placeholder/i)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Mi van veled/)).not.toBeInTheDocument()
 })
 test('Me screen theme toggle flips data-theme', async () => {
   renderApp('/me')

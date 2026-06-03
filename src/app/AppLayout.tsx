@@ -4,7 +4,7 @@ import { PhoneFrame } from './PhoneFrame'
 import { ScreenContent } from './ScreenContent'
 import { TabBar } from './TabBar'
 import { Fab } from './Fab'
-import { Sheet } from '@/components/ui/Sheet'
+import { QuickInputSheet } from '@/features/quickinput/QuickInputSheet'
 import { useTodayScenario } from '@/data/hooks'
 
 export function AppLayout() {
@@ -18,11 +18,7 @@ export function AppLayout() {
         <Outlet />
       </ScreenContent>
       <Fab onClick={() => setQuickOpen(true)} />
-      {quickOpen && (
-        <Sheet onClose={() => setQuickOpen(false)}>
-          <p>QuickInput placeholder</p>
-        </Sheet>
-      )}
+      {quickOpen && <QuickInputSheet onClose={() => setQuickOpen(false)} />}
       <TabBar />
     </PhoneFrame>
   )
