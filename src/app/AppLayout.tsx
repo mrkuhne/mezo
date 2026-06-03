@@ -1,15 +1,19 @@
 import { useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { PhoneFrame } from './PhoneFrame'
 import { ScreenContent } from './ScreenContent'
 import { TabBar } from './TabBar'
 import { Fab } from './Fab'
 import { Sheet } from '@/components/ui/Sheet'
+import { useTodayScenario } from '@/data/hooks'
 
 export function AppLayout() {
   const [quickOpen, setQuickOpen] = useState(false)
+  const scenario = useTodayScenario()
+  const location = useLocation()
+  const anchor = scenario.anchorMode && location.pathname.startsWith('/today')
   return (
-    <PhoneFrame>
+    <PhoneFrame anchor={anchor}>
       <ScreenContent>
         <Outlet />
       </ScreenContent>
