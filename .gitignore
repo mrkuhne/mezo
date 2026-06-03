@@ -54,3 +54,6 @@ playwright-report/
 .dolt/
 *.db
 .beads-credential-key
+
+# Superpowers brainstorm visual-companion (local only)
+.superpowers/
