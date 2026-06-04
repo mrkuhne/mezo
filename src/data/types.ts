@@ -98,3 +98,70 @@ export interface SleepTrends {
   factors: Factor[]
   insights: TrendInsight[]
 }
+
+// --- Emberek (people) ---
+export type Affect = 'positive' | 'neutral' | 'mixed' | 'negative'
+export type Relationship = 'partner' | 'teammate' | 'mentee'
+export type MentionSource = 'voice' | 'camera' | 'chip' | 'text'
+export interface Ritual {
+  kind: string
+  title: string
+  whenLabel: string
+  daysAway: number
+  attendees: string[]
+  lastHeldLabel: string
+}
+export interface AttentionItem { kind: 'watch' | 'celebrate'; person: string; reason: string }
+export interface PeopleSummary {
+  activeCount: number
+  mentionsThisWeek: number
+  mentionsLastWeek: number
+  affectScoreWeek: number
+  creditTrend: 'rising' | 'stable' | 'falling'
+  ritualUpcoming: Ritual
+  attention: AttentionItem[]
+}
+export interface PersonEntry {
+  id: string
+  name: string
+  initial: string
+  relationship: Relationship
+  relationshipHu: string
+  affect_baseline: Affect
+  mentionCount: number
+  mentionsThisWeek: number
+  last_mentioned_at: string
+  lastMentionLabel: string
+  contactCadenceLabel: string
+  notes: string
+  affectTrend: number[]
+  knownFacts: string[]
+  ties: string[]
+}
+export interface Mention {
+  id: string
+  ts: string
+  dayLabel: string
+  timeLabel: string
+  person_id: string
+  personName: string
+  source: MentionSource
+  duration_s?: number
+  excerpt: string
+  tone: Affect
+  tiedTo?: { kind: string; label: string }
+  flagged?: boolean
+}
+export interface RelationPattern {
+  id: string
+  title: string
+  evidence: string
+  kind: 'positive' | 'watch' | 'negative'
+  confidence: number
+  involves: string[]
+}
+
+// --- Tudás (knowledge) ---
+export type FactCategory = 'physiology' | 'preference' | 'trigger' | 'tendency' | 'goal_state'
+export interface KnowledgeFact { id: string; text: string; category: FactCategory; active: boolean; reinforced: number }
+export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }

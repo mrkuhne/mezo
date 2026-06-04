@@ -5,6 +5,8 @@ import { initialCheckins } from './checkins'
 import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
 import { goal, weightLog, weightTrends, linkedMesocycles } from './goals'
 import { sleepLog, sleepTrends } from './sleep'
+import { peopleSummary, people, mentions, relationPatterns } from './people'
+import { facts, edges } from './knowledge'
 import type { Briefing, CheckinSlot, DayState, TodayScenario } from './types'
 
 export function useTodayScenario(): TodayScenario {
@@ -54,4 +56,12 @@ export function useGoals() {
 
 export function useSleep() {
   return { sleepLog, sleepTrends, lastNight: sleepLog[sleepLog.length - 1] }
+}
+
+export function usePeople() {
+  return { summary: peopleSummary, people, mentions, patterns: relationPatterns }
+}
+
+export function useKnowledge() {
+  return { facts, edges, activeCount: facts.filter(f => f.active).length }
 }
