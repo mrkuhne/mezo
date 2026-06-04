@@ -3,6 +3,11 @@ import { AppLayout } from './AppLayout'
 import { TodayScreen } from '@/features/today/TodayScreen'
 import { TrainScreen } from '@/features/train/TrainScreen'
 import { FuelScreen } from '@/features/fuel/FuelScreen'
+import { FuelMaiView } from '@/features/fuel/views/FuelMaiView'
+import { FuelPlanView } from '@/features/fuel/views/FuelPlanView'
+import { FuelStackView } from '@/features/fuel/views/FuelStackView'
+import { FuelRecipesView } from '@/features/fuel/views/FuelRecipesView'
+import { FuelKamraView } from '@/features/fuel/views/FuelKamraView'
 import { InsightsScreen } from '@/features/insights/InsightsScreen'
 import { MeScreen, type MeOutletContext } from '@/features/me/MeScreen'
 import { ProfileView } from '@/features/me/views/ProfileView'
@@ -24,7 +29,17 @@ export const routes: RouteObject[] = [
       { index: true, element: <Navigate to="/today" replace /> },
       { path: 'today', element: <TodayScreen /> },
       { path: 'train', element: <TrainScreen /> },
-      { path: 'fuel', element: <FuelScreen /> },
+      {
+        path: 'fuel',
+        element: <FuelScreen />,
+        children: [
+          { index: true, element: <FuelMaiView /> },
+          { path: 'plan', element: <FuelPlanView /> },
+          { path: 'stack', element: <FuelStackView /> },
+          { path: 'recipes', element: <FuelRecipesView /> },
+          { path: 'kamra', element: <FuelKamraView /> },
+        ],
+      },
       { path: 'insights', element: <InsightsScreen /> },
       {
         path: 'me',

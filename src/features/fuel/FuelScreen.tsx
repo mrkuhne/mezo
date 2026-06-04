@@ -1,12 +1,11 @@
-import { PageTitle } from '@/components/ui/PageTitle'
-import { Eyebrow } from '@/components/ui/Eyebrow'
+import { Outlet } from 'react-router-dom'
+import { FuelSubNav } from './FuelSubNav'
+
 export function FuelScreen() {
   return (
-    <div className="page-header">
-      <div className="col gap-xs">
-        <Eyebrow brand>TÜZELŐ</Eyebrow>
-        <PageTitle>Fuel</PageTitle>
-      </div>
-    </div>
+    <>
+      <FuelSubNav />
+      <Outlet />
+    </>
   )
 }
