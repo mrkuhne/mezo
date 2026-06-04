@@ -12,7 +12,7 @@ export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scor
       <div className="row" style={{ gap: 16, alignItems: 'center' }}>
         {/* Ring */}
         <div style={{ flexShrink: 0 }}>
-          <ScoreRing pct={meal.score ?? 0} size={96} stroke={5} label={scorePct.toFixed(0)} />
+          <ScoreRing pct={meal.score ?? 0} size={96} stroke={5} label={scorePct.toFixed(0)} labelColor="var(--brand-glow)" sublabel="/100" />
         </div>
 
         {/* Meta */}
