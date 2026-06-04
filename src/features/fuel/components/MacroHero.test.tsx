@@ -12,3 +12,10 @@ test('renders the three macro cells and hydration', () => {
   render(<MacroHero targets={targets} consumed={consumed} />)
   for (const m of ['Protein', 'Carbs', 'Fat', 'Víz']) expect(screen.getByText(m)).toBeInTheDocument()
 })
+test('renders the optional pacing eyebrow when provided, omits it otherwise', () => {
+  const { unmount } = render(<MacroHero targets={targets} consumed={consumed} eyebrow="Pacing · 13:42" />)
+  expect(screen.getByText('Pacing · 13:42')).toBeInTheDocument()
+  unmount()
+  render(<MacroHero targets={targets} consumed={consumed} />)
+  expect(screen.queryByText('Pacing · 13:42')).not.toBeInTheDocument()
+})

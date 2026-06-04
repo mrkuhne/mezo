@@ -5,10 +5,11 @@ import { Icon } from '@/components/ui/Icon'
 
 const pct = (a: number, b: number) => Math.min(100, (a / b) * 100)
 
-export function MacroHero({ targets, consumed }: { targets: MacroSet; consumed: MacroSet }) {
+export function MacroHero({ targets, consumed, eyebrow }: { targets: MacroSet; consumed: MacroSet; eyebrow?: string }) {
   const kcalPct = (consumed.kcal / targets.kcal) * 100
   return (
     <div className="card notch-12" style={{ padding: 18 }}>
+      {eyebrow && <span className="eyebrow brand">{eyebrow}</span>}
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
         <div className="col" style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'var(--ff-display)', fontSize: 44, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap' }}>
@@ -35,12 +36,12 @@ export function MacroHero({ targets, consumed }: { targets: MacroSet; consumed: 
         <div className="macro-cell notch-4">
           <div className="name">Carbs</div>
           <div className="val">{consumed.c}<span className="unit">/{targets.c}g</span></div>
-          <ProgressBar className="mt-sm" value={pct(consumed.c, targets.c)} color="var(--warning)" glow />
+          <ProgressBar className="mt-sm" value={pct(consumed.c, targets.c)} color="var(--warning)" />
         </div>
         <div className="macro-cell notch-4">
           <div className="name">Fat</div>
           <div className="val">{consumed.f}<span className="unit">/{targets.f}g</span></div>
-          <ProgressBar className="mt-sm" value={pct(consumed.f, targets.f)} color="var(--cat-preference)" glow />
+          <ProgressBar className="mt-sm" value={pct(consumed.f, targets.f)} color="var(--cat-preference)" />
         </div>
       </div>
 
