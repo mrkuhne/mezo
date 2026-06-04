@@ -9,6 +9,7 @@ import { peopleSummary, people, mentions, relationPatterns } from './people'
 import { facts, edges } from './knowledge'
 import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './fuel'
 import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
+import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
 import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario } from './types'
 
 export function useTodayScenario(): TodayScenario {
@@ -90,4 +91,16 @@ export function usePantry() {
 
 export function useRecipes() {
   return { recipes, ingredients, sources: pantrySources, categoryMeta: pantryCategoryMeta }
+}
+
+export function useFuelWeek() {
+  return { retaWeek, gymSchedule, weeklySupplements, patterns: recurringPatterns, weeklyStats, volleyball: volleyballSessions }
+}
+
+export function useReplanScenarios() {
+  return { scenarios: replanScenarios }
+}
+
+export function useStackRecommendations() {
+  return { recommendations: stackRecommendations }
 }

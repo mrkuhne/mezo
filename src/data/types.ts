@@ -255,6 +255,42 @@ export interface RelationPattern {
   involves: string[]
 }
 
+// --- Fuel · weekly (Terv) + replan + gym schedule ---
+export type RetaPhase = 'Peak' | 'Stable' | 'Trough'
+export interface RetaDayCell { d: number; label: RetaPhase; color: string }
+// NOTE: prototype data.js gymSchedule.weeklyTimes uses null for inactive (Szo/Vas)
+// days and `today` is present on only one row → fields adapted to the real data.
+export interface GymScheduleDay {
+  day: string
+  active: boolean
+  today?: boolean
+  time: string | null
+  duration: number | null
+  type: string | null
+}
+export interface WeeklySupplementRow { name: string; dose: string; days: number[]; color: string; note?: string }
+export interface RecurringPattern { icon: IconName; color: string; title: string; detail: string }
+export interface ReplanCascade { system: 'Fuel' | 'Train' | 'Sleep' | 'Insights'; impact: string; detail: string }
+export interface ReplanScenario {
+  id: string
+  title: string
+  detail: string
+  icon: IconName
+  color: string
+  cascades: ReplanCascade[]
+  tools: { type: ToolType; name: string }[]
+  confidence: number
+}
+export interface StackRecommendation {
+  name: string
+  source: PantrySourceKey
+  price: string
+  inStash: boolean
+  reason: string
+  metric: string
+  confidence: number
+}
+
 // --- Tudás (knowledge) ---
 export type FactCategory = 'physiology' | 'preference' | 'trigger' | 'tendency' | 'goal_state'
 export interface KnowledgeFact { id: string; text: string; category: FactCategory; active: boolean; reinforced: number }
