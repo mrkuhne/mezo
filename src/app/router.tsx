@@ -1,10 +1,20 @@
-import { Navigate, type RouteObject } from 'react-router-dom'
+import { Navigate, useOutletContext, type RouteObject } from 'react-router-dom'
 import { AppLayout } from './AppLayout'
 import { TodayScreen } from '@/features/today/TodayScreen'
 import { TrainScreen } from '@/features/train/TrainScreen'
 import { FuelScreen } from '@/features/fuel/FuelScreen'
 import { InsightsScreen } from '@/features/insights/InsightsScreen'
-import { MeScreen } from '@/features/me/MeScreen'
+import { MeScreen, type MeOutletContext } from '@/features/me/MeScreen'
+import { ProfileView } from '@/features/me/views/ProfileView'
+import { GoalsView } from '@/features/me/views/GoalsView'
+import { SleepView } from '@/features/me/views/SleepView'
+import { PeopleView } from '@/features/me/views/PeopleView'
+import { KnowledgeView } from '@/features/me/views/KnowledgeView'
+
+function ProfileRoute() {
+  const { openSettings } = useOutletContext<MeOutletContext>()
+  return <ProfileView onOpenSettings={openSettings} />
+}
 
 export const routes: RouteObject[] = [
   {
@@ -16,7 +26,17 @@ export const routes: RouteObject[] = [
       { path: 'train', element: <TrainScreen /> },
       { path: 'fuel', element: <FuelScreen /> },
       { path: 'insights', element: <InsightsScreen /> },
-      { path: 'me', element: <MeScreen /> },
+      {
+        path: 'me',
+        element: <MeScreen />,
+        children: [
+          { index: true, element: <ProfileRoute /> },
+          { path: 'goals', element: <GoalsView /> },
+          { path: 'sleep', element: <SleepView /> },
+          { path: 'people', element: <PeopleView /> },
+          { path: 'knowledge', element: <KnowledgeView /> },
+        ],
+      },
       { path: '*', element: <Navigate to="/today" replace /> },
     ],
   },

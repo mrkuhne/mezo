@@ -28,6 +28,7 @@ test('FAB opens and the sheet closes again', async () => {
 test('Me screen theme toggle flips data-theme', async () => {
   renderApp('/me')
   document.documentElement.removeAttribute('data-theme')
-  await userEvent.click(screen.getByRole('button', { name: /téma/i }))
+  await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))
+  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
   expect(document.documentElement.getAttribute('data-theme')).toBe('light')
 })
