@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { useFuelWeek, useReplanScenarios } from './hooks'
+import { useFuelWeek, useReplanScenarios, useStackRecommendations } from './hooks'
 
 test('useFuelWeek returns 7 reta days, gym schedule, supplement matrix, patterns', () => {
   const { result } = renderHook(() => useFuelWeek())
@@ -14,4 +14,9 @@ test('useReplanScenarios returns scenarios with cascades', () => {
   const { result } = renderHook(() => useReplanScenarios())
   expect(result.current.scenarios.length).toBeGreaterThan(0)
   expect(result.current.scenarios[0].cascades.length).toBeGreaterThan(0)
+})
+
+test('useStackRecommendations returns 3 recommendations', () => {
+  const { result } = renderHook(() => useStackRecommendations())
+  expect(result.current.recommendations).toHaveLength(3)
 })
