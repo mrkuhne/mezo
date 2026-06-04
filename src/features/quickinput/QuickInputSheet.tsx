@@ -83,6 +83,8 @@ export function QuickInputSheet({ onClose, onCommit }: QuickInputSheetProps) {
 
   return (
     <Sheet onClose={onClose}>
+      {(close) => (
+      <>
       <div
         className="row"
         style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}
@@ -93,7 +95,7 @@ export function QuickInputSheet({ onClose, onCommit }: QuickInputSheetProps) {
             Mi van veled?
           </div>
         </div>
-        <button className="chip" onClick={onClose} style={{ padding: '6px 8px' }} aria-label="Bezárás">
+        <button className="chip" onClick={close} style={{ padding: '6px 8px' }} aria-label="Bezárás">
           <Icon name="x" size={12} />
         </button>
       </div>
@@ -254,7 +256,7 @@ export function QuickInputSheet({ onClose, onCommit }: QuickInputSheetProps) {
                 className="cta-primary notch-4 flex-1"
                 onClick={() => {
                   onCommit?.(parsed)
-                  onClose()
+                  close()
                 }}
               >
                 Megvan · ment
@@ -386,7 +388,7 @@ export function QuickInputSheet({ onClose, onCommit }: QuickInputSheetProps) {
               <button
                 className="cta-primary notch-4"
                 style={{ padding: '8px 16px', fontSize: 12 }}
-                onClick={onClose}
+                onClick={close}
               >
                 Mentés
               </button>
@@ -408,6 +410,8 @@ export function QuickInputSheet({ onClose, onCommit }: QuickInputSheetProps) {
           Self-logging · az ellenfelünk
         </span>
       </div>
+      </>
+      )}
     </Sheet>
   )
 }

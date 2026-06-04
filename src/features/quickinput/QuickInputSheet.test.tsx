@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QuickInputSheet } from './QuickInputSheet'
 
@@ -9,9 +9,9 @@ test('shows the header and switches to text mode', async () => {
   expect(screen.getByPlaceholderText(/Free note/)).toBeInTheDocument()
 })
 
-test('close chip calls onClose', async () => {
+test('close chip calls onClose (after slide-down)', async () => {
   const onClose = vi.fn()
   render(<QuickInputSheet onClose={onClose} />)
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
-  expect(onClose).toHaveBeenCalled()
+  await waitFor(() => expect(onClose).toHaveBeenCalled())
 })

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from './router'
@@ -23,7 +23,7 @@ test('FAB opens and the sheet closes again', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Gyors rögzítés' }))
   expect(screen.getByText(/Mi van veled/)).toBeInTheDocument()
   await userEvent.keyboard('{Escape}')
-  expect(screen.queryByText(/Mi van veled/)).not.toBeInTheDocument()
+  await waitFor(() => expect(screen.queryByText(/Mi van veled/)).not.toBeInTheDocument())
 })
 test('Me screen theme toggle flips data-theme', async () => {
   renderApp('/me')

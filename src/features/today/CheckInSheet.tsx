@@ -80,25 +80,27 @@ export function CheckInSheet({
     setTimeout(() => setStep(s => s + 1), 200)
   }
 
-  const save = () => {
+  const save = (close: () => void) => {
     onSave({
       state: 'done',
       values,
       note: note.trim() || null,
       savedAt: new Date().toISOString(),
     })
-    onClose()
+    close()
   }
 
   return (
     <Sheet onClose={onClose}>
+      {(close) => (
+      <>
       {/* Header */}
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
         <div className="col">
           <span className="eyebrow brand">Heartbeat · {slot.time}</span>
           <div className="h-display size-md" style={{ marginTop: 4 }}>Hogy vagyunk?</div>
         </div>
-        <button className="chip" onClick={onClose} style={{ padding: '6px 8px' }}>
+        <button className="chip" onClick={close} style={{ padding: '6px 8px' }}>
           <Icon name="x" size={12} />
         </button>
       </div>
@@ -266,11 +268,13 @@ export function CheckInSheet({
           <CheckInObservation values={values} slot={slot} />
 
           {/* Save */}
-          <button className="cta-primary notch-8" onClick={save}>
+          <button className="cta-primary notch-8" onClick={() => save(close)}>
             <Icon name="check" size={16} />
             <span>Mentés · {slot.time}</span>
           </button>
         </div>
+      )}
+      </>
       )}
     </Sheet>
   )

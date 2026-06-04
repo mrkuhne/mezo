@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Sheet } from './Sheet'
 
@@ -7,11 +7,15 @@ test('renders handle + children', () => {
   expect(screen.getByText('tartalom')).toBeInTheDocument()
   expect(document.querySelector('.sheet-handle')).toBeTruthy()
 })
-test('closes on backdrop click', async () => {
+test('supports render-prop children receiving an animated close', () => {
+  render(<Sheet onClose={() => {}}>{(close) => <button onClick={close}>zár</button>}</Sheet>)
+  expect(screen.getByRole('button', { name: 'zár' })).toBeInTheDocument()
+})
+test('closes on backdrop click (after slide-down)', async () => {
   const onClose = vi.fn()
   render(<Sheet onClose={onClose}><p>x</p></Sheet>)
   await userEvent.click(document.querySelector('.sheet-backdrop')!)
-  expect(onClose).toHaveBeenCalledOnce()
+  await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
 })
 test('does not close when clicking inside the sheet', async () => {
   const onClose = vi.fn()
@@ -19,9 +23,9 @@ test('does not close when clicking inside the sheet', async () => {
   await userEvent.click(screen.getByText('belül'))
   expect(onClose).not.toHaveBeenCalled()
 })
-test('closes on Escape', async () => {
+test('closes on Escape (after slide-down)', async () => {
   const onClose = vi.fn()
   render(<Sheet onClose={onClose}><p>x</p></Sheet>)
   await userEvent.keyboard('{Escape}')
-  expect(onClose).toHaveBeenCalledOnce()
+  await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
 })

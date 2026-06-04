@@ -279,6 +279,46 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   opacity: 0.4; border-radius: 3px; z-index: 60;
 }
 
+/* ============== Real mobile / installed PWA: full-bleed ==============
+   The .phone block above is a desktop *preview* mockup of an iPhone 17 Pro Max
+   (bezel, fake Dynamic Island, fake status bar, fake home indicator). On a real
+   phone — any viewport too narrow to hold the 440px frame, OR an installed
+   standalone/fullscreen PWA — we drop the mockup chrome and let the app fill the
+   screen, deferring to the device's real island/notch and home bar via
+   safe-area insets (the index.html viewport uses viewport-fit=cover). */
+@media (max-width: 519px),
+       (display-mode: standalone),
+       (display-mode: fullscreen),
+       (display-mode: minimal-ui) {
+  html, body { background: var(--canvas); }
+
+  .app-root { display: block; background: var(--canvas); }
+
+  .phone {
+    width: 100%; height: 100%;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .phone-screen { border-radius: 0; }
+
+  /* The real device renders these — hide the mockups to avoid duplicates */
+  .dynamic-island,
+  .home-indicator,
+  .status-bar { display: none; }
+
+  /* Defer to the device's real safe areas instead of the fake chrome heights */
+  .screen-content {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+  .tab-bar {
+    height: auto;
+    padding-top: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+}
+
 /* ============== Common ============== */
 .eyebrow {
   font-family: var(--ff-mono);
@@ -452,6 +492,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   z-index: 200;
   touch-action: none;
   overscroll-behavior: contain;
+  animation: sheet-fade 0.28s ease both;
 }
 .sheet {
   position: absolute;
@@ -459,18 +500,41 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: var(--surface-1);
   border-top: 1px solid var(--border-strong);
   border-radius: 24px 24px 0 0;
-  padding: 16px 20px 28px;
+  padding: 4px 20px calc(20px + env(safe-area-inset-bottom));
   z-index: 201;
   overscroll-behavior: contain;
-  max-height: 80%;
+  max-height: 88%;
   overflow-y: auto;
   box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.6);
+  /* Slide up from the bottom on mount; `both` keeps the start frame applied
+     before the first paint so it never flashes at full position. */
+  animation: sheet-rise 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform;
 }
+@keyframes sheet-rise {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes sheet-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+/* Drag-to-dismiss grab zone — wide hit area around the handle */
+.sheet-handle-zone {
+  display: flex; justify-content: center;
+  padding: 12px 0 14px;
+  margin: 0 -20px 2px;
+  touch-action: none;
+  cursor: grab;
+}
+.sheet-handle-zone:active { cursor: grabbing; }
 .sheet-handle {
   width: 40px; height: 4px;
   background: var(--border-strong);
   border-radius: 2px;
-  margin: 0 auto 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet, .sheet-backdrop { animation-duration: 0.01ms; }
 }
 
 /* Toast (PR) */
