@@ -109,3 +109,26 @@ test('our app — quickinput sheet', async ({ page }) => {
     path: 'tests/parity/__shots__/app-quickinput-sheet.png',
   })
 })
+
+const ME_VIEWS: Array<[string, string]> = [
+  ['me-profile', '/me'],
+  ['me-goals', '/me/goals'],
+  ['me-sleep', '/me/sleep'],
+  ['me-people', '/me/people'],
+  ['me-knowledge', '/me/knowledge'],
+]
+for (const [name, path] of ME_VIEWS) {
+  test(`our app — ${name}`, async ({ page }) => {
+    await page.goto(`http://localhost:4317${path}`)
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: `tests/parity/__shots__/app-${name}.png` })
+  })
+}
+
+test('our app — settings sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/me')
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'Beállítások' }).click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-me-settings.png' })
+})
