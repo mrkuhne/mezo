@@ -44,8 +44,8 @@ export function SlotCard({
               letterSpacing: '0.12em',
               textTransform: 'uppercase',
               color: meta.color,
-              border: '1px solid color-mix(in srgb, ' + meta.color + ' 40%, transparent)',
-              background: 'color-mix(in srgb, ' + meta.color + ' 10%, transparent)',
+              border: '1px solid color-mix(in srgb, ' + meta.color + ' 25%, transparent)',
+              background: 'color-mix(in srgb, ' + meta.color + ' 6%, transparent)',
             }}
           >
             {meta.label}

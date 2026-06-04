@@ -45,12 +45,12 @@ export function SupplementItemRow({ item }: { item: SlotItem }) {
             {item.label}
           </span>
           {isCaffeine && (
-            <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)' }}>
+            <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 25%, transparent)' }}>
               koffein
             </span>
           )}
           {isStimulant && !isCaffeine && (
-            <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}>
+            <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 25%, transparent)' }}>
               pörgető
             </span>
           )}
