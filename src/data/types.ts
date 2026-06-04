@@ -120,6 +120,22 @@ export interface Recipe {
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
 export interface PantrySuggestion { name: string; source: PantrySourceKey; price: string; reason: string }
 
+// Unified pantry item shape — built by buildKamraItems (Task 28), consumed by KamraCard.
+// Merges scraped Ingredient (food) + SupplementStashItem (supplement/stim/med) into one card model.
+export type PantryItemKind = 'food' | 'supplement' | 'stim' | 'med'
+export interface PantryItem {
+  id: string; name: string; brand: string; source: PantrySourceKey; category: string
+  kind: PantryItemKind
+  per?: number; unit?: string
+  macros?: { kcal: number; p: number; c: number; f: number }
+  price?: number; priceUnit?: string; pkg?: string
+  micros?: { name: string; pct: number }[]
+  nova?: NovaGroup
+  stock?: IngredientStock | { qty: number; unit: string } | null
+  lastUsed?: string; usedInRecipes?: number; scrapedAt?: string
+  isStashOnly?: boolean; dose?: string; protocol?: string; caffeine?: boolean; form?: string
+}
+
 // --- Profil extras (hardcoded in prototype JSX → typed consts here) ---
 export interface IdentityGoalCard { eyebrow: string; quote: string; note: string }
 export interface AreaRow { area: string; weight: number; last: string }
