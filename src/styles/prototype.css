@@ -533,6 +533,12 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: var(--border-strong);
   border-radius: 2px;
 }
+/* Nested sheet (a picker opened on top of another sheet). Lift both the
+   nested sheet and its sibling backdrop above the parent sheet (201/200) so
+   the picker fully overlays the sheet that launched it. The backdrop is the
+   immediate previous sibling of the sheet element in the portal output. */
+.sheet.sheet-nested { z-index: 211; }
+.sheet-backdrop:has(+ .sheet-nested) { z-index: 210; }
 @media (prefers-reduced-motion: reduce) {
   .sheet, .sheet-backdrop { animation-duration: 0.01ms; }
 }
