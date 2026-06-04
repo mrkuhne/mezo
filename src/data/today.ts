@@ -1,11 +1,12 @@
 import type {
   Briefing,
-  FuelSlot,
   TodayMeta,
   UserMeta,
   VolleyballSession,
   Workout,
 } from './types'
+
+export { fuelToday } from './fuel'
 
 export const today: TodayMeta = {
   dayLabel: 'Csütörtök',
@@ -115,89 +116,3 @@ export const volleyballSessions: VolleyballSession[] = [
   { day: 'Pén', time: '18:15', duration: 90, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés' },
   { day: 'Szo', time: '10:00', duration: 120, court: 'Kőbánya Sport', intensity: 'magas', role: 'meccs/scrim' },
 ]
-
-export const fuelToday: { slots: FuelSlot[] } = {
-  slots: [
-    {
-      time: '05:50',
-      kind: 'wake',
-      label: 'Ébresztő',
-      state: 'done',
-      items: [{ done: true }, { done: true }],
-    },
-    {
-      time: '06:20',
-      kind: 'snack',
-      label: 'Pre-workout snack',
-      state: 'done',
-      mealName: 'Banán + 20g whey · vízben',
-      mezoNote: 'T-70p gym előtt · gyors-szénhidrát + protein az aminósav-rendelkezésre álláshoz. Reta D3 reggel az étvágy még magas — könnyen lemegy.',
-      items: [],
-    },
-    {
-      time: '06:50',
-      kind: 'preworkout',
-      label: 'Pre-workout stack',
-      state: 'done',
-      mezoNote: 'Reggeli stack · koffein már a wake-időben volt (kávé), AAKG 30 perccel a gym előtt. Pull Day-en a pump segít a Chest Row PR-attempt-en.',
-      items: [{ done: true }, { done: true }],
-    },
-    {
-      time: '07:30',
-      kind: 'workout',
-      label: 'Pull Day · gym',
-      state: 'done',
-    },
-    {
-      time: '09:15',
-      kind: 'meal',
-      label: 'Reggeli · post-workout',
-      state: 'done',
-      mealName: 'Túrós zabkása · áfonyával',
-      mezoNote: 'Post-workout ablakban · slow-release C + komplett protein. A pre-workout snack az anyagcserét bekapcsolta, most a glikogén-pótlás megy.',
-      items: [],
-    },
-    {
-      time: '12:00',
-      kind: 'midday',
-      label: 'Délutáni stack',
-      state: 'done',
-      items: [{ done: true }, { done: true }],
-    },
-    {
-      time: '13:00',
-      kind: 'meal',
-      label: 'Ebéd',
-      state: 'done',
-      mealName: 'Csirke + édesburgonya + spenót',
-      mezoNote: 'Whole-foods ebéd · mikrótápanyag-density a hét egyik legjobbja.',
-      items: [],
-    },
-    {
-      time: '16:00',
-      kind: 'snack',
-      label: 'Délutáni snack',
-      state: 'now',
-      mealName: 'Túró · áfonya · méz quick',
-      mezoNote: 'Casein-súlyos snack · 220g/nap protein-target tartására. Reta D3 délután az étvágy lefelé indul, ez egy könnyen lemenő opció.',
-      items: [],
-    },
-    {
-      time: '19:00',
-      kind: 'meal',
-      label: 'Vacsora',
-      state: 'pending',
-      mealName: 'Lazac + barna rizs + brokkoli (tervezett)',
-      mezoNote: 'Omega-3 vacsora · 21:30 kitchen close előtt. Csü nincs volleyball · sleep onset előrébb hozható.',
-      items: [],
-    },
-    {
-      time: '21:00',
-      kind: 'evening',
-      label: 'Esti stack',
-      state: 'pending',
-      mezoNote: 'Pattern P2 megerősítve · 21:00 magnézium → első deep sleep ciklus tisztább.',
-      items: [{ done: false }, { done: false }],
-    },
-  ],
-}

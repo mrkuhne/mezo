@@ -7,7 +7,8 @@ import { goal, weightLog, weightTrends, linkedMesocycles } from './goals'
 import { sleepLog, sleepTrends } from './sleep'
 import { peopleSummary, people, mentions, relationPatterns } from './people'
 import { facts, edges } from './knowledge'
-import type { Briefing, CheckinSlot, DayState, TodayScenario } from './types'
+import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './fuel'
+import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario } from './types'
 
 export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
@@ -64,4 +65,20 @@ export function usePeople() {
 
 export function useKnowledge() {
   return { facts, edges, activeCount: facts.filter(f => f.active).length }
+}
+
+export function useFuelDay() {
+  return { fuel: fuelDay }
+}
+
+export function useFuelTimeline() {
+  return { plan: fuelPlan.today, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuelDay.meals) }
+}
+
+export function useStack() {
+  return { stash: supplementsStash }
+}
+
+export function useProtocol() {
+  return { protocol }
 }

@@ -1,4 +1,5 @@
 import type { IconName } from '@/components/ui/Icon'
+import type { NovaGroup } from './nova'
 
 export type DayState = 'good' | 'medium' | 'rough'
 export interface CheckinValues { energy: number; stress: number; body: number; mental: number }
@@ -12,7 +13,68 @@ export interface NiggleWarning { muscle: string; muscleLabel: string; detail: st
 export interface Workout { title: string; tag: string; durationEst: number; exercises: WorkoutExercise[]; niggleWarning: NiggleWarning }
 export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; today?: boolean }
 export type FuelKind = 'wake' | 'meal' | 'midday' | 'snack' | 'preworkout' | 'workout' | 'sport' | 'evening'
-export interface FuelSlot { time: string; kind: FuelKind; label: string; state: 'done' | 'now' | 'pending'; mealName?: string; mezoNote?: string; items?: { done?: boolean }[] }
+export interface SlotItem { type: 'supplement'; refId: string; label: string; done: boolean; primary?: boolean; note?: string }
+export interface FuelSlot {
+  time: string
+  kind: FuelKind
+  label: string
+  state: 'done' | 'now' | 'pending'
+  mealName?: string
+  mezoNote?: string
+  windowTip?: string
+  kcal?: number; p?: number; c?: number; f?: number
+  duration?: number
+  items?: SlotItem[] | { done?: boolean }[]
+}
+export interface FuelPlanToday {
+  workout: { type: string; start: string; end: string; duration: number }
+  volleyball: { start: string; end: string; noneToday: boolean }
+  bedtime: string; kitchenClose: string; caffeineCutoff: string
+  slots: FuelSlot[]
+}
+export interface MacroSet { kcal: number; p: number; c: number; f: number; water: number }
+export type ToolType = 'read' | 'compute' | 'write'
+export interface MealDimensionBase { id: 'macro' | 'micro' | 'nova' | 'context'; label: string; weight: number; score: number; color: string; detail: string }
+export interface MacroDimension extends MealDimensionBase { id: 'macro'; macroRatio: { p: number; c: number; f: number }; macroTargets: { p: string; c: string; f: string }; kcalShareOfDay: number; notes?: string }
+export type MicroStatus = 'good' | 'ok' | 'low'
+export interface MicroDimension extends MealDimensionBase { id: 'micro'; micros: { name: string; value: string; pct: number; status: MicroStatus }[] }
+export interface NovaDimension extends MealDimensionBase { id: 'nova'; nova: { dominant: NovaGroup; stack: { nova: NovaGroup; pct: number; label: string }[]; items: { name: string; nova: NovaGroup; warning?: boolean }[] } }
+export interface ContextDimension extends MealDimensionBase { id: 'context'; context: { label: string; value: string }[] }
+export type MealDimension = MacroDimension | MicroDimension | NovaDimension | ContextDimension
+export interface MealBreakdown {
+  confidence: number
+  summary: string
+  dimensions: MealDimension[]
+  improve: { text: string; impact: string }[]
+  tools: { type: ToolType; name: string }[]
+}
+export interface FuelMeal {
+  id: string; slot: string; title: string; score: number | null
+  kcal: number; p: number; c: number; f: number
+  items: string[]; tags: string[]
+  recipeId?: string; loggedAt?: string
+  breakdown?: MealBreakdown
+}
+export interface Micronutrient { name: string; pct: number; target: string }
+export interface FuelSummary { name: string; when: string; state: 'done' | 'pending'; dose: string }
+export interface FuelDay {
+  targets: MacroSet; consumed: MacroSet
+  meals: FuelMeal[]
+  pacing: { eyebrow: string; msg: string }
+  micronutrients: Micronutrient[]
+  supplements: FuelSummary[]
+}
+export type SupplementType = 'supplement' | 'stimulant' | 'medication'
+export interface SupplementStashItem {
+  id: string; name: string; brand: string; type: SupplementType; category: string
+  dose: string; form: string; stock: number | null; stockUnit: string | null
+  protocol: string; timing: string; taken: boolean; caffeine?: boolean
+}
+export interface Protocol {
+  version: number; builtAt: string; source: string; status: string
+  itemCount: number; confidence: number; lastReplanReason: string | null
+  history: { v: number; when: string; reason: string }[]
+}
 export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; retaDay: number; mesoPhase: string }
 export interface UserMeta {
   weekInMeso: number
