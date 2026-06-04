@@ -1,0 +1,22 @@
+import { render, screen } from '@testing-library/react'
+import { GoalsView } from './GoalsView'
+
+test('renders the goal hero, weights and identity frame', () => {
+  render(<GoalsView />)
+  expect(screen.getByRole('heading', { level: 1, name: /Hosszú cél/ })).toBeInTheDocument()
+  expect(screen.getByText('Fogyás · Nyári forma')).toBeInTheDocument()
+  expect(screen.getAllByText('78.6').length).toBeGreaterThan(0) // current weight (hero + chart label)
+  expect(screen.getByText(/Egészséges erő/)).toBeInTheDocument() // identityFrame
+})
+
+test('renders the factors section with tool chips', () => {
+  render(<GoalsView />)
+  expect(screen.getByText('Reta D3-D5 alacsony étvágy')).toBeInTheDocument()
+  expect(screen.getByText(/get_weight_log/)).toBeInTheDocument()
+})
+
+test('renders linked mesocycles with status chips', () => {
+  render(<GoalsView />)
+  expect(screen.getByText('Hypertrophy 04')).toBeInTheDocument()
+  expect(screen.getByText('AKTÍV')).toBeInTheDocument()
+})
