@@ -29,6 +29,12 @@ test('logged recipes (rec-1/2/4) carry recentLogs with non-empty loggedAt', () =
       expect(log.loggedAt.trim().length).toBeGreaterThan(0)
     }
   }
+
+  // Verify the enrichment math (not just structure): m1 (score 0.92) ↔ rec-1
+  // (mezoFit.score 0.92) → delta = +(0.92 - 0.92).toFixed(2) = 0.
+  const rec1 = result.current.recipes.find(r => r.id === 'rec-1')!
+  expect(rec1.recentLogs![0].score).toBe(0.92)
+  expect(rec1.recentLogs![0].delta).toBe(0)
 })
 
 test('standalone recipes (rec-3/5/6) have empty recentLogs but a templateBreakdown', () => {

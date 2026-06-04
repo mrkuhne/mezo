@@ -547,19 +547,21 @@ const linkedMeals: LinkedMeal[] = recipeLinks
 
 export const recipes: Recipe[] = recipesBase.map(r => {
   // pantry-data.js:316–324 — mirror logged meals (with breakdowns) onto the recipe.
-  const recentLogs: RecipeLog[] = linkedMeals
-    .filter(lm => lm.recipeId === r.id && lm.meal.breakdown)
-    .map(lm => ({
+  const recentLogs: RecipeLog[] = linkedMeals.flatMap(lm => {
+    const { score } = lm.meal
+    if (lm.recipeId !== r.id || score == null) return []
+    return [{
       mealId: lm.meal.id,
       slot: lm.meal.slot,
-      score: lm.meal.score as number,
-      delta: +((lm.meal.score as number) - r.mezoFit.score).toFixed(2),
+      score,
+      delta: +(score - r.mezoFit.score).toFixed(2),
       loggedAt: lm.loggedAt,
       kcal: lm.meal.kcal,
       p: lm.meal.p,
       c: lm.meal.c,
       f: lm.meal.f,
-    }))
+    }]
+  })
 
   // pantry-data.js:326–331 — baseline template = the most recent linked meal's breakdown.
   const sourceMeal = linkedMeals.find(lm => lm.recipeId === r.id && lm.meal.breakdown)
