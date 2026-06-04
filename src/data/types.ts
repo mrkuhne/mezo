@@ -291,6 +291,30 @@ export interface StackRecommendation {
   confidence: number
 }
 
+// --- Fuel · Stack protocol builder ---
+export interface ProtocolSlotItem { name: string; dose: string; color: string }
+export interface ProtocolSlotData {
+  time: string
+  window: string
+  kind: string
+  kindColor: string
+  relatedTo?: string
+  items: ProtocolSlotItem[]
+  reasoning: string
+  primary: boolean
+}
+export interface Reasoning {
+  kind: 'physiology' | 'timing' | 'interaction' | 'sleep'
+  text: string
+  evidence?: string
+}
+export interface MealMatch { recipeId: string; slot: string; reason: string }
+export interface BuiltProtocol {
+  slots: ProtocolSlotData[]
+  reasoning: Reasoning[]
+  mealMatches: MealMatch[]
+}
+
 // --- Tudás (knowledge) ---
 export type FactCategory = 'physiology' | 'preference' | 'trigger' | 'tendency' | 'goal_state'
 export interface KnowledgeFact { id: string; text: string; category: FactCategory; active: boolean; reinforced: number }
