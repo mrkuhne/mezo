@@ -1,0 +1,35 @@
+export function SleepStat({
+  label,
+  val,
+  unit,
+  highlight = false,
+}: {
+  label: string
+  val: string | number
+  unit?: string
+  highlight?: boolean
+}) {
+  return (
+    <div className="col flex-1">
+      <span className="label-mono" style={{ fontSize: 8 }}>{label}</span>
+      <span
+        style={{
+          fontFamily: 'var(--ff-display)',
+          fontSize: 18,
+          fontWeight: 600,
+          lineHeight: 1,
+          marginTop: 4,
+          color: highlight ? 'var(--brand-glow)' : 'var(--text-primary)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {val}
+        {unit && (
+          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>
+            {unit}
+          </span>
+        )}
+      </span>
+    </div>
+  )
+}
