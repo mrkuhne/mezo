@@ -1,5 +1,6 @@
 import type { IconName } from '@/components/ui/Icon'
 import type { NovaGroup } from './nova'
+import type { PantrySourceKey } from './pantrySources'
 
 export type DayState = 'good' | 'medium' | 'rough'
 export interface CheckinValues { energy: number; stress: number; body: number; mental: number }
@@ -87,6 +88,37 @@ export interface UserMeta {
   streakDays: number
 }
 export interface TodayScenario { dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean }
+
+// --- Pantry (Kamra) + Recipes (Receptek) ---
+export interface PantryCategoryMeta { label: string; color: string }
+export interface IngredientStock { qty: number; unit: string; expires: string; lowExpiry?: boolean }
+export interface Ingredient {
+  id: string; name: string; brand: string; source: PantrySourceKey; category: string
+  per: number; unit: string
+  macros: { kcal: number; p: number; c: number; f: number }
+  price: number; priceUnit: string; pkg: string
+  micros: { name: string; pct: number }[]
+  nova: NovaGroup
+  stock: IngredientStock | null
+  lastUsed: string; usedInRecipes: number; scrapedAt?: string
+  stashRefId?: string; warning?: string
+}
+export type RecipeCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+export interface RecipeLog { mealId: string; slot: string; score: number; delta: number; loggedAt: string; kcal: number; p: number; c: number; f: number }
+export interface Recipe {
+  id: string; name: string; slot: string; category: RecipeCategory
+  createdDate: string; timesLogged: number; avgScore: number; lastLogged: string
+  servings: number; prepMins: number; cookMins: number; tags: string[]
+  ingredients: { refId: string; amount: number; unit: string; note?: string }[]
+  macros: { kcal: number; p: number; c: number; f: number }
+  novaDominant: NovaGroup
+  mezoFit: { score: number; fitsFor: string[] }
+  starred: boolean
+  recentLogs?: RecipeLog[]
+  templateBreakdown?: MealBreakdown
+}
+export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
+export interface PantrySuggestion { name: string; source: PantrySourceKey; price: string; reason: string }
 
 // --- Profil extras (hardcoded in prototype JSX → typed consts here) ---
 export interface IdentityGoalCard { eyebrow: string; quote: string; note: string }

@@ -8,6 +8,7 @@ import { sleepLog, sleepTrends } from './sleep'
 import { peopleSummary, people, mentions, relationPatterns } from './people'
 import { facts, edges } from './knowledge'
 import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './fuel'
+import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario } from './types'
 
 export function useTodayScenario(): TodayScenario {
@@ -81,4 +82,12 @@ export function useStack() {
 
 export function useProtocol() {
   return { protocol }
+}
+
+export function usePantry() {
+  return { ingredients, stash: supplementsStash, sources: pantrySources, categoryMeta: pantryCategoryMeta, imports: pantryImports, suggestions: pantrySuggestions }
+}
+
+export function useRecipes() {
+  return { recipes, ingredients, sources: pantrySources, categoryMeta: pantryCategoryMeta }
 }
