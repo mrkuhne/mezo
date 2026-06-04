@@ -2,6 +2,9 @@ import { useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { today, user, briefing, briefingVariants, workout, volleyballSessions, fuelToday } from './today'
 import { initialCheckins } from './checkins'
+import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
+import { goal, weightLog, weightTrends, linkedMesocycles } from './goals'
+import { sleepLog, sleepTrends } from './sleep'
 import type { Briefing, CheckinSlot, DayState, TodayScenario } from './types'
 
 export function useTodayScenario(): TodayScenario {
@@ -39,4 +42,16 @@ export function useFuelPreview() {
   const visible = slots.slice(start, start + 3)
   const nextStack = slots.find(s => s.state !== 'done' && (s.items ?? []).some(it => !it.done))
   return { visible, nextStack }
+}
+
+export function useProfile() {
+  return { user, identityGoal, areas, quickSettings, notifSettings, version: appVersion }
+}
+
+export function useGoals() {
+  return { goal, weightLog, weightTrends, linkedMesocycles }
+}
+
+export function useSleep() {
+  return { sleepLog, sleepTrends, lastNight: sleepLog[sleepLog.length - 1] }
 }

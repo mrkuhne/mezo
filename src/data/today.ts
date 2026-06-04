@@ -20,6 +20,11 @@ export const user: UserMeta = {
   weekInMeso: 3,
   dayInWeek: 4,
   mesoLabel: 'Hypertrophy 04 · Tavasz',
+  name: 'Daniel',
+  handle: '@daniel.kuhne',
+  age: 33,
+  memberDays: 142,
+  streakDays: 27,
 }
 
 export const briefing: Briefing = {
