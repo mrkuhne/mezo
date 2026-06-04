@@ -24,7 +24,7 @@ export interface FuelSlot {
   windowTip?: string
   kcal?: number; p?: number; c?: number; f?: number
   duration?: number
-  items?: SlotItem[] | { done?: boolean }[]
+  items?: SlotItem[]
 }
 export interface FuelPlanToday {
   workout: { type: string; start: string; end: string; duration: number }
