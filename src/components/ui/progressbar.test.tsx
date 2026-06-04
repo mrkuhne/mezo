@@ -11,3 +11,13 @@ test('negative value clamps to 0', () => {
   const { container } = render(<ProgressBar value={-20} />)
   expect((container.querySelector('.bar-fill') as HTMLElement).style.width).toBe('0%')
 })
+test('applies a custom color to the fill', () => {
+  const { container } = render(<ProgressBar value={50} color="var(--cat-tendency)" />)
+  const fill = container.querySelector('.bar-fill') as HTMLElement
+  expect(fill.style.background).toContain('var(--cat-tendency)')
+})
+test('adds a glow box-shadow when glow + color set', () => {
+  const { container } = render(<ProgressBar value={50} color="var(--brand-glow)" glow />)
+  const fill = container.querySelector('.bar-fill') as HTMLElement
+  expect(fill.style.boxShadow).toContain('var(--brand-glow)')
+})
