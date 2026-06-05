@@ -134,6 +134,7 @@ export interface PantryItem {
   stock?: IngredientStock | { qty: number; unit: string } | null
   lastUsed?: string; usedInRecipes?: number; scrapedAt?: string
   isStashOnly?: boolean; dose?: string; protocol?: string; caffeine?: boolean; form?: string
+  stashRefId?: string
 }
 
 // --- Profil extras (hardcoded in prototype JSX → typed consts here) ---
