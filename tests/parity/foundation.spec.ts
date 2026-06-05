@@ -132,3 +132,89 @@ test('our app — settings sheet', async ({ page }) => {
   await page.waitForTimeout(400)
   await page.screenshot({ path: 'tests/parity/__shots__/app-me-settings.png' })
 })
+
+const FUEL_VIEWS: Array<[string, string]> = [
+  ['fuel-today', '/fuel'],
+  ['fuel-plan', '/fuel/plan'],
+  ['fuel-stack', '/fuel/stack'],
+  ['fuel-recipes', '/fuel/recipes'],
+  ['fuel-kamra', '/fuel/kamra'],
+]
+for (const [name, path] of FUEL_VIEWS) {
+  test(`our app — ${name}`, async ({ page }) => {
+    await page.goto(`http://localhost:4317${path}`)
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: `tests/parity/__shots__/app-${name}.png` })
+  })
+}
+
+// ── Fuel sheet states ─────────────────────────────────────────────────────
+// Each opens a route, clicks the sheet trigger, then screenshots the overlay.
+
+test('our app — fuel mealscore sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/fuel')
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'AI score' }).first().click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-mealscore.png' })
+})
+
+test('our app — fuel replan sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/fuel')
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'Replan' }).click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-replan.png' })
+})
+
+test('our app — fuel gymschedule sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/fuel/plan')
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'Idők' }).click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-gymschedule.png' })
+})
+
+test('our app — fuel stackpicker sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/fuel/stack')
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'Hozzáadás' }).click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-stackpicker.png' })
+})
+
+test('our app — fuel recipedetail sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/fuel/recipes')
+  await page.waitForTimeout(400)
+  // First recipe card is a `button.card.notch-12` (RecipeCard root).
+  await page.locator('button.card.notch-12').first().click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-recipedetail.png' })
+})
+
+test('our app — fuel newrecipe sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/fuel/recipes')
+  await page.waitForTimeout(400)
+  await page.getByRole('button', { name: 'Új' }).click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-newrecipe.png' })
+})
+
+test('our app — fuel ingredientdetail sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/fuel/kamra')
+  await page.waitForTimeout(400)
+  // First KamraCard is a `button.card.notch-8` (KamraCard root).
+  await page.locator('button.card.notch-8').first().click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-ingredientdetail.png' })
+})
+
+test('our app — fuel import sheet', async ({ page }) => {
+  await page.goto('http://localhost:4317/fuel/kamra')
+  await page.waitForTimeout(400)
+  // The header "Import" chip is first in DOM order (the scrape-feed card also
+  // matches the accessible name via "Új import →").
+  await page.getByRole('button', { name: 'Import' }).first().click()
+  await page.waitForTimeout(400)
+  await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-import.png' })
+})
