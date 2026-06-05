@@ -93,7 +93,7 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
               padding: '1px 5px',
               background: 'var(--surface-2)',
               border: '1px solid var(--border-subtle)',
-            }}>{item.price} {item.priceUnit}</span>
+            }}>{item.price} {item.priceUnit?.replace(/^Ft\//, '/')}</span>
           )}
           {item.pkg && !item.dose && (
             <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>{item.pkg}</span>
