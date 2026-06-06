@@ -124,7 +124,7 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball }: WeeklyDayR
               {isToday && (
                 <span
                   className="chip"
-                  style={{ fontSize: 8, padding: '2px 5px', color: 'var(--cat-tendency)', borderColor: 'rgba(244, 114, 182, 0.4)' }}
+                  style={{ fontSize: 8, padding: '2px 5px', color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}
                 >
                   log
                 </span>

@@ -96,8 +96,8 @@ export function TrainTodayView() {
             className="card notch-12"
             style={{
               padding: 16,
-              background: 'linear-gradient(180deg, rgba(244, 114, 182, 0.06) 0%, var(--surface-1) 100%)',
-              borderColor: 'rgba(244, 114, 182, 0.3)',
+              background: 'linear-gradient(180deg, color-mix(in srgb, var(--cat-tendency) 6%, transparent) 0%, var(--surface-1) 100%)',
+              borderColor: 'color-mix(in srgb, var(--cat-tendency) 30%, transparent)',
               position: 'relative',
               overflow: 'hidden',
             }}
@@ -115,7 +115,7 @@ export function TrainTodayView() {
               </div>
               <span
                 className="chip notch-4"
-                style={{ fontSize: 9, color: 'var(--cat-tendency)', borderColor: 'rgba(244, 114, 182, 0.4)' }}
+                style={{ fontSize: 9, color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}
               >
                 MA
               </span>
@@ -123,7 +123,7 @@ export function TrainTodayView() {
             <CtaGhost
               className="notch-4 mt-md"
               onClick={() => setVbLogOpen(true)}
-              style={{ borderColor: 'rgba(244, 114, 182, 0.4)', color: 'var(--cat-tendency)' }}
+              style={{ borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)', color: 'var(--cat-tendency)' }}
             >
               <Icon name="plus" size={12} /> Logold a session-t
             </CtaGhost>
