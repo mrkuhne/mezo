@@ -1016,4 +1016,6 @@ for (const [name, path] of TRAIN_VIEWS) {
 
 **Type consistency:** `Mesocycle`/`MesoDay`/`VolumeProfile`/`WorkoutPlan`/`Challenge`/`Sport*`/`GoalPreset`/`SplitOption` defined in T1, consumed by the same names throughout. `useTrain()` returns `{ mesocycles, activeMeso, workout, gymSchedule, sport, exerciseLibrary }`.
 
-**Open parity-review calls (decide at slice checkpoint, not blocking):** double-header on GYM/Sport (shell header + view header); whether the bottom tab bar should hide during active workout; `DayDetailSheet` English fragment.
+**Open parity-review calls (decide at slice checkpoint, not blocking):** whether the bottom tab bar should hide during active workout; `DayDetailSheet` English fragment.
+
+**DESIGN DECISION (resolved after T2 code review):** `TrainScreen` is a **thin Fuel-pattern shell** — it renders ONLY `<TrainSubNav/>` + `<Outlet/>` (no shell header). **Every sub-view (Mai/GYM/Sport/Mesociklusok-library) renders its OWN `.page-header`** (Eyebrow brand + PageTitle) as its first element, matching the prototype (sub-nav pinned at top; each view's header scrolls beneath it). Per-view header copy: Mai → eyebrow `Train · Mai` / title `Edzés` (+ right `{DAY_LABELS[today]} · W{currentWeek}`); GYM → eyebrow `Train · GYM` / title `{activeMeso.shortTitle}` (+ right `W{cw} / {weeks}`); Sport → eyebrow `Train · Sport` / title `Röplabda` (+ right `+ Log` chip); Mesociklusok → eyebrow `Train · Mesocycles` / title `Mesociklusok` (+ right `+ Új` chip). This removes the double-header risk and the parallel `HEADER` map.
