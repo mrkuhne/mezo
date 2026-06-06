@@ -1,4 +1,5 @@
 import type { IconName } from '@/components/ui/Icon'
+import type { Tool } from '@/components/ui/ToolChip'
 import type { NovaGroup } from './nova'
 import type { PantrySourceKey } from './pantrySources'
 
@@ -336,3 +337,69 @@ export interface BuiltProtocol {
 export type FactCategory = 'physiology' | 'preference' | 'trigger' | 'tendency' | 'goal_state'
 export interface KnowledgeFact { id: string; text: string; category: FactCategory; active: boolean; reinforced: number }
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
+
+// --- Insights (AI-memory surface) ---
+export type PatternCategory = 'physiology' | 'trigger' | 'response'
+export type PatternStatus = 'confirm' | 'monitor' | 'reject'
+export interface PatternCritique {
+  statistical: number
+  confounders: number
+  l3align: number
+  actionability: number
+}
+export interface Pattern {
+  id: string
+  category: PatternCategory
+  categoryLabel: string
+  confidence: number
+  title: string
+  mechanism: string
+  evidence: string[]
+  critique: PatternCritique
+  thinking?: string
+}
+
+export interface MemoirAnchor { kind: string; label: string }
+export interface Memoir {
+  week: string
+  title: string
+  body: string
+  anchors: MemoirAnchor[]
+}
+
+export type PredictionStatus = 'pending' | 'validated'
+export interface Prediction {
+  id: string
+  title: string
+  confidence: number
+  status: PredictionStatus
+  date: string
+  basis?: string
+  actual?: string
+}
+
+export type ExperimentStatus = 'active' | 'completed'
+export interface Experiment {
+  id: string
+  title: string
+  status: ExperimentStatus
+  day: number
+  total: number
+  hypothesis: string
+  outcome?: string
+  outcomeGood?: boolean
+}
+
+export type WeeklyTrend = 'up' | 'down' | 'flat'
+export interface WeeklyItem { label: string; value: string; trend: WeeklyTrend }
+export interface WeeklyReview { title: string; score: number; delta: number; items: WeeklyItem[] }
+
+export type ChatRole = 'user' | 'assistant'
+export interface ChatRef { kind: string; id: string }
+export interface ChatMessage {
+  role: ChatRole
+  ts: string
+  text: string
+  tools?: Tool[]
+  refs?: ChatRef[]
+}
