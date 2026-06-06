@@ -12,6 +12,7 @@ import { initialChat } from './chat'
 import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './fuel'
 import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
+import { mesocycles, activeMeso, workout as trainWorkout, gymSchedule as trainGymSchedule, sport, exerciseLibrary } from './train'
 import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario } from './types'
 
 export function useTodayScenario(): TodayScenario {
@@ -113,4 +114,8 @@ export function useReplanScenarios() {
 
 export function useStackRecommendations() {
   return { recommendations: stackRecommendations }
+}
+
+export function useTrain() {
+  return { mesocycles, activeMeso, workout: trainWorkout, gymSchedule: trainGymSchedule, sport, exerciseLibrary }
 }

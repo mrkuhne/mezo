@@ -13,7 +13,7 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
 export interface WorkoutExercise { id: string; name: string; sets: number; targetReps: string; targetRIR: number; type: string; muscle: string }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
 export interface Workout { title: string; tag: string; durationEst: number; exercises: WorkoutExercise[]; niggleWarning: NiggleWarning }
-export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; today?: boolean }
+export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; today?: boolean; flex?: boolean }
 export type FuelKind = 'wake' | 'meal' | 'midday' | 'snack' | 'preworkout' | 'workout' | 'sport' | 'evening'
 export interface SlotItem { type: 'supplement'; refId: string; label: string; done: boolean; primary?: boolean; note?: string }
 export interface FuelSlot {
@@ -403,3 +403,146 @@ export interface ChatMessage {
   tools?: Tool[]
   refs?: ChatRef[]
 }
+
+// --- Train (mesocycles, workouts, sport) ---
+// NOTE (port fix): `NiggleWarning` and `GymScheduleDay` already exist above (Today/Fuel
+// slices) with the exact shape Train needs — reused here rather than re-declared.
+// The plan's "WorkoutExercise" interface collides by name with the existing Today
+// `WorkoutExercise` (no `lastWeek`); the Train logged-set variant is therefore named
+// `LoggedWorkoutExercise`, and the plan's "WorkoutPlan" is kept verbatim. The existing
+// `VolleyballSession` gained an additive optional `flex?` field (present on the Szo
+// fixture in data.js) so it can be reused for the sport schedule too.
+export type MesoPhase = 'MEV' | 'MAV' | 'MRV' | 'Deload'
+export type MesoStatus = 'active' | 'planned' | 'archived'
+export type ExerciseKind = 'compound' | 'isolation'
+
+export interface GymExercise {
+  id: string
+  name: string
+  muscle: string
+  sets: number
+  targetReps: string
+  targetRIR: number
+  type: ExerciseKind
+  warning?: string
+}
+export interface MesoDay {
+  day: string            // 'Hét'..'Vas'
+  type: string           // 'Pull Day' | 'Rest' | ...
+  muscle: string
+  exerciseCount: number
+  exercises: GymExercise[]
+  note?: string
+  current?: boolean
+  muscleAccent?: boolean
+}
+export interface VolumeBaseline { name: string; mev: number; mav: number; mrv: number }
+export interface VolumeAdjustment {
+  kind: string           // 'pattern' | 'recovery' | 'niggle' | 'sport-cross'
+  label: string
+  delta: Partial<Record<'mev' | 'mav' | 'mrv', number>>
+  warning?: boolean
+}
+export interface VolumeSource {
+  baseline: VolumeBaseline
+  adjustments: VolumeAdjustment[]
+  confidence: number
+  note?: string
+}
+export interface VolumeProfile {
+  mev: number; mav: number; mrv: number; current: number
+  source: VolumeSource
+}
+export interface VolumeChange { muscle: string; change: string; reason: string; warning?: boolean }
+export interface VolumeRecompute { lastRun: string; nextRun: string; trigger: string; changes: VolumeChange[] }
+
+export interface Mesocycle {
+  id: string
+  status: MesoStatus
+  title: string
+  shortTitle: string
+  goal: string
+  startDate: string
+  endDate: string
+  weeks: number
+  currentWeek: number
+  split: string          // 'Pull / Push / Legs · 5×/hét'
+  style: string          // 'RP · 6 hét'
+  phaseCurve: MesoPhase[]
+  notes?: string
+  summary?: string
+  volumeRecompute?: VolumeRecompute
+  volumePerMuscle?: Record<string, VolumeProfile>
+  days?: MesoDay[]
+}
+
+export interface LastWeekSet { weight: number; reps: number; rir: number }
+export interface LoggedWorkoutExercise {
+  id: string
+  name: string
+  sets: number
+  targetReps: string
+  targetRIR: number
+  type: ExerciseKind
+  muscle: string
+  lastWeek: LastWeekSet
+}
+export interface ChallengeRef { kind: string; label: string }
+export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo'
+export interface Challenge {
+  id: string
+  type: ChallengeType
+  typeLabel: string
+  exerciseId: string
+  exercise?: string
+  target: string
+  confidence: number
+  risk: 'low' | 'mid'
+  why: string
+  refs: ChallengeRef[]
+  tools: Tool[]
+  glory: string
+}
+export interface WorkoutPlan {
+  title: string
+  tag: string
+  durationEst: number
+  exercises: LoggedWorkoutExercise[]
+  niggleWarning?: NiggleWarning
+  challenges: Challenge[]
+}
+
+export interface GymSchedule { weeklyTimes: GymScheduleDay[] }
+
+export interface SportSchedule {
+  volleyball: { team: string; sessions: VolleyballSession[]; season: string; weeklyHours: number }
+}
+export interface SportSession {
+  id: string; sport: string; date: string; time: string; duration: number
+  setsPlayed: number; intensity: number; rpe: number; shoulderStrain: number
+  jumpCount: number; notes: string | null
+}
+export interface SportWeek {
+  label: string; sessions: number; hoursPlayed: number
+  avgRPE: number; avgShoulderStrain: number; shoulderLoadTrend: string
+}
+export interface CrossLoadRow {
+  target: string; impact: string; why: string; system: string; warning?: boolean
+}
+export interface Sport {
+  schedule: SportSchedule
+  sessions: SportSession[]
+  week: SportWeek
+  crossLoad: CrossLoadRow[]
+}
+
+export interface ExerciseLibraryItem {
+  id: string; name: string; muscle: string; type: ExerciseKind; stim: number; fatigue: number
+}
+
+export interface GoalPreset {
+  id: string; label: string; sub: string; description: string
+  defaultWeeks: number; split: string; days: number; style: string
+  phaseTemplate: MesoPhase[]; color: string
+}
+export interface SplitOption { label: string; days: number[]; best: string | null }
