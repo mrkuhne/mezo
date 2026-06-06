@@ -14,6 +14,7 @@ import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 import { MesoOverview } from './components/MesoOverview'
+import { MesoVolume } from './components/MesoVolume'
 
 type BuilderView = 'overview' | 'volume' | 'exercises'
 
@@ -103,11 +104,7 @@ export function MesocycleBuilder() {
       </div>
 
       {view === 'overview' && <MesoOverview meso={meso} onEditDay={() => setView('exercises')} />}
-      {view === 'volume' && (
-        <div style={{ padding: '12px 24px' }}>
-          <div className="eyebrow">Volumen · hamarosan</div>
-        </div>
-      )}
+      {view === 'volume' && <MesoVolume meso={meso} />}
       {view === 'exercises' && (
         <div style={{ padding: '12px 24px' }}>
           <div className="eyebrow">Gyakorlatok · hamarosan</div>
