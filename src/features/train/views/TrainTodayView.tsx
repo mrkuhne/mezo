@@ -32,7 +32,7 @@ export function TrainTodayView() {
       day: d,
       gym: g && g.active ? g : null,
       volleyball: v ?? null,
-      isToday: Boolean(g?.today),
+      isToday: Boolean(g?.today || v?.today),
     }
   })
 
