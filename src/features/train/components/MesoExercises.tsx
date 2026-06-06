@@ -65,21 +65,21 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
 
   const removeExercise = (dayKey: string, exId: string) => {
     setDays((prev) =>
-      prev.map((d) =>
-        d.day === dayKey
-          ? { ...d, exercises: d.exercises.filter((e) => e.id !== exId), exerciseCount: d.exercises.length - 1 }
-          : d,
-      ),
+      prev.map((d) => {
+        if (d.day !== dayKey) return d
+        const exercises = d.exercises.filter((e) => e.id !== exId)
+        return { ...d, exercises, exerciseCount: exercises.length }
+      }),
     )
   }
 
   const addExercise = (dayKey: string, item: ExerciseLibraryItem) => {
     setDays((prev) =>
-      prev.map((d) =>
-        d.day === dayKey
-          ? { ...d, exercises: [...d.exercises, libraryToGymExercise(item)], exerciseCount: d.exercises.length + 1 }
-          : d,
-      ),
+      prev.map((d) => {
+        if (d.day !== dayKey) return d
+        const exercises = [...d.exercises, libraryToGymExercise(item)]
+        return { ...d, exercises, exerciseCount: exercises.length }
+      }),
     )
   }
 

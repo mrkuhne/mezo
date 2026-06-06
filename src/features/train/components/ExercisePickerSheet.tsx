@@ -7,9 +7,13 @@
 // the same slide-down as the backdrop.
 // Ported from prototype mesocycles.jsx ExercisePickerSheet.
 // ============================================================
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train'
+
+// Muscle filter tokens — the prototype's curated order (mesocycles.jsx
+// ExercisePickerSheet `muscles`), 'all' first. Kept explicit for pixel parity.
+const MUSCLE_FILTERS = ['all', 'back-mid', 'lats', 'chest', 'shoulder', 'biceps', 'triceps', 'quad', 'ham', 'glute', 'rear-delt']
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
@@ -25,15 +29,7 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
 
-  // Muscle filter tokens: 'all' + every distinct muscle present in the library,
-  // in first-appearance order (matches the prototype's hand-curated list).
-  const muscles = useMemo(() => {
-    const seen: string[] = ['all']
-    for (const e of exerciseLibrary) {
-      if (!seen.includes(e.muscle)) seen.push(e.muscle)
-    }
-    return seen
-  }, [exerciseLibrary])
+  const muscles = MUSCLE_FILTERS
 
   const filtered = exerciseLibrary.filter(
     (e) =>
