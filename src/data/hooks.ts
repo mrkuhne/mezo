@@ -8,6 +8,7 @@ import { sleepLog, sleepTrends } from './sleep'
 import { peopleSummary, people, mentions, relationPatterns } from './people'
 import { facts, edges } from './knowledge'
 import { patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments } from './insights'
+import { initialChat } from './chat'
 import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './fuel'
 import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
@@ -72,6 +73,10 @@ export function useKnowledge() {
 
 export function useInsights() {
   return { patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments }
+}
+
+export function useChat() {
+  return { initialChat }
 }
 
 export function useFuelDay() {
