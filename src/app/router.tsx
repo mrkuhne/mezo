@@ -2,6 +2,13 @@ import { Navigate, useOutletContext, type RouteObject } from 'react-router-dom'
 import { AppLayout } from './AppLayout'
 import { TodayScreen } from '@/features/today/TodayScreen'
 import { TrainScreen } from '@/features/train/TrainScreen'
+import { TrainTodayView } from '@/features/train/views/TrainTodayView'
+import { GymView } from '@/features/train/views/GymView'
+import { SportView } from '@/features/train/views/SportView'
+import { MesocycleLibraryView } from '@/features/train/views/MesocycleLibraryView'
+import { ActiveWorkoutScreen } from '@/features/train/ActiveWorkoutScreen'
+import { MesocyclePlanner } from '@/features/train/MesocyclePlanner'
+import { MesocycleBuilder } from '@/features/train/MesocycleBuilder'
 import { FuelScreen } from '@/features/fuel/FuelScreen'
 import { FuelMaiView } from '@/features/fuel/views/FuelMaiView'
 import { FuelPlanView } from '@/features/fuel/views/FuelPlanView'
@@ -35,7 +42,19 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/today" replace /> },
       { path: 'today', element: <TodayScreen /> },
-      { path: 'train', element: <TrainScreen /> },
+      {
+        path: 'train',
+        element: <TrainScreen />,
+        children: [
+          { index: true, element: <TrainTodayView /> },
+          { path: 'gym', element: <GymView /> },
+          { path: 'sport', element: <SportView /> },
+          { path: 'mesocycles', element: <MesocycleLibraryView /> },
+        ],
+      },
+      { path: 'train/session', element: <ActiveWorkoutScreen /> },
+      { path: 'train/mesocycles/new', element: <MesocyclePlanner /> },
+      { path: 'train/mesocycles/:id', element: <MesocycleBuilder /> },
       {
         path: 'fuel',
         element: <FuelScreen />,
