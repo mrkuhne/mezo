@@ -8,16 +8,16 @@
 // Ported from prototype mesocycles.jsx ActiveMesoCard / MesoOverview phase curves.
 // (DISTINCT from PhaseDots — that widget has its own colour map.)
 // ============================================================
-import { MESOCYCLE_PHASE_COLORS } from '@/data/train'
+import { MESOCYCLE_PHASE_COLORS, phaseBarHeight } from '@/data/train'
 import type { MesoPhase, MesoStatus } from '@/data/types'
 
 type PhaseCurveSize = 'sm' | 'lg'
 
-// sm = library mini bars; lg = builder overview hero bars.
-const BAR_HEIGHTS: Record<PhaseCurveSize, Record<MesoPhase, number>> = {
-  sm: { MEV: 12, MAV: 24, MRV: 36, Deload: 8 },
-  lg: { MEV: 18, MAV: 36, MRV: 52, Deload: 10 },
-}
+// sm heights come from the data layer's single source (`phaseBarHeight`);
+// lg = taller builder-overview hero bars.
+const LG_HEIGHTS: Record<MesoPhase, number> = { MEV: 18, MAV: 36, MRV: 52, Deload: 10 }
+const barHeight = (size: PhaseCurveSize, p: MesoPhase): number =>
+  size === 'lg' ? LG_HEIGHTS[p] : phaseBarHeight(p)
 
 interface PhaseCurveBarsProps {
   phases: MesoPhase[]
@@ -33,7 +33,6 @@ interface PhaseCurveBarsProps {
 export function PhaseCurveBars({ phases, currentWeek, size = 'sm', status = 'active' }: PhaseCurveBarsProps) {
   const isLg = size === 'lg'
   const containerHeight = isLg ? 60 : 36
-  const heights = BAR_HEIGHTS[size]
   const isActive = status === 'active'
   return (
     <div className="row gap-xs" style={{ height: containerHeight, alignItems: 'flex-end' }}>
@@ -51,7 +50,7 @@ export function PhaseCurveBars({ phases, currentWeek, size = 'sm', status = 'act
             <div
               style={{
                 width: '100%',
-                height: heights[p],
+                height: barHeight(size, p),
                 background: color,
                 opacity,
                 boxShadow: current ? `0 0 12px ${color}` : 'none',
