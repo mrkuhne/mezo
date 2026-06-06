@@ -7,7 +7,9 @@ import type { AddressInfo } from 'node:net'
 const PROTOTYPE_DIR =
   '/Users/daniel.kuhne/Downloads/design_handoff_mezo/prototype'
 const PROTOTYPE_ENTRY = 'Mezo Prototype.html'
-const TABS = ['today', 'train', 'fuel', 'insights', 'me'] as const
+// `train` is covered in detail by the TRAIN_VIEWS loop below (train-mai === /train),
+// so it is intentionally absent here to avoid a redundant app-train.png shot.
+const TABS = ['today', 'fuel', 'insights', 'me'] as const
 
 for (const tab of TABS) {
   test(`our app — ${tab}`, async ({ page }) => {
@@ -229,6 +231,23 @@ const INSIGHTS_VIEWS: Array<[string, string]> = [
   ['insights-experiments', '/insights/experiments'],
 ]
 for (const [name, path] of INSIGHTS_VIEWS) {
+  test(`our app — ${name}`, async ({ page }) => {
+    await page.goto(`http://localhost:4317${path}`)
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: `tests/parity/__shots__/app-${name}.png` })
+  })
+}
+
+const TRAIN_VIEWS: Array<[string, string]> = [
+  ['train-mai', '/train'],
+  ['train-gym', '/train/gym'],
+  ['train-sport', '/train/sport'],
+  ['train-mesocycles', '/train/mesocycles'],
+  ['train-builder', '/train/mesocycles/meso-hyp-04'],
+  ['train-planner', '/train/mesocycles/new'],
+  ['train-session', '/train/session'],
+]
+for (const [name, path] of TRAIN_VIEWS) {
   test(`our app — ${name}`, async ({ page }) => {
     await page.goto(`http://localhost:4317${path}`)
     await page.waitForTimeout(500)
