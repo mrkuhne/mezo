@@ -6,7 +6,6 @@
 // Ported from prototype train-views.jsx GymExRow.
 // ============================================================
 import { Icon } from '@/components/ui/Icon'
-import { MUSCLE_LABELS } from '@/data/train'
 import type { GymExercise } from '@/data/types'
 
 interface GymExRowProps {
@@ -28,7 +27,7 @@ export function GymExRow({ ex, idx }: GymExRowProps) {
           </div>
           <div className="row gap-md mt-xs" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10 }}>
             <span style={{ color: typeColor }}>{ex.type}</span>
-            <span style={{ color: 'var(--text-tertiary)' }}>· {MUSCLE_LABELS[ex.muscle] ?? ex.muscle}</span>
+            <span style={{ color: 'var(--text-tertiary)' }}>· {ex.muscle}</span>
           </div>
           {ex.warning && (
             <div
