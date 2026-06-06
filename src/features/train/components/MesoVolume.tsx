@@ -19,10 +19,10 @@ import { VolumeBar } from './VolumeBar'
 
 // The four tools behind the weekly volume recompute (prototype tool chips).
 const RECOMPUTE_TOOLS: Tool[] = [
-  { type: 'compute', name: 'generateAiHypotheses' },
+  { type: 'compute', name: 'generateAiHypotheses()' },
   { type: 'read', name: 'get_workout_pattern', args: '28d' },
-  { type: 'read', name: 'get_niggle_events' },
-  { type: 'write', name: 'updateVolumeProfile' },
+  { type: 'read', name: 'get_niggle_events()' },
+  { type: 'write', name: 'updateVolumeProfile()' },
 ]
 
 const PROVENANCE_INTRO =
