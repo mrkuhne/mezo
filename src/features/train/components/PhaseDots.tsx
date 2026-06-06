@@ -1,11 +1,25 @@
 // ============================================================
-// Mezo · PhaseDots — one dot per phaseCurve entry, coloured via
-// MESOCYCLE_PHASE_COLORS. The current week's dot is enlarged + glowing;
-// dots past the current week are dimmed to surface-3.
-// Ported from prototype train-views.jsx PhaseDots.
+// Mezo · PhaseDots — one dot per phaseCurve entry. The current week's dot is
+// enlarged + glowing; future dots are dimmed to surface-3.
+// Ported from prototype train-views.jsx PhaseDots (NOTE: this widget uses its
+// OWN phase→colour map — distinct from mesocycles.jsx MESOCYCLE_PHASE_COLORS,
+// which the library/builder phase-curve bars use).
 // ============================================================
-import { MESOCYCLE_PHASE_COLORS } from '@/data/train'
 import type { MesoPhase } from '@/data/types'
+
+// Prototype train-views.jsx `colorFor`: MEV→tertiary, MAV→brand-glow,
+// MRV→warning, Deload→cat-preference (fallback text-secondary).
+function colorFor(p: MesoPhase): string {
+  return p === 'MEV'
+    ? 'var(--text-tertiary)'
+    : p === 'MAV'
+      ? 'var(--brand-glow)'
+      : p === 'MRV'
+        ? 'var(--warning)'
+        : p === 'Deload'
+          ? 'var(--cat-preference)'
+          : 'var(--text-secondary)'
+}
 
 interface PhaseDotsProps {
   phases: MesoPhase[]
@@ -17,7 +31,7 @@ export function PhaseDots({ phases, current }: PhaseDotsProps) {
   return (
     <div className="row gap-xs" style={{ alignItems: 'center' }}>
       {phases.map((p, i) => {
-        const color = MESOCYCLE_PHASE_COLORS[p]
+        const color = colorFor(p)
         const isCurrent = i === current
         return (
           <span
