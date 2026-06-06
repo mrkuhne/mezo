@@ -8,7 +8,7 @@
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainScreen).
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import type { LastWeekSet } from '@/data/types'
@@ -42,6 +42,11 @@ const BRAND_TINT_6 = 'color-mix(in srgb, var(--brand-glow) 6%, transparent)'
 const BRAND_TINT_8 = 'color-mix(in srgb, var(--brand-glow) 8%, transparent)'
 const BRAND_TINT_12 = 'color-mix(in srgb, var(--brand-glow) 12%, transparent)'
 
+// PR demo (prototype-scripted moment): the 3rd set of exercise 0 at/above this
+// weight triggers the Personal Record toast, which auto-hides after PR_TOAST_MS.
+const PR_DEMO_THRESHOLD_KG = 105
+const PR_TOAST_MS = 4500
+
 export function ActiveWorkoutScreen() {
   const { workout, activeMeso } = useTrain()
   const W = workout
@@ -51,17 +56,28 @@ export function ActiveWorkoutScreen() {
   const weekLabel = `Week ${activeMeso.currentWeek} · ${activeMeso.phaseCurve[activeMeso.currentWeek - 1]}`
   const niggleActive = !!W.niggleWarning
 
+  // The logging panel opens pre-filled with the first exercise's last-week
+  // numbers (same source used to prefill exercises 1..N after each debrief).
+  const firstLastWeek = W.exercises[0].lastWeek
+
   const [phase, setPhase] = useState<Phase>('prep')
   const [exerciseIdx, setExerciseIdx] = useState(0)
   const [setIdx, setSetIdx] = useState(0)
-  const [weight, setWeight] = useState(102.5)
-  const [reps, setReps] = useState(9)
-  const [rir, setRir] = useState(2)
+  const [weight, setWeight] = useState(firstLastWeek.weight)
+  const [reps, setReps] = useState(firstLastWeek.reps)
+  const [rir, setRir] = useState(firstLastWeek.rir)
   const [completedSets, setCompletedSets] = useState<CompletedSets>({})
   const [showPR, setShowPR] = useState<PRState | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
-  const [, setNiggleConfirmed] = useState(false)
+  const [niggleConfirmed, setNiggleConfirmed] = useState(false)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
+
+  // Auto-hide the PR toast (leak-safe: cleared on unmount / re-trigger).
+  useEffect(() => {
+    if (!showPR) return
+    const t = setTimeout(() => setShowPR(null), PR_TOAST_MS)
+    return () => clearTimeout(t)
+  }, [showPR])
 
   const ex = W.exercises[exerciseIdx]
   const acceptedMap: Record<string, boolean> = Object.fromEntries(
@@ -79,10 +95,13 @@ export function ActiveWorkoutScreen() {
       [k]: [...(prev[k] ?? []), { weight, reps, rir }],
     }))
 
-    // PR demo: only set 3 of the Chest Supported Row at ≥105 kg counts.
-    if (exerciseIdx === 0 && setIdx === 2 && weight >= 105) {
-      setShowPR({ delta: (weight - 102.5).toFixed(1), prev: 102.5, prevReps: 9 })
-      setTimeout(() => setShowPR(null), 4500)
+    // PR demo: only set 3 of the Chest Supported Row at/above the threshold counts.
+    if (exerciseIdx === 0 && setIdx === 2 && weight >= PR_DEMO_THRESHOLD_KG) {
+      setShowPR({
+        delta: (weight - firstLastWeek.weight).toFixed(1),
+        prev: firstLastWeek.weight,
+        prevReps: firstLastWeek.reps,
+      })
     }
 
     if (setIdx + 1 >= ex.sets) {
@@ -127,8 +146,8 @@ export function ActiveWorkoutScreen() {
           </div>
         </div>
 
-        {/* Niggle pre-flag */}
-        {niggleActive && W.niggleWarning && (
+        {/* Niggle pre-flag — dismissed once acknowledged ("Értem · jó így") */}
+        {niggleActive && W.niggleWarning && !niggleConfirmed && (
           <div style={{ padding: '16px 24px' }}>
             <div
               className="card notch-12"
@@ -264,7 +283,7 @@ export function ActiveWorkoutScreen() {
 
   // ---------- COMPLETE ----------
   if (phase === 'complete') {
-    const hadPR = !!showPR || (completedSets['ex0'] ?? []).some((s) => s.weight >= 105)
+    const hadPR = !!showPR || (completedSets['ex0'] ?? []).some((s) => s.weight >= PR_DEMO_THRESHOLD_KG)
     return (
       <WorkoutComplete workout={W} completedSets={completedSets} hadPR={hadPR} onExit={onExit} />
     )
@@ -420,7 +439,7 @@ export function ActiveWorkoutScreen() {
                 </span>
                 {exHistory.map((s, i) => {
                   const delta = s.weight - ex.lastWeek.weight
-                  const isPR = exerciseIdx === 0 && s.weight >= 105
+                  const isPR = exerciseIdx === 0 && s.weight >= PR_DEMO_THRESHOLD_KG
                   return (
                     <div
                       key={i}
