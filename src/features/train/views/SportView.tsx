@@ -4,7 +4,8 @@
 // .page-header (eyebrow `Train · Sport`, title `Röplabda`, `+ Log` chip).
 // Ported from prototype sport.jsx (SportView + SportWeekView +
 // SportLogView + SportCrossloadView). All sport pinks use the
-// --cat-tendency token via color-mix (no raw rgba).
+// --cat-tendency token via color-mix (no raw pink rgba); the faint teal
+// brand-glow card tints follow the existing Insights/Fuel slice convention.
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
@@ -134,6 +135,7 @@ export function SportView() {
             <button
               key={v.id}
               type="button"
+              aria-pressed={active}
               onClick={() => setView(v.id)}
               className="flex-1 notch-4"
               style={{
