@@ -543,6 +543,6 @@ export interface ExerciseLibraryItem {
 export interface GoalPreset {
   id: string; label: string; sub: string; description: string
   defaultWeeks: number; split: string; days: number; style: string
-  phaseTemplate: MesoPhase[]; color: string
+  phaseTemplate: MesoPhase[]; color: string; icon: IconName
 }
 export interface SplitOption { label: string; days: number[]; best: string | null }

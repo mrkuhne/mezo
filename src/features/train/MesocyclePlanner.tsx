@@ -214,7 +214,7 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                     clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
                   }}
                 >
-                  <Icon name="train" size={18} color={selected ? g.color : 'var(--text-secondary)'} />
+                  <Icon name={g.icon} size={18} color={selected ? g.color : 'var(--text-secondary)'} />
                 </div>
                 <div className="col flex-1" style={{ minWidth: 0 }}>
                   <div className="row" style={{ justifyContent: 'space-between' }}>
