@@ -218,3 +218,20 @@ test('our app — fuel import sheet', async ({ page }) => {
   await page.waitForTimeout(400)
   await page.screenshot({ path: 'tests/parity/__shots__/app-fuel-import.png' })
 })
+
+const INSIGHTS_VIEWS: Array<[string, string]> = [
+  ['insights-patterns', '/insights'],
+  ['insights-weekly', '/insights/weekly'],
+  ['insights-memoir', '/insights/memoir'],
+  ['insights-knowledge', '/insights/knowledge'],
+  ['insights-chat', '/insights/chat'],
+  ['insights-predictions', '/insights/predictions'],
+  ['insights-experiments', '/insights/experiments'],
+]
+for (const [name, path] of INSIGHTS_VIEWS) {
+  test(`our app — ${name}`, async ({ page }) => {
+    await page.goto(`http://localhost:4317${path}`)
+    await page.waitForTimeout(500)
+    await page.screenshot({ path: `tests/parity/__shots__/app-${name}.png` })
+  })
+}
