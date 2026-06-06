@@ -2,12 +2,13 @@ import type {
   Mesocycle, WorkoutPlan, GymSchedule, Sport, ExerciseLibraryItem,
   GoalPreset, SplitOption, MesoPhase,
 } from './types'
+import type { IconName } from '@/components/ui/Icon'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
 export const MUSCLE_LABELS: Record<string, string> = {
   chest: 'Mell', back: 'Hát', 'back-mid': 'Hát (közép)', lats: 'Lat', shoulder: 'Váll',
   'rear-delt': 'Hátsó váll', biceps: 'Bicep', triceps: 'Tricep',
-  quad: 'Comb', ham: 'Lábhajlító', glute: 'Far',
+  quad: 'Comb', ham: 'Lábhajlító', glute: 'Far', calf: 'Vádli',
 }
 export const DAY_LABELS: Record<string, string> = {
   Hét: 'Hétfő', Kedd: 'Kedd', Sze: 'Szerda', Csü: 'Csütörtök', Pén: 'Péntek', Szo: 'Szombat', Vas: 'Vasárnap',
@@ -15,7 +16,7 @@ export const DAY_LABELS: Record<string, string> = {
 export const DAY_ORDER = ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'] as const
 
 // Cross-load system labels (sport.jsx SYSTEM_LABELS): label + token colour + icon name
-export const SYSTEM_LABELS: Record<string, { label: string; color: string; icon: string }> = {
+export const SYSTEM_LABELS: Record<string, { label: string; color: string; icon: IconName }> = {
   Train: { label: 'Edzés', color: 'var(--brand-glow)', icon: 'train' },
   Fuel: { label: 'Étkezés', color: 'var(--info, var(--brand-primary))', icon: 'fuel' },
   Sleep: { label: 'Alvás', color: 'var(--cat-preference)', icon: 'today' },
