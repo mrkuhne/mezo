@@ -11,7 +11,7 @@ import { Display } from '@/components/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 
 // --- NumberStep: label + mono value + 44px ± buttons (reuses .stepper) ---
-function NumberStep({
+export function NumberStep({
   label,
   val,
   step,
@@ -64,7 +64,7 @@ function NumberStep({
 // --- ScaleRow: label + 1-10 grid of cells (active = colour fill) ---
 const SCALE = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const
 
-function ScaleRow({
+export function ScaleRow({
   label,
   val,
   onChange,
