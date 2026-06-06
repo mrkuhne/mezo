@@ -16,7 +16,10 @@ test('redirects / to Today', () => {
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
   await userEvent.click(screen.getByText('Insights'))
-  expect(screen.getByRole('heading', { level: 1, name: /insights/i })).toBeInTheDocument()
+  // Insights shell: the brand eyebrow is the stable landmark; the page title is
+  // dynamic per active sub-view (the index sub-view renders "Patterns").
+  expect(screen.getByRole('heading', { level: 1, name: /patterns/i })).toBeInTheDocument()
+  expect(screen.getByLabelText('Insights alnavigáció')).toBeInTheDocument()
 })
 test('FAB opens and the sheet closes again', async () => {
   renderApp('/today')
