@@ -11,6 +11,9 @@ import { AttentionRow } from '../components/AttentionRow'
 import { PersonCard } from '../components/PersonCard'
 import { MentionRow } from '../components/MentionRow'
 import { RelationPatternCard } from '../components/RelationPatternCard'
+import { PersonLogSheet } from '../PersonLogSheet'
+import { PersonDetailSheet } from '../PersonDetailSheet'
+import type { PersonEntry } from '@/data/types'
 
 type Filter = 'all' | 'week' | 'flagged'
 const FILTERS: { id: Filter; label: string }[] = [
@@ -27,8 +30,11 @@ const PATTERN_TOOLS: Tool[] = [
 ]
 
 export function PeopleView() {
-  const { summary, people, mentions, patterns } = usePeople()
+  const { summary, people, mentions, patterns, logMention } = usePeople()
   const [filter, setFilter] = useState<Filter>('all')
+  const [logOpen, setLogOpen] = useState(false)
+  const [prechosen, setPrechosen] = useState<string | undefined>(undefined)
+  const [detailPerson, setDetailPerson] = useState<PersonEntry | null>(null)
 
   const visible =
     filter === 'all'
@@ -45,10 +51,13 @@ export function PeopleView() {
           <Eyebrow brand>Me · Emberek</Eyebrow>
           <PageTitle className="mt-sm">Kapcsolatok</PageTitle>
         </div>
-        {/* Log chip is inert (PersonLogSheet is a deferred follow-up) */}
-        <span className="chip" style={{ padding: '8px 10px' }}>
+        <button
+          className="chip"
+          style={{ padding: '8px 10px' }}
+          onClick={() => { setPrechosen(undefined); setLogOpen(true) }}
+        >
           <Icon name="mic" size={12} /> Log
-        </span>
+        </button>
       </div>
 
       {/* Weekly relational credit */}
@@ -81,8 +90,7 @@ export function PeopleView() {
         </div>
         <div className="col gap-sm">
           {people.map(p => (
-            // PersonCard tap is inert (PersonDetailSheet is a deferred follow-up)
-            <PersonCard key={p.id} person={p} />
+            <PersonCard key={p.id} person={p} onTap={() => setDetailPerson(p)} />
           ))}
         </div>
       </div>
@@ -147,6 +155,28 @@ export function PeopleView() {
           </div>
         </div>
       </div>
+
+      {logOpen && (
+        <PersonLogSheet
+          onClose={() => setLogOpen(false)}
+          onSave={logMention}
+          people={people}
+          initialPersonId={prechosen}
+        />
+      )}
+
+      {detailPerson && (
+        <PersonDetailSheet
+          person={detailPerson}
+          mentions={mentions.filter(m => m.person_id === detailPerson.id)}
+          onClose={() => setDetailPerson(null)}
+          onLog={() => {
+            setPrechosen(detailPerson.id)
+            setDetailPerson(null)
+            setLogOpen(true)
+          }}
+        />
+      )}
     </>
   )
 }

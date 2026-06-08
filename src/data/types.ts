@@ -176,6 +176,8 @@ export interface Goal {
   identityFrame: string
 }
 export interface WeightEntry { date: string; value: number; note?: string }
+/** Phase 2 REST DTO — POST /weight-log. `date` is stamped to today by the caller (no UI date picker). */
+export interface WeightLogInput { date: string; weightKg: number; note?: string }
 export interface WeightTrends {
   last7d: { avg: number; deltaVsPrev: number; weeklyRate: number; onTrack: boolean }
   last4w: { avg: number; deltaVsStart: number; weeklyRate: number; onTrack: boolean }
@@ -202,6 +204,11 @@ export interface SleepEntry {
   awakenings: number
   mealToSleep: number
   notes: string | null
+}
+/** Phase 2 REST DTO — POST /sleep-log. `durationH` is computed in the sheet from bedtime+wakeup. */
+export interface SleepLogInput {
+  date: string; bedtime: string; wakeup: string
+  durationH: number; quality: number; awakenings: number; note?: string
 }
 export interface SleepTrends {
   target: { duration: number; quality: number; bedtime: string; wakeup: string }
@@ -263,6 +270,12 @@ export interface Mention {
   tone: Affect
   tiedTo?: { kind: string; label: string }
   flagged?: boolean
+}
+/** Phase 2 REST DTO — POST /mentions. Hook enriches id/ts/labels/personName/source server-side in Phase 2. */
+export interface MentionLogInput {
+  personId: string
+  tone: Affect
+  text?: string
 }
 export interface RelationPattern {
   id: string

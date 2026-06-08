@@ -13,6 +13,8 @@ import { GoalStat } from '../components/GoalStat'
 import { TrendCell } from '../components/TrendCell'
 import { WeightChart } from '../components/WeightChart'
 import { LinkedMesoCard } from '../components/LinkedMesoCard'
+import { WeightLogSheet } from '../WeightLogSheet'
+import { EditGoalSheet } from '../EditGoalSheet'
 
 type Period = '7d' | '30d' | 'all'
 const PERIODS: Period[] = ['7d', '30d', 'all']
@@ -31,8 +33,9 @@ const FACTOR_TOOLS: Tool[] = [
 ]
 
 export function GoalsView() {
-  const { goal, weightLog, weightTrends, linkedMesocycles } = useGoals()
+  const { goal, weightLog, weightTrends, linkedMesocycles, logWeight } = useGoals()
   const [period, setPeriod] = useState<Period>('30d')
+  const [sheet, setSheet] = useState<'weight' | 'goal' | null>(null)
 
   const progressed = goal.startWeight - goal.currentWeight
   const remaining = goal.currentWeight - goal.targetWeight
@@ -47,20 +50,21 @@ export function GoalsView() {
           <Eyebrow brand>Me · Goals</Eyebrow>
           <PageTitle className="mt-sm">Hosszú cél</PageTitle>
         </div>
-        {/* +Súly chip is inert (WeightLogSheet is a deferred follow-up) */}
-        <span className="chip" style={{ padding: '8px 10px' }}>
+        <button className="chip" style={{ padding: '8px 10px' }} onClick={() => setSheet('weight')}>
           <Icon name="plus" size={12} /> Súly
-        </span>
+        </button>
       </div>
 
-      {/* Goal hero (inert — EditGoalSheet is a deferred follow-up) */}
+      {/* Goal hero (tap to open EditGoalSheet) */}
       <div style={{ padding: '0 24px 16px' }}>
         <div
           className="card notch-12"
+          onClick={() => setSheet('goal')}
           style={{
             padding: 20,
             width: '100%',
             textAlign: 'left',
+            cursor: 'pointer',
             background: 'linear-gradient(180deg, rgba(94, 234, 212, 0.06) 0%, var(--surface-1) 100%)',
             borderColor: 'var(--border-brand)',
             position: 'relative',
@@ -267,6 +271,16 @@ export function GoalsView() {
           })}
         </div>
       </div>
+
+      {sheet === 'weight' && (
+        <WeightLogSheet
+          onClose={() => setSheet(null)}
+          onSave={logWeight}
+          currentWeight={goal.currentWeight}
+        />
+      )}
+
+      {sheet === 'goal' && <EditGoalSheet onClose={() => setSheet(null)} goal={goal} />}
     </>
   )
 }
