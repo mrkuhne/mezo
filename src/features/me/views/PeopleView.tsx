@@ -11,6 +11,7 @@ import { AttentionRow } from '../components/AttentionRow'
 import { PersonCard } from '../components/PersonCard'
 import { MentionRow } from '../components/MentionRow'
 import { RelationPatternCard } from '../components/RelationPatternCard'
+import { PersonLogSheet } from '../PersonLogSheet'
 
 type Filter = 'all' | 'week' | 'flagged'
 const FILTERS: { id: Filter; label: string }[] = [
@@ -27,8 +28,10 @@ const PATTERN_TOOLS: Tool[] = [
 ]
 
 export function PeopleView() {
-  const { summary, people, mentions, patterns } = usePeople()
+  const { summary, people, mentions, patterns, logMention } = usePeople()
   const [filter, setFilter] = useState<Filter>('all')
+  const [logOpen, setLogOpen] = useState(false)
+  const [prechosen, setPrechosen] = useState<string | undefined>(undefined)
 
   const visible =
     filter === 'all'
@@ -45,10 +48,13 @@ export function PeopleView() {
           <Eyebrow brand>Me · Emberek</Eyebrow>
           <PageTitle className="mt-sm">Kapcsolatok</PageTitle>
         </div>
-        {/* Log chip is inert (PersonLogSheet is a deferred follow-up) */}
-        <span className="chip" style={{ padding: '8px 10px' }}>
+        <button
+          className="chip"
+          style={{ padding: '8px 10px' }}
+          onClick={() => { setPrechosen(undefined); setLogOpen(true) }}
+        >
           <Icon name="mic" size={12} /> Log
-        </span>
+        </button>
       </div>
 
       {/* Weekly relational credit */}
@@ -147,6 +153,15 @@ export function PeopleView() {
           </div>
         </div>
       </div>
+
+      {logOpen && (
+        <PersonLogSheet
+          onClose={() => setLogOpen(false)}
+          onSave={logMention}
+          people={people}
+          initialPersonId={prechosen}
+        />
+      )}
     </>
   )
 }
