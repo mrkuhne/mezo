@@ -11,6 +11,7 @@ import { SleepStat } from '../components/SleepStat'
 import { SleepCell } from '../components/SleepCell'
 import { SleepLogRow } from '../components/SleepLogRow'
 import { SleepChart } from '../components/SleepChart'
+import { SleepLogSheet } from '../SleepLogSheet'
 
 type Period = '7d' | '14d'
 const PERIODS: Period[] = ['7d', '14d']
@@ -25,8 +26,9 @@ const FACTOR_TOOLS: Tool[] = [
 const SLEEP_ACCENT = 'var(--cat-preference)'
 
 export function SleepView() {
-  const { sleepLog, sleepTrends, lastNight } = useSleep()
+  const { sleepLog, sleepTrends, lastNight, logSleep } = useSleep()
   const [period, setPeriod] = useState<Period>('14d')
+  const [logOpen, setLogOpen] = useState(false)
 
   const target = sleepTrends.target
   const durDelta = lastNight.duration - target.duration
@@ -40,10 +42,9 @@ export function SleepView() {
           <Eyebrow brand>Me · Alvás</Eyebrow>
           <PageTitle className="mt-sm">Sleep</PageTitle>
         </div>
-        {/* +Log chip is inert (SleepLogSheet is a deferred follow-up) */}
-        <span className="chip" style={{ padding: '8px 10px' }}>
+        <button className="chip" style={{ padding: '8px 10px' }} onClick={() => setLogOpen(true)}>
           <Icon name="plus" size={12} /> Log
-        </span>
+        </button>
       </div>
 
       {/* Last night hero */}
@@ -204,6 +205,8 @@ export function SleepView() {
           ))}
         </div>
       </div>
+
+      {logOpen && <SleepLogSheet onClose={() => setLogOpen(false)} onSave={logSleep} />}
     </>
   )
 }
