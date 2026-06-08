@@ -14,6 +14,7 @@ import { TrendCell } from '../components/TrendCell'
 import { WeightChart } from '../components/WeightChart'
 import { LinkedMesoCard } from '../components/LinkedMesoCard'
 import { WeightLogSheet } from '../WeightLogSheet'
+import { EditGoalSheet } from '../EditGoalSheet'
 
 type Period = '7d' | '30d' | 'all'
 const PERIODS: Period[] = ['7d', '30d', 'all']
@@ -54,14 +55,16 @@ export function GoalsView() {
         </button>
       </div>
 
-      {/* Goal hero (inert — EditGoalSheet is a deferred follow-up) */}
+      {/* Goal hero (tap to open EditGoalSheet) */}
       <div style={{ padding: '0 24px 16px' }}>
         <div
           className="card notch-12"
+          onClick={() => setSheet('goal')}
           style={{
             padding: 20,
             width: '100%',
             textAlign: 'left',
+            cursor: 'pointer',
             background: 'linear-gradient(180deg, rgba(94, 234, 212, 0.06) 0%, var(--surface-1) 100%)',
             borderColor: 'var(--border-brand)',
             position: 'relative',
@@ -276,6 +279,8 @@ export function GoalsView() {
           currentWeight={goal.currentWeight}
         />
       )}
+
+      {sheet === 'goal' && <EditGoalSheet onClose={() => setSheet(null)} goal={goal} />}
     </>
   )
 }
