@@ -1,6 +1,8 @@
 import { renderHook, act } from '@testing-library/react'
 import { useGoals } from './hooks'
 import { useSleep } from './hooks'
+import { usePeople } from './hooks'
+import { people } from './people'
 
 test('useGoals.logWeight appends a mapped WeightEntry to the log', () => {
   const { result } = renderHook(() => useGoals())
@@ -24,4 +26,18 @@ test('useSleep.logSleep appends a mapped SleepEntry', () => {
   })
   expect(result.current.sleepLog.length).toBe(before + 1)
   expect(result.current.lastNight).toMatchObject({ duration: 7.5, quality: 8, awakenings: 1, notes: 'jó' })
+})
+
+test('usePeople.logMention prepends an enriched Mention', () => {
+  const { result } = renderHook(() => usePeople())
+  const before = result.current.mentions.length
+  const target = people[0]
+  act(() => {
+    result.current.logMention({ personId: target.id, tone: 'positive', text: 'jó beszélgetés' })
+  })
+  expect(result.current.mentions.length).toBe(before + 1)
+  expect(result.current.mentions[0]).toMatchObject({
+    person_id: target.id, personName: target.name, tone: 'positive',
+    excerpt: 'jó beszélgetés', source: 'chip',
+  })
 })

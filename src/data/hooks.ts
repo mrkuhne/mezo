@@ -5,7 +5,7 @@ import { initialCheckins } from './checkins'
 import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
 import { goal, weightLog as initialWeightLog, weightTrends, linkedMesocycles } from './goals'
 import { sleepLog as initialSleepLog, sleepTrends } from './sleep'
-import { peopleSummary, people, mentions, relationPatterns } from './people'
+import { peopleSummary, people, mentions as initialMentions, relationPatterns } from './people'
 import { facts, edges } from './knowledge'
 import { patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments } from './insights'
 import { initialChat } from './chat'
@@ -13,7 +13,7 @@ import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './
 import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
 import { mesocycles, activeMeso, workout as trainWorkout, gymSchedule as trainGymSchedule, sport, exerciseLibrary } from './train'
-import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, WeightEntry, WeightLogInput, SleepEntry, SleepLogInput } from './types'
+import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, WeightEntry, WeightLogInput, SleepEntry, SleepLogInput, Mention, MentionLogInput } from './types'
 
 export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
@@ -77,7 +77,24 @@ export function useSleep() {
 }
 
 export function usePeople() {
-  return { summary: peopleSummary, people, mentions, patterns: relationPatterns }
+  const [mentions, setMentions] = useState<Mention[]>(initialMentions)
+  const logMention = useCallback((input: MentionLogInput) => {
+    const now = new Date()
+    const person = people.find(p => p.id === input.personId)
+    const newMention: Mention = {
+      id: crypto.randomUUID(),
+      ts: now.toISOString(),
+      dayLabel: 'Ma',
+      timeLabel: now.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' }),
+      person_id: input.personId,
+      personName: person?.name ?? '',
+      source: 'chip',
+      excerpt: input.text ?? '',
+      tone: input.tone,
+    }
+    setMentions(prev => [newMention, ...prev])
+  }, [])
+  return { summary: peopleSummary, people, mentions, patterns: relationPatterns, logMention }
 }
 
 export function useKnowledge() {

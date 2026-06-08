@@ -271,6 +271,12 @@ export interface Mention {
   tiedTo?: { kind: string; label: string }
   flagged?: boolean
 }
+/** Phase 2 REST DTO — POST /mentions. Hook enriches id/ts/labels/personName/source server-side in Phase 2. */
+export interface MentionLogInput {
+  personId: string
+  tone: Affect
+  text?: string
+}
 export interface RelationPattern {
   id: string
   title: string
