@@ -29,7 +29,7 @@ export function PersonDetailSheet({
                 <div id="person-detail-title" className="h-display size-md" style={{ marginTop: 4 }}>{person.name}</div>
               </div>
             </div>
-            <button className="chip" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
+            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
           <div className="row gap-sm">
             <DetailStat label="Affect" val={affectLabel(person.affect_baseline)} color={color} />

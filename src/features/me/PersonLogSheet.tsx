@@ -41,7 +41,7 @@ export function PersonLogSheet({
               <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>People · gyors log</span>
               <div id="person-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Mit jegyzünk meg?</div>
             </div>
-            <button className="chip" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
+            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
           <div className="card notch-12" style={{ padding: 18, marginBottom: 14, textAlign: 'center',
             background: 'linear-gradient(180deg, rgba(244, 114, 182, 0.07) 0%, var(--surface-1) 100%)', borderColor: 'rgba(244, 114, 182, 0.3)' }}>

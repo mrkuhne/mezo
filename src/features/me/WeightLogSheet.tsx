@@ -29,7 +29,7 @@ export function WeightLogSheet({
               <span className="eyebrow brand">Súly log · reggel</span>
               <div id="weight-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Mi a számunk ma?</div>
             </div>
-            <button className="chip" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
+            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
           <div className="card notch-12" style={{ padding: 18, marginBottom: 14 }}>
             <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>

@@ -45,7 +45,7 @@ export function SleepLogSheet({
               <span className="eyebrow" style={{ color: 'var(--cat-preference)' }}>Reggeli sleep log</span>
               <div id="sleep-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Hogyan aludtunk?</div>
             </div>
-            <button className="chip" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
+            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
           <div className="card notch-12" style={{ padding: 18, marginBottom: 14, background: 'rgba(167, 139, 250, 0.04)', borderColor: 'rgba(167, 139, 250, 0.3)' }}>
             <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
