@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { today, user, briefing, briefingVariants, workout, volleyballSessions, fuelToday } from './today'
 import { initialCheckins } from './checkins'
 import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
-import { goal, weightLog, weightTrends, linkedMesocycles } from './goals'
+import { goal, weightLog as initialWeightLog, weightTrends, linkedMesocycles } from './goals'
 import { sleepLog, sleepTrends } from './sleep'
 import { peopleSummary, people, mentions, relationPatterns } from './people'
 import { facts, edges } from './knowledge'
@@ -13,7 +13,7 @@ import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './
 import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
 import { mesocycles, activeMeso, workout as trainWorkout, gymSchedule as trainGymSchedule, sport, exerciseLibrary } from './train'
-import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario } from './types'
+import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, WeightEntry, WeightLogInput } from './types'
 
 export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
@@ -57,7 +57,11 @@ export function useProfile() {
 }
 
 export function useGoals() {
-  return { goal, weightLog, weightTrends, linkedMesocycles }
+  const [weightLog, setWeightLog] = useState<WeightEntry[]>(initialWeightLog)
+  const logWeight = useCallback((input: WeightLogInput) => {
+    setWeightLog(prev => [...prev, { date: input.date, value: input.weightKg, note: input.note }])
+  }, [])
+  return { goal, weightLog, weightTrends, linkedMesocycles, logWeight }
 }
 
 export function useSleep() {

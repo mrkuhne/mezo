@@ -176,6 +176,8 @@ export interface Goal {
   identityFrame: string
 }
 export interface WeightEntry { date: string; value: number; note?: string }
+/** Phase 2 REST DTO — POST /weight-log. `date` is stamped to today by the caller (no UI date picker). */
+export interface WeightLogInput { date: string; weightKg: number; note?: string }
 export interface WeightTrends {
   last7d: { avg: number; deltaVsPrev: number; weeklyRate: number; onTrack: boolean }
   last4w: { avg: number; deltaVsStart: number; weeklyRate: number; onTrack: boolean }
