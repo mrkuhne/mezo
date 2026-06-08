@@ -205,6 +205,11 @@ export interface SleepEntry {
   mealToSleep: number
   notes: string | null
 }
+/** Phase 2 REST DTO — POST /sleep-log. `durationH` is computed in the sheet from bedtime+wakeup. */
+export interface SleepLogInput {
+  date: string; bedtime: string; wakeup: string
+  durationH: number; quality: number; awakenings: number; note?: string
+}
 export interface SleepTrends {
   target: { duration: number; quality: number; bedtime: string; wakeup: string }
   last7d: { avgDuration: number; avgQuality: number; nightsUnder7h: number; awakeningsAvg: number; onTrack: boolean }
