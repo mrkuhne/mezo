@@ -12,6 +12,8 @@ import { PersonCard } from '../components/PersonCard'
 import { MentionRow } from '../components/MentionRow'
 import { RelationPatternCard } from '../components/RelationPatternCard'
 import { PersonLogSheet } from '../PersonLogSheet'
+import { PersonDetailSheet } from '../PersonDetailSheet'
+import type { PersonEntry } from '@/data/types'
 
 type Filter = 'all' | 'week' | 'flagged'
 const FILTERS: { id: Filter; label: string }[] = [
@@ -32,6 +34,7 @@ export function PeopleView() {
   const [filter, setFilter] = useState<Filter>('all')
   const [logOpen, setLogOpen] = useState(false)
   const [prechosen, setPrechosen] = useState<string | undefined>(undefined)
+  const [detailPerson, setDetailPerson] = useState<PersonEntry | null>(null)
 
   const visible =
     filter === 'all'
@@ -87,8 +90,7 @@ export function PeopleView() {
         </div>
         <div className="col gap-sm">
           {people.map(p => (
-            // PersonCard tap is inert (PersonDetailSheet is a deferred follow-up)
-            <PersonCard key={p.id} person={p} />
+            <PersonCard key={p.id} person={p} onTap={() => setDetailPerson(p)} />
           ))}
         </div>
       </div>
@@ -160,6 +162,19 @@ export function PeopleView() {
           onSave={logMention}
           people={people}
           initialPersonId={prechosen}
+        />
+      )}
+
+      {detailPerson && (
+        <PersonDetailSheet
+          person={detailPerson}
+          mentions={mentions.filter(m => m.person_id === detailPerson.id)}
+          onClose={() => setDetailPerson(null)}
+          onLog={() => {
+            setPrechosen(detailPerson.id)
+            setDetailPerson(null)
+            setLogOpen(true)
+          }}
         />
       )}
     </>
