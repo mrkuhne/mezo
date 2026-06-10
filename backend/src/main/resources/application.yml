@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: mezo
+  datasource:
+    url: jdbc:postgresql://localhost:5432/mezo
+    username: ${DB_USER:mezo}
+    password: ${DB_PASSWORD:mezo}
+  jpa:
+    hibernate:
+      ddl-auto: validate          # Liquibase owns the schema, never Hibernate
+    open-in-view: false
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+mezo:
+  auth:
+    jwt-secret: ${MEZO_JWT_SECRET:dev-only-change-me-32-bytes-minimum-secret}
+    owner-email: ${MEZO_OWNER_EMAIL:owner@mezo.local}
+    owner-password: ${MEZO_OWNER_PASSWORD:owner}
+    owner-name: ${MEZO_OWNER_NAME:Owner}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
