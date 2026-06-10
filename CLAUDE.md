@@ -50,20 +50,49 @@ bd close <id>         # Complete work
 <!-- END BEADS INTEGRATION -->
 
 
-## Build & Test
-
-_Add your build and test commands here_
-
-```bash
-# Example:
-# npm install
-# npm test
-```
-
 ## Architecture Overview
 
-_Add a brief overview of your project architecture_
+**mezo** is a mobile-first health & performance companion PWA, built in three phases (frontend-first — see `/Users/daniel.kuhne/Downloads/design_handoff_mezo/06-roadmap.md`):
 
-## Conventions & Patterns
+- **Phase 1 — Frontend (mock data):** ✅ done. React 19 + Vite + Tailwind v4, Hungarian UI, 6 vertical slices (Foundation → Today → Me → Fuel → Insights → Train) on a mock data layer. The single frontend↔data boundary is `src/data/hooks.ts`.
+- **Phase 2 — Core data backend:** 🔜 current. **Java / Spring Boot 4.x + PostgreSQL**, swapping the mock hooks to a real REST API **without changing the hook signatures** (frontend untouched). Repo becomes a symmetric monorepo: `frontend/` + `backend/`.
+- **Phase 3 — AI brain:** later. Spring AI, pgvector, RAG, pattern/companion pipeline.
 
-_Add your project-specific conventions here_
+Design spec for Phase 2: `docs/superpowers/specs/` (latest `*-phase2-backend-design.md`).
+
+## Build & Test
+
+```bash
+# Frontend (currently repo root; moves under frontend/ in Phase 2)
+pnpm dev          # vite dev server
+pnpm build        # tsc -b && vite build
+pnpm test         # vitest run
+pnpm parity       # playwright parity screenshots
+
+# Backend (Phase 2+, under backend/)
+./mvnw spring-boot:run          # run locally (needs Postgres — see backend/compose.yaml)
+./mvnw test                     # JUnit + Testcontainers integration tests
+./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata   # with owner/demo seed
+```
+
+## Backend Development Conventions (Phase 2+) — MANDATORY
+
+> **Trigger — read the relevant doc(s) FIRST.** Whenever you write, review, refactor, or plan **any** backend code — Java, Spring Boot, JPA/Hibernate entity, repository, service, controller, REST endpoint, DTO/MapStruct mapper, Liquibase migration, exception handling, or backend test — you MUST consult the matching reference under `docs/references/` **before** writing code, and follow it exactly. These are non-negotiable house standards.
+
+| Reference (`docs/references/`) | Read it when you touch… |
+|---|---|
+| `java_package_structure.md` | package layout, new class, naming — `feature/{name}/{controller,service,repository,entity,dto,mapper}` + `techcore/` |
+| `spring_patterns.md` | DI (constructor + `@RequiredArgsConstructor`, never field), `@Transactional` (method-level only), controllers, repositories (derived→JPQL→native), MapStruct, Lombok |
+| `error_handling.md` | any error/validation — `SystemRuntimeErrorException` + `SystemMessage` (code + `message.properties`), `exceptionTraceId`, no hardcoded user text, no stack traces to client |
+| `liquibase_conventions.md` | any DB migration — versioned changelog, `{YYYYMMDDHHMM}_{id}_{desc}` script naming, never modify released changesets, explicit constraint names (`pk_/fk_/uq_/ck_/idx_`), entity↔DDL sync, **seed data in Java `@Profile("demodata")`, never SQL** |
+| `testing_standards.md` | any backend test — integration-first (`@SpringBootTest` + Testcontainers Postgres), `test{Method}_should{Result}_when{Condition}`, AssertJ only, Java `DatabasePopulator` data, no mocks/`@MockBean`/H2 in integration tests |
+
+### Project-specific adaptations (these override the generic references where noted)
+
+- **Stack:** Spring Boot **4.x**, build tool **Maven** (not Gradle), **Java 21**.
+- **Base package:** `io.mrkuhne.mezo` (the references' `io.mrkuhne.{project}`).
+- **Primary keys: UUID** (`gen_random_uuid()`) across domain tables — matches the design handoff and the frontend (`crypto.randomUUID()`). Where a reference example shows `Long`/`BIGSERIAL`, use `UUID` here.
+- **Liquibase feature ID:** the reference uses spec-kit `F{NNN}`; mezo uses **beads**, so the feature segment of a changeset name is the **driving bd issue ID** (e.g. `202606092230_mezo-a1_create_weight_log.sql`). Keep the 12-digit UTC timestamp prefix and the immutability rules unchanged.
+- **Auth/ownership:** single-user. `created_by uuid` on every owned table, set server-side from the security principal (never from the client); app-level ownership filtering (`created_by = currentUser`). No login UI in Phase 2.
+- **Soft delete:** `is_deleted` + Hibernate `@SQLRestriction` / `@SQLDelete`; never physically delete in normal paths.
+- **jsonb** (provenance envelope, meal score, sleep factors): `@JdbcTypeCode(SqlTypes.JSON)` onto a typed embedded object — first-class, not `String`.
