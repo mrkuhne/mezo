@@ -13,3 +13,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606101300_mezo-v67_create_weight_log.sql
+  - changeSet:
+      id: "1.0.0:202606101310_mezo-v67_create_sleep_log"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606101310_mezo-v67_create_sleep_log.sql
