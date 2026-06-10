@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { isMockMode } from '@/lib/mode'
+import { weightApi } from '@/lib/biometricsApi'
 import { today, user, briefing, briefingVariants, workout, volleyballSessions, fuelToday } from './today'
 import { initialCheckins } from './checkins'
 import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
@@ -57,10 +60,23 @@ export function useProfile() {
 }
 
 export function useGoals() {
-  const [weightLog, setWeightLog] = useState<WeightEntry[]>(initialWeightLog)
-  const logWeight = useCallback((input: WeightLogInput) => {
-    setWeightLog(prev => [...prev, { date: input.date, value: input.weightKg, note: input.note }])
-  }, [])
+  const qc = useQueryClient()
+  const mock = isMockMode()
+  const { data: weightLog = [] } = useQuery({
+    queryKey: ['weightLog'],
+    queryFn: mock ? async () => initialWeightLog : weightApi.list,
+  })
+  const mutation = useMutation({
+    mutationFn: mock
+      ? async (input: WeightLogInput): Promise<WeightEntry> =>
+          ({ date: input.date, value: input.weightKg, note: input.note })
+      : weightApi.log,
+    onSuccess: (entry) => {
+      if (mock) qc.setQueryData<WeightEntry[]>(['weightLog'], prev => [...(prev ?? []), entry])
+      else qc.invalidateQueries({ queryKey: ['weightLog'] })
+    },
+  })
+  const logWeight = useCallback((input: WeightLogInput) => mutation.mutate(input), [mutation])
   return { goal, weightLog, weightTrends, linkedMesocycles, logWeight }
 }
 

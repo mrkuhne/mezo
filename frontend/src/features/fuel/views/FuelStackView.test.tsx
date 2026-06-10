@@ -2,8 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { FuelStackView } from './FuelStackView'
+import { QueryWrapper } from '@/test/queryWrapper'
 
-const renderView = () => render(<MemoryRouter><FuelStackView /></MemoryRouter>)
+const renderView = () => render(
+  <QueryWrapper><MemoryRouter><FuelStackView /></MemoryRouter></QueryWrapper>,
+)
 
 test('renders context, active stack and generated timing', () => {
   renderView()

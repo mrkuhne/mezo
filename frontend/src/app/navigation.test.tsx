@@ -3,10 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from './router'
 import { ThemeProvider } from './ThemeProvider'
+import { QueryWrapper } from '@/test/queryWrapper'
 
 function renderApp(path = '/') {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
-  return render(<ThemeProvider><RouterProvider router={router} /></ThemeProvider>)
+  return render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
 }
 
 test('redirects / to Today', () => {

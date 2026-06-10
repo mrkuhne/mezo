@@ -1,5 +1,6 @@
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { useProfile, useGoals, useSleep } from './hooks'
+import { QueryWrapper } from '@/test/queryWrapper'
 
 test('useProfile returns the extended user + Profil consts', () => {
   const { result } = renderHook(() => useProfile())
@@ -11,18 +12,18 @@ test('useProfile returns the extended user + Profil consts', () => {
   expect(result.current.version).toMatch(/v2\.0\.1/)
 })
 
-test('useGoals returns the active cut goal + trends + linked mesocycles', () => {
-  const { result } = renderHook(() => useGoals())
+test('useGoals returns the active cut goal + trends + linked mesocycles', async () => {
+  const { result } = renderHook(() => useGoals(), { wrapper: QueryWrapper })
   expect(result.current.goal.kind).toBe('cut')
   expect(result.current.goal.currentWeight).toBe(78.6)
-  expect(result.current.weightLog.length).toBe(15)
+  await waitFor(() => expect(result.current.weightLog.length).toBe(15))
   expect(result.current.weightTrends.factors).toHaveLength(4)
   expect(result.current.linkedMesocycles['meso-hyp-04'].status).toBe('active')
 })
 
-test('useSleep returns the log, trends, and last night', () => {
-  const { result } = renderHook(() => useSleep())
-  expect(result.current.sleepLog.length).toBe(14)
+test('useSleep returns the log, trends, and last night', async () => {
+  const { result } = renderHook(() => useSleep(), { wrapper: QueryWrapper })
+  await waitFor(() => expect(result.current.sleepLog.length).toBe(14))
   expect(result.current.lastNight.duration).toBe(7.4)
   expect(result.current.sleepTrends.target.duration).toBe(7.5)
 })
