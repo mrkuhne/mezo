@@ -1,6 +1,12 @@
 import { renderHook, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { useProfile, useGoals, useSleep } from './hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
+
+// These assert the Phase-1 mock dataset, so pin mock mode explicitly — they must
+// not depend on the ambient VITE_USE_MOCK default (e.g. `VITE_USE_MOCK=false pnpm test`).
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 test('useProfile returns the extended user + Profil consts', () => {
   const { result } = renderHook(() => useProfile())

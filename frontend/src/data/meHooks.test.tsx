@@ -1,9 +1,14 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { useGoals } from './hooks'
 import { useSleep } from './hooks'
 import { usePeople } from './hooks'
 import { people } from './people'
 import { QueryWrapper } from '@/test/queryWrapper'
+
+// Assert the Phase-1 mock dataset/behavior, so pin mock mode explicitly.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 test('useGoals.logWeight appends a mapped WeightEntry to the log', async () => {
   const { result } = renderHook(() => useGoals(), { wrapper: QueryWrapper })

@@ -59,7 +59,7 @@ test('useCheckins (real mode) updates the slot locally AND POSTs exactly once wi
 })
 
 test('useCheckins (mock mode) updates the slot locally and never fetches', async () => {
-  // No stubEnv → default mock mode.
+  vi.stubEnv('VITE_USE_MOCK', 'true')
   let postCount = 0
   server.use(
     http.post(`${BASE}/api/biometrics/checkin`, () => {

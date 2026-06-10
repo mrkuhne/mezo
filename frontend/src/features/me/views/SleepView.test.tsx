@@ -1,6 +1,11 @@
 import { render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { SleepView } from './SleepView'
 import { QueryWrapper } from '@/test/queryWrapper'
+
+// Asserts the Phase-1 mock sleep hero, so pin mock mode explicitly.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 test('renders the last-night hero', () => {
   render(<SleepView />, { wrapper: QueryWrapper })
