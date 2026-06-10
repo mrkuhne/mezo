@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -29,7 +30,7 @@ public class AuthService {
         AppUserEntity user = appUserRepository.findByEmail(req.email())
             .filter(u -> passwordEncoder.matches(req.password(), u.getPasswordHash()))
             .orElseThrow(() -> new SystemRuntimeErrorException(
-                SystemMessage.error("AUTH_LOGIN_INVALID_CREDENTIALS").build()));
+                SystemMessage.error("AUTH_LOGIN_INVALID_CREDENTIALS").build(), HttpStatus.UNAUTHORIZED));
 
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()

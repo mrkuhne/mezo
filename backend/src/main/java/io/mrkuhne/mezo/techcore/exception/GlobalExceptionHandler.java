@@ -28,7 +28,7 @@ public class GlobalExceptionHandler {
             m.setExceptionTraceId(traceId);
             m.setMessage(resolve(m));
         });
-        return ResponseEntity.badRequest().body(ex.getMessages());
+        return ResponseEntity.status(ex.getStatus()).body(ex.getMessages());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -37,13 +37,21 @@ public class GlobalExceptionHandler {
         log.warn("Validation failed [traceId={}]", traceId);
         List<SystemMessage> messages = ex.getBindingResult().getFieldErrors().stream()
             .map(fe -> {
-                SystemMessage m = SystemMessage.field("VALIDATION_REQUIRED_FIELD", fe.getField()).build();
+                SystemMessage m = SystemMessage.field(validationCode(fe.getCode()), fe.getField()).build();
                 m.setExceptionTraceId(traceId);
                 m.setMessage(resolve(m));
                 return m;
             })
             .toList();
         return ResponseEntity.badRequest().body(messages);
+    }
+
+    private static String validationCode(String constraint) {
+        return switch (constraint == null ? "" : constraint) {
+            case "NotBlank", "NotNull" -> "VALIDATION_REQUIRED_FIELD";
+            case "Email" -> "VALIDATION_INVALID_EMAIL";
+            default -> "VALIDATION_INVALID_VALUE";
+        };
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

@@ -22,11 +22,11 @@ public class OwnerSeedData implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (appUserRepository.existsByEmail(ownerProperties.email())) return;
+        if (appUserRepository.existsByEmail(ownerProperties.ownerEmail())) return;
         AppUserEntity owner = new AppUserEntity();
-        owner.setEmail(ownerProperties.email());
-        owner.setName(ownerProperties.name());
-        owner.setPasswordHash(passwordEncoder.encode(ownerProperties.password()));
+        owner.setEmail(ownerProperties.ownerEmail());
+        owner.setName(ownerProperties.ownerName());
+        owner.setPasswordHash(passwordEncoder.encode(ownerProperties.ownerPassword()));
         owner = appUserRepository.save(owner);
 
         UserProfileEntity profile = new UserProfileEntity();

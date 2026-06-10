@@ -12,11 +12,18 @@ import org.springframework.test.context.ActiveProfiles;
 class OwnerSeedDataIT extends AbstractIntegrationTest {
 
     @Autowired private AppUserRepository appUserRepository;
+    @Autowired private OwnerSeedData ownerSeedData;
 
     @Test
     void testSeed_shouldCreateOwnerOnce_whenProfileActive() {
         long count = appUserRepository.count();
         assertThat(count).isEqualTo(1);
         assertThat(appUserRepository.findByEmail("owner@mezo.local")).isPresent();
+    }
+
+    @Test
+    void testSeed_shouldRemainSingleOwner_whenRunAgain() {
+        ownerSeedData.run();
+        assertThat(appUserRepository.count()).isEqualTo(1);
     }
 }

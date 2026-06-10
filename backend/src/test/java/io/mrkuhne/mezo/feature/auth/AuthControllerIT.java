@@ -29,10 +29,10 @@ class AuthControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testLogin_shouldReturn400_whenPasswordWrong() {
+    void testLogin_shouldReturn401_whenPasswordWrong() {
         var resp = rest.postForEntity("/api/auth/login",
             new LoginRequest("owner@mezo.local", "wrong"), String.class);
-        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
     }
 
     @Test

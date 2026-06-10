@@ -23,7 +23,7 @@ public class SecurityConfig {
     private final byte[] secret;
 
     public SecurityConfig(OwnerProperties props) {
-        this.secret = props.jwtSecret().getBytes();
+        this.secret = props.jwtSecret().getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
     @Bean
