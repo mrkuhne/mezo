@@ -1,6 +1,8 @@
 import { http, HttpResponse } from 'msw'
+import { API_BASE } from '@/lib/api'
 
-export const API_BASE = 'http://localhost:8080'
+// Re-exported so hook tests keep importing it from here.
+export { API_BASE }
 
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),

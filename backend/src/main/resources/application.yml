@@ -1,8 +1,10 @@
+server:
+  port: ${MEZO_PORT:8090}        # custom port — 8080 is taken by other local projects
 spring:
   application:
     name: mezo
   datasource:
-    url: jdbc:postgresql://localhost:5432/mezo
+    url: jdbc:postgresql://localhost:${DB_PORT:15432}/mezo
     username: ${DB_USER:mezo}
     password: ${DB_PASSWORD:mezo}
   jpa:

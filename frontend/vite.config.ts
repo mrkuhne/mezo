@@ -30,6 +30,8 @@ export default defineConfig({
     }),
   ],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  // Custom dev port — 5173 is taken by other local projects. Parity keeps its own port (4317).
+  server: { port: 5180 },
   test: {
     globals: true,
     environment: 'jsdom',

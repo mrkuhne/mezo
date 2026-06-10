@@ -1,4 +1,6 @@
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+/** Single source of truth for the backend origin — MSW handlers import this too. */
+export const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8090'
+const BASE = API_BASE
 
 export interface SystemMessage {
   code: string

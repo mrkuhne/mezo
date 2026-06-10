@@ -65,17 +65,21 @@ Design spec for Phase 2: `docs/superpowers/specs/` (latest `*-phase2-backend-des
 ```bash
 # Frontend (under frontend/)
 cd frontend
-pnpm dev          # vite dev server (VITE_USE_MOCK=true → mock data, no backend needed)
+pnpm dev          # vite dev server on :5180 (VITE_USE_MOCK=true → mock data, no backend needed)
 pnpm build        # tsc -b && vite build
 pnpm test         # vitest run (also run VITE_USE_MOCK=false pnpm test — both modes must be green)
-pnpm parity       # playwright parity screenshots (prototype path: MEZO_PROTOTYPE_DIR env var)
+pnpm parity       # playwright parity screenshots (own port :4317; prototype path: MEZO_PROTOTYPE_DIR env var)
 
 # Backend (under backend/)
 cd backend
-docker compose up -d            # local Postgres 16
-./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata   # run with owner seed (login needs this!)
-./mvnw clean test               # JUnit + Testcontainers ITs — ALWAYS use `clean` (Lombok+MapStruct incremental compile is flaky)
+docker compose up -d            # local Postgres 16 on :15432 (mezo + mezo_test DBs via initdb/)
+./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata   # API on :8090, owner seed (login needs this!)
+./mvnw clean test               # ITs against the FIXED mezo_test DB (compose must be up) — inspect tables 1:1
+./mvnw clean test -Dmezo.test.use-testcontainers=true        # throwaway Testcontainers PG (CI / no compose)
+# ALWAYS use `clean` (Lombok+MapStruct incremental compile is flaky)
 ```
+
+**Custom local ports** (standard ones are taken by other projects on this machine): Postgres **15432** (`DB_PORT`), backend HTTP **8090** (`MEZO_PORT`), Vite dev **5180**, parity **4317**. Frontend targets the API via `VITE_API_URL` (see `frontend/.env.example`). If the `mezo_pg` volume predates `backend/initdb/`, recreate it once: `docker compose down -v && docker compose up -d`.
 
 ## Backend Development Conventions (Phase 2+) — MANDATORY
 
