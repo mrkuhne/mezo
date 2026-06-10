@@ -22,3 +22,12 @@ export const sleepApi = {
       }),
     }),
 }
+
+export interface SaveCheckInBody {
+  date: string; slotTime: string; state: string
+  energy?: number; stress?: number; body?: number; mental?: number; note?: string
+}
+export const checkinApi = {
+  listForDay: (date: string) => apiFetch<unknown[]>(`/api/biometrics/checkin?date=${date}`),
+  save: (body: SaveCheckInBody) => apiFetch<unknown>('/api/biometrics/checkin', { method: 'POST', body: JSON.stringify(body) }),
+}

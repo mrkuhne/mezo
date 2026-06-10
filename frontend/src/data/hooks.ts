@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
-import { weightApi, sleepApi } from '@/lib/biometricsApi'
+import { weightApi, sleepApi, checkinApi } from '@/lib/biometricsApi'
 import { today, user, briefing, briefingVariants, workout, volleyballSessions, fuelToday } from './today'
 import { initialCheckins } from './checkins'
 import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
@@ -40,9 +40,24 @@ export function useToday() {
 
 export function useCheckins() {
   const [checkins, setCheckins] = useState<CheckinSlot[]>(initialCheckins)
+  const mock = isMockMode()
+  const mutation = useMutation({ mutationFn: checkinApi.save })
   const saveCheckIn = useCallback((idx: number, data: Partial<CheckinSlot>) => {
-    setCheckins(prev => prev.map((c, i) => (i === idx ? { ...c, ...data } : c)))
-  }, [])
+    setCheckins(prev => {
+      const next = prev.map((c, i) => (i === idx ? { ...c, ...data } : c))
+      if (!mock) {
+        const slot = next[idx]
+        const v = slot.values
+        const today = new Date().toISOString().slice(0, 10)
+        mutation.mutate({
+          date: today, slotTime: slot.time, state: slot.state ?? 'done',
+          energy: v?.energy, stress: v?.stress, body: v?.body, mental: v?.mental,
+          note: slot.note ?? undefined,
+        })
+      }
+      return next
+    })
+  }, [mock, mutation])
   return { checkins, saveCheckIn }
 }
 
