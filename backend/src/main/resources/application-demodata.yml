@@ -1,0 +1,5 @@
+# inherits application.yml; activate with -Dspring-boot.run.profiles=demodata
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
