@@ -55,7 +55,7 @@ bd close <id>         # Complete work
 **mezo** is a mobile-first health & performance companion PWA, built in three phases (frontend-first — see `/Users/daniel.kuhne/Downloads/design_handoff_mezo/06-roadmap.md`):
 
 - **Phase 1 — Frontend (mock data):** ✅ done. React 19 + Vite + Tailwind v4, Hungarian UI, 6 vertical slices (Foundation → Today → Me → Fuel → Insights → Train) on a mock data layer. The single frontend↔data boundary is `src/data/hooks.ts`.
-- **Phase 2 — Core data backend:** 🔜 current. **Java / Spring Boot 4.x + PostgreSQL**, swapping the mock hooks to a real REST API **without changing the hook signatures** (frontend untouched). Repo becomes a symmetric monorepo: `frontend/` + `backend/`.
+- **Phase 2 — Core data backend:** 🔄 in progress. **Java / Spring Boot 4.0 + PostgreSQL**, swapping the mock hooks to a real REST API **without changing the hook signatures** (frontend untouched). Symmetric monorepo: `frontend/` + `backend/`. Slice A (foundation + thin auth + biometrics + TanStack Query wiring) ✅ done; slices B (Train) → C (Fuel) → D (Insights seed) → E (People) remain.
 - **Phase 3 — AI brain:** later. Spring AI, pgvector, RAG, pattern/companion pipeline.
 
 Design spec for Phase 2: `docs/superpowers/specs/` (latest `*-phase2-backend-design.md`).
@@ -63,16 +63,18 @@ Design spec for Phase 2: `docs/superpowers/specs/` (latest `*-phase2-backend-des
 ## Build & Test
 
 ```bash
-# Frontend (currently repo root; moves under frontend/ in Phase 2)
-pnpm dev          # vite dev server
+# Frontend (under frontend/)
+cd frontend
+pnpm dev          # vite dev server (VITE_USE_MOCK=true → mock data, no backend needed)
 pnpm build        # tsc -b && vite build
-pnpm test         # vitest run
-pnpm parity       # playwright parity screenshots
+pnpm test         # vitest run (also run VITE_USE_MOCK=false pnpm test — both modes must be green)
+pnpm parity       # playwright parity screenshots (prototype path: MEZO_PROTOTYPE_DIR env var)
 
-# Backend (Phase 2+, under backend/)
-./mvnw spring-boot:run          # run locally (needs Postgres — see backend/compose.yaml)
-./mvnw test                     # JUnit + Testcontainers integration tests
-./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata   # with owner/demo seed
+# Backend (under backend/)
+cd backend
+docker compose up -d            # local Postgres 16
+./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata   # run with owner seed (login needs this!)
+./mvnw clean test               # JUnit + Testcontainers ITs — ALWAYS use `clean` (Lombok+MapStruct incremental compile is flaky)
 ```
 
 ## Backend Development Conventions (Phase 2+) — MANDATORY
