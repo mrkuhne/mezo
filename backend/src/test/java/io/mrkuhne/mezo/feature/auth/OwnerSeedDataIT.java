@@ -1,0 +1,22 @@
+package io.mrkuhne.mezo.feature.auth;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
+
+@ActiveProfiles("demodata")
+class OwnerSeedDataIT extends AbstractIntegrationTest {
+
+    @Autowired private AppUserRepository appUserRepository;
+
+    @Test
+    void testSeed_shouldCreateOwnerOnce_whenProfileActive() {
+        long count = appUserRepository.count();
+        assertThat(count).isEqualTo(1);
+        assertThat(appUserRepository.findByEmail("owner@mezo.local")).isPresent();
+    }
+}
