@@ -19,8 +19,8 @@ public class SystemMessage {
         return SystemMessage.builder().level(Level.ERROR).code(code).type(Type.REQUEST);
     }
 
-    public static SystemMessage field(String code, String fieldName) {
+    public static SystemMessage.SystemMessageBuilder field(String code, String fieldName) {
         return SystemMessage.builder()
-            .level(Level.ERROR).code(code).fieldName(fieldName).type(Type.FIELD).build();
+            .level(Level.ERROR).code(code).fieldName(fieldName).type(Type.FIELD);
     }
 }

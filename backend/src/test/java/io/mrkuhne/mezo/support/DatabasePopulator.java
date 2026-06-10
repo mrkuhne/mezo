@@ -1,5 +1,8 @@
 package io.mrkuhne.mezo.support;
 
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.repository.UserProfileRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
 
 /**
@@ -9,10 +12,15 @@ import org.springframework.boot.test.context.TestComponent;
  * so subclasses can simply {@code @Autowired} it.
  */
 @TestComponent
+@RequiredArgsConstructor
 public class DatabasePopulator {
 
-    /** Extended per feature with repository deletes to reset state between tests. */
+    private final UserProfileRepository userProfileRepository;
+    private final AppUserRepository appUserRepository;
+
+    /** Resets owned state between tests; FK order matters (profiles → users). */
     public void clear() {
-        // no-op until features add repositories
+        userProfileRepository.deleteAll();
+        appUserRepository.deleteAll();
     }
 }
