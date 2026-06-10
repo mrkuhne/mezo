@@ -1,1 +1,8 @@
-databaseChangeLog: []   # changesets appended per task
+databaseChangeLog:
+  - changeSet:
+      id: "1.0.0:202606101200_mezo-v67_create_auth"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606101200_mezo-v67_create_auth.sql
