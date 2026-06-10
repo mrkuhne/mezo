@@ -13,8 +13,8 @@ target/
 # tsc -b composite emit artifacts (regenerated from *.ts configs)
 vite.config.js
 vite.config.d.ts
-tests/parity/playwright.config.js
-tests/parity/playwright.config.d.ts
+**/tests/parity/playwright.config.js
+**/tests/parity/playwright.config.d.ts
 
 # Environment & secrets
 .env
@@ -46,7 +46,7 @@ coverage/
 .nyc_output/
 
 # Playwright parity screenshots & run artifacts
-tests/parity/__shots__/
+**/tests/parity/__shots__/
 test-results/
 playwright-report/
 

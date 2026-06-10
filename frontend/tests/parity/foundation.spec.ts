@@ -5,6 +5,7 @@ import path from 'node:path'
 import type { AddressInfo } from 'node:net'
 
 const PROTOTYPE_DIR =
+  process.env.MEZO_PROTOTYPE_DIR ??
   '/Users/daniel.kuhne/Downloads/design_handoff_mezo/prototype'
 const PROTOTYPE_ENTRY = 'Mezo Prototype.html'
 // `train` is covered in detail by the TRAIN_VIEWS loop below (train-mai === /train),
