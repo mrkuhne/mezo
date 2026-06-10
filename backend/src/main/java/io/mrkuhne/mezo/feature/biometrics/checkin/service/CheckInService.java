@@ -29,6 +29,7 @@ public class CheckInService {
     @Transactional
     public CheckInResponse save(UUID createdBy, SaveCheckInRequest req) {
         // Upsert on the (createdBy, date, slotTime) slot — one row per slot per day.
+        // single-user app: no concurrency guard on the (created_by, date, slot_time) upsert; revisit (retry or ON CONFLICT) if multi-device lands
         CheckInEntity e = repository
             .findByCreatedByAndDateAndSlotTime(createdBy, req.date(), req.slotTime())
             .orElseGet(CheckInEntity::new);

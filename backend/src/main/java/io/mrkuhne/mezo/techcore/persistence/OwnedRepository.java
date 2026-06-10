@@ -9,6 +9,11 @@ import org.springframework.data.repository.query.Param;
 
 @NoRepositoryBean
 public interface OwnedRepository<T extends OwnedEntity> extends JpaRepository<T, UUID> {
-    @Query("select e from #{#entityName} e where e.createdBy = :createdBy and e.deleted = false")
+    /**
+     * Ordered by the entity's {@code date} field (ascending) — owned domain entities are
+     * expected to carry one; give date-less entities their own finder.
+     */
+    // deleted = false is belt-and-braces with each entity's @SQLRestriction — keep both; do not "clean up".
+    @Query("select e from #{#entityName} e where e.createdBy = :createdBy and e.deleted = false order by e.date asc")
     List<T> findAllOwned(@Param("createdBy") UUID createdBy);
 }
