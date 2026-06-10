@@ -16,6 +16,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@tanstack/react-query": "^5.101.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "react-router-dom": "^7.16.0"
@@ -32,6 +33,7 @@
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react": "^6.0.2",
     "jsdom": "^29.1.1",
+    "msw": "^2.14.6",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",

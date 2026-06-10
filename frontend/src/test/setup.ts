@@ -1,4 +1,6 @@
 import '@testing-library/jest-dom/vitest'
+import { afterAll, afterEach, beforeAll } from 'vitest'
+import { server } from './msw/server'
 
 // Node 25 ships an experimental native `localStorage` global that lacks the
 // Web Storage methods (getItem/setItem/clear). It shadows jsdom's Storage, so
@@ -22,3 +24,10 @@ function installStorage(name: 'localStorage' | 'sessionStorage'): void {
 
 installStorage('localStorage')
 installStorage('sessionStorage')
+
+// MSW — intercept the backend REST API in tests. 'bypass' keeps every other
+// request (and all mock-mode hooks, which never fetch) untouched, so the
+// existing suite is unaffected.
+beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
