@@ -1,19 +1,10 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
-import type { ReactNode } from 'react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { useSleep } from './hooks'
 import { server } from '@/test/msw/server'
-
-const BASE = 'http://localhost:8080'
-
-function wrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  )
-}
+import { API_BASE } from '@/test/msw/handlers'
+import { makeHookWrapper } from '@/test/queryWrapper'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
@@ -23,7 +14,7 @@ afterEach(() => {
 })
 
 test('useSleep (real mode) loads the sleep log from the API and exposes lastNight', async () => {
-  const { result } = renderHook(() => useSleep(), { wrapper: wrapper() })
+  const { result } = renderHook(() => useSleep(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.sleepLog.length).toBe(1))
   expect(result.current.lastNight).toMatchObject({ date: '2026-06-01', duration: 7.5, quality: 8 })
 })
@@ -31,7 +22,7 @@ test('useSleep (real mode) loads the sleep log from the API and exposes lastNigh
 test('useSleep.logSleep POSTs (mapping durationH) and the new entry appears after invalidation', async () => {
   let posted = false
   server.use(
-    http.post(`${BASE}/api/biometrics/sleep`, async ({ request }) => {
+    http.post(`${API_BASE}/api/biometrics/sleep`, async ({ request }) => {
       posted = true
       const body = (await request.json()) as {
         date: string; bedtime: string; wakeup: string; durationH: number
@@ -48,7 +39,7 @@ test('useSleep.logSleep POSTs (mapping durationH) and the new entry appears afte
         { status: 201 },
       )
     }),
-    http.get(`${BASE}/api/biometrics/sleep`, () =>
+    http.get(`${API_BASE}/api/biometrics/sleep`, () =>
       HttpResponse.json(
         posted
           ? [
@@ -60,7 +51,7 @@ test('useSleep.logSleep POSTs (mapping durationH) and the new entry appears afte
     ),
   )
 
-  const { result } = renderHook(() => useSleep(), { wrapper: wrapper() })
+  const { result } = renderHook(() => useSleep(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.sleepLog.length).toBe(1))
 
   act(() => {

@@ -12,7 +12,12 @@ export function QueryProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(mock)
   useEffect(() => {
     if (mock) return
-    bootstrapOwnerToken().then(() => setReady(true)).catch(() => setReady(true))
+    bootstrapOwnerToken()
+      .then(() => setReady(true))
+      .catch((err) => {
+        console.error('Owner token bootstrap failed', err)
+        setReady(true)
+      })
   }, [mock])
   if (!ready) return null
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>

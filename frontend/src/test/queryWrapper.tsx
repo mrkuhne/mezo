@@ -11,3 +11,15 @@ export function QueryWrapper({ children }: { children: ReactNode }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return <QueryClientProvider client={client}>{children}</QueryClientProvider>
 }
+
+/**
+ * Factory for renderHook wrappers — each call returns a wrapper backed by a
+ * FRESH QueryClient (retry disabled) so hook tests stay isolated from one
+ * another. Pass the returned component as renderHook's `wrapper` option.
+ */
+export function makeHookWrapper() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  )
+}

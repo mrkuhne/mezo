@@ -1,19 +1,10 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
-import type { ReactNode } from 'react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { useGoals } from './hooks'
 import { server } from '@/test/msw/server'
-
-const BASE = 'http://localhost:8080'
-
-function wrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  )
-}
+import { API_BASE } from '@/test/msw/handlers'
+import { makeHookWrapper } from '@/test/queryWrapper'
 
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
@@ -23,7 +14,7 @@ afterEach(() => {
 })
 
 test('useGoals (real mode) loads the weight log from the API', async () => {
-  const { result } = renderHook(() => useGoals(), { wrapper: wrapper() })
+  const { result } = renderHook(() => useGoals(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.weightLog.length).toBe(1))
   expect(result.current.weightLog[0]).toMatchObject({ date: '2026-06-01', value: 82.5 })
 })
@@ -32,12 +23,12 @@ test('useGoals.logWeight POSTs and the new entry appears after invalidation', as
   let posted = false
   // After the POST fires, the GET must return the appended list (server-side truth).
   server.use(
-    http.post(`${BASE}/api/biometrics/weight`, async ({ request }) => {
+    http.post(`${API_BASE}/api/biometrics/weight`, async ({ request }) => {
       posted = true
       const body = (await request.json()) as { date: string; weightKg: number; note?: string | null }
       return HttpResponse.json({ id: 'w2', date: body.date, value: body.weightKg, note: body.note ?? null }, { status: 201 })
     }),
-    http.get(`${BASE}/api/biometrics/weight`, () =>
+    http.get(`${API_BASE}/api/biometrics/weight`, () =>
       HttpResponse.json(
         posted
           ? [
@@ -49,7 +40,7 @@ test('useGoals.logWeight POSTs and the new entry appears after invalidation', as
     ),
   )
 
-  const { result } = renderHook(() => useGoals(), { wrapper: wrapper() })
+  const { result } = renderHook(() => useGoals(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.weightLog.length).toBe(1))
 
   act(() => {

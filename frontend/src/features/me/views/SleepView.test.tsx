@@ -1,7 +1,10 @@
-import { render, screen } from '@testing-library/react'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { render, screen, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { SleepView } from './SleepView'
-import { QueryWrapper } from '@/test/queryWrapper'
+import { QueryWrapper, makeHookWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 // Asserts the Phase-1 mock sleep hero, so pin mock mode explicitly.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -27,4 +30,13 @@ test('renders sleep factors (incl. the warning factor) with tool chips', () => {
 test('renders the recent log (last 7 nights, newest first)', () => {
   const { container } = render(<SleepView />, { wrapper: QueryWrapper })
   expect(container.querySelectorAll('[data-sleep-log-row]')).toHaveLength(7)
+})
+
+test('real mode with an empty sleep log renders the placeholder instead of crashing', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/biometrics/sleep`, () => HttpResponse.json([])))
+
+  render(<SleepView />, { wrapper: makeHookWrapper() })
+
+  await waitFor(() => expect(screen.getByText('Még nincs alvásadat.')).toBeInTheDocument())
 })

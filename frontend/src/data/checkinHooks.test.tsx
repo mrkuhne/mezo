@@ -1,19 +1,10 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
-import type { ReactNode } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { useCheckins } from './hooks'
 import { server } from '@/test/msw/server'
-
-const BASE = 'http://localhost:8080'
-
-function wrapper() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={client}>{children}</QueryClientProvider>
-  )
-}
+import { API_BASE } from '@/test/msw/handlers'
+import { makeHookWrapper } from '@/test/queryWrapper'
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -25,14 +16,14 @@ test('useCheckins (real mode) updates the slot locally AND POSTs exactly once wi
   let postCount = 0
   let lastBody: Record<string, unknown> | null = null
   server.use(
-    http.post(`${BASE}/api/biometrics/checkin`, async ({ request }) => {
+    http.post(`${API_BASE}/api/biometrics/checkin`, async ({ request }) => {
       postCount += 1
       lastBody = (await request.json()) as Record<string, unknown>
       return HttpResponse.json({ id: 'c1', ...lastBody, savedAt: '2026-06-01T09:00:00Z' }, { status: 200 })
     }),
   )
 
-  const { result } = renderHook(() => useCheckins(), { wrapper: wrapper() })
+  const { result } = renderHook(() => useCheckins(), { wrapper: makeHookWrapper() })
 
   // Slot 2 is the '14:00' "now" slot in initialCheckins.
   act(() => {
@@ -62,13 +53,13 @@ test('useCheckins (mock mode) updates the slot locally and never fetches', async
   vi.stubEnv('VITE_USE_MOCK', 'true')
   let postCount = 0
   server.use(
-    http.post(`${BASE}/api/biometrics/checkin`, () => {
+    http.post(`${API_BASE}/api/biometrics/checkin`, () => {
       postCount += 1
       return HttpResponse.json({ id: 'c1', savedAt: '2026-06-01T09:00:00Z' }, { status: 200 })
     }),
   )
 
-  const { result } = renderHook(() => useCheckins(), { wrapper: wrapper() })
+  const { result } = renderHook(() => useCheckins(), { wrapper: makeHookWrapper() })
 
   act(() => {
     result.current.saveCheckIn(2, { state: 'done', values: { energy: 6, stress: 4, body: 5, mental: 6 }, note: null })

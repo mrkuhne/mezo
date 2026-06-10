@@ -30,6 +30,18 @@ export function SleepView() {
   const [period, setPeriod] = useState<Period>('14d')
   const [logOpen, setLogOpen] = useState(false)
 
+  // Real mode first paint can have an empty log (no data yet / still loading);
+  // the hero below assumes a lastNight, so guard before destructuring it.
+  if (!lastNight) {
+    return (
+      <div style={{ padding: '32px 24px' }}>
+        <span className="text-tertiary" style={{ fontSize: 12, fontFamily: 'var(--ff-mono)' }}>
+          Még nincs alvásadat.
+        </span>
+      </div>
+    )
+  }
+
   const target = sleepTrends.target
   const durDelta = lastNight.duration - target.duration
   const qualOnTarget = lastNight.quality >= target.quality
