@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
-import { weightApi } from '@/lib/biometricsApi'
+import { weightApi, sleepApi } from '@/lib/biometricsApi'
 import { today, user, briefing, briefingVariants, workout, volleyballSessions, fuelToday } from './today'
 import { initialCheckins } from './checkins'
 import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
@@ -65,6 +65,9 @@ export function useGoals() {
   const { data: weightLog = [] } = useQuery({
     queryKey: ['weightLog'],
     queryFn: mock ? async () => initialWeightLog : weightApi.list,
+    // Mock mode seeds synchronously so the first render matches the Phase-1
+    // useState behavior exactly (parity + component tests). Real mode loads.
+    initialData: mock ? initialWeightLog : undefined,
   })
   const mutation = useMutation({
     mutationFn: mock
@@ -81,14 +84,29 @@ export function useGoals() {
 }
 
 export function useSleep() {
-  const [sleepLog, setSleepLog] = useState<SleepEntry[]>(initialSleepLog)
-  const logSleep = useCallback((input: SleepLogInput) => {
-    setSleepLog(prev => [...prev, {
-      date: input.date, bedtime: input.bedtime, wakeup: input.wakeup,
-      duration: input.durationH, quality: input.quality, awakenings: input.awakenings,
-      mealToSleep: 0, notes: input.note ?? null,
-    }])
-  }, [])
+  const qc = useQueryClient()
+  const mock = isMockMode()
+  const { data: sleepLog = [] } = useQuery({
+    queryKey: ['sleepLog'],
+    queryFn: mock ? async () => initialSleepLog : sleepApi.list,
+    // Mock mode seeds synchronously so the first render matches the Phase-1
+    // useState behavior exactly (parity + component tests). Real mode loads.
+    initialData: mock ? initialSleepLog : undefined,
+  })
+  const mutation = useMutation({
+    mutationFn: mock
+      ? async (input: SleepLogInput): Promise<SleepEntry> => ({
+          date: input.date, bedtime: input.bedtime, wakeup: input.wakeup,
+          duration: input.durationH, quality: input.quality, awakenings: input.awakenings,
+          mealToSleep: 0, notes: input.note ?? null,
+        })
+      : sleepApi.log,
+    onSuccess: (entry) => {
+      if (mock) qc.setQueryData<SleepEntry[]>(['sleepLog'], prev => [...(prev ?? []), entry])
+      else qc.invalidateQueries({ queryKey: ['sleepLog'] })
+    },
+  })
+  const logSleep = useCallback((input: SleepLogInput) => mutation.mutate(input), [mutation])
   return { sleepLog, sleepTrends, lastNight: sleepLog[sleepLog.length - 1], logSleep }
 }
 
