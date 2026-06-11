@@ -10,6 +10,7 @@
 // Ported from prototype mesocycles.jsx MesoExercises.
 // ============================================================
 import { useState } from 'react'
+import { useTrain } from '@/data/hooks'
 import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
@@ -37,7 +38,19 @@ function libraryToGymExercise(item: ExerciseLibraryItem): MesoDay['exercises'][n
 }
 
 export function MesoExercises({ meso }: { meso: Mesocycle }) {
+  const { saveDayExercises } = useTrain()
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(meso.days ?? []))
+
+  // T1 persistence: each add/remove keeps the synchronous local update (instant UI,
+  // Phase-1 behavior) and fires a background full-list PUT when the day carries a real
+  // row id. Mock fixtures have no day id -> local-only, exactly as before.
+  const persistDay = (day: MesoDay | undefined) => {
+    if (!day?.id) return
+    saveDayExercises(meso.id, day.id, day.exercises.map((e) => ({
+      name: e.name, muscle: e.muscle, sets: e.sets, targetReps: e.targetReps,
+      targetRIR: e.targetRIR, type: e.type, warning: e.warning,
+    })))
+  }
   // The day (by `day` key) whose picker is open, or null when closed.
   const [pickerDay, setPickerDay] = useState<string | null>(null)
   const [expandedDay, setExpandedDay] = useState<string | null>(() => {
@@ -64,23 +77,23 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
     'Tappold a napot kibontáshoz · plusz/cserélj/törölj gyakorlatot · drag-rendezés.'
 
   const removeExercise = (dayKey: string, exId: string) => {
-    setDays((prev) =>
-      prev.map((d) => {
-        if (d.day !== dayKey) return d
-        const exercises = d.exercises.filter((e) => e.id !== exId)
-        return { ...d, exercises, exerciseCount: exercises.length }
-      }),
-    )
+    const next = days.map((d) => {
+      if (d.day !== dayKey) return d
+      const exercises = d.exercises.filter((e) => e.id !== exId)
+      return { ...d, exercises, exerciseCount: exercises.length }
+    })
+    setDays(next)
+    persistDay(next.find((d) => d.day === dayKey))
   }
 
   const addExercise = (dayKey: string, item: ExerciseLibraryItem) => {
-    setDays((prev) =>
-      prev.map((d) => {
-        if (d.day !== dayKey) return d
-        const exercises = [...d.exercises, libraryToGymExercise(item)]
-        return { ...d, exercises, exerciseCount: exercises.length }
-      }),
-    )
+    const next = days.map((d) => {
+      if (d.day !== dayKey) return d
+      const exercises = [...d.exercises, libraryToGymExercise(item)]
+      return { ...d, exercises, exerciseCount: exercises.length }
+    })
+    setDays(next)
+    persistDay(next.find((d) => d.day === dayKey))
   }
 
   return (

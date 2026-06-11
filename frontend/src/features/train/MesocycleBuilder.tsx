@@ -28,7 +28,7 @@ const VIEWS: { id: BuilderView; label: string }[] = [
 export function MesocycleBuilder() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { mesocycles } = useTrain()
+  const { mesocycles, activateMesocycle, closeMesocycle, mesoMutationPending } = useTrain()
   const [view, setView] = useState<BuilderView>('overview')
 
   const meso = mesocycles.find((m) => m.id === id)
@@ -112,19 +112,26 @@ export function MesocycleBuilder() {
       <div style={{ padding: '16px 24px 32px' }}>
         {meso.status === 'active' && (
           <div className="col gap-sm">
+            {/* "Heti terv másolása" stays inert — out of T1 scope (copy-week lands later). */}
             <CtaGhost className="notch-4" style={{ padding: 12 }}>
               Heti terv másolása
             </CtaGhost>
             <CtaGhost
               className="notch-4"
               style={{ padding: 12, borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
+              onClick={() => closeMesocycle(meso.id)}
+              disabled={mesoMutationPending}
             >
               Meso lezárása
             </CtaGhost>
           </div>
         )}
         {meso.status === 'planned' && (
-          <CtaPrimary className="notch-8">
+          <CtaPrimary
+            className="notch-8"
+            onClick={() => activateMesocycle(meso.id)}
+            disabled={mesoMutationPending}
+          >
             <Icon name="check" size={16} /> Aktiválás · {meso.startDate}
           </CtaPrimary>
         )}
