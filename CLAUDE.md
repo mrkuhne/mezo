@@ -48,7 +48,7 @@ bd close <id>         # Complete work
 **mezo** is a mobile-first health & performance companion PWA, built in three phases (frontend-first):
 
 - **Phase 1 — Frontend (mock data):** ✅ done. React 19 + Vite + Tailwind v4, Hungarian UI, 6 vertical slices (Foundation → Today → Me → Fuel → Insights → Train) on a mock data layer. The single frontend↔data boundary is `src/data/hooks.ts`.
-- **Phase 2 — Core data backend:** 🔄 in progress. **Java / Spring Boot 4.0 + PostgreSQL**, swapping the mock hooks to a real REST API **without changing the hook signatures** (frontend untouched). Monorepo: `frontend/` + `backend/` + `api/` (OpenAPI contract — single source of truth for the FE↔BE boundary). Slice A (foundation + thin auth + biometrics + TanStack Query wiring) ✅ done; slices B (Train) → C (Fuel) → D (Insights seed) → E (People) remain.
+- **Phase 2 — Core data backend:** 🔄 in progress. **Java / Spring Boot 4.0 + PostgreSQL**, swapping the mock hooks to a real REST API **without changing the hook signatures** (frontend untouched). Monorepo: `frontend/` + `backend/` + `api/` (OpenAPI contract — single source of truth for the FE↔BE boundary). Slice A (foundation + thin auth + biometrics + TanStack Query wiring) ✅ done; Slice B (Train) ✅ done; slices C (Fuel) → D (Insights seed) → E (People) remain.
 - **Phase 3 — AI brain:** later. Spring AI, pgvector, RAG, pattern/companion pipeline.
 
 Design spec for Phase 2 (slice map, decisions): `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`.
