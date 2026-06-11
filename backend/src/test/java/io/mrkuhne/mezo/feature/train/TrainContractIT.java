@@ -29,11 +29,15 @@ class TrainContractIT extends ApiIntegrationTest {
 
     @Test
     void testListMesocycles_shouldReturn401_whenUnauthenticated() {
+        // Security-layer 401s are produced by Spring Security's BearerTokenAuthenticationEntryPoint
+        // BEFORE the dispatcher, so they carry no SystemMessage body by design — status-only is correct.
         getForBody("/api/train/mesocycles", null, HttpStatus.UNAUTHORIZED, Void.class);
     }
 
     @Test
     void testListSportSessions_shouldReturn401_whenUnauthenticated() {
+        // Security-layer 401s are produced by Spring Security's BearerTokenAuthenticationEntryPoint
+        // BEFORE the dispatcher, so they carry no SystemMessage body by design — status-only is correct.
         getForBody("/api/train/sport-sessions", null, HttpStatus.UNAUTHORIZED, Void.class);
     }
 
