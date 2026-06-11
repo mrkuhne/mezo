@@ -2,8 +2,8 @@ package io.mrkuhne.mezo.feature.biometrics.weight;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.biometrics.weight.dto.LogWeightRequest;
-import io.mrkuhne.mezo.feature.biometrics.weight.dto.WeightLogResponse;
+import io.mrkuhne.mezo.api.dto.LogWeightRequest;
+import io.mrkuhne.mezo.api.dto.WeightLogResponse;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightLogService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -45,16 +45,16 @@ class WeightLogServiceIT extends AbstractIntegrationTest {
         var first = service.log(user, new LogWeightRequest(LocalDate.parse("2026-06-01"), new BigDecimal("82.50"), null));
         var second = service.log(user, new LogWeightRequest(LocalDate.parse("2026-06-02"), new BigDecimal("82.10"), null));
         var removed = service.list(user).stream()
-            .filter(r -> r.date().equals(LocalDate.parse("2026-06-03"))).findFirst().orElseThrow();
+            .filter(r -> r.getDate().equals(LocalDate.parse("2026-06-03"))).findFirst().orElseThrow();
 
-        weightLogRepository.deleteById(removed.id()); // @SQLDelete → UPDATE is_deleted = true
+        weightLogRepository.deleteById(removed.getId()); // @SQLDelete → UPDATE is_deleted = true
         weightLogRepository.flush();
 
         List<WeightLogResponse> remaining = service.list(user);
         // Soft-deleted row vanishes from findAllOwned; siblings remain, ordered date-ascending.
         assertThat(remaining).hasSize(2);
-        assertThat(remaining).extracting(WeightLogResponse::id).containsExactly(first.id(), second.id());
-        assertThat(remaining).extracting(WeightLogResponse::date)
+        assertThat(remaining).extracting(WeightLogResponse::getId).containsExactly(first.getId(), second.getId());
+        assertThat(remaining).extracting(WeightLogResponse::getDate)
             .containsExactly(LocalDate.parse("2026-06-01"), LocalDate.parse("2026-06-02"));
         // Physical row still exists, only flagged — soft delete, not a DELETE.
         Long softDeleted = jdbcTemplate.queryForObject(

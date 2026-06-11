@@ -1,7 +1,7 @@
 package io.mrkuhne.mezo.feature.biometrics.sleep.service;
 
-import io.mrkuhne.mezo.feature.biometrics.sleep.dto.LogSleepRequest;
-import io.mrkuhne.mezo.feature.biometrics.sleep.dto.SleepLogResponse;
+import io.mrkuhne.mezo.api.dto.LogSleepRequest;
+import io.mrkuhne.mezo.api.dto.SleepLogResponse;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.mapper.SleepLogMapper;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
@@ -26,13 +26,13 @@ public class SleepLogService {
     public SleepLogResponse log(UUID createdBy, LogSleepRequest req) {
         SleepLogEntity e = new SleepLogEntity();
         e.setCreatedBy(createdBy); // server-side from principal, never from client
-        e.setDate(req.date());
-        e.setBedtime(req.bedtime());
-        e.setWakeup(req.wakeup());
-        e.setDurationH(req.durationH());
-        e.setQuality(req.quality());
-        e.setAwakenings(req.awakenings());
-        e.setNotes(req.note());
+        e.setDate(req.getDate());
+        e.setBedtime(req.getBedtime());
+        e.setWakeup(req.getWakeup());
+        e.setDurationH(req.getDurationH());
+        e.setQuality(req.getQuality());
+        e.setAwakenings(req.getAwakenings());
+        e.setNotes(req.getNote());
         return mapper.toResponse(repository.save(e));
     }
 }

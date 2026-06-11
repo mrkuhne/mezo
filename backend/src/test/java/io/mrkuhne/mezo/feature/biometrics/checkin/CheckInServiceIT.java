@@ -2,7 +2,7 @@ package io.mrkuhne.mezo.feature.biometrics.checkin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.biometrics.checkin.dto.SaveCheckInRequest;
+import io.mrkuhne.mezo.api.dto.SaveCheckInRequest;
 import io.mrkuhne.mezo.feature.biometrics.checkin.service.CheckInService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -27,7 +27,7 @@ class CheckInServiceIT extends AbstractIntegrationTest {
 
         var rows = service.listForDay(user, day);
         assertThat(rows).hasSize(1);
-        assertThat(rows.get(0).energy()).isEqualTo(8);
-        assertThat(rows.get(0).note()).isEqualTo("better");
+        assertThat(rows.get(0).getEnergy()).isEqualTo(8);
+        assertThat(rows.get(0).getNote()).isEqualTo("better");
     }
 }

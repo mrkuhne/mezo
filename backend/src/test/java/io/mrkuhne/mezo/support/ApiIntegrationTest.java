@@ -3,8 +3,8 @@ package io.mrkuhne.mezo.support;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.auth.dto.LoginRequest;
-import io.mrkuhne.mezo.feature.auth.dto.TokenResponse;
+import io.mrkuhne.mezo.api.dto.LoginRequest;
+import io.mrkuhne.mezo.api.dto.TokenResponse;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -52,7 +52,7 @@ public abstract class ApiIntegrationTest extends AbstractIntegrationTest {
             new LoginRequest(ownerProperties.ownerEmail(), ownerProperties.ownerPassword()),
             null, HttpStatus.OK, TokenResponse.class);
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token.token());
+        headers.setBearerAuth(token.getToken());
         return headers;
     }
 

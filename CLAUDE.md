@@ -79,6 +79,13 @@ docker compose up -d            # local Postgres 16 on :15432 (mezo + mezo_test 
 # ALWAYS use `clean` (Lombok+MapStruct incremental compile is flaky)
 ```
 
+```bash
+# API contract (under api/ — see api_contract_conventions.md)
+cd api/generate && npm run generate:api   # merge feature fragments -> api/openapi.yml
+cd frontend && pnpm generate:api          # regenerate src/lib/api.gen.ts (FE types)
+# backend Java types regenerate automatically in ./mvnw generate-sources/test
+```
+
 **Custom local ports** (standard ones are taken by other projects on this machine): Postgres **15432** (`DB_PORT`), backend HTTP **8090** (`MEZO_PORT`), Vite dev **5180**, parity **4317**. Frontend targets the API via `VITE_API_URL` (see `frontend/.env.example`). If the `mezo_pg` volume predates `backend/initdb/`, recreate it once: `docker compose down -v && docker compose up -d`.
 
 ## Backend Development Conventions (Phase 2+) — MANDATORY
@@ -94,6 +101,7 @@ docker compose up -d            # local Postgres 16 on :15432 (mezo + mezo_test 
 | `testing_standards.md` | any backend test — integration-first (`@SpringBootTest` + Testcontainers Postgres), `test{Method}_should{Result}_when{Condition}`, AssertJ only, Java `DatabasePopulator` data, no mocks/`@MockBean`/H2 in integration tests |
 | `integration_test_framework.md` | any integration test or test infrastructure — extend `AbstractIntegrationTest` (service-level) / `ApiIntegrationTest` (HTTP-level: verb helpers, `ownerAuthHeaders()`, SystemMessage asserts), data via `*Populator` factories, **new domain table → `ResetDatabase` TRUNCATE list, new aggregate → new populator** |
 | `configuration_conventions.md` | any configurable value or feature toggle — everything in `application.yml` under the `mezo:` root (switches: `mezo.feature.<name>.enabled` + `FeaturesConfiguration` constants + `@ConditionalOnProperty`; values: `@Validated` `*Properties` records), **never `@Value`**, no hardcoded tunables |
+| `api_contract_conventions.md` | any REST endpoint or FE↔BE DTO — **contract-first**: edit `api/feature/<name>/<name>.yml` BEFORE code, merge (`api/generate`), backend implements generated `<Tag>Api` + uses `api.dto` models, frontend types from `src/lib/api.gen.ts` (`satisfies` on request bodies); never hand-write boundary DTOs |
 
 ### Project-specific adaptations (these override the generic references where noted)
 

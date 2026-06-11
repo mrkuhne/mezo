@@ -1,0 +1,62 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: ''
+tags:
+  - name: Auth
+    description: Single-user thin auth (owner login)
+paths:
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Login with the owner credentials, returns a JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Invalid credentials (AUTH_LOGIN_INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: owner@mezo.local
+        password:
+          type: string
+          minLength: 1
+    TokenResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: HS256-signed JWT bearer token

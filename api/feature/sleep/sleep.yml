@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: ''
+tags:
+  - name: Sleep
+    description: Sleep log (biometrics)
+paths:
+  /api/biometrics/sleep:
+    get:
+      tags: [Sleep]
+      operationId: listSleepLogs
+      summary: All sleep logs of the current user, date ascending
+      responses:
+        '200':
+          description: Sleep logs, ordered by date ascending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SleepLogResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags: [Sleep]
+      operationId: logSleep
+      summary: Log a sleep entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogSleepRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepLogResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+components:
+  schemas:
+    LogSleepRequest:
+      type: object
+      required:
+        - date
+      properties:
+        date:
+          type: string
+          format: date
+        bedtime:
+          type: string
+          description: Bedtime as HH:mm
+          example: '23:10'
+        wakeup:
+          type: string
+          description: Wake-up time as HH:mm
+          example: '06:45'
+        durationH:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 99.99
+          description: Sleep duration in hours (max 2 integer + 2 fraction digits)
+        quality:
+          type: integer
+          minimum: 1
+          maximum: 10
+        awakenings:
+          type: integer
+          minimum: 0
+        note:
+          type: string
+    SleepLogResponse:
+      type: object
+      required:
+        - id
+        - date
+        - mealToSleep
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        bedtime:
+          type: string
+        wakeup:
+          type: string
+        duration:
+          type: number
+          description: Sleep duration in hours (frontend field name)
+        quality:
+          type: integer
+        awakenings:
+          type: integer
+        mealToSleep:
+          type: integer
+          description: Hours between last meal and sleep — always 0 until Fuel lands
+        notes:
+          type: string

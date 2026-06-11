@@ -1,0 +1,94 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: ''
+tags:
+  - name: Weight
+    description: Weight log (biometrics)
+paths:
+  /api/biometrics/weight:
+    get:
+      tags: [Weight]
+      operationId: listWeightLogs
+      summary: All weight logs of the current user, date ascending
+      responses:
+        '200':
+          description: Weight logs, ordered by date ascending
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeightLogResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags: [Weight]
+      operationId: logWeight
+      summary: Log a weight entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogWeightRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeightLogResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+components:
+  schemas:
+    LogWeightRequest:
+      type: object
+      required:
+        - date
+        - weightKg
+      properties:
+        date:
+          type: string
+          format: date
+        weightKg:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 999.99
+          description: Weight in kilograms (max 3 integer + 2 fraction digits)
+        note:
+          type: string
+    WeightLogResponse:
+      type: object
+      required:
+        - id
+        - date
+        - value
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        value:
+          type: number
+          description: Weight in kilograms (frontend field name)
+        note:
+          type: string

@@ -1,7 +1,7 @@
 package io.mrkuhne.mezo.feature.auth.service;
 
-import io.mrkuhne.mezo.feature.auth.dto.LoginRequest;
-import io.mrkuhne.mezo.feature.auth.dto.TokenResponse;
+import io.mrkuhne.mezo.api.dto.LoginRequest;
+import io.mrkuhne.mezo.api.dto.TokenResponse;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -27,8 +27,8 @@ public class AuthService {
     private final JwtEncoder jwtEncoder;
 
     public TokenResponse login(LoginRequest req) {
-        AppUserEntity user = appUserRepository.findByEmail(req.email())
-            .filter(u -> passwordEncoder.matches(req.password(), u.getPasswordHash()))
+        AppUserEntity user = appUserRepository.findByEmail(req.getEmail())
+            .filter(u -> passwordEncoder.matches(req.getPassword(), u.getPasswordHash()))
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("AUTH_LOGIN_INVALID_CREDENTIALS").build(), HttpStatus.UNAUTHORIZED));
 

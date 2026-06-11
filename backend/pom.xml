@@ -30,6 +30,9 @@
 		<java.version>21</java.version>
 		<mapstruct.version>1.6.3</mapstruct.version>
 		<lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
+		<openapi-generator.version>7.17.0</openapi-generator.version>
+		<!-- Contract-first source of truth (see docs/references/api_contract_conventions.md) -->
+		<openapi-location>${project.basedir}/../api/openapi.yml</openapi-location>
 		<!--
 			Pin the Docker Engine API version used by Testcontainers' docker-java
 			client. docker-java 3.7.x negotiates v1.44, which older Docker daemons
@@ -146,6 +149,46 @@
 						</exclude>
 					</excludes>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.openapitools</groupId>
+				<artifactId>openapi-generator-maven-plugin</artifactId>
+				<version>${openapi-generator.version}</version>
+				<executions>
+					<execution>
+						<id>generate-api-types</id>
+						<goals>
+							<goal>generate</goal>
+						</goals>
+						<configuration>
+							<inputSpec>${openapi-location}</inputSpec>
+							<generatorName>spring</generatorName>
+							<apiPackage>io.mrkuhne.mezo.api.controller</apiPackage>
+							<modelPackage>io.mrkuhne.mezo.api.dto</modelPackage>
+							<generateSupportingFiles>false</generateSupportingFiles>
+							<generateModelDocumentation>false</generateModelDocumentation>
+							<generateModelTests>false</generateModelTests>
+							<configOptions>
+								<useSpringBoot4>true</useSpringBoot4>
+								<useJakartaEe>true</useJakartaEe>
+								<dateLibrary>java8</dateLibrary>
+								<interfaceOnly>true</interfaceOnly>
+								<skipDefaultInterface>true</skipDefaultInterface>
+								<useResponseEntity>false</useResponseEntity>
+								<serializationLibrary>jackson</serializationLibrary>
+								<openApiNullable>false</openApiNullable>
+								<generatedConstructorWithRequiredArgs>false</generatedConstructorWithRequiredArgs>
+								<useTags>true</useTags>
+								<documentationProvider>none</documentationProvider>
+								<annotationLibrary>none</annotationLibrary>
+								<additionalModelTypeAnnotations>@lombok.Builder
+									@lombok.NoArgsConstructor
+									@lombok.AllArgsConstructor
+								</additionalModelTypeAnnotations>
+							</configOptions>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

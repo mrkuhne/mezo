@@ -1,0 +1,10 @@
+# openapi-merge-cli config — first input is the base (its info/servers/security win).
+# Every new feature fragment MUST be appended here.
+inputs:
+  - inputFile: ../base.yml
+  - inputFile: ../common/common-schemas.yml
+  - inputFile: ../feature/auth/auth.yml
+  - inputFile: ../feature/weight/weight.yml
+  - inputFile: ../feature/sleep/sleep.yml
+  - inputFile: ../feature/checkin/checkin.yml
+output: ../openapi.yml

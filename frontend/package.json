@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "parity": "playwright test --config tests/parity/playwright.config.ts"
+    "parity": "playwright test --config tests/parity/playwright.config.ts",
+    "generate:api": "openapi-typescript ../api/openapi.yml -o src/lib/api.gen.ts"
   },
   "keywords": [],
   "author": "",
@@ -34,6 +35,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "jsdom": "^29.1.1",
     "msw": "^2.14.6",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",

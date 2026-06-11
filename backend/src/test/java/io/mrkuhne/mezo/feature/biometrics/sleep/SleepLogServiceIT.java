@@ -2,7 +2,7 @@ package io.mrkuhne.mezo.feature.biometrics.sleep;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.biometrics.sleep.dto.LogSleepRequest;
+import io.mrkuhne.mezo.api.dto.LogSleepRequest;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepLogService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;

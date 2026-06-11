@@ -1,0 +1,447 @@
+openapi: 3.0.3
+info:
+  title: mezo API
+  description: >
+    Contract-first API definition for the mezo backend — the single source of
+    truth for generated backend DTOs / controller interfaces and frontend types.
+    See docs/references/api_contract_conventions.md.
+  version: 0.2.0
+servers:
+  - url: 'http://localhost:8090'
+    description: Local dev backend (MEZO_PORT)
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+    description: Single-user thin auth (owner login)
+  - name: Weight
+    description: Weight log (biometrics)
+  - name: Sleep
+    description: Sleep log (biometrics)
+  - name: CheckIn
+    description: Daily check-in slots (biometrics)
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      operationId: login
+      summary: 'Login with the owner credentials, returns a JWT'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: JWT issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Invalid credentials (AUTH_LOGIN_INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/biometrics/weight:
+    get:
+      tags:
+        - Weight
+      operationId: listWeightLogs
+      summary: 'All weight logs of the current user, date ascending'
+      responses:
+        '200':
+          description: 'Weight logs, ordered by date ascending'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeightLogResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Weight
+      operationId: logWeight
+      summary: Log a weight entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogWeightRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeightLogResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/biometrics/sleep:
+    get:
+      tags:
+        - Sleep
+      operationId: listSleepLogs
+      summary: 'All sleep logs of the current user, date ascending'
+      responses:
+        '200':
+          description: 'Sleep logs, ordered by date ascending'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SleepLogResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Sleep
+      operationId: logSleep
+      summary: Log a sleep entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogSleepRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepLogResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/biometrics/checkin:
+    get:
+      tags:
+        - CheckIn
+      operationId: listCheckInsForDay
+      summary: Check-ins of the current user for one day
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Check-ins for the given day
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CheckInResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - CheckIn
+      operationId: saveCheckIn
+      summary: Upsert a check-in slot (find-or-new on date + slotTime)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCheckInRequest'
+      responses:
+        '200':
+          description: 'Saved (upsert — 200, not 201)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SystemMessage:
+      type: object
+      description: >
+        Error contract returned by GlobalExceptionHandler (see
+        error_handling.md). Every non-2xx response body is an array of
+        SystemMessage.
+      required:
+        - code
+        - type
+      properties:
+        level:
+          type: string
+          enum:
+            - ERROR
+            - WARNING
+            - INFO
+        code:
+          type: string
+          description: Machine-readable error code resolved via messages.properties
+          example: VALIDATION_REQUIRED_FIELD
+        params:
+          type: array
+          items:
+            type: string
+        message:
+          type: string
+          description: Resolved human-readable message (English)
+        fieldName:
+          type: string
+          description: Offending field for FIELD-type messages
+        type:
+          type: string
+          enum:
+            - REQUEST
+            - FIELD
+        exceptionTraceId:
+          type: string
+          format: uuid
+    SystemMessageList:
+      type: array
+      items:
+        $ref: '#/components/schemas/SystemMessage'
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: owner@mezo.local
+        password:
+          type: string
+          minLength: 1
+    TokenResponse:
+      type: object
+      required:
+        - token
+      properties:
+        token:
+          type: string
+          description: HS256-signed JWT bearer token
+    LogWeightRequest:
+      type: object
+      required:
+        - date
+        - weightKg
+      properties:
+        date:
+          type: string
+          format: date
+        weightKg:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 999.99
+          description: Weight in kilograms (max 3 integer + 2 fraction digits)
+        note:
+          type: string
+    WeightLogResponse:
+      type: object
+      required:
+        - id
+        - date
+        - value
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        value:
+          type: number
+          description: Weight in kilograms (frontend field name)
+        note:
+          type: string
+    LogSleepRequest:
+      type: object
+      required:
+        - date
+      properties:
+        date:
+          type: string
+          format: date
+        bedtime:
+          type: string
+          description: 'Bedtime as HH:mm'
+          example: '23:10'
+        wakeup:
+          type: string
+          description: 'Wake-up time as HH:mm'
+          example: '06:45'
+        durationH:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 99.99
+          description: Sleep duration in hours (max 2 integer + 2 fraction digits)
+        quality:
+          type: integer
+          minimum: 1
+          maximum: 10
+        awakenings:
+          type: integer
+          minimum: 0
+        note:
+          type: string
+    SleepLogResponse:
+      type: object
+      required:
+        - id
+        - date
+        - mealToSleep
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        bedtime:
+          type: string
+        wakeup:
+          type: string
+        duration:
+          type: number
+          description: Sleep duration in hours (frontend field name)
+        quality:
+          type: integer
+        awakenings:
+          type: integer
+        mealToSleep:
+          type: integer
+          description: Hours between last meal and sleep — always 0 until Fuel lands
+        notes:
+          type: string
+    SaveCheckInRequest:
+      type: object
+      required:
+        - date
+        - slotTime
+        - state
+      properties:
+        date:
+          type: string
+          format: date
+        slotTime:
+          type: string
+          minLength: 1
+          description: 'Slot identifier as shown in the UI (e.g. "08:00")'
+        state:
+          type: string
+          pattern: ^(done|now|skipped|pending)$
+        energy:
+          type: integer
+          minimum: 1
+          maximum: 10
+        stress:
+          type: integer
+          minimum: 1
+          maximum: 10
+        body:
+          type: integer
+          minimum: 1
+          maximum: 10
+        mental:
+          type: integer
+          minimum: 1
+          maximum: 10
+        note:
+          type: string
+    CheckInResponse:
+      type: object
+      required:
+        - id
+        - date
+        - slotTime
+        - state
+        - savedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        slotTime:
+          type: string
+        state:
+          type: string
+        energy:
+          type: integer
+        stress:
+          type: integer
+        body:
+          type: integer
+        mental:
+          type: integer
+        note:
+          type: string
+        savedAt:
+          type: string
+          format: date-time

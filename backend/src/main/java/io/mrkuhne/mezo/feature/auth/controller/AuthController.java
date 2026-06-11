@@ -1,24 +1,21 @@
 package io.mrkuhne.mezo.feature.auth.controller;
 
-import io.mrkuhne.mezo.feature.auth.dto.LoginRequest;
-import io.mrkuhne.mezo.feature.auth.dto.TokenResponse;
+import io.mrkuhne.mezo.api.controller.AuthApi;
+import io.mrkuhne.mezo.api.dto.LoginRequest;
+import io.mrkuhne.mezo.api.dto.TokenResponse;
 import io.mrkuhne.mezo.feature.auth.service.AuthService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/** Implements the generated contract interface — mappings/validation come from {@link AuthApi}. */
 @RestController
-@RequestMapping("/api/auth")
 @RequiredArgsConstructor
-public class AuthController {
+public class AuthController implements AuthApi {
 
     private final AuthService authService;
 
-    @PostMapping("/login")
-    public TokenResponse login(@Valid @RequestBody LoginRequest req) {
-        return authService.login(req);
+    @Override
+    public TokenResponse login(LoginRequest loginRequest) {
+        return authService.login(loginRequest);
     }
 }

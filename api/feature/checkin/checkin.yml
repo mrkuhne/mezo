@@ -1,0 +1,133 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: ''
+tags:
+  - name: CheckIn
+    description: Daily check-in slots (biometrics)
+paths:
+  /api/biometrics/checkin:
+    get:
+      tags: [CheckIn]
+      operationId: listCheckInsForDay
+      summary: Check-ins of the current user for one day
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Check-ins for the given day
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CheckInResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags: [CheckIn]
+      operationId: saveCheckIn
+      summary: Upsert a check-in slot (find-or-new on date + slotTime)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveCheckInRequest'
+      responses:
+        '200':
+          description: Saved (upsert — 200, not 201)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckInResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+components:
+  schemas:
+    SaveCheckInRequest:
+      type: object
+      required:
+        - date
+        - slotTime
+        - state
+      properties:
+        date:
+          type: string
+          format: date
+        slotTime:
+          type: string
+          minLength: 1
+          description: Slot identifier as shown in the UI (e.g. "08:00")
+        state:
+          type: string
+          pattern: '^(done|now|skipped|pending)$'
+        energy:
+          type: integer
+          minimum: 1
+          maximum: 10
+        stress:
+          type: integer
+          minimum: 1
+          maximum: 10
+        body:
+          type: integer
+          minimum: 1
+          maximum: 10
+        mental:
+          type: integer
+          minimum: 1
+          maximum: 10
+        note:
+          type: string
+    CheckInResponse:
+      type: object
+      required:
+        - id
+        - date
+        - slotTime
+        - state
+        - savedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        slotTime:
+          type: string
+        state:
+          type: string
+        energy:
+          type: integer
+        stress:
+          type: integer
+        body:
+          type: integer
+        mental:
+          type: integer
+        note:
+          type: string
+        savedAt:
+          type: string
+          format: date-time

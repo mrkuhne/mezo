@@ -1,0 +1,11 @@
+{
+  "name": "mezo-api-generate",
+  "private": true,
+  "description": "Merges per-feature OpenAPI fragments into ../openapi.yml (see docs/references/api_contract_conventions.md)",
+  "scripts": {
+    "generate:api": "openapi-merge-cli --config merge.yml"
+  },
+  "devDependencies": {
+    "openapi-merge-cli": "^1.3.2"
+  }
+}

@@ -1,6 +1,6 @@
 package io.mrkuhne.mezo.feature.biometrics.weight.mapper;
 
-import io.mrkuhne.mezo.feature.biometrics.weight.dto.WeightLogResponse;
+import io.mrkuhne.mezo.api.dto.WeightLogResponse;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

@@ -2,8 +2,8 @@ package io.mrkuhne.mezo.feature.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.auth.dto.LoginRequest;
-import io.mrkuhne.mezo.feature.auth.dto.TokenResponse;
+import io.mrkuhne.mezo.api.dto.LoginRequest;
+import io.mrkuhne.mezo.api.dto.TokenResponse;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -14,7 +14,7 @@ class AuthControllerIT extends ApiIntegrationTest {
     void testLogin_shouldReturnToken_whenCredentialsValid() {
         TokenResponse token = postForBody("/api/auth/login",
             new LoginRequest("owner@mezo.local", "owner"), null, HttpStatus.OK, TokenResponse.class);
-        assertThat(token.token()).isNotBlank();
+        assertThat(token.getToken()).isNotBlank();
     }
 
     @Test
@@ -30,7 +30,7 @@ class AuthControllerIT extends ApiIntegrationTest {
             new LoginRequest("not-an-email", ""), null, HttpStatus.BAD_REQUEST, String.class);
         // proves Fix A: @Valid -> 400 FIELD messages, not 500
         assertHasFieldError(body, "email", "VALIDATION_INVALID_EMAIL");
-        assertHasFieldError(body, "password", "VALIDATION_REQUIRED_FIELD");
+        assertHasFieldError(body, "password", "VALIDATION_INVALID_VALUE");
     }
 
     @Test

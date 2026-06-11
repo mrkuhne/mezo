@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: ''
+paths: {}
+components:
+  schemas:
+    SystemMessage:
+      type: object
+      description: >
+        Error contract returned by GlobalExceptionHandler (see error_handling.md).
+        Every non-2xx response body is an array of SystemMessage.
+      required:
+        - code
+        - type
+      properties:
+        level:
+          type: string
+          enum: [ERROR, WARNING, INFO]
+        code:
+          type: string
+          description: Machine-readable error code resolved via messages.properties
+          example: VALIDATION_REQUIRED_FIELD
+        params:
+          type: array
+          items:
+            type: string
+        message:
+          type: string
+          description: Resolved human-readable message (English)
+        fieldName:
+          type: string
+          description: Offending field for FIELD-type messages
+        type:
+          type: string
+          enum: [REQUEST, FIELD]
+        exceptionTraceId:
+          type: string
+          format: uuid
+    SystemMessageList:
+      type: array
+      items:
+        $ref: '#/components/schemas/SystemMessage'

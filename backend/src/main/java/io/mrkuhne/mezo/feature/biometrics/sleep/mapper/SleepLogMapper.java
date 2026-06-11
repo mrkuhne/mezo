@@ -1,6 +1,6 @@
 package io.mrkuhne.mezo.feature.biometrics.sleep.mapper;
 
-import io.mrkuhne.mezo.feature.biometrics.sleep.dto.SleepLogResponse;
+import io.mrkuhne.mezo.api.dto.SleepLogResponse;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

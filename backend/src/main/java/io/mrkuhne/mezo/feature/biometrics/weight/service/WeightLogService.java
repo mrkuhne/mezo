@@ -1,7 +1,7 @@
 package io.mrkuhne.mezo.feature.biometrics.weight.service;
 
-import io.mrkuhne.mezo.feature.biometrics.weight.dto.LogWeightRequest;
-import io.mrkuhne.mezo.feature.biometrics.weight.dto.WeightLogResponse;
+import io.mrkuhne.mezo.api.dto.LogWeightRequest;
+import io.mrkuhne.mezo.api.dto.WeightLogResponse;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.mapper.WeightLogMapper;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
@@ -26,9 +26,9 @@ public class WeightLogService {
     public WeightLogResponse log(UUID createdBy, LogWeightRequest req) {
         WeightLogEntity e = new WeightLogEntity();
         e.setCreatedBy(createdBy); // server-side from principal, never from client
-        e.setDate(req.date());
-        e.setWeightKg(req.weightKg());
-        e.setNote(req.note());
+        e.setDate(req.getDate());
+        e.setWeightKg(req.getWeightKg());
+        e.setNote(req.getNote());
         return mapper.toResponse(repository.save(e));
     }
 }
