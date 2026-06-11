@@ -90,6 +90,18 @@
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
 		<dependency>
+			<!-- Java 8 date/time (OffsetDateTime, etc.) support for Hibernate's Jackson 2 jsonb
+			     FormatMapper. JacksonJsonFormatMapper's default ObjectMapper is built via
+			     ObjectMapper.findModules(ClassLoader) (ServiceLoader discovery), so simply having
+			     this module on the classpath auto-registers JavaTimeModule. Without it, persisting a
+			     jsonb record with a temporal field throws InvalidDefinitionException ("Java 8
+			     date/time type `java.time.OffsetDateTime` not supported by default"). Proven by the
+			     ProvenanceEnvelope.UserOverride.at round-trip (Slice B); Fuel's timestamped meal-score
+			     envelope relies on the same. Version managed by Hibernate's jackson-bom. -->
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>

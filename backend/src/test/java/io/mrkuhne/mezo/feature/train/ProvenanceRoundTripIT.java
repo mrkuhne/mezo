@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -67,5 +69,65 @@ class ProvenanceRoundTripIT extends AbstractIntegrationTest {
         String jsonType = jdbcTemplate.queryForObject(
             "select jsonb_typeof(source) from muscle_group_volume_log where id = ?", String.class, e.getId());
         assertThat(jsonType).isEqualTo("object"); // stored as real jsonb, not text
+    }
+
+    @Test
+    void testSave_shouldRoundTripUserOverrideWithTimestamp_whenOverridePresent() {
+        UUID user = databasePopulator.populateUser("override@test.local");
+        // Non-UTC offset on purpose: the temporal field is where jsonb round-trips surprise you.
+        // OBSERVED CONTRACT (Hibernate 7.1.8 + jackson-databind 2.20.1 + jackson-datatype-jsr310,
+        // the FormatMapper's auto-discovered ObjectMapper, no Spring customizations):
+        //   1. OffsetDateTime is stored as a NUMERIC epoch-seconds timestamp in the jsonb
+        //      (e.g. 1778785200.000000000), NOT an ISO-8601 string — WRITE_DATES_AS_TIMESTAMPS is
+        //      left ON in Hibernate's bare mapper.
+        //   2. The original +02:00 offset is therefore LOST; the value reloads as UTC
+        //      (2026-05-14T21:00+02:00 -> 2026-05-14T19:00Z). Same instant, different offset, so
+        //      whole-record equality FAILS.
+        // => Fuel's timestamped meal-score envelopes must compare temporals by INSTANT (isEqual),
+        //    never by ProvenanceEnvelope.equals(), and must not rely on the stored offset.
+        OffsetDateTime overrideAt = OffsetDateTime.parse("2026-05-14T21:00:00+02:00");
+        ProvenanceEnvelope source = new ProvenanceEnvelope(
+            new ProvenanceEnvelope.Baseline("RP guidelines · intermediate", 8, 12, 18),
+            List.of(new ProvenanceEnvelope.Adjustment("recovery", "Deload hét", Map.of("mav", -4), null)),
+            0.81,
+            "Manuális MRV override.",
+            new ProvenanceEnvelope.UserOverride(10, 16, 22, overrideAt));
+
+        MuscleGroupVolumeLogEntity e = new MuscleGroupVolumeLogEntity();
+        e.setCreatedBy(user);
+        UUID mesoId = jdbcTemplate.queryForObject(
+            "insert into mesocycle (created_by, title, short_title, status, start_date, end_date, weeks, split, style, phase_curve) "
+                + "values (?, 't', 't', 'active', '2026-05-01', '2026-06-12', 6, 's', 's', '{MEV}') returning id",
+            UUID.class, user);
+        e.setMesocycleId(mesoId);
+        e.setMuscle("back");
+        e.setMev(10); e.setMav(16); e.setMrv(22); e.setCurrentSets(16);
+        e.setSource(source);
+        repository.saveAndFlush(e);
+
+        entityManager.clear();
+
+        MuscleGroupVolumeLogEntity reloaded = repository.findById(e.getId()).orElseThrow();
+        ProvenanceEnvelope.UserOverride reloadedOverride = reloaded.getSource().userOverride();
+
+        // Non-temporal fields survive exactly.
+        assertThat(reloadedOverride.mev()).isEqualTo(10);
+        assertThat(reloadedOverride.mav()).isEqualTo(16);
+        assertThat(reloadedOverride.mrv()).isEqualTo(22);
+        // Same instant survives the round-trip...
+        assertThat(reloadedOverride.at()).isEqualTo(overrideAt.toInstant().atOffset(ZoneOffset.UTC));
+        assertThat(reloadedOverride.at().isEqual(overrideAt)).isTrue();
+        // ...but the offset is normalized to UTC, so whole-record equality FAILS (pins the contract).
+        assertThat(reloadedOverride.at().getOffset()).isEqualTo(ZoneOffset.UTC);
+        assertThat(reloaded.getSource()).isNotEqualTo(source);
+        // The rest of the envelope (no temporal fields) round-trips by record equality.
+        assertThat(reloaded.getSource().baseline()).isEqualTo(source.baseline());
+        assertThat(reloaded.getSource().adjustments()).isEqualTo(source.adjustments());
+        assertThat(reloaded.getSource().confidence()).isEqualTo(source.confidence());
+        assertThat(reloaded.getSource().note()).isEqualTo(source.note());
+
+        String jsonType = jdbcTemplate.queryForObject(
+            "select jsonb_typeof(source) from muscle_group_volume_log where id = ?", String.class, e.getId());
+        assertThat(jsonType).isEqualTo("object");
     }
 }
