@@ -36,3 +36,15 @@ test('TrainTodayView shows the ghost hero with a wizard CTA on an empty backend'
   await waitFor(() => expect(screen.getByText(/Itt fog élni a mai edzésed/i)).toBeInTheDocument())
   expect(screen.getByRole('button', { name: /tervezz mesociklust/i })).toBeInTheDocument()
 })
+
+test('GymView shows a ghost when there is no active meso', async () => {
+  renderApp('/train/gym')
+  await waitFor(() => expect(screen.getByText(/Nincs aktív mesociklus/i)).toBeInTheDocument())
+  expect(screen.getByRole('button', { name: /tervezz mesociklust/i })).toBeInTheDocument()
+})
+
+test('ActiveWorkoutScreen redirects to /train when there is no workout', async () => {
+  renderApp('/train/session')
+  // lands back on the Train Today ghost instead of crashing
+  await waitFor(() => expect(screen.getByText(/Itt fog élni a mai edzésed/i)).toBeInTheDocument())
+})
