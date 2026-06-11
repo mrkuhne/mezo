@@ -31,13 +31,14 @@ public class TrainController implements TrainApi {
         return service.listSportSessions(currentUserId.get());
     }
 
-    // Contract-first stubs: the interface landed with the T1 contract commit; the
-    // real service delegations replace these in the create/lifecycle/replace tasks
-    // of the same branch (mezo-696). Nothing calls them until the FE is wired.
     @Override
     public MesocycleResponse createMesocycle(MesocycleCreateRequest mesocycleCreateRequest) {
-        throw new UnsupportedOperationException("mezo-696: implemented in the create task");
+        return service.createMesocycle(currentUserId.get(), mesocycleCreateRequest);
     }
+
+    // Contract-first stubs: the interface landed with the T1 contract commit; the
+    // real service delegations replace these in the lifecycle/replace tasks of the
+    // same branch (mezo-696). Nothing calls them until the FE is wired.
 
     @Override
     public MesocycleResponse activateMesocycle(UUID id) {

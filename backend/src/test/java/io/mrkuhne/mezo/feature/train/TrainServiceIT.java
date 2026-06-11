@@ -2,6 +2,9 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
+import io.mrkuhne.mezo.api.dto.MesoDayInput;
+import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -179,5 +182,82 @@ class TrainServiceIT extends AbstractIntegrationTest {
         List<MesocycleResponse> bResponses = trainService.listMesocycles(userB);
         assertThat(bResponses).hasSize(1);
         assertThat(bResponses.get(0).getTitle()).isEqualTo("Strength B");
+    }
+
+    @Test
+    void testCreateMesocycle_shouldPersistNestedDaysAndComputeDerivedFields_whenValid() {
+        UUID user = databasePopulator.populateUser("create-a@test.local");
+        LocalDate start = LocalDate.now().minusDays(7);
+        MesocycleCreateRequest req = MesocycleCreateRequest.builder()
+            .title("Strength 02 · Nyár")
+            .status(MesocycleCreateRequest.StatusEnum.PLANNED)
+            .goal("Maximális erő")
+            .startDate(start)
+            .weeks(6)
+            .split("Upper / Lower · 4×/hét")
+            .style("Linear · 6 hét")
+            .phaseCurve(List.of(
+                MesocycleCreateRequest.PhaseCurveEnum.MEV,
+                MesocycleCreateRequest.PhaseCurveEnum.MAV,
+                MesocycleCreateRequest.PhaseCurveEnum.DELOAD))
+            .days(List.of(
+                MesoDayInput.builder().day("Hét").type("Upper").muscle("chest+back")
+                    .exercises(List.of(
+                        GymExerciseInput.builder().name("Bench Press").muscle("chest").sets(4)
+                            .targetReps("6-8").targetRIR(2)
+                            .type(GymExerciseInput.TypeEnum.COMPOUND).build(),
+                        GymExerciseInput.builder().name("Chest Supported Row").muscle("back-mid").sets(3)
+                            .targetReps("8-10").targetRIR(1)
+                            .type(GymExerciseInput.TypeEnum.COMPOUND).build()))
+                    .build(),
+                MesoDayInput.builder().day("Kedd").type("Rest").build()))
+            .build();
+
+        MesocycleResponse created = trainService.createMesocycle(user, req);
+        entityManager.clear();
+
+        assertThat(created.getId()).isNotNull();
+        assertThat(created.getEndDate()).isEqualTo(start.plusWeeks(6));
+        assertThat(created.getCurrentWeek()).isZero();
+        assertThat(created.getShortTitle()).isEqualTo("Strength 02 · Nyár"); // defaults to title
+        assertThat(created.getDays()).hasSize(2);
+        assertThat(created.getDays().get(0).getExercises())
+            .extracting(e -> e.getName()).containsExactly("Bench Press", "Chest Supported Row");
+
+        // DB state: template rows ordered by array order, owned, status planned / date null.
+        List<WorkoutSessionEntity> sessions = workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(user, List.of(created.getId()));
+        assertThat(sessions).hasSize(2);
+        assertThat(sessions).extracting(WorkoutSessionEntity::getDayLabel).containsExactly("Hét", "Kedd");
+        assertThat(sessions).extracting(WorkoutSessionEntity::getOrderIndex).containsExactly(0, 1);
+        assertThat(sessions).allSatisfy(s -> {
+            assertThat(s.getCreatedBy()).isEqualTo(user);
+            assertThat(s.getStatus()).isEqualTo("planned");
+            assertThat(s.getDate()).isNull();
+        });
+        List<ExerciseEntity> exercises = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(sessions.get(0).getId()));
+        assertThat(exercises).extracting(ExerciseEntity::getOrderIndex).containsExactly(0, 1);
+        assertThat(exercises).allSatisfy(e -> assertThat(e.getCreatedBy()).isEqualTo(user));
+    }
+
+    @Test
+    void testCreateMesocycle_shouldComputeCurrentWeek_whenActive() {
+        UUID user = databasePopulator.populateUser("create-b@test.local");
+        MesocycleCreateRequest base = MesocycleCreateRequest.builder()
+            .title("Aktív teszt").status(MesocycleCreateRequest.StatusEnum.ACTIVE)
+            .startDate(LocalDate.now().minusDays(8)).weeks(6)
+            .split("PPL").style("RP")
+            .phaseCurve(List.of(MesocycleCreateRequest.PhaseCurveEnum.MEV))
+            .build();
+        assertThat(trainService.createMesocycle(user, base).getCurrentWeek()).isEqualTo(2);
+
+        MesocycleCreateRequest future = MesocycleCreateRequest.builder()
+            .title("Jövőbeli aktív").status(MesocycleCreateRequest.StatusEnum.ACTIVE)
+            .startDate(LocalDate.now().plusDays(7)).weeks(6)
+            .split("PPL").style("RP")
+            .phaseCurve(List.of(MesocycleCreateRequest.PhaseCurveEnum.MEV))
+            .build();
+        assertThat(trainService.createMesocycle(user, future).getCurrentWeek()).isEqualTo(1);
     }
 }

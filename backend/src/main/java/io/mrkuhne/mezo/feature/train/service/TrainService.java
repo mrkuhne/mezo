@@ -1,6 +1,9 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
+import io.mrkuhne.mezo.api.dto.MesoDayInput;
+import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
@@ -13,6 +16,8 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,13 +25,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Read-only assembly of the Train slice responses. {@code listMesocycles} loads each owned
- * aggregate in three index-friendly batch queries (volume logs, sessions, exercises) and stitches
- * the per-muscle volume profile and template days onto every mesocycle. All finders are scoped by
- * {@code createdBy}, so cross-user data never leaks. No {@code @Transactional}: per house rule
- * (spring_patterns.md) only write paths open a transaction.
+ * Train slice service. Reads: {@code listMesocycles} loads each owned aggregate in three
+ * index-friendly batch queries (volume logs, sessions, exercises) and stitches the per-muscle
+ * volume profile and template days onto every mesocycle. Writes (T1): wizard create with nested
+ * template days/exercises; derived fields ({@code endDate}, {@code currentWeek}, {@code
+ * orderIndex}) are computed server-side. All finders are scoped by {@code createdBy} and ownership
+ * is stamped from the principal, so cross-user data never leaks. Per house rule
+ * (spring_patterns.md) only the write methods carry method-level {@code @Transactional}.
  */
 @Service
 @RequiredArgsConstructor
@@ -82,6 +90,96 @@ public class TrainService {
     public List<SportSessionResponse> listSportSessions(UUID createdBy) {
         return sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(createdBy)
             .stream().map(mapper::toResponse).toList();
+    }
+
+    @Transactional
+    public MesocycleResponse createMesocycle(UUID createdBy, MesocycleCreateRequest req) {
+        MesocycleEntity m = new MesocycleEntity();
+        m.setCreatedBy(createdBy); // server-side ownership — never from the client
+        m.setTitle(req.getTitle());
+        m.setShortTitle(req.getShortTitle() != null ? req.getShortTitle() : req.getTitle());
+        m.setStatus(req.getStatus().getValue());
+        m.setGoal(req.getGoal());
+        m.setStartDate(req.getStartDate());
+        m.setEndDate(req.getStartDate().plusWeeks(req.getWeeks()));
+        m.setWeeks(req.getWeeks());
+        m.setCurrentWeek(req.getStatus() == MesocycleCreateRequest.StatusEnum.ACTIVE
+            ? clampWeek(req.getStartDate(), req.getWeeks())
+            : 0);
+        m.setSplit(req.getSplit());
+        m.setStyle(req.getStyle());
+        m.setPhaseCurve(req.getPhaseCurve().stream()
+            .map(MesocycleCreateRequest.PhaseCurveEnum::getValue).toList());
+        m.setNotes(req.getNotes());
+        MesocycleEntity saved = mesocycleRepository.save(m);
+
+        // Template days + exercises — orderIndex pinned by array order.
+        List<MesoDayInput> days = req.getDays() != null ? req.getDays() : List.of();
+        for (int d = 0; d < days.size(); d++) {
+            MesoDayInput dayInput = days.get(d);
+            WorkoutSessionEntity day = new WorkoutSessionEntity();
+            day.setCreatedBy(createdBy);
+            day.setMesocycleId(saved.getId());
+            day.setDayLabel(dayInput.getDay());
+            day.setType(dayInput.getType());
+            day.setMuscle(dayInput.getMuscle() != null ? dayInput.getMuscle() : "");
+            day.setMuscleAccent(Boolean.TRUE.equals(dayInput.getMuscleAccent()));
+            day.setNote(dayInput.getNote());
+            day.setOrderIndex(d);
+            WorkoutSessionEntity savedDay = workoutSessionRepository.save(day);
+
+            List<GymExerciseInput> exercises =
+                dayInput.getExercises() != null ? dayInput.getExercises() : List.of();
+            for (int e = 0; e < exercises.size(); e++) {
+                exerciseRepository.save(toExerciseEntity(createdBy, savedDay.getId(), exercises.get(e), e));
+            }
+        }
+        return assembleResponse(createdBy, saved);
+    }
+
+    /** Week containing today, clamped to [1, weeks] — week 1 before the start date. */
+    private int clampWeek(LocalDate startDate, int weeks) {
+        long week = ChronoUnit.DAYS.between(startDate, LocalDate.now()) / 7 + 1;
+        return (int) Math.max(1, Math.min(weeks, week));
+    }
+
+    private ExerciseEntity toExerciseEntity(UUID createdBy, UUID workoutSessionId, GymExerciseInput in, int orderIndex) {
+        ExerciseEntity e = new ExerciseEntity();
+        e.setCreatedBy(createdBy);
+        e.setWorkoutSessionId(workoutSessionId);
+        e.setName(in.getName());
+        e.setMuscle(in.getMuscle() != null ? in.getMuscle() : "");
+        e.setSets(in.getSets());
+        e.setTargetReps(in.getTargetReps());
+        e.setTargetRir(in.getTargetRIR());
+        e.setType(in.getType().getValue());
+        e.setWarning(in.getWarning());
+        e.setOrderIndex(orderIndex);
+        return e;
+    }
+
+    /** Single-aggregate variant of the list stitching — write paths return the same shape as GET. */
+    private MesocycleResponse assembleResponse(UUID createdBy, MesocycleEntity m) {
+        MesocycleResponse r = mapper.toResponse(m);
+        Map<String, VolumeProfile> volume = volumeLogRepository
+            .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(m.getId())).stream()
+            .collect(Collectors.toMap(v -> v.getMuscle(), mapper::toProfile, (a, b) -> a, LinkedHashMap::new));
+        List<WorkoutSessionEntity> sessions =
+            workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(m.getId()));
+        List<UUID> sessionIds = sessions.stream().map(WorkoutSessionEntity::getId).toList();
+        Map<UUID, List<ExerciseEntity>> exercisesBySession = sessionIds.isEmpty()
+            ? Map.of()
+            : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, sessionIds)
+                .stream().collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
+        List<MesoDay> days = sessions.stream()
+            .map(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()))).toList();
+        if (!volume.isEmpty()) {
+            r.setVolumePerMuscle(volume);
+        }
+        if (!days.isEmpty()) {
+            r.setDays(days);
+        }
+        return r;
     }
 
     private MesoDay toDay(WorkoutSessionEntity s, List<ExerciseEntity> exercises) {
