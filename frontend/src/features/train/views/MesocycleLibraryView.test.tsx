@@ -1,12 +1,21 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { MesocycleLibraryView } from './MesocycleLibraryView'
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
+// useTrain hook reads useQuery, so a QueryClientProvider is required too).
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 function setup() {
   render(
-    <MemoryRouter>
-      <MesocycleLibraryView />
-    </MemoryRouter>,
+    <QueryWrapper>
+      <MemoryRouter>
+        <MesocycleLibraryView />
+      </MemoryRouter>
+    </QueryWrapper>,
   )
 }
 

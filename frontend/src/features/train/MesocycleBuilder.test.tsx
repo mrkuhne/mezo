@@ -1,15 +1,24 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { MesocycleBuilder } from './MesocycleBuilder'
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
+// useTrain hook reads useQuery, so a QueryClientProvider is required too).
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 function setup(id = 'meso-hyp-04') {
   return render(
-    <MemoryRouter initialEntries={[`/train/mesocycles/${id}`]}>
-      <Routes>
-        <Route path="/train/mesocycles/:id" element={<MesocycleBuilder />} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryWrapper>
+      <MemoryRouter initialEntries={[`/train/mesocycles/${id}`]}>
+        <Routes>
+          <Route path="/train/mesocycles/:id" element={<MesocycleBuilder />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryWrapper>,
   )
 }
 

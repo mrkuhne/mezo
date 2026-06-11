@@ -1,18 +1,27 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
+import { QueryWrapper } from '@/test/queryWrapper'
 import { activeMeso } from '@/data/train'
+
+// Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
+// useTrain hook reads useQuery, so a QueryClientProvider is required too).
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 async function renderExercisesView() {
   const router = createMemoryRouter(routes, {
     initialEntries: [`/train/mesocycles/${activeMeso.id}`],
   })
   render(
-    <ThemeProvider>
-      <RouterProvider router={router} />
-    </ThemeProvider>,
+    <QueryWrapper>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </QueryWrapper>,
   )
   await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
 }

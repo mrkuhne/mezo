@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { TrainTodayView } from './TrainTodayView'
+import { QueryWrapper } from '@/test/queryWrapper'
 
-const renderView = () => render(<MemoryRouter><TrainTodayView /></MemoryRouter>)
+// Asserts Phase-1 mock meso/gym data, so pin mock mode explicitly (the swapped
+// useTrain hook reads useQuery, so a QueryClientProvider is required too).
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
+
+const renderView = () => render(<QueryWrapper><MemoryRouter><TrainTodayView /></MemoryRouter></QueryWrapper>)
 
 test('today gym block + weekly timeline render', () => {
   renderView()
