@@ -26,7 +26,9 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Ports the Phase 1 Train mock fixtures ({@code frontend/src/data/train.ts}) 1:1 so real mode
@@ -41,6 +43,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Profile("demodata")
+@Order(100) // after OwnerSeedData — needs the seeded owner
 @RequiredArgsConstructor
 public class TrainSeedData implements CommandLineRunner {
 
@@ -52,13 +55,18 @@ public class TrainSeedData implements CommandLineRunner {
     private final ExerciseRepository exerciseRepository;
     private final SportSessionRepository sportSessionRepository;
 
+    // Both run(...) overloads carry @Transactional: startup enters via run(String...) but its
+    // call to run() is a self-invocation that bypasses the Spring proxy, so the no-arg @Transactional
+    // alone would NOT wrap the startup seed. The IT enters via run() directly through the proxy.
     /** CommandLineRunner entry point (startup). */
     @Override
+    @Transactional
     public void run(String... args) {
         run();
     }
 
     /** No-arg overload — used by the integration test to re-seed into a reset DB. */
+    @Transactional
     public void run() {
         if (mesocycleRepository.count() > 0) return;
         AppUserEntity owner = appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow();
@@ -93,7 +101,7 @@ public class TrainSeedData implements CommandLineRunner {
         UUID mesoId = hyp04.getId();
 
         // 8 volume logs (train.ts:63-151) — every baseline, adjustment, confidence, note verbatim.
-        volume(by, mesoId, "chest", 8, 14, 20, 14, new ProvenanceEnvelope(
+        volume(by, mesoId, "chest", 8, 14, 20, 14, new ProvenanceEnvelope( // mev mav mrv cur
             new Baseline("RP guidelines · intermediate", 8, 12, 18),
             List.of(
                 new Adjustment("pattern",
@@ -297,6 +305,8 @@ public class TrainSeedData implements CommandLineRunner {
         return mesocycleRepository.save(m);
     }
 
+    // Param order of the four adjacent ints: mev, mav, mrv, current(Sets). Easy to transpose —
+    // call sites pass them positionally; see the "// mev mav mrv cur" hint on the first call.
     private void volume(UUID by, UUID mesocycleId, String muscle, int mev, int mav, int mrv,
         int current, ProvenanceEnvelope source) {
         MuscleGroupVolumeLogEntity v = new MuscleGroupVolumeLogEntity();

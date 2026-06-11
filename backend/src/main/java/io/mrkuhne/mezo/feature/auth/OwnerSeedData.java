@@ -7,11 +7,13 @@ import io.mrkuhne.mezo.feature.auth.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 @Component
 @Profile("demodata")
+@Order(0) // seeds the owner that later runners (e.g. TrainSeedData) depend on
 @RequiredArgsConstructor
 public class OwnerSeedData implements CommandLineRunner {
 
