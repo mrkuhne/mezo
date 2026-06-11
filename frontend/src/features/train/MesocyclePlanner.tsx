@@ -12,7 +12,10 @@
 // ============================================================
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTrain } from '@/data/hooks'
 import type { GoalPreset, MesoPhase, SplitOption } from '@/data/types'
+import type { MesocycleCreateRequest } from '@/lib/trainApi'
+import { huMonthDay } from '@/lib/dates'
 import { GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/train'
 import { Icon } from '@/components/ui/Icon'
 import { Display } from '@/components/ui/Display'
@@ -37,14 +40,19 @@ const PAGE_TITLES = [
 
 export function MesocyclePlanner() {
   const navigate = useNavigate()
+  const { createMesocycle, mesoMutationPending } = useTrain()
   const [step, setStep] = useState(0)
   const [goal, setGoal] = useState<GoalPreset | null>(null)
   const [name, setName] = useState('')
-  const [startDate] = useState('Jún 16')
+  // ISO in state (the contract speaks ISO); HU display derived for labels/season.
+  const [startDateIso, setStartDateIso] = useState(() => new Date().toISOString().slice(0, 10))
+  const startDate = huMonthDay(startDateIso)
   const [weeks, setWeeks] = useState(6)
   const [phaseCurve, setPhaseCurve] = useState<MesoPhase[]>(['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'])
   const [split, setSplit] = useState<SplitOption | null>(null)
   const [days, setDays] = useState(5)
+  // Lifted from Step3 so the terminal save buttons can read the reviewed/edited program.
+  const [program, setProgram] = useState<PlannerDay[] | null>(null)
 
   const backToLibrary = () => navigate('/train/mesocycles')
 
@@ -56,6 +64,34 @@ export function MesocyclePlanner() {
     setPhaseCurve(g.phaseTemplate)
     setSplit(SPLITS.find((s) => s.label === g.split) ?? null)
     setDays(g.days)
+  }
+
+  // Wizard state -> contract payload. All 7 template days travel (rest days too) so the
+  // backend mirrors the seed/template shape; mock mode no-ops and just navigates (Phase 1).
+  const saveMesocycle = (status: 'planned' | 'active') => {
+    const request: MesocycleCreateRequest = {
+      title: name || `${goal?.label ?? 'Mesociklus'} · ${getSeason(startDate)}`,
+      shortTitle: goal?.label,
+      status,
+      goal: goal?.description,
+      startDate: startDateIso,
+      weeks,
+      split: split ? `${split.label} · ${days}×/hét` : `${days}×/hét`,
+      style: goal?.style ?? `${weeks} hét`,
+      phaseCurve,
+      days: (program ?? []).map((d) => ({
+        day: d.day,
+        type: d.type,
+        muscle: d.muscle,
+        muscleAccent: d.muscleAccent || undefined,
+        note: d.note,
+        exercises: d.exercises.map((e) => ({
+          name: e.name, muscle: e.muscle, sets: e.sets, targetReps: e.targetReps,
+          targetRIR: e.targetRIR, type: e.type, warning: e.warning,
+        })),
+      })),
+    }
+    createMesocycle(request, { onSuccess: backToLibrary })
   }
 
   const canNext =
@@ -113,6 +149,8 @@ export function MesocyclePlanner() {
           name={name}
           setName={setName}
           startDate={startDate}
+          startDateIso={startDateIso}
+          setStartDateIso={setStartDateIso}
           weeks={weeks}
           setWeeks={setWeeks}
           phaseCurve={phaseCurve}
@@ -121,7 +159,15 @@ export function MesocyclePlanner() {
       )}
       {step === 2 && <Step2Split goal={goal} split={split} setSplit={setSplit} days={days} setDays={setDays} />}
       {step === 3 && (
-        <Step3Program goal={goal} name={name} weeks={weeks} split={split} days={days} />
+        <Step3Program
+          goal={goal}
+          name={name}
+          weeks={weeks}
+          split={split}
+          days={days}
+          program={program}
+          setProgram={setProgram}
+        />
       )}
 
       {/* Nav */}
@@ -156,11 +202,23 @@ export function MesocyclePlanner() {
         )}
         {step === 3 && (
           <div className="col gap-sm">
-            <button type="button" className="cta-primary notch-8" onClick={backToLibrary} style={{ padding: 14 }}>
+            <button
+              type="button"
+              className="cta-primary notch-8"
+              onClick={() => saveMesocycle('planned')}
+              disabled={mesoMutationPending || !program}
+              style={{ padding: 14, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
+            >
               <Icon name="check" size={16} />
               <span>Hozzáad mint tervezett</span>
             </button>
-            <button type="button" className="cta-ghost notch-4" style={{ padding: 12 }} onClick={backToLibrary}>
+            <button
+              type="button"
+              className="cta-ghost notch-4"
+              style={{ padding: 12, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
+              onClick={() => saveMesocycle('active')}
+              disabled={mesoMutationPending || !program}
+            >
               Aktiválás most · {startDate}
             </button>
           </div>
@@ -251,6 +309,8 @@ function Step1Length({
   name,
   setName,
   startDate,
+  startDateIso,
+  setStartDateIso,
   weeks,
   setWeeks,
   phaseCurve,
@@ -260,6 +320,8 @@ function Step1Length({
   name: string
   setName: (v: string) => void
   startDate: string
+  startDateIso: string
+  setStartDateIso: (v: string) => void
   weeks: number
   setWeeks: (v: number) => void
   phaseCurve: MesoPhase[]
@@ -319,9 +381,14 @@ function Step1Length({
         <div className="row gap-sm">
           <div className="col gap-sm flex-1">
             <span className="label-mono">Kezdés</span>
-            <div className="card notch-4 row" style={{ padding: '10px 12px', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>{startDate} · 2026</span>
-              <Icon name="chevron-down" size={12} color="var(--text-tertiary)" />
+            <div className="card notch-4 row" style={{ padding: '6px 12px', alignItems: 'center' }}>
+              <input
+                type="date"
+                value={startDateIso}
+                onChange={(e) => setStartDateIso(e.target.value)}
+                aria-label="Kezdés dátuma"
+                style={{ width: '100%', fontSize: 13, color: 'var(--text-primary)', colorScheme: 'dark' }}
+              />
             </div>
           </div>
           <div className="col gap-sm flex-1">
@@ -532,14 +599,17 @@ function Step3Program({
   weeks,
   split,
   days,
+  program,
+  setProgram,
 }: {
   goal: GoalPreset | null
   name: string
   weeks: number
   split: SplitOption | null
   days: number
+  program: PlannerDay[] | null
+  setProgram: (v: PlannerDay[] | null | ((prev: PlannerDay[] | null) => PlannerDay[] | null)) => void
 }) {
-  const [program, setProgram] = useState<PlannerDay[] | null>(null)
   const [expandedDay, setExpandedDay] = useState<string | null>(null)
   const [pickerDay, setPickerDay] = useState<string | null>(null)
 
