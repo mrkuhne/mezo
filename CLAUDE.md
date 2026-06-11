@@ -22,43 +22,36 @@ bd close <id>         # Complete work
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
 
+## Git Workflow
+
+- One bd issue + one `feat/<topic>` branch per change; merge locally into `main` with `--no-ff`, then delete the branch (single dev, no PRs).
+- Conventional commit subjects carrying the driving bd id: `feat(api): ... (mezo-ej0)`.
+- `git pull --rebase` on main **before** merging the feature branch — rebasing after the merge flattens the `--no-ff` merge commit.
+
 ## Session Completion
 
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+**Work is NOT complete until `git push` succeeds — never leave work stranded locally.** Before ending a session:
 
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+1. File bd issues for remaining work; close/update finished ones
+2. Run quality gates if code changed (backend: `./mvnw clean test`; frontend: tests in both modes + build)
+3. Push everything (if push fails, resolve and retry until it succeeds):
    ```bash
-   git pull --rebase
-   bd dolt push
-   git push
+   git pull --rebase && bd dolt push && git push
    git status  # MUST show "up to date with origin"
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
+4. Hand off: short context for the next session
 <!-- END BEADS INTEGRATION -->
 
 
 ## Architecture Overview
 
-**mezo** is a mobile-first health & performance companion PWA, built in three phases (frontend-first — see `/Users/daniel.kuhne/Downloads/design_handoff_mezo/06-roadmap.md`):
+**mezo** is a mobile-first health & performance companion PWA, built in three phases (frontend-first):
 
 - **Phase 1 — Frontend (mock data):** ✅ done. React 19 + Vite + Tailwind v4, Hungarian UI, 6 vertical slices (Foundation → Today → Me → Fuel → Insights → Train) on a mock data layer. The single frontend↔data boundary is `src/data/hooks.ts`.
-- **Phase 2 — Core data backend:** 🔄 in progress. **Java / Spring Boot 4.0 + PostgreSQL**, swapping the mock hooks to a real REST API **without changing the hook signatures** (frontend untouched). Symmetric monorepo: `frontend/` + `backend/`. Slice A (foundation + thin auth + biometrics + TanStack Query wiring) ✅ done; slices B (Train) → C (Fuel) → D (Insights seed) → E (People) remain.
+- **Phase 2 — Core data backend:** 🔄 in progress. **Java / Spring Boot 4.0 + PostgreSQL**, swapping the mock hooks to a real REST API **without changing the hook signatures** (frontend untouched). Monorepo: `frontend/` + `backend/` + `api/` (OpenAPI contract — single source of truth for the FE↔BE boundary). Slice A (foundation + thin auth + biometrics + TanStack Query wiring) ✅ done; slices B (Train) → C (Fuel) → D (Insights seed) → E (People) remain.
 - **Phase 3 — AI brain:** later. Spring AI, pgvector, RAG, pattern/companion pipeline.
 
-Design spec for Phase 2: `docs/superpowers/specs/` (latest `*-phase2-backend-design.md`).
+Design spec for Phase 2 (slice map, decisions): `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`.
 
 ## Build & Test
 
