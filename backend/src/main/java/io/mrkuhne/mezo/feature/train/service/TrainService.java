@@ -16,6 +16,8 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
@@ -24,6 +26,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -135,6 +138,36 @@ public class TrainService {
             }
         }
         return assembleResponse(createdBy, saved);
+    }
+
+    @Transactional
+    public MesocycleResponse activateMesocycle(UUID createdBy, UUID id) {
+        MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
+        if (!"active".equals(target.getStatus())) {
+            // Single-active invariant (spec rule): activating archives every other active meso.
+            mesocycleRepository.findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
+                .forEach(m -> m.setStatus("archived"));
+            target.setStatus("active");
+            target.setCurrentWeek(clampWeek(target.getStartDate(), target.getWeeks()));
+        }
+        return assembleResponse(createdBy, target);
+    }
+
+    @Transactional
+    public MesocycleResponse closeMesocycle(UUID createdBy, UUID id) {
+        MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
+        if (!"archived".equals(target.getStatus())) {
+            target.setStatus("archived");
+        }
+        return assembleResponse(createdBy, target);
+    }
+
+    /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */
+    private MesocycleEntity ownedMesoOrThrow(UUID createdBy, UUID id) {
+        return mesocycleRepository.findById(id)
+            .filter(m -> createdBy.equals(m.getCreatedBy()))
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
     }
 
     /** Week containing today, clamped to [1, weeks] — week 1 before the start date. */

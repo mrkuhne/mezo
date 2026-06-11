@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
@@ -19,6 +20,7 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -259,5 +261,62 @@ class TrainServiceIT extends AbstractIntegrationTest {
             .phaseCurve(List.of(MesocycleCreateRequest.PhaseCurveEnum.MEV))
             .build();
         assertThat(trainService.createMesocycle(user, future).getCurrentWeek()).isEqualTo(1);
+    }
+
+    @Test
+    void testActivateMesocycle_shouldArchivePreviousActive_whenAnotherActiveExists() {
+        UUID user = databasePopulator.populateUser("lifecycle-a@test.local");
+        MesocycleEntity previous = trainPopulator.createMesocycle(user, "Régi aktív", "active");
+        MesocycleEntity target = trainPopulator.createMesocycle(user, "Új blokk", "planned");
+
+        MesocycleResponse activated = trainService.activateMesocycle(user, target.getId());
+        // The service relies on dirty-checking (commit-time flush in production); inside the
+        // test transaction we must flush before clearing or the pending UPDATE is discarded.
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(activated.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE);
+        // Populator meso: 2026-05-01 + 6 weeks -> today is past week 6, clamped to the last week.
+        assertThat(activated.getCurrentWeek()).isEqualTo(6);
+        assertThat(mesocycleRepository.findById(previous.getId()).orElseThrow().getStatus())
+            .isEqualTo("archived"); // single-active invariant
+        assertThat(mesocycleRepository.findById(target.getId()).orElseThrow().getStatus())
+            .isEqualTo("active");
+    }
+
+    @Test
+    void testActivateMesocycle_shouldBeIdempotent_whenAlreadyActive() {
+        UUID user = databasePopulator.populateUser("lifecycle-b@test.local");
+        MesocycleEntity active = trainPopulator.createMesocycle(user, "Aktív marad", "active");
+
+        MesocycleResponse result = trainService.activateMesocycle(user, active.getId());
+
+        assertThat(result.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE);
+        // Idempotent no-op: the populator's currentWeek (3) is untouched, no recompute fired.
+        assertThat(result.getCurrentWeek()).isEqualTo(3);
+    }
+
+    @Test
+    void testCloseMesocycle_shouldArchive_whenActive() {
+        UUID user = databasePopulator.populateUser("lifecycle-c@test.local");
+        MesocycleEntity active = trainPopulator.createMesocycle(user, "Lezárandó", "active");
+
+        MesocycleResponse closed = trainService.closeMesocycle(user, active.getId());
+        entityManager.flush(); // see activate test — dirty-checked UPDATE needs a flush pre-clear
+        entityManager.clear();
+
+        assertThat(closed.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ARCHIVED);
+        assertThat(mesocycleRepository.findById(active.getId()).orElseThrow().getStatus())
+            .isEqualTo("archived");
+    }
+
+    @Test
+    void testActivateMesocycle_shouldThrowNotFound_whenForeignOwner() {
+        UUID owner = databasePopulator.populateUser("lifecycle-d@test.local");
+        UUID intruder = databasePopulator.populateUser("lifecycle-e@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Másé", "planned");
+
+        assertThatThrownBy(() -> trainService.activateMesocycle(intruder, meso.getId()))
+            .isInstanceOf(SystemRuntimeErrorException.class);
     }
 }

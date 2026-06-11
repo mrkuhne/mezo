@@ -93,6 +93,38 @@ class TrainContractIT extends ApiIntegrationTest {
         assertHasFieldError(body, "title", "VALIDATION_REQUIRED_FIELD");
     }
 
+    @Test
+    void testActivateMesocycle_shouldArchivePreviousAndReturn200_whenAuthenticated() {
+        UUID owner = ownerId();
+        MesocycleEntity previous = trainPopulator.createMesocycle(owner, "Régi aktív", "active");
+        MesocycleEntity target = trainPopulator.createMesocycle(owner, "Új aktív", "planned");
+
+        MesocycleResponse activated = postForBody("/api/train/mesocycles/" + target.getId() + "/activate",
+            null, ownerAuthHeaders(), HttpStatus.OK, MesocycleResponse.class);
+
+        assertThat(activated.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE);
+        List<MesocycleResponse> all =
+            getForList("/api/train/mesocycles", ownerAuthHeaders(), HttpStatus.OK, MesocycleResponse.class);
+        assertThat(all).filteredOn(m -> m.getId().equals(previous.getId()))
+            .singleElement()
+            .satisfies(m -> assertThat(m.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ARCHIVED));
+    }
+
+    @Test
+    void testCloseMesocycle_shouldReturn404_whenUnknownId() {
+        ownerId();
+        String body = exchangeForBody(HttpMethod.POST,
+            "/api/train/mesocycles/" + UUID.randomUUID() + "/close", null,
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testActivateMesocycle_shouldReturn401_whenUnauthenticated() {
+        postForBody("/api/train/mesocycles/" + UUID.randomUUID() + "/activate",
+            null, null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
     private MesocycleCreateRequest minimalCreateRequest() {
         return MesocycleCreateRequest.builder()
             .title("Contract teszt meso")
