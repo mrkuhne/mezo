@@ -99,4 +99,18 @@ export const handlers = [
       },
     ]),
   ),
+  // T1 write endpoints — minimal happy-path defaults; tests override with spies when
+  // they need to capture the payload.
+  http.post(`${API_BASE}/api/train/mesocycles`, () =>
+    HttpResponse.json({ id: 'b6f3a0e2-0000-4000-8000-00000000beef' }, { status: 201 }),
+  ),
+  http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) =>
+    HttpResponse.json({ id: params.id }),
+  ),
+  http.post(`${API_BASE}/api/train/mesocycles/:id/close`, ({ params }) =>
+    HttpResponse.json({ id: params.id }),
+  ),
+  http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, () =>
+    HttpResponse.json({ day: 'Hét', type: 'Pull', muscle: '', exerciseCount: 0, exercises: [] }),
+  ),
 ]

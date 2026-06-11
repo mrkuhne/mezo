@@ -440,6 +440,7 @@ export interface GymExercise {
   warning?: string
 }
 export interface MesoDay {
+  id?: string            // template-day row id (real mode only; mock fixtures carry none)
   day: string            // 'Hét'..'Vas'
   type: string           // 'Pull Day' | 'Rest' | ...
   muscle: string

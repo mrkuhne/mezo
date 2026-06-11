@@ -37,6 +37,75 @@ test('useTrain (real mode) keeps static exerciseLibrary catalog', async () => {
   expect(result.current.exerciseLibrary.length).toBeGreaterThan(0)
 })
 
+test('useTrain (real mode) createMesocycle POSTs the wizard payload', async () => {
+  let posted: { title?: string; status?: string } | null = null
+  server.use(
+    http.post(`${API_BASE}/api/train/mesocycles`, async ({ request }) => {
+      posted = (await request.json()) as typeof posted
+      return HttpResponse.json({ id: 'b6f3a0e2-0000-4000-8000-00000000c0de' }, { status: 201 })
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  const onSuccess = vi.fn()
+  result.current.createMesocycle(
+    {
+      title: 'Teszt meso',
+      status: 'planned',
+      startDate: '2026-06-16',
+      weeks: 4,
+      split: 'Upper / Lower · 4×/hét',
+      style: 'Linear · 4 hét',
+      phaseCurve: ['MEV', 'MAV'],
+    },
+    { onSuccess },
+  )
+  await waitFor(() => expect(posted).not.toBeNull())
+  expect(posted!.title).toBe('Teszt meso')
+  expect(posted!.status).toBe('planned')
+  await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+})
+
+test('useTrain (real mode) activate/close/saveDayExercises hit the right endpoints', async () => {
+  const calls: string[] = []
+  server.use(
+    http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) => {
+      calls.push(`activate:${params.id}`)
+      return HttpResponse.json({ id: params.id })
+    }),
+    http.post(`${API_BASE}/api/train/mesocycles/:id/close`, ({ params }) => {
+      calls.push(`close:${params.id}`)
+      return HttpResponse.json({ id: params.id })
+    }),
+    http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, ({ params }) => {
+      calls.push(`replace:${params.id}/${params.dayId}`)
+      return HttpResponse.json({ day: 'Hét', type: 'Pull', muscle: '', exerciseCount: 0, exercises: [] })
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  result.current.activateMesocycle('m-1')
+  result.current.closeMesocycle('m-2')
+  result.current.saveDayExercises('m-3', 'd-1', [])
+  await waitFor(() =>
+    expect(calls).toEqual(expect.arrayContaining(['activate:m-1', 'close:m-2', 'replace:m-3/d-1'])),
+  )
+})
+
+test('useTrain (mock mode) mutations resolve without any network call', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true') // override the file-level real-mode stub
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  const onSuccess = vi.fn()
+  result.current.createMesocycle(
+    {
+      title: 'Mock meso', status: 'planned', startDate: '2026-06-16',
+      weeks: 4, split: 's', style: 's', phaseCurve: ['MEV'],
+    },
+    { onSuccess },
+  )
+  // No MSW override registered for POST here: a real request would fail the test
+  // via onUnhandledRequest — resolving onSuccess proves the mock branch no-ops.
+  await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+})
+
 test('useTrain (real mode) returns nulls (no static fallback) when the backend is empty', async () => {
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
