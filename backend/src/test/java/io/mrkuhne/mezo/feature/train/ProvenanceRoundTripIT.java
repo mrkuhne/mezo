@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.time.OffsetDateTime;
@@ -29,6 +30,7 @@ class ProvenanceRoundTripIT extends AbstractIntegrationTest {
 
     @Autowired private MuscleGroupVolumeLogRepository repository;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private TrainPopulator trainPopulator;
     @Autowired private JdbcTemplate jdbcTemplate;
 
     /** JPA-managed shared EntityManager — the one allowed exception to constructor injection. */
@@ -48,11 +50,7 @@ class ProvenanceRoundTripIT extends AbstractIntegrationTest {
 
         MuscleGroupVolumeLogEntity e = new MuscleGroupVolumeLogEntity();
         e.setCreatedBy(user);
-        // mesocycle FK is NOT NULL; MesocycleEntity doesn't exist yet (Task 4) -> insert the parent row directly:
-        UUID mesoId = jdbcTemplate.queryForObject(
-            "insert into mesocycle (created_by, title, short_title, status, start_date, end_date, weeks, split, style, phase_curve) "
-                + "values (?, 't', 't', 'active', '2026-05-01', '2026-06-12', 6, 's', 's', '{MEV}') returning id",
-            UUID.class, user);
+        UUID mesoId = trainPopulator.createMesocycle(user, "t", "active").getId();
         e.setMesocycleId(mesoId);
         e.setMuscle("chest");
         e.setMev(8); e.setMav(14); e.setMrv(20); e.setCurrentSets(14);
@@ -95,10 +93,7 @@ class ProvenanceRoundTripIT extends AbstractIntegrationTest {
 
         MuscleGroupVolumeLogEntity e = new MuscleGroupVolumeLogEntity();
         e.setCreatedBy(user);
-        UUID mesoId = jdbcTemplate.queryForObject(
-            "insert into mesocycle (created_by, title, short_title, status, start_date, end_date, weeks, split, style, phase_curve) "
-                + "values (?, 't', 't', 'active', '2026-05-01', '2026-06-12', 6, 's', 's', '{MEV}') returning id",
-            UUID.class, user);
+        UUID mesoId = trainPopulator.createMesocycle(user, "t", "active").getId();
         e.setMesocycleId(mesoId);
         e.setMuscle("back");
         e.setMev(10); e.setMav(16); e.setMrv(22); e.setCurrentSets(16);

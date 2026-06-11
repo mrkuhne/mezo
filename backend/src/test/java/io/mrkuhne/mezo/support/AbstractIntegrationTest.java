@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.support;
 
 import io.mrkuhne.mezo.TestcontainersConfiguration;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,8 @@ import org.springframework.context.annotation.Import;
  * facade or the per-aggregate populators in {@code support/populator/}).
  */
 @SpringBootTest
-@Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class, ResetDatabase.class})
+@Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
+    TrainPopulator.class, ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
 
     @Autowired
