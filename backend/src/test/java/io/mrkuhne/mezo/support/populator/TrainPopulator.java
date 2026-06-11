@@ -50,7 +50,7 @@ public class TrainPopulator {
         m.setCurrentWeek(3);
         m.setSplit("Pull / Push / Legs · 5×/hét");
         m.setStyle("RP · 6 hét");
-        m.setPhaseCurve(new String[] {"MEV", "MAV", "Deload"});
+        m.setPhaseCurve(List.of("MEV", "MAV", "Deload"));
         m.setVolumeRecompute(new VolumeRecomputeJson("Vasárnap", "Vasárnap", "batch",
             List.of(new VolumeRecomputeJson.Change("back", "MRV +2", "stabil", null))));
         return mesocycleRepository.saveAndFlush(m);

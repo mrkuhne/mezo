@@ -88,7 +88,7 @@ public class TrainSeedData implements CommandLineRunner {
             "Felsőtest hypertrophy · izomtömeg építés",
             "2026-05-01", "2026-06-12", 6, 3,
             "Pull / Push / Legs · 5×/hét", "RP · 6 hét",
-            new String[] {"MEV", "MEV", "MAV", "MAV", "MRV", "Deload"},
+            List.of("MEV", "MEV", "MAV", "MAV", "MRV", "Deload"),
             new VolumeRecomputeJson(
                 "Vasárnap · Máj 18 · 21:00",
                 "Vasárnap · Máj 25 · 21:00",
@@ -244,7 +244,7 @@ public class TrainSeedData implements CommandLineRunner {
             "Maximális erő · 1RM növelés Squat/Bench/Deadlift",
             "2026-06-16", "2026-08-04", 7, 0,
             "Upper / Lower · 4×/hét", "Linear · 7 hét",
-            new String[] {"MEV", "MEV", "MAV", "MAV", "MRV", "MRV", "Deload"},
+            List.of("MEV", "MEV", "MAV", "MAV", "MRV", "MRV", "Deload"),
             null,
             "Daniel: 'Idő egy erő-blokkra is.' Reta cycle befejezésével szinkronban indul.",
             null);
@@ -254,7 +254,7 @@ public class TrainSeedData implements CommandLineRunner {
             "Karbantartás · zsírvesztés-előkészítés",
             "2026-08-07", "2026-08-28", 3, 0,
             "Full body · 4×/hét", "Maintenance · 3 hét",
-            new String[] {"MAV", "MAV", "MAV"},
+            List.of("MAV", "MAV", "MAV"),
             null,
             "Reta cycle vége — kalória deficit nélkül erő- és izom-tartás.",
             null);
@@ -264,7 +264,7 @@ public class TrainSeedData implements CommandLineRunner {
             "Január niggle után · izolációs munka",
             "2026-02-12", "2026-04-23", 8, 8,
             "Push / Pull / Legs · 3-4×/hét", "RP · 8 hét",
-            new String[] {"MEV", "MEV", "MEV", "MAV", "MAV", "MRV", "MRV", "Deload"},
+            List.of("MEV", "MEV", "MEV", "MAV", "MAV", "MRV", "MRV", "Deload"),
             null,
             null,
             "8/10 — Chest Row +12.5kg, jobb váll niggle stabilizálva, alvás 7.2h átlag.");
@@ -287,7 +287,7 @@ public class TrainSeedData implements CommandLineRunner {
 
     private MesocycleEntity meso(UUID by, String title, String shortTitle, String status,
         String goal, String startDate, String endDate, int weeks, int currentWeek,
-        String split, String style, String[] phaseCurve, VolumeRecomputeJson volumeRecompute,
+        String split, String style, List<String> phaseCurve, VolumeRecomputeJson volumeRecompute,
         String notes, String summary) {
         MesocycleEntity m = new MesocycleEntity();
         m.setCreatedBy(by);
