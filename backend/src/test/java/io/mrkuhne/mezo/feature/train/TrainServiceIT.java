@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -16,6 +18,7 @@ import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -34,6 +37,7 @@ class TrainServiceIT extends AbstractIntegrationTest {
     @Autowired private WorkoutSessionRepository workoutSessionRepository;
     @Autowired private ExerciseRepository exerciseRepository;
     @Autowired private ExerciseSetRepository exerciseSetRepository;
+    @Autowired private SportSessionRepository sportSessionRepository;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
@@ -103,5 +107,30 @@ class TrainServiceIT extends AbstractIntegrationTest {
         assertThat(reloaded.getWeightKg()).isEqualByComparingTo(new BigDecimal("82.50"));
         assertThat(reloaded.getReps()).isEqualTo(8);
         assertThat(reloaded.getSetIndex()).isZero();
+    }
+
+    @Test
+    void testSportSessions_shouldReturnDateDescending_whenListed() {
+        UUID user = databasePopulator.populateUser("sport@test.local");
+
+        // Insert in NON-sorted order so the finder's ORDER BY date DESC must do the work.
+        trainPopulator.createSportSession(user, LocalDate.parse("2026-05-11"));
+        trainPopulator.createSportSession(user, LocalDate.parse("2026-05-20"));
+        trainPopulator.createSportSession(user, LocalDate.parse("2026-05-15"));
+
+        entityManager.clear();
+
+        List<SportSessionEntity> sessions =
+            sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(user);
+        assertThat(sessions).extracting(SportSessionEntity::getDate)
+            .containsExactly(
+                LocalDate.parse("2026-05-20"),
+                LocalDate.parse("2026-05-15"),
+                LocalDate.parse("2026-05-11"));
+
+        // Ownership isolation: a second user sees none of the first user's sessions.
+        UUID otherUser = databasePopulator.populateUser("sport-b@test.local");
+        assertThat(sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(otherUser))
+            .isEmpty();
     }
 }

@@ -5,12 +5,14 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,6 +36,7 @@ public class TrainPopulator {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+    private final SportSessionRepository sportSessionRepository;
 
     public MesocycleEntity createMesocycle(UUID createdBy, String title, String status) {
         MesocycleEntity m = new MesocycleEntity();
@@ -106,5 +109,20 @@ public class TrainPopulator {
         set.setReps(8);
         set.setRir(1);
         return exerciseSetRepository.saveAndFlush(set);
+    }
+
+    public SportSessionEntity createSportSession(UUID createdBy, LocalDate date) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setDate(date);
+        // sport stays the entity default "volleyball".
+        s.setTime("18:15");
+        s.setDurationMin(90);
+        s.setSetsPlayed(5);
+        s.setIntensity(7);
+        s.setRpe(new BigDecimal("6.8"));
+        s.setShoulderStrain(6);
+        s.setJumpCount(38);
+        return sportSessionRepository.saveAndFlush(s);
     }
 }
