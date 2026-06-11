@@ -12,6 +12,7 @@ import { useTrain } from '@/data/hooks'
 import type { SportSchedule, SportSession, CrossLoadRow as CrossLoadRowData } from '@/data/types'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
+import { GhostState } from '@/components/ui/GhostState'
 import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
 import { ToolChipRow } from '@/components/ui/ToolChipRow'
@@ -41,8 +42,10 @@ export function SportView() {
   const [view, setView] = useState<SportSubView>('week')
   const [logOpen, setLogOpen] = useState(false)
 
-  const { volleyball } = sport.schedule
-  const { week } = sport
+  // T0 clean slate: schedule/week/crossLoad are null in real mode until their
+  // slices land (T3 schedule+stats, Phase 3 cross-load) — ghost-guard each facet.
+  const volleyball = sport.schedule?.volleyball ?? null
+  const week = sport.week
 
   return (
     <>
@@ -62,8 +65,11 @@ export function SportView() {
         </button>
       </div>
 
-      {/* Hero card */}
+      {/* Hero card — stats need a schedule + computed week (T3); ghost until then */}
       <div style={{ padding: '0 24px 16px' }}>
+        {!week || !volleyball ? (
+          <GhostState lines={3} message="A statisztikáid az első logolt session után jelennek meg." />
+        ) : (
         <div
           className="card notch-12"
           style={{
@@ -125,6 +131,7 @@ export function SportView() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* View switcher */}
@@ -156,9 +163,23 @@ export function SportView() {
         })}
       </div>
 
-      {view === 'week' && <SportWeekView schedule={volleyball} />}
+      {view === 'week' &&
+        (volleyball ? (
+          <SportWeekView schedule={volleyball} />
+        ) : (
+          <div style={{ padding: '8px 24px 16px' }}>
+            <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
+          </div>
+        ))}
       {view === 'log' && <SportLogView sessions={sport.sessions} />}
-      {view === 'crossload' && <SportCrossloadView crossLoad={sport.crossLoad} />}
+      {view === 'crossload' &&
+        (sport.crossLoad ? (
+          <SportCrossloadView crossLoad={sport.crossLoad} />
+        ) : (
+          <div style={{ padding: '8px 24px 16px' }}>
+            <GhostState lines={2} message="A cross-load elemzés itt jelenik majd meg." />
+          </div>
+        ))}
 
       {logOpen && <SportLogSheet onClose={() => setLogOpen(false)} />}
     </>
@@ -272,6 +293,15 @@ function SportWeekView({ schedule }: { schedule: SportSchedule['volleyball'] }) 
 
 // === Session log ===
 function SportLogView({ sessions }: { sessions: SportSession[] }) {
+  if (sessions.length === 0) {
+    return (
+      <div style={{ padding: '8px 24px 16px' }}>
+        <span className="text-tertiary" style={{ fontSize: 11, fontStyle: 'italic' }}>
+          Még nincs logolt session.
+        </span>
+      </div>
+    )
+  }
   const avgJumps = Math.round(sessions.reduce((acc, s) => acc + s.jumpCount, 0) / sessions.length)
   return (
     <div style={{ padding: '8px 24px 16px' }}>

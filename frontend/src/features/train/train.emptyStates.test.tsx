@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -47,4 +48,20 @@ test('ActiveWorkoutScreen redirects to /train when there is no workout', async (
   renderApp('/train/session')
   // lands back on the Train Today ghost instead of crashing
   await waitFor(() => expect(screen.getByText(/Itt fog élni a mai edzésed/i)).toBeInTheDocument())
+})
+
+test('SportView ghosts the weekly plan and shows an empty log message', async () => {
+  renderApp('/train/sport')
+  // hero stats ghost + week-tab ghost (week is the default tab)
+  await waitFor(() =>
+    expect(screen.getByText(/A statisztikáid az első logolt session után jelennek meg/i)).toBeInTheDocument(),
+  )
+  expect(screen.getByText(/A heti rended itt jelenik majd meg/i)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
+  expect(await screen.findByText(/Még nincs logolt session/i)).toBeInTheDocument()
+})
+
+test('MesocycleLibraryView shows the empty hint when there are no mesocycles', async () => {
+  renderApp('/train/mesocycles')
+  await waitFor(() => expect(screen.getByText(/Még nincs mesociklusod/i)).toBeInTheDocument())
 })

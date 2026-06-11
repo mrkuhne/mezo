@@ -19,6 +19,7 @@ test('useTrain (real mode) fetches mesocycles, formats display dates, derives ac
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.mesocycles.length).toBeGreaterThan(0))
   const active = result.current.activeMeso
+  if (!active) throw new Error('expected an active meso from the MSW fixture')
   expect(active.title).toBe('Hypertrophy 04 · Tavasz')
   expect(active.startDate).toBe('Máj 1') // ISO 2026-05-01 -> HU display
   expect(active.volumePerMuscle?.chest.source.confidence).toBe(0.78)
