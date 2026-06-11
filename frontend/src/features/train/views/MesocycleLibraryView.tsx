@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
+import { GhostState } from '@/components/ui/GhostState'
 import { Icon } from '@/components/ui/Icon'
 import { ActiveMesoCard } from '../components/ActiveMesoCard'
 import { PlannedMesoCard } from '../components/PlannedMesoCard'
@@ -37,6 +38,14 @@ export function MesocycleLibraryView() {
           <Icon name="plus" size={12} /> Új
         </button>
       </div>
+
+      {/* T0 clean slate: brand-new library gets a short orientation hint; the
+          planned section's dashed CTA below stays the single creation action. */}
+      {mesocycles.length === 0 && (
+        <div style={{ padding: '8px 24px 0' }}>
+          <GhostState lines={2} message="Még nincs mesociklusod — itt fognak élni a blokkjaid." />
+        </div>
+      )}
 
       {/* Active */}
       <div style={{ padding: '8px 24px 16px' }}>

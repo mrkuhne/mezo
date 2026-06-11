@@ -14,6 +14,7 @@ import { PageTitle } from '@/components/ui/PageTitle'
 import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
+import { GhostState } from '@/components/ui/GhostState'
 import { SportLogSheet } from '../components/SportLogSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '../components/WeeklyDayRow'
 
@@ -21,6 +22,40 @@ export function TrainTodayView() {
   const { workout, gymSchedule, sport, activeMeso } = useTrain()
   const navigate = useNavigate()
   const [vbLogOpen, setVbLogOpen] = useState(false)
+
+  // T0 clean slate: in real mode these are null until their write/derive slices
+  // land (workout+gymSchedule → T2, sport.schedule → T3). Ghost-guard the whole
+  // view — everything below assumes non-null data.
+  if (!activeMeso || !workout || !gymSchedule || !sport.schedule) {
+    return (
+      <>
+        <div className="page-header">
+          <div className="col gap-xs">
+            <Eyebrow brand>Train · Mai</Eyebrow>
+            <PageTitle>Edzés</PageTitle>
+          </div>
+        </div>
+        <div style={{ padding: '0 24px 12px' }}>
+          {activeMeso ? (
+            <GhostState lines={4} message="A mai edzésed itt jelenik majd meg." />
+          ) : (
+            <GhostState
+              lines={4}
+              message="Itt fog élni a mai edzésed — előbb tervezz egy mesociklust."
+              ctaLabel="+ Tervezz mesociklust"
+              onCta={() => navigate('/train/mesocycles/new')}
+            />
+          )}
+        </div>
+        <div style={{ padding: '0 24px 16px' }}>
+          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
+            <span className="eyebrow">Heti terv · gym + sport</span>
+          </div>
+          <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
+        </div>
+      </>
+    )
+  }
 
   // Combine gym schedule + volleyball sessions into a unified weekly map.
   const gymTimes = gymSchedule.weeklyTimes

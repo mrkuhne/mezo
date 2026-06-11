@@ -32,8 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Ports the Phase 1 Train mock fixtures ({@code frontend/src/data/train.ts}) 1:1 so real mode
- * renders exactly what mock mode renders. Active only under {@code @Profile("demodata")} (like
- * {@link io.mrkuhne.mezo.feature.auth.OwnerSeedData}); every row is owned by the seeded owner.
+ * renders exactly what mock mode renders. These fixtures are <strong>opt-in demo data</strong>:
+ * active only under {@code @Profile("demofixtures")}, so a plain {@code demodata} app starts on a
+ * clean slate with the owner only ({@link io.mrkuhne.mezo.feature.auth.OwnerSeedData}). Run with
+ * {@code --spring.profiles.active=demodata,demofixtures} to load the demo content; every row is
+ * owned by the seeded owner ({@code demodata} supplies it, hence the dependency on both profiles).
  *
  * <p>All values below are copied verbatim from {@code train.ts}; display dates map to ISO with
  * year 2026 (Máj 1 → 2026-05-01, Jún 12 → 2026-06-12 …) and sport-session dates come from the
@@ -42,8 +45,8 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Idempotent: if any mesocycle already exists the runner is a no-op (re-runnable in tests).
  */
 @Component
-@Profile("demodata")
-@Order(100) // after OwnerSeedData — needs the seeded owner
+@Profile("demofixtures")
+@Order(100) // after OwnerSeedData — needs the seeded owner (from the demodata profile)
 @RequiredArgsConstructor
 public class TrainSeedData implements CommandLineRunner {
 

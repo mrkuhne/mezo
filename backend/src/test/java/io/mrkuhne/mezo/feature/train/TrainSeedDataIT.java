@@ -12,14 +12,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * Verifies the {@code demodata} Train seed ports {@code frontend/src/data/train.ts} 1:1 so that
- * real mode renders exactly what mock mode renders. {@code @ActiveProfiles("demodata")} spins a
- * separate context whose {@code OwnerSeedData} + {@code TrainSeedData} CommandLineRunners fire at
- * startup; {@link AbstractIntegrationTest}'s {@code @BeforeEach} ResetDatabase then TRUNCATEs the
- * Train tables (master-data owner survives), so each test re-seeds into a clean DB via the explicit
- * {@code trainSeedData.run()} — which still finds the preserved owner.
+ * Verifies the opt-in {@code demofixtures} Train seed ports {@code frontend/src/data/train.ts} 1:1
+ * so that real mode renders exactly what mock mode renders. {@code @ActiveProfiles({"demodata",
+ * "demofixtures"})} spins a separate context whose {@code OwnerSeedData} (demodata) +
+ * {@code TrainSeedData} (demofixtures) CommandLineRunners fire at startup;
+ * {@link AbstractIntegrationTest}'s {@code @BeforeEach} ResetDatabase then TRUNCATEs the Train
+ * tables (master-data owner survives), so each test re-seeds into a clean DB via the explicit
+ * {@code trainSeedData.run()} — which still finds the preserved owner. The {@code demodata}-only
+ * contract (Train seed bean absent without {@code demofixtures}) is pinned by {@code OwnerSeedDataIT}.
  */
-@ActiveProfiles("demodata")
+@ActiveProfiles({"demodata", "demofixtures"})
 class TrainSeedDataIT extends AbstractIntegrationTest {
 
     @Autowired private TrainSeedData trainSeedData;

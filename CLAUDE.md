@@ -58,7 +58,7 @@ Design spec for Phase 2 (slice map, decisions): `docs/superpowers/specs/2026-06-
 ```bash
 # Frontend (under frontend/)
 cd frontend
-pnpm dev          # vite dev server on :5180 (VITE_USE_MOCK=true → mock data, no backend needed)
+pnpm dev          # vite dev server on :5180 — REAL mode by default (backend on :8090 required); mock: VITE_USE_MOCK=true pnpm dev (no backend needed)
 pnpm build        # tsc -b && vite build
 pnpm test         # vitest run (also run VITE_USE_MOCK=false pnpm test — both modes must be green)
 pnpm parity       # playwright parity screenshots (own port :4317; prototype path: MEZO_PROTOTYPE_DIR env var)
@@ -66,7 +66,8 @@ pnpm parity       # playwright parity screenshots (own port :4317; prototype pat
 # Backend (under backend/)
 cd backend
 docker compose up -d            # local Postgres 16 on :15432 (mezo + mezo_test DBs via initdb/)
-./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata   # API on :8090, owner seed (login needs this!)
+./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata   # API on :8090, owner seed ONLY (login needs this!) — clean slate
+./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata,demofixtures  # + Train demo fixtures (opt-in)
 ./mvnw clean test               # ITs against the FIXED mezo_test DB (compose must be up) — inspect tables 1:1
 ./mvnw clean test -Dmezo.test.use-testcontainers=true        # throwaway Testcontainers PG (CI / no compose)
 # ALWAYS use `clean` (Lombok+MapStruct incremental compile is flaky)

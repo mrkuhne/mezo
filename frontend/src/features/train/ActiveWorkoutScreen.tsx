@@ -9,9 +9,9 @@
 // Ported from prototype train.jsx (the active-workout TrainScreen).
 // ============================================================
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
-import type { LastWeekSet } from '@/data/types'
+import type { LastWeekSet, Mesocycle, WorkoutPlan } from '@/data/types'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Chip } from '@/components/ui/Chip'
 import { Display } from '@/components/ui/Display'
@@ -47,8 +47,18 @@ const BRAND_TINT_12 = 'color-mix(in srgb, var(--brand-glow) 12%, transparent)'
 const PR_DEMO_THRESHOLD_KG = 105
 const PR_TOAST_MS = 4500
 
+// Guard wrapper: the session screen's hooks (useState×N) are initialized from
+// workout data, so the null case must redirect BEFORE the inner component mounts
+// — a conditional early return between hook calls would break the hook order
+// once `workout` becomes query-driven (T2).
 export function ActiveWorkoutScreen() {
   const { workout, activeMeso } = useTrain()
+  // T0 clean slate: no real workout data until T2 -> never render this screen without it
+  if (!workout || !activeMeso) return <Navigate to="/train" replace />
+  return <ActiveWorkoutSession workout={workout} activeMeso={activeMeso} />
+}
+
+function ActiveWorkoutSession({ workout, activeMeso }: { workout: WorkoutPlan; activeMeso: Mesocycle }) {
   const W = workout
   const navigate = useNavigate()
   const onExit = () => navigate('/train')

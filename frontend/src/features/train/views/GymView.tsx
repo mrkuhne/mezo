@@ -5,9 +5,11 @@
 // Ported from prototype train-views.jsx (GymView + sub-components).
 // ============================================================
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
+import { GhostState } from '@/components/ui/GhostState'
 import { Icon } from '@/components/ui/Icon'
 import type { MesoDay } from '@/data/types'
 import { GymStat } from '../components/GymStat'
@@ -17,7 +19,31 @@ import { GymDaySheet } from '../components/GymDaySheet'
 
 export function GymView() {
   const { activeMeso } = useTrain()
+  const navigate = useNavigate()
   const [openDay, setOpenDay] = useState<MesoDay | null>(null)
+
+  // T0 clean slate: no active meso in real mode -> ghost (meso writes land in T1).
+  // Placed after the hook calls so the hook order is render-stable.
+  if (!activeMeso) {
+    return (
+      <>
+        <div className="page-header">
+          <div className="col gap-xs">
+            <Eyebrow brand>Train · GYM</Eyebrow>
+            <PageTitle>Gym</PageTitle>
+          </div>
+        </div>
+        <div style={{ padding: '0 24px 12px' }}>
+          <GhostState
+            lines={4}
+            message="Nincs aktív mesociklus — a volumen- és fázisadatok itt jelennek majd meg."
+            ctaLabel="+ Tervezz mesociklust"
+            onCta={() => navigate('/train/mesocycles/new')}
+          />
+        </div>
+      </>
+    )
+  }
 
   const days = activeMeso.days ?? []
   const gymDays = days.filter((d) => d.exerciseCount > 0)
