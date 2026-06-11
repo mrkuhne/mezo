@@ -2,10 +2,15 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
+import io.mrkuhne.mezo.api.dto.MesoDay;
+import io.mrkuhne.mezo.api.dto.MesoDayInput;
+import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
@@ -14,6 +19,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 
 /** HTTP round-trips through the GENERATED Train contract interface (api/openapi.yml). */
@@ -55,6 +61,120 @@ class TrainContractIT extends ApiIntegrationTest {
         assertThat(mesos.get(0).getTitle()).isEqualTo("Hypertrophy 04");
         assertThat(mesos.get(0).getVolumePerMuscle()).isNotNull();
         assertThat(mesos.get(0).getVolumePerMuscle()).containsKey("chest");
+    }
+
+    @Test
+    void testCreateMesocycle_shouldReturn401_whenUnauthenticated() {
+        postForBody("/api/train/mesocycles", minimalCreateRequest(), null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testCreateMesocycle_shouldReturn201WithAssembledBody_whenValid() {
+        ownerId();
+        MesocycleCreateRequest req = minimalCreateRequest();
+
+        MesocycleResponse created = postForBody(
+            "/api/train/mesocycles", req, ownerAuthHeaders(), HttpStatus.CREATED, MesocycleResponse.class);
+
+        assertThat(created.getId()).isNotNull();
+        assertThat(created.getTitle()).isEqualTo("Contract teszt meso");
+        assertThat(created.getEndDate()).isEqualTo(req.getStartDate().plusWeeks(4));
+        assertThat(created.getDays()).hasSize(1);
+        assertThat(created.getDays().get(0).getExercises()).hasSize(1);
+    }
+
+    @Test
+    void testCreateMesocycle_shouldReturn400SystemMessage_whenTitleMissing() {
+        ownerId();
+        MesocycleCreateRequest req = minimalCreateRequest();
+        req.setTitle(null);
+
+        String body = exchangeForBody(HttpMethod.POST, "/api/train/mesocycles", req,
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "title", "VALIDATION_REQUIRED_FIELD");
+    }
+
+    @Test
+    void testActivateMesocycle_shouldArchivePreviousAndReturn200_whenAuthenticated() {
+        UUID owner = ownerId();
+        MesocycleEntity previous = trainPopulator.createMesocycle(owner, "Régi aktív", "active");
+        MesocycleEntity target = trainPopulator.createMesocycle(owner, "Új aktív", "planned");
+
+        MesocycleResponse activated = postForBody("/api/train/mesocycles/" + target.getId() + "/activate",
+            null, ownerAuthHeaders(), HttpStatus.OK, MesocycleResponse.class);
+
+        assertThat(activated.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE);
+        List<MesocycleResponse> all =
+            getForList("/api/train/mesocycles", ownerAuthHeaders(), HttpStatus.OK, MesocycleResponse.class);
+        assertThat(all).filteredOn(m -> m.getId().equals(previous.getId()))
+            .singleElement()
+            .satisfies(m -> assertThat(m.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ARCHIVED));
+    }
+
+    @Test
+    void testCloseMesocycle_shouldReturn404_whenUnknownId() {
+        ownerId();
+        String body = exchangeForBody(HttpMethod.POST,
+            "/api/train/mesocycles/" + UUID.randomUUID() + "/close", null,
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testActivateMesocycle_shouldReturn401_whenUnauthenticated() {
+        postForBody("/api/train/mesocycles/" + UUID.randomUUID() + "/activate",
+            null, null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testReplaceDayExercises_shouldRoundTripUpdatedDay_whenAuthenticated() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Szerkesztett", "active");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hét", "Pull", 0, "planned");
+        trainPopulator.createExercise(owner, day.getId(), "Régi", 0);
+
+        List<GymExerciseInput> body = List.of(
+            GymExerciseInput.builder().name("Friss gyakorlat").sets(3).targetReps("8-10").targetRIR(1)
+                .type(GymExerciseInput.TypeEnum.COMPOUND).build());
+        MesoDay updated = putForBody(
+            "/api/train/mesocycles/" + meso.getId() + "/days/" + day.getId() + "/exercises",
+            body, ownerAuthHeaders(), HttpStatus.OK, MesoDay.class);
+
+        assertThat(updated.getId()).isEqualTo(day.getId());
+        assertThat(updated.getExercises()).singleElement()
+            .satisfies(e -> assertThat(e.getName()).isEqualTo("Friss gyakorlat"));
+    }
+
+    @Test
+    void testReplaceDayExercises_shouldReturn404_whenUnknownDay() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+
+        String body = exchangeForBody(HttpMethod.PUT,
+            "/api/train/mesocycles/" + meso.getId() + "/days/" + UUID.randomUUID() + "/exercises",
+            List.of(), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    private MesocycleCreateRequest minimalCreateRequest() {
+        return MesocycleCreateRequest.builder()
+            .title("Contract teszt meso")
+            .status(MesocycleCreateRequest.StatusEnum.PLANNED)
+            .startDate(LocalDate.parse("2026-06-16"))
+            .weeks(4)
+            .split("Upper / Lower · 4×/hét")
+            .style("Linear · 4 hét")
+            .phaseCurve(List.of(
+                MesocycleCreateRequest.PhaseCurveEnum.MEV,
+                MesocycleCreateRequest.PhaseCurveEnum.MAV))
+            .days(List.of(MesoDayInput.builder().day("Hét").type("Upper")
+                .exercises(List.of(GymExerciseInput.builder().name("Bench Press").sets(4)
+                    .targetReps("6-8").targetRIR(2)
+                    .type(GymExerciseInput.TypeEnum.COMPOUND).build()))
+                .build()))
+            .build();
     }
 
     @Test

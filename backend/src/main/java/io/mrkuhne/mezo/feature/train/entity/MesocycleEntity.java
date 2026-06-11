@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -79,9 +80,9 @@ public class MesocycleEntity extends OwnedEntity {
     @NotNull
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "phase_curve", nullable = false, columnDefinition = "text[]")
-    // read-only in Phase 2; Hibernate won't dirty-check in-place array mutation — switch to
-    // List<String> if a write path lands.
-    private String[] phaseCurve;
+    // List (not String[]) so Hibernate dirty-checks element changes — required since the
+    // T1 write path (create/lifecycle) started mutating mesocycles.
+    private List<String> phaseCurve;
 
     @Column
     private String notes;

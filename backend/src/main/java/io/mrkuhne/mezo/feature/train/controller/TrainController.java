@@ -1,11 +1,15 @@
 package io.mrkuhne.mezo.feature.train.controller;
 
 import io.mrkuhne.mezo.api.controller.TrainApi;
+import io.mrkuhne.mezo.api.dto.GymExerciseInput;
+import io.mrkuhne.mezo.api.dto.MesoDay;
+import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -25,5 +29,25 @@ public class TrainController implements TrainApi {
     @Override
     public List<SportSessionResponse> listSportSessions() {
         return service.listSportSessions(currentUserId.get());
+    }
+
+    @Override
+    public MesocycleResponse createMesocycle(MesocycleCreateRequest mesocycleCreateRequest) {
+        return service.createMesocycle(currentUserId.get(), mesocycleCreateRequest);
+    }
+
+    @Override
+    public MesocycleResponse activateMesocycle(UUID id) {
+        return service.activateMesocycle(currentUserId.get(), id);
+    }
+
+    @Override
+    public MesocycleResponse closeMesocycle(UUID id) {
+        return service.closeMesocycle(currentUserId.get(), id);
+    }
+
+    @Override
+    public MesoDay replaceDayExercises(UUID id, UUID dayId, List<GymExerciseInput> gymExerciseInput) {
+        return service.replaceDayExercises(currentUserId.get(), id, dayId, gymExerciseInput);
     }
 }

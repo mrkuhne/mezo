@@ -60,7 +60,7 @@ Design spec for Phase 2 (slice map, decisions): `docs/superpowers/specs/2026-06-
 cd frontend
 pnpm dev          # vite dev server on :5180 — REAL mode by default (backend on :8090 required); mock: VITE_USE_MOCK=true pnpm dev (no backend needed)
 pnpm build        # tsc -b && vite build
-pnpm test         # vitest run (also run VITE_USE_MOCK=false pnpm test — both modes must be green)
+pnpm test         # vitest run — REAL mode by default; also run VITE_USE_MOCK=true pnpm test (both modes must be green)
 pnpm parity       # playwright parity screenshots (own port :4317; prototype path: MEZO_PROTOTYPE_DIR env var)
 
 # Backend (under backend/)

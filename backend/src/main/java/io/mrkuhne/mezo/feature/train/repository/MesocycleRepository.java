@@ -13,4 +13,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface MesocycleRepository extends JpaRepository<MesocycleEntity, UUID> {
 
     List<MesocycleEntity> findByCreatedByAndDeletedFalseOrderByStartDateAsc(UUID createdBy);
+
+    /** All owned mesocycles in one status — the activate flow archives the previous active ones. */
+    List<MesocycleEntity> findByCreatedByAndStatusAndDeletedFalse(UUID createdBy, String status);
 }

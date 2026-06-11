@@ -10,7 +10,6 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
-import java.util.Arrays;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -44,7 +43,7 @@ public interface TrainMapper {
 
     VolumeRecompute toRecompute(VolumeRecomputeJson json);
 
-    default List<MesocycleResponse.PhaseCurveEnum> phaseCurve(String[] curve) {
-        return Arrays.stream(curve).map(MesocycleResponse.PhaseCurveEnum::fromValue).toList();
+    default List<MesocycleResponse.PhaseCurveEnum> phaseCurve(List<String> curve) {
+        return curve.stream().map(MesocycleResponse.PhaseCurveEnum::fromValue).toList();
     }
 }

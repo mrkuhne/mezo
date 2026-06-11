@@ -238,6 +238,154 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Train
+      operationId: createMesocycle
+      summary: Create a mesocycle (wizard) with nested template days and exercises
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesocycleCreateRequest'
+      responses:
+        '201':
+          description: Created mesocycle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/activate':
+    post:
+      tags:
+        - Train
+      operationId: activateMesocycle
+      summary: Activate a mesocycle — archives any other active one (idempotent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Activated mesocycle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/close':
+    post:
+      tags:
+        - Train
+      operationId: closeMesocycle
+      summary: Close (archive) a mesocycle (idempotent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archived mesocycle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/days/{dayId}/exercises':
+    put:
+      tags:
+        - Train
+      operationId: replaceDayExercises
+      summary: >-
+        Replace the exercise list of one template day (full-list, order = array
+        order)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: dayId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/GymExerciseInput'
+      responses:
+        '200':
+          description: Updated template day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoDay'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle/day not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/sport-sessions:
     get:
       tags:
@@ -692,6 +840,12 @@ components:
         - exerciseCount
         - exercises
       properties:
+        id:
+          type: string
+          format: uuid
+          description: >-
+            The underlying template-day (workout_session) row — addresses
+            day-level writes
         day:
           type: string
           description: '''Hét''..''Vas'''
@@ -735,6 +889,113 @@ components:
           type: string
         targetRIR:
           type: integer
+        type:
+          type: string
+          enum:
+            - compound
+            - isolation
+        warning:
+          type: string
+    MesocycleCreateRequest:
+      type: object
+      required:
+        - title
+        - status
+        - startDate
+        - weeks
+        - split
+        - style
+        - phaseCurve
+      properties:
+        title:
+          type: string
+          minLength: 1
+        shortTitle:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+        goal:
+          type: string
+        startDate:
+          type: string
+          format: date
+        weeks:
+          type: integer
+          minimum: 1
+          maximum: 16
+        split:
+          type: string
+          minLength: 1
+        style:
+          type: string
+          minLength: 1
+        phaseCurve:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - MEV
+              - MAV
+              - MRV
+              - Deload
+        notes:
+          type: string
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoDayInput'
+    MesoDayInput:
+      type: object
+      required:
+        - day
+        - type
+      properties:
+        day:
+          type: string
+          minLength: 1
+          description: '''Hét''..''Vas'''
+        type:
+          type: string
+          minLength: 1
+        muscle:
+          type: string
+        muscleAccent:
+          type: boolean
+        note:
+          type: string
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/GymExerciseInput'
+    GymExerciseInput:
+      type: object
+      required:
+        - name
+        - sets
+        - targetReps
+        - targetRIR
+        - type
+      properties:
+        name:
+          type: string
+          minLength: 1
+        muscle:
+          type: string
+        sets:
+          type: integer
+          minimum: 1
+          maximum: 20
+        targetReps:
+          type: string
+          minLength: 1
+        targetRIR:
+          type: integer
+          minimum: 0
+          maximum: 5
         type:
           type: string
           enum:

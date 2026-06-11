@@ -85,6 +85,58 @@ export interface paths {
         /** All mesocycles of the current user with volume provenance and template days, start date ascending */
         get: operations["listMesocycles"];
         put?: never;
+        /** Create a mesocycle (wizard) with nested template days and exercises */
+        post: operations["createMesocycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate a mesocycle — archives any other active one (idempotent) */
+        post: operations["activateMesocycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close (archive) a mesocycle (idempotent) */
+        post: operations["closeMesocycle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/mesocycles/{id}/days/{dayId}/exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the exercise list of one template day (full-list, order = array order) */
+        put: operations["replaceDayExercises"];
         post?: never;
         delete?: never;
         options?: never;
@@ -298,6 +350,11 @@ export interface components {
             at: string;
         };
         MesoDay: {
+            /**
+             * Format: uuid
+             * @description The underlying template-day (workout_session) row — addresses day-level writes
+             */
+            id?: string;
             /** @description 'Hét'..'Vas' */
             day: string;
             type: string;
@@ -313,6 +370,40 @@ export interface components {
             id: string;
             name: string;
             muscle: string;
+            sets: number;
+            targetReps: string;
+            targetRIR: number;
+            /** @enum {string} */
+            type: "compound" | "isolation";
+            warning?: string;
+        };
+        MesocycleCreateRequest: {
+            title: string;
+            shortTitle?: string;
+            /** @enum {string} */
+            status: "active" | "planned";
+            goal?: string;
+            /** Format: date */
+            startDate: string;
+            weeks: number;
+            split: string;
+            style: string;
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            notes?: string;
+            days?: components["schemas"]["MesoDayInput"][];
+        };
+        MesoDayInput: {
+            /** @description 'Hét'..'Vas' */
+            day: string;
+            type: string;
+            muscle?: string;
+            muscleAccent?: boolean;
+            note?: string;
+            exercises?: components["schemas"]["GymExerciseInput"][];
+        };
+        GymExerciseInput: {
+            name: string;
+            muscle?: string;
             sets: number;
             targetReps: string;
             targetRIR: number;
@@ -626,6 +717,182 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createMesocycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesocycleCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created mesocycle */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    activateMesocycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activated mesocycle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    closeMesocycle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived mesocycle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    replaceDayExercises: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                dayId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GymExerciseInput"][];
+            };
+        };
+        responses: {
+            /** @description Updated template day */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoDay"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle/day not found or not owned */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
