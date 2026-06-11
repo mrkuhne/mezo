@@ -7,4 +7,5 @@ inputs:
   - inputFile: ../feature/weight/weight.yml
   - inputFile: ../feature/sleep/sleep.yml
   - inputFile: ../feature/checkin/checkin.yml
+  - inputFile: ../feature/train/train.yml
 output: ../openapi.yml
