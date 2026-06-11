@@ -95,6 +95,18 @@ public abstract class ApiIntegrationTest extends AbstractIntegrationTest {
         return deserialize(response.getBody(), bodyType);
     }
 
+    /**
+     * Raw exchange that returns the full {@link ResponseEntity} (status + headers + body) without
+     * asserting the status. Use when the test needs to inspect response headers (e.g. CORS
+     * {@code Access-Control-Allow-Origin}) or a CORS preflight OPTIONS, which the body-only verb
+     * helpers above deliberately hide.
+     */
+    protected ResponseEntity<String> exchangeForResponse(
+        HttpMethod method, String uri, Object request, HttpHeaders headers
+    ) {
+        return rest.exchange(uri, method, new HttpEntity<>(request, headers), String.class);
+    }
+
     @SuppressWarnings("unchecked")
     private <T> T deserialize(String body, Class<T> bodyType) {
         if (bodyType == Void.class || body == null || body.isEmpty()) {

@@ -19,6 +19,12 @@ mezo:
     owner-email: ${MEZO_OWNER_EMAIL:owner@mezo.local}
     owner-password: ${MEZO_OWNER_PASSWORD:owner}
     owner-name: ${MEZO_OWNER_NAME:Owner}
+  cors:
+    # Browser origins allowed to call the API. The Vite dev server (:5180) is the default;
+    # add the deployed frontend origin per environment. Server-to-server callers send no Origin
+    # and bypass CORS entirely.
+    allowed-origins:
+      - http://localhost:5180
 management:
   endpoints:
     web:
