@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -12,6 +13,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -38,6 +40,7 @@ class TrainServiceIT extends AbstractIntegrationTest {
     @Autowired private ExerciseRepository exerciseRepository;
     @Autowired private ExerciseSetRepository exerciseSetRepository;
     @Autowired private SportSessionRepository sportSessionRepository;
+    @Autowired private TrainService trainService;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
@@ -132,5 +135,49 @@ class TrainServiceIT extends AbstractIntegrationTest {
         UUID otherUser = databasePopulator.populateUser("sport-b@test.local");
         assertThat(sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(otherUser))
             .isEmpty();
+    }
+
+    @Test
+    void testListMesocycles_shouldAssembleNestedResponse_whenVolumeAndDaysExist() {
+        UUID userA = databasePopulator.populateUser("meso-a@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(userA, "Hypertrophy 04", "active");
+        trainPopulator.createVolumeLog(userA, meso.getId(), "chest");
+        trainPopulator.createVolumeLog(userA, meso.getId(), "back");
+
+        WorkoutSessionEntity day0 =
+            trainPopulator.createWorkoutSession(userA, meso.getId(), "Hétfő", "push", 0, "planned");
+        // Second session is the active/current one and carries the muscle accent flag.
+        trainPopulator.createWorkoutSession(userA, meso.getId(), "Szerda", "pull", 1, "active", true);
+        trainPopulator.createExercise(userA, day0.getId(), "Guggolás", 0);
+        trainPopulator.createExercise(userA, day0.getId(), "Fekvenyomás", 1);
+
+        // User B owns an unrelated mesocycle that must NOT leak into user A's view.
+        UUID userB = databasePopulator.populateUser("meso-b@test.local");
+        trainPopulator.createMesocycle(userB, "Strength B", "planned");
+
+        List<MesocycleResponse> responses = trainService.listMesocycles(userA);
+
+        assertThat(responses).hasSize(1);
+        MesocycleResponse r = responses.get(0);
+        assertThat(r.getStatus()).isEqualTo(MesocycleResponse.StatusEnum.ACTIVE);
+        assertThat(r.getVolumePerMuscle()).containsOnlyKeys("chest", "back");
+        assertThat(r.getVolumePerMuscle().get("chest").getCurrent()).isEqualTo(14);
+        assertThat(r.getVolumePerMuscle().get("chest").getSource().getBaseline().getName())
+            .isEqualTo("RP guidelines · intermediate");
+        assertThat(r.getPhaseCurve()).containsExactly(
+            MesocycleResponse.PhaseCurveEnum.MEV,
+            MesocycleResponse.PhaseCurveEnum.MAV,
+            MesocycleResponse.PhaseCurveEnum.DELOAD);
+
+        assertThat(r.getDays()).hasSize(2);
+        assertThat(r.getDays().get(0).getExerciseCount()).isEqualTo(2);
+        assertThat(r.getDays().get(0).getCurrent()).isNull();
+        assertThat(r.getDays().get(1).getCurrent()).isTrue();
+        assertThat(r.getDays().get(1).getMuscleAccent()).isTrue();
+
+        // Ownership isolation: user B sees only their own (empty volume/days) mesocycle.
+        List<MesocycleResponse> bResponses = trainService.listMesocycles(userB);
+        assertThat(bResponses).hasSize(1);
+        assertThat(bResponses.get(0).getTitle()).isEqualTo("Strength B");
     }
 }

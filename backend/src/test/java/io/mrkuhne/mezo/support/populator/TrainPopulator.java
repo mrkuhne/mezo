@@ -74,12 +74,18 @@ public class TrainPopulator {
 
     public WorkoutSessionEntity createWorkoutSession(UUID createdBy, UUID mesocycleId,
         String dayLabel, String type, int orderIndex, String status) {
+        return createWorkoutSession(createdBy, mesocycleId, dayLabel, type, orderIndex, status, false);
+    }
+
+    public WorkoutSessionEntity createWorkoutSession(UUID createdBy, UUID mesocycleId,
+        String dayLabel, String type, int orderIndex, String status, boolean muscleAccent) {
         WorkoutSessionEntity s = new WorkoutSessionEntity();
         s.setCreatedBy(createdBy);
         s.setMesocycleId(mesocycleId);
         s.setDayLabel(dayLabel);
         s.setType(type);
         s.setMuscle("hát");
+        s.setMuscleAccent(muscleAccent);
         s.setOrderIndex(orderIndex);
         s.setStatus(status);
         return workoutSessionRepository.saveAndFlush(s);
