@@ -1,11 +1,18 @@
 package io.mrkuhne.mezo.support.populator;
 
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +31,9 @@ public class TrainPopulator {
 
     private final MesocycleRepository mesocycleRepository;
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
+    private final WorkoutSessionRepository workoutSessionRepository;
+    private final ExerciseRepository exerciseRepository;
+    private final ExerciseSetRepository exerciseSetRepository;
 
     public MesocycleEntity createMesocycle(UUID createdBy, String title, String status) {
         MesocycleEntity m = new MesocycleEntity();
@@ -57,5 +67,44 @@ public class TrainPopulator {
             List.of(new ProvenanceEnvelope.Adjustment("pattern", "test", Map.of("mrv", 2), null)),
             0.78, null, null));
         return volumeLogRepository.saveAndFlush(v);
+    }
+
+    public WorkoutSessionEntity createWorkoutSession(UUID createdBy, UUID mesocycleId,
+        String dayLabel, String type, int orderIndex, String status) {
+        WorkoutSessionEntity s = new WorkoutSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setMesocycleId(mesocycleId);
+        s.setDayLabel(dayLabel);
+        s.setType(type);
+        s.setMuscle("hát");
+        s.setOrderIndex(orderIndex);
+        s.setStatus(status);
+        return workoutSessionRepository.saveAndFlush(s);
+    }
+
+    public ExerciseEntity createExercise(UUID createdBy, UUID workoutSessionId, String name,
+        int orderIndex) {
+        ExerciseEntity e = new ExerciseEntity();
+        e.setCreatedBy(createdBy);
+        e.setWorkoutSessionId(workoutSessionId);
+        e.setName(name);
+        e.setMuscle("hát");
+        e.setSets(3);
+        e.setTargetReps("8-10");
+        e.setTargetRir(1);
+        e.setType("compound");
+        e.setOrderIndex(orderIndex);
+        return exerciseRepository.saveAndFlush(e);
+    }
+
+    public ExerciseSetEntity createExerciseSet(UUID createdBy, UUID exerciseId, int setIndex) {
+        ExerciseSetEntity set = new ExerciseSetEntity();
+        set.setCreatedBy(createdBy);
+        set.setExerciseId(exerciseId);
+        set.setSetIndex(setIndex);
+        set.setWeightKg(new BigDecimal("82.50"));
+        set.setReps(8);
+        set.setRir(1);
+        return exerciseSetRepository.saveAndFlush(set);
     }
 }

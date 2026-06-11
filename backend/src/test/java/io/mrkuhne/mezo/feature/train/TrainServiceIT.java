@@ -2,13 +2,21 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +31,9 @@ import org.springframework.transaction.annotation.Transactional;
 class TrainServiceIT extends AbstractIntegrationTest {
 
     @Autowired private MesocycleRepository mesocycleRepository;
+    @Autowired private WorkoutSessionRepository workoutSessionRepository;
+    @Autowired private ExerciseRepository exerciseRepository;
+    @Autowired private ExerciseSetRepository exerciseSetRepository;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
@@ -43,5 +54,54 @@ class TrainServiceIT extends AbstractIntegrationTest {
         assertThat(reloaded.getVolumeRecompute()).isNotNull();
         assertThat(reloaded.getVolumeRecompute().changes()).hasSize(1);
         assertThat(reloaded.getVolumeRecompute().changes().get(0).muscle()).isEqualTo("back");
+    }
+
+    @Test
+    void testWorkoutDays_shouldReturnExercisesInOrder_whenOrderIndexSet() {
+        UUID user = databasePopulator.populateUser("days@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Hypertrophy 04", "active");
+
+        WorkoutSessionEntity day0 =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Hétfő", "push", 0, "planned");
+        trainPopulator.createWorkoutSession(user, meso.getId(), "Szerda", "pull", 1, "active");
+
+        // Insert exercises OUT of order (index 1 first, then index 0) to prove the ORDER BY.
+        trainPopulator.createExercise(user, day0.getId(), "Fekvenyomás", 1);
+        trainPopulator.createExercise(user, day0.getId(), "Guggolás", 0);
+
+        entityManager.clear();
+
+        List<WorkoutSessionEntity> sessions =
+            workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(
+                user, List.of(meso.getId()));
+        assertThat(sessions).extracting(WorkoutSessionEntity::getOrderIndex)
+            .containsExactly(0, 1);
+
+        List<ExerciseEntity> exercises =
+            exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                user, List.of(day0.getId()));
+        assertThat(exercises).extracting(ExerciseEntity::getOrderIndex)
+            .containsExactly(0, 1);
+        // Ordered finder reverses the insertion order: "Guggolás" (index 0) comes first.
+        assertThat(exercises).extracting(ExerciseEntity::getName)
+            .containsExactly("Guggolás", "Fekvenyomás");
+    }
+
+    @Test
+    void testSaveExerciseSet_shouldRoundTripWeightKg_whenReloaded() {
+        UUID user = databasePopulator.populateUser("set@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Hypertrophy 04", "active");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Hétfő", "push", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, day.getId(), "Guggolás", 0);
+        ExerciseSetEntity saved = trainPopulator.createExerciseSet(user, exercise.getId(), 0);
+
+        // Force a REAL round-trip so the numeric(6,2) value is rehydrated from the DB row.
+        entityManager.clear();
+
+        ExerciseSetEntity reloaded = exerciseSetRepository.findById(saved.getId()).orElseThrow();
+        assertThat(reloaded.getWeightKg()).isEqualByComparingTo(new BigDecimal("82.50"));
+        assertThat(reloaded.getReps()).isEqualTo(8);
+        assertThat(reloaded.getSetIndex()).isZero();
     }
 }

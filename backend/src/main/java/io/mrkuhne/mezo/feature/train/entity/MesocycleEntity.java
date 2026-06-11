@@ -79,6 +79,8 @@ public class MesocycleEntity extends OwnedEntity {
     @NotNull
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "phase_curve", nullable = false, columnDefinition = "text[]")
+    // read-only in Phase 2; Hibernate won't dirty-check in-place array mutation — switch to
+    // List<String> if a write path lands.
     private String[] phaseCurve;
 
     @Column
