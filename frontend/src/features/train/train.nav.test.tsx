@@ -1,15 +1,24 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// Asserts Phase-1 mock meso/sport data, so pin mock mode explicitly (the swapped
+// useTrain hook reads useQuery, so a QueryClientProvider is required too).
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 function renderApp(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   return render(
-    <ThemeProvider>
-      <RouterProvider router={router} />
-    </ThemeProvider>,
+    <QueryWrapper>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </QueryWrapper>,
   )
 }
 

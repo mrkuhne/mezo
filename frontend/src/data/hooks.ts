@@ -2,8 +2,9 @@ import { useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
-import { localDateString } from '@/lib/dates'
+import { localDateString, huMonthDay, huMonthDayDow } from '@/lib/dates'
 import { weightApi, sleepApi, checkinApi } from '@/lib/biometricsApi'
+import { trainApi, type MesocycleResponse, type SportSessionResponse } from '@/lib/trainApi'
 import { today, user, briefing, briefingVariants, workout, volleyballSessions, fuelToday } from './today'
 import { initialCheckins } from './checkins'
 import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
@@ -17,7 +18,7 @@ import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './
 import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
 import { mesocycles, activeMeso, workout as trainWorkout, gymSchedule as trainGymSchedule, sport, exerciseLibrary } from './train'
-import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, WeightEntry, WeightLogInput, SleepEntry, SleepLogInput, Mention, MentionLogInput } from './types'
+import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, WeightEntry, WeightLogInput, SleepEntry, SleepLogInput, Mention, MentionLogInput, Mesocycle, SportSession } from './types'
 
 export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
@@ -198,6 +199,51 @@ export function useStackRecommendations() {
   return { recommendations: stackRecommendations }
 }
 
+// Backend serves ISO dates (`2026-05-01`); the UI expects HU display strings.
+// The generated MesocycleResponse is structurally close to the domain Mesocycle
+// (goal is optional in the contract, delta keys are a looser string map) — the
+// boundary cast mirrors the Slice A biometrics-api idiom.
+function toMesocycle(r: MesocycleResponse): Mesocycle {
+  return {
+    ...r,
+    startDate: huMonthDay(r.startDate),
+    endDate: huMonthDay(r.endDate),
+    goal: r.goal ?? '',
+  } as Mesocycle
+}
+
+function toSportSession(r: SportSessionResponse): SportSession {
+  return {
+    id: r.id, sport: r.sport, date: huMonthDayDow(r.date), time: r.time,
+    duration: r.duration, setsPlayed: r.setsPlayed, intensity: r.intensity,
+    rpe: r.rpe, shoulderStrain: r.shoulderStrain, jumpCount: r.jumpCount,
+    notes: r.notes ?? null,
+  }
+}
+
 export function useTrain() {
-  return { mesocycles, activeMeso, workout: trainWorkout, gymSchedule: trainGymSchedule, sport, exerciseLibrary }
+  const mock = isMockMode()
+  const { data: mesoData } = useQuery({
+    queryKey: ['train', 'mesocycles'],
+    queryFn: mock ? async () => mesocycles : () => trainApi.mesocycles().then(rs => rs.map(toMesocycle)),
+    // Mock mode seeds synchronously so the first render matches the Phase-1
+    // static return exactly (parity + component tests). Real mode loads.
+    initialData: mock ? mesocycles : undefined,
+  })
+  const { data: sportSessions } = useQuery({
+    queryKey: ['train', 'sportSessions'],
+    queryFn: mock ? async () => sport.sessions : () => trainApi.sportSessions().then(rs => rs.map(toSportSession)),
+    initialData: mock ? sport.sessions : undefined,
+  })
+  const mesos = mesoData ?? []
+  return {
+    mesocycles: mesos,
+    // Static fallback while real data loads → components never see undefined
+    // (no component edits allowed). Once loaded, the real active meso wins.
+    activeMeso: mesos.find(m => m.status === 'active') ?? activeMeso,
+    workout: trainWorkout,
+    gymSchedule: trainGymSchedule,
+    sport: { ...sport, sessions: sportSessions ?? [] },
+    exerciseLibrary,
+  }
 }

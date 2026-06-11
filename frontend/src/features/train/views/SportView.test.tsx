@@ -1,8 +1,15 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { SportView } from './SportView'
+import { QueryWrapper } from '@/test/queryWrapper'
 
-const renderView = () => render(<SportView />)
+// Asserts Phase-1 mock sport data, so pin mock mode explicitly (the swapped
+// useTrain hook reads useQuery, so a QueryClientProvider is required too).
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
+
+const renderView = () => render(<SportView />, { wrapper: QueryWrapper })
 
 test('own page-header: brand eyebrow + PageTitle', () => {
   renderView()

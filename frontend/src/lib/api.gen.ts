@@ -75,6 +75,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/mesocycles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All mesocycles of the current user with volume provenance and template days, start date ascending */
+        get: operations["listMesocycles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/sport-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sport (volleyball) sessions of the current user, date descending */
+        get: operations["listSportSessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -187,6 +221,124 @@ export interface components {
             note?: string;
             /** Format: date-time */
             savedAt: string;
+        };
+        MesocycleResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            shortTitle: string;
+            /** @enum {string} */
+            status: "active" | "planned" | "archived";
+            goal?: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            weeks: number;
+            currentWeek: number;
+            split: string;
+            style: string;
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            notes?: string;
+            summary?: string;
+            volumeRecompute?: components["schemas"]["VolumeRecompute"];
+            /** @description Per-muscle volume profile keyed by muscle id (chest, back, ...) */
+            volumePerMuscle?: {
+                [key: string]: components["schemas"]["VolumeProfile"];
+            };
+            days?: components["schemas"]["MesoDay"][];
+        };
+        VolumeRecompute: {
+            lastRun: string;
+            nextRun: string;
+            trigger: string;
+            changes: components["schemas"]["VolumeChange"][];
+        };
+        VolumeChange: {
+            muscle: string;
+            change: string;
+            reason: string;
+            warning?: boolean;
+        };
+        VolumeProfile: {
+            mev: number;
+            mav: number;
+            mrv: number;
+            current: number;
+            source: components["schemas"]["VolumeSource"];
+        };
+        /** @description Provenance envelope — baseline -> adjustments -> confidence -> override */
+        VolumeSource: {
+            baseline: components["schemas"]["VolumeBaseline"];
+            adjustments: components["schemas"]["VolumeAdjustment"][];
+            confidence: number;
+            note?: string;
+            userOverride?: components["schemas"]["VolumeUserOverride"];
+        };
+        VolumeBaseline: {
+            name: string;
+            mev: number;
+            mav: number;
+            mrv: number;
+        };
+        VolumeAdjustment: {
+            kind: string;
+            label: string;
+            /** @description Partial mev/mav/mrv deltas */
+            delta: {
+                [key: string]: number;
+            };
+            warning?: boolean;
+        };
+        VolumeUserOverride: {
+            mev: number;
+            mav: number;
+            mrv: number;
+            /** Format: date-time */
+            at: string;
+        };
+        MesoDay: {
+            /** @description 'Hét'..'Vas' */
+            day: string;
+            type: string;
+            muscle: string;
+            exerciseCount: number;
+            exercises: components["schemas"]["GymExercise"][];
+            note?: string;
+            current?: boolean;
+            muscleAccent?: boolean;
+        };
+        GymExercise: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            muscle: string;
+            sets: number;
+            targetReps: string;
+            targetRIR: number;
+            /** @enum {string} */
+            type: "compound" | "isolation";
+            warning?: string;
+        };
+        SportSessionResponse: {
+            /** Format: uuid */
+            id: string;
+            sport: string;
+            /** Format: date */
+            date: string;
+            /**
+             * @description HH:mm
+             * @example 18:15
+             */
+            time: string;
+            /** @description minutes */
+            duration: number;
+            setsPlayed: number;
+            intensity: number;
+            rpe: number;
+            shoulderStrain: number;
+            jumpCount: number;
+            notes?: string;
         };
     };
     responses: never;
@@ -441,6 +593,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listMesocycles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Mesocycles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listSportSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sport sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SportSessionResponse"][];
                 };
             };
             /** @description Missing/invalid token */

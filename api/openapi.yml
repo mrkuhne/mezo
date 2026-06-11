@@ -5,7 +5,7 @@ info:
     Contract-first API definition for the mezo backend — the single source of
     truth for generated backend DTOs / controller interfaces and frontend types.
     See docs/references/api_contract_conventions.md.
-  version: 0.2.0
+  version: 0.3.0
 servers:
   - url: 'http://localhost:8090'
     description: Local dev backend (MEZO_PORT)
@@ -20,6 +20,8 @@ tags:
     description: Sleep log (biometrics)
   - name: CheckIn
     description: Daily check-in slots (biometrics)
+  - name: Train
+    description: Training domain — mesocycles (with volume provenance) and sport sessions
 paths:
   /api/auth/login:
     post:
@@ -207,6 +209,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/mesocycles:
+    get:
+      tags:
+        - Train
+      operationId: listMesocycles
+      summary: >-
+        All mesocycles of the current user with volume provenance and template
+        days, start date ascending
+      responses:
+        '200':
+          description: Mesocycles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MesocycleResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport-sessions:
+    get:
+      tags:
+        - Train
+      operationId: listSportSessions
+      summary: 'Sport (volleyball) sessions of the current user, date descending'
+      responses:
+        '200':
+          description: Sport sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SportSessionResponse'
         '401':
           description: Missing/invalid token
           content:
@@ -445,3 +491,295 @@ components:
         savedAt:
           type: string
           format: date-time
+    MesocycleResponse:
+      type: object
+      required:
+        - id
+        - title
+        - shortTitle
+        - status
+        - startDate
+        - endDate
+        - weeks
+        - currentWeek
+        - split
+        - style
+        - phaseCurve
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        shortTitle:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+            - archived
+        goal:
+          type: string
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        weeks:
+          type: integer
+        currentWeek:
+          type: integer
+        split:
+          type: string
+        style:
+          type: string
+        phaseCurve:
+          type: array
+          items:
+            type: string
+            enum:
+              - MEV
+              - MAV
+              - MRV
+              - Deload
+        notes:
+          type: string
+        summary:
+          type: string
+        volumeRecompute:
+          $ref: '#/components/schemas/VolumeRecompute'
+        volumePerMuscle:
+          type: object
+          description: 'Per-muscle volume profile keyed by muscle id (chest, back, ...)'
+          additionalProperties:
+            $ref: '#/components/schemas/VolumeProfile'
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/MesoDay'
+    VolumeRecompute:
+      type: object
+      required:
+        - lastRun
+        - nextRun
+        - trigger
+        - changes
+      properties:
+        lastRun:
+          type: string
+        nextRun:
+          type: string
+        trigger:
+          type: string
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeChange'
+    VolumeChange:
+      type: object
+      required:
+        - muscle
+        - change
+        - reason
+      properties:
+        muscle:
+          type: string
+        change:
+          type: string
+        reason:
+          type: string
+        warning:
+          type: boolean
+    VolumeProfile:
+      type: object
+      required:
+        - mev
+        - mav
+        - mrv
+        - current
+        - source
+      properties:
+        mev:
+          type: integer
+        mav:
+          type: integer
+        mrv:
+          type: integer
+        current:
+          type: integer
+        source:
+          $ref: '#/components/schemas/VolumeSource'
+    VolumeSource:
+      type: object
+      description: Provenance envelope — baseline -> adjustments -> confidence -> override
+      required:
+        - baseline
+        - adjustments
+        - confidence
+      properties:
+        baseline:
+          $ref: '#/components/schemas/VolumeBaseline'
+        adjustments:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeAdjustment'
+        confidence:
+          type: number
+        note:
+          type: string
+        userOverride:
+          $ref: '#/components/schemas/VolumeUserOverride'
+    VolumeBaseline:
+      type: object
+      required:
+        - name
+        - mev
+        - mav
+        - mrv
+      properties:
+        name:
+          type: string
+        mev:
+          type: integer
+        mav:
+          type: integer
+        mrv:
+          type: integer
+    VolumeAdjustment:
+      type: object
+      required:
+        - kind
+        - label
+        - delta
+      properties:
+        kind:
+          type: string
+          pattern: ^(pattern|recovery|niggle|sport-cross)$
+        label:
+          type: string
+        delta:
+          type: object
+          description: Partial mev/mav/mrv deltas
+          additionalProperties:
+            type: integer
+        warning:
+          type: boolean
+    VolumeUserOverride:
+      type: object
+      required:
+        - mev
+        - mav
+        - mrv
+        - at
+      properties:
+        mev:
+          type: integer
+        mav:
+          type: integer
+        mrv:
+          type: integer
+        at:
+          type: string
+          format: date-time
+    MesoDay:
+      type: object
+      required:
+        - day
+        - type
+        - muscle
+        - exerciseCount
+        - exercises
+      properties:
+        day:
+          type: string
+          description: '''Hét''..''Vas'''
+        type:
+          type: string
+        muscle:
+          type: string
+        exerciseCount:
+          type: integer
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/GymExercise'
+        note:
+          type: string
+        current:
+          type: boolean
+        muscleAccent:
+          type: boolean
+    GymExercise:
+      type: object
+      required:
+        - id
+        - name
+        - muscle
+        - sets
+        - targetReps
+        - targetRIR
+        - type
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        muscle:
+          type: string
+        sets:
+          type: integer
+        targetReps:
+          type: string
+        targetRIR:
+          type: integer
+        type:
+          type: string
+          enum:
+            - compound
+            - isolation
+        warning:
+          type: string
+    SportSessionResponse:
+      type: object
+      required:
+        - id
+        - sport
+        - date
+        - time
+        - duration
+        - setsPlayed
+        - intensity
+        - rpe
+        - shoulderStrain
+        - jumpCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        sport:
+          type: string
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          description: 'HH:mm'
+          example: '18:15'
+        duration:
+          type: integer
+          description: minutes
+        setsPlayed:
+          type: integer
+        intensity:
+          type: integer
+        rpe:
+          type: number
+        shoulderStrain:
+          type: integer
+        jumpCount:
+          type: integer
+        notes:
+          type: string

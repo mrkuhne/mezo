@@ -1,8 +1,15 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { GymView } from './GymView'
+import { QueryWrapper } from '@/test/queryWrapper'
 
-const renderView = () => render(<MemoryRouter><GymView /></MemoryRouter>)
+// Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
+// useTrain hook reads useQuery, so a QueryClientProvider is required too).
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
+
+const renderView = () => render(<QueryWrapper><MemoryRouter><GymView /></MemoryRouter></QueryWrapper>)
 
 test('own page-header: brand eyebrow + meso short title + week badge', () => {
   renderView()
