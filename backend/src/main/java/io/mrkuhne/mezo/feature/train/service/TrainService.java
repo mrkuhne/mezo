@@ -115,6 +115,11 @@ public class TrainService {
         m.setPhaseCurve(req.getPhaseCurve().stream()
             .map(MesocycleCreateRequest.PhaseCurveEnum::getValue).toList());
         m.setNotes(req.getNotes());
+        if (req.getStatus() == MesocycleCreateRequest.StatusEnum.ACTIVE) {
+            // Single-active invariant holds on the create-as-active path too — the wizard's
+            // "Aktiválás most" creates directly with active status (live-smoke regression).
+            archiveActiveMesos(createdBy);
+        }
         MesocycleEntity saved = mesocycleRepository.save(m);
 
         // Template days + exercises — orderIndex pinned by array order.
@@ -146,8 +151,7 @@ public class TrainService {
         MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
         if (!"active".equals(target.getStatus())) {
             // Single-active invariant (spec rule): activating archives every other active meso.
-            mesocycleRepository.findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
-                .forEach(m -> m.setStatus("archived"));
+            archiveActiveMesos(createdBy);
             target.setStatus("active");
             target.setCurrentWeek(clampWeek(target.getStartDate(), target.getWeeks()));
         }
@@ -180,6 +184,12 @@ public class TrainService {
             fresh.add(exerciseRepository.save(toExerciseEntity(createdBy, dayId, inputs.get(i), i)));
         }
         return toDay(day, fresh);
+    }
+
+    /** Single-active invariant: archives every currently active meso of the owner. */
+    private void archiveActiveMesos(UUID createdBy) {
+        mesocycleRepository.findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
+            .forEach(m -> m.setStatus("archived"));
     }
 
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */

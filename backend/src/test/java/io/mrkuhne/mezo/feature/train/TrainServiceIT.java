@@ -265,6 +265,27 @@ class TrainServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testCreateMesocycle_shouldArchivePreviousActive_whenCreatedAsActive() {
+        UUID user = databasePopulator.populateUser("create-c@test.local");
+        MesocycleEntity previous = trainPopulator.createMesocycle(user, "Régi aktív", "active");
+
+        MesocycleCreateRequest req = MesocycleCreateRequest.builder()
+            .title("Azonnal aktív").status(MesocycleCreateRequest.StatusEnum.ACTIVE)
+            .startDate(LocalDate.now()).weeks(4)
+            .split("PPL").style("RP")
+            .phaseCurve(List.of(MesocycleCreateRequest.PhaseCurveEnum.MEV))
+            .build();
+        trainService.createMesocycle(user, req);
+        entityManager.flush();
+        entityManager.clear();
+
+        // The single-active invariant must hold on the create-as-active path too,
+        // not only on the explicit activate endpoint (live-smoke regression).
+        assertThat(mesocycleRepository.findById(previous.getId()).orElseThrow().getStatus())
+            .isEqualTo("archived");
+    }
+
+    @Test
     void testActivateMesocycle_shouldArchivePreviousActive_whenAnotherActiveExists() {
         UUID user = databasePopulator.populateUser("lifecycle-a@test.local");
         MesocycleEntity previous = trainPopulator.createMesocycle(user, "Régi aktív", "active");
