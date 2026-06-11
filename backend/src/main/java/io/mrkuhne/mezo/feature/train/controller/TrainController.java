@@ -46,11 +46,8 @@ public class TrainController implements TrainApi {
         return service.closeMesocycle(currentUserId.get(), id);
     }
 
-    // Contract-first stub: the interface landed with the T1 contract commit; the real
-    // service delegation replaces it in the replace task of the same branch (mezo-696).
-
     @Override
     public MesoDay replaceDayExercises(UUID id, UUID dayId, List<GymExerciseInput> gymExerciseInput) {
-        throw new UnsupportedOperationException("mezo-696: implemented in the replace task");
+        return service.replaceDayExercises(currentUserId.get(), id, dayId, gymExerciseInput);
     }
 }

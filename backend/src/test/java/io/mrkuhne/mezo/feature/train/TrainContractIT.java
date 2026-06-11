@@ -3,12 +3,14 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
+import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
@@ -123,6 +125,37 @@ class TrainContractIT extends ApiIntegrationTest {
     void testActivateMesocycle_shouldReturn401_whenUnauthenticated() {
         postForBody("/api/train/mesocycles/" + UUID.randomUUID() + "/activate",
             null, null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testReplaceDayExercises_shouldRoundTripUpdatedDay_whenAuthenticated() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Szerkesztett", "active");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), "Hét", "Pull", 0, "planned");
+        trainPopulator.createExercise(owner, day.getId(), "Régi", 0);
+
+        List<GymExerciseInput> body = List.of(
+            GymExerciseInput.builder().name("Friss gyakorlat").sets(3).targetReps("8-10").targetRIR(1)
+                .type(GymExerciseInput.TypeEnum.COMPOUND).build());
+        MesoDay updated = putForBody(
+            "/api/train/mesocycles/" + meso.getId() + "/days/" + day.getId() + "/exercises",
+            body, ownerAuthHeaders(), HttpStatus.OK, MesoDay.class);
+
+        assertThat(updated.getId()).isEqualTo(day.getId());
+        assertThat(updated.getExercises()).singleElement()
+            .satisfies(e -> assertThat(e.getName()).isEqualTo("Friss gyakorlat"));
+    }
+
+    @Test
+    void testReplaceDayExercises_shouldReturn404_whenUnknownDay() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+
+        String body = exchangeForBody(HttpMethod.PUT,
+            "/api/train/mesocycles/" + meso.getId() + "/days/" + UUID.randomUUID() + "/exercises",
+            List.of(), ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
 
     private MesocycleCreateRequest minimalCreateRequest() {

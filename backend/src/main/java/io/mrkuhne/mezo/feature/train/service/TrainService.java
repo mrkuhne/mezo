@@ -20,6 +20,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,6 +163,25 @@ public class TrainService {
         return assembleResponse(createdBy, target);
     }
 
+    @Transactional
+    public MesoDay replaceDayExercises(UUID createdBy, UUID mesoId, UUID dayId, List<GymExerciseInput> inputs) {
+        ownedMesoOrThrow(createdBy, mesoId);
+        WorkoutSessionEntity day = workoutSessionRepository.findById(dayId)
+            .filter(s -> createdBy.equals(s.getCreatedBy()) && mesoId.equals(s.getMesocycleId()))
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+
+        // Full-list replace: soft-delete the current rows (@SQLDelete flips is_deleted), then
+        // insert the new list with orderIndex pinned by array order.
+        exerciseRepository.deleteAll(exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(dayId)));
+        List<ExerciseEntity> fresh = new ArrayList<>(inputs.size());
+        for (int i = 0; i < inputs.size(); i++) {
+            fresh.add(exerciseRepository.save(toExerciseEntity(createdBy, dayId, inputs.get(i), i)));
+        }
+        return toDay(day, fresh);
+    }
+
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */
     private MesocycleEntity ownedMesoOrThrow(UUID createdBy, UUID id) {
         return mesocycleRepository.findById(id)
@@ -217,6 +237,7 @@ public class TrainService {
 
     private MesoDay toDay(WorkoutSessionEntity s, List<ExerciseEntity> exercises) {
         return MesoDay.builder()
+            .id(s.getId())
             .day(s.getDayLabel())
             .type(s.getType())
             .muscle(s.getMuscle())

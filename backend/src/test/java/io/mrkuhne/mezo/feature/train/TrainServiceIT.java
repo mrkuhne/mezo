@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
+import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
@@ -318,5 +319,67 @@ class TrainServiceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> trainService.activateMesocycle(intruder, meso.getId()))
             .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testReplaceDayExercises_shouldSoftDeleteOldAndInsertOrdered_whenValid() {
+        UUID user = databasePopulator.populateUser("replace-a@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Szerkesztett", "active");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Hét", "Pull", 0, "planned");
+        trainPopulator.createExercise(user, day.getId(), "Régi A", 0);
+        trainPopulator.createExercise(user, day.getId(), "Régi B", 1);
+
+        MesoDay updated = trainService.replaceDayExercises(user, meso.getId(), day.getId(), List.of(
+            GymExerciseInput.builder().name("Új 1").sets(3).targetReps("8-10").targetRIR(1)
+                .type(GymExerciseInput.TypeEnum.COMPOUND).build(),
+            GymExerciseInput.builder().name("Új 2").sets(3).targetReps("10-12").targetRIR(2)
+                .type(GymExerciseInput.TypeEnum.ISOLATION).build(),
+            GymExerciseInput.builder().name("Új 3").sets(2).targetReps("12-15").targetRIR(1)
+                .type(GymExerciseInput.TypeEnum.ISOLATION).build()));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(updated.getId()).isEqualTo(day.getId());
+        assertThat(updated.getExercises()).extracting(e -> e.getName())
+            .containsExactly("Új 1", "Új 2", "Új 3");
+        assertThat(updated.getExerciseCount()).isEqualTo(3);
+
+        List<ExerciseEntity> fresh = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(user, List.of(day.getId()));
+        assertThat(fresh).extracting(ExerciseEntity::getName).containsExactly("Új 1", "Új 2", "Új 3");
+        assertThat(fresh).extracting(ExerciseEntity::getOrderIndex).containsExactly(0, 1, 2);
+
+        // The old rows are soft-deleted, not physically removed (house rule).
+        Number softDeleted = (Number) entityManager.createNativeQuery(
+                "select count(*) from exercise where workout_session_id = ?1 and is_deleted = true")
+            .setParameter(1, day.getId())
+            .getSingleResult();
+        assertThat(softDeleted.longValue()).isEqualTo(2);
+    }
+
+    @Test
+    void testReplaceDayExercises_shouldThrowNotFound_whenDayBelongsToOtherMeso() {
+        UUID user = databasePopulator.populateUser("replace-b@test.local");
+        MesocycleEntity mesoA = trainPopulator.createMesocycle(user, "A blokk", "active");
+        MesocycleEntity mesoB = trainPopulator.createMesocycle(user, "B blokk", "planned");
+        WorkoutSessionEntity dayOfB =
+            trainPopulator.createWorkoutSession(user, mesoB.getId(), "Hét", "Pull", 0, "planned");
+
+        assertThatThrownBy(() -> trainService.replaceDayExercises(user, mesoA.getId(), dayOfB.getId(), List.of()))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testListMesocycles_shouldExposeDayIds_whenDaysExist() {
+        UUID user = databasePopulator.populateUser("dayid@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Id-s napok", "active");
+        WorkoutSessionEntity day =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Hét", "Pull", 0, "planned");
+
+        List<MesocycleResponse> responses = trainService.listMesocycles(user);
+
+        assertThat(responses.get(0).getDays()).singleElement()
+            .satisfies(d -> assertThat(d.getId()).isEqualTo(day.getId()));
     }
 }
