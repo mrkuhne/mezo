@@ -80,6 +80,16 @@
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
+			<!-- Hibernate 7's typed jsonb mapping (@JdbcTypeCode(SqlTypes.JSON)) auto-detects a
+			     JSON FormatMapper, but its JacksonJsonFormatMapper is bound to Jackson 2
+			     (com.fasterxml.jackson.databind), whereas Spring Boot 4 ships only Jackson 3
+			     (tools.jackson). Add Jackson 2 databind (version managed by Hibernate's jackson-bom)
+			     so Hibernate can (de)serialize jsonb columns; Spring MVC still uses Jackson 3.
+			     Required by the ProvenanceEnvelope jsonb round-trip (Slice B). -->
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
