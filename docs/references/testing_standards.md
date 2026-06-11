@@ -1,5 +1,8 @@
 # Testing Standards
 
+> Reusable infrastructure (base classes, populators, DB reset, HTTP verb helpers) is defined
+> in `integration_test_framework.md` — read both when writing integration tests.
+
 ## Priority
 
 **Integration tests (HIGH)** > Unit tests (LOW)
