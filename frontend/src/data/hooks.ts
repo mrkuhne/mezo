@@ -18,7 +18,7 @@ import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './
 import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
 import { mesocycles, activeMeso, workout as trainWorkout, gymSchedule as trainGymSchedule, sport, exerciseLibrary } from './train'
-import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, WeightEntry, WeightLogInput, SleepEntry, SleepLogInput, Mention, MentionLogInput, Mesocycle, SportSession } from './types'
+import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, WeightEntry, WeightLogInput, SleepEntry, SleepLogInput, Mention, MentionLogInput, Mesocycle, SportSession, WorkoutPlan, GymSchedule, Sport, ExerciseLibraryItem } from './types'
 
 export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
@@ -221,7 +221,22 @@ function toSportSession(r: SportSessionResponse): SportSession {
   }
 }
 
-export function useTrain() {
+// Real mode has no static fallback (T0 "tiszta lap"): an empty backend must
+// surface as null, not silently render Phase-1 demo data. Components ghost-guard
+// these in T3-T5. `sport.sessions` always loads from the API; the other sport
+// facets (schedule/week/crossLoad) are derived data that lands in T2, so they're
+// null until then. `exerciseLibrary` stays static — it's a content catalog, not
+// user data (spec decision). Mock mode returns the byte-identical Phase-1 statics.
+type TrainData = {
+  mesocycles: Mesocycle[]
+  activeMeso: Mesocycle | null
+  workout: WorkoutPlan | null
+  gymSchedule: GymSchedule | null
+  sport: { [K in keyof Sport]: K extends 'sessions' ? SportSession[] : Sport[K] | null }
+  exerciseLibrary: ExerciseLibraryItem[]
+}
+
+export function useTrain(): TrainData {
   const mock = isMockMode()
   const { data: mesoData } = useQuery({
     queryKey: ['train', 'mesocycles'],
@@ -238,12 +253,13 @@ export function useTrain() {
   const mesos = mesoData ?? []
   return {
     mesocycles: mesos,
-    // Static fallback while real data loads → components never see undefined
-    // (no component edits allowed). Once loaded, the real active meso wins.
-    activeMeso: mesos.find(m => m.status === 'active') ?? activeMeso,
-    workout: trainWorkout,
-    gymSchedule: trainGymSchedule,
-    sport: { ...sport, sessions: sportSessions ?? [] },
-    exerciseLibrary,
+    // real mode: no static fallback — empty backend means null, components ghost-guard (T0)
+    activeMeso: mesos.find(m => m.status === 'active') ?? (mock ? activeMeso : null),
+    workout: mock ? trainWorkout : null,          // real value arrives in T2 (/today endpoint)
+    gymSchedule: mock ? trainGymSchedule : null,  // real derivation arrives in T2
+    sport: mock
+      ? { ...sport, sessions: sportSessions ?? [] }
+      : { ...sport, schedule: null, week: null, crossLoad: null, sessions: sportSessions ?? [] },
+    exerciseLibrary, // static catalog — content, not user data (spec decision)
   }
 }
