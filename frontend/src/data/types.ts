@@ -499,7 +499,7 @@ export interface LoggedWorkoutExercise {
   targetRIR: number
   type: ExerciseKind
   muscle: string
-  lastWeek: LastWeekSet
+  lastWeek: LastWeekSet | null // null on the first-ever workout (no previous completed instance)
 }
 export interface ChallengeRef { kind: string; label: string }
 export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo'

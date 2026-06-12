@@ -110,14 +110,77 @@ test('useTrain (real mode) returns nulls (no static fallback) when the backend i
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
     http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.mesocycles).toEqual([]))
   expect(result.current.activeMeso).toBeNull()
   expect(result.current.workout).toBeNull()
   expect(result.current.gymSchedule).toBeNull()
+  expect(result.current.todaySession).toBeNull()
   expect(result.current.sport.schedule).toBeNull()
   expect(result.current.sport.week).toBeNull()
   expect(result.current.sport.crossLoad).toBeNull()
   expect(result.current.sport.sessions).toEqual([])
+})
+
+test('useTrain (real mode) maps /today into the WorkoutPlan shape with lastWeek refs', async () => {
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.workout).not.toBeNull())
+  expect(result.current.workout!.title).toBe('Pull Day')
+  expect(result.current.workout!.exercises[0].name).toBe('Chest Supported Row')
+  expect(result.current.workout!.exercises[0].lastWeek).toEqual({ weight: 102.5, reps: 9, rir: 2 })
+  expect(result.current.workout!.challenges).toEqual([]) // AI challenges are Phase 3
+  expect(result.current.todaySession).toEqual({
+    templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
+    openWorkout: null,
+  })
+})
+
+test('useTrain (real mode) derives the gym weekly schedule from the active meso days', async () => {
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.gymSchedule).not.toBeNull())
+  const rows = result.current.gymSchedule!.weeklyTimes
+  expect(rows).toHaveLength(7)
+  const csu = rows.find((r) => r.day === 'Csü')!
+  expect(csu.active).toBe(true) // the meso fixture's only day with exercises
+  expect(csu.type).toBe('Pull')
+  expect(rows.filter((r) => r.active)).toHaveLength(1)
+})
+
+test('useTrain (real mode) workout write mutations hit the T2 endpoints', async () => {
+  const calls: string[] = []
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts`, async ({ request }) => {
+      const body = (await request.json()) as { templateSessionId: string }
+      calls.push(`start:${body.templateSessionId}`)
+      return HttpResponse.json(
+        { id: 'w-1', templateSessionId: body.templateSessionId, date: '2026-06-12', status: 'active', sets: [] },
+        { status: 201 },
+      )
+    }),
+    http.post(`${API_BASE}/api/train/workouts/:id/sets`, ({ params }) => {
+      calls.push(`set:${params.id}`)
+      return HttpResponse.json({ id: 'st-1', exerciseId: 'ex-1', setIndex: 0 }, { status: 201 })
+    }),
+    http.post(`${API_BASE}/api/train/workouts/:id/feedback`, ({ params }) => {
+      calls.push(`feedback:${params.id}`)
+      return new HttpResponse(null, { status: 204 })
+    }),
+    http.post(`${API_BASE}/api/train/workouts/:id/finish`, ({ params }) => {
+      calls.push(`finish:${params.id}`)
+      return HttpResponse.json({ id: String(params.id), templateSessionId: 't-1', date: '2026-06-12', status: 'completed', sets: [] })
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  const started = vi.fn()
+  result.current.startWorkout('t-1', { onSuccess: started })
+  await waitFor(() => expect(started).toHaveBeenCalled())
+  expect(started.mock.calls[0][0].id).toBe('w-1')
+  result.current.logSet('w-1', { exerciseId: 'ex-1', setIndex: 0, weightKg: 102.5, reps: 9, rir: 2 })
+  result.current.saveWorkoutFeedback('w-1', [{ exerciseId: 'ex-1', pump: 3, jointPain: 1, workload: 2 }])
+  result.current.finishWorkout('w-1')
+  await waitFor(() =>
+    expect(calls).toEqual(expect.arrayContaining(['start:t-1', 'set:w-1', 'feedback:w-1', 'finish:w-1'])),
+  )
 })

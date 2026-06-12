@@ -74,6 +74,7 @@ export const handlers = [
         },
         days: [
           {
+            id: 'a1f3a0e2-0000-4000-8000-000000000010',
             day: 'Csü', type: 'Pull', muscle: 'back+bicep', exerciseCount: 1, current: true,
             exercises: [
               {
@@ -112,5 +113,46 @@ export const handlers = [
   ),
   http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, () =>
     HttpResponse.json({ day: 'Hét', type: 'Pull', muscle: '', exerciseCount: 0, exercises: [] }),
+  ),
+  // T2 workout-execution endpoints — happy-path defaults; tests override with spies.
+  http.get(`${API_BASE}/api/train/workouts/today`, () =>
+    HttpResponse.json({
+      templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
+      dayLabel: 'Csü',
+      title: 'Pull Day',
+      durationEst: 78,
+      exercises: [
+        {
+          id: 'c1f3a0e2-0000-4000-8000-000000000002', name: 'Chest Supported Row',
+          muscle: 'back-mid', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound',
+          lastWeek: { weightKg: 102.5, reps: 9, rir: 2 },
+        },
+      ],
+      openWorkout: null,
+    }),
+  ),
+  http.post(`${API_BASE}/api/train/workouts`, () =>
+    HttpResponse.json(
+      {
+        id: 'e1f3a0e2-0000-4000-8000-000000000020',
+        templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
+        date: '2026-06-12', status: 'active', sets: [],
+      },
+      { status: 201 },
+    ),
+  ),
+  http.post(`${API_BASE}/api/train/workouts/:id/sets`, () =>
+    HttpResponse.json(
+      { id: 'f1f3a0e2-0000-4000-8000-000000000030', exerciseId: 'c1f3a0e2-0000-4000-8000-000000000002', setIndex: 0 },
+      { status: 201 },
+    ),
+  ),
+  http.post(`${API_BASE}/api/train/workouts/:id/feedback`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/train/workouts/:id/finish`, ({ params }) =>
+    HttpResponse.json({
+      id: String(params.id),
+      templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
+      date: '2026-06-12', status: 'completed', sets: [],
+    }),
   ),
 ]

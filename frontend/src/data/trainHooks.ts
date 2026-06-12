@@ -7,9 +7,14 @@ import {
   type GymExerciseInput,
   type MesocycleCreateRequest,
   type MesocycleResponse,
+  type SetLogRequest,
   type SportSessionResponse,
+  type WorkoutFeedbackInput,
+  type WorkoutInstanceResponse,
+  type WorkoutTodayResponse,
 } from '@/lib/trainApi'
 import {
+  DAY_ORDER,
   mesocycles,
   activeMeso,
   workout as trainWorkout,
@@ -25,6 +30,41 @@ import type {
   SportSession,
   WorkoutPlan,
 } from './types'
+
+// /today -> the Phase-1 WorkoutPlan shape. AI extras (challenges, niggleWarning)
+// are Phase 3 — empty/absent in real mode. `tag` is display-derived elsewhere.
+function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): WorkoutPlan | null {
+  if (!r?.templateSessionId || !r.exercises?.length) return null
+  return {
+    title: r.title ?? '',
+    tag: '',
+    durationEst: r.durationEst ?? 0,
+    exercises: r.exercises.map((e) => ({
+      id: e.id, name: e.name, muscle: e.muscle, sets: e.sets,
+      targetReps: e.targetReps, targetRIR: e.targetRIR, type: e.type,
+      lastWeek: e.lastWeek
+        ? { weight: Number(e.lastWeek.weightKg), reps: e.lastWeek.reps, rir: e.lastWeek.rir }
+        : null,
+    })),
+    challenges: [],
+  }
+}
+
+// Gym weekly row derived from the active meso's template days (no schedule
+// template in Phase 2 — FR-2.1.12 is out of scope, so time/duration are null).
+function deriveGymSchedule(meso: Mesocycle | null): GymSchedule | null {
+  const days = meso?.days
+  if (!days?.length) return null
+  const todayLabel = DAY_ORDER[(new Date().getDay() + 6) % 7]
+  return {
+    weeklyTimes: DAY_ORDER.map((d) => {
+      const md = days.find((x) => x.day === d && x.exerciseCount > 0)
+      return md
+        ? { day: d, type: md.type, time: null, duration: null, active: true, today: d === todayLabel }
+        : { day: d, type: null, time: null, duration: null, active: false }
+    }),
+  }
+}
 
 // Backend serves ISO dates (`2026-05-01`); the UI expects HU display strings.
 // The generated MesocycleResponse is structurally close to the domain Mesocycle
@@ -64,10 +104,15 @@ type TrainData = {
   gymSchedule: GymSchedule | null
   sport: { [K in keyof Sport]: K extends 'sessions' ? SportSession[] : Sport[K] | null }
   exerciseLibrary: ExerciseLibraryItem[]
+  todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
   createMesocycle: (req: MesocycleCreateRequest, opts?: MutateOpts) => void
   activateMesocycle: (id: string, opts?: MutateOpts) => void
   closeMesocycle: (id: string, opts?: MutateOpts) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
+  startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
+  logSet: (workoutId: string, set: SetLogRequest) => void
+  saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
+  finishWorkout: (workoutId: string) => void
   mesoMutationPending: boolean
 }
 
@@ -85,6 +130,12 @@ export function useTrain(): TrainData {
     queryKey: ['train', 'sportSessions'],
     queryFn: mock ? async () => sport.sessions : () => trainApi.sportSessions().then(rs => rs.map(toSportSession)),
     initialData: mock ? sport.sessions : undefined,
+  })
+  // Today's workout context — only meaningful in real mode (mock serves the static plan).
+  const { data: todayData } = useQuery({
+    queryKey: ['train', 'workoutToday'],
+    queryFn: mock ? async () => null : () => trainApi.workoutToday(),
+    initialData: mock ? null : undefined,
   })
 
   // Write mutations: mock mode no-ops (Phase-1 local behavior stays untouched);
@@ -112,6 +163,32 @@ export function useTrain(): TrainData {
     onSuccess: invalidate,
   })
 
+  // T2 workout-execution mutations: mock no-ops; real persists then refetches
+  // /today so a mid-workout reload resumes from the open instance.
+  const invalidateToday = () => {
+    if (!mock) qc.invalidateQueries({ queryKey: ['train', 'workoutToday'] })
+  }
+  const startMutation = useMutation<WorkoutInstanceResponse | undefined, Error, string>({
+    mutationFn: mock ? async () => undefined : (templateSessionId) => trainApi.startWorkout(templateSessionId),
+    onSuccess: invalidateToday,
+  })
+  const logSetMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { workoutId: string; set: SetLogRequest }) => undefined
+      : (args: { workoutId: string; set: SetLogRequest }) => trainApi.logSet(args.workoutId, args.set),
+    onSuccess: invalidateToday,
+  })
+  const feedbackMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { workoutId: string; items: WorkoutFeedbackInput[] }) => undefined
+      : (args: { workoutId: string; items: WorkoutFeedbackInput[] }) =>
+          trainApi.saveWorkoutFeedback(args.workoutId, args.items),
+  })
+  const finishMutation = useMutation({
+    mutationFn: mock ? async (_id: string) => undefined : (id: string) => trainApi.finishWorkout(id),
+    onSuccess: invalidateToday,
+  })
+
   const createMesocycle = useCallback(
     (req: MesocycleCreateRequest, opts?: MutateOpts) => createMutation.mutate(req, opts),
     [createMutation],
@@ -129,14 +206,37 @@ export function useTrain(): TrainData {
       replaceMutation.mutate({ mesoId, dayId, exercises }),
     [replaceMutation],
   )
+  const startWorkout = useCallback(
+    (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) =>
+      startMutation.mutate(templateSessionId, {
+        onSuccess: (w) => { if (w) opts?.onSuccess?.(w) },
+      }),
+    [startMutation],
+  )
+  const logSet = useCallback(
+    (workoutId: string, set: SetLogRequest) => logSetMutation.mutate({ workoutId, set }),
+    [logSetMutation],
+  )
+  const saveWorkoutFeedback = useCallback(
+    (workoutId: string, items: WorkoutFeedbackInput[]) => feedbackMutation.mutate({ workoutId, items }),
+    [feedbackMutation],
+  )
+  const finishWorkout = useCallback(
+    (workoutId: string) => finishMutation.mutate(workoutId),
+    [finishMutation],
+  )
 
   const mesos = mesoData ?? []
+  const realActiveMeso = mesos.find(m => m.status === 'active') ?? null
   return {
     mesocycles: mesos,
     // real mode: no static fallback — empty backend means null, components ghost-guard (T0)
-    activeMeso: mesos.find(m => m.status === 'active') ?? (mock ? activeMeso : null),
-    workout: mock ? trainWorkout : null,          // real value arrives in T2 (/today endpoint)
-    gymSchedule: mock ? trainGymSchedule : null,  // real derivation arrives in T2
+    activeMeso: realActiveMeso ?? (mock ? activeMeso : null),
+    workout: mock ? trainWorkout : toWorkoutPlan(todayData),
+    gymSchedule: mock ? trainGymSchedule : deriveGymSchedule(realActiveMeso),
+    todaySession: !mock && todayData?.templateSessionId
+      ? { templateSessionId: todayData.templateSessionId, openWorkout: todayData.openWorkout ?? null }
+      : null,
     sport: mock
       ? { ...sport, sessions: sportSessions ?? [] }
       : { ...sport, schedule: null, week: null, crossLoad: null, sessions: sportSessions ?? [] },
@@ -145,6 +245,10 @@ export function useTrain(): TrainData {
     activateMesocycle,
     closeMesocycle,
     saveDayExercises,
+    startWorkout,
+    logSet,
+    saveWorkoutFeedback,
+    finishWorkout,
     mesoMutationPending: createMutation.isPending || activateMutation.isPending || closeMutation.isPending,
   }
 }
