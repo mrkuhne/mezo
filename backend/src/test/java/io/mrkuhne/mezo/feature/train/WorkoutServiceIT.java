@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -237,5 +238,71 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
             .isInstanceOf(SystemRuntimeErrorException.class)
             .extracting(e -> ((SystemRuntimeErrorException) e).getStatus())
             .isEqualTo(org.springframework.http.HttpStatus.CONFLICT);
+    }
+
+    private static WorkoutFeedbackInput feedbackInput(ExerciseEntity exercise, int pump, int jointPain,
+        int workload) {
+        return WorkoutFeedbackInput.builder().exerciseId(exercise.getId())
+            .pump(pump).jointPain(jointPain).workload(workload).build();
+    }
+
+    @Test
+    void testSaveFeedback_shouldUpsertPerExercise_whenSavedTwice() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+
+        workoutService.saveFeedback(user, started.getId(), List.of(feedbackInput(exercise, 3, 1, 2)));
+        workoutService.saveFeedback(user, started.getId(), List.of(feedbackInput(exercise, 4, 2, 3)));
+        entityManager.flush();
+        entityManager.clear();
+
+        List<ExerciseFeedbackEntity> rows = exerciseFeedbackRepository.findAll().stream()
+            .filter(f -> started.getId().equals(f.getWorkoutSessionId())).toList();
+        assertThat(rows).hasSize(1); // upsert — UNIQUE pair, second save updates
+        assertThat(rows.get(0).getPump()).isEqualTo(4);
+        assertThat(rows.get(0).getJointPain()).isEqualTo(2);
+        assertThat(rows.get(0).getWorkload()).isEqualTo(3);
+    }
+
+    @Test
+    void testSaveFeedback_shouldThrowNotFound_whenExerciseNotInTemplateDay() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        WorkoutSessionEntity otherDay =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Pén", "Push Day", 1, "planned");
+        ExerciseEntity foreignExercise = trainPopulator.createExercise(user, otherDay.getId(), "Bench", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+
+        assertThatThrownBy(() -> workoutService.saveFeedback(user, started.getId(),
+            List.of(feedbackInput(foreignExercise, 3, 1, 2))))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testFinishWorkout_shouldCompleteAndStayCompleted_whenCalledTwice() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+        workoutService.logSet(user, started.getId(), setRequest(exercise, 0, "100", 8, 1));
+
+        WorkoutInstanceResponse finished = workoutService.finishWorkout(user, started.getId());
+        WorkoutInstanceResponse again = workoutService.finishWorkout(user, started.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(finished.getStatus()).isEqualTo(WorkoutInstanceResponse.StatusEnum.COMPLETED);
+        assertThat(finished.getSets()).hasSize(1); // response carries the logged sets (summary)
+        assertThat(again.getStatus()).isEqualTo(WorkoutInstanceResponse.StatusEnum.COMPLETED);
+        WorkoutSessionEntity row = workoutSessionRepository.findById(started.getId()).orElseThrow();
+        assertThat(row.getStatus()).isEqualTo("completed");
     }
 }

@@ -2,11 +2,14 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
@@ -42,6 +45,7 @@ public class WorkoutService {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+    private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final TrainMapper mapper;
 
     @Transactional
@@ -96,6 +100,40 @@ public class WorkoutService {
         set.setNote(req.getNote());
         set.setDoneAt(Instant.now());
         return mapper.toSetResponse(exerciseSetRepository.save(set));
+    }
+
+    @Transactional
+    public void saveFeedback(UUID createdBy, UUID workoutId, List<WorkoutFeedbackInput> items) {
+        WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
+        for (WorkoutFeedbackInput in : items) {
+            exerciseRepository.findById(in.getExerciseId())
+                .filter(e -> createdBy.equals(e.getCreatedBy())
+                    && instance.getTemplateSessionId().equals(e.getWorkoutSessionId()))
+                .orElseThrow(WorkoutService::notFound);
+            // Upsert per (instance, exercise) — the DB UNIQUE backs this invariant.
+            ExerciseFeedbackEntity row = exerciseFeedbackRepository
+                .findByCreatedByAndWorkoutSessionIdAndExerciseId(createdBy, instance.getId(), in.getExerciseId())
+                .orElseGet(() -> {
+                    ExerciseFeedbackEntity f = new ExerciseFeedbackEntity();
+                    f.setCreatedBy(createdBy);
+                    f.setWorkoutSessionId(instance.getId());
+                    f.setExerciseId(in.getExerciseId());
+                    return f;
+                });
+            row.setPump(in.getPump());
+            row.setJointPain(in.getJointPain());
+            row.setWorkload(in.getWorkload());
+            exerciseFeedbackRepository.save(row);
+        }
+    }
+
+    @Transactional
+    public WorkoutInstanceResponse finishWorkout(UUID createdBy, UUID workoutId) {
+        WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
+        if ("active".equals(instance.getStatus())) {
+            instance.setStatus("completed"); // dirty-checked, flushed at commit
+        }
+        return toInstanceResponse(createdBy, instance);
     }
 
     /** Instance gate: owned AND an instance row (template rows are not loggable targets). */

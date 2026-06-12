@@ -77,11 +77,11 @@ public class TrainController implements TrainApi {
 
     @Override
     public void saveWorkoutFeedback(UUID id, List<WorkoutFeedbackInput> workoutFeedbackInput) {
-        throw new UnsupportedOperationException("T2 Task 5");
+        workoutService.saveFeedback(currentUserId.get(), id, workoutFeedbackInput);
     }
 
     @Override
     public WorkoutInstanceResponse finishWorkout(UUID id) {
-        throw new UnsupportedOperationException("T2 Task 5");
+        return workoutService.finishWorkout(currentUserId.get(), id);
     }
 }
