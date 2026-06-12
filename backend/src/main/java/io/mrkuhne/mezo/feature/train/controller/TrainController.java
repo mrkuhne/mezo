@@ -7,11 +7,15 @@ import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
+import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
+import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -27,6 +31,7 @@ public class TrainController implements TrainApi {
 
     private final TrainService service;
     private final WorkoutService workoutService;
+    private final SportService sportService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -57,6 +62,21 @@ public class TrainController implements TrainApi {
     @Override
     public MesoDay replaceDayExercises(UUID id, UUID dayId, List<GymExerciseInput> gymExerciseInput) {
         return service.replaceDayExercises(currentUserId.get(), id, dayId, gymExerciseInput);
+    }
+
+    @Override
+    public SportSessionResponse logSportSession(SportSessionCreateRequest sportSessionCreateRequest) {
+        return sportService.logSportSession(currentUserId.get(), sportSessionCreateRequest);
+    }
+
+    @Override
+    public List<SportScheduleSlotResponse> getSportSchedule() {
+        return sportService.getSchedule(currentUserId.get());
+    }
+
+    @Override
+    public List<SportScheduleSlotResponse> replaceSportSchedule(List<SportScheduleSlotInput> sportScheduleSlotInput) {
+        return sportService.replaceSchedule(currentUserId.get(), sportScheduleSlotInput);
     }
 
     @Override

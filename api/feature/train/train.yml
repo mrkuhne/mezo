@@ -188,6 +188,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags: [Train]
+      operationId: logSportSession
+      summary: Log a sport session (SportLogSheet) — date/time default to now server-side
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SportSessionCreateRequest'
+      responses:
+        '201':
+          description: Created sport session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SportSessionResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport-schedule:
+    get:
+      tags: [Train]
+      operationId: getSportSchedule
+      summary: The recurring weekly sport schedule slots, day-of-week then time ascending
+      responses:
+        '200':
+          description: Weekly schedule slots (empty array when none set)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SportScheduleSlotResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags: [Train]
+      operationId: replaceSportSchedule
+      summary: Full-replace of the weekly schedule (idempotent; soft-deletes the previous slots)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/SportScheduleSlotInput'
+      responses:
+        '200':
+          description: The saved weekly slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SportScheduleSlotResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/workouts/today:
     get:
       tags: [Train]
@@ -892,6 +974,96 @@ components:
           type: integer
           minimum: 1
           maximum: 3
+    SportSessionCreateRequest:
+      type: object
+      description: SportLogSheet payload — date/time default to "now" server-side when absent
+      required:
+        - duration
+        - setsPlayed
+        - rpe
+        - shoulderStrain
+      properties:
+        date:
+          type: string
+          format: date
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        duration:
+          type: integer
+          minimum: 1
+          maximum: 600
+          description: minutes
+        setsPlayed:
+          type: integer
+          minimum: 0
+          maximum: 50
+        rpe:
+          type: number
+          minimum: 1
+          maximum: 10
+        shoulderStrain:
+          type: integer
+          minimum: 1
+          maximum: 10
+        notes:
+          type: string
+          maxLength: 500
+    SportScheduleSlotInput:
+      type: object
+      required:
+        - dayOfWeek
+        - time
+        - durationMin
+        - kind
+      properties:
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 0=Hét .. 6=Vas
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        durationMin:
+          type: integer
+          minimum: 15
+          maximum: 360
+        kind:
+          type: string
+          pattern: '^(training|match)$'
+        location:
+          type: string
+          maxLength: 120
+        intensityLabel:
+          type: string
+          maxLength: 40
+    SportScheduleSlotResponse:
+      type: object
+      required:
+        - id
+        - dayOfWeek
+        - time
+        - durationMin
+        - kind
+      properties:
+        id:
+          type: string
+          format: uuid
+        dayOfWeek:
+          type: integer
+          description: 0=Hét .. 6=Vas
+        time:
+          type: string
+        durationMin:
+          type: integer
+        kind:
+          type: string
+          enum: [training, match]
+        location:
+          type: string
+        intensityLabel:
+          type: string
     SportSessionResponse:
       type: object
       required:
@@ -901,10 +1073,8 @@ components:
         - time
         - duration
         - setsPlayed
-        - intensity
         - rpe
         - shoulderStrain
-        - jumpCount
       properties:
         id:
           type: string

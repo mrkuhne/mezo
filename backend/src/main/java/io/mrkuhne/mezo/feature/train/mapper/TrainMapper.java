@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.mapper;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
+import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import java.util.List;
@@ -43,6 +45,10 @@ public interface TrainMapper {
 
     @Mapping(target = "duration", source = "durationMin")
     SportSessionResponse toResponse(SportSessionEntity entity);
+
+    @Mapping(target = "kind",
+        expression = "java(SportScheduleSlotResponse.KindEnum.fromValue(entity.getKind()))")
+    SportScheduleSlotResponse toSlotResponse(SportScheduleSlotEntity entity);
 
     ExerciseSetResponse toSetResponse(ExerciseSetEntity entity);
 
