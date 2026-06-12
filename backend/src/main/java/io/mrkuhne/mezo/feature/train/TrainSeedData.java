@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope.Adjustment;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope.Baseline;
+import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson.Change;
@@ -16,6 +17,7 @@ import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
@@ -57,6 +59,7 @@ public class TrainSeedData implements CommandLineRunner {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
     private final SportSessionRepository sportSessionRepository;
+    private final SportScheduleSlotRepository sportScheduleSlotRepository;
 
     // Both run(...) overloads carry @Transactional: startup enters via run(String...) but its
     // call to run() is a self-invocation that bypasses the Spring proxy, so the no-arg @Transactional
@@ -78,6 +81,7 @@ public class TrainSeedData implements CommandLineRunner {
         seedActiveMeso(by);
         seedPlannedAndArchivedMesos(by);
         seedSportSessions(by);
+        seedSportSchedule(by);
     }
 
     // --- active meso "Hypertrophy 04 · Tavasz" (hyp-04) + 8 volume logs + 7 days ---------------
@@ -283,6 +287,16 @@ public class TrainSeedData implements CommandLineRunner {
             "Sok smash · vasárnap pihentem");
     }
 
+    // --- BVSC weekly schedule (train.ts:364-377) — day index = DAY_ORDER position ---------------
+
+    private void seedSportSchedule(UUID by) {
+        slot(by, 0, "18:15", 90, "training", "BVSC csarnok", "közepes");
+        slot(by, 1, "17:00", 90, "training", "BVSC csarnok", "közepes");
+        slot(by, 2, "18:15", 90, "training", "BVSC csarnok", "közepes");
+        slot(by, 4, "18:15", 90, "training", "BVSC csarnok", "közepes");
+        slot(by, 5, "10:00", 120, "match", "Kőbánya Sport", "magas");
+    }
+
     // --- plain builders ------------------------------------------------------------------------
 
     private MesocycleEntity meso(UUID by, String title, String shortTitle, String status,
@@ -370,5 +384,18 @@ public class TrainSeedData implements CommandLineRunner {
         s.setJumpCount(jumpCount);
         s.setNotes(notes);
         sportSessionRepository.save(s);
+    }
+
+    private void slot(UUID by, int dayOfWeek, String time, int durationMin, String kind,
+        String location, String intensityLabel) {
+        SportScheduleSlotEntity s = new SportScheduleSlotEntity();
+        s.setCreatedBy(by);
+        s.setDayOfWeek(dayOfWeek);
+        s.setTime(time);
+        s.setDurationMin(durationMin);
+        s.setKind(kind);
+        s.setLocation(location);
+        s.setIntensityLabel(intensityLabel);
+        sportScheduleSlotRepository.save(s);
     }
 }

@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
+import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -14,6 +15,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
@@ -40,6 +42,7 @@ public class TrainPopulator {
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final SportSessionRepository sportSessionRepository;
+    private final SportScheduleSlotRepository sportScheduleSlotRepository;
 
     public MesocycleEntity createMesocycle(UUID createdBy, String title, String status) {
         MesocycleEntity m = new MesocycleEntity();
@@ -175,5 +178,18 @@ public class TrainPopulator {
         s.setShoulderStrain(6);
         s.setJumpCount(38);
         return sportSessionRepository.saveAndFlush(s);
+    }
+
+    public SportScheduleSlotEntity createScheduleSlot(UUID createdBy, int dayOfWeek, String time,
+        int durationMin, String kind) {
+        SportScheduleSlotEntity s = new SportScheduleSlotEntity();
+        s.setCreatedBy(createdBy);
+        s.setDayOfWeek(dayOfWeek);
+        s.setTime(time);
+        s.setDurationMin(durationMin);
+        s.setKind(kind);
+        s.setLocation("BVSC csarnok");
+        s.setIntensityLabel("közepes");
+        return sportScheduleSlotRepository.saveAndFlush(s);
     }
 }

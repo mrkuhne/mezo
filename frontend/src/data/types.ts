@@ -533,8 +533,8 @@ export interface SportSchedule {
 }
 export interface SportSession {
   id: string; sport: string; date: string; time: string; duration: number
-  setsPlayed: number; intensity: number; rpe: number; shoulderStrain: number
-  jumpCount: number; notes: string | null
+  setsPlayed: number; intensity: number | null; rpe: number; shoulderStrain: number
+  jumpCount: number | null; notes: string | null
 }
 export interface SportWeek {
   label: string; sessions: number; hoursPlayed: number

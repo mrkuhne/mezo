@@ -154,6 +154,25 @@ export interface paths {
         /** Sport (volleyball) sessions of the current user, date descending */
         get: operations["listSportSessions"];
         put?: never;
+        /** Log a sport session (SportLogSheet) — date/time default to now server-side */
+        post: operations["logSportSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/sport-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The recurring weekly sport schedule slots, day-of-week then time ascending */
+        get: operations["getSportSchedule"];
+        /** Full-replace of the weekly schedule (idempotent; soft-deletes the previous slots) */
+        put: operations["replaceSportSchedule"];
         post?: never;
         delete?: never;
         options?: never;
@@ -572,6 +591,39 @@ export interface components {
             jointPain: number;
             workload: number;
         };
+        /** @description SportLogSheet payload — date/time default to "now" server-side when absent */
+        SportSessionCreateRequest: {
+            /** Format: date */
+            date?: string;
+            time?: string;
+            /** @description minutes */
+            duration: number;
+            setsPlayed: number;
+            rpe: number;
+            shoulderStrain: number;
+            notes?: string;
+        };
+        SportScheduleSlotInput: {
+            /** @description 0=Hét .. 6=Vas */
+            dayOfWeek: number;
+            time: string;
+            durationMin: number;
+            kind: string;
+            location?: string;
+            intensityLabel?: string;
+        };
+        SportScheduleSlotResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description 0=Hét .. 6=Vas */
+            dayOfWeek: number;
+            time: string;
+            durationMin: number;
+            /** @enum {string} */
+            kind: "training" | "match";
+            location?: string;
+            intensityLabel?: string;
+        };
         SportSessionResponse: {
             /** Format: uuid */
             id: string;
@@ -586,10 +638,10 @@ export interface components {
             /** @description minutes */
             duration: number;
             setsPlayed: number;
-            intensity: number;
+            intensity?: number;
             rpe: number;
             shoulderStrain: number;
-            jumpCount: number;
+            jumpCount?: number;
             notes?: string;
         };
     };
@@ -1079,6 +1131,119 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SportSessionResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    logSportSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SportSessionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created sport session */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SportSessionResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getSportSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Weekly schedule slots (empty array when none set) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SportScheduleSlotResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    replaceSportSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SportScheduleSlotInput"][];
+            };
+        };
+        responses: {
+            /** @description The saved weekly slots */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SportScheduleSlotResponse"][];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */

@@ -9,6 +9,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
+import { isMockMode } from '@/lib/mode'
 import type { SportSchedule, SportSession, CrossLoadRow as CrossLoadRowData } from '@/data/types'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
@@ -23,6 +24,7 @@ import { SportStat } from '../components/SportStat'
 import { SportSessionCard } from '../components/SportSessionCard'
 import { CrossLoadRow } from '../components/CrossLoadRow'
 import { SportLogSheet } from '../components/SportLogSheet'
+import { SportScheduleSheet } from '../components/SportScheduleSheet'
 
 type SportSubView = 'week' | 'log' | 'crossload'
 
@@ -38,14 +40,26 @@ const RPE_EXPLAINER =
   'regenerálódás + másnapi load számolásához.'
 
 export function SportView() {
-  const { sport } = useTrain()
+  const { sport, logSportSession, saveSportSchedule } = useTrain()
   const [view, setView] = useState<SportSubView>('week')
   const [logOpen, setLogOpen] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
 
-  // T0 clean slate: schedule/week/crossLoad are null in real mode until their
-  // slices land (T3 schedule+stats, Phase 3 cross-load) — ghost-guard each facet.
+  // T3: schedule comes from the DB slots and week derives from the logged
+  // sessions; only crossLoad stays null (Phase 3) — ghost-guard each facet.
   const volleyball = sport.schedule?.volleyball ?? null
   const week = sport.week
+
+  // Venue = the most frequent slot location (schedule-derived; the mock fixture
+  // yields the same 'BVSC csarnok' string the prototype hardcoded — parity-safe).
+  const venue = (() => {
+    const counts = new Map<string, number>()
+    for (const s of volleyball?.sessions ?? []) if (s.court) counts.set(s.court, (counts.get(s.court) ?? 0) + 1)
+    let best = 'Volleyball'
+    let bestN = 0
+    for (const [c, n] of counts) if (n > bestN) { best = c; bestN = n }
+    return best
+  })()
 
   return (
     <>
@@ -97,14 +111,16 @@ export function SportView() {
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div className="col">
                 <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>
-                  {volleyball.team}
+                  {volleyball.team || 'Volleyball'}
                 </span>
                 <div style={{ marginTop: 6 }}>
-                  <Display size="lg">BVSC csarnok</Display>
+                  <Display size="lg">{venue}</Display>
                 </div>
-                <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>
-                  {volleyball.season}
-                </span>
+                {volleyball.season && (
+                  <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>
+                    {volleyball.season}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -165,10 +181,18 @@ export function SportView() {
 
       {view === 'week' &&
         (volleyball ? (
-          <SportWeekView schedule={volleyball} />
+          <SportWeekView
+            schedule={volleyball}
+            onEdit={isMockMode() ? undefined : () => setScheduleOpen(true)}
+          />
         ) : (
           <div style={{ padding: '8px 24px 16px' }}>
-            <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
+            <GhostState
+              lines={2}
+              message="A heti rended itt jelenik majd meg."
+              ctaLabel="+ Állítsd be a heti rended"
+              onCta={() => setScheduleOpen(true)}
+            />
           </div>
         ))}
       {view === 'log' && <SportLogView sessions={sport.sessions} />}
@@ -181,17 +205,29 @@ export function SportView() {
           </div>
         ))}
 
-      {logOpen && <SportLogSheet onClose={() => setLogOpen(false)} />}
+      {logOpen && <SportLogSheet onClose={() => setLogOpen(false)} onSave={logSportSession} />}
+      {scheduleOpen && (
+        <SportScheduleSheet
+          initial={volleyball?.sessions ?? []}
+          onSave={saveSportSchedule}
+          onClose={() => setScheduleOpen(false)}
+        />
+      )}
     </>
   )
 }
 
 // === Week view: 7-day schedule with volleyball slots ===
-function SportWeekView({ schedule }: { schedule: SportSchedule['volleyball'] }) {
+function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyball']; onEdit?: () => void }) {
   return (
     <div style={{ padding: '8px 24px 16px' }}>
-      <div className="eyebrow" style={{ marginBottom: 12 }}>
-        Heti ritmus · {schedule.weeklyHours}h court
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span className="eyebrow">Heti ritmus · {schedule.weeklyHours}h court</span>
+        {onEdit && (
+          <button type="button" className="chip notch-4" onClick={onEdit} style={{ padding: '4px 8px', fontSize: 9 }}>
+            Szerkesztés
+          </button>
+        )}
       </div>
       <div className="col gap-sm">
         {DAY_ORDER.map((d) => {
@@ -259,7 +295,7 @@ function SportWeekView({ schedule }: { schedule: SportSchedule['volleyball'] }) 
                         className="text-tertiary"
                         style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}
                       >
-                        {session.court} · {session.role} · {session.intensity}
+                        {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
                       </span>
                     </div>
                     <Icon name="chevron-right" size={12} color="var(--text-tertiary)" />
@@ -302,12 +338,17 @@ function SportLogView({ sessions }: { sessions: SportSession[] }) {
       </div>
     )
   }
-  const avgJumps = Math.round(sessions.reduce((acc, s) => acc + s.jumpCount, 0) / sessions.length)
+  // Jump counts are not captured by the T3 log sheet — average only the sessions
+  // that carry one, and hide the chip entirely when none do.
+  const withJumps = sessions.filter((s) => s.jumpCount != null)
+  const avgJumps = withJumps.length
+    ? Math.round(withJumps.reduce((acc, s) => acc + (s.jumpCount ?? 0), 0) / withJumps.length)
+    : null
   return (
     <div style={{ padding: '8px 24px 16px' }}>
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
         <span className="eyebrow">Utolsó {sessions.length} session</span>
-        <span className="eyebrow text-tertiary">avg {avgJumps} ugrás</span>
+        {avgJumps != null && <span className="eyebrow text-tertiary">avg {avgJumps} ugrás</span>}
       </div>
       <div className="col gap-sm">
         {sessions.map((s) => (

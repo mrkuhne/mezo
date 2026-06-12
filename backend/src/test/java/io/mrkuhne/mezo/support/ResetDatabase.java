@@ -35,7 +35,7 @@ public class ResetDatabase {
         entityManager.createNativeQuery(
             "TRUNCATE TABLE weight_log, sleep_log, check_in, "
                 + "exercise_feedback, exercise_set, exercise, workout_session, muscle_group_volume_log, mesocycle, "
-                + "sport_session CASCADE").executeUpdate();
+                + "sport_schedule_slot, sport_session CASCADE").executeUpdate();
         // Master data (demodata owner + their profile) survives; everything else goes.
         entityManager.createNativeQuery(
                 "DELETE FROM user_profiles WHERE created_by NOT IN "

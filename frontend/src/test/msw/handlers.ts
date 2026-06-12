@@ -155,4 +155,25 @@ export const handlers = [
       date: '2026-06-12', status: 'completed', sets: [],
     }),
   ),
+  // T3 sport endpoints — schedule fixture mirrors the demofixtures BVSC week.
+  http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+    HttpResponse.json([
+      { id: 'e1f3a0e2-0000-4000-8000-000000000050', dayOfWeek: 0, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      { id: 'e1f3a0e2-0000-4000-8000-000000000051', dayOfWeek: 1, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      { id: 'e1f3a0e2-0000-4000-8000-000000000052', dayOfWeek: 2, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      { id: 'e1f3a0e2-0000-4000-8000-000000000054', dayOfWeek: 4, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      { id: 'e1f3a0e2-0000-4000-8000-000000000055', dayOfWeek: 5, time: '10:00', durationMin: 120, kind: 'match', location: 'Kőbánya Sport', intensityLabel: 'magas' },
+    ]),
+  ),
+  http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json(
+      { id: 'd1f3a0e2-0000-4000-8000-00000000cafe', sport: 'volleyball', date: '2026-06-12', time: '18:00', ...body },
+      { status: 201 },
+    )
+  }),
+  http.put(`${API_BASE}/api/train/sport-schedule`, async ({ request }) => {
+    const slots = (await request.json()) as Array<Record<string, unknown>>
+    return HttpResponse.json(slots.map((s, i) => ({ id: `e1f3a0e2-0000-4000-8000-0000000000${60 + i}`, ...s })))
+  }),
 ]

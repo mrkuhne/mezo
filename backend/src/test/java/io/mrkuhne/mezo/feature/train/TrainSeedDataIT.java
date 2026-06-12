@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -29,6 +30,7 @@ class TrainSeedDataIT extends AbstractIntegrationTest {
     @Autowired private MuscleGroupVolumeLogRepository volumeLogRepository;
     @Autowired private WorkoutSessionRepository workoutSessionRepository;
     @Autowired private SportSessionRepository sportSessionRepository;
+    @Autowired private SportScheduleSlotRepository sportScheduleSlotRepository;
 
     @Test
     void testSeed_shouldPortAllTrainFixtures_whenRun() {
@@ -37,6 +39,7 @@ class TrainSeedDataIT extends AbstractIntegrationTest {
         assertThat(volumeLogRepository.count()).isEqualTo(8);   // 8 muscles on the active meso
         assertThat(workoutSessionRepository.count()).isEqualTo(7); // Hét..Vas template days
         assertThat(sportSessionRepository.count()).isEqualTo(5);
+        assertThat(sportScheduleSlotRepository.count()).isEqualTo(5); // BVSC week (Hét/Kedd/Sze/Pén + Szo match)
     }
 
     @Test

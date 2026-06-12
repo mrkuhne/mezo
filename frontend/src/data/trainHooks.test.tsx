@@ -111,6 +111,7 @@ test('useTrain (real mode) returns nulls (no static fallback) when the backend i
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
     http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
   )
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.mesocycles).toEqual([]))
@@ -183,4 +184,77 @@ test('useTrain (real mode) workout write mutations hit the T2 endpoints', async 
   await waitFor(() =>
     expect(calls).toEqual(expect.arrayContaining(['start:t-1', 'set:w-1', 'feedback:w-1', 'finish:w-1'])),
   )
+})
+
+// ---- T3 sport block: schedule mapping, week derivation, write mutations ----
+
+test('useTrain (real mode) maps the sport schedule slots into SportSchedule', async () => {
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.sport.schedule).not.toBeNull())
+  const vb = result.current.sport.schedule!.volleyball
+  expect(vb.sessions).toHaveLength(5)
+  expect(vb.sessions[0]).toMatchObject({
+    day: 'Hét', time: '18:15', duration: 90, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés',
+  })
+  expect(vb.sessions[4].role).toBe('meccs')
+  expect(vb.weeklyHours).toBe(8) // (4×90 + 120) / 60 — derived, unlike the hand-written 7.5 in the Phase-1 fixture
+})
+
+test('useTrain (real mode) derives week stats from sessions logged this week', async () => {
+  const today = new Date()
+  const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'd1f3a0e2-0000-4000-8000-000000000077', sport: 'volleyball', date: iso, time: '18:00', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 },
+      ]),
+    ),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.sport.week).not.toBeNull())
+  expect(result.current.sport.week).toMatchObject({
+    sessions: 1, hoursPlayed: 1.5, avgRPE: 7, avgShoulderStrain: 6, shoulderLoadTrend: 'stabil',
+  })
+  // intensity/jumpCount are not captured by the sheet -> surfaced as null, not 0
+  expect(result.current.sport.sessions[0].intensity).toBeNull()
+  expect(result.current.sport.sessions[0].jumpCount).toBeNull()
+})
+
+test('useTrain (real mode) week stays null when no session falls in the current week', async () => {
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() }) // default handlers: May 2026 sessions only
+  await waitFor(() => expect(result.current.sport.sessions.length).toBeGreaterThan(0))
+  expect(result.current.sport.week).toBeNull()
+})
+
+test('useTrain (real mode) logSportSession POSTs the sheet payload', async () => {
+  const posted: unknown[] = []
+  server.use(
+    http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {
+      posted.push(await request.json())
+      return HttpResponse.json(
+        { id: 'd1f3a0e2-0000-4000-8000-00000000beef', sport: 'volleyball', date: '2026-06-12', time: '18:00', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 },
+        { status: 201 },
+      )
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.sport.sessions.length).toBeGreaterThan(0))
+  result.current.logSportSession({ duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 })
+  await waitFor(() => expect(posted).toHaveLength(1))
+  expect(posted[0]).toEqual({ duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 })
+})
+
+test('useTrain (real mode) saveSportSchedule PUTs the full slot list', async () => {
+  const put: unknown[] = []
+  server.use(
+    http.put(`${API_BASE}/api/train/sport-schedule`, async ({ request }) => {
+      put.push(await request.json())
+      return HttpResponse.json([])
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.sport.schedule).not.toBeNull())
+  result.current.saveSportSchedule([{ dayOfWeek: 0, time: '18:15', durationMin: 90, kind: 'training' }])
+  await waitFor(() => expect(put).toHaveLength(1))
+  expect(put[0]).toEqual([{ dayOfWeek: 0, time: '18:15', durationMin: 90, kind: 'training' }])
 })

@@ -1,7 +1,8 @@
 // ============================================================
 // Mezo · SportLogSheet — shared volleyball/sport session logger
-// Reused by the Mai view (Task 4) and the Sport view (Task 6).
-// All state is local; Save just closes (no persistence).
+// Reused by the Mai view and the Sport view. State is local; Mentés
+// hands the captured values to the parent's onSave (T3: logSportSession
+// -> POST /api/train/sport-sessions; date/time default to now server-side).
 // Ported from prototype sport.jsx: SportLogSheet + NumberStep + ScaleRow.
 // ============================================================
 import { useState } from 'react'
@@ -9,20 +10,27 @@ import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
 import { Display } from '@/components/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
+import type { SportSessionCreateRequest } from '@/lib/trainApi'
 
 // --- NumberStep: label + mono value + 44px ± buttons (reuses .stepper) ---
+// min/max clamp the stepped value to the API contract bounds so the sheets can
+// never produce a payload the backend's @Valid rejects with a 400.
 export function NumberStep({
   label,
   val,
   step,
   onChange,
   color,
+  min = 0,
+  max,
 }: {
   label: string
   val: number
   step: number
   onChange: (next: number) => void
   color?: string
+  min?: number
+  max?: number
 }) {
   return (
     <div className="col gap-sm">
@@ -44,7 +52,7 @@ export function NumberStep({
         <button
           type="button"
           aria-label={`${label} csökkentése`}
-          onClick={() => onChange(Math.max(0, val - step))}
+          onClick={() => onChange(Math.max(min, val - step))}
         >
           <Icon name="minus" size={14} />
         </button>
@@ -52,7 +60,7 @@ export function NumberStep({
         <button
           type="button"
           aria-label={`${label} növelése`}
-          onClick={() => onChange(val + step)}
+          onClick={() => onChange(max != null ? Math.min(max, val + step) : val + step)}
         >
           <Icon name="plus" size={14} />
         </button>
@@ -115,7 +123,10 @@ export function ScaleRow({
 }
 
 // --- SportLogSheet ---
-export function SportLogSheet({ onClose }: { onClose: () => void }) {
+export function SportLogSheet({ onClose, onSave }: {
+  onClose: () => void
+  onSave?: (input: SportSessionCreateRequest) => void
+}) {
   const [duration, setDuration] = useState(90)
   const [sets, setSets] = useState(5)
   const [rpe, setRpe] = useState(7)
@@ -142,8 +153,8 @@ export function SportLogSheet({ onClose }: { onClose: () => void }) {
 
           {/* Fields */}
           <div className="col gap-md">
-            <NumberStep label="Idő · perc" val={duration} step={15} onChange={setDuration} />
-            <NumberStep label="Setek · összesen" val={sets} step={1} onChange={setSets} />
+            <NumberStep label="Idő · perc" val={duration} step={15} min={15} max={600} onChange={setDuration} />
+            <NumberStep label="Setek · összesen" val={sets} step={1} max={50} onChange={setSets} />
             <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--brand-glow)" />
             <ScaleRow
               label="Váll terhelés"
@@ -171,7 +182,14 @@ export function SportLogSheet({ onClose }: { onClose: () => void }) {
             <CtaGhost className="notch-4 flex-1" onClick={close}>
               Mégse
             </CtaGhost>
-            <CtaPrimary className="notch-4 flex-1" onClick={close}>
+            <CtaPrimary
+              className="notch-4 flex-1"
+              onClick={() => {
+                // date/time default to "now" server-side — the sheet captures effort only.
+                onSave?.({ duration, setsPlayed: sets, rpe, shoulderStrain: shoulder })
+                close()
+              }}
+            >
               <Icon name="check" size={14} /> Mentés
             </CtaPrimary>
           </div>
