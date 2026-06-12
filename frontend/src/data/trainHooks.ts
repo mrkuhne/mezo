@@ -105,6 +105,8 @@ type TrainData = {
   sport: { [K in keyof Sport]: K extends 'sessions' ? SportSession[] : Sport[K] | null }
   exerciseLibrary: ExerciseLibraryItem[]
   todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
+  /** True while the meso//today queries are still loading (real mode) — guards must not redirect yet. */
+  workoutPending: boolean
   createMesocycle: (req: MesocycleCreateRequest, opts?: MutateOpts) => void
   activateMesocycle: (id: string, opts?: MutateOpts) => void
   closeMesocycle: (id: string, opts?: MutateOpts) => void
@@ -119,7 +121,7 @@ type TrainData = {
 export function useTrain(): TrainData {
   const mock = isMockMode()
   const qc = useQueryClient()
-  const { data: mesoData } = useQuery({
+  const { data: mesoData, isPending: mesoPending } = useQuery({
     queryKey: ['train', 'mesocycles'],
     queryFn: mock ? async () => mesocycles : () => trainApi.mesocycles().then(rs => rs.map(toMesocycle)),
     // Mock mode seeds synchronously so the first render matches the Phase-1
@@ -132,7 +134,7 @@ export function useTrain(): TrainData {
     initialData: mock ? sport.sessions : undefined,
   })
   // Today's workout context — only meaningful in real mode (mock serves the static plan).
-  const { data: todayData } = useQuery({
+  const { data: todayData, isPending: todayPending } = useQuery({
     queryKey: ['train', 'workoutToday'],
     queryFn: mock ? async () => null : () => trainApi.workoutToday(),
     initialData: mock ? null : undefined,
@@ -237,6 +239,7 @@ export function useTrain(): TrainData {
     todaySession: !mock && todayData?.templateSessionId
       ? { templateSessionId: todayData.templateSessionId, openWorkout: todayData.openWorkout ?? null }
       : null,
+    workoutPending: !mock && (mesoPending || todayPending),
     sport: mock
       ? { ...sport, sessions: sportSessions ?? [] }
       : { ...sport, schedule: null, week: null, crossLoad: null, sessions: sportSessions ?? [] },

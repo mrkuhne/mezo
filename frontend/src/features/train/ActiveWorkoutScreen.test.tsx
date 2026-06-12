@@ -142,6 +142,36 @@ test('real mode: an open instance resumes mid-workout with seeded sets', async (
   await waitFor(() => expect(calls.some((c) => c.startsWith('set:w-9:e-1:1'))).toBe(true))
 })
 
+test('real mode: a hard reload on /train/session resumes instead of redirecting while queries load', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      openWorkout: {
+        id: 'w-9', templateSessionId: 'd-1', date: '2026-06-12', status: 'active',
+        sets: [{ id: 's-1', exerciseId: 'e-1', setIndex: 0, weightKg: 100, reps: 8, rir: 2 }],
+      },
+    },
+    calls,
+  )
+  // Route-mounted render (like a fresh page load): if the guard redirects during
+  // the pending query state, the router unmounts the session screen for good.
+  const { routes } = await import('@/app/router')
+  const { createMemoryRouter, RouterProvider } = await import('react-router-dom')
+  const { ThemeProvider } = await import('@/app/ThemeProvider')
+  const router = createMemoryRouter(routes, { initialEntries: ['/train/session'] })
+  render(
+    <QueryWrapper>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </QueryWrapper>,
+  )
+  expect(await screen.findByText('Set kész')).toBeInTheDocument()
+  expect(screen.getByText(/Set 2\//)).toBeInTheDocument() // resumed at the 2nd set
+})
+
 test('real mode: the last set debrief persists feedback and finish fires', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []

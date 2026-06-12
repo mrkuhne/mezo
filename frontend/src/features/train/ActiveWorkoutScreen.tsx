@@ -54,7 +54,10 @@ const PR_TOAST_MS = 4500
 // — a conditional early return between hook calls would break the hook order
 // now that `workout` is query-driven (T2).
 export function ActiveWorkoutScreen() {
-  const { workout, activeMeso, todaySession, startWorkout, logSet, saveWorkoutFeedback, finishWorkout } = useTrain()
+  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, saveWorkoutFeedback, finishWorkout } = useTrain()
+  // A hard reload lands here with the queries still loading — redirecting now
+  // would kill the resume flow (live-smoke catch). Hold rendering until loaded.
+  if (workoutPending) return null
   // T0 clean slate: never render the session without a workout (and at least one exercise).
   if (!workout || workout.exercises.length === 0 || !activeMeso) return <Navigate to="/train" replace />
   return (
