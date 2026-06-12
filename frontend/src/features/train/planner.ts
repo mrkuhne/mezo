@@ -9,6 +9,7 @@
 //     substitution warnings)
 // GOAL_PRESETS / SPLITS / exerciseLibrary live in @/data/train.
 // ============================================================
+import { DAY_ORDER } from '@/data/train'
 import type { ExerciseKind, GymExercise, MesoDay, GoalPreset, SplitOption } from '@/data/types'
 
 // --- step labels (meso-planner.jsx:135) ---
@@ -207,45 +208,61 @@ const SPLIT_TEMPLATES: Record<string, DayTemplate[]> = {
 
 const BASE_TYPES = ['Pull', 'Push', 'Legs', 'Upper', 'Lower', 'Full'] as const
 
+const isTrainingType = (t: string) => t !== 'Rest' && t !== 'Volleyball'
+
+/** Split label → 7-day template with the training days trimmed to `days` (light days first). */
+function trimmedTemplate(split: SplitOption | string | null, days: number): DayTemplate[] {
+  const splitLabel = typeof split === 'string' ? split : (split?.label ?? '')
+  // "Custom split" → "Custom" template key.
+  const templateKey = splitLabel === 'Custom split' ? 'Custom' : splitLabel
+  const template = SPLIT_TEMPLATES[templateKey] ?? SPLIT_TEMPLATES['Pull / Push / Legs']
+
+  const trainingCount = template.filter((d) => isTrainingType(d.type)).length
+  if (trainingCount <= days) return template
+  let toRemove = trainingCount - days
+  return template.map((d) => {
+    if (toRemove > 0 && isTrainingType(d.type) && d.type.includes('light')) {
+      toRemove--
+      return { day: d.day, type: 'Rest', muscle: '', note: 'Pihenőnap' }
+    }
+    return d
+  })
+}
+
+/** Default gym-weekday selection for a split + day count: the template's training days,
+ *  padded from its rest then volleyball days when the template is thinner than `days`
+ *  (Upper/Lower/Sport defines only 3 gym days), capped at `days`, week-ordered. */
+export function defaultWeekdays({ split, days }: { split: SplitOption | string | null; days: number }): string[] {
+  const template = trimmedTemplate(split, days)
+  const training = template.filter((d) => isTrainingType(d.type)).map((d) => d.day)
+  const rest = template.filter((d) => d.type === 'Rest').map((d) => d.day)
+  const volleyball = template.filter((d) => d.type === 'Volleyball').map((d) => d.day)
+  const picked = [...training, ...rest, ...volleyball].slice(0, days)
+  return DAY_ORDER.filter((d) => picked.includes(d))
+}
+
 export interface GenerateProgramArgs {
   goal: GoalPreset | null
   split: SplitOption | string | null
   days: number
+  /** Selected gym weekdays ('Hét'..'Vas'). When set, the training sequence lands on these
+   *  days (cycling if more days than the split defines); template volleyball days that were
+   *  not selected stay volleyball, everything else rests. Absent → template weekdays. */
+  weekdays?: string[]
   niggle?: Niggle
 }
 
 /** Builds the 7-day program for a goal + split + day-count + niggle context.
  *  Applies the goal's set/rep scheme to each exercise and injects niggle-aware
  *  substitution warnings (Overhead Press / Lat Pulldown on shoulder niggle). */
-export function generateProgram({ goal, split, days, niggle }: GenerateProgramArgs): PlannerDay[] {
-  const splitLabel = typeof split === 'string' ? split : (split?.label ?? '')
-  // "Custom split" → "Custom" template key.
-  const templateKey = splitLabel === 'Custom split' ? 'Custom' : splitLabel
-  let template = SPLIT_TEMPLATES[templateKey] ?? SPLIT_TEMPLATES['Pull / Push / Legs']
-
-  // Trim training days to the requested count (light days first).
-  const trainingCount = template.filter((d) => d.type !== 'Rest' && d.type !== 'Volleyball').length
-  if (trainingCount > days) {
-    let toRemove = trainingCount - days
-    template = template.map((d) => {
-      if (toRemove > 0 && d.type !== 'Rest' && d.type !== 'Volleyball' && d.type.includes('light')) {
-        toRemove--
-        return { day: d.day, type: 'Rest', muscle: '', note: 'Pihenőnap' }
-      }
-      return d
-    })
-  }
-
+export function generateProgram({ goal, split, days, weekdays, niggle }: GenerateProgramArgs): PlannerDay[] {
+  const template = trimmedTemplate(split, days)
   const scheme = SCHEMES[goal?.id ?? ''] ?? SCHEMES.hypertrophy
 
-  return template.map((d): PlannerDay => {
-    if (d.type === 'Rest') {
-      return { ...d, exerciseCount: 0, exercises: [], note: d.note ?? 'Pihenőnap' }
-    }
-    if (d.type === 'Volleyball') {
-      return { ...d, exerciseCount: 0, exercises: [], note: 'Sport day · volleyball' }
-    }
+  const restDay = (day: string, note?: string): PlannerDay =>
+    ({ day, type: 'Rest', muscle: '', exerciseCount: 0, exercises: [], note: note ?? 'Pihenőnap' })
 
+  const trainingDay = (d: DayTemplate): PlannerDay => {
     const baseType = BASE_TYPES.find((t) => d.type.startsWith(t)) ?? 'Pull'
     const isLight = d.type.includes('light')
     let exercises: GymExercise[] = exercisesForDay(baseType, niggle).map((seed, i) => {
@@ -266,5 +283,31 @@ export function generateProgram({ goal, split, days, niggle }: GenerateProgramAr
     if (isLight) exercises = exercises.slice(0, Math.max(3, exercises.length - 1))
 
     return { ...d, exerciseCount: exercises.length, exercises }
+  }
+
+  if (!weekdays) {
+    return template.map((d): PlannerDay => {
+      if (d.type === 'Rest') return { ...restDay(d.day, d.note), muscle: d.muscle }
+      if (d.type === 'Volleyball') return { ...d, exerciseCount: 0, exercises: [], note: 'Sport day · volleyball' }
+      return trainingDay(d)
+    })
+  }
+
+  // Selected-weekday placement: the trimmed training sequence lands on the chosen days in
+  // week order, cycling when more days are picked than the split defines; non-selected
+  // template volleyball days stay volleyball, everything else rests.
+  const sequence = template.filter((d) => isTrainingType(d.type))
+  let next = 0
+  return DAY_ORDER.map((dayKey): PlannerDay => {
+    if (weekdays.includes(dayKey) && sequence.length > 0) {
+      const src = sequence[next % sequence.length]
+      next++
+      return trainingDay({ ...src, day: dayKey })
+    }
+    const templ = template.find((d) => d.day === dayKey)
+    if (templ?.type === 'Volleyball') {
+      return { ...templ, exerciseCount: 0, exercises: [], note: 'Sport day · volleyball' }
+    }
+    return restDay(dayKey)
   })
 }
