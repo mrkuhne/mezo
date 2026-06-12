@@ -35,6 +35,10 @@ export function ChallengesCarousel({
 
   const acceptedCount = Object.values(accepted).filter(Boolean).length
 
+  // Real mode has no AI challenges until Phase 3 — render nothing instead of an
+  // empty rail. Placed after the hook calls so the hook order is render-stable.
+  if (challenges.length === 0) return null
+
   return (
     <div style={{ padding: '16px 0 8px' }}>
       <div
