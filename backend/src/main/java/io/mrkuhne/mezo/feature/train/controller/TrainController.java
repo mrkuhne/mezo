@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.controller;
 
 import io.mrkuhne.mezo.api.controller.TrainApi;
+import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
@@ -15,6 +16,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
@@ -32,11 +34,17 @@ public class TrainController implements TrainApi {
     private final TrainService service;
     private final WorkoutService workoutService;
     private final SportService sportService;
+    private final ExerciseCatalogService exerciseCatalogService;
     private final CurrentUserId currentUserId;
 
     @Override
     public List<MesocycleResponse> listMesocycles() {
         return service.listMesocycles(currentUserId.get());
+    }
+
+    @Override
+    public List<ExerciseCatalogItem> getExerciseCatalog() {
+        return exerciseCatalogService.list();
     }
 
     @Override

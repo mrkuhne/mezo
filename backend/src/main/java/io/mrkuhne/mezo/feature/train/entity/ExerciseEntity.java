@@ -59,10 +59,14 @@ public class ExerciseEntity extends OwnedEntity {
 
     @NotNull
     @Column(nullable = false)
-    private String type; // compound|isolation (DB CHECK)
+    private String type; // compound|isolation|plyo (DB CHECK)
 
     @Column
     private String warning;
+
+    /** Optional reference to the exercise_catalog row this exercise was picked from. */
+    @Column(name = "catalog_id")
+    private UUID catalogId;
 
     @NotNull
     @Column(name = "order_index", nullable = false)
