@@ -177,6 +177,41 @@ export const handlers = [
       { id: 'f1e3a0e2-0000-4000-8000-000000000075', slug: 'cable-crunch', name: 'Cable Crunch', muscle: 'core', type: 'isolation', stim: 0.72, fatigue: 0.2 },
     ]),
   ),
+  // Exercise records fixture — one full weighted record + one bodyweight (plyo) record.
+  http.get(`${API_BASE}/api/train/exercise-records`, () =>
+    HttpResponse.json([
+      {
+        catalogId: 'f1e3a0e2-0000-4000-8000-000000000070',
+        name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
+        bestSet: { weightKg: 102.5, reps: 9, date: '2026-06-02' },
+        bestE1rm: { value: 133.3, set: { weightKg: 102.5, reps: 9, date: '2026-06-02' } },
+        bestSessionVolume: { volumeKg: 4920, date: '2026-05-26' },
+        totalVolume: 182450, totalSets: 342, totalReps: 2814, sessionCount: 21,
+        repRecords: [
+          { weightKg: 102.5, reps: 9, date: '2026-06-02' },
+          { weightKg: 100, reps: 9, date: '2026-05-19' },
+          { weightKg: 90, reps: 13, date: '2026-04-28' },
+        ],
+        recentTopSets: [
+          { weightKg: 95, reps: 8, date: '2026-05-12' },
+          { weightKg: 100, reps: 9, date: '2026-05-19' },
+          { weightKg: 100, reps: 8, date: '2026-05-23' },
+          { weightKg: 102.5, reps: 8, date: '2026-05-26' },
+          { weightKg: 102.5, reps: 9, date: '2026-06-02' },
+        ],
+      },
+      {
+        catalogId: 'f1e3a0e2-0000-4000-8000-000000000072',
+        name: 'Box Jump', muscle: 'quad', type: 'plyo',
+        totalVolume: 0, totalSets: 18, totalReps: 186, sessionCount: 6,
+        repRecords: [],
+        recentTopSets: [
+          { reps: 10, date: '2026-05-26' },
+          { reps: 12, date: '2026-06-02' },
+        ],
+      },
+    ]),
+  ),
   http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json(

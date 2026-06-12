@@ -45,6 +45,22 @@ test('useTrain (real mode) maps the API exercise catalog into exerciseLibrary', 
   })
 })
 
+test('useTrain (real mode) serves exercise records from the endpoint', async () => {
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.exerciseRecords.length).toBe(2))
+  const row = result.current.exerciseRecords[0]
+  expect(row.name).toBe('Chest Supported Row')
+  expect(row.bestSet?.weightKg).toBe(102.5)
+  expect(row.bestE1rm?.value).toBe(133.3)
+  expect(result.current.exerciseRecords[1].bestSet).toBeUndefined() // bodyweight record
+})
+
+test('useTrain (mock mode) serves no exercise records (Phase-1 has no set history)', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  expect(result.current.exerciseRecords).toEqual([])
+})
+
 test('useTrain (mock mode) keeps the static Phase-1 exerciseLibrary', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true') // override the file-level real-mode stub
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })

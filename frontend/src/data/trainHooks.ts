@@ -5,6 +5,7 @@ import { huMonthDay, huMonthDayDow } from '@/lib/dates'
 import {
   trainApi,
   type ExerciseCatalogItem,
+  type ExerciseRecordResponse,
   type GymExerciseInput,
   type MesocycleCreateRequest,
   type MesocycleResponse,
@@ -177,6 +178,7 @@ type TrainData = {
   gymSchedule: GymSchedule | null
   sport: { [K in keyof Sport]: K extends 'sessions' ? SportSession[] : Sport[K] | null }
   exerciseLibrary: ExerciseLibraryItem[]
+  exerciseRecords: ExerciseRecordResponse[]
   todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
   /** True while the meso//today queries are still loading (real mode) — guards must not redirect yet. */
   workoutPending: boolean
@@ -223,6 +225,13 @@ export function useTrain(): TrainData {
     queryFn: mock ? async () => exerciseLibrary : () => trainApi.exerciseCatalog().then((rs) => rs.map(toLibraryItem)),
     initialData: mock ? exerciseLibrary : undefined,
     staleTime: 60 * 60 * 1000,
+  })
+  // Per-exercise records — computed server-side from logged sets; mock mode has no
+  // set history (Phase 1), so it serves an empty list and the view ghost-guards.
+  const { data: recordsData } = useQuery({
+    queryKey: ['train', 'exerciseRecords'],
+    queryFn: mock ? async () => [] as ExerciseRecordResponse[] : () => trainApi.exerciseRecords(),
+    initialData: mock ? [] : undefined,
   })
   // Today's workout context — only meaningful in real mode (mock serves the static plan).
   const { data: todayData, isPending: todayPending } = useQuery({
@@ -357,6 +366,7 @@ export function useTrain(): TrainData {
       ? { ...sport, sessions: sportData?.sessions ?? [] }
       : { schedule: scheduleData ?? null, week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
     exerciseLibrary: catalogData ?? [], // API catalog in real mode, Phase-1 statics in mock
+    exerciseRecords: recordsData ?? [],
     createMesocycle,
     activateMesocycle,
     closeMesocycle,
