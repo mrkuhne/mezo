@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.techcore.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -38,6 +39,30 @@ public class GlobalExceptionHandler {
         List<SystemMessage> messages = ex.getBindingResult().getFieldErrors().stream()
             .map(fe -> {
                 SystemMessage m = SystemMessage.field(validationCode(fe.getCode()), fe.getField()).build();
+                m.setExceptionTraceId(traceId);
+                m.setMessage(resolve(m));
+                return m;
+            })
+            .toList();
+        return ResponseEntity.badRequest().body(messages);
+    }
+
+    /**
+     * Method-level bean validation (e.g. {@code List<@Valid X>} request bodies) surfaces as
+     * {@link ConstraintViolationException} instead of {@link MethodArgumentNotValidException} —
+     * map it onto the same FIELD SystemMessage contract. The property path is
+     * {@code method.param[i].field}; the leaf segment is the field name.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<List<SystemMessage>> handleConstraintViolation(ConstraintViolationException ex) {
+        String traceId = UUID.randomUUID().toString();
+        log.warn("Validation failed [traceId={}]", traceId);
+        List<SystemMessage> messages = ex.getConstraintViolations().stream()
+            .map(v -> {
+                String path = v.getPropertyPath().toString();
+                String field = path.substring(path.lastIndexOf('.') + 1);
+                String constraint = v.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName();
+                SystemMessage m = SystemMessage.field(validationCode(constraint), field).build();
                 m.setExceptionTraceId(traceId);
                 m.setMessage(resolve(m));
                 return m;
