@@ -161,6 +161,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's workout — active meso's template day, exercises with last-week refs, open instance */
+        get: operations["getTodayWorkout"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start (or resume) a workout instance for a template day — an open instance is returned, never duplicated */
+        post: operations["startWorkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts/{id}/sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log one set into an active workout instance */
+        post: operations["logWorkoutSet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts/{id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Persist RP debrief rows for the instance (upsert per exercise) */
+        post: operations["saveWorkoutFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts/{id}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete a workout instance (idempotent) */
+        post: operations["finishWorkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -410,6 +495,82 @@ export interface components {
             /** @enum {string} */
             type: "compound" | "isolation";
             warning?: string;
+        };
+        /** @description All fields absent when there is no active meso or today is a rest day */
+        WorkoutTodayResponse: {
+            /** Format: uuid */
+            templateSessionId?: string;
+            /** @description 'Hét'..'Vas' */
+            dayLabel?: string;
+            /** @description The day type, e.g. 'Pull Day' */
+            title?: string;
+            durationEst?: number;
+            exercises?: components["schemas"]["TodayExercise"][];
+            openWorkout?: components["schemas"]["WorkoutInstanceResponse"];
+        };
+        TodayExercise: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            muscle: string;
+            sets: number;
+            targetReps: string;
+            targetRIR: number;
+            /** @enum {string} */
+            type: "compound" | "isolation";
+            warning?: string;
+            lastWeek?: components["schemas"]["LastWeekRef"];
+        };
+        /** @description Top set of the previous completed instance of the same template day */
+        LastWeekRef: {
+            weightKg: number;
+            reps: number;
+            rir: number;
+        };
+        WorkoutInstanceResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            templateSessionId: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            status: "active" | "completed";
+            sets: components["schemas"]["ExerciseSetResponse"][];
+        };
+        ExerciseSetResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            exerciseId: string;
+            setIndex: number;
+            weightKg?: number;
+            reps?: number;
+            rir?: number;
+            /** @description L|B|R */
+            side?: string;
+            note?: string;
+        };
+        WorkoutStartRequest: {
+            /** Format: uuid */
+            templateSessionId: string;
+        };
+        SetLogRequest: {
+            /** Format: uuid */
+            exerciseId: string;
+            setIndex: number;
+            weightKg: number;
+            reps: number;
+            rir: number;
+            side?: string;
+            note?: string;
+        };
+        WorkoutFeedbackInput: {
+            /** Format: uuid */
+            exerciseId: string;
+            pump: number;
+            jointPain: number;
+            workload: number;
         };
         SportSessionResponse: {
             /** Format: uuid */
@@ -922,6 +1083,239 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTodayWorkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's workout context (empty object when no active meso or rest day) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutTodayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    startWorkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutStartRequest"];
+            };
+        };
+        responses: {
+            /** @description The active instance (created, or the resumed open one) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutInstanceResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Template day not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    logWorkoutSet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetLogRequest"];
+            };
+        };
+        responses: {
+            /** @description Logged set */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseSetResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout already completed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    saveWorkoutFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutFeedbackInput"][];
+            };
+        };
+        responses: {
+            /** @description Feedback stored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout/exercise not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    finishWorkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The completed instance with its logged sets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutInstanceResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout not found or not owned */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

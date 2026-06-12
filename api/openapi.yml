@@ -407,6 +407,192 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/workouts/today:
+    get:
+      tags:
+        - Train
+      operationId: getTodayWorkout
+      summary: >-
+        Today's workout — active meso's template day, exercises with last-week
+        refs, open instance
+      responses:
+        '200':
+          description: >-
+            Today's workout context (empty object when no active meso or rest
+            day)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutTodayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/workouts:
+    post:
+      tags:
+        - Train
+      operationId: startWorkout
+      summary: >-
+        Start (or resume) a workout instance for a template day — an open
+        instance is returned, never duplicated
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutStartRequest'
+      responses:
+        '201':
+          description: 'The active instance (created, or the resumed open one)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutInstanceResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Template day not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/sets':
+    post:
+      tags:
+        - Train
+      operationId: logWorkoutSet
+      summary: Log one set into an active workout instance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetLogRequest'
+      responses:
+        '201':
+          description: Logged set
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseSetResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Workout already completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/feedback':
+    post:
+      tags:
+        - Train
+      operationId: saveWorkoutFeedback
+      summary: Persist RP debrief rows for the instance (upsert per exercise)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WorkoutFeedbackInput'
+      responses:
+        '204':
+          description: Feedback stored
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/finish':
+    post:
+      tags:
+        - Train
+      operationId: finishWorkout
+      summary: Complete a workout instance (idempotent)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The completed instance with its logged sets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutInstanceResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -1003,6 +1189,192 @@ components:
             - isolation
         warning:
           type: string
+    WorkoutTodayResponse:
+      type: object
+      description: All fields absent when there is no active meso or today is a rest day
+      properties:
+        templateSessionId:
+          type: string
+          format: uuid
+        dayLabel:
+          type: string
+          description: '''Hét''..''Vas'''
+        title:
+          type: string
+          description: 'The day type, e.g. ''Pull Day'''
+        durationEst:
+          type: integer
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodayExercise'
+        openWorkout:
+          $ref: '#/components/schemas/WorkoutInstanceResponse'
+    TodayExercise:
+      type: object
+      required:
+        - id
+        - name
+        - muscle
+        - sets
+        - targetReps
+        - targetRIR
+        - type
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        muscle:
+          type: string
+        sets:
+          type: integer
+        targetReps:
+          type: string
+        targetRIR:
+          type: integer
+        type:
+          type: string
+          enum:
+            - compound
+            - isolation
+        warning:
+          type: string
+        lastWeek:
+          $ref: '#/components/schemas/LastWeekRef'
+    LastWeekRef:
+      type: object
+      description: Top set of the previous completed instance of the same template day
+      required:
+        - weightKg
+        - reps
+        - rir
+      properties:
+        weightKg:
+          type: number
+        reps:
+          type: integer
+        rir:
+          type: integer
+    WorkoutInstanceResponse:
+      type: object
+      required:
+        - id
+        - templateSessionId
+        - date
+        - status
+        - sets
+      properties:
+        id:
+          type: string
+          format: uuid
+        templateSessionId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+        sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExerciseSetResponse'
+    ExerciseSetResponse:
+      type: object
+      required:
+        - id
+        - exerciseId
+        - setIndex
+      properties:
+        id:
+          type: string
+          format: uuid
+        exerciseId:
+          type: string
+          format: uuid
+        setIndex:
+          type: integer
+        weightKg:
+          type: number
+        reps:
+          type: integer
+        rir:
+          type: integer
+        side:
+          type: string
+          description: L|B|R
+        note:
+          type: string
+    WorkoutStartRequest:
+      type: object
+      required:
+        - templateSessionId
+      properties:
+        templateSessionId:
+          type: string
+          format: uuid
+    SetLogRequest:
+      type: object
+      required:
+        - exerciseId
+        - setIndex
+        - weightKg
+        - reps
+        - rir
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
+        setIndex:
+          type: integer
+          minimum: 0
+          maximum: 49
+        weightKg:
+          type: number
+          minimum: 0
+          maximum: 999
+        reps:
+          type: integer
+          minimum: 1
+          maximum: 100
+        rir:
+          type: integer
+          minimum: 0
+          maximum: 5
+        side:
+          type: string
+          pattern: '^[LBR]$'
+        note:
+          type: string
+          maxLength: 500
+    WorkoutFeedbackInput:
+      type: object
+      required:
+        - exerciseId
+        - pump
+        - jointPain
+        - workload
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
+        pump:
+          type: integer
+          minimum: 1
+          maximum: 4
+        jointPain:
+          type: integer
+          minimum: 1
+          maximum: 3
+        workload:
+          type: integer
+          minimum: 1
+          maximum: 3
     SportSessionResponse:
       type: object
       required:

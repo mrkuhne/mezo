@@ -1,11 +1,17 @@
 package io.mrkuhne.mezo.feature.train.controller;
 
 import io.mrkuhne.mezo.api.controller.TrainApi;
+import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
+import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
@@ -49,5 +55,31 @@ public class TrainController implements TrainApi {
     @Override
     public MesoDay replaceDayExercises(UUID id, UUID dayId, List<GymExerciseInput> gymExerciseInput) {
         return service.replaceDayExercises(currentUserId.get(), id, dayId, gymExerciseInput);
+    }
+
+    // T2 stubs — replaced by WorkoutService delegations in Tasks 3–6.
+    @Override
+    public WorkoutTodayResponse getTodayWorkout() {
+        throw new UnsupportedOperationException("T2 Task 6");
+    }
+
+    @Override
+    public WorkoutInstanceResponse startWorkout(WorkoutStartRequest workoutStartRequest) {
+        throw new UnsupportedOperationException("T2 Task 3");
+    }
+
+    @Override
+    public ExerciseSetResponse logWorkoutSet(UUID id, SetLogRequest setLogRequest) {
+        throw new UnsupportedOperationException("T2 Task 4");
+    }
+
+    @Override
+    public void saveWorkoutFeedback(UUID id, List<WorkoutFeedbackInput> workoutFeedbackInput) {
+        throw new UnsupportedOperationException("T2 Task 5");
+    }
+
+    @Override
+    public WorkoutInstanceResponse finishWorkout(UUID id) {
+        throw new UnsupportedOperationException("T2 Task 5");
     }
 }
