@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { GOAL_PRESETS, SPLITS } from '@/data/train'
-import { addWeeks, generateProgram, getSeason, stepLabels } from './planner'
+import { addWeeks, defaultWeekdays, generateProgram, getSeason, stepLabels } from './planner'
 
 describe('addWeeks', () => {
   test('adds whole weeks across HU month boundaries', () => {
@@ -58,5 +58,61 @@ describe('generateProgram', () => {
     })
     const overhead = program.flatMap((d) => d.exercises).find((e) => e.name === 'Overhead Press')
     expect(overhead?.warning).toBeUndefined()
+  })
+})
+
+describe('defaultWeekdays', () => {
+  test('PPL with 5 days defaults to the template training weekdays', () => {
+    expect(defaultWeekdays({ split: SPLITS[0], days: 5 })).toEqual(['Hét', 'Kedd', 'Sze', 'Csü', 'Pén'])
+  })
+
+  test('caps at the requested day count', () => {
+    expect(defaultWeekdays({ split: SPLITS[0], days: 4 })).toEqual(['Hét', 'Kedd', 'Sze', 'Csü'])
+  })
+
+  test('pads thin templates (Upper/Lower/Sport has 3 gym days) up to the count, rest days first', () => {
+    const days = defaultWeekdays({ split: 'Upper / Lower / Sport', days: 5 })
+    expect(days).toHaveLength(5)
+    expect(days).toEqual(['Hét', 'Kedd', 'Sze', 'Pén', 'Vas']) // Hét/Sze/Pén gym + Vas rest-pad + Kedd vb-pad, week-ordered
+  })
+})
+
+describe('generateProgram · weekdays placement', () => {
+  test('puts the training sequence on the selected weekdays, everything else rests', () => {
+    const program = generateProgram({
+      goal: GOAL_PRESETS[0], split: SPLITS[0], days: 3,
+      weekdays: ['Kedd', 'Csü', 'Szo'], niggle: null,
+    })
+    expect(program).toHaveLength(7)
+    const byDay = Object.fromEntries(program.map((d) => [d.day, d]))
+    expect(byDay['Kedd'].type).toBe('Push')
+    expect(byDay['Csü'].type).toBe('Pull')
+    expect(byDay['Szo'].type).toBe('Legs')
+    for (const off of ['Hét', 'Sze', 'Pén', 'Vas']) {
+      expect(byDay[off].type).toBe('Rest')
+      expect(byDay[off].exercises).toHaveLength(0)
+    }
+  })
+
+  test('keeps template volleyball days that were not selected as gym days', () => {
+    const program = generateProgram({
+      goal: GOAL_PRESETS[4], split: 'Upper / Lower / Sport', days: 3,
+      weekdays: ['Hét', 'Sze', 'Pén'], niggle: null,
+    })
+    const byDay = Object.fromEntries(program.map((d) => [d.day, d]))
+    expect(byDay['Kedd'].type).toBe('Volleyball')
+    expect(byDay['Csü'].type).toBe('Volleyball')
+    expect(byDay['Szo'].type).toBe('Volleyball')
+    expect(byDay['Hét'].type).toBe('Upper')
+    expect(byDay['Sze'].type).toBe('Lower')
+  })
+
+  test('cycles the training sequence when more days are selected than the split defines', () => {
+    const program = generateProgram({
+      goal: GOAL_PRESETS[4], split: 'Upper / Lower / Sport', days: 5,
+      weekdays: ['Hét', 'Kedd', 'Sze', 'Pén', 'Vas'], niggle: null,
+    })
+    const types = program.filter((d) => d.exerciseCount > 0).map((d) => d.type)
+    expect(types).toEqual(['Upper', 'Lower', 'Upper', 'Upper', 'Lower']) // 3-entry sequence cycled to 5
   })
 })

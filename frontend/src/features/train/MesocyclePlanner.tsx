@@ -16,11 +16,11 @@ import { useTrain } from '@/data/hooks'
 import type { ExerciseLibraryItem, GoalPreset, MesoPhase, SplitOption } from '@/data/types'
 import type { MesocycleCreateRequest } from '@/lib/trainApi'
 import { huMonthDay } from '@/lib/dates'
-import { GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/train'
+import { DAY_ORDER, GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/train'
 import { Icon } from '@/components/ui/Icon'
 import { Display } from '@/components/ui/Display'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
-import { addWeeks, generateProgram, getSeason, GOAL_HINTS, stepLabels } from './planner'
+import { addWeeks, defaultWeekdays, generateProgram, getSeason, GOAL_HINTS, stepLabels } from './planner'
 import type { PlannerDay } from './planner'
 import { ExercisePickerSheet } from './components/ExercisePickerSheet'
 import { PlannerDaySection } from './components/PlannerDaySection'
@@ -51,6 +51,9 @@ export function MesocyclePlanner() {
   const [phaseCurve, setPhaseCurve] = useState<MesoPhase[]>(['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'])
   const [split, setSplit] = useState<SplitOption | null>(null)
   const [days, setDays] = useState(5)
+  // Selected gym weekdays — exactly `days` must be picked; split/days changes re-derive
+  // the defaults from the split template (mezo-cne).
+  const [selectedDays, setSelectedDays] = useState<string[]>(() => defaultWeekdays({ split: null, days: 5 }))
   // Lifted from Step3 so the terminal save buttons can read the reviewed/edited program.
   const [program, setProgram] = useState<PlannerDay[] | null>(null)
 
@@ -64,7 +67,24 @@ export function MesocyclePlanner() {
     setPhaseCurve(g.phaseTemplate)
     setSplit(SPLITS.find((s) => s.label === g.split) ?? null)
     setDays(g.days)
+    setSelectedDays(defaultWeekdays({ split: g.split, days: g.days }))
   }
+
+  const pickSplit = (s: SplitOption) => {
+    setSplit(s)
+    setSelectedDays(defaultWeekdays({ split: s, days }))
+  }
+  const pickDays = (d: number) => {
+    setDays(d)
+    setSelectedDays(defaultWeekdays({ split, days: d }))
+  }
+  const toggleDay = (d: string) =>
+    setSelectedDays((cur) =>
+      cur.includes(d)
+        ? cur.filter((x) => x !== d)
+        : cur.length < days
+          ? DAY_ORDER.filter((x) => cur.includes(x) || x === d)
+          : cur)
 
   // Wizard state -> contract payload. All 7 template days travel (rest days too) so the
   // backend mirrors the seed/template shape; mock mode no-ops and just navigates (Phase 1).
@@ -95,7 +115,8 @@ export function MesocyclePlanner() {
   }
 
   const canNext =
-    (step === 0 && !!goal) || (step === 1 && weeks > 0) || step === 2 || step === 3
+    (step === 0 && !!goal) || (step === 1 && weeks > 0)
+    || (step === 2 && selectedDays.length === days) || step === 3
 
   const handleBack = () => {
     if (step > 0) setStep(step - 1)
@@ -157,7 +178,17 @@ export function MesocyclePlanner() {
           setPhaseCurve={setPhaseCurve}
         />
       )}
-      {step === 2 && <Step2Split goal={goal} split={split} setSplit={setSplit} days={days} setDays={setDays} />}
+      {step === 2 && (
+        <Step2Split
+          goal={goal}
+          split={split}
+          setSplit={pickSplit}
+          days={days}
+          setDays={pickDays}
+          selectedDays={selectedDays}
+          toggleDay={toggleDay}
+        />
+      )}
       {step === 3 && (
         <Step3Program
           goal={goal}
@@ -165,6 +196,7 @@ export function MesocyclePlanner() {
           weeks={weeks}
           split={split}
           days={days}
+          weekdays={selectedDays}
           program={program}
           setProgram={setProgram}
         />
@@ -496,12 +528,16 @@ function Step2Split({
   setSplit,
   days,
   setDays,
+  selectedDays,
+  toggleDay,
 }: {
   goal: GoalPreset | null
   split: SplitOption | null
   setSplit: (v: SplitOption) => void
   days: number
   setDays: (v: number) => void
+  selectedDays: string[]
+  toggleDay: (d: string) => void
 }) {
   return (
     <div style={{ padding: '8px 24px' }}>
@@ -575,6 +611,51 @@ function Step2Split({
         </div>
       </div>
 
+      {/* Gym weekdays — exactly `days` must stay selected (mezo-cne) */}
+      <div className="col gap-sm mt-xl">
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+          <span className="label-mono">Melyik napokon?</span>
+          <span
+            className="label-mono"
+            style={{ fontSize: 9, color: selectedDays.length === days ? 'var(--brand-glow)' : 'var(--warning)' }}
+          >
+            {selectedDays.length}/{days}
+          </span>
+        </div>
+        <div className="row gap-xs">
+          {DAY_ORDER.map((d) => {
+            const active = selectedDays.includes(d)
+            return (
+              <button
+                key={d}
+                type="button"
+                aria-pressed={active}
+                onClick={() => toggleDay(d)}
+                className="flex-1 notch-4"
+                style={{
+                  padding: '10px 0',
+                  background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
+                  border: `1px solid ${active ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
+                  color: active ? 'var(--brand-glow)' : 'var(--text-tertiary)',
+                  fontFamily: 'var(--ff-mono)',
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.06em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {d}
+              </button>
+            )
+          })}
+        </div>
+        {selectedDays.length !== days && (
+          <span className="label-mono" style={{ fontSize: 9, color: 'var(--warning)' }}>
+            Válassz pontosan {days} napot a folytatáshoz.
+          </span>
+        )}
+      </div>
+
       {/* Exercise auto-fill option */}
       <div className="card notch-4 mt-xl" style={{ padding: 14, background: BRAND_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
@@ -599,6 +680,7 @@ function Step3Program({
   weeks,
   split,
   days,
+  weekdays,
   program,
   setProgram,
 }: {
@@ -607,6 +689,7 @@ function Step3Program({
   weeks: number
   split: SplitOption | null
   days: number
+  weekdays: string[]
   program: PlannerDay[] | null
   setProgram: (v: PlannerDay[] | null | ((prev: PlannerDay[] | null) => PlannerDay[] | null)) => void
 }) {
@@ -614,21 +697,18 @@ function Step3Program({
   const [pickerDay, setPickerDay] = useState<string | null>(null)
 
   // Brief loading state, then generate the program (re-run if inputs change).
+  // The first training day auto-expands ONCE per generation, right here — a
+  // standalone "expand when null" effect would re-open every user collapse (mezo-xnq).
   useEffect(() => {
     setProgram(null)
+    setExpandedDay(null)
     const timer = setTimeout(() => {
-      setProgram(generateProgram({ goal, split, days, niggle: 'shoulder' }))
+      const prog = generateProgram({ goal, split, days, weekdays, niggle: 'shoulder' })
+      setProgram(prog)
+      setExpandedDay(prog.find((d) => d.exerciseCount > 0)?.day ?? null)
     }, 600)
     return () => clearTimeout(timer)
-  }, [goal, split, days])
-
-  // Auto-expand the first training day once the program lands.
-  useEffect(() => {
-    if (program && expandedDay == null) {
-      const first = program.find((d) => d.exerciseCount > 0)
-      if (first) setExpandedDay(first.day)
-    }
-  }, [program, expandedDay])
+  }, [goal, split, days, weekdays])
 
   if (!program) {
     return (

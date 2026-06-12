@@ -81,3 +81,53 @@ test('the wizard persists the mesocycle in real mode and lands on the library', 
   // navigation: back on the (empty) library
   await waitFor(() => expect(screen.getByText(/Még nincs mesociklusod/i)).toBeInTheDocument())
 })
+
+test('step 2 weekday picker: defaults match the split, Tovább gates on exact count', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
+  // Hypertrophy defaults: PPL · 5 days -> Hét..Pén preselected
+  for (const d of ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén']) {
+    expect(screen.getByRole('button', { name: d, pressed: true })).toBeInTheDocument()
+  }
+  expect(screen.getByRole('button', { name: 'Szo', pressed: false })).toBeInTheDocument()
+  // Deselect one -> 4/5, Tovább disabled + hint shows
+  await user.click(screen.getByRole('button', { name: 'Pén' }))
+  expect(screen.getByText('Válassz pontosan 5 napot a folytatáshoz.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Tovább →' })).toBeDisabled()
+  // Select Szo instead -> gate opens again
+  await user.click(screen.getByRole('button', { name: 'Szo' }))
+  expect(screen.getByRole('button', { name: 'Tovább →' })).toBeEnabled()
+})
+
+test('the generated program lands on the selected weekdays', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
+  await user.click(screen.getByRole('button', { name: 'Pén' })) // off
+  await user.click(screen.getByRole('button', { name: 'Vas' })) // on instead
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 3
+  // program generation has a 600ms delay
+  const vasSection = await screen.findByRole('button', { name: /Vas/ }, { timeout: 3000 })
+  expect(vasSection).toHaveTextContent(/Pull/) // 5th entry of the PPL sequence lands on Vas
+  // Pén became a rest day
+  const penSection = screen.getByRole('button', { name: /^Pén/ })
+  expect(penSection).toHaveTextContent(/Rest/)
+})
+
+test('an expanded program day can be collapsed (and stays collapsed)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 3
+  // the first training day auto-expands once the program lands
+  const header = await screen.findByRole('button', { name: /Hét.*Push/, expanded: true }, { timeout: 3000 })
+  await user.click(header)
+  expect(screen.getByRole('button', { name: /Hét.*Push/ })).toHaveAttribute('aria-expanded', 'false')
+})
