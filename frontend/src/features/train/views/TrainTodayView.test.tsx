@@ -62,6 +62,8 @@ test('real mode renders the today card and agenda from the active meso + /today'
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
     http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    // pin the schedule empty — the default BVSC fixture would add weekday-dependent vb rows
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
     http.get(`${API_BASE}/api/train/workouts/today`, () =>
       HttpResponse.json({
         templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
@@ -82,6 +84,7 @@ test('real mode shows the rest-day note when /today is empty but a meso is activ
     // the meso's only gym day is NOT today -> rest day
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
     http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()

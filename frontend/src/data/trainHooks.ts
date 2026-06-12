@@ -8,6 +8,9 @@ import {
   type MesocycleCreateRequest,
   type MesocycleResponse,
   type SetLogRequest,
+  type SportScheduleSlotInput,
+  type SportScheduleSlotResponse,
+  type SportSessionCreateRequest,
   type SportSessionResponse,
   type WorkoutFeedbackInput,
   type WorkoutInstanceResponse,
@@ -27,7 +30,9 @@ import type {
   GymSchedule,
   Mesocycle,
   Sport,
+  SportSchedule,
   SportSession,
+  SportWeek,
   WorkoutPlan,
 } from './types'
 
@@ -82,9 +87,69 @@ function toMesocycle(r: MesocycleResponse): Mesocycle {
 function toSportSession(r: SportSessionResponse): SportSession {
   return {
     id: r.id, sport: r.sport, date: huMonthDayDow(r.date), time: r.time,
-    duration: r.duration, setsPlayed: r.setsPlayed, intensity: r.intensity,
-    rpe: r.rpe, shoulderStrain: r.shoulderStrain, jumpCount: r.jumpCount,
+    duration: r.duration, setsPlayed: r.setsPlayed, intensity: r.intensity ?? null,
+    rpe: r.rpe, shoulderStrain: r.shoulderStrain, jumpCount: r.jumpCount ?? null,
     notes: r.notes ?? null,
+  }
+}
+
+// Weekly slots -> the Phase-1 SportSchedule shape. team/season have no DB home in
+// Phase 2 (slot table only) — empty in real mode, the view renders them conditionally.
+function toSportSchedule(slots: SportScheduleSlotResponse[]): SportSchedule | null {
+  if (!slots.length) return null
+  const todayIdx = (new Date().getDay() + 6) % 7
+  return {
+    volleyball: {
+      team: '',
+      season: '',
+      weeklyHours: Math.round((slots.reduce((a, s) => a + s.durationMin, 0) / 60) * 10) / 10,
+      sessions: slots.map((s) => ({
+        day: DAY_ORDER[s.dayOfWeek],
+        time: s.time,
+        duration: s.durationMin,
+        court: s.location ?? '',
+        intensity: s.intensityLabel ?? '',
+        role: s.kind === 'match' ? 'meccs' : 'edzés',
+        ...(s.dayOfWeek === todayIdx ? { today: true } : {}),
+      })),
+    },
+  }
+}
+
+function isoWeekNumber(d: Date): number {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+  const dayNum = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
+  return Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+}
+
+// Current ISO week (Mon-Sun) stats from the logged sessions; null when the week is
+// empty so the hero ghost ("megjelenik az első logolt session után") stays truthful.
+// Trend analysis is Phase 3 — 'stabil' is a constant (the field is not rendered).
+function deriveSportWeek(rs: SportSessionResponse[]): SportWeek | null {
+  const now = new Date()
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7))
+  const afterSunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 7)
+  const inWeek = rs.filter((r) => {
+    const [y, m, d] = r.date.split('-').map(Number)
+    const dt = new Date(y, m - 1, d)
+    return dt >= monday && dt < afterSunday
+  })
+  if (inWeek.length === 0) return null
+  const round1 = (n: number) => Math.round(n * 10) / 10
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6)
+  const isoDate = (dt: Date) => new Intl.DateTimeFormat('en-CA').format(dt)
+  const range = monday.getMonth() === sunday.getMonth()
+    ? `${huMonthDay(isoDate(monday))}-${sunday.getDate()}`
+    : `${huMonthDay(isoDate(monday))} - ${huMonthDay(isoDate(sunday))}`
+  return {
+    label: `Hét ${isoWeekNumber(now)} · ${range}`,
+    sessions: inWeek.length,
+    hoursPlayed: round1(inWeek.reduce((a, r) => a + r.duration, 0) / 60),
+    avgRPE: round1(inWeek.reduce((a, r) => a + r.rpe, 0) / inWeek.length),
+    avgShoulderStrain: round1(inWeek.reduce((a, r) => a + r.shoulderStrain, 0) / inWeek.length),
+    shoulderLoadTrend: 'stabil',
   }
 }
 
@@ -92,11 +157,12 @@ type MutateOpts = { onSuccess?: () => void }
 
 // Real mode has no static fallback (T0 "tiszta lap"): an empty backend must
 // surface as null, not silently render Phase-1 demo data. `sport.sessions`
-// always loads from the API; the other sport facets (schedule/week/crossLoad)
-// are derived data that lands in T2/T3, so they're null until then.
-// `exerciseLibrary` stays static — it's a content catalog, not user data (spec
-// decision). Mock mode returns the byte-identical Phase-1 statics, and the
-// T1 write mutations no-op so Phase-1 interactions keep their local behavior.
+// loads from the API, `sport.schedule` from the weekly slots (T3), `sport.week`
+// derives client-side from the current week's sessions (T3); only `crossLoad`
+// stays null (Phase 3). `exerciseLibrary` stays static — it's a content
+// catalog, not user data (spec decision). Mock mode returns the byte-identical
+// Phase-1 statics, and the write mutations no-op so Phase-1 interactions keep
+// their local behavior.
 type TrainData = {
   mesocycles: Mesocycle[]
   activeMeso: Mesocycle | null
@@ -115,6 +181,8 @@ type TrainData = {
   logSet: (workoutId: string, set: SetLogRequest) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string) => void
+  logSportSession: (req: SportSessionCreateRequest, opts?: MutateOpts) => void
+  saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
   mesoMutationPending: boolean
 }
 
@@ -128,10 +196,19 @@ export function useTrain(): TrainData {
     // static return exactly (parity + component tests). Real mode loads.
     initialData: mock ? mesocycles : undefined,
   })
-  const { data: sportSessions } = useQuery({
+  // Week stats derive from the RAW ISO-dated responses (the mapped sessions carry
+  // HU display dates), so the derivation happens inside the queryFn.
+  const { data: sportData } = useQuery({
     queryKey: ['train', 'sportSessions'],
-    queryFn: mock ? async () => sport.sessions : () => trainApi.sportSessions().then(rs => rs.map(toSportSession)),
-    initialData: mock ? sport.sessions : undefined,
+    queryFn: mock
+      ? async () => ({ sessions: sport.sessions, week: sport.week })
+      : () => trainApi.sportSessions().then((rs) => ({ sessions: rs.map(toSportSession), week: deriveSportWeek(rs) })),
+    initialData: mock ? { sessions: sport.sessions, week: sport.week } : undefined,
+  })
+  const { data: scheduleData } = useQuery({
+    queryKey: ['train', 'sportSchedule'],
+    queryFn: mock ? async () => sport.schedule : () => trainApi.sportSchedule().then(toSportSchedule),
+    initialData: mock ? sport.schedule : undefined,
   })
   // Today's workout context — only meaningful in real mode (mock serves the static plan).
   const { data: todayData, isPending: todayPending } = useQuery({
@@ -191,6 +268,20 @@ export function useTrain(): TrainData {
     onSuccess: invalidateToday,
   })
 
+  // T3 sport mutations: mock no-ops; real persists then refetches the affected query.
+  const logSportMutation = useMutation({
+    mutationFn: mock
+      ? async (_req: SportSessionCreateRequest) => undefined
+      : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
+    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }) },
+  })
+  const sportScheduleMutation = useMutation({
+    mutationFn: mock
+      ? async (_slots: SportScheduleSlotInput[]) => undefined
+      : (slots: SportScheduleSlotInput[]) => trainApi.replaceSportSchedule(slots),
+    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSchedule'] }) },
+  })
+
   const createMesocycle = useCallback(
     (req: MesocycleCreateRequest, opts?: MutateOpts) => createMutation.mutate(req, opts),
     [createMutation],
@@ -227,6 +318,14 @@ export function useTrain(): TrainData {
     (workoutId: string) => finishMutation.mutate(workoutId),
     [finishMutation],
   )
+  const logSportSession = useCallback(
+    (req: SportSessionCreateRequest, opts?: MutateOpts) => logSportMutation.mutate(req, opts),
+    [logSportMutation],
+  )
+  const saveSportSchedule = useCallback(
+    (slots: SportScheduleSlotInput[], opts?: MutateOpts) => sportScheduleMutation.mutate(slots, opts),
+    [sportScheduleMutation],
+  )
 
   const mesos = mesoData ?? []
   const realActiveMeso = mesos.find(m => m.status === 'active') ?? null
@@ -241,8 +340,8 @@ export function useTrain(): TrainData {
       : null,
     workoutPending: !mock && (mesoPending || todayPending),
     sport: mock
-      ? { ...sport, sessions: sportSessions ?? [] }
-      : { ...sport, schedule: null, week: null, crossLoad: null, sessions: sportSessions ?? [] },
+      ? { ...sport, sessions: sportData?.sessions ?? [] }
+      : { schedule: scheduleData ?? null, week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
     exerciseLibrary, // static catalog — content, not user data (spec decision)
     createMesocycle,
     activateMesocycle,
@@ -252,6 +351,8 @@ export function useTrain(): TrainData {
     logSet,
     saveWorkoutFeedback,
     finishWorkout,
+    logSportSession,
+    saveSportSchedule,
     mesoMutationPending: createMutation.isPending || activateMutation.isPending || closeMutation.isPending,
   }
 }
