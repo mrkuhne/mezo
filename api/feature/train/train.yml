@@ -188,6 +188,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/exercise-records:
+    get:
+      tags: [Train]
+      operationId: getExerciseRecords
+      summary: Per-exercise all-time records aggregated from logged sets, sessionCount desc then name
+      responses:
+        '200':
+          description: Exercise records (empty array when nothing is logged yet)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseRecordResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/sport-sessions:
     get:
       tags: [Train]
@@ -850,6 +870,91 @@ components:
           type: number
           minimum: 0
           maximum: 1
+    RecordSetRef:
+      type: object
+      description: One logged set as a record reference; weightKg absent on bodyweight sets
+      required:
+        - reps
+        - date
+      properties:
+        weightKg:
+          type: number
+        reps:
+          type: integer
+        date:
+          type: string
+          format: date
+    E1rmRecord:
+      type: object
+      required:
+        - value
+        - set
+      properties:
+        value:
+          type: number
+          description: Epley estimate weight×(1+reps/30), 1 decimal
+        set:
+          $ref: '#/components/schemas/RecordSetRef'
+    SessionVolumeRecord:
+      type: object
+      required:
+        - volumeKg
+        - date
+      properties:
+        volumeKg:
+          type: number
+        date:
+          type: string
+          format: date
+    ExerciseRecordResponse:
+      type: object
+      required:
+        - name
+        - muscle
+        - type
+        - totalVolume
+        - totalSets
+        - totalReps
+        - sessionCount
+        - repRecords
+        - recentTopSets
+      properties:
+        catalogId:
+          type: string
+          format: uuid
+          description: Identity when the exercise is catalog-linked; absent for name-grouped legacy rows
+        name:
+          type: string
+        muscle:
+          type: string
+        type:
+          type: string
+          enum: [compound, isolation, plyo]
+        bestSet:
+          $ref: '#/components/schemas/RecordSetRef'
+        bestE1rm:
+          $ref: '#/components/schemas/E1rmRecord'
+        bestSessionVolume:
+          $ref: '#/components/schemas/SessionVolumeRecord'
+        totalVolume:
+          type: number
+          description: Σ weight×reps all-time, whole kg (0 for bodyweight-only exercises)
+        totalSets:
+          type: integer
+        totalReps:
+          type: integer
+        sessionCount:
+          type: integer
+        repRecords:
+          type: array
+          description: Max reps at the top 3 distinct weights, weight descending
+          items:
+            $ref: '#/components/schemas/RecordSetRef'
+        recentTopSets:
+          type: array
+          description: Top set of the last 5 sessions, oldest first (sparkline order), max 5
+          items:
+            $ref: '#/components/schemas/RecordSetRef'
     WorkoutTodayResponse:
       type: object
       description: All fields absent when there is no active meso or today is a rest day

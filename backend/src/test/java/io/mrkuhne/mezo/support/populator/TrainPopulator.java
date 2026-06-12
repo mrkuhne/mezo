@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -110,6 +111,38 @@ public class TrainPopulator {
         e.setType("compound");
         e.setOrderIndex(orderIndex);
         return exerciseRepository.saveAndFlush(e);
+    }
+
+    /** Catalog-linked exercise with explicit muscle/type — record-aggregation tests. */
+    public ExerciseEntity createExercise(UUID createdBy, UUID workoutSessionId, String name,
+        int orderIndex, String muscle, String type, UUID catalogId) {
+        ExerciseEntity e = new ExerciseEntity();
+        e.setCreatedBy(createdBy);
+        e.setWorkoutSessionId(workoutSessionId);
+        e.setName(name);
+        e.setMuscle(muscle);
+        e.setSets(3);
+        e.setTargetReps("8-10");
+        e.setTargetRir(1);
+        e.setType(type);
+        e.setCatalogId(catalogId);
+        e.setOrderIndex(orderIndex);
+        return exerciseRepository.saveAndFlush(e);
+    }
+
+    /** Logged set with explicit doneAt (record date/ordering tests); weightKg null = bodyweight. */
+    public ExerciseSetEntity createLoggedSet(UUID createdBy, UUID exerciseId, UUID workoutSessionId,
+        int setIndex, String weightKg, int reps, int rir, Instant doneAt) {
+        ExerciseSetEntity set = new ExerciseSetEntity();
+        set.setCreatedBy(createdBy);
+        set.setExerciseId(exerciseId);
+        set.setWorkoutSessionId(workoutSessionId);
+        set.setSetIndex(setIndex);
+        set.setWeightKg(weightKg != null ? new BigDecimal(weightKg) : null);
+        set.setReps(reps);
+        set.setRir(rir);
+        set.setDoneAt(doneAt);
+        return exerciseSetRepository.saveAndFlush(set);
     }
 
     public ExerciseSetEntity createExerciseSet(UUID createdBy, UUID exerciseId, int setIndex) {

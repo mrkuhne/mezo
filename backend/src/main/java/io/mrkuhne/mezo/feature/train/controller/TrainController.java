@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.controller;
 
 import io.mrkuhne.mezo.api.controller.TrainApi;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
+import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
@@ -45,6 +46,11 @@ public class TrainController implements TrainApi {
     @Override
     public List<ExerciseCatalogItem> getExerciseCatalog() {
         return exerciseCatalogService.list();
+    }
+
+    @Override
+    public List<ExerciseRecordResponse> getExerciseRecords() {
+        return List.of(); // stub — replaced by ExerciseRecordService in Task 2
     }
 
     @Override
