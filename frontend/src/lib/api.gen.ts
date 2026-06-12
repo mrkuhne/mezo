@@ -161,6 +161,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/exercise-records": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-exercise all-time records aggregated from logged sets, sessionCount desc then name */
+        get: operations["getExerciseRecords"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/sport-sessions": {
         parameters: {
             query?: never;
@@ -549,6 +566,46 @@ export interface components {
             type: "compound" | "isolation" | "plyo";
             stim: number;
             fatigue: number;
+        };
+        /** @description One logged set as a record reference; weightKg absent on bodyweight sets */
+        RecordSetRef: {
+            weightKg?: number;
+            reps: number;
+            /** Format: date */
+            date: string;
+        };
+        E1rmRecord: {
+            /** @description Epley estimate weight×(1+reps/30), 1 decimal */
+            value: number;
+            set: components["schemas"]["RecordSetRef"];
+        };
+        SessionVolumeRecord: {
+            volumeKg: number;
+            /** Format: date */
+            date: string;
+        };
+        ExerciseRecordResponse: {
+            /**
+             * Format: uuid
+             * @description Identity when the exercise is catalog-linked; absent for name-grouped legacy rows
+             */
+            catalogId?: string;
+            name: string;
+            muscle: string;
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            bestSet?: components["schemas"]["RecordSetRef"];
+            bestE1rm?: components["schemas"]["E1rmRecord"];
+            bestSessionVolume?: components["schemas"]["SessionVolumeRecord"];
+            /** @description Σ weight×reps all-time, whole kg (0 for bodyweight-only exercises) */
+            totalVolume: number;
+            totalSets: number;
+            totalReps: number;
+            sessionCount: number;
+            /** @description Max reps at the top 3 distinct weights, weight descending */
+            repRecords: components["schemas"]["RecordSetRef"][];
+            /** @description Top set of the last 5 sessions, oldest first (sparkline order), max 5 */
+            recentTopSets: components["schemas"]["RecordSetRef"][];
         };
         /** @description All fields absent when there is no active meso or today is a rest day */
         WorkoutTodayResponse: {
@@ -1166,6 +1223,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExerciseCatalogItem"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getExerciseRecords: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Exercise records (empty array when nothing is logged yet) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseRecordResponse"][];
                 };
             };
             /** @description Missing/invalid token */

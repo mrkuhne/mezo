@@ -6,9 +6,9 @@ function renderAt(path: string) {
   return render(<MemoryRouter initialEntries={[path]}><TrainSubNav /></MemoryRouter>)
 }
 
-test('renders all four sub-nav items with verbatim labels', () => {
+test('renders all five sub-nav items with verbatim labels', () => {
   renderAt('/train')
-  for (const label of ['Mai', 'GYM', 'Sport', 'Mesociklusok']) {
+  for (const label of ['Mai', 'GYM', 'Sport', 'Gyakorlatok', 'Mesociklusok']) {
     expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
   }
 })
