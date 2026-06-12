@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
+import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -20,6 +22,7 @@ import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -170,5 +173,69 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> workoutService.startWorkout(user, startRequest(instance)))
             .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    private static SetLogRequest setRequest(ExerciseEntity exercise, int setIndex, String weightKg,
+        int reps, int rir) {
+        return SetLogRequest.builder().exerciseId(exercise.getId()).setIndex(setIndex)
+            .weightKg(new BigDecimal(weightKg)).reps(reps).rir(rir).build();
+    }
+
+    @Test
+    void testLogSet_shouldPersistSetIntoInstance_whenWorkoutActive() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+
+        SetLogRequest req = setRequest(exercise, 0, "105.0", 8, 1);
+        req.setSide("L");
+        req.setNote("pumpa brutális");
+        ExerciseSetResponse logged = workoutService.logSet(user, started.getId(), req);
+
+        assertThat(logged.getId()).isNotNull();
+        ExerciseSetEntity row = exerciseSetRepository.findById(logged.getId()).orElseThrow();
+        assertThat(row.getWorkoutSessionId()).isEqualTo(started.getId());
+        assertThat(row.getExerciseId()).isEqualTo(exercise.getId());
+        assertThat(row.getWeightKg()).isEqualByComparingTo("105.0");
+        assertThat(row.getSide()).isEqualTo("L");
+        assertThat(row.getNote()).isEqualTo("pumpa brutális");
+        assertThat(row.getDoneAt()).isNotNull();
+        assertThat(row.getCreatedBy()).isEqualTo(user);
+    }
+
+    @Test
+    void testLogSet_shouldThrowNotFound_whenExerciseNotInTemplateDay() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        WorkoutSessionEntity otherDay =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Pén", "Push Day", 1, "planned");
+        ExerciseEntity foreignExercise = trainPopulator.createExercise(user, otherDay.getId(), "Bench", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+
+        assertThatThrownBy(() -> workoutService.logSet(user, started.getId(),
+            setRequest(foreignExercise, 0, "60", 10, 2)))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testLogSet_shouldThrowConflict_whenWorkoutCompleted() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutSessionEntity completed =
+            trainPopulator.createWorkoutInstance(user, template, LocalDate.now(), "completed");
+
+        assertThatThrownBy(() -> workoutService.logSet(user, completed.getId(),
+            setRequest(exercise, 0, "100", 8, 1)))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .extracting(e -> ((SystemRuntimeErrorException) e).getStatus())
+            .isEqualTo(org.springframework.http.HttpStatus.CONFLICT);
     }
 }

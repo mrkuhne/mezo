@@ -72,7 +72,7 @@ public class TrainController implements TrainApi {
 
     @Override
     public ExerciseSetResponse logWorkoutSet(UUID id, SetLogRequest setLogRequest) {
-        throw new UnsupportedOperationException("T2 Task 4");
+        return workoutService.logSet(currentUserId.get(), id, setLogRequest);
     }
 
     @Override

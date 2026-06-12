@@ -1,7 +1,10 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
+import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
@@ -10,6 +13,7 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -66,6 +70,39 @@ public class WorkoutService {
         instance.setDate(LocalDate.now());
         instance.setStatus("active");
         return toInstanceResponse(createdBy, workoutSessionRepository.save(instance));
+    }
+
+    @Transactional
+    public ExerciseSetResponse logSet(UUID createdBy, UUID workoutId, SetLogRequest req) {
+        WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
+        if (!"active".equals(instance.getStatus())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_WORKOUT_NOT_ACTIVE").build(), HttpStatus.CONFLICT);
+        }
+        // The exercise must hang off the instance's template day — child writes verify the chain.
+        exerciseRepository.findById(req.getExerciseId())
+            .filter(e -> createdBy.equals(e.getCreatedBy())
+                && instance.getTemplateSessionId().equals(e.getWorkoutSessionId()))
+            .orElseThrow(WorkoutService::notFound);
+        ExerciseSetEntity set = new ExerciseSetEntity();
+        set.setCreatedBy(createdBy);
+        set.setExerciseId(req.getExerciseId());
+        set.setWorkoutSessionId(instance.getId());
+        set.setSetIndex(req.getSetIndex());
+        set.setWeightKg(req.getWeightKg());
+        set.setReps(req.getReps());
+        set.setRir(req.getRir());
+        set.setSide(req.getSide());
+        set.setNote(req.getNote());
+        set.setDoneAt(Instant.now());
+        return mapper.toSetResponse(exerciseSetRepository.save(set));
+    }
+
+    /** Instance gate: owned AND an instance row (template rows are not loggable targets). */
+    private WorkoutSessionEntity ownedInstanceOrThrow(UUID createdBy, UUID workoutId) {
+        return workoutSessionRepository.findById(workoutId)
+            .filter(s -> createdBy.equals(s.getCreatedBy()) && s.getTemplateSessionId() != null)
+            .orElseThrow(WorkoutService::notFound);
     }
 
     private WorkoutInstanceResponse toInstanceResponse(UUID createdBy, WorkoutSessionEntity instance) {
