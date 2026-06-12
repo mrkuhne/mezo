@@ -18,6 +18,9 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>Growth rule:</b> every new owned domain table (Slice B+) MUST be added to the
  * TRUNCATE list here in the same change that creates it.
+ *
+ * <p><b>exercise_catalog is master data</b> (content, no created_by) — it must NOT join the
+ * TRUNCATE list; the startup ExerciseCatalogLoader owns it.
  */
 @TestComponent
 @RequiredArgsConstructor
