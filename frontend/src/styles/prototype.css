@@ -235,6 +235,15 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   /* default base; component-level offset below */
 }
 
+/* Sticky page chrome (breadcrumb/back rows) — pins below the fake status bar
+   while the content scrolls under it, like native app navigation chrome. */
+.sticky-top {
+  position: sticky;
+  top: 54px;
+  z-index: 40;
+  background: var(--canvas);
+}
+
 /* Lock background scroll when a sheet/modal is open */
 .phone-screen:has(.sheet-backdrop) .screen-content {
   overflow: hidden !important;
@@ -317,6 +326,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
+  .sticky-top { top: env(safe-area-inset-top); }
   .tab-bar {
     height: auto;
     padding-top: 8px;

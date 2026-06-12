@@ -94,7 +94,7 @@ export function WorkoutComplete({
     'Lezártuk a Pull Day-t, és a Reta D3 ablakot nézve ez a volumen most pont elég. Holnap péntek volleyball lesz — a regenerálódás az igazi munka most.'
 
   return (
-    <div className="screen-content">
+    <div>
       {/* Hero */}
       <div style={{ padding: '20px 24px 8px' }}>
         <button className="row gap-sm" onClick={onExit} style={{ marginBottom: 16 }}>
