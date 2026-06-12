@@ -153,6 +153,12 @@ html, body {
   overflow: hidden;
 }
 
+/* Native-app feel: scrollbars are never shown anywhere (scrolling is untouched).
+   `width: 0` alone does not suppress macOS overlay scrollbars in Safari — only
+   `display: none` does; `scrollbar-width` covers Firefox. */
+* { scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
 button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
 input, textarea { font-family: inherit; color: inherit; background: none; border: none; outline: none; }
 
@@ -228,7 +234,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .screen-content {
   /* default base; component-level offset below */
 }
-.screen-content::-webkit-scrollbar { width: 0; }
 
 /* Lock background scroll when a sheet/modal is open */
 .phone-screen:has(.sheet-backdrop) .screen-content {
