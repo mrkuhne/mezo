@@ -131,3 +131,27 @@ test('an expanded program day can be collapsed (and stays collapsed)', async () 
   await user.click(header)
   expect(screen.getByRole('button', { name: /Hét.*Push/ })).toHaveAttribute('aria-expanded', 'false')
 })
+
+test('custom split: empty nameable days, the user picks the exercises', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
+  await user.click(screen.getByText('Custom split'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 3
+  // the first custom day auto-expands even though it has no exercises yet
+  const header = await screen.findByRole('button', { name: /Body A/, expanded: true }, { timeout: 3000 })
+  expect(header).toHaveTextContent(/Üres nap/)
+  // renaming the day updates the header
+  const nameInput = screen.getByLabelText('Nap neve')
+  await user.clear(nameInput)
+  await user.type(nameInput, 'Láb nap')
+  expect(screen.getByRole('button', { name: /Láb nap/ })).toBeInTheDocument()
+  // the add affordance opens the picker and the pick lands in the day
+  await user.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
+  await user.click(screen.getByText('Hip Thrust'))
+  await waitFor(() => expect(screen.queryByText('Mit pakolunk be?')).not.toBeInTheDocument())
+  expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Láb nap/ })).toHaveTextContent(/1 gyakorlat/)
+})

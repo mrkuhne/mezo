@@ -263,6 +263,11 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
     ({ day, type: 'Rest', muscle: '', exerciseCount: 0, exercises: [], note: note ?? 'Pihenőnap' })
 
   const trainingDay = (d: DayTemplate): PlannerDay => {
+    // Custom-split days carry no preset — the user names them and picks the
+    // exercises in the step-3 review (mezo-9wv); auto-fill would override that.
+    if (d.muscle === 'custom') {
+      return { ...d, exerciseCount: 0, exercises: [] }
+    }
     const baseType = BASE_TYPES.find((t) => d.type.startsWith(t)) ?? 'Pull'
     const isLight = d.type.includes('light')
     let exercises: GymExercise[] = exercisesForDay(baseType, niggle).map((seed, i) => {

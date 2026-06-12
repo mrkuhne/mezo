@@ -705,7 +705,8 @@ function Step3Program({
     const timer = setTimeout(() => {
       const prog = generateProgram({ goal, split, days, weekdays, niggle: 'shoulder' })
       setProgram(prog)
-      setExpandedDay(prog.find((d) => d.exerciseCount > 0)?.day ?? null)
+      // type-based: a custom day starts with 0 exercises but is still the day to open
+      setExpandedDay(prog.find((d) => d.type !== 'Rest' && d.type !== 'Volleyball')?.day ?? null)
     }, 600)
     return () => clearTimeout(timer)
   }, [goal, split, days, weekdays])
@@ -744,6 +745,13 @@ function Step3Program({
           ? { ...d, exercises: d.exercises.filter((e) => e.id !== exId), exerciseCount: d.exercises.filter((e) => e.id !== exId).length }
           : d,
       ),
+    )
+  }
+
+  // Custom-split days are user-named (mezo-9wv); the day key stays, only the label changes.
+  const renameDay = (dayName: string, name: string) => {
+    setProgram((prev) =>
+      (prev ?? []).map((d) => (d.day === dayName ? { ...d, type: name } : d)),
     )
   }
 
@@ -822,6 +830,7 @@ function Step3Program({
             onToggle={() => setExpandedDay((cur) => (cur === d.day ? null : d.day))}
             onRemove={(exId) => removeExercise(d.day, exId)}
             onAdd={() => setPickerDay(d.day)}
+            onRename={d.muscle === 'custom' ? (name) => renameDay(d.day, name) : undefined}
           />
         ))}
       </div>
