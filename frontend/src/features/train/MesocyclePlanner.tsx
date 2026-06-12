@@ -51,9 +51,12 @@ export function MesocyclePlanner() {
   const [phaseCurve, setPhaseCurve] = useState<MesoPhase[]>(['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'])
   const [split, setSplit] = useState<SplitOption | null>(null)
   const [days, setDays] = useState(5)
-  // Selected gym weekdays — exactly `days` must be picked; split/days changes re-derive
-  // the defaults from the split template (mezo-cne).
+  // Selected gym weekdays — exactly `days` must be picked. Defaults derive from the
+  // split template (mezo-cne), but ONLY until the user touches the chips: after that,
+  // split/count changes keep the manual pick and the exact-count gate guides adjusting
+  // (mezo-509). A fresh goal pick re-prefills everything and clears the touch.
   const [selectedDays, setSelectedDays] = useState<string[]>(() => defaultWeekdays({ split: null, days: 5 }))
+  const [daysTouched, setDaysTouched] = useState(false)
   // Lifted from Step3 so the terminal save buttons can read the reviewed/edited program.
   const [program, setProgram] = useState<PlannerDay[] | null>(null)
 
@@ -68,23 +71,26 @@ export function MesocyclePlanner() {
     setSplit(SPLITS.find((s) => s.label === g.split) ?? null)
     setDays(g.days)
     setSelectedDays(defaultWeekdays({ split: g.split, days: g.days }))
+    setDaysTouched(false)
   }
 
   const pickSplit = (s: SplitOption) => {
     setSplit(s)
-    setSelectedDays(defaultWeekdays({ split: s, days }))
+    if (!daysTouched) setSelectedDays(defaultWeekdays({ split: s, days }))
   }
   const pickDays = (d: number) => {
     setDays(d)
-    setSelectedDays(defaultWeekdays({ split, days: d }))
+    if (!daysTouched) setSelectedDays(defaultWeekdays({ split, days: d }))
   }
-  const toggleDay = (d: string) =>
+  const toggleDay = (d: string) => {
+    setDaysTouched(true)
     setSelectedDays((cur) =>
       cur.includes(d)
         ? cur.filter((x) => x !== d)
         : cur.length < days
           ? DAY_ORDER.filter((x) => cur.includes(x) || x === d)
           : cur)
+  }
 
   // Wizard state -> contract payload. All 7 template days travel (rest days too) so the
   // backend mirrors the seed/template shape; mock mode no-ops and just navigates (Phase 1).

@@ -155,3 +155,23 @@ test('custom split: empty nameable days, the user picks the exercises', async ()
   expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Láb nap/ })).toHaveTextContent(/1 gyakorlat/)
 })
+
+test('manually picked weekdays survive a day-count change', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
+  // customize: Pén off, Szo on (defaults were Hét..Pén)
+  await user.click(screen.getByRole('button', { name: 'Pén' }))
+  await user.click(screen.getByRole('button', { name: 'Szo' }))
+  // change weekly count 5 -> 4: the manual pick must NOT reset to defaults
+  await user.click(screen.getByRole('button', { name: '4×' }))
+  expect(screen.getByRole('button', { name: 'Szo', pressed: true })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Pén', pressed: false })).toBeInTheDocument()
+  // 5 picked vs 4 needed -> gate + hint until one is removed
+  expect(screen.getByText('Válassz pontosan 4 napot a folytatáshoz.')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Tovább →' })).toBeDisabled()
+  await user.click(screen.getByRole('button', { name: 'Hét' })) // remove one
+  expect(screen.getByRole('button', { name: 'Tovább →' })).toBeEnabled()
+})
