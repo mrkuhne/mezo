@@ -9,6 +9,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
+import { isMockMode } from '@/lib/mode'
 import type { SportSchedule, SportSession, CrossLoadRow as CrossLoadRowData } from '@/data/types'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
@@ -23,6 +24,7 @@ import { SportStat } from '../components/SportStat'
 import { SportSessionCard } from '../components/SportSessionCard'
 import { CrossLoadRow } from '../components/CrossLoadRow'
 import { SportLogSheet } from '../components/SportLogSheet'
+import { SportScheduleSheet } from '../components/SportScheduleSheet'
 
 type SportSubView = 'week' | 'log' | 'crossload'
 
@@ -41,6 +43,7 @@ export function SportView() {
   const { sport, logSportSession, saveSportSchedule } = useTrain()
   const [view, setView] = useState<SportSubView>('week')
   const [logOpen, setLogOpen] = useState(false)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
 
   // T0 clean slate: schedule/week/crossLoad are null in real mode until their
   // slices land (T3 schedule+stats, Phase 3 cross-load) — ghost-guard each facet.
@@ -165,10 +168,18 @@ export function SportView() {
 
       {view === 'week' &&
         (volleyball ? (
-          <SportWeekView schedule={volleyball} />
+          <SportWeekView
+            schedule={volleyball}
+            onEdit={isMockMode() ? undefined : () => setScheduleOpen(true)}
+          />
         ) : (
           <div style={{ padding: '8px 24px 16px' }}>
-            <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
+            <GhostState
+              lines={2}
+              message="A heti rended itt jelenik majd meg."
+              ctaLabel="+ Állítsd be a heti rended"
+              onCta={() => setScheduleOpen(true)}
+            />
           </div>
         ))}
       {view === 'log' && <SportLogView sessions={sport.sessions} />}
@@ -182,16 +193,28 @@ export function SportView() {
         ))}
 
       {logOpen && <SportLogSheet onClose={() => setLogOpen(false)} onSave={logSportSession} />}
+      {scheduleOpen && (
+        <SportScheduleSheet
+          initial={volleyball?.sessions ?? []}
+          onSave={saveSportSchedule}
+          onClose={() => setScheduleOpen(false)}
+        />
+      )}
     </>
   )
 }
 
 // === Week view: 7-day schedule with volleyball slots ===
-function SportWeekView({ schedule }: { schedule: SportSchedule['volleyball'] }) {
+function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyball']; onEdit?: () => void }) {
   return (
     <div style={{ padding: '8px 24px 16px' }}>
-      <div className="eyebrow" style={{ marginBottom: 12 }}>
-        Heti ritmus · {schedule.weeklyHours}h court
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <span className="eyebrow">Heti ritmus · {schedule.weeklyHours}h court</span>
+        {onEdit && (
+          <button type="button" className="chip notch-4" onClick={onEdit} style={{ padding: '4px 8px', fontSize: 9 }}>
+            Szerkesztés
+          </button>
+        )}
       </div>
       <div className="col gap-sm">
         {DAY_ORDER.map((d) => {
