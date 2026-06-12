@@ -1,11 +1,13 @@
 package io.mrkuhne.mezo.feature.train.mapper;
 
+import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
 import io.mrkuhne.mezo.api.dto.VolumeRecompute;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
@@ -40,6 +42,8 @@ public interface TrainMapper {
 
     @Mapping(target = "duration", source = "durationMin")
     SportSessionResponse toResponse(SportSessionEntity entity);
+
+    ExerciseSetResponse toSetResponse(ExerciseSetEntity entity);
 
     VolumeRecompute toRecompute(VolumeRecomputeJson json);
 

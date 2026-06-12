@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
 import java.util.UUID;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TrainController implements TrainApi {
 
     private final TrainService service;
+    private final WorkoutService workoutService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -65,7 +67,7 @@ public class TrainController implements TrainApi {
 
     @Override
     public WorkoutInstanceResponse startWorkout(WorkoutStartRequest workoutStartRequest) {
-        throw new UnsupportedOperationException("T2 Task 3");
+        return workoutService.startWorkout(currentUserId.get(), workoutStartRequest);
     }
 
     @Override
