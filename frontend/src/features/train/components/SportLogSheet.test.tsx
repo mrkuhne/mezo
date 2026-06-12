@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { SportLogSheet } from './SportLogSheet'
+import { NumberStep, SportLogSheet } from './SportLogSheet'
 
 function setup() {
   const onClose = vi.fn()
@@ -43,6 +43,26 @@ test('Mentés passes the sheet values to onSave (house WeightLogSheet idiom)', a
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(onSave).toHaveBeenCalledWith({ duration: 105, setsPlayed: 6, rpe: 8, shoulderStrain: 7 })
   await waitFor(() => expect(onClose).toHaveBeenCalled())
+})
+
+// Contract bounds (review finding): the steppers must clamp so the sheet can
+// never produce a payload the backend's @Valid rejects with a 400.
+test('NumberStep clamps to min/max bounds', async () => {
+  const onChange = vi.fn()
+  const { rerender } = render(<NumberStep label="X" val={600} step={15} max={600} onChange={onChange} />)
+  await userEvent.click(screen.getByRole('button', { name: 'X növelése' }))
+  expect(onChange).toHaveBeenCalledWith(600) // ceiling holds
+  rerender(<NumberStep label="X" val={15} step={15} min={15} max={600} onChange={onChange} />)
+  await userEvent.click(screen.getByRole('button', { name: 'X csökkentése' }))
+  expect(onChange).toHaveBeenLastCalledWith(15) // floor holds
+})
+
+test('duration stepper never goes below 15 minutes', async () => {
+  setup()
+  const minus = screen.getByRole('button', { name: 'Idő · perc csökkentése' })
+  for (let i = 0; i < 7; i++) await userEvent.click(minus) // 90 - 7×15 would be < 0
+  const display = minus.closest('.stepper')!.querySelector('.stepper-display')!
+  expect(display.textContent).toBe('15')
 })
 
 test('Mégse does not call onSave', async () => {

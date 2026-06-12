@@ -149,7 +149,9 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                         label="Hossz · perc"
                         val={d.durationMin}
                         step={15}
-                        onChange={(v) => patch(i, { durationMin: Math.max(15, v) })}
+                        min={15}
+                        max={360}
+                        onChange={(v) => patch(i, { durationMin: v })}
                       />
                       <input
                         aria-label={`${day} helyszín`}

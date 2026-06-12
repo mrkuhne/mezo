@@ -13,18 +13,24 @@ import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 import type { SportSessionCreateRequest } from '@/lib/trainApi'
 
 // --- NumberStep: label + mono value + 44px ± buttons (reuses .stepper) ---
+// min/max clamp the stepped value to the API contract bounds so the sheets can
+// never produce a payload the backend's @Valid rejects with a 400.
 export function NumberStep({
   label,
   val,
   step,
   onChange,
   color,
+  min = 0,
+  max,
 }: {
   label: string
   val: number
   step: number
   onChange: (next: number) => void
   color?: string
+  min?: number
+  max?: number
 }) {
   return (
     <div className="col gap-sm">
@@ -46,7 +52,7 @@ export function NumberStep({
         <button
           type="button"
           aria-label={`${label} csökkentése`}
-          onClick={() => onChange(Math.max(0, val - step))}
+          onClick={() => onChange(Math.max(min, val - step))}
         >
           <Icon name="minus" size={14} />
         </button>
@@ -54,7 +60,7 @@ export function NumberStep({
         <button
           type="button"
           aria-label={`${label} növelése`}
-          onClick={() => onChange(val + step)}
+          onClick={() => onChange(max != null ? Math.min(max, val + step) : val + step)}
         >
           <Icon name="plus" size={14} />
         </button>
@@ -147,8 +153,8 @@ export function SportLogSheet({ onClose, onSave }: {
 
           {/* Fields */}
           <div className="col gap-md">
-            <NumberStep label="Idő · perc" val={duration} step={15} onChange={setDuration} />
-            <NumberStep label="Setek · összesen" val={sets} step={1} onChange={setSets} />
+            <NumberStep label="Idő · perc" val={duration} step={15} min={15} max={600} onChange={setDuration} />
+            <NumberStep label="Setek · összesen" val={sets} step={1} max={50} onChange={setSets} />
             <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--brand-glow)" />
             <ScaleRow
               label="Váll terhelés"

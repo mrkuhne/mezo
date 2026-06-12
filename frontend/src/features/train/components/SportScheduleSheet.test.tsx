@@ -47,6 +47,20 @@ test('toggling a day off removes it from the saved list', async () => {
   ])
 })
 
+test('slot duration clamps to the contract ceiling (360)', async () => {
+  const onSave = vi.fn()
+  render(
+    <SportScheduleSheet
+      initial={[{ day: 'Hét', time: '18:15', duration: 360, court: '', intensity: '', role: 'edzés' }]}
+      onSave={onSave}
+      onClose={vi.fn()}
+    />,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Hossz · perc növelése' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave.mock.calls[0][0][0].durationMin).toBe(360)
+})
+
 test('kind toggle switches a day to match', async () => {
   const onSave = vi.fn()
   render(<SportScheduleSheet initial={[initial[0]]} onSave={onSave} onClose={vi.fn()} />)
