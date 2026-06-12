@@ -17,6 +17,7 @@ beforeEach(() => {
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
     http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
 })
 afterEach(() => vi.unstubAllEnvs())

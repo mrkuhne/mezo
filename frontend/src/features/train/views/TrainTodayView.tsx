@@ -23,10 +23,10 @@ export function TrainTodayView() {
   const navigate = useNavigate()
   const [vbLogOpen, setVbLogOpen] = useState(false)
 
-  // T0 clean slate: in real mode these are null until their write/derive slices
-  // land (workout+gymSchedule → T2, sport.schedule → T3). Ghost-guard the whole
-  // view — everything below assumes non-null data.
-  if (!activeMeso || !workout || !gymSchedule || !sport.schedule) {
+  // T0/T2: without an active meso the whole view ghosts. With one, the agenda
+  // derives from the meso (gymSchedule) and /today drives the hero card;
+  // volleyball columns stay empty until T3 (sport.schedule is null until then).
+  if (!activeMeso) {
     return (
       <>
         <div className="page-header">
@@ -36,16 +36,12 @@ export function TrainTodayView() {
           </div>
         </div>
         <div style={{ padding: '0 24px 12px' }}>
-          {activeMeso ? (
-            <GhostState lines={4} message="A mai edzésed itt jelenik majd meg." />
-          ) : (
-            <GhostState
-              lines={4}
-              message="Itt fog élni a mai edzésed — előbb tervezz egy mesociklust."
-              ctaLabel="+ Tervezz mesociklust"
-              onCta={() => navigate('/train/mesocycles/new')}
-            />
-          )}
+          <GhostState
+            lines={4}
+            message="Itt fog élni a mai edzésed — előbb tervezz egy mesociklust."
+            ctaLabel="+ Tervezz mesociklust"
+            onCta={() => navigate('/train/mesocycles/new')}
+          />
         </div>
         <div style={{ padding: '0 24px 16px' }}>
           <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
@@ -58,8 +54,8 @@ export function TrainTodayView() {
   }
 
   // Combine gym schedule + volleyball sessions into a unified weekly map.
-  const gymTimes = gymSchedule.weeklyTimes
-  const vbSessions = sport.schedule.volleyball.sessions
+  const gymTimes = gymSchedule?.weeklyTimes ?? []
+  const vbSessions = sport.schedule?.volleyball.sessions ?? []
   const agenda: WeeklyAgendaDay[] = DAY_ORDER.map((d) => {
     const g = gymTimes.find((x) => x.day === d)
     const v = vbSessions.find((x) => x.day === d)
@@ -78,8 +74,7 @@ export function TrainTodayView() {
 
   // Active meso phase for the current week (Week 3 ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
-  const totalSets = workout.exercises.reduce((acc, e) => acc + e.sets, 0)
-  const startWorkout = () => navigate('/train/session')
+  const openSession = () => navigate('/train/session')
 
   return (
     <>
@@ -94,8 +89,8 @@ export function TrainTodayView() {
         </span>
       </div>
 
-      {/* Today's main gym block */}
-      {todayHasGym && (
+      {/* Today's main gym block — needs both the agenda slot and the /today workout */}
+      {todayHasGym && workout && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card notch-12" style={{ padding: 18 }}>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -104,22 +99,37 @@ export function TrainTodayView() {
                 <div style={{ marginTop: 8 }}>
                   <Display size="lg">{workout.title}</Display>
                 </div>
-                <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
-                  {todayHasGym.time} · {todayHasGym.duration}p
-                </span>
+                {(todayHasGym.time || todayHasGym.duration) && (
+                  <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
+                    {[todayHasGym.time, todayHasGym.duration ? `${todayHasGym.duration}p` : null]
+                      .filter(Boolean).join(' · ')}
+                  </span>
+                )}
               </div>
               <span className="chip brand notch-4" style={{ fontSize: 9 }}>MA</span>
             </div>
             <div className="row gap-sm mt-md">
               <span className="chip notch-4">{workout.exercises.length} gyakorlat</span>
-              <span className="chip notch-4">{totalSets} szet</span>
-              <span className="chip notch-4">~{workout.durationEst}p</span>
+              <span className="chip notch-4">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szet</span>
+              {workout.durationEst > 0 && <span className="chip notch-4">~{workout.durationEst}p</span>}
             </div>
-            <CtaPrimary className="mt-md" onClick={startWorkout}>
+            <CtaPrimary className="mt-md" onClick={openSession}>
               <span>Indítsuk</span>
               <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span>
               <span>{workout.title}</span>
             </CtaPrimary>
+          </div>
+        </div>
+      )}
+
+      {/* Rest day (real mode): no gym slot and no volleyball today */}
+      {!todayHasGym && !todayHasVb && (
+        <div style={{ padding: '0 24px 12px' }}>
+          <div className="card notch-12" style={{ padding: 18 }}>
+            <span className="eyebrow">Ma pihenőnap</span>
+            <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Nincs tervezett edzés mára — a heti rended lent találod.
+            </p>
           </div>
         </div>
       )}
@@ -177,7 +187,7 @@ export function TrainTodayView() {
             <WeeklyDayRow
               key={a.day}
               agenda={a}
-              onStartGym={startWorkout}
+              onStartGym={openSession}
               onLogVolleyball={() => setVbLogOpen(true)}
             />
           ))}
