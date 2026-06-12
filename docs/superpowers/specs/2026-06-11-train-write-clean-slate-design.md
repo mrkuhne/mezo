@@ -73,6 +73,14 @@ implementation with two-stage reviews, gates, `--no-ff` merge — the Slice B wo
 - `sport_schedule_slot`: `day_of_week` smallint 0–6 CHECK, `time varchar(5)`,
   `duration_min int`, `kind` text CHECK (`training`|`match`), `location` text,
   `intensity_label` text NULL, house columns. `demofixtures` seeds the current BVSC week.
+- **As built (T3):** week stats (`SportWeek`) derive client-side from the current ISO
+  week's logged sessions — the hero ghosts until a session lands in the running week;
+  `team`/`season` have no DB home, so the hero shows the schedule-derived main venue
+  (most frequent slot location, 'Volleyball' fallback). The weekly editor
+  (`SportScheduleSheet`) is a real-mode-only affordance and constrains to one slot per
+  day (the DB/contract allow more). `intensity`/`jumpCount` are not captured by the log
+  sheet (stay NULL; left the `SportSessionResponse` required list), and the sheet/editor
+  steppers clamp to the contract bounds (duration 15–600, sets ≤50, slot duration 15–360).
 
 **Seed changes (T0):** `TrainSeedData` moves to `@Profile("demofixtures")`; `demodata`
 keeps `OwnerSeedData` only. `TrainSeedDataIT` activates both profiles.
