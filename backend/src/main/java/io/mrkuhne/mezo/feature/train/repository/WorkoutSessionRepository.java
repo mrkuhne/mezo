@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.repository;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,4 +16,7 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
 
     List<WorkoutSessionEntity> findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(
         UUID createdBy, Collection<UUID> mesocycleIds);
+
+    Optional<WorkoutSessionEntity> findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
+        UUID createdBy, UUID templateSessionId, String status);
 }

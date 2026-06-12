@@ -14,4 +14,7 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, 
 
     List<ExerciseSetEntity> findByCreatedByAndExerciseIdOrderBySetIndexAsc(
         UUID createdBy, UUID exerciseId);
+
+    List<ExerciseSetEntity> findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(
+        UUID createdBy, UUID workoutSessionId);
 }

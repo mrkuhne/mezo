@@ -39,6 +39,10 @@ public class ExerciseSetEntity extends OwnedEntity {
     @Column(name = "exercise_id", nullable = false)
     private UUID exerciseId;
 
+    /** The concrete workout instance this set was logged in (NULL on legacy/template-less rows). */
+    @Column(name = "workout_session_id")
+    private UUID workoutSessionId;
+
     @NotNull
     @Column(name = "set_index", nullable = false)
     private Integer setIndex;
@@ -55,8 +59,8 @@ public class ExerciseSetEntity extends OwnedEntity {
     @Column
     private String side; // null|L|B|R (DB CHECK)
 
-    @Column(name = "voice_note")
-    private String voiceNote;
+    @Column
+    private String note;
 
     @Column(name = "done_at")
     private Instant doneAt;
