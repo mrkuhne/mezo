@@ -155,7 +155,7 @@ export function TrainTodayView() {
                   <Display size="md">Volleyball · {todayHasVb.time}</Display>
                 </div>
                 <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
-                  {todayHasVb.court} · {todayHasVb.duration}p · {todayHasVb.role}
+                  {[todayHasVb.court, `${todayHasVb.duration}p`, todayHasVb.role].filter(Boolean).join(' · ')}
                 </span>
               </div>
               <span

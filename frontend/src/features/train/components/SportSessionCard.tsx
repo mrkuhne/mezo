@@ -12,10 +12,13 @@ interface SportSessionCardProps {
 }
 
 export function SportSessionCard({ session }: SportSessionCardProps) {
+  // intensity is not captured by the T3 log sheet — colour falls back to the RPE
+  // scale (same 1-10 semantics) and the Intenzitás bar hides when not present.
+  const intensityScore = session.intensity ?? session.rpe
   const intensityColor =
-    session.intensity >= 8
+    intensityScore >= 8
       ? 'var(--warning)'
-      : session.intensity >= 7
+      : intensityScore >= 7
         ? 'var(--brand-glow)'
         : 'var(--text-secondary)'
 
@@ -58,7 +61,9 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
 
       {/* Mini stat row */}
       <div className="row gap-sm mt-md" style={{ paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}>
-        <MiniBar label="Intenzitás" val={session.intensity} max={10} color="var(--cat-tendency)" />
+        {session.intensity != null && (
+          <MiniBar label="Intenzitás" val={session.intensity} max={10} color="var(--cat-tendency)" />
+        )}
         <MiniBar
           label="Váll terhelés"
           val={session.shoulderStrain}

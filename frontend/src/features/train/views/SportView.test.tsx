@@ -87,3 +87,36 @@ test('real mode ghost CTA opens the editor when no schedule exists', async () =>
   await userEvent.click(await screen.findByRole('button', { name: /Állítsd be a heti rended/ }))
   expect(await screen.findByRole('heading', { name: 'Heti rend' })).toBeInTheDocument()
 })
+
+test('real mode hero shows week stats once a session lands in the current week', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const today = new Date()
+  const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'd1f3a0e2-0000-4000-8000-000000000088', sport: 'volleyball', date: iso, time: '18:00', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 },
+      ]),
+    ),
+  )
+  renderView()
+  // schedule-derived venue replaces the hardcoded string; /5 heti = 5 fixture slots
+  expect(await screen.findByText('/5 heti')).toBeInTheDocument()
+  expect(screen.getByText('BVSC csarnok')).toBeInTheDocument()
+})
+
+test('real mode Napló hides the jump average when sessions carry no jumpCount', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'd1f3a0e2-0000-4000-8000-000000000099', sport: 'volleyball', date: '2026-06-01', time: '18:00', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 },
+      ]),
+    ),
+  )
+  renderView()
+  await userEvent.click(await screen.findByRole('button', { name: 'Napló' }))
+  expect(await screen.findByText(/Utolsó 1 session/)).toBeInTheDocument()
+  expect(screen.queryByText(/ugrás/)).not.toBeInTheDocument()
+  expect(screen.queryByText('Intenzitás')).not.toBeInTheDocument() // null intensity -> MiniBar hidden
+})

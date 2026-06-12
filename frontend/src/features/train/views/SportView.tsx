@@ -45,10 +45,21 @@ export function SportView() {
   const [logOpen, setLogOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
 
-  // T0 clean slate: schedule/week/crossLoad are null in real mode until their
-  // slices land (T3 schedule+stats, Phase 3 cross-load) — ghost-guard each facet.
+  // T3: schedule comes from the DB slots and week derives from the logged
+  // sessions; only crossLoad stays null (Phase 3) — ghost-guard each facet.
   const volleyball = sport.schedule?.volleyball ?? null
   const week = sport.week
+
+  // Venue = the most frequent slot location (schedule-derived; the mock fixture
+  // yields the same 'BVSC csarnok' string the prototype hardcoded — parity-safe).
+  const venue = (() => {
+    const counts = new Map<string, number>()
+    for (const s of volleyball?.sessions ?? []) if (s.court) counts.set(s.court, (counts.get(s.court) ?? 0) + 1)
+    let best = 'Volleyball'
+    let bestN = 0
+    for (const [c, n] of counts) if (n > bestN) { best = c; bestN = n }
+    return best
+  })()
 
   return (
     <>
@@ -100,14 +111,16 @@ export function SportView() {
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div className="col">
                 <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>
-                  {volleyball.team}
+                  {volleyball.team || 'Volleyball'}
                 </span>
                 <div style={{ marginTop: 6 }}>
-                  <Display size="lg">BVSC csarnok</Display>
+                  <Display size="lg">{venue}</Display>
                 </div>
-                <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>
-                  {volleyball.season}
-                </span>
+                {volleyball.season && (
+                  <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>
+                    {volleyball.season}
+                  </span>
+                )}
               </div>
             </div>
 
@@ -282,7 +295,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                         className="text-tertiary"
                         style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}
                       >
-                        {session.court} · {session.role} · {session.intensity}
+                        {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
                       </span>
                     </div>
                     <Icon name="chevron-right" size={12} color="var(--text-tertiary)" />
@@ -325,12 +338,17 @@ function SportLogView({ sessions }: { sessions: SportSession[] }) {
       </div>
     )
   }
-  const avgJumps = Math.round(sessions.reduce((acc, s) => acc + s.jumpCount, 0) / sessions.length)
+  // Jump counts are not captured by the T3 log sheet — average only the sessions
+  // that carry one, and hide the chip entirely when none do.
+  const withJumps = sessions.filter((s) => s.jumpCount != null)
+  const avgJumps = withJumps.length
+    ? Math.round(withJumps.reduce((acc, s) => acc + (s.jumpCount ?? 0), 0) / withJumps.length)
+    : null
   return (
     <div style={{ padding: '8px 24px 16px' }}>
       <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
         <span className="eyebrow">Utolsó {sessions.length} session</span>
-        <span className="eyebrow text-tertiary">avg {avgJumps} ugrás</span>
+        {avgJumps != null && <span className="eyebrow text-tertiary">avg {avgJumps} ugrás</span>}
       </div>
       <div className="col gap-sm">
         {sessions.map((s) => (

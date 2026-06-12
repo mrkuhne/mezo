@@ -91,3 +91,23 @@ test('real mode shows the rest-day note when /today is empty but a meso is activ
   expect(await screen.findByText(/Ma pihenőnap/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
 })
+
+test('real mode shows the volleyball today-card when a slot falls on today', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+      HttpResponse.json([
+        { id: 'e1f3a0e2-0000-4000-8000-0000000000aa', dayOfWeek: todayIdx, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      ]),
+    ),
+  )
+  renderView()
+  expect(await screen.findByText(/Volleyball · 18:15/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Logold a session-t/ })).toBeInTheDocument()
+  // gym rest day + vb today -> no rest-day card
+  expect(screen.queryByText(/Ma pihenőnap/)).not.toBeInTheDocument()
+})

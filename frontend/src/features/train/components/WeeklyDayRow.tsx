@@ -122,7 +122,7 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball }: WeeklyDayR
                   <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>· {volleyball.time}</span>
                 </div>
                 <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
-                  {volleyball.duration}p · {volleyball.role} · {volleyball.intensity}
+                  {[`${volleyball.duration}p`, volleyball.role, volleyball.intensity].filter(Boolean).join(' · ')}
                 </span>
               </div>
               {isToday && (
