@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.support.populator;
 
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
@@ -8,6 +9,7 @@ import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
@@ -36,6 +38,7 @@ public class TrainPopulator {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
+    private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final SportSessionRepository sportSessionRepository;
 
     public MesocycleEntity createMesocycle(UUID createdBy, String title, String status) {
@@ -115,6 +118,48 @@ public class TrainPopulator {
         set.setReps(8);
         set.setRir(1);
         return exerciseSetRepository.saveAndFlush(set);
+    }
+
+    /** Instance row: copies the template's day fields, links back via templateSessionId. */
+    public WorkoutSessionEntity createWorkoutInstance(UUID createdBy, WorkoutSessionEntity template,
+        LocalDate date, String status) {
+        WorkoutSessionEntity s = new WorkoutSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setMesocycleId(template.getMesocycleId());
+        s.setTemplateSessionId(template.getId());
+        s.setDayLabel(template.getDayLabel());
+        s.setType(template.getType());
+        s.setMuscle(template.getMuscle());
+        s.setMuscleAccent(template.isMuscleAccent());
+        s.setOrderIndex(template.getOrderIndex());
+        s.setDate(date);
+        s.setStatus(status);
+        return workoutSessionRepository.saveAndFlush(s);
+    }
+
+    /** Logged set inside an instance (T2 path — workoutSessionId set, side/note carried). */
+    public ExerciseSetEntity createLoggedSet(UUID createdBy, UUID exerciseId, UUID workoutSessionId,
+        int setIndex, String weightKg, int reps, int rir) {
+        ExerciseSetEntity set = new ExerciseSetEntity();
+        set.setCreatedBy(createdBy);
+        set.setExerciseId(exerciseId);
+        set.setWorkoutSessionId(workoutSessionId);
+        set.setSetIndex(setIndex);
+        set.setWeightKg(new BigDecimal(weightKg));
+        set.setReps(reps);
+        set.setRir(rir);
+        return exerciseSetRepository.saveAndFlush(set);
+    }
+
+    public ExerciseFeedbackEntity createFeedback(UUID createdBy, UUID workoutSessionId, UUID exerciseId) {
+        ExerciseFeedbackEntity f = new ExerciseFeedbackEntity();
+        f.setCreatedBy(createdBy);
+        f.setWorkoutSessionId(workoutSessionId);
+        f.setExerciseId(exerciseId);
+        f.setPump(3);
+        f.setJointPain(1);
+        f.setWorkload(2);
+        return exerciseFeedbackRepository.saveAndFlush(f);
     }
 
     public SportSessionEntity createSportSession(UUID createdBy, LocalDate date) {

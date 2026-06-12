@@ -64,8 +64,10 @@ implementation with two-stage reviews, gates, `--no-ff` merge — the Slice B wo
 - `exercise_set.voice_note` **renamed to `note`** (new changeset; text note — voice
   recording is Phase 3).
 - **New `exercise_feedback`:** `workout_session_id` (instance, FK CASCADE), `exercise_id`
-  (FK), `soreness`/`pump`/`joint_pain` smallint NOT NULL CHECK 1–3, house columns,
-  UNIQUE (workout_session_id, exercise_id).
+  (FK), **as built (T2):** `pump` smallint 1–4, `joint_pain` smallint 1–3, `workload`
+  smallint 1–3 (the shipped FeedbackModal asks pump/joint/„Akarunk még?” — RP workload —
+  so the planned `soreness` column became `workload`, and pump carries 4 options),
+  house columns, UNIQUE (workout_session_id, exercise_id).
 
 **T3 — new table:**
 - `sport_schedule_slot`: `day_of_week` smallint 0–6 CHECK, `time varchar(5)`,

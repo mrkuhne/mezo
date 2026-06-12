@@ -89,9 +89,13 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball }: WeeklyDayR
               <div className="col flex-1">
                 <div className="row gap-xs" style={{ alignItems: 'center' }}>
                   <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{gym.type}</span>
-                  <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>· {gym.time}</span>
+                  {gym.time && (
+                    <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>· {gym.time}</span>
+                  )}
                 </div>
-                <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>{gym.duration}p · gym</span>
+                <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
+                  {gym.duration ? `${gym.duration}p · gym` : 'gym'}
+                </span>
               </div>
               {isToday && <Icon name="chevron-right" size={11} color="var(--brand-glow)" />}
             </button>

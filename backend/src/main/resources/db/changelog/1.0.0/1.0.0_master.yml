@@ -34,3 +34,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606111400_mezo-n5q_create_train.sql
+  - changeSet:
+      id: "1.0.0:202606120900_mezo-tod_t2_workout_execution"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606120900_mezo-tod_t2_workout_execution.sql

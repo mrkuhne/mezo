@@ -38,6 +38,10 @@ public class WorkoutSessionEntity extends OwnedEntity {
     @Column(name = "mesocycle_id")
     private UUID mesocycleId;
 
+    /** Instance discriminator: NULL on template rows; on instance rows the template's id. */
+    @Column(name = "template_session_id")
+    private UUID templateSessionId;
+
     @NotNull
     @Column(name = "day_label", nullable = false)
     private String dayLabel;
