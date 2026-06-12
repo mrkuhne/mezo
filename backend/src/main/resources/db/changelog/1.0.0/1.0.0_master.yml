@@ -41,3 +41,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606120900_mezo-tod_t2_workout_execution.sql
+  - changeSet:
+      id: "1.0.0:202606121000_mezo-0ae_t3_sport_schedule"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606121000_mezo-0ae_t3_sport_schedule.sql
