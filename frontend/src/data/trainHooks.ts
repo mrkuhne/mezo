@@ -4,6 +4,7 @@ import { isMockMode } from '@/lib/mode'
 import { huMonthDay, huMonthDayDow } from '@/lib/dates'
 import {
   trainApi,
+  type ExerciseCatalogItem,
   type GymExerciseInput,
   type MesocycleCreateRequest,
   type MesocycleResponse,
@@ -116,6 +117,12 @@ function toSportSchedule(slots: SportScheduleSlotResponse[]): SportSchedule | nu
   }
 }
 
+// Catalog row -> the Phase-1 library shape; `id` doubles as the catalog uuid and
+// `catalogId` flags "came from the backend catalog" (mock statics never set it).
+function toLibraryItem(r: ExerciseCatalogItem): ExerciseLibraryItem {
+  return { id: r.id, catalogId: r.id, name: r.name, muscle: r.muscle, type: r.type, stim: r.stim, fatigue: r.fatigue }
+}
+
 function isoWeekNumber(d: Date): number {
   const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
   const dayNum = date.getUTCDay() || 7
@@ -159,8 +166,8 @@ type MutateOpts = { onSuccess?: () => void }
 // surface as null, not silently render Phase-1 demo data. `sport.sessions`
 // loads from the API, `sport.schedule` from the weekly slots (T3), `sport.week`
 // derives client-side from the current week's sessions (T3); only `crossLoad`
-// stays null (Phase 3). `exerciseLibrary` stays static — it's a content
-// catalog, not user data (spec decision). Mock mode returns the byte-identical
+// stays null (Phase 3). `exerciseLibrary` loads from GET /api/train/exercises
+// in real mode (curated master data, mezo-7ot). Mock mode returns the byte-identical
 // Phase-1 statics, and the write mutations no-op so Phase-1 interactions keep
 // their local behavior.
 type TrainData = {
@@ -209,6 +216,13 @@ export function useTrain(): TrainData {
     queryKey: ['train', 'sportSchedule'],
     queryFn: mock ? async () => sport.schedule : () => trainApi.sportSchedule().then(toSportSchedule),
     initialData: mock ? sport.schedule : undefined,
+  })
+  // Exercise catalog — master data; one fetch per app session is plenty.
+  const { data: catalogData } = useQuery({
+    queryKey: ['train', 'exerciseCatalog'],
+    queryFn: mock ? async () => exerciseLibrary : () => trainApi.exerciseCatalog().then((rs) => rs.map(toLibraryItem)),
+    initialData: mock ? exerciseLibrary : undefined,
+    staleTime: 60 * 60 * 1000,
   })
   // Today's workout context — only meaningful in real mode (mock serves the static plan).
   const { data: todayData, isPending: todayPending } = useQuery({
@@ -342,7 +356,7 @@ export function useTrain(): TrainData {
     sport: mock
       ? { ...sport, sessions: sportData?.sessions ?? [] }
       : { schedule: scheduleData ?? null, week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
-    exerciseLibrary, // static catalog — content, not user data (spec decision)
+    exerciseLibrary: catalogData ?? [], // API catalog in real mode, Phase-1 statics in mock
     createMesocycle,
     activateMesocycle,
     closeMesocycle,
