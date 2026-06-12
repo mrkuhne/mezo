@@ -104,6 +104,20 @@ Dates derive from `done_at` (fallback `created_at`).
   state), `ExerciseRecordSheet` tests (full metrics render, weightless variant),
   tab-row tests updated for 5 tabs. Both FE modes + build + parity captures.
 
+## As built (2026-06-12, mezo-wua)
+
+- **Identity past soft delete:** day-edit full-replace soft-deletes template exercise rows
+  while their logged sets survive — identity resolution therefore uses a NATIVE projection
+  (`ExerciseRepository.findIdentityRowsIncludingDeleted`) that bypasses `@SQLRestriction`;
+  IT-pinned (`testList_shouldKeepHistory_whenTemplateExerciseSoftDeleted`).
+- **Shared `muscleFilters.ts`:** the picker's chip tokens/labels + `matchesMuscleFilter`
+  moved to `features/train/muscleFilters.ts`, imported by both ExercisePickerSheet and
+  ExercisesView.
+- Volume formatting follows the hu-HU locale: 4-digit numbers are NOT grouped
+  (`4920 kg`), ≥10 000 kg switches to tonnes (`182,5 t`).
+- Live smoke confirmed the Epley winner can differ from the heaviest set
+  (100×10 → 133.3 beats 105×6 → 126.0) — surfaced correctly in the sheet.
+
 ## Out of scope (YAGNI)
 
 - Live PR detection / toast during an active workout.
