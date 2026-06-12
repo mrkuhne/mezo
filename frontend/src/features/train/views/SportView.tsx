@@ -38,7 +38,7 @@ const RPE_EXPLAINER =
   'regenerálódás + másnapi load számolásához.'
 
 export function SportView() {
-  const { sport } = useTrain()
+  const { sport, logSportSession, saveSportSchedule } = useTrain()
   const [view, setView] = useState<SportSubView>('week')
   const [logOpen, setLogOpen] = useState(false)
 
@@ -181,7 +181,7 @@ export function SportView() {
           </div>
         ))}
 
-      {logOpen && <SportLogSheet onClose={() => setLogOpen(false)} />}
+      {logOpen && <SportLogSheet onClose={() => setLogOpen(false)} onSave={logSportSession} />}
     </>
   )
 }

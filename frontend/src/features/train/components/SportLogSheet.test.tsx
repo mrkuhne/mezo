@@ -30,3 +30,26 @@ test('high shoulder strain swaps the observation copy', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Váll terhelés 8' }))
   expect(screen.getByText(/Váll terhelés magas/)).toBeInTheDocument()
 })
+
+test('Mentés passes the sheet values to onSave (house WeightLogSheet idiom)', async () => {
+  const onClose = vi.fn()
+  const onSave = vi.fn()
+  render(<SportLogSheet onClose={onClose} onSave={onSave} />)
+  // duration 90 -> 105 (+15 step), sets 5 -> 6, rpe -> 8, shoulder -> 7
+  await userEvent.click(screen.getByRole('button', { name: 'Idő · perc növelése' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Setek · összesen növelése' }))
+  await userEvent.click(screen.getByRole('button', { name: 'RPE · összesített nehézség 8' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Váll terhelés 7' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave).toHaveBeenCalledWith({ duration: 105, setsPlayed: 6, rpe: 8, shoulderStrain: 7 })
+  await waitFor(() => expect(onClose).toHaveBeenCalled())
+})
+
+test('Mégse does not call onSave', async () => {
+  const onClose = vi.fn()
+  const onSave = vi.fn()
+  render(<SportLogSheet onClose={onClose} onSave={onSave} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Mégse' }))
+  expect(onSave).not.toHaveBeenCalled()
+  await waitFor(() => expect(onClose).toHaveBeenCalled())
+})

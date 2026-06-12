@@ -19,7 +19,7 @@ import { SportLogSheet } from '../components/SportLogSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '../components/WeeklyDayRow'
 
 export function TrainTodayView() {
-  const { workout, gymSchedule, sport, activeMeso } = useTrain()
+  const { workout, gymSchedule, sport, activeMeso, logSportSession } = useTrain()
   const navigate = useNavigate()
   const [vbLogOpen, setVbLogOpen] = useState(false)
 
@@ -207,7 +207,7 @@ export function TrainTodayView() {
         </div>
       </div>
 
-      {vbLogOpen && <SportLogSheet onClose={() => setVbLogOpen(false)} />}
+      {vbLogOpen && <SportLogSheet onClose={() => setVbLogOpen(false)} onSave={logSportSession} />}
     </>
   )
 }
