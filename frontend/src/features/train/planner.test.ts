@@ -116,3 +116,30 @@ describe('generateProgram · weekdays placement', () => {
     expect(types).toEqual(['Upper', 'Lower', 'Upper', 'Upper', 'Lower']) // 3-entry sequence cycled to 5
   })
 })
+
+describe('generateProgram · custom split', () => {
+  test('custom days start empty (no auto-filled exercises), names cycle Body A/B', () => {
+    const program = generateProgram({
+      goal: GOAL_PRESETS[0], split: 'Custom split', days: 4,
+      weekdays: ['Kedd', 'Csü', 'Szo', 'Vas'], niggle: null,
+    })
+    const byDay = Object.fromEntries(program.map((d) => [d.day, d]))
+    expect(byDay['Kedd'].type).toBe('Body A')
+    expect(byDay['Csü'].type).toBe('Body B')
+    expect(byDay['Szo'].type).toBe('Body A')
+    expect(byDay['Vas'].type).toBe('Body A') // 3-entry template cycles: A,B,A -> 4th = A
+    for (const d of ['Kedd', 'Csü', 'Szo', 'Vas']) {
+      expect(byDay[d].exercises).toHaveLength(0) // the user picks — no auto-fill
+      expect(byDay[d].exerciseCount).toBe(0)
+    }
+  })
+
+  test('non-custom splits keep the auto-filled exercises', () => {
+    const program = generateProgram({
+      goal: GOAL_PRESETS[0], split: SPLITS[0], days: 5,
+      weekdays: ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén'], niggle: null,
+    })
+    const trainings = program.filter((d) => d.type !== 'Rest' && d.type !== 'Volleyball')
+    expect(trainings.every((d) => d.exercises.length > 0)).toBe(true)
+  })
+})

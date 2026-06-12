@@ -15,10 +15,14 @@ interface PlannerDaySectionProps {
   onToggle: () => void
   onRemove: (exId: string) => void
   onAdd: () => void
+  /** Renames the day (custom splits start empty and user-named — mezo-9wv). */
+  onRename?: (name: string) => void
 }
 
-export function PlannerDaySection({ day, expanded, onToggle, onRemove, onAdd }: PlannerDaySectionProps) {
-  const isTraining = (day.exerciseCount || 0) > 0
+export function PlannerDaySection({ day, expanded, onToggle, onRemove, onAdd, onRename }: PlannerDaySectionProps) {
+  // Type-based: an empty (not yet filled) training day is still a training day,
+  // it must keep the add-exercise affordance instead of rendering as "off".
+  const isTraining = day.type !== 'Rest' && day.type !== 'Volleyball'
   const setCount = day.exercises.reduce((a, e) => a + e.sets, 0)
 
   return (
@@ -60,7 +64,9 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onAdd }: 
           </div>
           {isTraining && (
             <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}>
-              {day.exerciseCount} gyakorlat · {setCount} szet
+              {day.exercises.length > 0
+                ? `${day.exercises.length} gyakorlat · ${setCount} szet`
+                : 'Üres nap · adj hozzá gyakorlatot'}
             </span>
           )}
           {!isTraining && day.note && (
@@ -75,6 +81,17 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onAdd }: 
       {expanded && isTraining && (
         <div style={{ padding: '0 14px 14px' }}>
           <div style={{ height: 1, background: 'var(--border-subtle)', marginBottom: 10 }} />
+          {onRename && (
+            <div className="card notch-4 row" style={{ padding: '8px 10px', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+              <span className="label-mono text-tertiary" style={{ fontSize: 9, flexShrink: 0 }}>Nap neve</span>
+              <input
+                aria-label="Nap neve"
+                value={day.type}
+                onChange={(e) => onRename(e.target.value)}
+                style={{ flex: 1, fontSize: 13, padding: '2px 0' }}
+              />
+            </div>
+          )}
           <div className="col gap-sm">
             {day.exercises.map((e) => (
               <PlannerExerciseRow key={e.id} ex={e} onRemove={() => onRemove(e.id)} />
