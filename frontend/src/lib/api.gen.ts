@@ -144,6 +144,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Curated exercise catalog (master data), muscle then name ascending */
+        get: operations["getExerciseCatalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/sport-sessions": {
         parameters: {
             query?: never;
@@ -478,8 +495,13 @@ export interface components {
             targetReps: string;
             targetRIR: number;
             /** @enum {string} */
-            type: "compound" | "isolation";
+            type: "compound" | "isolation" | "plyo";
             warning?: string;
+            /**
+             * Format: uuid
+             * @description Optional reference to the exercise_catalog row this exercise was picked from
+             */
+            catalogId?: string;
         };
         MesocycleCreateRequest: {
             title: string;
@@ -512,8 +534,21 @@ export interface components {
             targetReps: string;
             targetRIR: number;
             /** @enum {string} */
-            type: "compound" | "isolation";
+            type: "compound" | "isolation" | "plyo";
             warning?: string;
+            /** Format: uuid */
+            catalogId?: string;
+        };
+        ExerciseCatalogItem: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            name: string;
+            muscle: string;
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            stim: number;
+            fatigue: number;
         };
         /** @description All fields absent when there is no active meso or today is a rest day */
         WorkoutTodayResponse: {
@@ -536,7 +571,7 @@ export interface components {
             targetReps: string;
             targetRIR: number;
             /** @enum {string} */
-            type: "compound" | "isolation";
+            type: "compound" | "isolation" | "plyo";
             warning?: string;
             lastWeek?: components["schemas"]["LastWeekRef"];
         };
@@ -1106,6 +1141,35 @@ export interface operations {
             };
             /** @description Mesocycle/day not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getExerciseCatalog: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseCatalogItem"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

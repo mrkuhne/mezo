@@ -32,9 +32,24 @@ test('useTrain (real mode) fetches sport sessions with computed HU date labels',
   expect(result.current.sport.sessions[0].notes).toBeNull()
 })
 
-test('useTrain (real mode) keeps static exerciseLibrary catalog', async () => {
+test('useTrain (real mode) maps the API exercise catalog into exerciseLibrary', async () => {
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
-  expect(result.current.exerciseLibrary.length).toBeGreaterThan(0)
+  await waitFor(() => expect(result.current.exerciseLibrary.length).toBe(6))
+  const boxJump = result.current.exerciseLibrary.find((e) => e.name === 'Box Jump')
+  expect(boxJump).toMatchObject({
+    id: 'f1e3a0e2-0000-4000-8000-000000000072',
+    catalogId: 'f1e3a0e2-0000-4000-8000-000000000072',
+    muscle: 'quad',
+    type: 'plyo',
+    stim: 0.6,
+  })
+})
+
+test('useTrain (mock mode) keeps the static Phase-1 exerciseLibrary', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true') // override the file-level real-mode stub
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  expect(result.current.exerciseLibrary.length).toBe(21)
+  expect(result.current.exerciseLibrary[0].id).toBe('exl-1')
 })
 
 test('useTrain (real mode) createMesocycle POSTs the wizard payload', async () => {

@@ -427,7 +427,7 @@ export interface ChatMessage {
 // fixture in data.js) so it can be reused for the sport schedule too.
 export type MesoPhase = 'MEV' | 'MAV' | 'MRV' | 'Deload'
 export type MesoStatus = 'active' | 'planned' | 'archived'
-export type ExerciseKind = 'compound' | 'isolation'
+export type ExerciseKind = 'compound' | 'isolation' | 'plyo'
 
 export interface GymExercise {
   id: string
@@ -438,6 +438,7 @@ export interface GymExercise {
   targetRIR: number
   type: ExerciseKind
   warning?: string
+  catalogId?: string  // exercise_catalog row when picked from the API catalog (real mode)
 }
 export interface MesoDay {
   id?: string            // template-day row id (real mode only; mock fixtures carry none)
@@ -552,6 +553,7 @@ export interface Sport {
 
 export interface ExerciseLibraryItem {
   id: string; name: string; muscle: string; type: ExerciseKind; stim: number; fatigue: number
+  catalogId?: string  // set when the item comes from the backend catalog (real mode)
 }
 
 export interface GoalPreset {

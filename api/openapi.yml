@@ -386,6 +386,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/exercises:
+    get:
+      tags:
+        - Train
+      operationId: getExerciseCatalog
+      summary: 'Curated exercise catalog (master data), muscle then name ascending'
+      responses:
+        '200':
+          description: Catalog items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExerciseCatalogItem'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/sport-sessions:
     get:
       tags:
@@ -1171,8 +1192,15 @@ components:
           enum:
             - compound
             - isolation
+            - plyo
         warning:
           type: string
+        catalogId:
+          type: string
+          format: uuid
+          description: >-
+            Optional reference to the exercise_catalog row this exercise was
+            picked from
     MesocycleCreateRequest:
       type: object
       required:
@@ -1278,8 +1306,46 @@ components:
           enum:
             - compound
             - isolation
+            - plyo
         warning:
           type: string
+        catalogId:
+          type: string
+          format: uuid
+    ExerciseCatalogItem:
+      type: object
+      required:
+        - id
+        - slug
+        - name
+        - muscle
+        - type
+        - stim
+        - fatigue
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        muscle:
+          type: string
+        type:
+          type: string
+          enum:
+            - compound
+            - isolation
+            - plyo
+        stim:
+          type: number
+          minimum: 0
+          maximum: 1
+        fatigue:
+          type: number
+          minimum: 0
+          maximum: 1
     WorkoutTodayResponse:
       type: object
       description: All fields absent when there is no active meso or today is a rest day
@@ -1330,6 +1396,7 @@ components:
           enum:
             - compound
             - isolation
+            - plyo
         warning:
           type: string
         lastWeek:

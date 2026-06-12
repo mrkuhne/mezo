@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
-import type { GoalPreset, MesoPhase, SplitOption } from '@/data/types'
+import type { ExerciseLibraryItem, GoalPreset, MesoPhase, SplitOption } from '@/data/types'
 import type { MesocycleCreateRequest } from '@/lib/trainApi'
 import { huMonthDay } from '@/lib/dates'
 import { GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/train'
@@ -87,7 +87,7 @@ export function MesocyclePlanner() {
         note: d.note,
         exercises: d.exercises.map((e) => ({
           name: e.name, muscle: e.muscle, sets: e.sets, targetReps: e.targetReps,
-          targetRIR: e.targetRIR, type: e.type, warning: e.warning,
+          targetRIR: e.targetRIR, type: e.type, warning: e.warning, catalogId: e.catalogId,
         })),
       })),
     }
@@ -667,13 +667,17 @@ function Step3Program({
     )
   }
 
-  const addExercise = (dayName: string, item: { id: string; name: string; muscle: string; type: 'compound' | 'isolation' }) => {
+  const addExercise = (dayName: string, item: ExerciseLibraryItem) => {
     setProgram((prev) =>
       (prev ?? []).map((d) => {
         if (d.day !== dayName) return d
         const exercises = [
           ...d.exercises,
-          { id: `${item.id}-${Date.now()}`, name: item.name, muscle: item.muscle, type: item.type, sets: 3, targetReps: '8-12', targetRIR: 1 },
+          {
+            id: `${item.id}-${Date.now()}`, name: item.name, muscle: item.muscle, type: item.type,
+            sets: 3, targetReps: '8-12', targetRIR: 1,
+            ...(item.catalogId ? { catalogId: item.catalogId } : {}),
+          },
         ]
         return { ...d, exercises, exerciseCount: exercises.length }
       }),

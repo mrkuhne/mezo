@@ -143,6 +143,19 @@ Frontend (both modes):
 - Gates: BE both DB modes, FE both modes, build, parity 45/45 (picker layout unchanged
   apart from extra chips — parity screens must stay green; mock mode visuals untouched).
 
+## As built (2026-06-12, mezo-7ot)
+
+- **110 items**, not ~120: the thin groups (rear-delt 5, traps 4, calf 5) are realistically
+  smaller than the 8–14 guideline; all 21 Phase-1 names/values kept verbatim, and
+  `Standing Calf Raise` included because `planner.ts` generates it.
+- Picker chip order: `Összes, Plyo, …muscles…` — the Plyo chip sits right after "Összes".
+- Wizard-`generateProgram` exercises stay `catalogId=NULL` (copy semantics); BUT a picker
+  add inside the wizard DOES carry `catalogId` into the create request, and the
+  MesoExercises editor round-trips `catalogId` through the full-replace PUT (live-smoke
+  verified: a previously linked row keeps its link after an unrelated re-save).
+- `planner.ts` `ExerciseSeed.type` narrowed to `Exclude<ExerciseKind, 'plyo'>` — the
+  generator deals schemes only to compound/isolation; plyo enters via the picker.
+
 ## Out of scope (YAGNI)
 
 - User-created custom exercises (POST/PUT on the catalog).

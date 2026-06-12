@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
@@ -48,6 +49,7 @@ public class TrainService {
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
+    private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final SportSessionRepository sportSessionRepository;
     private final TrainMapper mapper;
 
@@ -209,6 +211,11 @@ public class TrainService {
     }
 
     private ExerciseEntity toExerciseEntity(UUID createdBy, UUID workoutSessionId, GymExerciseInput in, int orderIndex) {
+        // Unknown catalog reference must surface as a 400 field error, never a raw FK 500.
+        if (in.getCatalogId() != null && !exerciseCatalogRepository.existsById(in.getCatalogId())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("VALIDATION_INVALID_VALUE", "catalogId").build(), HttpStatus.BAD_REQUEST);
+        }
         ExerciseEntity e = new ExerciseEntity();
         e.setCreatedBy(createdBy);
         e.setWorkoutSessionId(workoutSessionId);
@@ -219,6 +226,7 @@ public class TrainService {
         e.setTargetRir(in.getTargetRIR());
         e.setType(in.getType().getValue());
         e.setWarning(in.getWarning());
+        e.setCatalogId(in.getCatalogId());
         e.setOrderIndex(orderIndex);
         return e;
     }

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.train.mapper;
 
+import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
@@ -8,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
 import io.mrkuhne.mezo.api.dto.VolumeRecompute;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -42,6 +44,9 @@ public interface TrainMapper {
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(GymExercise.TypeEnum.fromValue(entity.getType()))")
     GymExercise toGymExercise(ExerciseEntity entity);
+
+    @Mapping(target = "type", expression = "java(ExerciseCatalogItem.TypeEnum.fromValue(entity.getType()))")
+    ExerciseCatalogItem toCatalogItem(ExerciseCatalogEntity entity);
 
     @Mapping(target = "duration", source = "durationMin")
     SportSessionResponse toResponse(SportSessionEntity entity);
