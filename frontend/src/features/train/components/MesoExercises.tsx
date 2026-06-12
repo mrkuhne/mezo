@@ -34,6 +34,7 @@ function libraryToGymExercise(item: ExerciseLibraryItem): MesoDay['exercises'][n
     targetReps: '8-12',
     targetRIR: 1,
     type: item.type,
+    ...(item.catalogId ? { catalogId: item.catalogId } : {}),
   }
 }
 
@@ -48,7 +49,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
     if (!day?.id) return
     saveDayExercises(meso.id, day.id, day.exercises.map((e) => ({
       name: e.name, muscle: e.muscle, sets: e.sets, targetReps: e.targetReps,
-      targetRIR: e.targetRIR, type: e.type, warning: e.warning,
+      targetRIR: e.targetRIR, type: e.type, warning: e.warning, catalogId: e.catalogId,
     })))
   }
   // The day (by `day` key) whose picker is open, or null when closed.

@@ -9,6 +9,7 @@ export const MUSCLE_LABELS: Record<string, string> = {
   chest: 'Mell', back: 'Hát', 'back-mid': 'Hát (közép)', lats: 'Lat', shoulder: 'Váll',
   'rear-delt': 'Hátsó váll', biceps: 'Bicep', triceps: 'Tricep',
   quad: 'Comb', ham: 'Lábhajlító', glute: 'Far', calf: 'Vádli',
+  core: 'Core', traps: 'Trapéz',
 }
 export const DAY_LABELS: Record<string, string> = {
   Hét: 'Hétfő', Kedd: 'Kedd', Sze: 'Szerda', Csü: 'Csütörtök', Pén: 'Péntek', Szo: 'Szombat', Vas: 'Vasárnap',

@@ -11,9 +11,11 @@ import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train'
 
-// Muscle filter tokens — the prototype's curated order (mesocycles.jsx
-// ExercisePickerSheet `muscles`), 'all' first. Kept explicit for pixel parity.
-const MUSCLE_FILTERS = ['all', 'back-mid', 'lats', 'chest', 'shoulder', 'biceps', 'triceps', 'quad', 'ham', 'glute', 'rear-delt']
+// Muscle filter tokens — the prototype's curated order, 'all' first; 'plyo' is a TYPE
+// filter chip (vertical-jump block), the rest filter by muscle. calf/core/traps joined
+// with the backend catalog (mezo-7ot).
+const MUSCLE_FILTERS = ['all', 'plyo', 'back-mid', 'lats', 'chest', 'shoulder', 'biceps', 'triceps', 'quad', 'ham', 'glute', 'calf', 'rear-delt', 'core', 'traps']
+const FILTER_LABELS: Record<string, string> = { all: 'Összes', plyo: 'Plyo' }
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
@@ -33,7 +35,7 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
 
   const filtered = exerciseLibrary.filter(
     (e) =>
-      (filter === 'all' || e.muscle === filter) &&
+      (filter === 'all' || (filter === 'plyo' ? e.type === 'plyo' : e.muscle === filter)) &&
       (search === '' || e.name.toLowerCase().includes(search.toLowerCase())),
   )
 
@@ -90,7 +92,7 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
                 className={cn('chip', 'notch-4', filter === m && 'brand')}
                 style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
               >
-                {m === 'all' ? 'Összes' : (MUSCLE_LABELS[m] ?? m)}
+                {FILTER_LABELS[m] ?? MUSCLE_LABELS[m] ?? m}
               </button>
             ))}
           </div>
