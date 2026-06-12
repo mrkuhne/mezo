@@ -126,14 +126,19 @@ export function MesocyclePlanner() {
   const backLabel = step === 0 ? 'Mesociklusok' : stepLabels[step - 1]
 
   return (
-    <div className="screen-content">
-      {/* Header */}
-      <div style={{ padding: '12px 24px' }}>
-        <button type="button" className="row gap-sm" onClick={handleBack} style={{ marginBottom: 14 }}>
+    // The route already sits inside AppLayout's .screen-content scroller — a nested
+    // .screen-content would double the 54px status-bar padding (mezo-wdk).
+    <div>
+      {/* Breadcrumb — pinned below the status bar like native nav chrome */}
+      <div className="sticky-top" style={{ padding: '8px 24px' }}>
+        <button type="button" className="row gap-sm" onClick={handleBack}>
           <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
           <span className="eyebrow">{backLabel}</span>
         </button>
+      </div>
 
+      {/* Header */}
+      <div style={{ padding: '6px 24px 0' }}>
         {/* Step progress — earlier segments tappable to jump back */}
         <div className="row gap-xs" style={{ marginBottom: 14 }}>
           {Array.from({ length: STEP_COUNT }, (_, i) => (

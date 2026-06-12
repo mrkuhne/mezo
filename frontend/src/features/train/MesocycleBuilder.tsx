@@ -36,7 +36,7 @@ export function MesocycleBuilder() {
 
   if (!meso) {
     return (
-      <div className="screen-content" style={{ padding: '24px' }}>
+      <div style={{ padding: '24px' }}>
         <p className="text-secondary" style={{ fontSize: 13 }}>
           Ez a mesociklus nem található.
         </p>
@@ -57,13 +57,17 @@ export function MesocycleBuilder() {
         : 'Archív'
 
   return (
-    <div className="screen-content">
-      {/* Header */}
-      <div style={{ padding: '12px 24px 4px' }}>
-        <button type="button" onClick={backToLibrary} className="row gap-sm" style={{ marginBottom: 14 }}>
+    // Inside AppLayout's .screen-content scroller — no nested wrapper (mezo-wdk).
+    <div>
+      {/* Breadcrumb — pinned below the status bar like native nav chrome */}
+      <div className="sticky-top" style={{ padding: '8px 24px' }}>
+        <button type="button" onClick={backToLibrary} className="row gap-sm">
           <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
           <span className="eyebrow">Mesociklusok</span>
         </button>
+      </div>
+      {/* Header */}
+      <div style={{ padding: '6px 24px 4px' }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div className="col flex-1">
             <span className={meso.status === 'active' ? 'eyebrow brand' : 'eyebrow'}>{statusEyebrow}</span>

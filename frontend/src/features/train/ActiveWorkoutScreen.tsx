@@ -227,13 +227,16 @@ function ActiveWorkoutSession({
   // ---------- PREP ----------
   if (phase === 'prep') {
     return (
-      <div className="screen-content">
-        <div style={{ padding: '12px 24px' }}>
+      <div>
+        {/* Breadcrumb — pinned below the status bar like native nav chrome (mezo-wdk) */}
+        <div className="sticky-top" style={{ padding: '8px 24px' }}>
           <button className="row gap-sm" onClick={onExit}>
             <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
             <span className="eyebrow">Vissza</span>
           </button>
-          <div className="mt-lg">
+        </div>
+        <div style={{ padding: '6px 24px' }}>
+          <div className="mt-sm">
             <PageTitle>{W.title}</PageTitle>
           </div>
           <div className="row gap-sm mt-sm flex-wrap">
@@ -403,9 +406,9 @@ function ActiveWorkoutSession({
         />
       )}
 
-      <div className="screen-content">
-        {/* Header */}
-        <div style={{ padding: '10px 24px' }}>
+      <div>
+        {/* Header — pinned below the status bar so progress stays visible (mezo-wdk) */}
+        <div className="sticky-top" style={{ padding: '8px 24px 10px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <button onClick={onExit} className="row gap-sm">
               <Icon name="x" size={16} color="var(--text-secondary)" />
