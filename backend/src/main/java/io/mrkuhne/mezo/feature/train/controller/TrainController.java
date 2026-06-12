@@ -59,10 +59,9 @@ public class TrainController implements TrainApi {
         return service.replaceDayExercises(currentUserId.get(), id, dayId, gymExerciseInput);
     }
 
-    // T2 stubs — replaced by WorkoutService delegations in Tasks 3–6.
     @Override
     public WorkoutTodayResponse getTodayWorkout() {
-        throw new UnsupportedOperationException("T2 Task 6");
+        return workoutService.getToday(currentUserId.get());
     }
 
     @Override

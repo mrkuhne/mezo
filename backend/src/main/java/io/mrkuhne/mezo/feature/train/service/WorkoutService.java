@@ -1,12 +1,17 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
+import io.mrkuhne.mezo.api.dto.LastWeekRef;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
+import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
@@ -19,7 +24,9 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -47,6 +54,71 @@ public class WorkoutService {
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final TrainMapper mapper;
+
+    public WorkoutTodayResponse getToday(UUID createdBy) {
+        WorkoutTodayResponse empty = new WorkoutTodayResponse();
+        MesocycleEntity activeMeso = mesocycleRepository
+            .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
+            .stream().findFirst().orElse(null);
+        if (activeMeso == null) {
+            return empty;
+        }
+        String todayLabel = HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity day = workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()))
+            .stream()
+            .filter(s -> s.getTemplateSessionId() == null && todayLabel.equals(s.getDayLabel()))
+            .findFirst().orElse(null);
+        if (day == null) {
+            return empty;
+        }
+        List<ExerciseEntity> exercises = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(day.getId()));
+        if (exercises.isEmpty()) {
+            return empty; // rest day
+        }
+        Map<UUID, LastWeekRef> lastWeek = lastWeekRefs(createdBy, day.getId());
+        WorkoutSessionEntity open = workoutSessionRepository
+            .findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
+                createdBy, day.getId(), "active")
+            .orElse(null);
+        return WorkoutTodayResponse.builder()
+            .templateSessionId(day.getId())
+            .dayLabel(day.getDayLabel())
+            .title(day.getType())
+            .durationEst(day.getDurationEst())
+            .exercises(exercises.stream().map(e -> {
+                TodayExercise t = mapper.toTodayExercise(e);
+                t.setLastWeek(lastWeek.get(e.getId()));
+                return t;
+            }).toList())
+            .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
+            .build();
+    }
+
+    /**
+     * "Last week" reference per exercise: the TOP set (max weight, ties broken by insertion order)
+     * of the most recent COMPLETED instance of the same template day.
+     */
+    private Map<UUID, LastWeekRef> lastWeekRefs(UUID createdBy, UUID templateSessionId) {
+        return workoutSessionRepository
+            .findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
+                createdBy, templateSessionId, "completed")
+            .map(prev -> exerciseSetRepository
+                .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, prev.getId()).stream()
+                .filter(s -> s.getWeightKg() != null && s.getReps() != null && s.getRir() != null)
+                .collect(Collectors.toMap(ExerciseSetEntity::getExerciseId, this::toLastWeekRef,
+                    (a, b) -> b.getWeightKg().compareTo(a.getWeightKg()) > 0 ? b : a)))
+            .orElse(Map.of());
+    }
+
+    private LastWeekRef toLastWeekRef(ExerciseSetEntity set) {
+        return LastWeekRef.builder()
+            .weightKg(set.getWeightKg())
+            .reps(set.getReps())
+            .rir(set.getRir())
+            .build();
+    }
 
     @Transactional
     public WorkoutInstanceResponse startWorkout(UUID createdBy, WorkoutStartRequest req) {

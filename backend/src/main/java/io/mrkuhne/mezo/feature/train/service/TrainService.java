@@ -63,8 +63,10 @@ public class TrainService {
             .collect(Collectors.groupingBy(v -> v.getMesocycleId(), LinkedHashMap::new,
                 Collectors.toMap(v -> v.getMuscle(), mapper::toProfile, (a, b) -> a, LinkedHashMap::new)));
 
+        // Template days only — workout instances (templateSessionId set) are not plan rows.
         List<WorkoutSessionEntity> sessions =
-            workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, mesoIds);
+            workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, mesoIds)
+                .stream().filter(s -> s.getTemplateSessionId() == null).toList();
         List<UUID> sessionIds = sessions.stream().map(WorkoutSessionEntity::getId).toList();
         Map<UUID, List<ExerciseEntity>> exercisesBySession = sessionIds.isEmpty()
             ? Map.of()
@@ -228,7 +230,8 @@ public class TrainService {
             .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(m.getId())).stream()
             .collect(Collectors.toMap(v -> v.getMuscle(), mapper::toProfile, (a, b) -> a, LinkedHashMap::new));
         List<WorkoutSessionEntity> sessions =
-            workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(m.getId()));
+            workoutSessionRepository.findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(m.getId()))
+                .stream().filter(s -> s.getTemplateSessionId() == null).toList();
         List<UUID> sessionIds = sessions.stream().map(WorkoutSessionEntity::getId).toList();
         Map<UUID, List<ExerciseEntity>> exercisesBySession = sessionIds.isEmpty()
             ? Map.of()

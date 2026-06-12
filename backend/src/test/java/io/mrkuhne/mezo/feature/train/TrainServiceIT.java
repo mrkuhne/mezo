@@ -403,4 +403,20 @@ class TrainServiceIT extends AbstractIntegrationTest {
         assertThat(responses.get(0).getDays()).singleElement()
             .satisfies(d -> assertThat(d.getId()).isEqualTo(day.getId()));
     }
+
+    @Test
+    void testListMesocycles_shouldExcludeInstanceRows_whenInstancesExist() {
+        UUID user = databasePopulator.populateUser("train@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Csü", "Pull Day", 0, "planned");
+        trainPopulator.createWorkoutInstance(user, template, LocalDate.now(), "active");
+
+        List<MesocycleResponse> mesos = trainService.listMesocycles(user);
+
+        assertThat(mesos).hasSize(1);
+        // only the template day appears — the started instance must not duplicate it
+        assertThat(mesos.get(0).getDays()).hasSize(1);
+        assertThat(mesos.get(0).getDays().get(0).getId()).isEqualTo(template.getId());
+    }
 }

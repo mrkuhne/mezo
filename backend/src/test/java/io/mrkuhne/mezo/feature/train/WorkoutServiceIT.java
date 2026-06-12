@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -304,5 +305,85 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         assertThat(again.getStatus()).isEqualTo(WorkoutInstanceResponse.StatusEnum.COMPLETED);
         WorkoutSessionEntity row = workoutSessionRepository.findById(started.getId()).orElseThrow();
         assertThat(row.getStatus()).isEqualTo("completed");
+    }
+
+    @Test
+    void testGetToday_shouldReturnEmpty_whenNoActiveMeso() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        trainPopulator.createMesocycle(user, "Planned only", "planned");
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getTemplateSessionId()).isNull();
+        assertThat(today.getExercises()).isNullOrEmpty(); // generated model inits the list field
+    }
+
+    @Test
+    void testGetToday_shouldReturnEmpty_whenTodayIsRestDay() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        // a template day exists for today but has NO exercises -> rest day
+        trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Rest", 0, "planned");
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getTemplateSessionId()).isNull();
+    }
+
+    @Test
+    void testGetToday_shouldReturnTemplateDayWithExercises_whenTodayHasGymDay() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        trainPopulator.createExercise(user, template.getId(), "Chest Supported Row", 0);
+        trainPopulator.createExercise(user, template.getId(), "Lat Pulldown", 1);
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getTemplateSessionId()).isEqualTo(template.getId());
+        assertThat(today.getTitle()).isEqualTo("Pull Day");
+        assertThat(today.getDayLabel()).isEqualTo(todayLabel());
+        assertThat(today.getExercises()).hasSize(2);
+        assertThat(today.getExercises().get(0).getName()).isEqualTo("Chest Supported Row");
+        assertThat(today.getExercises().get(0).getLastWeek()).isNull(); // first-ever workout
+        assertThat(today.getOpenWorkout()).isNull();
+    }
+
+    @Test
+    void testGetToday_shouldDeriveLastWeekTopSet_whenPreviousCompletedInstanceExists() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutSessionEntity lastWeekInstance =
+            trainPopulator.createWorkoutInstance(user, template, LocalDate.now().minusDays(7), "completed");
+        trainPopulator.createLoggedSet(user, exercise.getId(), lastWeekInstance.getId(), 0, "100.0", 8, 2);
+        trainPopulator.createLoggedSet(user, exercise.getId(), lastWeekInstance.getId(), 1, "102.5", 9, 2);
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getExercises().get(0).getLastWeek()).isNotNull();
+        assertThat(today.getExercises().get(0).getLastWeek().getWeightKg())
+            .isEqualByComparingTo(new BigDecimal("102.5")); // top set wins
+        assertThat(today.getExercises().get(0).getLastWeek().getReps()).isEqualTo(9);
+    }
+
+    @Test
+    void testGetToday_shouldCarryOpenWorkoutWithSets_whenInstanceActive() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+        workoutService.logSet(user, started.getId(), setRequest(exercise, 0, "100", 8, 1));
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getOpenWorkout()).isNotNull();
+        assertThat(today.getOpenWorkout().getId()).isEqualTo(started.getId());
+        assertThat(today.getOpenWorkout().getSets()).hasSize(1);
     }
 }
