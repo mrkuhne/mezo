@@ -92,7 +92,9 @@ interface DayTemplate {
 interface ExerciseSeed {
   name: string
   muscle: string
-  type: ExerciseKind
+  // The generator only deals set/rep schemes to compound/isolation work — plyo
+  // exercises enter a day via the picker, never via generateProgram.
+  type: Exclude<ExerciseKind, 'plyo'>
   warning?: string
 }
 
