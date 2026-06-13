@@ -43,6 +43,21 @@ bd close <id>         # Complete work
 <!-- END BEADS INTEGRATION -->
 
 
+## Documentation (`docs/`) — MANDATORY
+
+`docs/` is the project's **durable memory**. `bd` tracks tasks; `docs/` records the *why*, *where*, and *when* behind them. See **[`docs/README.md`](docs/README.md)** for the full taxonomy, naming conventions, and the ADR template — read it before adding docs.
+
+Layout: `decisions/` (ADRs — the WHY), `infrastructure/` (HOW/WHERE it runs), `milestones/` (roadmap & milestone log), `references/` (coding house standards), `superpowers/specs|plans/` (per-feature design & plans).
+
+**It is mandatory to keep `docs/` populated.** Whenever you:
+- make or change a significant decision / direction / tool choice → write an **ADR** in `docs/decisions/`;
+- add or change infrastructure (deploy, CI, secrets, hosting, proxy) → write/update a doc in `docs/infrastructure/`;
+- hit or move a milestone / change the roadmap → update `docs/milestones/roadmap.md`.
+
+If a finished piece of work leaves no trace in `docs/` of the decision behind it, the work is **not done** — capture it before closing the `bd` issue.
+
+> **Trigger — pull these in when relevant:** deployment / infra / hosting / k8s / ArgoCD work → read **[`docs/infrastructure/deployment-k3s-argocd.md`](docs/infrastructure/deployment-k3s-argocd.md)** and **[`docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`](docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md)** FIRST. Project status / direction questions → **[`docs/milestones/roadmap.md`](docs/milestones/roadmap.md)**.
+
 ## Architecture Overview
 
 **mezo** is a mobile-first health & performance companion PWA, built in three phases (frontend-first):
