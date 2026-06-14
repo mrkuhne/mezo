@@ -47,13 +47,16 @@ bd close <id>         # Complete work
 
 `docs/` is the project's **durable memory**. `bd` tracks tasks; `docs/` records the *why*, *where*, and *when* behind them. See **[`docs/README.md`](docs/README.md)** for the full taxonomy, naming conventions, and the ADR template — read it before adding docs.
 
-Layout: `decisions/` (ADRs — the WHY), `infrastructure/` (HOW/WHERE it runs), `milestones/` (roadmap & milestone log), `references/` (coding house standards), `superpowers/specs|plans/` (per-feature design & plans — point-in-time), `features/` (per-feature **living** docs — how each feature works now, how to use/extend/integrate it).
+Layout: `decisions/` (ADRs — the WHY), `infrastructure/` (HOW/WHERE it runs), `milestones/` (roadmap & milestone log), `references/` (coding house standards), `superpowers/specs|plans/` (per-feature design & plans — point-in-time), `features/` (per-feature **living** docs — how each feature works now, how to use/extend/integrate it), `research/` (source-ingested **research wiki** — external knowledge captured immutably & distilled; Karpathy/Nous llm-wiki pattern, git-native).
+
+`features/` + `research/` form a **code-native LLM-wiki**: two living markdown collections sharing one frontmatter + lint + cross-link convention. `features/` documents OUR code (the code is its raw layer → staleness is auto-detected by git-drift against each doc's `key_files`); `research/` documents EXTERNAL sources (immutable in `research/raw/`). The **`knowledge-base`** skill is the operating manual for both; **`node scripts/lint-docs.mjs`** lints both (and flags stale feature docs).
 
 **It is mandatory to keep `docs/` populated.** Whenever you:
 - make or change a significant decision / direction / tool choice → write an **ADR** in `docs/decisions/`;
 - add or change infrastructure (deploy, CI, secrets, hosting, proxy) → write/update a doc in `docs/infrastructure/`;
 - hit or move a milestone / change the roadmap → update `docs/milestones/roadmap.md`;
-- touch a **feature in any way that changes what its doc describes** — new feature/view/flow/domain/sub-feature, a behavior or contract change, a cross-feature integration, a refactor that moves files, a bugfix that changes behavior, or swapping a mock hook to a real backend → update its `docs/features/<domain>.md` (or `_platform-*.md`) **in the same change**. The `features/` docs are a **living** reference: keep them current so there's always an up-to-date description of every part of the app.
+- touch a **feature in any way that changes what its doc describes** — new feature/view/flow/domain/sub-feature, a behavior or contract change, a cross-feature integration, a refactor that moves files, a bugfix that changes behavior, or swapping a mock hook to a real backend → update its `docs/features/<domain>.md` (or `_platform-*.md`) **in the same change**. The `features/` docs are a **living** reference: keep them current so there's always an up-to-date description of every part of the app. After touching a doc, run `node scripts/lint-docs.mjs` to clear its staleness flag.
+- learn something from an **external source** (evaluate a library/technique, an investigation, a market/tooling scan, a `/last30days` run worth keeping) → ingest it into `docs/research/` via the **`knowledge-base`** skill (source → `research/raw/`, distilled into entity/concept pages).
 
 **`features/` maintenance policy (living docs, kept lean):**
 - **Overwrite in place — git is the history.** Edit the affected sections directly; do NOT keep a changelog, version suffixes, or dated snapshots inside the doc. To see the past, use `git log -p docs/features/<x>.md`. This is what keeps the docs from bloating.
@@ -63,7 +66,7 @@ Layout: `decisions/` (ADRs — the WHY), `infrastructure/` (HOW/WHERE it runs), 
 
 If a finished piece of work leaves no trace in `docs/` of the decision behind it, the work is **not done** — capture it before closing the `bd` issue.
 
-> **Trigger — pull these in when relevant:** deployment / infra / hosting / k8s / ArgoCD work → read **[`docs/infrastructure/deployment-k3s-argocd.md`](docs/infrastructure/deployment-k3s-argocd.md)** and **[`docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`](docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md)** FIRST. Understanding / extending / integrating an existing feature → read its **[`docs/features/<domain>.md`](docs/features/README.md)** FIRST. Project status / direction questions → **[`docs/milestones/roadmap.md`](docs/milestones/roadmap.md)**.
+> **Trigger — pull these in when relevant:** deployment / infra / hosting / k8s / ArgoCD work → read **[`docs/infrastructure/deployment-k3s-argocd.md`](docs/infrastructure/deployment-k3s-argocd.md)** and **[`docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`](docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md)** FIRST. Understanding / extending / integrating an existing feature → read its **[`docs/features/<domain>.md`](docs/features/README.md)** FIRST. Documenting a feature, ingesting research, or running the doc-lint → use the **`knowledge-base`** skill (and `node scripts/lint-docs.mjs`). Project status / direction questions → **[`docs/milestones/roadmap.md`](docs/milestones/roadmap.md)**.
 
 ## Architecture Overview
 
