@@ -1428,7 +1428,7 @@ components:
       type: object
       required: [type, durationSec]
       properties:
-        type: { type: string, enum: [warmup, work, rest, cooldown] }
+        type: { type: string, description: 'warmup|work|rest|cooldown' }
         durationSec: { type: integer }
         label: { type: string, nullable: true }
     RpeTarget:
@@ -1444,7 +1444,7 @@ components:
         key: { type: string }
         dayOfWeek: { type: integer, description: '0=Hét..6=Vas' }
         label: { type: string }
-        kind: { type: string, enum: [sprint, pyramid, steady] }
+        kind: { type: string, description: 'sprint|pyramid|steady' }
         rpeTarget: { $ref: '#/components/schemas/RpeTarget' }
         rounds: { type: integer, nullable: true }
         segments:

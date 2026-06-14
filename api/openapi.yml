@@ -1998,11 +1998,7 @@ components:
       properties:
         type:
           type: string
-          enum:
-            - warmup
-            - work
-            - rest
-            - cooldown
+          description: warmup|work|rest|cooldown
         durationSec:
           type: integer
         label:
@@ -2037,10 +2033,7 @@ components:
           type: string
         kind:
           type: string
-          enum:
-            - sprint
-            - pyramid
-            - steady
+          description: sprint|pyramid|steady
         rpeTarget:
           $ref: '#/components/schemas/RpeTarget'
         rounds:

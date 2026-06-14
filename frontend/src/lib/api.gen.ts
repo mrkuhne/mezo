@@ -825,8 +825,8 @@ export interface components {
             notes?: string;
         };
         RunSegment: {
-            /** @enum {string} */
-            type: "warmup" | "work" | "rest" | "cooldown";
+            /** @description warmup|work|rest|cooldown */
+            type: string;
             durationSec: number;
             label?: string | null;
         };
@@ -839,8 +839,8 @@ export interface components {
             /** @description 0=Hét..6=Vas */
             dayOfWeek: number;
             label: string;
-            /** @enum {string} */
-            kind: "sprint" | "pyramid" | "steady";
+            /** @description sprint|pyramid|steady */
+            kind: string;
             rpeTarget: components["schemas"]["RpeTarget"];
             rounds?: number | null;
             segments: components["schemas"]["RunSegment"][];
