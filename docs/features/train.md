@@ -1,3 +1,20 @@
+---
+title: Train
+type: feature-domain
+status: done
+updated: 2026-06-14
+tags: [train, running, sport, frontend, backend, data-layer]
+key_files:
+  - frontend/src/features/train
+  - frontend/src/data/trainHooks.ts
+  - frontend/src/data/runningHooks.ts
+  - frontend/src/lib/trainApi.ts
+  - frontend/src/lib/runningApi.ts
+  - api/feature/train/train.yml
+  - backend/src/main/java/io/mrkuhne/mezo/feature/train
+related: [_platform-data-layer, _platform-design-system, today, fuel]
+---
+
 # Train — Feature Documentation
 
 > The six-tab strength + conditioning area (plan, execute, log, analyze). **Status: ✅ done (FE mock + FE real + Spring Boot backend)** — the only gaps are clearly-flagged Phase-3 AI/analysis features. Lives under the **`Edzés`/Train** tab at route `/train` (sub-nav defined in `frontend/src/features/train/tabs.ts`).

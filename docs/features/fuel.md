@@ -1,3 +1,16 @@
+---
+title: Fuel (Nutrition)
+type: feature-domain
+status: mock-only
+updated: 2026-06-14
+tags: [fuel, frontend, data-layer]
+key_files:
+  - frontend/src/features/fuel
+  - frontend/src/data/fuel.ts
+  - frontend/src/app/router.tsx
+related: [_platform-data-layer, _platform-design-system, train, today]
+---
+
 # Fuel (Nutrition) — Feature Documentation
 
 > The `/fuel` tab — meal pacing, supplement stack/protocol, pantry (Kamra), recipes, and a weekly fuel rhythm. **Status: 🔶 mock-only** (Phase 1 FE done; Phase 2 backend **Slice C · Fuel not started**; AI scoring/replan/import is 🟣 Phase-3-planned, simulated client-side today).

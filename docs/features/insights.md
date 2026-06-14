@@ -1,3 +1,16 @@
+---
+title: Insights
+type: feature-domain
+status: mock-only
+updated: 2026-06-14
+tags: [insights, frontend, data-layer]
+key_files:
+  - frontend/src/features/insights
+  - frontend/src/data
+  - frontend/src/features/today/components/InsightsTeaser.tsx
+related: [_platform-data-layer, _platform-design-system, today, me]
+---
+
 # Insights — Feature Documentation
 
 > One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mock-only** (Phase-1 frontend; designated **🟣 Phase-3 landing zone**). Lives under the **`/insights`** tab (4th in `TabBar`, between Fuel and Me).
