@@ -147,6 +147,16 @@ class RunningContractIT extends ApiIntegrationTest {
 
         RunningBlockUpsertRequest changed = sampleUpsert("Futás módosított");
         changed.setWeeks(10);
+        // PUT fully replaces the jsonb structure — use a distinct phaseLabel + session key.
+        RunPrescribedSession tempo = RunPrescribedSession.builder()
+            .key("thu-tempo").dayOfWeek(3).label("Tempófutás").kind("tempo")
+            .rpeTarget(RpeTarget.builder().min(6).max(7).build()).rounds(1)
+            .segments(List.of(RunSegment.builder().type("work").durationSec(1200).build()))
+            .build();
+        changed.setStructure(RunningBlockStructureDto.builder()
+            .weeks(List.of(RunWeek.builder()
+                .weekNumber(5).phaseLabel("Csúcsformázás").sessions(List.of(tempo)).build()))
+            .build());
 
         RunningBlockResponse updated = putForBody(BLOCKS + "/" + created.getId(), changed,
             auth, HttpStatus.OK, RunningBlockResponse.class);
@@ -154,6 +164,12 @@ class RunningContractIT extends ApiIntegrationTest {
         assertThat(updated.getId()).isEqualTo(created.getId());
         assertThat(updated.getTitle()).isEqualTo("Futás módosított");
         assertThat(updated.getWeeks()).isEqualTo(10);
+        // The replaced structure is reflected back (jsonb round-trip), not the created one.
+        assertThat(updated.getStructure().getWeeks()).singleElement().satisfies(w -> {
+            assertThat(w.getPhaseLabel()).isEqualTo("Csúcsformázás");
+            assertThat(w.getSessions()).singleElement()
+                .satisfies(s -> assertThat(s.getKey()).isEqualTo("thu-tempo"));
+        });
     }
 
     // ---- close ------------------------------------------------------------------

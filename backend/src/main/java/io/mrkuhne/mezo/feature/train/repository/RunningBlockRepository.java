@@ -14,10 +14,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface RunningBlockRepository extends JpaRepository<RunningBlockEntity, UUID> {
 
-    List<RunningBlockEntity> findByCreatedByOrderByStartDateAsc(UUID createdBy);
+    List<RunningBlockEntity> findByCreatedByAndDeletedFalseOrderByStartDateAsc(UUID createdBy);
 
-    Optional<RunningBlockEntity> findByIdAndCreatedBy(UUID id, UUID createdBy);
+    Optional<RunningBlockEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
     /** All owned blocks in one status — the activate flow archives the previous active one. */
-    List<RunningBlockEntity> findByCreatedByAndStatus(UUID createdBy, String status);
+    List<RunningBlockEntity> findByCreatedByAndStatusAndDeletedFalse(UUID createdBy, String status);
 }

@@ -34,7 +34,7 @@ public class RunningService {
     private final RunningMapper mapper;
 
     public List<RunningBlockResponse> listBlocks(UUID userId) {
-        return blockRepository.findByCreatedByOrderByStartDateAsc(userId)
+        return blockRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(userId)
             .stream().map(mapper::toResponse).toList();
     }
 
@@ -58,21 +58,24 @@ public class RunningService {
     public RunningBlockResponse activateBlock(UUID userId, UUID id) {
         RunningBlockEntity target = requireOwned(userId, id);
         // Single-active invariant (spec rule): activating archives every other active block.
-        for (RunningBlockEntity other : blockRepository.findByCreatedByAndStatus(userId, "active")) {
+        for (RunningBlockEntity other : blockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active")) {
             if (!other.getId().equals(id)) {
-                other.setStatus("archived");
-                blockRepository.save(other);
+                other.setStatus("archived"); // dirty-checking flushes — no explicit save
             }
         }
-        target.setStatus("active");
-        return mapper.toResponse(blockRepository.save(target));
+        if (!"active".equals(target.getStatus())) {
+            target.setStatus("active");
+        }
+        return mapper.toResponse(target);
     }
 
     @Transactional
     public RunningBlockResponse closeBlock(UUID userId, UUID id) {
         RunningBlockEntity e = requireOwned(userId, id);
-        e.setStatus("archived");
-        return mapper.toResponse(blockRepository.save(e));
+        if (!"archived".equals(e.getStatus())) {
+            e.setStatus("archived");
+        }
+        return mapper.toResponse(e);
     }
 
     @Transactional
@@ -81,7 +84,7 @@ public class RunningService {
     }
 
     public List<RunSessionLogResponse> listSessions(UUID userId) {
-        return logRepository.findByCreatedByOrderByDateDesc(userId)
+        return logRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(userId)
             .stream().map(mapper::toResponse).toList();
     }
 
@@ -117,7 +120,7 @@ public class RunningService {
 
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */
     private RunningBlockEntity requireOwned(UUID userId, UUID id) {
-        return blockRepository.findByIdAndCreatedBy(id, userId)
+        return blockRepository.findByIdAndCreatedByAndDeletedFalse(id, userId)
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
     }

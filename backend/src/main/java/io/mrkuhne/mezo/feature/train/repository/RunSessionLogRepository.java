@@ -13,5 +13,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface RunSessionLogRepository extends JpaRepository<RunSessionLogEntity, UUID> {
 
-    List<RunSessionLogEntity> findByCreatedByOrderByDateDesc(UUID createdBy);
+    List<RunSessionLogEntity> findByCreatedByAndDeletedFalseOrderByDateDesc(UUID createdBy);
 }
