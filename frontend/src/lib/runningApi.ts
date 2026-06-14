@@ -27,4 +27,6 @@ export const runningApi = {
     apiFetch<RunningBlockResponse>(`/api/train/running-blocks/${id}/close`, { method: 'POST' }),
   remove: (id: string): Promise<void> =>
     apiFetch<void>(`/api/train/running-blocks/${id}`, { method: 'DELETE' }),
+  logRunSession: (body: RunSessionLogRequest): Promise<RunSessionLogResponse> =>
+    apiFetch<RunSessionLogResponse>('/api/train/run-sessions', { method: 'POST', body: JSON.stringify(body) }),
 }

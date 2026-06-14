@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
-import { runningApi, type RunningBlockResponse, type RunningBlockUpsertRequest, type RunSessionLogResponse } from '@/lib/runningApi'
+import { runningApi, type RunningBlockResponse, type RunningBlockUpsertRequest, type RunSessionLogRequest, type RunSessionLogResponse } from '@/lib/runningApi'
 import { runningBlocksMock, runSessionsMock } from './running'
 
 export type RunningData = {
@@ -14,6 +14,7 @@ export type RunningData = {
   activateRunningBlock: (id: string) => void
   closeRunningBlock: (id: string) => void
   deleteRunningBlock: (id: string, opts?: { onSuccess?: () => void }) => void
+  logRunSession: (body: RunSessionLogRequest, opts?: { onSuccess?: () => void }) => void
   runningMutationPending: boolean
 }
 
@@ -62,11 +63,25 @@ export function useRunning(): RunningData {
       : runningApi.remove(id),
     onSuccess: invalidate })
 
+  const logMock = (body: RunSessionLogRequest): RunSessionLogResponse =>
+    ({ id: `rs-${Math.round(performance.now())}`, ...body,
+       completedRounds: body.completedRounds ?? null, rpeActual: body.rpeActual ?? null,
+       hrRecoverySec: body.hrRecoverySec ?? null, sprintLandmark: body.sprintLandmark ?? null,
+       durationMin: body.durationMin ?? null, notes: body.notes ?? null })
+  const logMutation = useMutation({
+    mutationFn: (body: RunSessionLogRequest): Promise<void> => mock
+      ? Promise.resolve(qc.setQueryData<RunSessionLogResponse[]>(['running', 'runSessions'], (prev = []) => [logMock(body), ...prev]) as unknown as void)
+      : runningApi.logRunSession(body).then(() => undefined),
+    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['running', 'runSessions'] }) },
+  })
+
   const saveRunningBlock = useCallback((id: string | null, body: RunningBlockUpsertRequest, opts?: { onSuccess?: (b: RunningBlockResponse) => void }) =>
     saveMutation.mutate({ id, body }, { onSuccess: (b) => { if (b) opts?.onSuccess?.(b) } }), [saveMutation])
   const activateRunningBlock = useCallback((id: string) => activateMutation.mutate(id), [activateMutation])
   const closeRunningBlock = useCallback((id: string) => closeMutation.mutate(id), [closeMutation])
   const deleteRunningBlock = useCallback((id: string, opts?: { onSuccess?: () => void }) => deleteMutation.mutate(id, { onSuccess: () => opts?.onSuccess?.() }), [deleteMutation])
+  const logRunSession = useCallback((body: RunSessionLogRequest, opts?: { onSuccess?: () => void }) =>
+    logMutation.mutate(body, { onSuccess: () => opts?.onSuccess?.() }), [logMutation])
 
   return {
     runningBlocks: blockList,
@@ -77,6 +92,7 @@ export function useRunning(): RunningData {
     activateRunningBlock,
     closeRunningBlock,
     deleteRunningBlock,
-    runningMutationPending: saveMutation.isPending || activateMutation.isPending || closeMutation.isPending || deleteMutation.isPending,
+    logRunSession,
+    runningMutationPending: saveMutation.isPending || activateMutation.isPending || closeMutation.isPending || deleteMutation.isPending || logMutation.isPending,
   }
 }
