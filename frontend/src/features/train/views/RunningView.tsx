@@ -22,6 +22,7 @@ import { Display } from '@/components/ui/Display'
 import { huMonthDay, huMonthDayDow } from '@/lib/dates'
 import { RunWeekStrip } from '../components/RunWeekStrip'
 import { RunSessionCard } from '../components/RunSessionCard'
+import { RunCrossLoadCard } from '../components/RunCrossLoadCard'
 import { RunLogSheet } from '../components/RunLogSheet'
 
 const RUN = 'var(--info)'
@@ -51,7 +52,7 @@ const STATUS_LABELS: Record<RunningBlockResponse['status'], string> = {
 }
 
 export function RunningView() {
-  const { runningBlocks, activeRunningBlock, runSessions, saveRunningBlock, logRunSession } = useRunning()
+  const { runningBlocks, activeRunningBlock, runSessions, runningPending, saveRunningBlock, logRunSession } = useRunning()
   const [view, setView] = useState<RunSubView>('week')
   const navigate = useNavigate()
 
@@ -106,7 +107,7 @@ export function RunningView() {
         })}
       </div>
 
-      {view === 'week' && <RunWeekView block={activeRunningBlock} onLog={logRunSession} />}
+      {view === 'week' && <RunWeekView block={activeRunningBlock} pending={runningPending} onLog={logRunSession} />}
       {view === 'log' && <RunLogView sessions={runSessions} />}
       {view === 'blocks' && <RunBlocksView blocks={runningBlocks} onOpen={openBuilder} />}
     </>
@@ -114,8 +115,19 @@ export function RunningView() {
 }
 
 // === E heti edzés: active block hero + this week's prescribed sessions ===
-function RunWeekView({ block, onLog }: { block: RunningBlockResponse | null; onLog: (body: RunSessionLogRequest) => void }) {
+function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | null; pending: boolean; onLog: (body: RunSessionLogRequest) => void }) {
   const [logCtx, setLogCtx] = useState<RunLogCtx | null>(null)
+
+  // Real-mode initial load: neutral skeleton until the query resolves, so the
+  // no-active-block ghost doesn't flash before data lands. Mock mode is
+  // synchronous (pending === false) so this never triggers there.
+  if (pending) {
+    return (
+      <div style={{ padding: '8px 24px 16px' }}>
+        <GhostState lines={3} message="Betöltés…" />
+      </div>
+    )
+  }
 
   if (!block) {
     return (
@@ -197,6 +209,10 @@ function RunWeekView({ block, onLog }: { block: RunningBlockResponse | null; onL
                 })}
               />
             ))}
+          </div>
+          {/* Derived cross-load → gym leg volume (static in Phase 2) */}
+          <div style={{ marginTop: 16 }}>
+            <RunCrossLoadCard />
           </div>
         </>
       ) : (
