@@ -7,8 +7,9 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain } from '@/data/hooks'
+import { useTrain, useRunning } from '@/data/hooks'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train'
+import { runSessionsForDay, todayIdx } from '@/data/runningAgenda'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Display } from '@/components/ui/Display'
@@ -16,12 +17,17 @@ import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 import { GhostState } from '@/components/ui/GhostState'
 import { SportLogSheet } from '../components/SportLogSheet'
+import { RunLogSheet } from '../components/RunLogSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '../components/WeeklyDayRow'
+
+type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
 export function TrainTodayView() {
   const { workout, gymSchedule, sport, activeMeso, logSportSession } = useTrain()
+  const { activeRunningBlock, logRunSession } = useRunning()
   const navigate = useNavigate()
   const [vbLogOpen, setVbLogOpen] = useState(false)
+  const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
 
   // T0/T2: without an active meso the whole view ghosts. With one, the agenda
   // derives from the meso (gymSchedule) and /today drives the hero card;
@@ -45,7 +51,7 @@ export function TrainTodayView() {
         </div>
         <div style={{ padding: '0 24px 16px' }}>
           <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-            <span className="eyebrow">Heti terv · gym + sport</span>
+            <span className="eyebrow">Heti terv · gym + futás + sport</span>
           </div>
           <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
         </div>
@@ -63,14 +69,16 @@ export function TrainTodayView() {
       day: d,
       gym: g && g.active ? g : null,
       volleyball: v ?? null,
+      running: runSessionsForDay(activeRunningBlock, DAY_ORDER.indexOf(d)),
       isToday: Boolean(g?.today || v?.today),
     }
   })
 
+  const todayRuns = runSessionsForDay(activeRunningBlock, todayIdx())
   const today = agenda.find((a) => a.isToday)
   const todayHasGym = today?.gym ?? null
   const todayHasVb = today?.volleyball ?? null
-  const sessionCount = agenda.filter((a) => a.gym || a.volleyball).length
+  const sessionCount = agenda.filter((a) => a.gym || a.volleyball || a.running.length).length
 
   // Active meso phase for the current week (Week 3 ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
@@ -176,10 +184,70 @@ export function TrainTodayView() {
         </div>
       )}
 
+      {/* Today's running hero(s) — one blue card per prescribed run today */}
+      {todayRuns.map((s) => (
+        <div key={s.key} style={{ padding: '0 24px 12px' }}>
+          <div
+            className="card notch-12"
+            style={{
+              padding: 16,
+              background: 'linear-gradient(180deg, color-mix(in srgb, var(--info) 6%, transparent) 0%, var(--surface-1) 100%)',
+              borderColor: 'color-mix(in srgb, var(--info) 30%, transparent)',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--info)' }} />
+            <span
+              style={{
+                position: 'absolute',
+                right: -50,
+                top: -50,
+                width: 160,
+                height: 160,
+                borderRadius: '50%',
+                background: 'radial-gradient(circle, color-mix(in srgb, var(--info) 12%, transparent), transparent 70%)',
+              }}
+            />
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: 6, position: 'relative' }}>
+              <div className="col">
+                <span className="eyebrow" style={{ color: 'var(--info)' }}>Futás · ma</span>
+                <div style={{ marginTop: 6 }}>
+                  <Display size="md">{s.label}</Display>
+                </div>
+                <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
+                  {`RPE ${s.rpeTarget.min}–${s.rpeTarget.max}${s.rounds ? ` · ${s.rounds} kör` : ''}`}
+                </span>
+              </div>
+              <span
+                className="chip notch-4"
+                style={{ fontSize: 9, color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }}
+              >
+                MA
+              </span>
+            </div>
+            <CtaGhost
+              className="notch-4 mt-md"
+              onClick={() => setRunLogCtx({
+                blockId: activeRunningBlock!.id,
+                weekNumber: activeRunningBlock!.currentWeek,
+                sessionKey: s.key,
+                label: s.label,
+                isSprint: s.kind === 'sprint',
+                defaultRounds: s.rounds ?? undefined,
+              })}
+              style={{ borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)', color: 'var(--info)' }}
+            >
+              <Icon name="plus" size={12} /> Naplózd a futást
+            </CtaGhost>
+          </div>
+        </div>
+      ))}
+
       {/* Weekly combined timeline */}
       <div style={{ padding: '0 24px 16px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-          <span className="eyebrow">Heti terv · gym + sport</span>
+          <span className="eyebrow">Heti terv · gym + futás + sport</span>
           <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>{sessionCount} session</span>
         </div>
         <div className="col gap-sm">
@@ -189,6 +257,14 @@ export function TrainTodayView() {
               agenda={a}
               onStartGym={openSession}
               onLogVolleyball={() => setVbLogOpen(true)}
+              onLogRun={(s) => setRunLogCtx({
+                blockId: activeRunningBlock!.id,
+                weekNumber: activeRunningBlock!.currentWeek,
+                sessionKey: s.key,
+                label: s.label,
+                isSprint: s.kind === 'sprint',
+                defaultRounds: s.rounds ?? undefined,
+              })}
             />
           ))}
         </div>
@@ -208,6 +284,7 @@ export function TrainTodayView() {
       </div>
 
       {vbLogOpen && <SportLogSheet onClose={() => setVbLogOpen(false)} onSave={logSportSession} />}
+      {runLogCtx && <RunLogSheet ctx={runLogCtx} onClose={() => setRunLogCtx(null)} onSave={(body) => logRunSession(body)} />}
     </>
   )
 }

@@ -4,11 +4,13 @@
 // ============================================================
 import { Icon } from '@/components/ui/Icon'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
+import type { RunPrescribedSession } from '@/lib/runningApi'
 
 export interface WeeklyAgendaDay {
   day: string
   gym: GymScheduleDay | null
   volleyball: VolleyballSession | null
+  running: RunPrescribedSession[]
   isToday: boolean
 }
 
@@ -16,11 +18,13 @@ interface WeeklyDayRowProps {
   agenda: WeeklyAgendaDay
   onStartGym: () => void
   onLogVolleyball: () => void
+  onLogRun?: (s: RunPrescribedSession) => void
 }
 
-export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball }: WeeklyDayRowProps) {
+export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball, onLogRun }: WeeklyDayRowProps) {
   const { day, gym, volleyball, isToday } = agenda
-  const hasContent = Boolean(gym || volleyball)
+  const running = agenda.running ?? []
+  const hasContent = Boolean(gym || volleyball || running.length)
   const dayLabelColor = isToday
     ? 'var(--brand-glow)'
     : hasContent
@@ -81,7 +85,7 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball }: WeeklyDayR
                 gap: 10,
                 width: '100%',
                 textAlign: 'left',
-                borderBottom: volleyball ? '1px solid var(--border-subtle)' : 'none',
+                borderBottom: volleyball || running.length ? '1px solid var(--border-subtle)' : 'none',
                 cursor: isToday ? 'pointer' : 'default',
               }}
             >
@@ -112,6 +116,7 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball }: WeeklyDayR
                 gap: 10,
                 width: '100%',
                 textAlign: 'left',
+                borderBottom: running.length ? '1px solid var(--border-subtle)' : 'none',
                 cursor: isToday ? 'pointer' : 'default',
               }}
             >
@@ -135,6 +140,40 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball }: WeeklyDayR
               )}
             </button>
           )}
+
+          {running.map((run, i) => (
+            <button
+              key={run.key}
+              type="button"
+              onClick={isToday ? () => onLogRun?.(run) : undefined}
+              className="row"
+              style={{
+                padding: '10px 14px',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                textAlign: 'left',
+                borderBottom: i < running.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                cursor: isToday ? 'pointer' : 'default',
+              }}
+            >
+              <Icon name="voice-wave" size={13} color="var(--info)" />
+              <div className="col flex-1">
+                <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{run.label}</span>
+                <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
+                  {`${run.kind === 'sprint' ? 'Sprint' : 'Piramis'} · futás`}
+                </span>
+              </div>
+              {isToday && (
+                <span
+                  className="chip"
+                  style={{ fontSize: 8, padding: '2px 5px', color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }}
+                >
+                  log
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
     </div>

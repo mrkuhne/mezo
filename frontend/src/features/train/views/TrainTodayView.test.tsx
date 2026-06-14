@@ -22,7 +22,7 @@ test('today gym block + weekly timeline render', () => {
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
   expect(screen.getByText('07:30 · 78p')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
-  expect(screen.getByText('Heti terv · gym + sport')).toBeInTheDocument()
+  expect(screen.getByText('Heti terv · gym + futás + sport')).toBeInTheDocument()
   // weekly note (verbatim, substring)
   expect(screen.getByText(/A gym a mesociklus szerint/)).toBeInTheDocument()
 })
