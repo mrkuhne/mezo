@@ -485,6 +485,164 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/running-blocks:
+    get:
+      tags: [Train]
+      operationId: listRunningBlocks
+      summary: All running blocks of the current user (any status), start date ascending
+      responses:
+        '200':
+          description: Running blocks
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RunningBlockResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    post:
+      tags: [Train]
+      operationId: createRunningBlock
+      summary: Create a running block (Builder save)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RunningBlockUpsertRequest' }
+      responses:
+        '201':
+          description: Created running block
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunningBlockResponse' }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/train/running-blocks/{id}:
+    put:
+      tags: [Train]
+      operationId: updateRunningBlock
+      summary: Full-replace a running block incl. structure
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RunningBlockUpsertRequest' }
+      responses:
+        '200':
+          description: Updated running block
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunningBlockResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    delete:
+      tags: [Train]
+      operationId: deleteRunningBlock
+      summary: Soft-delete a running block
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deleted }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/train/running-blocks/{id}/activate:
+    post:
+      tags: [Train]
+      operationId: activateRunningBlock
+      summary: Activate a running block — archives any other active one (idempotent)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Activated running block
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunningBlockResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/train/running-blocks/{id}/close:
+    post:
+      tags: [Train]
+      operationId: closeRunningBlock
+      summary: Close (archive) a running block
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Archived running block
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunningBlockResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/train/run-sessions:
+    get:
+      tags: [Train]
+      operationId: listRunSessions
+      summary: Logged run-session actuals of the current user, newest first
+      responses:
+        '200':
+          description: Run sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/RunSessionLogResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    post:
+      tags: [Train]
+      operationId: logRunSession
+      summary: Log run-session actuals against a prescribed session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RunSessionLogRequest' }
+      responses:
+        '201':
+          description: Logged run session
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunSessionLogResponse' }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     MesocycleResponse:
@@ -1266,3 +1424,102 @@ components:
           type: integer
         notes:
           type: string
+    RunSegment:
+      type: object
+      required: [type, durationSec]
+      properties:
+        type: { type: string, enum: [warmup, work, rest, cooldown] }
+        durationSec: { type: integer }
+        label: { type: string, nullable: true }
+    RpeTarget:
+      type: object
+      required: [min, max]
+      properties:
+        min: { type: integer }
+        max: { type: integer }
+    RunPrescribedSession:
+      type: object
+      required: [key, dayOfWeek, label, kind, rpeTarget, segments]
+      properties:
+        key: { type: string }
+        dayOfWeek: { type: integer, description: '0=Hét..6=Vas' }
+        label: { type: string }
+        kind: { type: string, enum: [sprint, pyramid, steady] }
+        rpeTarget: { $ref: '#/components/schemas/RpeTarget' }
+        rounds: { type: integer, nullable: true }
+        segments:
+          type: array
+          items: { $ref: '#/components/schemas/RunSegment' }
+    RunWeek:
+      type: object
+      required: [weekNumber, phaseLabel, sessions]
+      properties:
+        weekNumber: { type: integer }
+        phaseLabel: { type: string }
+        sessions:
+          type: array
+          items: { $ref: '#/components/schemas/RunPrescribedSession' }
+    RunningBlockStructureDto:
+      type: object
+      required: [weeks]
+      properties:
+        weeks:
+          type: array
+          items: { $ref: '#/components/schemas/RunWeek' }
+    RunningBlockResponse:
+      type: object
+      required: [id, title, kind, status, startDate, endDate, weeks, currentWeek, structure]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        goal: { type: string, nullable: true }
+        kind: { type: string }
+        status: { type: string, enum: [planned, active, archived] }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        weeks: { type: integer }
+        currentWeek: { type: integer }
+        summary: { type: string, nullable: true }
+        structure: { $ref: '#/components/schemas/RunningBlockStructureDto' }
+    RunningBlockUpsertRequest:
+      type: object
+      required: [title, kind, startDate, endDate, weeks, structure]
+      properties:
+        title: { type: string }
+        goal: { type: string, nullable: true }
+        kind: { type: string }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        weeks: { type: integer }
+        currentWeek: { type: integer, nullable: true }
+        summary: { type: string, nullable: true }
+        structure: { $ref: '#/components/schemas/RunningBlockStructureDto' }
+    RunSessionLogResponse:
+      type: object
+      required: [id, blockId, weekNumber, sessionKey, date]
+      properties:
+        id: { type: string, format: uuid }
+        blockId: { type: string, format: uuid }
+        weekNumber: { type: integer }
+        sessionKey: { type: string }
+        date: { type: string, format: date }
+        completedRounds: { type: integer, nullable: true }
+        rpeActual: { type: integer, nullable: true }
+        hrRecoverySec: { type: integer, nullable: true }
+        sprintLandmark: { type: string, nullable: true }
+        durationMin: { type: integer, nullable: true }
+        notes: { type: string, nullable: true }
+    RunSessionLogRequest:
+      type: object
+      required: [blockId, weekNumber, sessionKey, date]
+      properties:
+        blockId: { type: string, format: uuid }
+        weekNumber: { type: integer }
+        sessionKey: { type: string }
+        date: { type: string, format: date }
+        completedRounds: { type: integer, nullable: true }
+        rpeActual: { type: integer, nullable: true }
+        hrRecoverySec: { type: integer, nullable: true }
+        sprintLandmark: { type: string, nullable: true }
+        durationMin: { type: integer, nullable: true }
+        notes: { type: string, nullable: true }

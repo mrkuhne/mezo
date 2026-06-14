@@ -299,6 +299,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/running-blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All running blocks of the current user (any status), start date ascending */
+        get: operations["listRunningBlocks"];
+        put?: never;
+        /** Create a running block (Builder save) */
+        post: operations["createRunningBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/running-blocks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Full-replace a running block incl. structure */
+        put: operations["updateRunningBlock"];
+        post?: never;
+        /** Soft-delete a running block */
+        delete: operations["deleteRunningBlock"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/running-blocks/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Activate a running block — archives any other active one (idempotent) */
+        post: operations["activateRunningBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/running-blocks/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close (archive) a running block */
+        post: operations["closeRunningBlock"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/run-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Logged run-session actuals of the current user, newest first */
+        get: operations["listRunSessions"];
+        put?: never;
+        /** Log run-session actuals against a prescribed session */
+        post: operations["logRunSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -735,6 +823,95 @@ export interface components {
             shoulderStrain: number;
             jumpCount?: number;
             notes?: string;
+        };
+        RunSegment: {
+            /** @enum {string} */
+            type: "warmup" | "work" | "rest" | "cooldown";
+            durationSec: number;
+            label?: string | null;
+        };
+        RpeTarget: {
+            min: number;
+            max: number;
+        };
+        RunPrescribedSession: {
+            key: string;
+            /** @description 0=Hét..6=Vas */
+            dayOfWeek: number;
+            label: string;
+            /** @enum {string} */
+            kind: "sprint" | "pyramid" | "steady";
+            rpeTarget: components["schemas"]["RpeTarget"];
+            rounds?: number | null;
+            segments: components["schemas"]["RunSegment"][];
+        };
+        RunWeek: {
+            weekNumber: number;
+            phaseLabel: string;
+            sessions: components["schemas"]["RunPrescribedSession"][];
+        };
+        RunningBlockStructureDto: {
+            weeks: components["schemas"]["RunWeek"][];
+        };
+        RunningBlockResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            goal?: string | null;
+            kind: string;
+            /** @enum {string} */
+            status: "planned" | "active" | "archived";
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            weeks: number;
+            currentWeek: number;
+            summary?: string | null;
+            structure: components["schemas"]["RunningBlockStructureDto"];
+        };
+        RunningBlockUpsertRequest: {
+            title: string;
+            goal?: string | null;
+            kind: string;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            weeks: number;
+            currentWeek?: number | null;
+            summary?: string | null;
+            structure: components["schemas"]["RunningBlockStructureDto"];
+        };
+        RunSessionLogResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            blockId: string;
+            weekNumber: number;
+            sessionKey: string;
+            /** Format: date */
+            date: string;
+            completedRounds?: number | null;
+            rpeActual?: number | null;
+            hrRecoverySec?: number | null;
+            sprintLandmark?: string | null;
+            durationMin?: number | null;
+            notes?: string | null;
+        };
+        RunSessionLogRequest: {
+            /** Format: uuid */
+            blockId: string;
+            weekNumber: number;
+            sessionKey: string;
+            /** Format: date */
+            date: string;
+            completedRounds?: number | null;
+            rpeActual?: number | null;
+            hrRecoverySec?: number | null;
+            sprintLandmark?: string | null;
+            durationMin?: number | null;
+            notes?: string | null;
         };
     };
     responses: never;
@@ -1631,6 +1808,274 @@ export interface operations {
             };
             /** @description Workout not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listRunningBlocks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Running blocks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunningBlockResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createRunningBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunningBlockUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Created running block */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunningBlockResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateRunningBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunningBlockUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated running block */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunningBlockResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteRunningBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    activateRunningBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Activated running block */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunningBlockResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    closeRunningBlock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Archived running block */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunningBlockResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listRunSessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Run sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunSessionLogResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    logRunSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunSessionLogRequest"];
+            };
+        };
+        responses: {
+            /** @description Logged run session */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunSessionLogResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
