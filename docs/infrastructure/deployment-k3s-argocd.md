@@ -113,7 +113,14 @@ cd frontend && VITE_USE_MOCK=false VITE_API_URL= VITE_OWNER_EMAIL=owner@mezo.loc
 docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-frontend:<tag> frontend --push
 ```
 
-Still TODO: pgAdmin (step 3), ArgoCD/GitOps (step 4), HTTP→HTTPS redirect (optional).
+pgAdmin (step 3): deployed, private (no ingress) — reach via
+`kubectl port-forward -n mezo svc/pgadmin 5050:80` → http://localhost:5050.
+
+ArgoCD (step 4): installed in `argocd` ns; manages the `k8s/` dir via
+`argocd/application.yaml` (GitOps). UI via
+`kubectl port-forward -n argocd svc/argocd-server 8080:443` → https://localhost:8080.
+
+Still TODO: HTTP→HTTPS redirect (optional), Sealed Secrets for git-committable secrets.
 
 ## Out of scope (future, would each warrant its own ADR/doc)
 

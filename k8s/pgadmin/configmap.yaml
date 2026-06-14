@@ -1,0 +1,23 @@
+# Pre-seeds the mezo Postgres connection into pgAdmin so the server shows up
+# automatically on first login (you only enter the DB password once). pgAdmin
+# reads this via PGADMIN_SERVER_JSON_FILE.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgadmin-servers
+  namespace: mezo
+data:
+  servers.json: |
+    {
+      "Servers": {
+        "1": {
+          "Name": "mezo (k8s)",
+          "Group": "Servers",
+          "Host": "postgres",
+          "Port": 5432,
+          "MaintenanceDB": "mezo",
+          "Username": "mezo",
+          "SSLMode": "prefer"
+        }
+      }
+    }
