@@ -14,8 +14,9 @@ milestone, and standard lives here as a file, not only in chat or in `bd` issues
 | `infrastructure/` | **WHERE / HOW it runs** | Deployment topology, hosting, CI/CD, networking, secrets, ops runbooks, target architecture. |
 | `milestones/` | **WHEN / WHAT shipped** | Roadmap, phase status, milestone log. The high-level "where are we" timeline. |
 | `references/` | **HOW we build** | Coding house standards — Java/Spring/Liquibase/testing/API conventions. Non-negotiable rules (see root `CLAUDE.md`). |
-| `superpowers/specs/` | **WHAT a feature does** | Per-feature design specs (dated). |
+| `superpowers/specs/` | **WHAT we decided to build** (point-in-time) | Per-feature design specs (dated) — the design as it stood when the feature was conceived. A historical artifact; not kept in sync with later changes. |
 | `superpowers/plans/` | **step-by-step** | Per-feature implementation plans (dated). |
+| `features/` | **HOW a feature works NOW** (living) | Durable, current per-feature reference: what it does, its data flow, data model/API, **integrations with other features**, how to **use** it, how to **extend** it, how it's tested. One doc per domain (`today`, `train`, `fuel`, `insights`, `me`) + platform docs (`_platform-*`). Kept in sync with the code — read this to understand or build on a feature. See [`features/README.md`](features/README.md). |
 
 ## When you MUST write a doc here
 
@@ -27,6 +28,7 @@ Writing to `docs/` is **mandatory** — not optional housekeeping. Add or update
    (new deploy target, CI pipeline, secret strategy, DB hosting, ingress/proxy).
 3. **Hit or move a milestone / change the roadmap** → entry in `milestones/`.
 4. **Establish a reusable coding standard** → doc in `references/` (and link it from `CLAUDE.md`).
+5. **Add or change a user-facing feature** (new view/flow, new domain, swap a mock hook to real, new sub-feature, a cross-feature integration) → add or update its doc in `features/`. The spec in `superpowers/specs/` records *why we designed it that way then*; the `features/` doc records *how it works now and how to build on it*. Both matter; the `features/` doc is the one that must stay current.
 
 If you finish a piece of work and nothing in `docs/` reflects the decision behind it,
 the work is **not done**. Capture it before closing the `bd` issue.
@@ -37,6 +39,7 @@ the work is **not done**. Capture it before closing the `bd` issue.
 - **Infrastructure** (`infrastructure/`): `kebab-topic.md`, e.g. `deployment-k3s-argocd.md`.
 - **Milestones** (`milestones/`): keep the running log in `roadmap.md`; one-off retrospectives as `YYYY-MM-DD-title.md`.
 - **Specs / plans** (`superpowers/`): `YYYY-MM-DD-title.md` (existing convention).
+- **Features** (`features/`): `<domain>.md` for the five domains (`today.md`, `train.md`, `fuel.md`, `insights.md`, `me.md`) and `_platform-<topic>.md` for cross-cutting platform docs (`_platform-data-layer.md`, `_platform-api-backend.md`, `_platform-auth-security.md`, `_platform-design-system.md`). No date prefix — these are living, not dated artifacts. Every doc follows the 10-section template in [`features/README.md`](features/README.md).
 
 ## ADR template (copy for new decisions)
 
@@ -66,3 +69,4 @@ the work is **not done**. Capture it before closing the `bd` issue.
 - [`infrastructure/deployment-k3s-argocd.md`](infrastructure/deployment-k3s-argocd.md) — deployment architecture + current live facts.
 - [`infrastructure/runbook.md`](infrastructure/runbook.md) — **operational runbook**: access, logins, day-to-day ops, troubleshooting, recovery.
 - [`milestones/roadmap.md`](milestones/roadmap.md) — phase & milestone status.
+- [`features/README.md`](features/README.md) — **per-feature documentation index** (operation, usage, extension, integrations) for every domain + platform area.
