@@ -1,0 +1,30 @@
+name: deploy
+# git push to main -> build the changed image, test it, push to GHCR, bump the
+# k8s tag via a [skip ci] commit. ArgoCD (already automated) deploys the result.
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false   # never abort a half-done release; queue instead
+
+permissions:
+  contents: write   # commit the tag bump back + push the git tag
+  packages: write   # push images to GHCR
+
+jobs:
+  version:
+    # Skip the release-commit's own push, breaking the loop.
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.calc.outputs.version }}
+      frontend_changed: ${{ steps.calc.outputs.frontend_changed }}
+      backend_changed: ${{ steps.calc.outputs.backend_changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # full history + tags for semver + diff
+      - id: calc
+        run: bash .github/scripts/compute-release.sh
