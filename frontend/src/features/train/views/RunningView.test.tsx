@@ -37,6 +37,8 @@ describe('RunningView (mock mode)', () => {
     // week 3 prescribes both sessions
     expect(screen.getByText('Sprint-intervallum')).toBeInTheDocument()
     expect(screen.getByText('Piramis-intervallum')).toBeInTheDocument()
+    // R4: derived cross-load → gym leg volume note renders under the sessions
+    expect(screen.getByText(/Cross-load/i)).toBeInTheDocument()
   })
 
   test('Napló switcher shows the logged run sessions', async () => {
