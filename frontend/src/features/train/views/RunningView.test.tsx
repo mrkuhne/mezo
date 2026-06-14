@@ -54,6 +54,17 @@ describe('RunningView (mock mode)', () => {
     expect(screen.getByText('5K-alapozó')).toBeInTheDocument()
     expect(screen.getByText('Téli base 02')).toBeInTheDocument()
   })
+
+  test('logging a prescribed session opens the RunLogSheet (date-independent)', async () => {
+    renderView()
+    // Each RunSessionCard in the E-heti view exposes a "Naplózás ▸" button.
+    const logButtons = screen.getAllByRole('button', { name: /Naplózás/ })
+    expect(logButtons.length).toBeGreaterThan(0)
+    await userEvent.click(logButtons[0])
+    // Sheet title appears; "Mentés" saves without crashing.
+    expect(await screen.findByText('Hogy ment?')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  })
 })
 
 // ---- REAL mode, empty backend: ghost states, no crash ----

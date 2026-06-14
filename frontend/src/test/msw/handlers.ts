@@ -223,4 +223,12 @@ export const handlers = [
     const slots = (await request.json()) as Array<Record<string, unknown>>
     return HttpResponse.json(slots.map((s, i) => ({ id: `e1f3a0e2-0000-4000-8000-0000000000${60 + i}`, ...s })))
   }),
+  // R3 running endpoints — default empty so real-mode Mai stays clean (no active
+  // block ⇒ no run hero/lanes). Tests override with server.use() when they need data.
+  http.get(`${API_BASE}/api/train/running-blocks`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/train/run-sessions`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/train/run-sessions`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ id: 'rs-f1f3a0e2-0000-4000-8000-00000000beef', ...body }, { status: 201 })
+  }),
 ]
