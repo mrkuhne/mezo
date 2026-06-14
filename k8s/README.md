@@ -42,22 +42,33 @@ deploy. ArgoCD excludes `**/secret.example.yaml`; real secrets live only in the 
 cert-manager itself is installed out-of-band (not in this repo yet):
 `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml`
 
-## Secrets are never committed
+## Secrets: Sealed Secrets (committed, encrypted)
 
-`secret.example.yaml` is a template only. The real `mezo-db` Secret is created
-out-of-band so no plaintext credential lands in git:
+Secrets live in git as **SealedSecrets** (`*/sealedsecret*.yaml`) — RSA-encrypted by
+the [sealed-secrets](https://github.com/bitnami-labs/sealed-secrets) controller's
+public key, so the ciphertext is safe to commit. Only the in-cluster controller can
+decrypt them into real `Secret`s. ArgoCD syncs them like any other manifest.
 
+Managed this way: `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull`
+(registry), `pgadmin-auth` (pgAdmin login). The `secret.example.yaml` files remain as
+plaintext-shape documentation (ArgoCD excludes them; never put real values there).
+
+NOT sealed (managed by their own controllers): `mezo-tls` (cert-manager),
+`operator-oauth` (Tailscale operator), `argocd-initial-admin-secret` (ArgoCD).
+
+To create or rotate a sealed secret:
 ```bash
 export KUBECONFIG=~/.kube/mezo-k3s.yaml
-kubectl apply -f k8s/namespace.yaml
 kubectl create secret generic mezo-db -n mezo \
-  --from-literal=POSTGRES_DB=mezo \
-  --from-literal=POSTGRES_USER=mezo \
-  --from-literal=POSTGRES_PASSWORD='<a-strong-password>'
+  --from-literal=POSTGRES_DB=mezo --from-literal=POSTGRES_USER=mezo \
+  --from-literal=POSTGRES_PASSWORD='<strong-pw>' --dry-run=client -o yaml \
+  | kubeseal --controller-name sealed-secrets-controller --controller-namespace kube-system \
+      --format yaml > k8s/postgres/sealedsecret.yaml
+git add k8s/postgres/sealedsecret.yaml && git commit && git push   # ArgoCD applies it
 ```
 
-(Step 4 replaces this with **Sealed Secrets**, which encrypt the secret so it
-*can* be committed safely.)
+> The sealing key is cluster-specific. If you rebuild the cluster, back up the
+> controller's `sealed-secrets-key*` secret in kube-system, or re-seal from source values.
 
 ## Apply order (manual, pre-ArgoCD)
 
@@ -67,16 +78,12 @@ export KUBECONFIG=~/.kube/mezo-k3s.yaml
 # 1. namespace
 kubectl apply -f k8s/namespace.yaml
 
-# 2. secrets (out-of-band, never committed) — once
-kubectl create secret generic mezo-db -n mezo \
-  --from-literal=POSTGRES_DB=mezo --from-literal=POSTGRES_USER=mezo \
-  --from-literal=POSTGRES_PASSWORD='<strong-pw>'
-kubectl create secret generic mezo-app -n mezo \
-  --from-literal=MEZO_JWT_SECRET="$(openssl rand -base64 48)" \
-  --from-literal=MEZO_OWNER_EMAIL=owner@mezo.local \
-  --from-literal=MEZO_OWNER_PASSWORD=owner --from-literal=MEZO_OWNER_NAME=Owner
-kubectl create secret docker-registry ghcr-pull -n mezo \
-  --docker-server=ghcr.io --docker-username=mrkuhne --docker-password="$(gh auth token)"
+# 2. secrets — now SealedSecrets in git, decrypted by the controller (install it first):
+helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets \
+  -n kube-system --set-string fullnameOverride=sealed-secrets-controller --wait
+kubectl apply -f k8s/postgres/sealedsecret.yaml -f k8s/backend/sealedsecret.yaml \
+  -f k8s/backend/sealedsecret-ghcr.yaml -f k8s/pgadmin/sealedsecret.yaml
+# (under ArgoCD these are synced automatically — no manual step)
 
 # 3. workloads
 kubectl apply -f k8s/postgres/service.yaml -f k8s/postgres/statefulset.yaml

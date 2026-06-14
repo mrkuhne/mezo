@@ -131,7 +131,11 @@ Private admin access (Tailscale operator):
   (ArgoCD-managed) and `argocd/ingress-tailscale.yaml` (applied manually, argocd ns).
 - Tailnet ACL needs `tagOwners` for `tag:k8s-operator` (and `tag:k8s`); HTTPS enabled on the tailnet.
 
-Still TODO: HTTP→HTTPS redirect (optional), Sealed Secrets for git-committable secrets.
+Sealed Secrets: DONE. `mezo-db`, `mezo-app`, `ghcr-pull`, `pgadmin-auth` now live in git
+as encrypted SealedSecrets (`k8s/**/sealedsecret*.yaml`), decrypted by the sealed-secrets
+controller (kube-system, Helm). No more imperative `kubectl create secret`. See k8s/README.md.
+
+Still TODO: HTTP→HTTPS redirect (optional).
 
 ## Out of scope (future, would each warrant its own ADR/doc)
 
