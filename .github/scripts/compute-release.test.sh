@@ -17,4 +17,6 @@ assert_eq "$(printf 'refactor: a\n\nBREAKING CHANGE: x\n' | compute_bump)" "majo
 assert_eq "$(next_version 0.0.1 patch)" "0.0.2" "patch bump"
 assert_eq "$(next_version 0.1.3 minor)" "0.2.0" "minor resets patch"
 assert_eq "$(next_version 1.2.3 major)" "2.0.0" "major resets minor+patch"
+assert_eq "$(printf 'fix: avoid a breaking change in parser\n' | compute_bump)" "patch" "prose 'breaking change' => patch (not major)"
+assert_eq "$(printf 'fix: a\nfeat: b' | compute_bump)" "minor" "no trailing newline still counts last line"
 exit $fail

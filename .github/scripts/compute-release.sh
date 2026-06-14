@@ -6,9 +6,9 @@ set -euo pipefail
 # stdin: conventional-commit lines (subjects + bodies). stdout: major | minor | patch.
 compute_bump() {
   local level="patch" line
-  while IFS= read -r line; do
+  while IFS= read -r line || [ -n "$line" ]; do
     if printf '%s' "$line" | grep -qE '^[a-z]+(\([^)]*\))?!:' \
-       || printf '%s' "$line" | grep -qiE 'BREAKING[ -]CHANGE'; then
+       || printf '%s' "$line" | grep -qE '^BREAKING[ -]CHANGE:'; then
       echo "major"; return 0
     fi
     if printf '%s' "$line" | grep -qE '^feat(\([^)]*\))?:'; then
@@ -45,8 +45,8 @@ main() {
   level=$(git log "${base_ref}..HEAD" --format='%s%n%b' | compute_bump)
   version=$(next_version "$base_ver" "$level")
   changed=$(git diff --name-only "${base_ref}..HEAD")
-  printf '%s\n' "$changed" | grep -qE '^frontend/'      && fe="true"
-  printf '%s\n' "$changed" | grep -qE '^(backend|api)/' && be="true"
+  if printf '%s\n' "$changed" | grep -qE '^frontend/'; then fe="true"; fi
+  if printf '%s\n' "$changed" | grep -qE '^(backend|api)/'; then be="true"; fi
 
   {
     echo "version=${version}"
