@@ -1,0 +1,21 @@
+# Exposes the ArgoCD UI on the PRIVATE tailnet via the Tailscale operator.
+# Reachable at https://argocd.<tailnet>.ts.net from your Tailscale devices, always
+# on, no port-forward, never public. argocd-server runs in --insecure mode so the
+# Tailscale proxy terminates TLS (avoids a redirect loop).
+#
+# Lives outside k8s/ (argocd namespace, not the ArgoCD-synced path); applied manually.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: argocd-ts
+  namespace: argocd
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: argocd-server
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - argocd         # → argocd.<tailnet>.ts.net

@@ -113,12 +113,23 @@ cd frontend && VITE_USE_MOCK=false VITE_API_URL= VITE_OWNER_EMAIL=owner@mezo.loc
 docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-frontend:<tag> frontend --push
 ```
 
-pgAdmin (step 3): deployed, private (no ingress) — reach via
-`kubectl port-forward -n mezo svc/pgadmin 5050:80` → http://localhost:5050.
+pgAdmin (step 3): deployed, private. Reachable on the tailnet at
+**https://pgadmin.tail8ce56d.ts.net** (always on, no port-forward, never public).
 
 ArgoCD (step 4): installed in `argocd` ns; manages the `k8s/` dir via
-`argocd/application.yaml` (GitOps). UI via
-`kubectl port-forward -n argocd svc/argocd-server 8080:443` → https://localhost:8080.
+`argocd/application.yaml` (GitOps). UI on the tailnet at
+**https://argocd.tail8ce56d.ts.net** (argocd-server runs `--insecure`; TLS terminated
+by the Tailscale proxy).
+
+Private admin access (Tailscale operator):
+- Installed via Helm (`tailscale/tailscale-operator`, ns `tailscale`) with an OAuth
+  client (scopes Devices Core + Auth Keys write, tag `tag:k8s-operator`). OAuth creds
+  live in the `operator-oauth` Secret, not git; rotate in the Tailscale admin console.
+- **`proxyConfig.defaultTags=tag:k8s-operator`** (override) — the default `tag:k8s`
+  failed to mint auth keys; the OAuth client can only assign `tag:k8s-operator`.
+- Exposed via Tailscale `Ingress` (ingressClassName `tailscale`): `k8s/pgadmin/ingress-tailscale.yaml`
+  (ArgoCD-managed) and `argocd/ingress-tailscale.yaml` (applied manually, argocd ns).
+- Tailnet ACL needs `tagOwners` for `tag:k8s-operator` (and `tag:k8s`); HTTPS enabled on the tailnet.
 
 Still TODO: HTTP→HTTPS redirect (optional), Sealed Secrets for git-committable secrets.
 
