@@ -69,3 +69,31 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: ghcr.io/mrkuhne/mezo-frontend:${{ needs.version.outputs.version }}
+
+  build-backend:
+    needs: version
+    if: ${{ needs.version.outputs.backend_changed == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4    # full repo so ../api contract is present
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Test + package (throwaway Testcontainers PG)
+        run: ./mvnw -B clean verify -Dmezo.test.use-testcontainers=true
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: backend
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/mrkuhne/mezo-backend:${{ needs.version.outputs.version }}
