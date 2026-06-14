@@ -1,0 +1,72 @@
+# pgAdmin 4 — web UI for inspecting the Postgres database.
+# NOT exposed via Ingress: reachable only through `kubectl port-forward`
+# (which itself rides the Tailscale connection). DB admin never on the public net.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgadmin
+  namespace: mezo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgadmin
+  template:
+    metadata:
+      labels:
+        app: pgadmin
+    spec:
+      # pgAdmin runs as uid/gid 5050; fsGroup makes the PVC writable for it.
+      securityContext:
+        runAsUser: 5050
+        runAsGroup: 5050
+        fsGroup: 5050
+      containers:
+        - name: pgadmin
+          image: dpage/pgadmin4:9.8
+          ports:
+            - containerPort: 80
+          env:
+            # Login credentials for the pgAdmin UI (from the pgadmin-auth Secret).
+            - name: PGADMIN_DEFAULT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-auth
+                  key: PGADMIN_DEFAULT_EMAIL
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pgadmin-auth
+                  key: PGADMIN_DEFAULT_PASSWORD
+            # Auto-import the pre-seeded mezo server connection.
+            - name: PGADMIN_SERVER_JSON_FILE
+              value: /pgadmin4/servers.json
+            # We don't run a mail server in the pod.
+            - name: PGADMIN_DISABLE_POSTFIX
+              value: "true"
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/pgadmin
+            - name: servers
+              mountPath: /pgadmin4/servers.json
+              subPath: servers.json
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /misc/ping
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              memory: "512Mi"
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pgadmin-data
+        - name: servers
+          configMap:
+            name: pgadmin-servers

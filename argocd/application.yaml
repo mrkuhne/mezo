@@ -1,0 +1,27 @@
+# The ArgoCD Application — the heart of GitOps. It tells ArgoCD: "keep the cluster
+# matching the k8s/ directory of this git repo." Applied once manually (bootstrap);
+# from then on, `git push` to k8s/ is the only deploy action needed.
+#
+# Lives OUTSIDE the synced path (k8s/) so ArgoCD doesn't try to manage itself.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: mezo
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/mrkuhne/mezo
+    targetRevision: main
+    path: k8s
+    directory:
+      recurse: true
+      # Never sync the secret templates — real secrets live only in the cluster.
+      exclude: "**/secret.example.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: mezo
+  syncPolicy:
+    automated:
+      prune: true       # remove resources deleted from git
+      selfHeal: true    # revert manual drift back to git state

@@ -1,0 +1,14 @@
+# ClusterIP only — internal. Reached via `kubectl port-forward svc/pgadmin ...`.
+# Intentionally NO Ingress: this admin UI must not be on the public internet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgadmin
+  namespace: mezo
+spec:
+  selector:
+    app: pgadmin
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

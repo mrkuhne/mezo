@@ -1,0 +1,12 @@
+# pgAdmin stores its own config (server list, preferences, sessions) here.
+# A Deployment can't use volumeClaimTemplates, so the PVC is declared separately.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pgadmin-data
+  namespace: mezo
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

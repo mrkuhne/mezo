@@ -25,9 +25,19 @@ k8s/
 ├── frontend/
 │   ├── deployment.yaml        # nginx serving the static PWA build
 │   └── service.yaml           # frontend:80 (ClusterIP)
-└── cert-manager/
-    └── clusterissuer.yaml     # Let's Encrypt prod issuer (HTTP-01 via Traefik)
+├── cert-manager/
+│   └── clusterissuer.yaml     # Let's Encrypt prod issuer (HTTP-01 via Traefik)
+└── pgadmin/
+    ├── configmap.yaml         # pre-seeded mezo server connection
+    ├── pvc.yaml               # pgAdmin config storage
+    ├── deployment.yaml        # pgAdmin 4 (private, no ingress)
+    ├── service.yaml           # pgadmin:80 (ClusterIP)
+    └── secret.example.yaml    # TEMPLATE for pgadmin-auth login creds
 ```
+
+GitOps: ArgoCD (in the `argocd` namespace) syncs this whole `k8s/` directory from
+git per `argocd/application.yaml` (repo root). After bootstrap, `git push` is the
+deploy. ArgoCD excludes `**/secret.example.yaml`; real secrets live only in the cluster.
 
 cert-manager itself is installed out-of-band (not in this repo yet):
 `kubectl apply -f https://github.com/cert-manager/cert-manager/releases/latest/download/cert-manager.yaml`
