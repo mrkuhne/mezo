@@ -4,7 +4,8 @@
 
 This is where and how mezo is meant to run in production-for-learning. The primary goal is to
 practice the **client stack (Kubernetes + ArgoCD + pgAdmin)** while hosting the app. See ADR 0001
-for *why* this path over a managed/Coolify deploy.
+for *why* this path over a managed/Coolify deploy. For day-to-day operation, access, logins,
+troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
 
 ## Topology (one box)
 

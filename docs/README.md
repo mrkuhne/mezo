@@ -63,5 +63,6 @@ the work is **not done**. Capture it before closing the `bd` issue.
 ## Index of key docs
 
 - [`decisions/0001-deploy-on-k3s-argocd-learning-track.md`](decisions/0001-deploy-on-k3s-argocd-learning-track.md) — why we deploy on self-managed k3s + ArgoCD.
-- [`infrastructure/deployment-k3s-argocd.md`](infrastructure/deployment-k3s-argocd.md) — target deployment architecture.
+- [`infrastructure/deployment-k3s-argocd.md`](infrastructure/deployment-k3s-argocd.md) — deployment architecture + current live facts.
+- [`infrastructure/runbook.md`](infrastructure/runbook.md) — **operational runbook**: access, logins, day-to-day ops, troubleshooting, recovery.
 - [`milestones/roadmap.md`](milestones/roadmap.md) — phase & milestone status.
