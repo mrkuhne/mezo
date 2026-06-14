@@ -1,6 +1,6 @@
 # Deployment architecture — single-VPS k3s + ArgoCD + pgAdmin
 
-**Status:** Target architecture (not yet built) · **Driver:** mezo-ht3 · **Decision:** [ADR 0001](../decisions/0001-deploy-on-k3s-argocd-learning-track.md)
+**Status:** LIVE (built 2026-06-14, applied manually via kubectl; ArgoCD/GitOps still pending) · **Driver:** mezo-ht3 · **Decision:** [ADR 0001](../decisions/0001-deploy-on-k3s-argocd-learning-track.md)
 
 This is where and how mezo is meant to run in production-for-learning. The primary goal is to
 practice the **client stack (Kubernetes + ArgoCD + pgAdmin)** while hosting the app. See ADR 0001
@@ -85,6 +85,35 @@ argocd/
 5. Build FE/BE images → GHCR; wire `imagePullSecret`.
 
 Tip: steps 1–3 can be rehearsed locally on **k3d/minikube** with zero VPS cost before touching the real box.
+
+## Current deployment (live as of 2026-06-14)
+
+| Fact | Value |
+|---|---|
+| Server | Hetzner CX33, 8 GB, x86, **Ubuntu 26.04 LTS**, Nuremberg |
+| Public IP | `46.225.112.172` |
+| Tailscale (private admin) | server `mezo-k3s` = `100.75.51.113`; admin Mac = `100.68.26.113` |
+| k3s | `v1.35.5+k3s1` (Traefik ingress + local-path storage bundled) |
+| Public URL | `https://46.225.112.172.sslip.io/` (Let's Encrypt via cert-manager) |
+| Images | `ghcr.io/mrkuhne/mezo-backend:0.0.1`, `ghcr.io/mrkuhne/mezo-frontend:0.0.1` (private; pulled with `ghcr-pull` secret) |
+| Owner login | `owner@mezo.local` / `owner` (demodata seed; baked into the frontend build) |
+| Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed) |
+
+Local admin access:
+- `kubectl` from the Mac: `export KUBECONFIG=~/.kube/mezo-k3s.yaml` (context `mezo`, server `https://100.75.51.113:6443` over Tailscale).
+- SSH: `ssh -i ~/.ssh/id_mezo_hetzner deploy@100.75.51.113` (or the public IP).
+
+Build/push images (arm64 Mac → amd64 server):
+```bash
+# backend
+cd backend && ./mvnw -B clean package -DskipTests
+docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-backend:<tag> backend --push
+# frontend
+cd frontend && VITE_USE_MOCK=false VITE_API_URL= VITE_OWNER_EMAIL=owner@mezo.local VITE_OWNER_PASSWORD=owner pnpm build
+docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-frontend:<tag> frontend --push
+```
+
+Still TODO: pgAdmin (step 3), ArgoCD/GitOps (step 4), HTTP→HTTPS redirect (optional).
 
 ## Out of scope (future, would each warrant its own ADR/doc)
 

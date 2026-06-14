@@ -24,3 +24,4 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
 | Date | Milestone |
 |---|---|
 | 2026-06-13 | Deploy direction decided: self-managed k3s + ArgoCD + pgAdmin (learning track). ADR 0001 + infra doc written. `docs/` decision/infra/milestone structure established. |
+| 2026-06-14 | Deploy steps 0-2 done: Hetzner VPS hardened + Tailscale, k3s installed, full mezo (Postgres + backend + frontend) live on k8s at `https://46.225.112.172.sslip.io/` with Let's Encrypt HTTPS. `k8s/` manifests + Dockerfiles committed. Pending: pgAdmin (step 3), ArgoCD/GitOps (step 4). |

@@ -1,0 +1,13 @@
+# Stable internal address for the frontend pods. The Ingress routes / here.
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: mezo
+spec:
+  selector:
+    app: frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

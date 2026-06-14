@@ -1,0 +1,9 @@
+# The image only needs the built dist/ and nginx.conf. Keep the context small.
+node_modules
+src
+tests
+test-results
+public
+*.tsbuildinfo
+vite.config.*
+tsconfig*.json

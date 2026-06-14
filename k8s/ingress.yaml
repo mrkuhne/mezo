@@ -1,0 +1,41 @@
+# The public front door. Traefik (bundled with k3s) turns this Ingress into
+# routing rules: /api → backend, everything else → frontend. Same host = same
+# browser origin, so the frontend's relative /api calls need no CORS.
+#
+# Host uses sslip.io: 46.225.112.172.sslip.io resolves to the server's public IP
+# with no domain purchase. Swap in a real domain later by changing `host` (in
+# both the rule and the tls block).
+#
+# HTTPS: the cert-manager annotation + tls block make cert-manager request a
+# Let's Encrypt certificate for this host and store it in the `mezo-tls` Secret;
+# Traefik then serves HTTPS with it (auto-renewed).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mezo
+  namespace: mezo
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - 46.225.112.172.sslip.io
+      secretName: mezo-tls
+  rules:
+    - host: 46.225.112.172.sslip.io
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8090
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

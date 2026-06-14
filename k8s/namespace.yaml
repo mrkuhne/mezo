@@ -1,0 +1,6 @@
+# A namespace is a logical "room" inside the cluster. Everything mezo-related
+# lives in `mezo`, isolated from kube-system and any other app.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mezo

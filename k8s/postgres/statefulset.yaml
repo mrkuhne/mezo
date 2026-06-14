@@ -1,0 +1,53 @@
+# StatefulSet = the right controller for a database: stable identity + its own
+# persistent disk. Unlike a Deployment, the volume survives pod restarts.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: mezo
+spec:
+  serviceName: postgres        # ties to the headless Service above
+  replicas: 1                  # single DB instance (no HA in the learning setup)
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          # POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD come from the
+          # `mezo-db` Secret (created out-of-band, never committed to git).
+          envFrom:
+            - secretRef:
+                name: mezo-db
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          # Readiness: pod is only "Ready" once Postgres actually accepts connections.
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "mezo", "-d", "mezo"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              memory: "512Mi"
+  # volumeClaimTemplates auto-creates a PersistentVolumeClaim per replica.
+  # k3s's local-path provisioner fulfils it with a directory on the node SSD.
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
