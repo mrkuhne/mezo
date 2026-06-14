@@ -47,16 +47,23 @@ bd close <id>         # Complete work
 
 `docs/` is the project's **durable memory**. `bd` tracks tasks; `docs/` records the *why*, *where*, and *when* behind them. See **[`docs/README.md`](docs/README.md)** for the full taxonomy, naming conventions, and the ADR template — read it before adding docs.
 
-Layout: `decisions/` (ADRs — the WHY), `infrastructure/` (HOW/WHERE it runs), `milestones/` (roadmap & milestone log), `references/` (coding house standards), `superpowers/specs|plans/` (per-feature design & plans).
+Layout: `decisions/` (ADRs — the WHY), `infrastructure/` (HOW/WHERE it runs), `milestones/` (roadmap & milestone log), `references/` (coding house standards), `superpowers/specs|plans/` (per-feature design & plans — point-in-time), `features/` (per-feature **living** docs — how each feature works now, how to use/extend/integrate it).
 
 **It is mandatory to keep `docs/` populated.** Whenever you:
 - make or change a significant decision / direction / tool choice → write an **ADR** in `docs/decisions/`;
 - add or change infrastructure (deploy, CI, secrets, hosting, proxy) → write/update a doc in `docs/infrastructure/`;
-- hit or move a milestone / change the roadmap → update `docs/milestones/roadmap.md`.
+- hit or move a milestone / change the roadmap → update `docs/milestones/roadmap.md`;
+- touch a **feature in any way that changes what its doc describes** — new feature/view/flow/domain/sub-feature, a behavior or contract change, a cross-feature integration, a refactor that moves files, a bugfix that changes behavior, or swapping a mock hook to a real backend → update its `docs/features/<domain>.md` (or `_platform-*.md`) **in the same change**. The `features/` docs are a **living** reference: keep them current so there's always an up-to-date description of every part of the app.
+
+**`features/` maintenance policy (living docs, kept lean):**
+- **Overwrite in place — git is the history.** Edit the affected sections directly; do NOT keep a changelog, version suffixes, or dated snapshots inside the doc. To see the past, use `git log -p docs/features/<x>.md`. This is what keeps the docs from bloating.
+- **`features/` vs `superpowers/specs/`:** the `features/` doc is mutable and always-current ("how it works now + how to build on it"); a `specs/` doc is a frozen, dated design artifact ("why we designed it then") — never rewrite an old spec; a new design effort gets a new dated spec. The spec corpus grows by design; the feature docs stay one-per-feature and current.
+- **Link, don't duplicate; edit only what changed.** Describe structure/intent/integration seams with `file:line` pointers rather than pasting code (code rots fastest). The 10-section template means a change maps to specific sections (e.g. new endpoint → §4 + §10; new integration → §5) — update those, leave the rest.
+- **Threshold:** update when the change alters behavior, contract, data model, integrations, the file map, or status. A purely internal no-behavior-change refactor/typo only needs a doc touch if its `file:line` pointers went stale.
 
 If a finished piece of work leaves no trace in `docs/` of the decision behind it, the work is **not done** — capture it before closing the `bd` issue.
 
-> **Trigger — pull these in when relevant:** deployment / infra / hosting / k8s / ArgoCD work → read **[`docs/infrastructure/deployment-k3s-argocd.md`](docs/infrastructure/deployment-k3s-argocd.md)** and **[`docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`](docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md)** FIRST. Project status / direction questions → **[`docs/milestones/roadmap.md`](docs/milestones/roadmap.md)**.
+> **Trigger — pull these in when relevant:** deployment / infra / hosting / k8s / ArgoCD work → read **[`docs/infrastructure/deployment-k3s-argocd.md`](docs/infrastructure/deployment-k3s-argocd.md)** and **[`docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`](docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md)** FIRST. Understanding / extending / integrating an existing feature → read its **[`docs/features/<domain>.md`](docs/features/README.md)** FIRST. Project status / direction questions → **[`docs/milestones/roadmap.md`](docs/milestones/roadmap.md)**.
 
 ## Architecture Overview
 
