@@ -1,6 +1,6 @@
 # Deployment architecture — single-VPS k3s + ArgoCD + pgAdmin
 
-**Status:** LIVE (built 2026-06-14, applied manually via kubectl; ArgoCD/GitOps still pending) · **Driver:** mezo-ht3 · **Decision:** [ADR 0001](../decisions/0001-deploy-on-k3s-argocd-learning-track.md)
+**Status:** LIVE (built 2026-06-14) · ArgoCD GitOps active on `k8s/`; **deploy half is CI-driven** — `git push` to `main` builds + tags + rolls out (see [CI/CD pipeline](#cicd-pipeline-git-push--live) + [ADR 0002](../decisions/0002-ci-cd-github-actions-auto-deploy.md)). · **Driver:** mezo-ht3 · **Decision:** [ADR 0001](../decisions/0001-deploy-on-k3s-argocd-learning-track.md)
 
 This is where and how mezo is meant to run in production-for-learning. The primary goal is to
 practice the **client stack (Kubernetes + ArgoCD + pgAdmin)** while hosting the app. See ADR 0001
@@ -137,6 +137,48 @@ as encrypted SealedSecrets (`k8s/**/sealedsecret*.yaml`), decrypted by the seale
 controller (kube-system, Helm). No more imperative `kubectl create secret`. See k8s/README.md.
 
 Still TODO: HTTP→HTTPS redirect (optional).
+
+## CI/CD pipeline (`git push` → live)
+
+A `git push` to `main` now builds, tests, tags, and rolls out the changed component automatically —
+no manual `docker buildx` / tag bookkeeping. The build half lives in
+**`.github/workflows/deploy.yml`** (GitHub Actions); the deploy half is the **unchanged** ArgoCD
+auto-sync on `k8s/`. See [ADR 0002](../decisions/0002-ci-cd-github-actions-auto-deploy.md) for the
+*why* and [`docs/superpowers/plans/2026-06-14-ci-cd-auto-deploy.md`](../superpowers/plans/2026-06-14-ci-cd-auto-deploy.md)
+for the build-out steps.
+
+**Flow** — four jobs, fired on push to `main`:
+
+1. **`version`** — runs `.github/scripts/compute-release.sh`: computes the next semver from the
+   conventional commits since the last `v*` tag (`feat` → minor, `feat!` / `BREAKING CHANGE:` →
+   major, else patch) and derives `frontend_changed` / `backend_changed` from a path-filtered
+   `git diff` (`frontend/**` → FE; `backend/**` or `api/**` → BE).
+2. **`build-frontend`** (only if FE changed) — `pnpm test` in real (MSW) **and** mock modes →
+   `pnpm build` (owner creds baked in) → docker build/push `ghcr.io/mrkuhne/mezo-frontend:<ver>`.
+3. **`build-backend`** (only if BE changed) — `./mvnw -B clean verify` against a throwaway
+   Testcontainers Postgres → docker build/push `ghcr.io/mrkuhne/mezo-backend:<ver>`.
+4. **`release`** (if nothing failed and ≥1 component shipped) — `sed`-rewrites the changed
+   `k8s/<comp>/deployment.yaml` image tag to `<ver>`, commits it back as
+   `chore(release): v<ver> [skip ci]`, `git pull --rebase origin main` (non-fast-forward guard),
+   tags `v<ver>`, and pushes. **ArgoCD then syncs that commit and deploys it.**
+
+**Loop guard:** the release commit carries `[skip ci]`, and the `version` job is gated
+`if: !contains(head_commit.message, '[skip ci]')`, so the release commit does not re-trigger the
+workflow.
+
+**Workflow permissions:** `contents: write` (commit + tag back) and `packages: write` (push to
+GHCR), both via the built-in `GITHUB_TOKEN`. The cluster still pulls private images with the
+existing `ghcr-pull` secret (unchanged).
+
+**One-time bootstrap (manual, already done):**
+- Seed a baseline `v0.0.1` git tag — the semver math needs a starting point.
+- Repo **Settings → Actions → Workflow permissions → "Read and write permissions"** (so the
+  commit-back + tag push are allowed).
+- Repo **Variables** `VITE_OWNER_EMAIL` / `VITE_OWNER_PASSWORD` — the demo-owner creds baked into
+  the frontend build (demo values, not real secrets).
+
+**Caveat:** if `main` ever gains PR-required branch protection, the default `GITHUB_TOKEN`
+commit-back push is rejected — it would then need a PAT / GitHub App token or a protection bypass.
 
 ## Out of scope (future, would each warrant its own ADR/doc)
 
