@@ -8,6 +8,10 @@ import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.RunSessionLogRequest;
+import io.mrkuhne.mezo.api.dto.RunSessionLogResponse;
+import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
+import io.mrkuhne.mezo.api.dto.RunningBlockUpsertRequest;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
@@ -19,6 +23,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
+import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
@@ -38,6 +43,7 @@ public class TrainController implements TrainApi {
     private final SportService sportService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
+    private final RunningService runningService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -118,5 +124,45 @@ public class TrainController implements TrainApi {
     @Override
     public WorkoutInstanceResponse finishWorkout(UUID id) {
         return workoutService.finishWorkout(currentUserId.get(), id);
+    }
+
+    @Override
+    public List<RunningBlockResponse> listRunningBlocks() {
+        return runningService.listBlocks(currentUserId.get());
+    }
+
+    @Override
+    public RunningBlockResponse createRunningBlock(RunningBlockUpsertRequest runningBlockUpsertRequest) {
+        return runningService.createBlock(currentUserId.get(), runningBlockUpsertRequest);
+    }
+
+    @Override
+    public RunningBlockResponse updateRunningBlock(UUID id, RunningBlockUpsertRequest runningBlockUpsertRequest) {
+        return runningService.updateBlock(currentUserId.get(), id, runningBlockUpsertRequest);
+    }
+
+    @Override
+    public void deleteRunningBlock(UUID id) {
+        runningService.deleteBlock(currentUserId.get(), id);
+    }
+
+    @Override
+    public RunningBlockResponse activateRunningBlock(UUID id) {
+        return runningService.activateBlock(currentUserId.get(), id);
+    }
+
+    @Override
+    public RunningBlockResponse closeRunningBlock(UUID id) {
+        return runningService.closeBlock(currentUserId.get(), id);
+    }
+
+    @Override
+    public List<RunSessionLogResponse> listRunSessions() {
+        return runningService.listSessions(currentUserId.get());
+    }
+
+    @Override
+    public RunSessionLogResponse logRunSession(RunSessionLogRequest runSessionLogRequest) {
+        return runningService.logSession(currentUserId.get(), runSessionLogRequest);
     }
 }
