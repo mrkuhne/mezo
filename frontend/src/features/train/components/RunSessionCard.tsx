@@ -64,7 +64,7 @@ function segmentPills(session: RunPrescribedSession): { key: string; text: strin
   return pills
 }
 
-export function RunSessionCard({ session }: { session: RunPrescribedSession }) {
+export function RunSessionCard({ session, onLog }: { session: RunPrescribedSession; onLog?: () => void }) {
   const dayLabel = DAY_ORDER[session.dayOfWeek] ?? ''
   const { min, max } = session.rpeTarget
   // High-intensity sprint targets (min >= 9) get the red --error tag; otherwise amber --warning.
@@ -104,6 +104,41 @@ export function RunSessionCard({ session }: { session: RunPrescribedSession }) {
           {segmentPills(session).map((p) => (
             <Pill key={p.key} text={p.text} tone={p.tone} />
           ))}
+        </div>
+        <div className="row" style={{ justifyContent: 'flex-end', marginTop: 10 }}>
+          {onLog ? (
+            <button
+              type="button"
+              onClick={onLog}
+              style={{
+                fontFamily: 'var(--ff-mono)',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: RUN,
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+              }}
+            >
+              Naplózás ▸
+            </button>
+          ) : (
+            <span
+              style={{
+                fontFamily: 'var(--ff-mono)',
+                fontSize: 10,
+                fontWeight: 600,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              Naplózás ▸
+            </span>
+          )}
         </div>
       </div>
     </div>

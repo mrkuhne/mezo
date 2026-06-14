@@ -12,7 +12,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRunning } from '@/data/hooks'
-import type { RunningBlockResponse, RunSessionLogResponse } from '@/lib/runningApi'
+import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest } from '@/lib/runningApi'
 import { newDraft } from '@/data/runningDraft'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
@@ -22,8 +22,11 @@ import { Display } from '@/components/ui/Display'
 import { huMonthDay, huMonthDayDow } from '@/lib/dates'
 import { RunWeekStrip } from '../components/RunWeekStrip'
 import { RunSessionCard } from '../components/RunSessionCard'
+import { RunLogSheet } from '../components/RunLogSheet'
 
 const RUN = 'var(--info)'
+
+type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
 type RunSubView = 'week' | 'log' | 'blocks'
 
@@ -48,7 +51,7 @@ const STATUS_LABELS: Record<RunningBlockResponse['status'], string> = {
 }
 
 export function RunningView() {
-  const { runningBlocks, activeRunningBlock, runSessions, saveRunningBlock } = useRunning()
+  const { runningBlocks, activeRunningBlock, runSessions, saveRunningBlock, logRunSession } = useRunning()
   const [view, setView] = useState<RunSubView>('week')
   const navigate = useNavigate()
 
@@ -103,7 +106,7 @@ export function RunningView() {
         })}
       </div>
 
-      {view === 'week' && <RunWeekView block={activeRunningBlock} />}
+      {view === 'week' && <RunWeekView block={activeRunningBlock} onLog={logRunSession} />}
       {view === 'log' && <RunLogView sessions={runSessions} />}
       {view === 'blocks' && <RunBlocksView blocks={runningBlocks} onOpen={openBuilder} />}
     </>
@@ -111,7 +114,9 @@ export function RunningView() {
 }
 
 // === E heti edzés: active block hero + this week's prescribed sessions ===
-function RunWeekView({ block }: { block: RunningBlockResponse | null }) {
+function RunWeekView({ block, onLog }: { block: RunningBlockResponse | null; onLog: (body: RunSessionLogRequest) => void }) {
+  const [logCtx, setLogCtx] = useState<RunLogCtx | null>(null)
+
   if (!block) {
     return (
       <div style={{ padding: '8px 24px 16px' }}>
@@ -179,7 +184,18 @@ function RunWeekView({ block }: { block: RunningBlockResponse | null }) {
           <div style={{ marginBottom: 12 }}><Eyebrow>E hét · {sessions.length} edzés</Eyebrow></div>
           <div className="col gap-sm">
             {sessions.map((s) => (
-              <RunSessionCard key={s.key} session={s} />
+              <RunSessionCard
+                key={s.key}
+                session={s}
+                onLog={() => setLogCtx({
+                  blockId: block.id,
+                  weekNumber: block.currentWeek,
+                  sessionKey: s.key,
+                  label: s.label,
+                  isSprint: s.kind === 'sprint',
+                  defaultRounds: s.rounds ?? undefined,
+                })}
+              />
             ))}
           </div>
         </>
@@ -188,6 +204,8 @@ function RunWeekView({ block }: { block: RunningBlockResponse | null }) {
           Az aktuális hét ({block.currentWeek}) nincs a tervben.
         </span>
       )}
+
+      {logCtx && <RunLogSheet ctx={logCtx} onClose={() => setLogCtx(null)} onSave={(body) => onLog(body)} />}
     </div>
   )
 }
