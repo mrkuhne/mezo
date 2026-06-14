@@ -1,0 +1,10 @@
+# The runtime image only needs the built fat JAR. Keep the build context tiny.
+target/*
+!target/*.jar
+src
+.mvn
+mvnw
+mvnw.cmd
+HELP.md
+compose.yaml
+initdb

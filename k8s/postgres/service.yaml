@@ -1,0 +1,16 @@
+# A headless Service (clusterIP: None) gives the StatefulSet stable DNS.
+# Other pods reach the database simply as `postgres:5432` inside the `mezo`
+# namespace (full name: postgres.mezo.svc.cluster.local). No public exposure.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: mezo
+spec:
+  clusterIP: None          # headless: DNS resolves straight to the pod IP
+  selector:
+    app: postgres          # routes to pods labelled app=postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432

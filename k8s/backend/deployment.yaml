@@ -1,0 +1,88 @@
+# The Spring Boot backend. A Deployment (not StatefulSet) because it is stateless —
+# all state lives in Postgres. k8s can recreate/replace this pod freely.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: mezo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      # Pull the private image from GHCR using the ghcr-pull secret.
+      imagePullSecrets:
+        - name: ghcr-pull
+      containers:
+        - name: backend
+          image: ghcr.io/mrkuhne/mezo-backend:0.0.1
+          ports:
+            - containerPort: 8090
+          env:
+            # demodata = seed the single owner user on first boot.
+            - name: SPRING_PROFILES_ACTIVE
+              value: demodata
+            # Override the localhost JDBC URL from application.yml → the k8s Service.
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres:5432/mezo
+            # DB credentials come from the same Secret Postgres uses.
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-db
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-db
+                  key: POSTGRES_PASSWORD
+            # App secrets (JWT signing key + owner seed credentials).
+            - name: MEZO_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: MEZO_JWT_SECRET
+            - name: MEZO_OWNER_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: MEZO_OWNER_EMAIL
+            - name: MEZO_OWNER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: MEZO_OWNER_PASSWORD
+            - name: MEZO_OWNER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: MEZO_OWNER_NAME
+          # startupProbe gives Spring Boot + Liquibase time to come up before
+          # liveness/readiness start judging it. /actuator/health is exposed.
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8090
+            periodSeconds: 5
+            failureThreshold: 40      # up to ~200s to boot
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8090
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8090
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              memory: "1Gi"
