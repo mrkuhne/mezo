@@ -5,6 +5,7 @@ import { TrainScreen } from '@/features/train/TrainScreen'
 import { TrainTodayView } from '@/features/train/views/TrainTodayView'
 import { GymView } from '@/features/train/views/GymView'
 import { SportView } from '@/features/train/views/SportView'
+import { RunningView } from '@/features/train/views/RunningView'
 import { ExercisesView } from '@/features/train/views/ExercisesView'
 import { MesocycleLibraryView } from '@/features/train/views/MesocycleLibraryView'
 import { ActiveWorkoutScreen } from '@/features/train/ActiveWorkoutScreen'
@@ -50,6 +51,7 @@ export const routes: RouteObject[] = [
           { index: true, element: <TrainTodayView /> },
           { path: 'gym', element: <GymView /> },
           { path: 'sport', element: <SportView /> },
+          { path: 'futas', element: <RunningView /> },
           { path: 'exercises', element: <ExercisesView /> },
           { path: 'mesocycles', element: <MesocycleLibraryView /> },
         ],
