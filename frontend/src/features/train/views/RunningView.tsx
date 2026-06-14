@@ -10,10 +10,13 @@
 // navigation, no Mai/cross-load — those are later R-steps.
 // ============================================================
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useRunning } from '@/data/hooks'
 import type { RunningBlockResponse, RunSessionLogResponse } from '@/lib/runningApi'
+import { newDraft } from '@/data/runningDraft'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
+import { Icon } from '@/components/ui/Icon'
 import { GhostState } from '@/components/ui/GhostState'
 import { Display } from '@/components/ui/Display'
 import { huMonthDay, huMonthDayDow } from '@/lib/dates'
@@ -45,17 +48,30 @@ const STATUS_LABELS: Record<RunningBlockResponse['status'], string> = {
 }
 
 export function RunningView() {
-  const { runningBlocks, activeRunningBlock, runSessions } = useRunning()
+  const { runningBlocks, activeRunningBlock, runSessions, saveRunningBlock } = useRunning()
   const [view, setView] = useState<RunSubView>('week')
+  const navigate = useNavigate()
+
+  const openBuilder = (id: string) => navigate(`/train/futas/${id}`)
+  const createBlock = () => {
+    const start = new Date().toISOString().slice(0, 10)
+    const end = new Date(Date.now() + 28 * 864e5).toISOString().slice(0, 10)
+    saveRunningBlock(null, newDraft(start, end), { onSuccess: (b) => openBuilder(b.id) })
+  }
 
   return (
     <>
-      {/* Header — no chip in R1 (read-only) */}
+      {/* Header — `＋ Új terv` chip lives on the Tervek (blocks) segment */}
       <div className="page-header">
         <div className="col gap-xs">
           <Eyebrow brand>Train · Futás</Eyebrow>
           <PageTitle>Intervallum</PageTitle>
         </div>
+        {view === 'blocks' && (
+          <button type="button" className="chip notch-4" style={{ padding: '8px 10px' }} onClick={createBlock}>
+            <Icon name="plus" size={12} /> Új terv
+          </button>
+        )}
       </div>
 
       {/* View switcher */}
@@ -89,7 +105,7 @@ export function RunningView() {
 
       {view === 'week' && <RunWeekView block={activeRunningBlock} />}
       {view === 'log' && <RunLogView sessions={runSessions} />}
-      {view === 'blocks' && <RunBlocksView blocks={runningBlocks} />}
+      {view === 'blocks' && <RunBlocksView blocks={runningBlocks} onOpen={openBuilder} />}
     </>
   )
 }
@@ -273,7 +289,7 @@ function RunLogCard({ session }: { session: RunSessionLogResponse }) {
 }
 
 // === Tervek: Aktív / Tervezett / Archív sections (read-only library) ===
-function RunBlocksView({ blocks }: { blocks: RunningBlockResponse[] }) {
+function RunBlocksView({ blocks, onOpen }: { blocks: RunningBlockResponse[]; onOpen: (id: string) => void }) {
   const active = blocks.filter((b) => b.status === 'active')
   const planned = blocks.filter((b) => b.status === 'planned')
   const archived = blocks.filter((b) => b.status === 'archived')
@@ -292,7 +308,7 @@ function RunBlocksView({ blocks }: { blocks: RunningBlockResponse[] }) {
         <div style={{ marginBottom: 12 }}><Eyebrow>Aktív · {active.length}</Eyebrow></div>
         <div className="col gap-sm">
           {active.map((b) => (
-            <RunActiveBlockCard key={b.id} block={b} />
+            <RunActiveBlockCard key={b.id} block={b} onOpen={onOpen} />
           ))}
         </div>
       </div>
@@ -301,7 +317,7 @@ function RunBlocksView({ blocks }: { blocks: RunningBlockResponse[] }) {
         <div style={{ marginBottom: 12 }}><Eyebrow>Tervezett · {planned.length}</Eyebrow></div>
         <div className="col gap-sm">
           {planned.map((b) => (
-            <RunCompactBlockCard key={b.id} block={b} />
+            <RunCompactBlockCard key={b.id} block={b} onOpen={onOpen} />
           ))}
         </div>
       </div>
@@ -310,7 +326,7 @@ function RunBlocksView({ blocks }: { blocks: RunningBlockResponse[] }) {
         <div style={{ marginBottom: 12 }}><Eyebrow>Archív · {archived.length}</Eyebrow></div>
         <div className="col gap-sm">
           {archived.map((b) => (
-            <RunCompactBlockCard key={b.id} block={b} />
+            <RunCompactBlockCard key={b.id} block={b} onOpen={onOpen} />
           ))}
         </div>
       </div>
@@ -344,14 +360,19 @@ function RunStatusChip({ status }: { status: RunningBlockResponse['status'] }) {
   )
 }
 
-function RunActiveBlockCard({ block }: { block: RunningBlockResponse }) {
+function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; onOpen: (id: string) => void }) {
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(block.id)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(block.id) } }}
       className="card notch-12"
       style={{
         padding: 16,
         position: 'relative',
         overflow: 'hidden',
+        cursor: 'pointer',
         background: 'linear-gradient(180deg, color-mix(in srgb, var(--info) 6%, transparent), var(--surface-1))',
         borderColor: 'color-mix(in srgb, var(--info) 30%, transparent)',
       }}
@@ -370,19 +391,28 @@ function RunActiveBlockCard({ block }: { block: RunningBlockResponse }) {
         <RunStatusChip status="active" />
       </div>
       <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
-      <span className="text-tertiary" style={{ display: 'block', marginTop: 8, fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-        Hét {block.currentWeek} / {block.weeks}
-      </span>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+        <span className="text-tertiary" style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+          Hét {block.currentWeek} / {block.weeks}
+        </span>
+        <span style={{ color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 9, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+          Builder ▸
+        </span>
+      </div>
     </div>
   )
 }
 
-function RunCompactBlockCard({ block }: { block: RunningBlockResponse }) {
+function RunCompactBlockCard({ block, onOpen }: { block: RunningBlockResponse; onOpen: (id: string) => void }) {
   const isArchived = block.status === 'archived'
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(block.id)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(block.id) } }}
       className="card notch-4"
-      style={{ padding: 14, opacity: isArchived ? 0.7 : 1 }}
+      style={{ padding: 14, opacity: isArchived ? 0.7 : 1, cursor: 'pointer' }}
     >
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="col">

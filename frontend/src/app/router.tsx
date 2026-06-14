@@ -11,6 +11,7 @@ import { MesocycleLibraryView } from '@/features/train/views/MesocycleLibraryVie
 import { ActiveWorkoutScreen } from '@/features/train/ActiveWorkoutScreen'
 import { MesocyclePlanner } from '@/features/train/MesocyclePlanner'
 import { MesocycleBuilder } from '@/features/train/MesocycleBuilder'
+import { RunningBlockBuilder } from '@/features/train/RunningBlockBuilder'
 import { FuelScreen } from '@/features/fuel/FuelScreen'
 import { FuelMaiView } from '@/features/fuel/views/FuelMaiView'
 import { FuelPlanView } from '@/features/fuel/views/FuelPlanView'
@@ -59,6 +60,7 @@ export const routes: RouteObject[] = [
       { path: 'train/session', element: <ActiveWorkoutScreen /> },
       { path: 'train/mesocycles/new', element: <MesocyclePlanner /> },
       { path: 'train/mesocycles/:id', element: <MesocycleBuilder /> },
+      { path: 'train/futas/:id', element: <RunningBlockBuilder /> },
       {
         path: 'fuel',
         element: <FuelScreen />,
