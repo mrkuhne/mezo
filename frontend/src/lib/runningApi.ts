@@ -17,4 +17,14 @@ export const runningApi = {
     apiFetch<RunningBlockResponse[]>('/api/train/running-blocks'),
   runSessions: (): Promise<RunSessionLogResponse[]> =>
     apiFetch<RunSessionLogResponse[]>('/api/train/run-sessions'),
+  create: (body: RunningBlockUpsertRequest): Promise<RunningBlockResponse> =>
+    apiFetch<RunningBlockResponse>('/api/train/running-blocks', { method: 'POST', body: JSON.stringify(body) }),
+  update: (id: string, body: RunningBlockUpsertRequest): Promise<RunningBlockResponse> =>
+    apiFetch<RunningBlockResponse>(`/api/train/running-blocks/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  activate: (id: string): Promise<RunningBlockResponse> =>
+    apiFetch<RunningBlockResponse>(`/api/train/running-blocks/${id}/activate`, { method: 'POST' }),
+  close: (id: string): Promise<RunningBlockResponse> =>
+    apiFetch<RunningBlockResponse>(`/api/train/running-blocks/${id}/close`, { method: 'POST' }),
+  remove: (id: string): Promise<void> =>
+    apiFetch<void>(`/api/train/running-blocks/${id}`, { method: 'DELETE' }),
 }
