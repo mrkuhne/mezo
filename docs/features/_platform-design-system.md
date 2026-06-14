@@ -1,3 +1,19 @@
+---
+title: Design System & UI Primitives ("Deep Current v2")
+type: feature-platform
+status: done
+updated: 2026-06-14
+tags: [platform, design, frontend]
+key_files:
+  - frontend/src/styles/prototype.css
+  - frontend/src/index.css
+  - frontend/src/components/ui
+  - frontend/src/app
+  - frontend/src/lib/theme.ts
+  - frontend/src/lib/cn.ts
+related: [_platform-data-layer, today, train, me]
+---
+
 # Design System & UI Primitives ("Deep Current v2") — Feature Documentation
 
 > **One-line:** mezo's mobile-first visual foundation — a single CSS-token vocabulary, ~25 thin React primitives, and an iPhone-frame app shell that every screen renders on. **Status: ✅ done (Phase 1, frontend-only).** It is _platform-level_ (the `_` prefix): it has no route/tab of its own; it lives under `frontend/src/styles/`, `frontend/src/components/ui/`, and `frontend/src/app/`, and is consumed by all 5 domain tabs (`Today/Train/Fuel/Insights/Me`).

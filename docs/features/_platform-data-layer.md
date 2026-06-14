@@ -1,3 +1,20 @@
+---
+title: Platform · Data Layer & Dual-Mode
+type: feature-platform
+status: done
+updated: 2026-06-14
+tags: [platform, data-layer, frontend]
+key_files:
+  - frontend/src/data/hooks.ts
+  - frontend/src/data/trainHooks.ts
+  - frontend/src/data/runningHooks.ts
+  - frontend/src/lib/mode.ts
+  - frontend/src/lib/api.ts
+  - frontend/src/lib/biometricsApi.ts
+  - frontend/src/app/providers/QueryProvider.tsx
+related: [_platform-api-backend, _platform-auth-security, train, me]
+---
+
 # Platform · Data Layer & Dual-Mode — Feature Documentation
 
 > The single FE↔data boundary (`frontend/src/data/hooks.ts`) + the `isMockMode()` dual-mode switch + the TanStack Query wiring + the typed REST clients. **Status:** ✅ done (cross-cutting platform layer; some hooks 🔶 mock-only — see §2). Not a screen — it sits under **every** route/tab; the wired domains are Me (biometrics) and Train/Futás.

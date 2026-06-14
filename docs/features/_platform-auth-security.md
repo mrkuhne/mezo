@@ -1,3 +1,19 @@
+---
+title: Auth & Security
+type: feature-platform
+status: mixed
+updated: 2026-06-14
+tags: [platform, auth, backend, frontend]
+key_files:
+  - backend/src/main/java/io/mrkuhne/mezo/feature/auth
+  - backend/src/main/java/io/mrkuhne/mezo/techcore
+  - api/feature/auth/auth.yml
+  - backend/src/main/resources/application.yml
+  - frontend/src/lib/auth.ts
+  - frontend/src/lib/api.ts
+related: [_platform-data-layer, _platform-api-backend, me]
+---
+
 # Auth & Security — Feature Documentation
 
 > One-line: the single-owner authentication + ownership model (login → 30-day HS256 JWT → resource-server filter → server-side `created_by`). **Status: ✅ backend done (Phase 2, Slice A); ✅ FE token bootstrap real, 🔶 stubbed in mock mode.** This is a *platform* feature — no route/tab of its own; it sits under every authenticated screen, bootstrapped at app boot before any view renders.

@@ -1,3 +1,19 @@
+---
+title: Today
+type: feature-domain
+status: mock-only
+updated: 2026-06-14
+tags: [today, biometrics, frontend, data-layer]
+key_files:
+  - frontend/src/features/today
+  - frontend/src/data/hooks.ts
+  - frontend/src/data/today.ts
+  - frontend/src/lib/biometricsApi.ts
+  - api/feature/checkin/checkin.yml
+  - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin
+related: [_platform-data-layer, _platform-design-system, me, insights]
+---
+
 # Today — Feature Documentation
 
 > The daily home / morning-briefing screen at route `/today` (tab "Ma"), the PWA's default landing page. **Status: 🔶 mock-only** — every section is static mock data, with **one** real Phase-2 seam: the check-in *save* (`POST /api/biometrics/checkin`, ✅ done).

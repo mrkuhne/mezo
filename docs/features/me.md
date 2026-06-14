@@ -1,3 +1,19 @@
+---
+title: Me Area
+type: feature-domain
+status: mixed
+updated: 2026-06-14
+tags: [me, biometrics, frontend, backend, data-layer]
+key_files:
+  - frontend/src/features/me
+  - frontend/src/data/hooks.ts
+  - frontend/src/lib/biometricsApi.ts
+  - api/feature/weight/weight.yml
+  - api/feature/sleep/sleep.yml
+  - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics
+related: [_platform-data-layer, _platform-design-system, today, insights]
+---
+
 # Me Area — Feature Documentation
 
 > The profile + personal-biometrics + relationships hub. **Mixed status:** `Cél` (weight) and `Alvás` (sleep) are ✅ Phase-2 backed (the `biometrics` backend feature); `Profil`, `Emberek` (People) and `Tudás` (Knowledge) are 🔶 mock-only. Lives under the `/me` tab (`MeScreen`, Hungarian sub-nav `Profil` / `Cél` / `Alvás` / `Emberek` / `Tudás`).

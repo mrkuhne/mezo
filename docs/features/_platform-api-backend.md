@@ -1,3 +1,20 @@
+---
+title: Platform · API Contract & Backend Architecture
+type: feature-platform
+status: done
+updated: 2026-06-14
+tags: [platform, backend, data-layer, frontend]
+key_files:
+  - api/openapi.yml
+  - api/generate
+  - backend/src/main/java/io/mrkuhne/mezo
+  - backend/pom.xml
+  - backend/src/main/resources/messages.properties
+  - frontend/src/lib/api.ts
+  - frontend/src/data/hooks.ts
+related: [_platform-data-layer, _platform-auth-security, train, today]
+---
+
 # Platform · API Contract & Backend Architecture — Feature Documentation
 
 > One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/lib/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · Train; the durable backbone every backed feature flows through. Not a route/tab — it underlies all of them.
