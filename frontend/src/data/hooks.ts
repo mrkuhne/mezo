@@ -200,3 +200,4 @@ export function useStackRecommendations() {
 // The Train hook (queries + T1 write mutations) lives in trainHooks.ts —
 // re-exported here so consumer import paths stay `@/data/hooks`.
 export { useTrain } from './trainHooks'
+export { useRunning } from './runningHooks'
