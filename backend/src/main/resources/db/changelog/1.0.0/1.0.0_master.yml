@@ -55,3 +55,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606121400_mezo-7ot_exercise_catalog.sql
+  - changeSet:
+      id: "1.0.0:202606141200_mezo-b4n_create_running_block"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606141200_mezo-b4n_create_running_block.sql
+  - changeSet:
+      id: "1.0.0:202606141210_mezo-b4n_create_run_session_log"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606141210_mezo-b4n_create_run_session_log.sql
