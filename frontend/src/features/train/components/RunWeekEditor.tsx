@@ -27,7 +27,7 @@ export function RunWeekEditor({
   weekNumber: number
   onStructure: (s: RunningBlockStructureDto) => void
 }) {
-  const week = structure.weeks.find((w) => w.weekNumber === weekNumber)
+  const week = structure?.weeks?.find((w) => w.weekNumber === weekNumber)
   if (!week) {
     return (
       <span className="text-tertiary" style={{ fontSize: 11, fontStyle: 'italic' }}>
