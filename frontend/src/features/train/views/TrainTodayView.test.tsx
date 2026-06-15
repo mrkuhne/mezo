@@ -132,6 +132,45 @@ test('real mode orders the morning run hero above the evening gym hero', async (
   expect(runEyebrow.compareDocumentPosition(startBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })
 
+test('real mode renders the run hero (no rest-day note) when only a run is prescribed today', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  // Running blocks are mesocycle-independent: the agenda's flag-based isToday is
+  // never set by running, so a run-only-today (no gym day, no volleyball) must
+  // still surface its hero and must NOT trigger the "Ma pihenőnap" rest card.
+  const todayIdx = (new Date().getDay() + 6) % 7
+  const runBlock = {
+    id: 'rb-1', title: 'Robbanékonyság', goal: 'sprint', kind: 'interval', status: 'active',
+    startDate: '2026-06-01', endDate: '2026-08-01', weeks: 4, currentWeek: 1, summary: null,
+    structure: {
+      weeks: [{
+        weekNumber: 1, phaseLabel: 'Alapozás',
+        sessions: [{
+          key: 'today-sprint', dayOfWeek: todayIdx, timeOfDay: '08:00', label: 'Reggeli sprint',
+          kind: 'sprint', rpeTarget: { min: 9, max: 10 }, rounds: 6, segments: [],
+        }],
+      }],
+    },
+  }
+  server.use(
+    // meso's only gym day is NOT today + no volleyball -> gym rest day
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/running-blocks`, () => HttpResponse.json([runBlock])),
+    http.get(`${API_BASE}/api/train/run-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+  )
+  renderView()
+  // the "Futás · ma" run hero IS rendered (eyebrow + log CTA are hero-unique;
+  // "Reggeli sprint" itself also appears in the weekly row, hence not asserted alone) ...
+  expect(await screen.findByText('Futás · ma')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
+  expect(screen.getAllByText('Reggeli sprint').length).toBeGreaterThan(0)
+  // ... and the rest-day note is NOT (a prescribed run is not a rest day)
+  expect(screen.queryByText(/Ma pihenőnap/)).not.toBeInTheDocument()
+})
+
 test('real mode shows the volleyball today-card when a slot falls on today', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const todayIdx = (new Date().getDay() + 6) % 7

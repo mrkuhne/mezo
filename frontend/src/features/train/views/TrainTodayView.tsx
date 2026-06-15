@@ -9,7 +9,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useRunning } from '@/data/hooks'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train'
-import { runSessionsForDay } from '@/data/runningAgenda'
+import { runSessionsForDay, todayIdx } from '@/data/runningAgenda'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Display } from '@/components/ui/Display'
@@ -75,12 +75,21 @@ export function TrainTodayView() {
     }
   })
 
+  // The agenda's `isToday` is flag-based (gym/volleyball only); running blocks
+  // are mesocycle-independent, so a day may have ONLY a prescribed run today.
+  // Pull today's runs separately (date-based) and merge them with the flag-based
+  // today row into a synthetic day, so a run-only-today still shows its hero.
   const today = agenda.find((a) => a.isToday)
-  const todayHasGym = today?.gym ?? null
-  const todayHasVb = today?.volleyball ?? null
+  const todayRuns = runSessionsForDay(activeRunningBlock, todayIdx())
   // Today's hero cards rendered in time-of-day order (a morning run hero above
   // an evening gym hero); same ordering as the weekly rows via daySessions.
-  const orderedToday = today ? daySessions(today) : []
+  const orderedToday = daySessions({
+    day: today?.day ?? '',
+    gym: today?.gym ?? null,
+    volleyball: today?.volleyball ?? null,
+    running: todayRuns,
+    isToday: true,
+  })
   const sessionCount = agenda.filter((a) => a.gym || a.volleyball || a.running.length).length
 
   // Active meso phase for the current week (Week 3 ⇒ MAV).
@@ -245,8 +254,8 @@ export function TrainTodayView() {
         )
       })}
 
-      {/* Rest day (real mode): no gym slot and no volleyball today */}
-      {!todayHasGym && !todayHasVb && (
+      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
+      {!today?.gym && !today?.volleyball && todayRuns.length === 0 && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card notch-12" style={{ padding: 18 }}>
             <span className="eyebrow">Ma pihenőnap</span>

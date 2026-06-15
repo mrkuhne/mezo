@@ -40,7 +40,7 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
   } as const
 
   return (
-    <Sheet onClose={onClose}>
+    <Sheet onClose={onClose} labelledBy="gym-schedule-title">
       {(close) => (
         <>
           {/* Header */}
