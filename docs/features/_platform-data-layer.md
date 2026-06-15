@@ -112,7 +112,7 @@ const mutation = useMutation({
 
 - **Optimistic cache emulation** (mock) → `setQueryData`: `useGoals.logWeight`, `useSleep.logSleep`, and all of `useRunning`'s mock mutations (`upsertMock`/`lifecycleMock`/`logMock` in `data/runningHooks.ts:38`) which fully re-implement create/update/activate/close/delete/log in-cache so mock interactions behave like a server — including **server-derived fields**: `upsertMock` computes `currentWeek` via `currentWeekOf` (`lib/dates.ts`) exactly as the backend's `clampWeek` does, so a mock-created block isn't stuck on week 0 (mezo-478).
   - **Exception — real-mode *create* also `setQueryData`s** (mezo-11m, `runningHooks.ts:52`): `useRunning`'s save mutation's `onSuccess` branches — for a real-mode *create* (`!mock && !args.id`) it inserts the returned block into `['running','blocks']` **synchronously** and skips the invalidate, because the server response is authoritative for the just-created row and an async refetch races a navigate-into-the-builder (read-after-write could transiently drop it). Real-mode *updates* and all mock paths still `invalidate()`. This is the one place a real-mode mutation patches the cache directly instead of refetching truth.
-- **Pure no-op** (mock) → `async () => undefined`, real → persist + `invalidateQueries`: `useTrain`'s ten write mutations (`data/trainHooks.ts:248`); rationale in-code — "mock mode no-ops (Phase-1 local behavior stays untouched)".
+- **Pure no-op** (mock) → `async () => undefined`, real → persist + `invalidateQueries`: `useTrain`'s eleven write mutations (incl. `gymScheduleMutation` → PUT `/gym-schedule`, invalidates `['train','gymSchedule']`, `data/trainHooks.ts:331`); rationale in-code — "mock mode no-ops (Phase-1 local behavior stays untouched)".
 - **Local `useState` (no query at all)**: `useCheckins` (`hooks.ts:41`) and `usePeople` (`hooks.ts:131`). `useCheckins` is a hybrid — it always updates local state synchronously and, **only in real mode**, additionally fires `checkinApi.save` as a fire-and-forget mutation (errors just `console.error`, no rollback). `usePeople.logMention` is mock-only (mints a `Mention` with `crypto.randomUUID()` and prepends it).
 
 ### The "no static fallback in real mode → ghost-guard" rule
@@ -122,7 +122,7 @@ Real mode must surface an empty backend as `null`/`[]`, never as Phase-1 demo da
 ```ts
 activeMeso: realActiveMeso ?? (mock ? activeMeso : null),   // mock falls back to static, real stays null
 workout:    mock ? trainWorkout : toWorkoutPlan(todayData),
-gymSchedule: mock ? trainGymSchedule : deriveGymSchedule(realActiveMeso),
+gymSchedule: mock ? trainGymSchedule : deriveGymSchedule(realActiveMeso, gymSlots),  // joins meso gym-days × standalone gym-time slots
 ```
 
 Hooks also expose a **`*Pending` flag** (`workoutPending` = `!mock && (mesoPending || todayPending)` at `trainHooks.ts:364`; `runningPending` = `!mock && isPending` at `runningHooks.ts:90`), so route guards/views can wait instead of flashing the empty ghost before data lands.
@@ -136,7 +136,7 @@ The FE↔BE boundary types are **generated, never hand-written** (see `docs/refe
 **Endpoints by client:**
 
 - `biometricsApi` (`lib/biometricsApi.ts`): `GET/POST /api/biometrics/weight`, `GET/POST /api/biometrics/sleep`, `GET ?date= / POST /api/biometrics/checkin`. Types `WeightLogResponse`/`LogWeightRequest`, `SleepLogResponse`/`LogSleepRequest`, `CheckInResponse`/`SaveCheckInRequest`.
-- `trainApi` (`lib/trainApi.ts`): `mesocycles` (GET), `sport-sessions` (GET), mesocycle `create`/`:id/activate`/`:id/close`, `:mesoId/days/:dayId/exercises` (PUT), `workouts/today` (GET), `workouts` (start), `workouts/:id/sets` (logSet), `workouts/:id/feedback`, `workouts/:id/finish`, `sport-schedule` (GET/PUT), `exercises` (catalog GET), `exercise-records` (GET). 16 endpoints.
+- `trainApi` (`lib/trainApi.ts`): `mesocycles` (GET), `sport-sessions` (GET), mesocycle `create`/`:id/activate`/`:id/close`, `:mesoId/days/:dayId/exercises` (PUT), `workouts/today` (GET), `workouts` (start), `workouts/:id/sets` (logSet), `workouts/:id/feedback`, `workouts/:id/finish`, `sport-schedule` (GET/PUT), `gym-schedule` (GET/PUT — `gymSchedule`/`replaceGymSchedule`), `exercises` (catalog GET), `exercise-records` (GET). 18 endpoints.
 - `runningApi` (`lib/runningApi.ts`): `running-blocks` (GET/POST), `running-blocks/:id` (PUT/DELETE), `:id/activate`, `:id/close`, `run-sessions` (GET/POST).
 - `auth` (`lib/auth.ts`): `POST /api/auth/login` → `TokenResponse`.
 
@@ -161,7 +161,7 @@ This layer is the hub; every feature is a spoke. Concrete, bidirectional seams:
 - **Today ← biometrics / Train**: `TodayScreen`, `FuelTimelinePreview` consume `useToday`/`useFuelPreview` (mock) and the Train hooks. `useTodayScenario` (`hooks.ts:21`) reads `?day=/retaDay=/niggle=/vulnerable=` URL params to drive the mock day-state demo (parsed in `hooks.test.tsx`). **Contract crossing the seam:** the `TodayScenario` type (`{ dayState, retaDay, niggle, vulnerable, anchorMode }`).
 - **Me ← biometrics**: `GoalsView` (`useGoals`/`logWeight`), `SleepView` (`useSleep`/`logSleep`), `ProfileView`/`PeopleView`/`KnowledgeView` (`useProfile`/`usePeople`/`useKnowledge`, all mock). **Contract:** `WeightEntry[]`, `SleepEntry[]`, `CheckinSlot[]` from `data/types.ts`.
 - **Train ↔ Train sub-views**: `useTrain` feeds `GymView`, `SportView`, `TrainTodayView`, `MesocycleLibraryView`, `ExercisesView`, `ActiveWorkoutScreen`; `useRunning` feeds `RunningView`. The `todaySession` field (`{ templateSessionId, openWorkout }`) lets a mid-workout reload resume from the open instance (`trainHooks.ts:361`).
-- **Train → Today**: `useTrain().workout` derives the Today workout card; `gymSchedule`/`sport.schedule` derive the weekly rows. The gym schedule is *derived client-side* from the active meso's template days (`deriveGymSchedule`, `trainHooks.ts:62`) because the FR-2.1.12 schedule template is out of Phase-2 scope.
+- **Train → Today**: `useTrain().workout` derives the Today workout card; `gymSchedule`/`sport.schedule` derive the weekly rows. The gym schedule is *derived client-side* by `deriveGymSchedule(meso, slots)` (`trainHooks.ts:67`), joining the active meso's template gym days (WHAT) with the standalone weekly gym-time slots (WHEN — the new `['train','gymSchedule']` query, persists across mesocycles, edited via `saveGymSchedule`). Only per-day gym `duration` stays out of scope.
 - **Cross-feature mock fixtures**: `data/today.ts` re-exports `volleyballSessions`, `fuelToday`; `useFuelWeek` pulls `volleyball: volleyballSessions` from `today.ts` (`hooks.ts:189`) — mock-only cross-references between domains that the real backend will eventually own.
 - **Auth seam**: `QueryProvider` → `bootstrapOwnerToken` → `setToken` → `apiFetch` Bearer header. Every real-mode request depends on this completing first; the provider blocks render until then. **Contract:** `TokenResponse.token` → module-level `token` in `lib/api.ts`.
 - **MSW ↔ `API_BASE` seam**: tests import `API_BASE` from `lib/api.ts` (re-exported via `test/msw/handlers.ts`) so handler URLs always match the real client target.
@@ -218,7 +218,7 @@ pnpm build                      # tsc -b && vite build
 ## 10. Key files
 
 - `frontend/src/data/hooks.ts` — **THE single FE↔data boundary**; ~22 hooks, re-exports `useTrain`/`useRunning`.
-- `frontend/src/data/trainHooks.ts` — `useTrain` (richest dual-mode hook: 6 queries, 10 mutations, DTO→display mappers).
+- `frontend/src/data/trainHooks.ts` — `useTrain` (richest dual-mode hook: 7 queries, 11 mutations, DTO→display mappers).
 - `frontend/src/data/runningHooks.ts` — `useRunning` (cleanest idiom: full `setQueryData` mock emulation, generated types as view model).
 - `frontend/src/lib/mode.ts` — `isMockMode()`, the per-call mode switch.
 - `frontend/src/lib/api.ts` — `apiFetch`, `API_BASE`, `setToken`, `ApiError`, `SystemMessage`.
