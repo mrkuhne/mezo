@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
+import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
+import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
@@ -23,6 +25,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
+import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
@@ -41,6 +44,7 @@ public class TrainController implements TrainApi {
     private final TrainService service;
     private final WorkoutService workoutService;
     private final SportService sportService;
+    private final GymScheduleService gymScheduleService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
     private final RunningService runningService;
@@ -99,6 +103,16 @@ public class TrainController implements TrainApi {
     @Override
     public List<SportScheduleSlotResponse> replaceSportSchedule(List<SportScheduleSlotInput> sportScheduleSlotInput) {
         return sportService.replaceSchedule(currentUserId.get(), sportScheduleSlotInput);
+    }
+
+    @Override
+    public List<GymScheduleSlotResponse> getGymSchedule() {
+        return gymScheduleService.getSchedule(currentUserId.get());
+    }
+
+    @Override
+    public List<GymScheduleSlotResponse> putGymSchedule(List<GymScheduleSlotInput> gymScheduleSlotInput) {
+        return gymScheduleService.replaceSchedule(currentUserId.get(), gymScheduleSlotInput);
     }
 
     @Override

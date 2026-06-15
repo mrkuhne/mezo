@@ -31,7 +31,7 @@ Train is the largest mezo domain: a six-tab area for planning and executing stre
 - **FE real** (Phase 2): each read/write swapped to `/api/train/*` behind the same hooks; no signature change.
 - **Backend** (Phase 2): full `feature/train/**` Spring Boot slice over Postgres — mesocycles, workout execution, sport, exercise catalog/records, running.
 
-**Phase-3-planned (🟣, flagged throughout, do NOT assume live):** AI workout `challenges` + `niggleWarning`, PR detection (the current toast is a scripted demo), the live cross-load → volume recompute engine (both Sport and Running cross-load are static), `volumePerMuscle`/`volumeRecompute` provenance (seed-only), `shoulderLoadTrend`, sport `jumpCount`/`intensity`/`team`/`season` capture, gym-schedule `time`/`duration` (FR-2.1.12), copy-week, and the active-workout 90s timer + Voice chips.
+**Phase-3-planned (🟣, flagged throughout, do NOT assume live):** AI workout `challenges` + `niggleWarning`, PR detection (the current toast is a scripted demo), the live cross-load → volume recompute engine (both Sport and Running cross-load are static), `volumePerMuscle`/`volumeRecompute` provenance (seed-only), `shoulderLoadTrend`, sport `jumpCount`/`intensity`/`team`/`season` capture, gym-schedule **`duration`** (the gym-time **schedule is now live** — see §4 `GymScheduleSlot`; only per-day duration stays out of scope), copy-week, and the active-workout 90s timer + Voice chips.
 
 **Driving design docs (read before changing this area):**
 - `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` — Phase-2 slice map.
@@ -46,7 +46,7 @@ Train is the largest mezo domain: a six-tab area for planning and executing stre
 The sub-nav (`TrainSubNav`, `frontend/src/features/train/tabs.ts`) has six tabs: **`Mai`** (`/train`), **`GYM`** (`/train/gym`), **`Sport`** (`/train/sport`), **`Futás`** (`/train/futas`), **`Gyakorlatok`** (`/train/exercises`), **`Mesociklusok`** (`/train/mesocycles`). Three full-screen sibling routes have no sub-nav: active workout (`/train/session`), mesocycle planner/builder (`/train/mesocycles/new`, `/train/mesocycles/:id`), and the running-block builder (`/train/futas/:id`).
 
 ### `Mai` — the weekly cross-domain agenda (`views/TrainTodayView.tsx`)
-Where gym, volleyball, and running converge. Stacked hero cards for **today** (gym teal → volleyball pink → running blue), then a combined weekly timeline (`WeeklyDayRow`). You can log a volleyball or running session inline via the shared `SportLogSheet`/`RunLogSheet`. Ghosts entirely when there is no active mesocycle ("+ Tervezz mesociklust").
+Where gym, volleyball, and running converge. Both **today's hero cards** and the **weekly timeline rows** (`WeeklyDayRow`) are now ordered **by time-of-day** rather than by a fixed gym→volleyball→running modality order — a morning run renders above an evening gym; untimed sessions sort last. Both surfaces order through the same pure helper `daySessions(day)` (`features/train/agenda.ts`), which flattens a day's `{gym, volleyball, running[]}` into typed `AgendaItem`s carrying `timeOfDay` and sorts ascending (null/`''` → `'99:99'` last, then stable by modality). Gym time comes from the standalone gym schedule (§4 `GymScheduleSlot`); running time from each session's `timeOfDay` (now shown next to the weekday in the weekly rows). You can log a volleyball or running session inline via the shared `SportLogSheet`/`RunLogSheet`. Ghosts entirely when there is no active mesocycle ("+ Tervezz mesociklust"). Run-only-today (a running session today with no gym/volleyball) renders its hero via a synthetic agenda day; a true rest day shows the "Ma pihenőnap" card.
 
 ### `Mesociklusok` — plan library (`views/MesocycleLibraryView.tsx`)
 `Aktív` hero + `Tervezett` section (with a dashed "+ Új mesociklus tervezése" CTA) + `Archív`. Header chip "+ Új" opens the planner. Cards open the builder.
@@ -54,7 +54,7 @@ Where gym, volleyball, and running converge. Stacked hero cards for **today** (g
 - **Builder** (`MesocycleBuilder.tsx`, `/train/mesocycles/:id`) — three sub-views: `Áttekintés`, `Volumen` (provenance), `Gyakorlatok` (weekly exercise editor). Lifecycle buttons: planned → `Aktiválás`, active → `Meso lezárása`. "Heti terv másolása" is inert (deferred).
 
 ### `GYM` — the active week (`views/GymView.tsx`)
-Week-by-week view of the **active** meso: meta stats (`Fázis`, `Split`, `Szetek`, `Gym napok`), `PhaseDots`, day-by-day `GymDayCard`s. Tapping a day opens `GymDaySheet`; "Indítsuk · most" appears only on today's day and launches the workout. Ghosts when no active meso.
+Week-by-week view of the **active** meso: meta stats (`Fázis`, `Split`, `Szetek`, `Gym napok`), `PhaseDots`, day-by-day `GymDayCard`s. Tapping a day opens `GymDaySheet`; "Indítsuk · most" appears only on today's day and launches the workout. A header **"Időpontok"** chip opens `GymScheduleSheet` (the weekly gym-time editor, §4 `GymScheduleSlot`); it is **mock-gated** — hidden in mock mode where `saveGymSchedule` no-ops, mirroring `SportView`'s schedule-edit gating (`GymView.tsx:70-79`). Ghosts when no active meso.
 
 ### Active workout (`ActiveWorkoutScreen.tsx`, `/train/session`)
 Full-screen takeover, three phases: **`prep`** (niggle pre-flag, AI challenges carousel, warmup, exercise list, "Kezdjük el") → **`active`** (per-set weight/reps/RIR logging, "Múlt hét" comparison, set dots, set history, PR toast, RP feedback debrief) → **`complete`** (`WorkoutComplete` recap). A mid-workout hard reload **resumes** straight back into `active`.
@@ -92,7 +92,7 @@ View (features/train/**)
 - Default mode is **mock** (`VITE_USE_MOCK !== 'false'`), but per `CLAUDE.md` the project runs FE in REAL mode by default in dev/test.
 - Contract types are generated: `api/feature/train/train.yml` → merged `api/openapi.yml` → FE `frontend/src/lib/api.gen.ts` (re-exported as named types in `trainApi.ts`/`runningApi.ts`) and BE `io.mrkuhne.mezo.api.dto.*` + the `TrainApi` interface that `TrainController` implements.
 
-**Real-mode mapping notes** (`trainHooks.ts`): `toWorkoutPlan` (`:43-58`) collapses the API response to the Phase-1 `WorkoutPlan` shape and sets `challenges: []` (AI is Phase 3); `deriveGymSchedule` (`:62-74`) builds the gym week from the active meso's template days with `time`/`duration` = `null` (no schedule-template table — FR-2.1.12 out of scope); the active-meso real fallback is `realActiveMeso ?? (mock ? activeMeso : null)` (`:358`).
+**Real-mode mapping notes** (`trainHooks.ts`): `toWorkoutPlan` (`:47-62`) collapses the API response to the Phase-1 `WorkoutPlan` shape and sets `challenges: []` (AI is Phase 3); `deriveGymSchedule(meso, slots)` (`:67-83`) builds the gym week by joining the active meso's template days (WHAT) with the standalone weekly gym slots (WHEN) — `DAY_ORDER` index `==` `slot.dayOfWeek`, a gym day with no matching slot keeps `time: null`; `duration` stays `null` (no DB home, out of scope). The active-meso real fallback is `realActiveMeso ?? (mock ? activeMeso : null)` (`:393`).
 
 ---
 
@@ -126,6 +126,14 @@ All tables: UUID PKs (`gen_random_uuid()`), `created_by` ownership via `OwnedEnt
 - **DTOs:** `SportSessionResponse`, `SportSessionCreateRequest {duration,setsPlayed,rpe,shoulderStrain,notes?}`, schedule slot DTOs. Server defaults session date/time to **now** (the sheet has no date picker); `sport` is always `"volleyball"`.
 - 🟣 `jumpCount` exists in the DB/DTO but the log sheet never captures it (only demofixtures set it); `intensity` is never written by the log path; `team`/`season`/`weeklyHours` have no DB home.
 
+### Gym schedule (`GymScheduleSlot` — weekday → time)
+A **standalone** owner-scoped weekly schedule answering only *when* the user trains on each weekday; it **persists across mesocycles** (the active meso supplies *what*, this supplies *when*). Mirrors `sport_schedule_slot`, minus the volleyball-specific columns. This is the Option-Y choice (standalone schedule, not time-on-the-meso-day) — see the X-vs-Y decision in `docs/superpowers/specs/2026-06-15-gym-schedule-times-design.md`.
+- **Table:** `gym_schedule_slot` (`202606151500_mezo-auk_create_gym_schedule_slot.sql`) — `day_of_week` SMALLINT (0=Hét..6=Vas, `ck_gym_schedule_slot_day_of_week` CHECK 0–6), `time` VARCHAR(5), plus the `OwnedEntity` columns; `idx_gym_schedule_slot_created_by_day_of_week`. Lean by design: **no** duration/kind/location.
+- **Entity / repository:** `GymScheduleSlotEntity extends OwnedEntity` (`dayOfWeek`, `time`); `GymScheduleSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc`.
+- **Service:** `GymScheduleService` — `getSchedule` + a **replace-all** `replaceSchedule` (soft-delete the owner's current week via `@SQLDelete`, then re-insert; method-level `@Transactional` on the write only), exactly mirroring `SportService`'s schedule methods. Ownership stamped server-side, never from the client.
+- **Endpoints:** `GET/PUT /api/train/gym-schedule` (`TrainController.getGymSchedule`/`putGymSchedule` delegate to `GymScheduleService`); PUT body is the full slot list and returns the new list.
+- **DTOs / mapper:** `GymScheduleSlotResponse {id, dayOfWeek 0–6, time '^\d{2}:\d{2}$'}`, `GymScheduleSlotInput {dayOfWeek, time}` (`api/feature/train/train.yml`); `TrainMapper.toGymSlotResponse` (entity→DTO). The FE joins these onto the active meso's gym days via `deriveGymSchedule` (§3).
+
 ### Running (`Futás`)
 - **Tables** (`202606141200`/`202606141210_mezo-b4n_*`): `running_block` (status planned|active|archived CHECK, kind interval CHECK, `structure jsonb`), `run_session_log` (FK→block CASCADE, `rpe_actual` CHECK 1-10).
 - **The plan is typed jsonb:** `RunningBlockStructure` (`entity/RunningBlockStructure.java`) = `weeks[ {weekNumber, phaseLabel, sessions[ {key, dayOfWeek 0=Hét..6=Vas, timeOfDay "HH:mm" (nullable), label, kind sprint|pyramid|steady, rpeTarget{min,max}, rounds?, segments[ {type warmup|work|rest|cooldown, durationSec, label} ]} ]} ]`, persisted via `@JdbcTypeCode(SqlTypes.JSON)`; `RunningMapper` round-trips it field-for-field to `RunningBlockStructureDto`.
@@ -155,7 +163,7 @@ This is the highest-value section: Train both consumes and exposes a number of s
 | **Error contract** | Train ↔ techcore | `SystemRuntimeErrorException` + `SystemMessage` | `SystemMessageList` (401/404/409 etc.) |
 | **Design system** | Train ↔ shared UI | `Sheet`, `GhostState`, ui primitives; tokens in `frontend/src/styles/prototype.css` | category palette `--cat-*`, run accent `--run` (blue), volleyball pink `--cat-tendency` |
 
-**The canonical internal integration** is `TrainTodayView`: it merges `gymSchedule` (from `useTrain`), `sport.schedule` (volleyball), and `runSessionsForDay(activeRunningBlock, dayIdx)` (from `useRunning`, via `data/runningAgenda.ts`) into one `WeeklyAgendaDay[]`. Logging from here reuses the **shared sheets** `SportLogSheet`/`RunLogSheet`. Note the cross-load seams (Sport→everything, Running→gym volume) are the documented bidirectional contracts but their **live engines are Phase 3** — today they render static rows.
+**The canonical internal integration** is `TrainTodayView`: it merges `gymSchedule` (from `useTrain`, itself the meso-days × gym-slots join of `deriveGymSchedule`), `sport.schedule` (volleyball), and `runSessionsForDay(activeRunningBlock, dayIdx)` (from `useRunning`, via `data/runningAgenda.ts`) into one `WeeklyAgendaDay[]`, then orders each day by time-of-day through the shared `daySessions` helper (`features/train/agenda.ts`). Logging from here reuses the **shared sheets** `SportLogSheet`/`RunLogSheet`. Note the cross-load seams (Sport→everything, Running→gym volume) are the documented bidirectional contracts but their **live engines are Phase 3** — today they render static rows.
 
 **Inbound seams (one-sided — no live data crosses yet):** Today (`/today`) links here via `WorkoutTeaser` navigation only — it renders its **own** mock `Workout`, not this backend. Fuel keeps a *private copy* of the gym/volleyball schedule (`GymScheduleDay`/`VolleyballSession` in `data/fuelWeek.ts`), **not** sourced from Train — the Fuel (Slice C) backend will later reconcile them. Both are documented from the consuming side in `today.md` §5 / `fuel.md` §5.
 
@@ -170,12 +178,12 @@ import { useTrain, useRunning } from '@/data/hooks'
 
 function MyWidget() {
   const {
-    mesocycles, activeMeso, workout, gymSchedule, sport,
+    mesocycles, activeMeso, workout, gymSchedule, gymSlots, sport,
     exerciseLibrary, exerciseRecords, workoutPending, todaySession,
     // imperative writes:
     createMesocycle, activateMesocycle, closeMesocycle, saveDayExercises,
     startWorkout, logSet, saveWorkoutFeedback, finishWorkout,
-    logSportSession, saveSportSchedule,
+    logSportSession, saveSportSchedule, saveGymSchedule,
   } = useTrain()
 
   const {
@@ -220,14 +228,14 @@ Adding a Train endpoint/field/sub-tab is **contract-first + dual-mode + both-tes
 
 Both modes and both layers must stay green.
 
-- **Frontend (vitest — `VITE_USE_MOCK` both modes must pass):** per-tab view tests (`views/*.test.tsx`), `ActiveWorkoutScreen.test.tsx`, `MesocyclePlanner.test.tsx`, `MesocycleBuilder.test.tsx`, `RunningBlockBuilder.test.tsx`, `WeekdayGrid.test.tsx`, `planner.test.ts`, sheet tests, `trainHooks.test.tsx`, `trainData.test.tsx`, `train.emptyStates.test.tsx` (the ghost-guards), `train.nav.test.tsx`, `runningDraft.test.ts`, `runningHooks.test.ts`, `runningAgenda.test.ts`. Plus Playwright parity (`pnpm parity`).
+- **Frontend (vitest — `VITE_USE_MOCK` both modes must pass):** per-tab view tests (`views/*.test.tsx`), `ActiveWorkoutScreen.test.tsx`, `MesocyclePlanner.test.tsx`, `MesocycleBuilder.test.tsx`, `RunningBlockBuilder.test.tsx`, `WeekdayGrid.test.tsx`, `planner.test.ts`, sheet tests (incl. `GymScheduleSheet.test.tsx`), `agenda.test.ts` (the `daySessions` time-ordering), `WeeklyDayRow.test.tsx` (time-ordered rows), `trainHooks.test.tsx`, `trainHooks.deriveGym.test.ts` (the gym-slot join), `trainData.test.tsx`, `train.emptyStates.test.tsx` (the ghost-guards), `train.nav.test.tsx`, `runningDraft.test.ts`, `runningHooks.test.ts`, `runningAgenda.test.ts`. Plus Playwright parity (`pnpm parity`).
   ```bash
   cd frontend
   pnpm test                          # REAL mode
   VITE_USE_MOCK=true pnpm test       # MOCK mode — both must be green
   pnpm build
   ```
-- **Backend (integration-first, `@SpringBootTest` + Postgres, AssertJ, populators — `docs/references/testing_standards.md`, `integration_test_framework.md`):** service ITs `TrainServiceIT`, `WorkoutServiceIT`, `SportServiceIT`, `ExerciseRecordServiceIT`, `ExerciseCatalogLoaderIT`, `ProvenanceRoundTripIT` (the typed-jsonb risk item), `TrainSeedDataIT`; HTTP contract ITs `TrainContractIT`, `WorkoutContractIT`, `SportContractIT`, `RunningContractIT`, `ExerciseCatalogContractIT`, `ExerciseRecordContractIT`. Populators: `support/populator/TrainPopulator.java`, `RunningPopulator.java`.
+- **Backend (integration-first, `@SpringBootTest` + Postgres, AssertJ, populators — `docs/references/testing_standards.md`, `integration_test_framework.md`):** service ITs `TrainServiceIT`, `WorkoutServiceIT`, `SportServiceIT`, `ExerciseRecordServiceIT`, `ExerciseCatalogLoaderIT`, `ProvenanceRoundTripIT` (the typed-jsonb risk item), `TrainSeedDataIT`; HTTP contract ITs `TrainContractIT`, `WorkoutContractIT`, `SportContractIT`, `GymScheduleContractIT` (gym-schedule GET/PUT round-trip, replace-all, ownership isolation, 401), `RunningContractIT`, `ExerciseCatalogContractIT`, `ExerciseRecordContractIT`. Populators: `support/populator/TrainPopulator.java`, `RunningPopulator.java`.
   ```bash
   cd backend
   docker compose up -d
@@ -251,8 +259,11 @@ Both modes and both layers must stay green.
 - **Ownership errors:** foreign/missing → **404** (indistinguishable); `logSet` on a completed instance → **409**.
 - **`phase_curve text[]` is `List<String>`** (not `String[]`) for Hibernate dirty-checking.
 - Day-edit save (`MesoExercises.tsx`) fires `saveDayExercises` only when the day carries a real row `id`; mock fixtures have no id → local-only. Drag-reorder is visual only.
+- **Gym time is a *standalone* schedule, not a meso-day field** (Option Y, `2026-06-15-gym-schedule-times-design.md`): `GymScheduleSlot` persists across mesocycles; the meso decides *whether* you train that weekday, the slot decides *when*. `deriveGymSchedule` joins them by weekday — a slot with no meso gym day shows nothing; a meso gym day with no slot renders with `time: null` (graceful). PUT is **replace-all** (delete-then-insert the whole week).
+- **`Mai` orders by time-of-day, not modality** — `daySessions` (`features/train/agenda.ts`) is the single ordering helper shared by `WeeklyDayRow` and `TrainTodayView` heroes; untimed (null/`''`) sort last (`'99:99'` sentinel), ties stable by modality. `TrainTodayView` builds today's hero from a `daySessions` pass, with run-only-today handled via a **synthetic** agenda day (no gym/volleyball but a running session) so the run still gets a hero; a fully empty today shows "Ma pihenőnap".
+- **`GymView`'s "Időpontok" entry is mock-gated** (`GymView.tsx:70`): hidden in mock mode because `saveGymSchedule` no-ops there, mirroring `SportView`. Mock mode still *renders* gym times from the static `gymScheduleMock` slots (`data/train.ts`), it just can't edit them.
 
-**Deferred / Phase 3 (🟣 do NOT assume live):** AI workout `challenges` + `niggleWarning`; PR detection (current toast is a scripted demo, threshold-gated); live cross-load → volume engine (Sport AND Running cross-load are static); `volumePerMuscle`/`volumeRecompute` (seed-only); `shoulderLoadTrend` (constant `'stabil'`); sport `jumpCount`/`intensity`/`team`/`season`/`weeklyHours` capture; gym-schedule `time`/`duration` (FR-2.1.12); copy-week ("Heti terv másolása" inert); active-workout 90s timer + Voice chips.
+**Deferred / Phase 3 (🟣 do NOT assume live):** AI workout `challenges` + `niggleWarning`; PR detection (current toast is a scripted demo, threshold-gated); live cross-load → volume engine (Sport AND Running cross-load are static); `volumePerMuscle`/`volumeRecompute` (seed-only); `shoulderLoadTrend` (constant `'stabil'`); sport `jumpCount`/`intensity`/`team`/`season`/`weeklyHours` capture; gym-schedule **`duration`** only (gym **time** is now live via `GymScheduleSlot` — §4); copy-week ("Heti terv másolása" inert); active-workout 90s timer + Voice chips.
 
 ---
 
@@ -272,20 +283,21 @@ Both modes and both layers must stay green.
 - `frontend/src/features/train/views/{TrainTodayView,GymView,SportView,RunningView,ExercisesView,MesocycleLibraryView}.tsx`
 - `frontend/src/features/train/{ActiveWorkoutScreen,MesocyclePlanner,MesocycleBuilder,RunningBlockBuilder}.tsx` — full-screen routes
 - `frontend/src/features/train/{planner,muscleFilters}.ts` — planner program-gen + exercise filters
-- `frontend/src/features/train/components/` — sheets/cards (`GymDaySheet`, `ExercisePickerSheet`, `ExerciseRecordSheet`, `ChallengesCarousel`, `FeedbackModal`, `WorkoutComplete`, `PRToast`, `SportLogSheet`, `SportScheduleSheet`, `CrossLoadRow`, `RunLogSheet`, `RunWeekEditor` (two-zone session cards: Menetrend = `WeekdayGrid` + time, Terhelés = load), `WeekdayGrid` (single-select 7-day picker), `RunSessionCard`, `RunCrossLoadCard`, `WeeklyDayRow`, `MesoOverview`, `MesoVolume`, `MesoExercises`, …)
+- `frontend/src/features/train/agenda.ts` — pure `daySessions(day)` time-ordering helper (shared by `WeeklyDayRow` + `TrainTodayView`)
+- `frontend/src/features/train/components/` — sheets/cards (`GymDaySheet`, `GymScheduleSheet` (standalone weekly gym-time editor → PUT `/gym-schedule`), `ExercisePickerSheet`, `ExerciseRecordSheet`, `ChallengesCarousel`, `FeedbackModal`, `WorkoutComplete`, `PRToast`, `SportLogSheet`, `SportScheduleSheet`, `CrossLoadRow`, `RunLogSheet`, `RunWeekEditor` (two-zone session cards: Menetrend = `WeekdayGrid` + time, Terhelés = load), `WeekdayGrid` (single-select 7-day picker), `RunSessionCard`, `RunCrossLoadCard`, `WeeklyDayRow` (renders `daySessions` time-ordered items, running time shown), `MesoOverview`, `MesoVolume`, `MesoExercises`, …)
 
 **API contract**
 - `api/feature/train/train.yml` — the FE↔BE source of truth for Train
 
 **Backend** (`backend/src/main/java/io/mrkuhne/mezo/feature/train/`)
 - `controller/TrainController.java` — implements generated `TrainApi`
-- `service/{TrainService,WorkoutService,SportService,ExerciseCatalogService,ExerciseRecordService,RunningService}.java`
-- `entity/*` — `MesocycleEntity`, `WorkoutSessionEntity`, `ExerciseEntity`, `ExerciseSetEntity`, `ExerciseFeedbackEntity`, `MuscleGroupVolumeLogEntity`, `ProvenanceEnvelope`, `VolumeRecomputeJson`, `SportSessionEntity`, `SportScheduleSlotEntity`, `ExerciseCatalogEntity`, `RunningBlockEntity`, `RunningBlockStructure`, `RunSessionLogEntity`
+- `service/{TrainService,WorkoutService,SportService,GymScheduleService,ExerciseCatalogService,ExerciseRecordService,RunningService}.java`
+- `entity/*` — `MesocycleEntity`, `WorkoutSessionEntity`, `ExerciseEntity`, `ExerciseSetEntity`, `ExerciseFeedbackEntity`, `MuscleGroupVolumeLogEntity`, `ProvenanceEnvelope`, `VolumeRecomputeJson`, `SportSessionEntity`, `SportScheduleSlotEntity`, `GymScheduleSlotEntity`, `ExerciseCatalogEntity`, `RunningBlockEntity`, `RunningBlockStructure`, `RunSessionLogEntity`
 - `repository/*` — notably `ExerciseRepository.findIdentityRowsIncludingDeleted`
 - `mapper/{TrainMapper,RunningMapper}.java`
 - `{TrainSeedData,RunningSeedData,ExerciseCatalogLoader}.java` — seed + master content loader
 - `backend/src/main/resources/content/exercise-catalog.json` — catalog master data
-- Migrations: `backend/src/main/resources/db/changelog/1.0.0/script/{202606111400_mezo-n5q_create_train, 202606120900_mezo-tod_t2_workout_execution, 202606121000_mezo-0ae_t3_sport_schedule, 202606121400_mezo-7ot_exercise_catalog, 202606141200_mezo-b4n_create_running_block, 202606141210_mezo-b4n_create_run_session_log}.sql`
+- Migrations: `backend/src/main/resources/db/changelog/1.0.0/script/{202606111400_mezo-n5q_create_train, 202606120900_mezo-tod_t2_workout_execution, 202606121000_mezo-0ae_t3_sport_schedule, 202606121400_mezo-7ot_exercise_catalog, 202606141200_mezo-b4n_create_running_block, 202606141210_mezo-b4n_create_run_session_log, 202606151500_mezo-auk_create_gym_schedule_slot}.sql`
 
 **Tests**
 - FE: `frontend/src/features/train/**/*.test.{ts,tsx}`, `frontend/src/data/trainHooks.test.tsx`, `train.emptyStates.test.tsx`, `train.nav.test.tsx`

@@ -127,7 +127,7 @@ UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Colu
 | `POST /biometrics/weight`, `GET /biometrics/weight` | `WeightApi` | log / list weight |
 | `POST /biometrics/sleep`, `GET /biometrics/sleep` | `SleepApi` | log / list sleep |
 | `POST /biometrics/checkin` (+read) | `CheckInApi` | daily check-in upsert |
-| Train surface (`/train/...`, running, sport, catalog, records) | `TrainApi` (fans to 6 services) | see Train feature doc + `api/feature/train/train.yml` |
+| Train surface (`/train/...`, running, sport, gym-schedule, catalog, records) | `TrainApi` (fans to 7 services) | see Train feature doc + `api/feature/train/train.yml` |
 
 **Mock-only domains (no backend, no fragment):** Fuel shape lives in `frontend/src/data/fuel.ts` / `pantry.ts` / `fuelWeek.ts`; Insights in `data/insights.ts`; People in `data/people.ts`. The backend will plug in by adding `api/feature/<x>/<x>.yml`, a `feature/<x>` backend package, and swapping the mock hook to dual-mode — exactly the recipe in §7. (`ProvenanceEnvelope`'s docstring already forward-references "Fuel reuses this pattern for meal score".)
 
@@ -149,7 +149,7 @@ This is the most load-bearing section — every seam, bidirectionally, with the 
 
 **Error contract ↔ both sides.** The hand-written `techcore` `SystemMessage` (exception layer) and the generated `api.dto.SystemMessage` (wire contract from `common-schemas.yml`) are **two deliberately separate types kept field-compatible** by the contract ITs (`assertHasFieldError`/`assertHasRequestError` match on code/type/field, never resolved text). The FE has its own `SystemMessage` interface + `ApiError` in `lib/api.ts`. All three must agree on the field set — the contract IT is the guard.
 
-**Train-internal seams (largest consumer).** `TrainController` fans one `TrainApi` out to six services (`TrainService`, `WorkoutService`, `SportService`, `ExerciseCatalogService`, `ExerciseRecordService`, `RunningService`). The `workout_session` table is reused for both **template days** (`templateSessionId == null`) and **workout instances** (`templateSessionId` set, `date`+`status` populated) — the discriminator column is the seam between the planning model (`TrainService`) and the execution model (`WorkoutService`). `ExerciseRecordService` aggregates over logged `exercise_set` rows; the exercise catalog (`exercise_catalog`, loaded by `ExerciseCatalogLoader`) is referenced *optionally* by `exercise.catalog_id` (unknown catalogId → 400 FIELD `VALIDATION_INVALID_VALUE`, never a raw FK 500). See the Train feature doc for the full fan-out.
+**Train-internal seams (largest consumer).** `TrainController` fans one `TrainApi` out to seven services (`TrainService`, `WorkoutService`, `SportService`, `GymScheduleService`, `ExerciseCatalogService`, `ExerciseRecordService`, `RunningService`). `GymScheduleService` maintains the recurring weekly gym-time slots (`gym_schedule_slot`, `GET/PUT /api/train/gym-schedule`, full-replace) exactly like `SportService`'s sport-schedule methods. The `workout_session` table is reused for both **template days** (`templateSessionId == null`) and **workout instances** (`templateSessionId` set, `date`+`status` populated) — the discriminator column is the seam between the planning model (`TrainService`) and the execution model (`WorkoutService`). `ExerciseRecordService` aggregates over logged `exercise_set` rows; the exercise catalog (`exercise_catalog`, loaded by `ExerciseCatalogLoader`) is referenced *optionally* by `exercise.catalog_id` (unknown catalogId → 400 FIELD `VALIDATION_INVALID_VALUE`, never a raw FK 500). See the Train feature doc for the full fan-out.
 
 ---
 
@@ -283,12 +283,12 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - `feature/auth/...` (`AuthController`, `AuthService`, `OwnerProperties`, `OwnerSeedData`, `entity/AppUserEntity`, `UserProfileEntity`)
 
 **Train (largest consumer — one `TrainApi` → six services)**
-- `feature/train/controller/TrainController.java`; services `TrainService/WorkoutService/SportService/ExerciseCatalogService/ExerciseRecordService/RunningService`; mappers `TrainMapper/RunningMapper`
+- `feature/train/controller/TrainController.java`; services `TrainService/WorkoutService/SportService/GymScheduleService/ExerciseCatalogService/ExerciseRecordService/RunningService`; mappers `TrainMapper/RunningMapper`
 - typed-jsonb: `entity/ProvenanceEnvelope.java`, `VolumeRecomputeJson.java`, `RunningBlockStructure.java`; discriminator: `entity/WorkoutSessionEntity.java`
 - content/seed: `ExerciseCatalogLoader.java` (master content, all profiles), `TrainSeedData.java`, `RunningSeedData.java` (demodata)
 
 **Liquibase**
-- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (10 changesets, bd-ids: v67/n5q/tod/0ae/7ot/b4n)
+- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (11 changesets, bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk)
 
 **Test framework**
 - `support/AbstractIntegrationTest.java`, `ApiIntegrationTest.java`, `ResetDatabase.java`, `DatabasePopulator.java`, `populator/{UserPopulator,TrainPopulator,RunningPopulator}.java`

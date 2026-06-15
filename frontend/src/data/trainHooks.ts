@@ -7,6 +7,8 @@ import {
   type ExerciseCatalogItem,
   type ExerciseRecordResponse,
   type GymExerciseInput,
+  type GymScheduleSlotInput,
+  type GymScheduleSlotResponse,
   type MesocycleCreateRequest,
   type MesocycleResponse,
   type SetLogRequest,
@@ -24,12 +26,14 @@ import {
   activeMeso,
   workout as trainWorkout,
   gymSchedule as trainGymSchedule,
+  gymScheduleMock,
   sport,
   exerciseLibrary,
 } from './train'
 import type {
   ExerciseLibraryItem,
   GymSchedule,
+  GymScheduleSlot,
   Mesocycle,
   Sport,
   SportSchedule,
@@ -57,17 +61,22 @@ function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): WorkoutPlan 
   }
 }
 
-// Gym weekly row derived from the active meso's template days (no schedule
-// template in Phase 2 — FR-2.1.12 is out of scope, so time/duration are null).
-function deriveGymSchedule(meso: Mesocycle | null): GymSchedule | null {
+// Gym weekly row derived from the active meso's template days (WHAT) joined with the
+// standalone weekly gym slots (WHEN). DAY_ORDER index (0=Hét..6=Vas) == slot.dayOfWeek;
+// a gym day with no matching slot keeps time=null. Duration has no DB home (out of scope).
+export function deriveGymSchedule(meso: Mesocycle | null, slots: GymScheduleSlot[] = []): GymSchedule | null {
   const days = meso?.days
   if (!days?.length) return null
   const todayLabel = DAY_ORDER[(new Date().getDay() + 6) % 7]
+  const timeFor = (dayLabel: string): string | null => {
+    const idx = DAY_ORDER.indexOf(dayLabel as (typeof DAY_ORDER)[number])
+    return slots.find((s) => s.dayOfWeek === idx)?.time ?? null
+  }
   return {
     weeklyTimes: DAY_ORDER.map((d) => {
       const md = days.find((x) => x.day === d && x.exerciseCount > 0)
       return md
-        ? { day: d, type: md.type, time: null, duration: null, active: true, today: d === todayLabel }
+        ? { day: d, type: md.type, time: timeFor(d), duration: null, active: true, today: d === todayLabel }
         : { day: d, type: null, time: null, duration: null, active: false }
     }),
   }
@@ -116,6 +125,12 @@ function toSportSchedule(slots: SportScheduleSlotResponse[]): SportSchedule | nu
       })),
     },
   }
+}
+
+// Gym slot responses -> the lean domain slot shape (drops the server `id`); the
+// derive join only needs weekday + time.
+function toGymSlots(slots: GymScheduleSlotResponse[]): GymScheduleSlot[] {
+  return slots.map((s) => ({ dayOfWeek: s.dayOfWeek, time: s.time }))
 }
 
 // Catalog row -> the Phase-1 library shape; `id` doubles as the catalog uuid and
@@ -176,6 +191,7 @@ type TrainData = {
   activeMeso: Mesocycle | null
   workout: WorkoutPlan | null
   gymSchedule: GymSchedule | null
+  gymSlots: GymScheduleSlot[]
   sport: { [K in keyof Sport]: K extends 'sessions' ? SportSession[] : Sport[K] | null }
   exerciseLibrary: ExerciseLibraryItem[]
   exerciseRecords: ExerciseRecordResponse[]
@@ -192,6 +208,7 @@ type TrainData = {
   finishWorkout: (workoutId: string) => void
   logSportSession: (req: SportSessionCreateRequest, opts?: MutateOpts) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
+  saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
   mesoMutationPending: boolean
 }
 
@@ -218,6 +235,13 @@ export function useTrain(): TrainData {
     queryKey: ['train', 'sportSchedule'],
     queryFn: mock ? async () => sport.schedule : () => trainApi.sportSchedule().then(toSportSchedule),
     initialData: mock ? sport.schedule : undefined,
+  })
+  // Standalone weekly gym slots (WHEN) — joined onto the active meso's gym days
+  // by `deriveGymSchedule`. Mock serves the static slots; real fetches + maps.
+  const { data: gymSlotsData } = useQuery({
+    queryKey: ['train', 'gymSchedule'],
+    queryFn: mock ? async () => gymScheduleMock : () => trainApi.gymSchedule().then(toGymSlots),
+    initialData: mock ? gymScheduleMock : undefined,
   })
   // Exercise catalog — master data; one fetch per app session is plenty.
   const { data: catalogData } = useQuery({
@@ -304,6 +328,12 @@ export function useTrain(): TrainData {
       : (slots: SportScheduleSlotInput[]) => trainApi.replaceSportSchedule(slots),
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSchedule'] }) },
   })
+  const gymScheduleMutation = useMutation({
+    mutationFn: mock
+      ? async (_slots: GymScheduleSlotInput[]) => undefined
+      : (slots: GymScheduleSlotInput[]) => trainApi.replaceGymSchedule(slots),
+    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'gymSchedule'] }) },
+  })
 
   const createMesocycle = useCallback(
     (req: MesocycleCreateRequest, opts?: MutateOpts) => createMutation.mutate(req, opts),
@@ -349,15 +379,23 @@ export function useTrain(): TrainData {
     (slots: SportScheduleSlotInput[], opts?: MutateOpts) => sportScheduleMutation.mutate(slots, opts),
     [sportScheduleMutation],
   )
+  const saveGymSchedule = useCallback(
+    (slots: GymScheduleSlotInput[], opts?: MutateOpts) => gymScheduleMutation.mutate(slots, opts),
+    [gymScheduleMutation],
+  )
 
   const mesos = mesoData ?? []
   const realActiveMeso = mesos.find(m => m.status === 'active') ?? null
+  const gymSlots = gymSlotsData ?? []
   return {
     mesocycles: mesos,
     // real mode: no static fallback — empty backend means null, components ghost-guard (T0)
     activeMeso: realActiveMeso ?? (mock ? activeMeso : null),
     workout: mock ? trainWorkout : toWorkoutPlan(todayData),
-    gymSchedule: mock ? trainGymSchedule : deriveGymSchedule(realActiveMeso),
+    // Mock serves the full static weekly schedule (Phase-1 parity); real derives
+    // the meso's gym days (WHAT) joined with the standalone gym slots (WHEN).
+    gymSchedule: mock ? trainGymSchedule : deriveGymSchedule(realActiveMeso, gymSlots),
+    gymSlots,
     todaySession: !mock && todayData?.templateSessionId
       ? { templateSessionId: todayData.templateSessionId, openWorkout: todayData.openWorkout ?? null }
       : null,
@@ -377,6 +415,7 @@ export function useTrain(): TrainData {
     finishWorkout,
     logSportSession,
     saveSportSchedule,
+    saveGymSchedule,
     mesoMutationPending: createMutation.isPending || activateMutation.isPending || closeMutation.isPending,
   }
 }

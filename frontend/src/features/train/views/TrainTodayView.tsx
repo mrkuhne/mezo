@@ -19,6 +19,7 @@ import { GhostState } from '@/components/ui/GhostState'
 import { SportLogSheet } from '../components/SportLogSheet'
 import { RunLogSheet } from '../components/RunLogSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '../components/WeeklyDayRow'
+import { daySessions } from '../agenda'
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
@@ -74,10 +75,21 @@ export function TrainTodayView() {
     }
   })
 
-  const todayRuns = runSessionsForDay(activeRunningBlock, todayIdx())
+  // The agenda's `isToday` is flag-based (gym/volleyball only); running blocks
+  // are mesocycle-independent, so a day may have ONLY a prescribed run today.
+  // Pull today's runs separately (date-based) and merge them with the flag-based
+  // today row into a synthetic day, so a run-only-today still shows its hero.
   const today = agenda.find((a) => a.isToday)
-  const todayHasGym = today?.gym ?? null
-  const todayHasVb = today?.volleyball ?? null
+  const todayRuns = runSessionsForDay(activeRunningBlock, todayIdx())
+  // Today's hero cards rendered in time-of-day order (a morning run hero above
+  // an evening gym hero); same ordering as the weekly rows via daySessions.
+  const orderedToday = daySessions({
+    day: today?.day ?? '',
+    gym: today?.gym ?? null,
+    volleyball: today?.volleyball ?? null,
+    running: todayRuns,
+    isToday: true,
+  })
   const sessionCount = agenda.filter((a) => a.gym || a.volleyball || a.running.length).length
 
   // Active meso phase for the current week (Week 3 ⇒ MAV).
@@ -97,41 +109,153 @@ export function TrainTodayView() {
         </span>
       </div>
 
-      {/* Today's main gym block — needs both the agenda slot and the /today workout */}
-      {todayHasGym && workout && (
-        <div style={{ padding: '0 24px 12px' }}>
-          <div className="card notch-12" style={{ padding: 18 }}>
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div className="col">
-                <span className="eyebrow brand">Week {activeMeso.currentWeek} · {currentPhase}</span>
-                <div style={{ marginTop: 8 }}>
-                  <Display size="lg">{workout.title}</Display>
+      {/* Today's hero cards, ordered by time-of-day (gym / volleyball / running).
+          A morning run hero appears above an evening gym hero. Each hero keeps
+          its bespoke markup; the gym hero additionally requires the /today workout. */}
+      {orderedToday.map((item) => {
+        if (item.kind === 'gym') {
+          const gym = item.gym
+          if (!workout) return null
+          return (
+            <div key="hero-gym" style={{ padding: '0 24px 12px' }}>
+              <div className="card notch-12" style={{ padding: 18 }}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div className="col">
+                    <span className="eyebrow brand">Week {activeMeso.currentWeek} · {currentPhase}</span>
+                    <div style={{ marginTop: 8 }}>
+                      <Display size="lg">{workout.title}</Display>
+                    </div>
+                    {(gym.time || gym.duration) && (
+                      <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
+                        {[gym.time, gym.duration ? `${gym.duration}p` : null]
+                          .filter(Boolean).join(' · ')}
+                      </span>
+                    )}
+                  </div>
+                  <span className="chip brand notch-4" style={{ fontSize: 9 }}>MA</span>
                 </div>
-                {(todayHasGym.time || todayHasGym.duration) && (
-                  <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
-                    {[todayHasGym.time, todayHasGym.duration ? `${todayHasGym.duration}p` : null]
-                      .filter(Boolean).join(' · ')}
-                  </span>
-                )}
+                <div className="row gap-sm mt-md">
+                  <span className="chip notch-4">{workout.exercises.length} gyakorlat</span>
+                  <span className="chip notch-4">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szet</span>
+                  {workout.durationEst > 0 && <span className="chip notch-4">~{workout.durationEst}p</span>}
+                </div>
+                <CtaPrimary className="mt-md" onClick={openSession}>
+                  <span>Indítsuk</span>
+                  <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span>
+                  <span>{workout.title}</span>
+                </CtaPrimary>
               </div>
-              <span className="chip brand notch-4" style={{ fontSize: 9 }}>MA</span>
             </div>
-            <div className="row gap-sm mt-md">
-              <span className="chip notch-4">{workout.exercises.length} gyakorlat</span>
-              <span className="chip notch-4">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szet</span>
-              {workout.durationEst > 0 && <span className="chip notch-4">~{workout.durationEst}p</span>}
-            </div>
-            <CtaPrimary className="mt-md" onClick={openSession}>
-              <span>Indítsuk</span>
-              <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span>
-              <span>{workout.title}</span>
-            </CtaPrimary>
-          </div>
-        </div>
-      )}
+          )
+        }
 
-      {/* Rest day (real mode): no gym slot and no volleyball today */}
-      {!todayHasGym && !todayHasVb && (
+        if (item.kind === 'volleyball') {
+          const vb = item.volleyball
+          return (
+            <div key="hero-vb" style={{ padding: '0 24px 12px' }}>
+              <div
+                className="card notch-12"
+                style={{
+                  padding: 16,
+                  background: 'linear-gradient(180deg, color-mix(in srgb, var(--cat-tendency) 6%, transparent) 0%, var(--surface-1) 100%)',
+                  borderColor: 'color-mix(in srgb, var(--cat-tendency) 30%, transparent)',
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+              >
+                <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--cat-tendency)' }} />
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: 6 }}>
+                  <div className="col">
+                    <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>Sport · ma</span>
+                    <div style={{ marginTop: 6 }}>
+                      <Display size="md">Volleyball · {vb.time}</Display>
+                    </div>
+                    <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
+                      {[vb.court, `${vb.duration}p`, vb.role].filter(Boolean).join(' · ')}
+                    </span>
+                  </div>
+                  <span
+                    className="chip notch-4"
+                    style={{ fontSize: 9, color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}
+                  >
+                    MA
+                  </span>
+                </div>
+                <CtaGhost
+                  className="notch-4 mt-md"
+                  onClick={() => setVbLogOpen(true)}
+                  style={{ borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)', color: 'var(--cat-tendency)' }}
+                >
+                  <Icon name="plus" size={12} /> Logold a session-t
+                </CtaGhost>
+              </div>
+            </div>
+          )
+        }
+
+        const s = item.running
+        return (
+          <div key={s.key} style={{ padding: '0 24px 12px' }}>
+            <div
+              className="card notch-12"
+              style={{
+                padding: 16,
+                background: 'linear-gradient(180deg, color-mix(in srgb, var(--info) 6%, transparent) 0%, var(--surface-1) 100%)',
+                borderColor: 'color-mix(in srgb, var(--info) 30%, transparent)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--info)' }} />
+              <span
+                style={{
+                  position: 'absolute',
+                  right: -50,
+                  top: -50,
+                  width: 160,
+                  height: 160,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, color-mix(in srgb, var(--info) 12%, transparent), transparent 70%)',
+                }}
+              />
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: 6, position: 'relative' }}>
+                <div className="col">
+                  <span className="eyebrow" style={{ color: 'var(--info)' }}>Futás · ma</span>
+                  <div style={{ marginTop: 6 }}>
+                    <Display size="md">{s.label}</Display>
+                  </div>
+                  <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
+                    {`RPE ${s.rpeTarget.min}–${s.rpeTarget.max}${s.rounds ? ` · ${s.rounds} kör` : ''}`}
+                  </span>
+                </div>
+                <span
+                  className="chip notch-4"
+                  style={{ fontSize: 9, color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }}
+                >
+                  MA
+                </span>
+              </div>
+              <CtaGhost
+                className="notch-4 mt-md"
+                onClick={() => setRunLogCtx({
+                  blockId: activeRunningBlock!.id,
+                  weekNumber: activeRunningBlock!.currentWeek,
+                  sessionKey: s.key,
+                  label: s.label,
+                  isSprint: s.kind === 'sprint',
+                  defaultRounds: s.rounds ?? undefined,
+                })}
+                style={{ borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)', color: 'var(--info)' }}
+              >
+                <Icon name="plus" size={12} /> Naplózd a futást
+              </CtaGhost>
+            </div>
+          </div>
+        )
+      })}
+
+      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
+      {!today?.gym && !today?.volleyball && todayRuns.length === 0 && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card notch-12" style={{ padding: 18 }}>
             <span className="eyebrow">Ma pihenőnap</span>
@@ -141,108 +265,6 @@ export function TrainTodayView() {
           </div>
         </div>
       )}
-
-      {/* Today's volleyball block (only if a volleyball session is today) */}
-      {todayHasVb && (
-        <div style={{ padding: '0 24px 12px' }}>
-          <div
-            className="card notch-12"
-            style={{
-              padding: 16,
-              background: 'linear-gradient(180deg, color-mix(in srgb, var(--cat-tendency) 6%, transparent) 0%, var(--surface-1) 100%)',
-              borderColor: 'color-mix(in srgb, var(--cat-tendency) 30%, transparent)',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--cat-tendency)' }} />
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: 6 }}>
-              <div className="col">
-                <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>Sport · ma</span>
-                <div style={{ marginTop: 6 }}>
-                  <Display size="md">Volleyball · {todayHasVb.time}</Display>
-                </div>
-                <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
-                  {[todayHasVb.court, `${todayHasVb.duration}p`, todayHasVb.role].filter(Boolean).join(' · ')}
-                </span>
-              </div>
-              <span
-                className="chip notch-4"
-                style={{ fontSize: 9, color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}
-              >
-                MA
-              </span>
-            </div>
-            <CtaGhost
-              className="notch-4 mt-md"
-              onClick={() => setVbLogOpen(true)}
-              style={{ borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)', color: 'var(--cat-tendency)' }}
-            >
-              <Icon name="plus" size={12} /> Logold a session-t
-            </CtaGhost>
-          </div>
-        </div>
-      )}
-
-      {/* Today's running hero(s) — one blue card per prescribed run today */}
-      {todayRuns.map((s) => (
-        <div key={s.key} style={{ padding: '0 24px 12px' }}>
-          <div
-            className="card notch-12"
-            style={{
-              padding: 16,
-              background: 'linear-gradient(180deg, color-mix(in srgb, var(--info) 6%, transparent) 0%, var(--surface-1) 100%)',
-              borderColor: 'color-mix(in srgb, var(--info) 30%, transparent)',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--info)' }} />
-            <span
-              style={{
-                position: 'absolute',
-                right: -50,
-                top: -50,
-                width: 160,
-                height: 160,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle, color-mix(in srgb, var(--info) 12%, transparent), transparent 70%)',
-              }}
-            />
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: 6, position: 'relative' }}>
-              <div className="col">
-                <span className="eyebrow" style={{ color: 'var(--info)' }}>Futás · ma</span>
-                <div style={{ marginTop: 6 }}>
-                  <Display size="md">{s.label}</Display>
-                </div>
-                <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
-                  {`RPE ${s.rpeTarget.min}–${s.rpeTarget.max}${s.rounds ? ` · ${s.rounds} kör` : ''}`}
-                </span>
-              </div>
-              <span
-                className="chip notch-4"
-                style={{ fontSize: 9, color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }}
-              >
-                MA
-              </span>
-            </div>
-            <CtaGhost
-              className="notch-4 mt-md"
-              onClick={() => setRunLogCtx({
-                blockId: activeRunningBlock!.id,
-                weekNumber: activeRunningBlock!.currentWeek,
-                sessionKey: s.key,
-                label: s.label,
-                isSprint: s.kind === 'sprint',
-                defaultRounds: s.rounds ?? undefined,
-              })}
-              style={{ borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)', color: 'var(--info)' }}
-            >
-              <Icon name="plus" size={12} /> Naplózd a futást
-            </CtaGhost>
-          </div>
-        </div>
-      ))}
 
       {/* Weekly combined timeline */}
       <div style={{ padding: '0 24px 16px' }}>

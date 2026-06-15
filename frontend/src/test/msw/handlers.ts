@@ -165,6 +165,13 @@ export const handlers = [
       { id: 'e1f3a0e2-0000-4000-8000-000000000055', dayOfWeek: 5, time: '10:00', durationMin: 120, kind: 'match', location: 'Kőbánya Sport', intensityLabel: 'magas' },
     ]),
   ),
+  // Weekly gym slots fixture — Csü (index 3) carries a time so deriveGymSchedule
+  // can fill the meso fixture's only gym day. Lean shape: id + dayOfWeek + time.
+  http.get(`${API_BASE}/api/train/gym-schedule`, () =>
+    HttpResponse.json([
+      { id: 'e2f3a0e2-0000-4000-8000-000000000060', dayOfWeek: 3, time: '18:30' },
+    ]),
+  ),
   // Exercise catalog fixture — small slice across muscles incl. one plyo item.
   // Hip Thrust must stay: the real-mode MesoExercises test picks it from the sheet.
   http.get(`${API_BASE}/api/train/exercises`, () =>
@@ -222,6 +229,10 @@ export const handlers = [
   http.put(`${API_BASE}/api/train/sport-schedule`, async ({ request }) => {
     const slots = (await request.json()) as Array<Record<string, unknown>>
     return HttpResponse.json(slots.map((s, i) => ({ id: `e1f3a0e2-0000-4000-8000-0000000000${60 + i}`, ...s })))
+  }),
+  http.put(`${API_BASE}/api/train/gym-schedule`, async ({ request }) => {
+    const slots = (await request.json()) as Array<Record<string, unknown>>
+    return HttpResponse.json(slots.map((s, i) => ({ id: `e2f3a0e2-0000-4000-8000-0000000000${70 + i}`, ...s })))
   }),
   // R3 running endpoints — default empty so real-mode Mai stays clean (no active
   // block ⇒ no run hero/lanes). Tests override with server.use() when they need data.
