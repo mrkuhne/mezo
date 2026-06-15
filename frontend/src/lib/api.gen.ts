@@ -214,6 +214,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/gym-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The recurring weekly gym time slots, day-of-week then time ascending */
+        get: operations["getGymSchedule"];
+        /** Full-replace of the weekly gym times (idempotent; soft-deletes the previous slots) */
+        put: operations["putGymSchedule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/workouts/today": {
         parameters: {
             query?: never;
@@ -803,6 +821,20 @@ export interface components {
             kind: "training" | "match";
             location?: string;
             intensityLabel?: string;
+        };
+        GymScheduleSlotResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description 0=Hét .. 6=Vas */
+            dayOfWeek: number;
+            /** @description HH:mm */
+            time: string;
+        };
+        GymScheduleSlotInput: {
+            /** @description 0=Hét .. 6=Vas */
+            dayOfWeek: number;
+            /** @description HH:mm */
+            time: string;
         };
         SportSessionResponse: {
             /** Format: uuid */
@@ -1567,6 +1599,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SportScheduleSlotResponse"][];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getGymSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Weekly gym time slots (empty array when none set) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GymScheduleSlotResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putGymSchedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GymScheduleSlotInput"][];
+            };
+        };
+        responses: {
+            /** @description The saved weekly gym time slots */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GymScheduleSlotResponse"][];
                 };
             };
             /** @description Validation error */

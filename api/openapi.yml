@@ -542,6 +542,63 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/gym-schedule:
+    get:
+      tags:
+        - Train
+      operationId: getGymSchedule
+      summary: 'The recurring weekly gym time slots, day-of-week then time ascending'
+      responses:
+        '200':
+          description: Weekly gym time slots (empty array when none set)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GymScheduleSlotResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Train
+      operationId: putGymSchedule
+      summary: >-
+        Full-replace of the weekly gym times (idempotent; soft-deletes the
+        previous slots)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/GymScheduleSlotInput'
+      responses:
+        '200':
+          description: The saved weekly gym time slots
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GymScheduleSlotResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/workouts/today:
     get:
       tags:
@@ -1951,6 +2008,40 @@ components:
           type: string
         intensityLabel:
           type: string
+    GymScheduleSlotResponse:
+      type: object
+      required:
+        - id
+        - dayOfWeek
+        - time
+      properties:
+        id:
+          type: string
+          format: uuid
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 0=Hét .. 6=Vas
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          description: 'HH:mm'
+    GymScheduleSlotInput:
+      type: object
+      required:
+        - dayOfWeek
+        - time
+      properties:
+        dayOfWeek:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: 0=Hét .. 6=Vas
+        time:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          description: 'HH:mm'
     SportSessionResponse:
       type: object
       required:
