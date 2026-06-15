@@ -62,6 +62,16 @@ export function setSessionDay(s: RunningBlockStructureDto, key: string, dayOfWee
 export function setSessionTime(s: RunningBlockStructureDto, key: string, timeOfDay: string): RunningBlockStructureDto {
   return mapSessionAllWeeks(s, key, (sess) => ({ ...sess, timeOfDay }))
 }
+export function addWeek(s: RunningBlockStructureDto): RunningBlockStructureDto {
+  if (s.weeks.length >= 8) return s
+  const last = s.weeks[s.weeks.length - 1]
+  const n = s.weeks.length + 1
+  return { weeks: [...s.weeks, { ...last, weekNumber: n, sessions: last.sessions.map((sess) => ({ ...sess, segments: sess.segments.map((g) => ({ ...g })) })) }] }
+}
+export function removeLastWeek(s: RunningBlockStructureDto): RunningBlockStructureDto {
+  if (s.weeks.length <= 1) return s
+  return { weeks: s.weeks.slice(0, -1) }
+}
 export function sprintOf(w: RunWeek) { return w.sessions.find((s) => s.kind === 'sprint') ?? null }
 export function pyramidOf(w: RunWeek) { return w.sessions.find((s) => s.kind === 'pyramid') ?? null }
 export function workSecs(sess: RunPrescribedSession): number[] { return sess.segments.filter((g) => g.type === 'work').map((g) => g.durationSec) }

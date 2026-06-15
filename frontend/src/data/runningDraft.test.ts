@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   newDraft, duplicateDraft, setSprintRounds, setSprintRest, setPyramidWork,
-  setSessionDay, setSessionTime,
+  setSessionDay, setSessionTime, addWeek, removeLastWeek,
   sprintOf, pyramidOf, workSecs, restSec,
 } from './runningDraft'
 import { runningBlocksMock } from './running'
@@ -146,5 +146,32 @@ describe('newDraft factory defaults', () => {
     expect(sprint.timeOfDay).toBe('18:00')
     expect(pyramid.dayOfWeek).toBe(4)
     expect(pyramid.timeOfDay).toBe('17:30')
+  })
+})
+
+describe('addWeek / removeLastWeek', () => {
+  test('addWeek clones the last week with the next weekNumber, capped at 8', () => {
+    let s = newDraft('2026-06-16', '2026-07-14').structure // 4 weeks
+    s = addWeek(s)
+    expect(s.weeks).toHaveLength(5)
+    expect(s.weeks[4].weekNumber).toBe(5)
+    // cloned load from week 4
+    expect(workSecs(pyramidOf(s.weeks[4])!)).toEqual(workSecs(pyramidOf(s.weeks[3])!))
+    // cap at 8
+    while (s.weeks.length < 8) s = addWeek(s)
+    expect(s.weeks).toHaveLength(8)
+    s = addWeek(s)
+    expect(s.weeks).toHaveLength(8) // no-op at 8
+  })
+
+  test('removeLastWeek drops the last week, floored at 1', () => {
+    let s = newDraft('2026-06-16', '2026-07-14').structure
+    s = removeLastWeek(s)
+    expect(s.weeks).toHaveLength(3)
+    expect(s.weeks.at(-1)!.weekNumber).toBe(3)
+    s = removeLastWeek(removeLastWeek(s)) // -> 1
+    expect(s.weeks).toHaveLength(1)
+    s = removeLastWeek(s)
+    expect(s.weeks).toHaveLength(1) // no-op at 1
   })
 })
