@@ -41,12 +41,22 @@ main() {
     base_ref="$last_tag"; base_ver="${last_tag#v}"
   fi
 
-  local level version changed fe="false" be="false"
+  local level version fe="false" be="false"
   level=$(git log "${base_ref}..HEAD" --format='%s%n%b' | compute_bump)
   version=$(next_version "$base_ver" "$level")
-  changed=$(git diff --name-only "${base_ref}..HEAD")
-  if printf '%s\n' "$changed" | grep -qE '^frontend/'; then fe="true"; fi
-  if printf '%s\n' "$changed" | grep -qE '^(backend|api)/'; then be="true"; fi
+  # Path-change detection compares each top-level dir's tree-object hash between
+  # base and HEAD. Robust where `git diff base..HEAD` is not: actions/checkout
+  # presents a merge commit in a way that silently yielded backend_changed=false
+  # on the first CI run (the dirs clearly differed). Tree hashes are intrinsic to
+  # the commit graph, so this is deterministic in CI and locally alike.
+  tree_changed() {  # <dir> -> echoes "true" when the dir tree differs base..HEAD
+    local b h
+    b=$(git rev-parse -q --verify "${base_ref}:$1" 2>/dev/null || echo absent)
+    h=$(git rev-parse -q --verify "HEAD:$1" 2>/dev/null || echo absent)
+    [ "$b" != "$h" ] && echo true || echo false
+  }
+  if [ "$(tree_changed frontend)" = "true" ]; then fe="true"; fi
+  if [ "$(tree_changed backend)" = "true" ] || [ "$(tree_changed api)" = "true" ]; then be="true"; fi
 
   {
     echo "version=${version}"
