@@ -7,6 +7,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
+import { isMockMode } from '@/lib/mode'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { GhostState } from '@/components/ui/GhostState'
@@ -64,14 +65,18 @@ export function GymView() {
           <PageTitle>{activeMeso.shortTitle}</PageTitle>
         </div>
         <div className="row gap-sm" style={{ alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={() => setScheduleOpen(true)}
-            className="chip notch-4"
-            style={{ padding: '8px 10px' }}
-          >
-            <Icon name="today" size={12} /> Időpontok
-          </button>
+          {/* saveGymSchedule is a no-op in mock mode (trainHooks) — hide the
+              editor entry there, mirroring SportView's mock-mode gating. */}
+          {!isMockMode() && (
+            <button
+              type="button"
+              onClick={() => setScheduleOpen(true)}
+              className="chip notch-4"
+              style={{ padding: '8px 10px' }}
+            >
+              <Icon name="today" size={12} /> Időpontok
+            </button>
+          )}
           <span className="label-mono brand" style={{ fontSize: 9 }}>
             W{activeMeso.currentWeek} / {activeMeso.weeks}
           </span>
