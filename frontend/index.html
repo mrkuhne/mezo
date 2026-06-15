@@ -2,7 +2,13 @@
 <html lang="hu">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- maximum-scale=1 + user-scalable=no: disable all browser zoom app-wide.
+         Primary effect: kills iOS Safari's auto-zoom when focusing sub-16px inputs (the app's
+         compact UI uses 12–13px fields). viewport-fit=cover kept for notch/safe-area insets. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#0A0F14" />
     <title>Mezo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />

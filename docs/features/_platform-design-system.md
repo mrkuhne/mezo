@@ -208,6 +208,7 @@ pnpm parity          # playwright pixel-parity vs prototype
 - **The 519px breakpoint** is the desktop-mockup ↔ full-bleed-PWA switch (`prototype.css:303–335`). Scrollbars are globally hidden with `display: none` (not just `width: 0` — required for macOS Safari overlay scrollbars; `prototype.css:156–160`).
 - **Accent-via-`color-mix` is a convention, not a primitive.** `NotchCard` only supports `accent: brand/warning/error/tendency`; Sport/Running do their full accent theming with inline `color-mix`, not `NotchCard`. A reusable accent-hero primitive is an obvious-but-deferred refactor.
 - **Mock-only AI motifs:** `ToolChip`, the `--cat-*` pattern palette, and the tool-transparency rows render mock data; they become real in **Phase 3** (Spring AI / pgvector / RAG).
+- **Browser zoom is disabled app-wide** via the viewport meta (`maximum-scale=1, user-scalable=no`, `index.html:5`). The driving reason is the compact UI: form fields render at 12–13px, so iOS Safari would auto-zoom on focus (it zooms any sub-16px input). This is an accessibility trade-off (WCAG 1.4.4) accepted for the native-app feel; the alternative — forcing every input to ≥16px — would break the dense visual language. Pinch-zoom: fully blocked on Android; iOS ignores `user-scalable=no` for pinch but honors `maximum-scale=1`, which is what suppresses the focus auto-zoom.
 - **Deferred:** heavier visual-regression coverage was explicitly deferred in phase 1.
 
 ---
@@ -217,7 +218,7 @@ pnpm parity          # playwright pixel-parity vs prototype
 **Tokens & CSS**
 - `frontend/src/styles/prototype.css` — all tokens + every component CSS class (809 lines).
 - `frontend/src/index.css` — Tailwind v4 `@theme inline` bridge.
-- `frontend/index.html` — fonts (Antonio/Inter/JetBrains), `viewport-fit=cover`, `theme-color`.
+- `frontend/index.html` — fonts (Antonio/Inter/JetBrains), `viewport-fit=cover`, `theme-color`, zoom disabled (`maximum-scale=1, user-scalable=no`).
 
 **Primitives** (`frontend/src/components/ui/`)
 - `Icon.tsx` — custom SVG icon set (`IconName`, `BrandGlyph`, `StatusIcons`).
