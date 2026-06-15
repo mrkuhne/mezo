@@ -92,6 +92,46 @@ test('real mode shows the rest-day note when /today is empty but a meso is activ
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
 })
 
+test('real mode orders the morning run hero above the evening gym hero', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  const runBlock = {
+    id: 'rb-1', title: 'Robbanékonyság', goal: 'sprint', kind: 'interval', status: 'active',
+    startDate: '2026-06-01', endDate: '2026-08-01', weeks: 4, currentWeek: 1, summary: null,
+    structure: {
+      weeks: [{
+        weekNumber: 1, phaseLabel: 'Alapozás',
+        sessions: [{
+          key: 'today-sprint', dayOfWeek: todayIdx, timeOfDay: '08:00', label: 'Reggeli sprint',
+          kind: 'sprint', rpeTarget: { min: 9, max: 10 }, rounds: 6, segments: [],
+        }],
+      }],
+    },
+  }
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    // gym slot today at 18:30 -> deriveGymSchedule fills the today gym day's time
+    http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([{ id: 'g-1', dayOfWeek: todayIdx, time: '18:30' }])),
+    http.get(`${API_BASE}/api/train/running-blocks`, () => HttpResponse.json([runBlock])),
+    http.get(`${API_BASE}/api/train/run-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
+        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+        openWorkout: null,
+      }),
+    ),
+  )
+  renderView()
+  // both heroes present
+  const runEyebrow = await screen.findByText('Futás · ma')
+  const startBtn = await screen.findByRole('button', { name: /Indítsuk/ }) // gym hero CTA
+  // run hero (08:00) must precede gym hero (18:30) in the DOM
+  expect(runEyebrow.compareDocumentPosition(startBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
 test('real mode shows the volleyball today-card when a slot falls on today', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const todayIdx = (new Date().getDay() + 6) % 7
