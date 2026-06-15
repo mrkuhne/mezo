@@ -30,6 +30,7 @@ import {
 import type {
   ExerciseLibraryItem,
   GymSchedule,
+  GymScheduleSlot,
   Mesocycle,
   Sport,
   SportSchedule,
@@ -57,17 +58,22 @@ function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): WorkoutPlan 
   }
 }
 
-// Gym weekly row derived from the active meso's template days (no schedule
-// template in Phase 2 — FR-2.1.12 is out of scope, so time/duration are null).
-function deriveGymSchedule(meso: Mesocycle | null): GymSchedule | null {
+// Gym weekly row derived from the active meso's template days (WHAT) joined with the
+// standalone weekly gym slots (WHEN). DAY_ORDER index (0=Hét..6=Vas) == slot.dayOfWeek;
+// a gym day with no matching slot keeps time=null. Duration has no DB home (out of scope).
+export function deriveGymSchedule(meso: Mesocycle | null, slots: GymScheduleSlot[] = []): GymSchedule | null {
   const days = meso?.days
   if (!days?.length) return null
   const todayLabel = DAY_ORDER[(new Date().getDay() + 6) % 7]
+  const timeFor = (dayLabel: string): string | null => {
+    const idx = DAY_ORDER.indexOf(dayLabel as (typeof DAY_ORDER)[number])
+    return slots.find((s) => s.dayOfWeek === idx)?.time ?? null
+  }
   return {
     weeklyTimes: DAY_ORDER.map((d) => {
       const md = days.find((x) => x.day === d && x.exerciseCount > 0)
       return md
-        ? { day: d, type: md.type, time: null, duration: null, active: true, today: d === todayLabel }
+        ? { day: d, type: md.type, time: timeFor(d), duration: null, active: true, today: d === todayLabel }
         : { day: d, type: null, time: null, duration: null, active: false }
     }),
   }
