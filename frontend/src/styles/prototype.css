@@ -239,7 +239,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    while the content scrolls under it, like native app navigation chrome. */
 .sticky-top {
   position: sticky;
-  top: 54px;
+  /* top: 0 — NOT 54px: the .screen-content already offsets the scrollport below
+     the status bar via padding-top, so a non-zero top double-counts it and the
+     breadcrumb pins below the status bar, letting the header scroll over it. */
+  top: 0;
   z-index: 40;
   background: var(--canvas);
 }
@@ -255,7 +258,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   position: absolute; bottom: 0; left: 0; right: 0;
   height: 88px;
   padding: 8px 12px 28px;
-  background: rgba(10, 15, 20, 0.75);
+  /* High opacity so scrolling content (e.g. the builder's teal CTA) fades behind
+     the bar instead of bleeding through; the blur still reads as frosted glass. */
+  background: rgba(10, 15, 20, 0.92);
   backdrop-filter: blur(24px) saturate(160%);
   -webkit-backdrop-filter: blur(24px) saturate(160%);
   border-top: 1px solid var(--border-subtle);
@@ -326,7 +331,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
-  .sticky-top { top: env(safe-area-inset-top); }
+  .sticky-top { top: 0; }
   .tab-bar {
     height: auto;
     padding-top: 8px;
