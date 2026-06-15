@@ -19,6 +19,19 @@ class GymScheduleContractIT extends ApiIntegrationTest {
         return GymScheduleSlotInput.builder().dayOfWeek(dayOfWeek).time(time).build();
     }
 
+    // ---- 401s ------------------------------------------------------------------
+
+    @Test
+    void testGetGymSchedule_shouldReturn401_whenUnauthenticated() {
+        getForBody(SCHEDULE, null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testReplaceGymSchedule_shouldReturn401_whenUnauthenticated() {
+        putForBody(SCHEDULE, List.of(slot(1, "18:30")),
+            null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
     @Test
     void testGetGymSchedule_shouldReturnEmpty_whenNoneSet() {
         List<GymScheduleSlotResponse> slots =
