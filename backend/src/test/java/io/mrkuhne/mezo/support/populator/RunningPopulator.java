@@ -55,7 +55,7 @@ public class RunningPopulator {
 
     public static RunningBlockStructure sampleStructure() {
         RunPrescribedSession sprint = new RunPrescribedSession(
-            "tue-sprint", 1, "Sprint-intervallum", "sprint", new RpeTarget(9, 10), 6,
+            "tue-sprint", 1, "18:00", "Sprint-intervallum", "sprint", new RpeTarget(9, 10), 6,
             List.of(new RunSegment("warmup", 300, null),
                     new RunSegment("work", 15, null),
                     new RunSegment("rest", 45, null),

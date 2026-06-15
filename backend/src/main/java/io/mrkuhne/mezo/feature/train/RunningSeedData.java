@@ -105,7 +105,7 @@ public class RunningSeedData implements CommandLineRunner {
         segments.add(new RunSegment("rest", restSec, null));
         segments.add(new RunSegment("cooldown", 300, null));
         return new RunPrescribedSession(
-            "tue-sprint", 1, "Sprint-intervallum", "sprint", new RpeTarget(9, 10), rounds, segments);
+            "tue-sprint", 1, "18:00", "Sprint-intervallum", "sprint", new RpeTarget(9, 10), rounds, segments);
     }
 
     /** Péntek pyramid: warmup, explicit work/rest pairs per the work-second sequence, cooldown. */
@@ -118,14 +118,14 @@ public class RunningSeedData implements CommandLineRunner {
         }
         segments.add(new RunSegment("cooldown", 300, null));
         return new RunPrescribedSession(
-            "fri-pyramid", 4, "Piramis-intervallum", "pyramid", new RpeTarget(8, 9), null, segments);
+            "fri-pyramid", 4, "17:30", "Piramis-intervallum", "pyramid", new RpeTarget(8, 9), null, segments);
     }
 
     // --- planned block "5K-alapozó" — minimal 1-week structure --------------------------------
 
     private void seedPlannedBlock(UUID by) {
         RunPrescribedSession steady = new RunPrescribedSession(
-            "wed-steady", 2, "Egyenletes futás", "steady", new RpeTarget(4, 5), null,
+            "wed-steady", 2, "17:30", "Egyenletes futás", "steady", new RpeTarget(4, 5), null,
             List.of(new RunSegment("warmup", 300, null),
                     new RunSegment("work", 1800, null),
                     new RunSegment("cooldown", 300, null)));
@@ -139,7 +139,7 @@ public class RunningSeedData implements CommandLineRunner {
 
     private void seedArchivedBlock(UUID by) {
         RunPrescribedSession steady = new RunPrescribedSession(
-            "wed-steady", 2, "Egyenletes futás", "steady", new RpeTarget(4, 5), null,
+            "wed-steady", 2, "17:30", "Egyenletes futás", "steady", new RpeTarget(4, 5), null,
             List.of(new RunSegment("warmup", 300, null),
                     new RunSegment("work", 2400, null),
                     new RunSegment("cooldown", 300, null)));
