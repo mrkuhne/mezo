@@ -16,11 +16,13 @@ import { GymStat } from '../components/GymStat'
 import { PhaseDots } from '../components/PhaseDots'
 import { GymDayCard } from '../components/GymDayCard'
 import { GymDaySheet } from '../components/GymDaySheet'
+import { GymScheduleSheet } from '../components/GymScheduleSheet'
 
 export function GymView() {
-  const { activeMeso } = useTrain()
+  const { activeMeso, gymSlots, saveGymSchedule } = useTrain()
   const navigate = useNavigate()
   const [openDay, setOpenDay] = useState<MesoDay | null>(null)
+  const [scheduleOpen, setScheduleOpen] = useState(false)
 
   // T0 clean slate: no active meso in real mode -> ghost (meso writes land in T1).
   // Placed after the hook calls so the hook order is render-stable.
@@ -61,9 +63,19 @@ export function GymView() {
           <Eyebrow brand>Train · GYM</Eyebrow>
           <PageTitle>{activeMeso.shortTitle}</PageTitle>
         </div>
-        <span className="label-mono brand" style={{ fontSize: 9 }}>
-          W{activeMeso.currentWeek} / {activeMeso.weeks}
-        </span>
+        <div className="row gap-sm" style={{ alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => setScheduleOpen(true)}
+            className="chip notch-4"
+            style={{ padding: '8px 10px' }}
+          >
+            <Icon name="today" size={12} /> Időpontok
+          </button>
+          <span className="label-mono brand" style={{ fontSize: 9 }}>
+            W{activeMeso.currentWeek} / {activeMeso.weeks}
+          </span>
+        </div>
       </div>
 
       {/* Meso meta */}
@@ -102,6 +114,13 @@ export function GymView() {
       </div>
 
       {openDay && <GymDaySheet day={openDay} onClose={() => setOpenDay(null)} />}
+      {scheduleOpen && (
+        <GymScheduleSheet
+          slots={gymSlots}
+          onSave={saveGymSchedule}
+          onClose={() => setScheduleOpen(false)}
+        />
+      )}
     </>
   )
 }
