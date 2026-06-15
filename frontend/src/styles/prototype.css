@@ -258,11 +258,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   position: absolute; bottom: 0; left: 0; right: 0;
   height: 88px;
   padding: 8px 12px 28px;
-  /* High opacity so scrolling content (e.g. the builder's teal CTA) fades behind
-     the bar instead of bleeding through; the blur still reads as frosted glass. */
-  background: rgba(10, 15, 20, 0.92);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  /* Fully opaque + theme-aware (matches .status-bar / .sticky-top) so scrolled
+     content can never bleed through the bar. The old translucent frosted-glass
+     bar (rgba(10,15,20,0.92) + blur) still leaked ~8% and was hardcoded dark, so
+     it broke in light theme too — see mezo-ci5. */
+  background: var(--canvas);
   border-top: 1px solid var(--border-subtle);
   display: flex; align-items: stretch; justify-content: space-around;
   z-index: 40;
