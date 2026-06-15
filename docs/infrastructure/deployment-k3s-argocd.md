@@ -151,8 +151,11 @@ for the build-out steps.
 
 1. **`version`** — runs `.github/scripts/compute-release.sh`: computes the next semver from the
    conventional commits since the last `v*` tag (`feat` → minor, `feat!` / `BREAKING CHANGE:` →
-   major, else patch) and derives `frontend_changed` / `backend_changed` from a path-filtered
-   `git diff` (`frontend/**` → FE; `backend/**` or `api/**` → BE).
+   major, else patch) and derives `frontend_changed` / `backend_changed` by comparing each
+   top-level directory's **tree-object hash** between the base and HEAD (`frontend` → FE;
+   `backend` or `api` → BE). Tree hashes are used rather than `git diff base..HEAD`, which proved
+   unreliable under `actions/checkout`'s merge-commit checkout — it silently reported the backend
+   as unchanged on the first run and skipped its deploy (fixed in mezo-7n5).
 2. **`build-frontend`** (only if FE changed) — `pnpm test` in real (MSW) **and** mock modes →
    `pnpm build` (owner creds baked in) → docker build/push `ghcr.io/mrkuhne/mezo-frontend:<ver>`.
 3. **`build-backend`** (only if BE changed) — `./mvnw -B clean verify` against a throwaway
@@ -171,11 +174,17 @@ GHCR), both via the built-in `GITHUB_TOKEN`. The cluster still pulls private ima
 existing `ghcr-pull` secret (unchanged).
 
 **One-time bootstrap (manual, already done):**
-- Seed a baseline `v0.0.1` git tag — the semver math needs a starting point.
 - Repo **Settings → Actions → Workflow permissions → "Read and write permissions"** (so the
   commit-back + tag push are allowed).
 - Repo **Variables** `VITE_OWNER_EMAIL` / `VITE_OWNER_PASSWORD` — the demo-owner creds baked into
   the frontend build (demo values, not real secrets).
+- **GHCR package → Actions access** for each private package (`mezo-frontend`, `mezo-backend`):
+  package **Settings → "Manage Actions access" → Add Repository → `mrkuhne/mezo` → Write**. The
+  packages were first created by hand with a PAT, so they are not auto-linked to the repo; without
+  this the `GITHUB_TOKEN` push fails with `denied: permission_denied: write_package`.
+- **No baseline tag was seeded** — with no `v*` tag the first run computes from the repo root
+  (`feat` history → **v0.1.0**) and builds both images; the `release` job then creates the `v*`
+  tag, so later runs bump from there.
 
 **Caveat:** if `main` ever gains PR-required branch protection, the default `GITHUB_TOKEN`
 commit-back push is rejected — it would then need a PAT / GitHub App token or a protection bypass.
