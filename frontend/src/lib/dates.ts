@@ -19,3 +19,19 @@ export function huMonthDayDow(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${huMonthDay(iso)} · ${HU_DOW[new Date(y, m - 1, d).getDay()]}`
 }
+
+/**
+ * The 1-based week (containing today) of a dated block, clamped to [1, weeks] — week 1 before the
+ * start date. Mirrors the backend's `RunningService.clampWeek`/`TrainService.clampWeek` so mock mode
+ * derives `currentWeek` identically. `Math.trunc` matches Java's truncate-toward-zero integer
+ * division for future start dates (negative day spans).
+ */
+export function currentWeekOf(startIso: string, weeks: number): number {
+  const [sy, sm, sd] = startIso.split('-').map(Number)
+  const start = new Date(sy, sm - 1, sd)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const days = Math.round((today.getTime() - start.getTime()) / 86_400_000) // DST-safe day span
+  const week = Math.trunc(days / 7) + 1
+  return Math.max(1, Math.min(weeks, week))
+}

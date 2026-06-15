@@ -76,6 +76,16 @@ class RunningContractIT extends ApiIntegrationTest {
         return postForBody(BLOCKS, sampleUpsert(title), auth, HttpStatus.CREATED, RunningBlockResponse.class);
     }
 
+    /** An 8-week block starting on {@code start}, carrying a deliberately-wrong currentWeek(5) the server must ignore. */
+    private static RunningBlockUpsertRequest upsertStarting(LocalDate start) {
+        return RunningBlockUpsertRequest.builder()
+            .title("Futás derive").goal("").kind("interval")
+            .startDate(start).endDate(start.plusWeeks(8))
+            .weeks(8).currentWeek(5)
+            .summary(null).structure(sampleStructure())
+            .build();
+    }
+
     // ---- list -------------------------------------------------------------------
 
     @Test
@@ -117,6 +127,23 @@ class RunningContractIT extends ApiIntegrationTest {
         // The upsert request carries no status field — the server always forces "planned".
         RunningBlockResponse created = createBlock("Futás kényszerített", ownerAuthHeaders());
         assertThat(created.getStatus()).isEqualTo(RunningBlockResponse.StatusEnum.PLANNED);
+    }
+
+    @Test
+    void testCreateRunningBlock_shouldDeriveCurrentWeekFromStartDate_ignoringClientValue() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        // A plan starting today is on week 1 — the bogus client currentWeek (5) is ignored.
+        // Regression for mezo-478: a "mától induló" block used to persist currentWeek 0, which then
+        // rendered "az aktuális hét (0) nincs a tervben" because weeks are 1-indexed.
+        RunningBlockResponse today = postForBody(BLOCKS, upsertStarting(LocalDate.now()),
+            auth, HttpStatus.CREATED, RunningBlockResponse.class);
+        assertThat(today.getCurrentWeek()).isEqualTo(1);
+
+        // A plan that started two weeks ago is on week 3.
+        RunningBlockResponse twoWeeksIn = postForBody(BLOCKS, upsertStarting(LocalDate.now().minusWeeks(2)),
+            auth, HttpStatus.CREATED, RunningBlockResponse.class);
+        assertThat(twoWeeksIn.getCurrentWeek()).isEqualTo(3);
     }
 
     // ---- activate ---------------------------------------------------------------

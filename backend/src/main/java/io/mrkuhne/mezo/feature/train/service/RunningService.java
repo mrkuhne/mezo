@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +37,7 @@ public class RunningService {
 
     public List<RunningBlockResponse> listBlocks(UUID userId) {
         return blockRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(userId)
-            .stream().map(mapper::toResponse).toList();
+            .stream().map(this::toResponse).toList();
     }
 
     @Transactional
@@ -44,14 +46,14 @@ public class RunningService {
         e.setCreatedBy(userId); // server-side ownership — never from the client
         e.setStatus("planned");
         applyUpsert(e, req);
-        return mapper.toResponse(blockRepository.save(e));
+        return toResponse(blockRepository.save(e));
     }
 
     @Transactional
     public RunningBlockResponse updateBlock(UUID userId, UUID id, RunningBlockUpsertRequest req) {
         RunningBlockEntity e = requireOwned(userId, id);
         applyUpsert(e, req);
-        return mapper.toResponse(blockRepository.save(e));
+        return toResponse(blockRepository.save(e));
     }
 
     @Transactional
@@ -66,7 +68,7 @@ public class RunningService {
         if (!"active".equals(target.getStatus())) {
             target.setStatus("active");
         }
-        return mapper.toResponse(target);
+        return toResponse(target);
     }
 
     @Transactional
@@ -75,7 +77,7 @@ public class RunningService {
         if (!"archived".equals(e.getStatus())) {
             e.setStatus("archived");
         }
-        return mapper.toResponse(e);
+        return toResponse(e);
     }
 
     @Transactional
@@ -113,9 +115,36 @@ public class RunningService {
         e.setStartDate(req.getStartDate());
         e.setEndDate(req.getEndDate());
         e.setWeeks(req.getWeeks());
-        e.setCurrentWeek(req.getCurrentWeek() != null ? req.getCurrentWeek() : 0);
+        // currentWeek is derived, never trusted from the client (the request field is ignored):
+        // the 1-based week containing today, clamped to [1, weeks] (mezo-478).
+        e.setCurrentWeek(clampWeek(req.getStartDate(), req.getWeeks()));
         e.setSummary(req.getSummary());
         e.setStructure(mapper.toEntityStructure(req.getStructure()));
+    }
+
+    /**
+     * The 1-based week of the block that contains today, clamped to [1, weeks] (week 1 before the
+     * start date). Mirrors {@code TrainService.clampWeek} — currentWeek is a derived calendar fact,
+     * not a stored pointer the client owns.
+     */
+    private int clampWeek(LocalDate startDate, int weeks) {
+        long week = ChronoUnit.DAYS.between(startDate, LocalDate.now()) / 7 + 1;
+        return (int) Math.max(1, Math.min(weeks, week));
+    }
+
+    /**
+     * Map a block, healing a stale/invalid stored {@code currentWeek} (null, &lt; 1, or &gt; weeks) by
+     * re-deriving it from the dates. So a block written before currentWeek was derived (e.g. a legacy
+     * 0 that rendered "az aktuális hét nincs a tervben") self-corrects on read, while a valid stored
+     * value is left untouched (mezo-478).
+     */
+    private RunningBlockResponse toResponse(RunningBlockEntity e) {
+        RunningBlockResponse r = mapper.toResponse(e);
+        Integer cw = r.getCurrentWeek();
+        if (cw == null || cw < 1 || cw > e.getWeeks()) {
+            r.setCurrentWeek(clampWeek(e.getStartDate(), e.getWeeks()));
+        }
+        return r;
     }
 
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */

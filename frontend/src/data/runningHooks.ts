@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
+import { currentWeekOf } from '@/lib/dates'
 import { runningApi, type RunningBlockResponse, type RunningBlockUpsertRequest, type RunSessionLogRequest, type RunSessionLogResponse } from '@/lib/runningApi'
 import { runningBlocksMock, runSessionsMock } from './running'
 
@@ -39,7 +40,8 @@ export function useRunning(): RunningData {
     const block: RunningBlockResponse = {
       id: id ?? `rb-${Math.round(performance.now())}-${blockList.length}`,
       status: id ? (blockList.find(b => b.id === id)?.status ?? 'planned') : 'planned',
-      ...body, goal: body.goal ?? null, summary: body.summary ?? null, currentWeek: body.currentWeek ?? 0,
+      // currentWeek is derived (mirrors the backend), never the client's value — see currentWeekOf (mezo-478).
+      ...body, goal: body.goal ?? null, summary: body.summary ?? null, currentWeek: currentWeekOf(body.startDate, body.weeks),
     }
     qc.setQueryData<RunningBlockResponse[]>(['running', 'blocks'], (prev = []) =>
       id ? prev.map(b => b.id === id ? block : b) : [...prev, block])
