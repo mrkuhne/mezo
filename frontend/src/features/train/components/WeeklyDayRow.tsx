@@ -5,6 +5,7 @@
 import { Icon } from '@/components/ui/Icon'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
 import type { RunPrescribedSession } from '@/lib/runningApi'
+import { daySessions } from '../agenda'
 
 export interface WeeklyAgendaDay {
   day: string
@@ -22,9 +23,11 @@ interface WeeklyDayRowProps {
 }
 
 export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball, onLogRun }: WeeklyDayRowProps) {
-  const { day, gym, volleyball, isToday } = agenda
-  const running = agenda.running ?? []
-  const hasContent = Boolean(gym || volleyball || running.length)
+  const { day, isToday } = agenda
+  // Time-ordered flat session list — gym/volleyball/running interleave by
+  // time-of-day so a morning run renders above an evening gym (untimed last).
+  const sessions = daySessions(agenda)
+  const hasContent = sessions.length > 0
   const dayLabelColor = isToday
     ? 'var(--brand-glow)'
     : hasContent
@@ -74,106 +77,109 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball, onLogRun }: 
             </span>
           )}
 
-          {gym && (
-            <button
-              type="button"
-              onClick={isToday ? onStartGym : undefined}
-              className="row"
-              style={{
-                padding: '10px 14px',
-                alignItems: 'center',
-                gap: 10,
-                width: '100%',
-                textAlign: 'left',
-                borderBottom: volleyball || running.length ? '1px solid var(--border-subtle)' : 'none',
-                cursor: isToday ? 'pointer' : 'default',
-              }}
-            >
-              <Icon name="train" size={13} color="var(--brand-glow)" />
-              <div className="col flex-1">
-                <div className="row gap-xs" style={{ alignItems: 'center' }}>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{gym.type}</span>
-                  {gym.time && (
-                    <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>· {gym.time}</span>
+          {sessions.map((item, idx, arr) => {
+            const notLast = idx < arr.length - 1
+            const rowStyle = {
+              padding: '10px 14px',
+              alignItems: 'center',
+              gap: 10,
+              width: '100%',
+              textAlign: 'left',
+              borderBottom: notLast ? '1px solid var(--border-subtle)' : 'none',
+              cursor: isToday ? 'pointer' : 'default',
+            } as const
+
+            if (item.kind === 'gym') {
+              const gym = item.gym
+              return (
+                <button
+                  key="gym"
+                  type="button"
+                  onClick={isToday ? onStartGym : undefined}
+                  className="row"
+                  style={rowStyle}
+                >
+                  <Icon name="train" size={13} color="var(--brand-glow)" />
+                  <div className="col flex-1">
+                    <div className="row gap-xs" style={{ alignItems: 'center' }}>
+                      <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{gym.type}</span>
+                      {gym.time && (
+                        <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>· {gym.time}</span>
+                      )}
+                    </div>
+                    <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
+                      {gym.duration ? `${gym.duration}p · gym` : 'gym'}
+                    </span>
+                  </div>
+                  {isToday && <Icon name="chevron-right" size={11} color="var(--brand-glow)" />}
+                </button>
+              )
+            }
+
+            if (item.kind === 'volleyball') {
+              const volleyball = item.volleyball
+              return (
+                <button
+                  key="volleyball"
+                  type="button"
+                  onClick={isToday ? onLogVolleyball : undefined}
+                  className="row"
+                  style={rowStyle}
+                >
+                  <Icon name="today" size={13} color="var(--cat-tendency)" />
+                  <div className="col flex-1">
+                    <div className="row gap-xs" style={{ alignItems: 'center' }}>
+                      <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>Volleyball</span>
+                      <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>· {volleyball.time}</span>
+                    </div>
+                    <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
+                      {[`${volleyball.duration}p`, volleyball.role, volleyball.intensity].filter(Boolean).join(' · ')}
+                    </span>
+                  </div>
+                  {isToday && (
+                    <span
+                      className="chip"
+                      style={{ fontSize: 8, padding: '2px 5px', color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}
+                    >
+                      log
+                    </span>
                   )}
-                </div>
-                <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
-                  {gym.duration ? `${gym.duration}p · gym` : 'gym'}
-                </span>
-              </div>
-              {isToday && <Icon name="chevron-right" size={11} color="var(--brand-glow)" />}
-            </button>
-          )}
+                </button>
+              )
+            }
 
-          {volleyball && (
-            <button
-              type="button"
-              onClick={isToday ? onLogVolleyball : undefined}
-              className="row"
-              style={{
-                padding: '10px 14px',
-                alignItems: 'center',
-                gap: 10,
-                width: '100%',
-                textAlign: 'left',
-                borderBottom: running.length ? '1px solid var(--border-subtle)' : 'none',
-                cursor: isToday ? 'pointer' : 'default',
-              }}
-            >
-              <Icon name="today" size={13} color="var(--cat-tendency)" />
-              <div className="col flex-1">
-                <div className="row gap-xs" style={{ alignItems: 'center' }}>
-                  <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>Volleyball</span>
-                  <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>· {volleyball.time}</span>
+            const run = item.running
+            return (
+              <button
+                key={run.key}
+                type="button"
+                onClick={isToday ? () => onLogRun?.(run) : undefined}
+                className="row"
+                style={rowStyle}
+              >
+                <Icon name="voice-wave" size={13} color="var(--info)" />
+                <div className="col flex-1">
+                  <div className="row gap-xs" style={{ alignItems: 'center' }}>
+                    <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{run.label}</span>
+                    {run.timeOfDay && (
+                      <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>· {run.timeOfDay}</span>
+                    )}
+                  </div>
+                  <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
+                    {`${run.kind === 'sprint' ? 'Sprint' : 'Piramis'} · futás`}
+                  </span>
                 </div>
-                <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
-                  {[`${volleyball.duration}p`, volleyball.role, volleyball.intensity].filter(Boolean).join(' · ')}
-                </span>
-              </div>
-              {isToday && (
-                <span
-                  className="chip"
-                  style={{ fontSize: 8, padding: '2px 5px', color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}
-                >
-                  log
-                </span>
-              )}
-            </button>
-          )}
-
-          {running.map((run, i) => (
-            <button
-              key={run.key}
-              type="button"
-              onClick={isToday ? () => onLogRun?.(run) : undefined}
-              className="row"
-              style={{
-                padding: '10px 14px',
-                alignItems: 'center',
-                gap: 10,
-                width: '100%',
-                textAlign: 'left',
-                borderBottom: i < running.length - 1 ? '1px solid var(--border-subtle)' : 'none',
-                cursor: isToday ? 'pointer' : 'default',
-              }}
-            >
-              <Icon name="voice-wave" size={13} color="var(--info)" />
-              <div className="col flex-1">
-                <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{run.label}</span>
-                <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
-                  {`${run.kind === 'sprint' ? 'Sprint' : 'Piramis'} · futás`}
-                </span>
-              </div>
-              {isToday && (
-                <span
-                  className="chip"
-                  style={{ fontSize: 8, padding: '2px 5px', color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }}
-                >
-                  log
-                </span>
-              )}
-            </button>
-          ))}
+                {isToday && (
+                  <span
+                    className="chip"
+                    style={{ fontSize: 8, padding: '2px 5px', color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }}
+                  >
+                    log
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>
