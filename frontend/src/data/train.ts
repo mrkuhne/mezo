@@ -360,6 +360,13 @@ export const gymSchedule: GymSchedule = {
   ],
 }
 
+// Standalone weekly gym slots (dayOfWeek 0=Hét..6=Vas) — the WHEN that
+// `deriveGymSchedule` joins onto the active meso's gym days in mock mode.
+export const gymScheduleMock: { dayOfWeek: number; time: string }[] = [
+  { dayOfWeek: 1, time: '18:30' }, // Kedd
+  { dayOfWeek: 3, time: '18:30' }, // Csü
+]
+
 // --- sport (data.js:250-322) — ADD jumpCount to each session (port fix) ---
 export const sport: Sport = {
   schedule: {
