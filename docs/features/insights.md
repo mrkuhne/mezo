@@ -2,11 +2,14 @@
 title: Insights
 type: feature-domain
 status: mock-only
-updated: 2026-06-14
+updated: 2026-06-15
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
-  - frontend/src/data
+  - frontend/src/data/insights.ts
+  - frontend/src/data/knowledge.ts
+  - frontend/src/data/chat.ts
+  - frontend/src/data/hooks.ts
   - frontend/src/features/today/components/InsightsTeaser.tsx
 related: [_platform-data-layer, _platform-design-system, today, me]
 ---
