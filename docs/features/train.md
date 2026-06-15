@@ -2,13 +2,13 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-06-14
+updated: 2026-06-15
 tags: [train, running, sport, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/train
   - frontend/src/data/trainHooks.ts
   - frontend/src/data/runningHooks.ts
-  - frontend/src/lib/trainApi.ts
+  - frontend/src/data/runningDraft.ts
   - frontend/src/lib/runningApi.ts
   - api/feature/train/train.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/train
@@ -66,7 +66,7 @@ Default state "Top gyakorlatok · rekordjaid" ranked by `sessionCount`. Searchin
 Hero with week stats (Sessions/Idő/RPE/Váll) and a 3-button switcher: **`Heti terv`** (7-day recurring schedule, editable in real mode via `SportScheduleSheet`), **`Napló`** (logged sessions), **`Cross-load`** (impact rows). Header chip "+ Log" opens `SportLogSheet`.
 
 ### `Futás` — running (`views/RunningView.tsx`)
-3-segment switcher: **`E heti edzés`** (active block hero with `RunWeekStrip` + prescribed `RunSessionCard`s + `RunCrossLoadCard`), **`Napló`** (logged runs newest-first), **`Tervek`** (Aktív/Tervezett/Archív library; "+ Új terv" → builder). The **builder** (`RunningBlockBuilder.tsx`, `/train/futas/:id`) edits title/goal and a per-week interval editor (`RunWeekEditor`) with `Mentés`/`Duplikál`/`Aktiválás`/`Blokk lezárása`/`Törlés`.
+3-segment switcher: **`E heti edzés`** (active block hero with `RunWeekStrip` + prescribed `RunSessionCard`s — each now shows its `timeOfDay` next to the weekday — + `RunCrossLoadCard`), **`Napló`** (logged runs newest-first), **`Tervek`** (Aktív/Tervezett/Archív library; "+ Új terv" → builder). The **builder** (`RunningBlockBuilder.tsx`, `/train/futas/:id`) edits title/goal, a **1–8 week** add/remove row (`RunningBlockBuilder.tsx:153-177`), and the selected week via `RunWeekEditor`. Editing is **auto-saved** — no Save button; a debounced write (`:65-69`) persists ~600 ms after the last keystroke and flushes on back, with a `Mentés…`/`✓ Mentve`/`Nem mentve` status pill (`:126-128`). Lifecycle collapses to a **single status-dependent CTA** (planned→`Aktiválás`, active→`Lezárás`) plus a `⋯` **overflow menu** (`OverflowMenu`, `:206`) carrying `Duplikálás`/`Törlés`. Each `RunWeekEditor` session is a **two-zone card** (`RunWeekEditor.tsx:59-92`): **Menetrend** (`WeekdayGrid` single-select weekday + a `type="time"` time-of-day input — both plan-level) over **Terhelés** (week-level load: sprint rounds+rest steppers / pyramid work-second pills). The old hardcoded "Kedd · Sprint" / "Péntek · Piramis" labels are gone — weekday + time are user-editable.
 
 ---
 
@@ -128,7 +128,8 @@ All tables: UUID PKs (`gen_random_uuid()`), `created_by` ownership via `OwnedEnt
 
 ### Running (`Futás`)
 - **Tables** (`202606141200`/`202606141210_mezo-b4n_*`): `running_block` (status planned|active|archived CHECK, kind interval CHECK, `structure jsonb`), `run_session_log` (FK→block CASCADE, `rpe_actual` CHECK 1-10).
-- **The plan is typed jsonb:** `RunningBlockStructure` (`entity/RunningBlockStructure.java`) = `weeks[ {weekNumber, phaseLabel, sessions[ {key, dayOfWeek 0=Hét..6=Vas, label, kind sprint|pyramid|steady, rpeTarget{min,max}, rounds?, segments[ {type warmup|work|rest|cooldown, durationSec, label} ]} ]} ]`, persisted via `@JdbcTypeCode(SqlTypes.JSON)`; `RunningMapper` round-trips it field-for-field to `RunningBlockStructureDto`.
+- **The plan is typed jsonb:** `RunningBlockStructure` (`entity/RunningBlockStructure.java`) = `weeks[ {weekNumber, phaseLabel, sessions[ {key, dayOfWeek 0=Hét..6=Vas, timeOfDay "HH:mm" (nullable), label, kind sprint|pyramid|steady, rpeTarget{min,max}, rounds?, segments[ {type warmup|work|rest|cooldown, durationSec, label} ]} ]} ]`, persisted via `@JdbcTypeCode(SqlTypes.JSON)`; `RunningMapper` round-trips it field-for-field to `RunningBlockStructureDto`.
+- **`timeOfDay` rides the `structure` jsonb — NO Liquibase migration.** It's a nullable `HH:mm` field added to `RunPrescribedSession` (`RunningBlockStructure.java:17`, OpenAPI `train.yml` `RunPrescribedSession.timeOfDay` `pattern ^\d{2}:\d{2}$`); MapStruct + Hibernate `@JdbcTypeCode(JSON)` round-trip it with no DDL change. The pre-existing `dayOfWeek` is now **user-editable** in the builder (`WeekdayGrid`). Both are **plan-level**: the FE `setSessionDay`/`setSessionTime` editors (`runningDraft.ts:59-64`) apply one edit to the same-`key` session in **every** week, since weekday/time are constant across weeks.
 - **Endpoints:** `GET/POST /api/train/running-blocks`, `PUT/DELETE /api/train/running-blocks/{id}`, `POST .../{id}/activate`, `POST .../{id}/close`, `GET/POST /api/train/run-sessions`. `RunningService` enforces single-active on activate; `deleteBlock` is soft delete.
 - **DTOs:** `RunningBlockResponse`/`RunningBlockUpsertRequest`, `RunningBlockStructureDto`, `RunWeek`, `RunPrescribedSession`, `RunSegment`, `RpeTarget`, `RunSessionLogResponse`/`RunSessionLogRequest`.
 - **Seed:** `RunningSeedData` is `@Profile("demodata")` (not `demofixtures` like Train) — a plain `demodata` app already has the 3 blocks (active/planned/archived).
@@ -218,7 +219,7 @@ Adding a Train endpoint/field/sub-tab is **contract-first + dual-mode + both-tes
 
 Both modes and both layers must stay green.
 
-- **Frontend (vitest — `VITE_USE_MOCK` both modes must pass):** per-tab view tests (`views/*.test.tsx`), `ActiveWorkoutScreen.test.tsx`, `MesocyclePlanner.test.tsx`, `MesocycleBuilder.test.tsx`, `RunningBlockBuilder.test.tsx`, `planner.test.ts`, sheet tests, `trainHooks.test.tsx`, `trainData.test.tsx`, `train.emptyStates.test.tsx` (the ghost-guards), `train.nav.test.tsx`, `runningDraft.test.ts`, `runningAgenda.test.ts`. Plus Playwright parity (`pnpm parity`).
+- **Frontend (vitest — `VITE_USE_MOCK` both modes must pass):** per-tab view tests (`views/*.test.tsx`), `ActiveWorkoutScreen.test.tsx`, `MesocyclePlanner.test.tsx`, `MesocycleBuilder.test.tsx`, `RunningBlockBuilder.test.tsx`, `WeekdayGrid.test.tsx`, `planner.test.ts`, sheet tests, `trainHooks.test.tsx`, `trainData.test.tsx`, `train.emptyStates.test.tsx` (the ghost-guards), `train.nav.test.tsx`, `runningDraft.test.ts`, `runningHooks.test.ts`, `runningAgenda.test.ts`. Plus Playwright parity (`pnpm parity`).
   ```bash
   cd frontend
   pnpm test                          # REAL mode
@@ -241,6 +242,8 @@ Both modes and both layers must stay green.
 **Gotchas:**
 - **Mock parity contract is the single most important rule:** mock returns byte-identical Phase-1 statics (synchronous `initialData`); real has no fallback → views MUST ghost-guard.
 - **`useTrain` mocks no-op; `useRunning` mocks emulate** (`setQueryData`). Asymmetric on purpose.
+- **Real-mode run-block create inserts synchronously into the cache** (`runningHooks.ts:52-63`, **mezo-11m**): on a `create` success the new block is written into `['running','blocks']` directly (no async invalidate that would race the read-after-write), so navigating straight to the builder no longer crashes on an `undefined` structure. Updates + mock mode still invalidate. The builder also guards `!draft.structure` with a `Betöltés…` placeholder (`RunningBlockBuilder.tsx:97-99`).
+- **Run-builder edits auto-save (no Save button):** a 600 ms debounce (`RunningBlockBuilder.tsx:65-69`) plus a flush-on-back (`backToList`, `:71-74`); `dirty` is a `JSON.stringify` diff of the draft vs the loaded block (`:57-60`). The re-seed effect keys on `block?.id` only so a refetch never clobbers in-progress edits.
 - **Template vs instance** both live in `workout_session`: template = `template_session_id IS NULL`; instance carries date/status/back-link. `listMesocycles`/`getToday` filter to templates; `logSet`/`finish` operate on instances.
 - **Single-active invariant** for both mesocycles and running blocks (enforced server-side on activate AND on meso create-as-active).
 - **Records resolve over soft-deleted exercises** via native query — day-edits soft-delete template rows but must not erase history.
@@ -268,7 +271,7 @@ Both modes and both layers must stay green.
 - `frontend/src/features/train/views/{TrainTodayView,GymView,SportView,RunningView,ExercisesView,MesocycleLibraryView}.tsx`
 - `frontend/src/features/train/{ActiveWorkoutScreen,MesocyclePlanner,MesocycleBuilder,RunningBlockBuilder}.tsx` — full-screen routes
 - `frontend/src/features/train/{planner,muscleFilters}.ts` — planner program-gen + exercise filters
-- `frontend/src/features/train/components/` — sheets/cards (`GymDaySheet`, `ExercisePickerSheet`, `ExerciseRecordSheet`, `ChallengesCarousel`, `FeedbackModal`, `WorkoutComplete`, `PRToast`, `SportLogSheet`, `SportScheduleSheet`, `CrossLoadRow`, `RunLogSheet`, `RunWeekEditor`, `RunSessionCard`, `RunCrossLoadCard`, `WeeklyDayRow`, `MesoOverview`, `MesoVolume`, `MesoExercises`, …)
+- `frontend/src/features/train/components/` — sheets/cards (`GymDaySheet`, `ExercisePickerSheet`, `ExerciseRecordSheet`, `ChallengesCarousel`, `FeedbackModal`, `WorkoutComplete`, `PRToast`, `SportLogSheet`, `SportScheduleSheet`, `CrossLoadRow`, `RunLogSheet`, `RunWeekEditor` (two-zone session cards: Menetrend = `WeekdayGrid` + time, Terhelés = load), `WeekdayGrid` (single-select 7-day picker), `RunSessionCard`, `RunCrossLoadCard`, `WeeklyDayRow`, `MesoOverview`, `MesoVolume`, `MesoExercises`, …)
 
 **API contract**
 - `api/feature/train/train.yml` — the FE↔BE source of truth for Train

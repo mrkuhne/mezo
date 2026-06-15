@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Futás builder — végső</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --brand-primary:#14B8A6; --brand-glow:#5EEAD4;
+  --canvas:#0A0F14; --surface-1:#121A22; --surface-2:#1A242E; --surface-3:#232F3B;
+  --border-subtle:rgba(255,255,255,.06); --border-strong:rgba(255,255,255,.12);
+  --text-primary:#ECECF1; --text-secondary:#9CA3AF; --text-tertiary:#6B7280; --text-inverse:#0A0F14;
+  --error:#F43F5E; --warning:#F59E0B; --info:#60A5FA; --success:#34D399;
+  --ff-display:"Antonio",sans-serif; --ff-body:"Inter",system-ui,sans-serif; --ff-mono:"JetBrains Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,textarea{font-family:inherit;color:inherit;background:none;border:none;outline:none}
+body{background:radial-gradient(ellipse at 50% 0%,#0c1218 0%,#050709 60%);color:var(--text-primary);font-family:var(--ff-body);min-height:100vh;padding:32px 24px 64px}
+.intro{max-width:880px;margin:0 auto 24px;text-align:center}
+.intro .eyebrow{font-family:var(--ff-mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--info)}
+.intro h1{font-family:var(--ff-display);font-size:28px;font-weight:600;text-transform:uppercase;letter-spacing:.01em;margin:10px 0 8px}
+.intro p{color:var(--text-secondary);font-size:13.5px;line-height:1.6;max-width:680px;margin:0 auto}
+.stage{display:flex;gap:40px;justify-content:center;align-items:flex-start;flex-wrap:wrap;max-width:1000px;margin:0 auto}
+.scr{width:372px;height:780px;background:var(--canvas);border-radius:42px;overflow:hidden;position:relative;border:1px solid rgba(255,255,255,.05);box-shadow:0 30px 80px rgba(0,0,0,.7)}
+.statusbar{height:38px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 4px;font-size:13px;font-weight:600}
+.body{height:calc(780px - 38px);overflow-y:auto;padding-bottom:14px;position:relative}
+.body::-webkit-scrollbar{display:none}
+.pad{padding:0 18px}
+.eyebrow{font-family:var(--ff-mono);font-size:9.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--text-tertiary)}
+.eyebrow.run{color:var(--info)}
+.lbl{font-family:var(--ff-mono);font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-secondary)}
+.lbl.run{color:var(--info)}
+.field{background:var(--surface-2);border:1px solid var(--border-subtle);color:var(--text-primary);font-family:var(--ff-body);font-size:13px;padding:9px 12px;width:100%}
+.field.title{font-family:var(--ff-display);font-size:20px;text-transform:uppercase;letter-spacing:.01em}
+.field.ph{color:var(--text-tertiary)}
+.notch4{clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)}
+.notch8{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+.card-s{background:var(--surface-1);border:1px solid var(--border-subtle)}
+.daygrid{display:flex;gap:4px}
+.day{flex:1;text-align:center;padding:8px 0;background:var(--surface-1);border:1px solid var(--border-subtle);color:var(--text-tertiary);font-family:var(--ff-mono);font-size:9px;font-weight:600;text-transform:uppercase}
+.day.on{background:color-mix(in srgb,var(--info) 12%,transparent);border-color:var(--info);color:var(--info)}
+.timeinput{display:inline-flex;align-items:center;gap:6px;font-family:var(--ff-mono);font-size:14px;font-weight:600;color:var(--info);background:var(--surface-2);border:1px solid rgba(96,165,250,.3);padding:6px 12px}
+.timeinput .clk{font-size:11px;opacity:.7}
+.wkrow{display:flex;gap:5px;flex-wrap:wrap}
+.wk{min-width:30px;padding:7px 0;text-align:center;background:var(--surface-1);border:1px solid var(--border-subtle);color:var(--text-secondary);font-family:var(--ff-mono);font-size:11px;font-weight:600}
+.wk.on{background:color-mix(in srgb,var(--info) 10%,transparent);border-color:color-mix(in srgb,var(--info) 45%,transparent);color:var(--info)}
+.wk.add{color:var(--info);border-style:dashed;border-color:color-mix(in srgb,var(--info) 45%,transparent);min-width:34px}
+.step{flex:1;background:var(--surface-2);padding:5px;display:flex;align-items:center;gap:4px;clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)}
+.step button{width:34px;height:34px;background:var(--surface-1);color:var(--brand-glow);border:1px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:300}
+.step .val{flex:1;text-align:center;font-family:var(--ff-display);font-size:19px;font-weight:600;color:var(--text-primary);line-height:1}
+.step .val .u{font-family:var(--ff-mono);font-size:9px;color:var(--text-tertiary);margin-left:2px;font-weight:500}
+.pill{display:inline-flex;align-items:center;gap:4px;font-family:var(--ff-mono);font-size:10.5px;font-weight:600;padding:4px 7px;color:var(--info);border:1px solid color-mix(in srgb,var(--info) 35%,transparent);background:color-mix(in srgb,var(--info) 8%,transparent)}
+.pill .x{color:var(--text-tertiary)}
+.addpill{font-family:var(--ff-mono);font-size:10.5px;font-weight:600;padding:4px 7px;color:var(--info);border:1px dashed color-mix(in srgb,var(--info) 45%,transparent);background:transparent}
+.hint{font-family:var(--ff-mono);font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-tertiary)}
+.rpe{font-family:var(--ff-mono);font-size:9px;font-weight:600;letter-spacing:.06em;padding:2px 7px;border-radius:10px;border:1px solid}
+.rpe.hot{color:var(--error);background:rgba(244,63,94,.08);border-color:rgba(244,63,94,.35)}
+.rpe.warm{color:var(--warning);background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.35)}
+.cta{width:100%;padding:14px;font-family:var(--ff-display);font-size:15px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px}
+.cta.primary{background:var(--brand-primary);color:var(--text-inverse)}
+.row{display:flex;align-items:center}.between{justify-content:space-between}.col{display:flex;flex-direction:column}
+.iconbtn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border-subtle);color:var(--text-secondary);font-size:15px}
+.savedchip{display:inline-flex;align-items:center;gap:5px;font-family:var(--ff-mono);font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--success)}
+.zone-div{height:1px;background:var(--border-subtle);margin:3px 0}
+.actionbar{position:sticky;bottom:0;background:linear-gradient(to top,var(--canvas) 72%,transparent);padding:14px 18px 16px}
+/* side notes */
+.notes{max-width:330px;padding-top:8px}
+.notes h3{font-family:var(--ff-display);font-size:17px;font-weight:600;text-transform:uppercase;margin-bottom:4px}
+.notes .grp{margin-top:18px}
+.notes .gh{font-family:var(--ff-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--info);margin-bottom:8px}
+.notes ul{list-style:none}
+.notes li{font-size:13px;color:var(--text-secondary);line-height:1.5;padding:5px 0 5px 18px;position:relative}
+.notes li::before{content:"▸";position:absolute;left:0;color:var(--info)}
+.notes li b{color:var(--text-primary)}
+</style>
+</head>
+<body>
+<div class="intro">
+  <div class="eyebrow">Futás builder · újratervezés · végső</div>
+  <h1>Így állna össze a terv</h1>
+  <p>Minden eddigi döntés egy képen. Nézd meg, és ha jó, megírom a részletes spec-et, majd nekiállhatunk az implementációnak.</p>
+</div>
+
+<div class="stage">
+  <div class="scr">
+    <div class="statusbar"><span>13:42</span><span>● ▼ ▮</span></div>
+    <div class="body">
+      <div class="pad col" style="gap:3px;padding-top:6px">
+        <div class="row" style="gap:7px"><span style="color:var(--info)">←</span><span class="eyebrow run">Futás</span></div>
+        <div class="row between" style="margin-top:4px">
+          <span class="eyebrow run">Builder · Tervezett</span>
+          <div class="row" style="gap:10px">
+            <span class="savedchip">✓ Mentve</span>
+            <button class="iconbtn notch4">⋯</button>
+          </div>
+        </div>
+      </div>
+      <div class="pad col" style="gap:7px;margin-top:8px">
+        <input class="field title" value="ÚJ FUTÓTERV" readonly>
+        <input class="field ph" value="Cél (pl. sprint-állóképesség)" readonly>
+      </div>
+
+      <div class="pad row between" style="margin-top:16px">
+        <span class="lbl">Hetek · 1–8</span>
+        <div class="wkrow"><div class="wk">1</div><div class="wk on">2</div><div class="wk">3</div><div class="wk">4</div><div class="wk">5</div><div class="wk">6</div><div class="wk add">＋</div></div>
+      </div>
+
+      <!-- session 1: Sprint -->
+      <div class="pad" style="margin-top:14px">
+        <div class="card-s notch4 col" style="padding:12px;gap:9px;position:relative">
+          <span style="position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--info)"></span>
+          <div class="row between"><span class="lbl run">Sprint-intervallum</span><span class="rpe hot">RPE 9–10</span></div>
+          <span class="hint">Nap · minden héten</span>
+          <div class="daygrid"><div class="day">Hét</div><div class="day on">Kedd</div><div class="day">Sze</div><div class="day">Csü</div><div class="day">Pén</div><div class="day">Szo</div><div class="day">Vas</div></div>
+          <div class="row between" style="margin-top:2px">
+            <span class="hint">Időpont · minden héten</span>
+            <span class="timeinput notch4"><span class="clk">◷</span>18:00</span>
+          </div>
+          <div class="zone-div"></div>
+          <span class="hint">Terhelés · 2. hét</span>
+          <div class="row" style="gap:7px">
+            <div class="step"><button>−</button><span class="val">5<span class="u">kör</span></span><button>+</button></div>
+            <div class="step"><button>−</button><span class="val">45<span class="u">mp</span></span><button>+</button></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- session 2: Piramis -->
+      <div class="pad" style="margin-top:10px">
+        <div class="card-s notch4 col" style="padding:12px;gap:9px;position:relative">
+          <span style="position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--info)"></span>
+          <div class="row between"><span class="lbl run">Piramis-intervallum</span><span class="rpe warm">RPE 8–9</span></div>
+          <span class="hint">Nap · minden héten</span>
+          <div class="daygrid"><div class="day">Hét</div><div class="day">Kedd</div><div class="day">Sze</div><div class="day">Csü</div><div class="day on">Pén</div><div class="day">Szo</div><div class="day">Vas</div></div>
+          <div class="row between" style="margin-top:2px">
+            <span class="hint">Időpont · minden héten</span>
+            <span class="timeinput notch4"><span class="clk">◷</span>17:30</span>
+          </div>
+          <div class="zone-div"></div>
+          <span class="hint">Terhelés · 2. hét · szakaszok</span>
+          <div class="row" style="gap:4px;flex-wrap:wrap">
+            <span class="pill">15<span class="x">×</span></span><span class="pill">30<span class="x">×</span></span><span class="pill">45<span class="x">×</span></span><span class="pill">30<span class="x">×</span></span><span class="pill">15<span class="x">×</span></span><span class="addpill">＋ szakasz</span>
+          </div>
+          <span class="hint">pihenő = szakasz × 2 · automatikus</span>
+        </div>
+      </div>
+
+      <div class="actionbar">
+        <button class="cta primary notch8">✓ Aktiválás · jún 15</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h3>Mi változik</h3>
+    <div class="grp">
+      <div class="gh">Amit kértél</div>
+      <ul>
+        <li><b>Nap-választó</b> minden edzéshez (7-napos grid, a Kedd/Péntek már nem fix).</li>
+        <li><b>Időpont</b> minden edzéshez (HH:mm, natív idő-választó).</li>
+        <li>A nap+idő <b>terv-szintű</b> — „minden héten” —, a hét-választó csak a terhelést váltja.</li>
+        <li><b>1–8 hét</b>, a <b>＋</b> ad hozzá (az utolsó hét eltávolítható).</li>
+      </ul>
+    </div>
+    <div class="grp">
+      <div class="gh">Tisztább akciók</div>
+      <ul>
+        <li><b>Auto-mentés</b> („✓ Mentve”) — nincs külön Mentés-gomb.</li>
+        <li>Alul <b>egyetlen</b> tét: Aktiválás (aktívnál Lezárás).</li>
+        <li>Duplikálás / Törlés a <b>⋯</b> menüben.</li>
+      </ul>
+    </div>
+    <div class="grp">
+      <div class="gh">Javítás + később</div>
+      <ul>
+        <li>A <b>„weeks” crash</b> megszűnik (új terv → builder nem omlik össze).</li>
+        <li><b>＋ Edzés hozzáadása</b> (szabad edzések) — külön, későbbi kör.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</body>
+</html>

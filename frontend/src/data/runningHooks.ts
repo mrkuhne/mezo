@@ -49,7 +49,18 @@ export function useRunning(): RunningData {
     mutationFn: (args: { id: string | null; body: RunningBlockUpsertRequest }) =>
       mock ? Promise.resolve(upsertMock(args.id, args.body))
            : (args.id ? runningApi.update(args.id, args.body) : runningApi.create(args.body)),
-    onSuccess: invalidate,
+    onSuccess: (block, args) => {
+      // Real-mode create: insert synchronously so an immediate navigate to the
+      // builder finds the block (mezo-11m). The seed is authoritative for the
+      // just-created block, so skip the async invalidate that would race the
+      // read-after-write and could transiently drop it. Updates + mock mode
+      // keep invalidate.
+      if (!mock && !args.id && block) {
+        qc.setQueryData<RunningBlockResponse[]>(['running', 'blocks'], (prev = []) => [...prev, block])
+        return
+      }
+      invalidate()
+    },
   })
   const lifecycleMock = (id: string, status: 'active' | 'archived') => {
     qc.setQueryData<RunningBlockResponse[]>(['running', 'blocks'], (prev = []) =>

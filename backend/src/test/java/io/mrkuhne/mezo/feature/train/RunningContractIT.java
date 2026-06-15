@@ -30,7 +30,7 @@ class RunningContractIT extends ApiIntegrationTest {
     /** One week, one sprint session with a couple of segments — DTO mirror of RunningPopulator.sampleStructure(). */
     private static RunningBlockStructureDto sampleStructure() {
         RunPrescribedSession sprint = RunPrescribedSession.builder()
-            .key("tue-sprint").dayOfWeek(1).label("Sprint-intervallum").kind("sprint")
+            .key("tue-sprint").dayOfWeek(1).timeOfDay("18:00").label("Sprint-intervallum").kind("sprint")
             .rpeTarget(RpeTarget.builder().min(9).max(10).build()).rounds(6)
             .segments(List.of(
                 RunSegment.builder().type("warmup").durationSec(300).build(),
@@ -102,6 +102,7 @@ class RunningContractIT extends ApiIntegrationTest {
         assertThat(created.getStructure().getWeeks().get(0).getSessions()).singleElement()
             .satisfies(s -> {
                 assertThat(s.getKey()).isEqualTo("tue-sprint");
+                assertThat(s.getTimeOfDay()).isEqualTo("18:00");
                 assertThat(s.getRpeTarget().getMin()).isEqualTo(9);
                 assertThat(s.getSegments()).hasSize(4);
             });

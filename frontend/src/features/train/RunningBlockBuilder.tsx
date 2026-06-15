@@ -1,20 +1,20 @@
 // ============================================================
 // Mezo · RunningBlockBuilder — full-screen takeover for a single running
 // block (sibling route /train/futas/:id, NO sub-nav). Own back-button header
-// (← Futás), status-aware eyebrow, editable title + goal, a week-selector
-// chip row driving the RunWeekEditor, and status-dependent bottom actions
-// (Mentés / Duplikál / Aktiválás | Blokk lezárása / Törlés). Accent --info.
-// Ported from the futas-blocks-builder mockup (RIGHT phone); mirrors
-// MesocycleBuilder's shell.
+// (← Futás), status-aware eyebrow + auto-save indicator + ⋯ overflow menu
+// (Duplikálás / Törlés), editable title + goal, a 1–8 add/remove week row
+// driving the RunWeekEditor, and a single status-dependent bottom CTA
+// (Aktiválás | Lezárás). Edits auto-save (debounced) and flush on back.
+// Accent --info. Mirrors MesocycleBuilder's shell.
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useRunning } from '@/data/hooks'
 import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 import { RunWeekEditor } from './components/RunWeekEditor'
-import { toUpsert, duplicateDraft } from '@/data/runningDraft'
-import type { RunningBlockResponse, RunningBlockUpsertRequest } from '@/lib/runningApi'
+import { toUpsert, duplicateDraft, addWeek, removeLastWeek } from '@/data/runningDraft'
+import type { RunningBlockUpsertRequest } from '@/lib/runningApi'
 
 const RUN = 'var(--info)'
 
@@ -37,7 +37,6 @@ export function RunningBlockBuilder() {
   } = useRunning()
 
   const block = runningBlocks.find((b) => b.id === id)
-  const backToList = () => navigate('/train/futas')
 
   const [draft, setDraft] = useState<RunningBlockUpsertRequest>(() => (block ? toUpsert(block) : ({} as RunningBlockUpsertRequest)))
   const [selectedWeek, setSelectedWeek] = useState<number>(() => block?.currentWeek || 1)
@@ -52,6 +51,34 @@ export function RunningBlockBuilder() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [block?.id])
 
+  // Dirty = the in-progress draft differs from the loaded block. Compute
+  // safely when block is undefined so the hook never throws before the
+  // not-found early return runs.
+  const dirty = useMemo(
+    () => JSON.stringify(draft) !== JSON.stringify(block ? toUpsert(block) : {}),
+    [draft, block],
+  )
+
+  // Auto-save: debounce a pending edit and persist it without an explicit
+  // Save button. The cleanup clears the timer on unmount, so tests that finish
+  // before 600ms never trigger a save.
+  useEffect(() => {
+    if (!block || !dirty) return
+    const t = setTimeout(() => saveRunningBlock(block.id, draft), 600)
+    return () => clearTimeout(t)
+  }, [draft, dirty, block, saveRunningBlock])
+
+  const backToList = () => {
+    if (block && dirty) saveRunningBlock(block.id, draft)
+    navigate('/train/futas')
+  }
+
+  const addWeekToDraft = () => setDraft((d) => ({ ...d, weeks: Math.min(8, (d.weeks || 1) + 1), structure: addWeek(d.structure) }))
+  const removeWeek = () => {
+    setDraft((d) => ({ ...d, weeks: Math.max(1, (d.weeks || 1) - 1), structure: removeLastWeek(d.structure) }))
+    setSelectedWeek((w) => Math.min(w, Math.max(1, (draft.weeks || 1) - 1)))
+  }
+
   if (!block) {
     return (
       <div style={{ padding: '24px' }}>
@@ -65,6 +92,10 @@ export function RunningBlockBuilder() {
         </div>
       </div>
     )
+  }
+
+  if (!draft.structure) {
+    return <div style={{ padding: 24 }}><span className="text-secondary" style={{ fontSize: 13 }}>Betöltés…</span></div>
   }
 
   const statusEyebrow =
@@ -89,8 +120,17 @@ export function RunningBlockBuilder() {
 
       {/* Header */}
       <div style={{ padding: '6px 24px 4px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="eyebrow" style={{ color: RUN }}>Builder · {statusEyebrow}</span>
+          <div className="row gap-md">
+            <span className="label-mono" style={{ fontSize: 9, color: dirty ? 'var(--text-tertiary)' : 'var(--success)' }}>
+              {runningMutationPending ? 'Mentés…' : dirty ? 'Nem mentve' : '✓ Mentve'}
+            </span>
+            <OverflowMenu
+              onDuplicate={() => saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList })}
+              onDelete={() => deleteRunningBlock(block.id, { onSuccess: backToList })}
+            />
+          </div>
         </div>
         <div className="col gap-sm mt-sm">
           <input
@@ -110,37 +150,29 @@ export function RunningBlockBuilder() {
         </div>
       </div>
 
-      {/* Week selector */}
+      {/* Week add/remove row — 1–8 */}
       <div style={{ padding: '16px 24px 4px' }}>
-        <div style={{ marginBottom: 8 }}>
-          <span className="label-mono">Hetek</span>
+        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+          <span className="label-mono">Hetek · 1–8</span>
         </div>
         <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
           {Array.from({ length: draft.weeks || 1 }, (_, i) => i + 1).map((w) => {
             const active = w === clampedWeek
             return (
-              <button
-                key={w}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setSelectedWeek(w)}
-                className="notch-4"
-                style={{
-                  minWidth: 40,
-                  padding: '8px 10px',
-                  background: active ? 'color-mix(in srgb, var(--info) 8%, transparent)' : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'color-mix(in srgb, var(--info) 40%, transparent)' : 'var(--border-subtle)'}`,
-                  color: active ? RUN : 'var(--text-secondary)',
-                  fontFamily: 'var(--ff-mono)',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.1em',
-                }}
-              >
+              <button key={w} type="button" aria-pressed={active} onClick={() => setSelectedWeek(w)} className="notch-4"
+                style={{ minWidth: 38, padding: '8px 10px', background: active ? 'color-mix(in srgb, var(--info) 8%, transparent)' : 'var(--surface-1)', border: `1px solid ${active ? 'color-mix(in srgb, var(--info) 40%, transparent)' : 'var(--border-subtle)'}`, color: active ? RUN : 'var(--text-secondary)', fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em' }}>
                 {w}
               </button>
             )
           })}
+          {(draft.weeks || 1) > 1 && (
+            <button type="button" aria-label="Utolsó hét eltávolítása" onClick={removeWeek} className="notch-4"
+              style={{ minWidth: 38, padding: '8px 10px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>−</button>
+          )}
+          {(draft.weeks || 1) < 8 && (
+            <button type="button" aria-label="Hét hozzáadása" onClick={addWeekToDraft} className="notch-4"
+              style={{ minWidth: 38, padding: '8px 10px', background: 'transparent', border: '1px dashed color-mix(in srgb, var(--info) 45%, transparent)', color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 14 }}>＋</button>
+          )}
         </div>
       </div>
 
@@ -153,57 +185,36 @@ export function RunningBlockBuilder() {
         />
       </div>
 
-      {/* Actions */}
-      <BuilderActions
-        block={block}
-        pending={runningMutationPending}
-        onSave={() => saveRunningBlock(block.id, draft, { onSuccess: backToList })}
-        onDuplicate={() => saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList })}
-        onActivate={() => { activateRunningBlock(block.id); backToList() }}
-        onClose={() => { closeRunningBlock(block.id); backToList() }}
-        onDelete={() => deleteRunningBlock(block.id, { onSuccess: backToList })}
-      />
+      {/* Single status CTA */}
+      <div className="col gap-sm" style={{ padding: '16px 24px 32px' }}>
+        {block.status === 'planned' && (
+          <CtaPrimary className="notch-8" onClick={() => { activateRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
+            <Icon name="check" size={16} /> Aktiválás · {block.startDate}
+          </CtaPrimary>
+        )}
+        {block.status === 'active' && (
+          <CtaGhost className="notch-4" style={{ padding: 12, borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
+            onClick={() => { closeRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
+            Lezárás
+          </CtaGhost>
+        )}
+      </div>
     </div>
   )
 }
 
-function BuilderActions({
-  block, pending, onSave, onDuplicate, onActivate, onClose, onDelete,
-}: {
-  block: RunningBlockResponse
-  pending: boolean
-  onSave: () => void
-  onDuplicate: () => void
-  onActivate: () => void
-  onClose: () => void
-  onDelete: () => void
-}) {
-  const errorTint: React.CSSProperties = {
-    padding: 12,
-    borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)',
-    color: 'var(--error)',
-  }
+function OverflowMenu({ onDuplicate, onDelete }: { onDuplicate: () => void; onDelete: () => void }) {
+  const [open, setOpen] = useState(false)
   return (
-    <div className="col gap-sm" style={{ padding: '16px 24px 32px' }}>
-      <CtaPrimary className="notch-8" onClick={onSave} disabled={pending}>
-        <Icon name="check" size={16} /> Mentés
-      </CtaPrimary>
-      <CtaGhost className="notch-4" style={{ padding: 12 }} onClick={onDuplicate} disabled={pending}>
-        Duplikál
-      </CtaGhost>
-      {block.status === 'planned' && (
-        <CtaPrimary className="notch-8" onClick={onActivate} disabled={pending}>
-          <Icon name="check" size={16} /> Aktiválás
-        </CtaPrimary>
+    <div style={{ position: 'relative' }}>
+      <button type="button" aria-label="További műveletek" aria-expanded={open} onClick={() => setOpen((o) => !o)}
+        className="notch-4" style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 16 }}>⋯</button>
+      {open && (
+        <div className="card notch-4" style={{ position: 'absolute', right: 0, top: 40, zIndex: 20, minWidth: 150, background: 'var(--surface-3)', border: '1px solid var(--border-strong)' }}>
+          <button type="button" onClick={() => { setOpen(false); onDuplicate() }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', fontSize: 13, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)' }}>Duplikálás</button>
+          <button type="button" onClick={() => { setOpen(false); onDelete() }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', fontSize: 13, color: 'var(--error)' }}>Törlés</button>
+        </div>
       )}
-      {block.status === 'active' && (
-        <CtaGhost className="notch-4" style={errorTint} onClick={onClose} disabled={pending}>
-          Blokk lezárása
-        </CtaGhost>
-      )}
-      <CtaGhost className="notch-4" style={errorTint} onClick={onDelete} disabled={pending}>
-        Törlés
-      </CtaGhost>
     </div>
   )
 }

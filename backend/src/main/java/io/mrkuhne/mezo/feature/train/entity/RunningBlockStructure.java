@@ -14,6 +14,7 @@ public record RunningBlockStructure(List<RunWeek> weeks) {
     public record RunPrescribedSession(
         String key,
         Integer dayOfWeek,            // 0=Hét..6=Vas
+        String timeOfDay,             // HH:mm, plan-level start time; nullable
         String label,
         String kind,                  // sprint|pyramid|steady
         RpeTarget rpeTarget,

@@ -83,6 +83,9 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="row" style={{ alignItems: 'center', gap: 10 }}>
             <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{dayLabel}</span>
+            {session.timeOfDay && (
+              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: RUN }}>{session.timeOfDay}</span>
+            )}
             <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.label}</span>
           </div>
           <span

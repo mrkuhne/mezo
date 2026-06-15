@@ -1443,6 +1443,7 @@ components:
       properties:
         key: { type: string }
         dayOfWeek: { type: integer, description: '0=Hét..6=Vas' }
+        timeOfDay: { type: string, nullable: true, pattern: '^\d{2}:\d{2}$', example: '18:00', description: 'HH:mm, plan-level start time' }
         label: { type: string }
         kind: { type: string, description: 'sprint|pyramid|steady' }
         rpeTarget: { $ref: '#/components/schemas/RpeTarget' }

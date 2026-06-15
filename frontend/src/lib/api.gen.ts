@@ -838,6 +838,11 @@ export interface components {
             key: string;
             /** @description 0=Hét..6=Vas */
             dayOfWeek: number;
+            /**
+             * @description HH:mm, plan-level start time
+             * @example 18:00
+             */
+            timeOfDay?: string | null;
             label: string;
             /** @description sprint|pyramid|steady */
             kind: string;
