@@ -299,6 +299,8 @@ export interface GymScheduleDay {
   duration: number | null
   type: string | null
 }
+/** Standalone weekly gym slot (persists across mesocycles). `dayOfWeek`: 0=Hét .. 6=Vas. */
+export interface GymScheduleSlot { dayOfWeek: number; time: string }
 export interface WeeklySupplementRow { name: string; dose: string; days: number[]; color: string; note?: string }
 export interface RecurringPattern { icon: IconName; color: string; title: string; detail: string }
 export interface ReplanCascade { system: 'Fuel' | 'Train' | 'Sleep' | 'Insights'; impact: string; detail: string }
