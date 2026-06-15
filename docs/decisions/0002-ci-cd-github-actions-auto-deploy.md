@@ -86,3 +86,15 @@ Job graph: `version` → (`build-frontend` ⋁ `build-backend`, each conditional
 - **Per-component versions** (separate FE/BE tags) — rejected: mapping commit scope → component is
   brittle (`fix(train)` is which side? `chore(bd)` is neither), and the repo is almost entirely
   frontend commits, so a single shared version is simpler and accurate enough.
+
+## Update — 2026-06-15 (mezo-oa3): tests removed from the deploy pipeline
+
+The original decision ran the full FE + BE test suite inside `deploy.yml` before each build. On a
+single-dev repo where CLAUDE.md already mandates the quality gates locally **before** every push
+(`./mvnw clean test`, frontend tests in both modes), running them again in CI only added several
+minutes to every deploy for no added safety. The test steps were dropped: `build-frontend` now goes
+straight `pnpm install → pnpm build`, and `build-backend` runs `./mvnw -B clean package -DskipTests`
+(so it no longer needs Testcontainers/Docker in CI). **Tests are now a local pre-push gate only.**
+
+Trade-off accepted: CI no longer catches a broken push if the local gate was skipped — acceptable
+for a solo project optimizing deploy latency; revisit if the repo gains contributors or PR flow.

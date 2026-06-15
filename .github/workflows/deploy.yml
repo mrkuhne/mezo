@@ -1,6 +1,8 @@
 name: deploy
-# git push to main -> build the changed image, test it, push to GHCR, bump the
-# k8s tag via a [skip ci] commit. ArgoCD (already automated) deploys the result.
+# git push to main -> build the changed image, push to GHCR, bump the k8s tag via
+# a [skip ci] commit. ArgoCD (already automated) deploys the result.
+# NOTE: tests are intentionally NOT run here (mezo-oa3) — they are a local pre-push
+# gate (see CLAUDE.md "Session Completion"). The deploy path goes straight to build.
 on:
   push:
     branches: [main]
@@ -47,10 +49,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
-      - name: Test (real mode, MSW)
-        run: pnpm test
-      - name: Test (mock mode)
-        run: VITE_USE_MOCK=true pnpm test
       - name: Build (real mode, owner baked in)
         env:
           VITE_USE_MOCK: "false"
@@ -84,8 +82,8 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: maven
-      - name: Test + package (throwaway Testcontainers PG)
-        run: ./mvnw -B clean verify -Dmezo.test.use-testcontainers=true
+      - name: Package (skip tests — local pre-push gate; mezo-oa3)
+        run: ./mvnw -B clean package -DskipTests
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io

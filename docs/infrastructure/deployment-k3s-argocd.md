@@ -140,8 +140,10 @@ Still TODO: HTTP→HTTPS redirect (optional).
 
 ## CI/CD pipeline (`git push` → live)
 
-A `git push` to `main` now builds, tests, tags, and rolls out the changed component automatically —
-no manual `docker buildx` / tag bookkeeping. The build half lives in
+A `git push` to `main` now builds, tags, and rolls out the changed component automatically —
+no manual `docker buildx` / tag bookkeeping. **Tests are intentionally NOT run in CI** (mezo-oa3):
+the suite is a **local pre-push gate** (see CLAUDE.md "Session Completion"), so the deploy path goes
+straight to build → push → release for speed. The build half lives in
 **`.github/workflows/deploy.yml`** (GitHub Actions); the deploy half is the **unchanged** ArgoCD
 auto-sync on `k8s/`. See [ADR 0002](../decisions/0002-ci-cd-github-actions-auto-deploy.md) for the
 *why* and [`docs/superpowers/plans/2026-06-14-ci-cd-auto-deploy.md`](../superpowers/plans/2026-06-14-ci-cd-auto-deploy.md)
@@ -156,10 +158,11 @@ for the build-out steps.
    `backend` or `api` → BE). Tree hashes are used rather than `git diff base..HEAD`, which proved
    unreliable under `actions/checkout`'s merge-commit checkout — it silently reported the backend
    as unchanged on the first run and skipped its deploy (fixed in mezo-7n5).
-2. **`build-frontend`** (only if FE changed) — `pnpm test` in real (MSW) **and** mock modes →
-   `pnpm build` (owner creds baked in) → docker build/push `ghcr.io/mrkuhne/mezo-frontend:<ver>`.
-3. **`build-backend`** (only if BE changed) — `./mvnw -B clean verify` against a throwaway
-   Testcontainers Postgres → docker build/push `ghcr.io/mrkuhne/mezo-backend:<ver>`.
+2. **`build-frontend`** (only if FE changed) — `pnpm build` (owner creds baked in) → docker
+   build/push `ghcr.io/mrkuhne/mezo-frontend:<ver>`. No test step (mezo-oa3).
+3. **`build-backend`** (only if BE changed) — `./mvnw -B clean package -DskipTests` (no
+   Testcontainers/Docker needed since tests are skipped) → docker build/push
+   `ghcr.io/mrkuhne/mezo-backend:<ver>`.
 4. **`release`** (if nothing failed and ≥1 component shipped) — `sed`-rewrites the changed
    `k8s/<comp>/deployment.yaml` image tag to `<ver>`, commits it back as
    `chore(release): v<ver> [skip ci]`, `git pull --rebase origin main` (non-fast-forward guard),
