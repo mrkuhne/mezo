@@ -9,7 +9,7 @@ import type {
 // dayOfWeek: 0=Hét..6=Vas. Tue=1, Fri=4.
 function sprintSession(rounds: number, restSec: number): RunPrescribedSession {
   return {
-    key: 'tue-sprint', dayOfWeek: 1, label: 'Sprint-intervallum', kind: 'sprint',
+    key: 'tue-sprint', dayOfWeek: 1, timeOfDay: '18:00', label: 'Sprint-intervallum', kind: 'sprint',
     rpeTarget: { min: 9, max: 10 }, rounds,
     segments: [
       { type: 'warmup', durationSec: 300, label: null },
@@ -27,7 +27,7 @@ function pyramidSession(workSecs: number[], restMul: number): RunPrescribedSessi
   }
   segments.push({ type: 'cooldown', durationSec: 300, label: null })
   return {
-    key: 'fri-pyramid', dayOfWeek: 4, label: 'Piramis-intervallum', kind: 'pyramid',
+    key: 'fri-pyramid', dayOfWeek: 4, timeOfDay: '17:30', label: 'Piramis-intervallum', kind: 'pyramid',
     rpeTarget: { min: 8, max: 9 }, rounds: null, segments,
   }
 }

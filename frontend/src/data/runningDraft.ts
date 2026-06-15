@@ -6,7 +6,7 @@ const warmup = (): RunSegment => ({ type: 'warmup', durationSec: 300, label: nul
 const cooldown = (): RunSegment => ({ type: 'cooldown', durationSec: 300, label: null })
 
 export function sprintSession(rounds: number, restSec: number): RunPrescribedSession {
-  return { key: 'tue-sprint', dayOfWeek: 1, label: 'Sprint-intervallum', kind: 'sprint',
+  return { key: 'tue-sprint', dayOfWeek: 1, timeOfDay: '18:00', label: 'Sprint-intervallum', kind: 'sprint',
     rpeTarget: { min: 9, max: 10 }, rounds,
     segments: [warmup(), { type: 'work', durationSec: 15, label: null }, { type: 'rest', durationSec: restSec, label: null }, cooldown()] }
 }
@@ -14,7 +14,7 @@ export function pyramidSession(workSecs: number[], restMul: number): RunPrescrib
   const segs: RunSegment[] = [warmup()]
   for (const w of workSecs) { segs.push({ type: 'work', durationSec: w, label: null }); segs.push({ type: 'rest', durationSec: Math.round(w * restMul), label: null }) }
   segs.push(cooldown())
-  return { key: 'fri-pyramid', dayOfWeek: 4, label: 'Piramis-intervallum', kind: 'pyramid', rpeTarget: { min: 8, max: 9 }, rounds: null, segments: segs }
+  return { key: 'fri-pyramid', dayOfWeek: 4, timeOfDay: '17:30', label: 'Piramis-intervallum', kind: 'pyramid', rpeTarget: { min: 8, max: 9 }, rounds: null, segments: segs }
 }
 export function defaultWeek(n: number): RunWeek {
   return { weekNumber: n, phaseLabel: 'Alapozás', sessions: [sprintSession(5, 45), pyramidSession([15, 30, 45, 30, 15], 2)] }
@@ -50,6 +50,17 @@ function mapSession(s: RunningBlockStructureDto, weekNumber: number, key: string
   fn: (sess: RunPrescribedSession) => RunPrescribedSession): RunningBlockStructureDto {
   return { weeks: s.weeks.map((w) => w.weekNumber !== weekNumber ? w
     : { ...w, sessions: w.sessions.map((sess) => sess.key === key ? fn(sess) : sess) }) }
+}
+// Plan-level: apply fn to the same-key session in EVERY week (day/time are constant across weeks).
+function mapSessionAllWeeks(s: RunningBlockStructureDto, key: string,
+  fn: (sess: RunPrescribedSession) => RunPrescribedSession): RunningBlockStructureDto {
+  return { weeks: s.weeks.map((w) => ({ ...w, sessions: w.sessions.map((sess) => sess.key === key ? fn(sess) : sess) })) }
+}
+export function setSessionDay(s: RunningBlockStructureDto, key: string, dayOfWeek: number): RunningBlockStructureDto {
+  return mapSessionAllWeeks(s, key, (sess) => ({ ...sess, dayOfWeek }))
+}
+export function setSessionTime(s: RunningBlockStructureDto, key: string, timeOfDay: string): RunningBlockStructureDto {
+  return mapSessionAllWeeks(s, key, (sess) => ({ ...sess, timeOfDay }))
 }
 export function sprintOf(w: RunWeek) { return w.sessions.find((s) => s.kind === 'sprint') ?? null }
 export function pyramidOf(w: RunWeek) { return w.sessions.find((s) => s.kind === 'pyramid') ?? null }

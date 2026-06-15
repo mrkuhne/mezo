@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import {
   newDraft, duplicateDraft, setSprintRounds, setSprintRest, setPyramidWork,
+  setSessionDay, setSessionTime,
   sprintOf, pyramidOf, workSecs, restSec,
 } from './runningDraft'
 import { runningBlocksMock } from './running'
@@ -105,5 +106,45 @@ describe('readers', () => {
   test('workSecs reads every work segment, restSec reads the first rest', () => {
     expect(workSecs(pyramidOf(week3)!)).toEqual([15, 30, 45, 45, 30, 15])
     expect(restSec(sprintOf(week3)!)).toBe(45)
+  })
+})
+
+describe('setSessionDay (plan-level)', () => {
+  test('sets dayOfWeek on the same-key session in EVERY week, keeps key stable, is immutable', () => {
+    const struct = newDraft('2026-06-16', '2026-07-14').structure
+    const next = setSessionDay(struct, 'tue-sprint', 2) // Tue(1) -> Wed(2)
+
+    for (const w of next.weeks) {
+      const sprint = w.sessions.find((s) => s.key === 'tue-sprint')!
+      expect(sprint.dayOfWeek).toBe(2)
+      expect(sprint.key).toBe('tue-sprint') // key never derived from weekday
+    }
+    // pyramid sessions untouched
+    expect(next.weeks[0].sessions.find((s) => s.key === 'fri-pyramid')!.dayOfWeek).toBe(4)
+    // immutability
+    expect(struct.weeks[0].sessions.find((s) => s.key === 'tue-sprint')!.dayOfWeek).toBe(1)
+  })
+})
+
+describe('setSessionTime (plan-level)', () => {
+  test('sets timeOfDay on the same-key session in EVERY week', () => {
+    const struct = newDraft('2026-06-16', '2026-07-14').structure
+    const next = setSessionTime(struct, 'fri-pyramid', '17:45')
+    for (const w of next.weeks) {
+      expect(w.sessions.find((s) => s.key === 'fri-pyramid')!.timeOfDay).toBe('17:45')
+    }
+  })
+})
+
+describe('newDraft factory defaults', () => {
+  test('seeds a default weekday and time on each session', () => {
+    const struct = newDraft('2026-06-16', '2026-07-14').structure
+    const w1 = struct.weeks[0]
+    const sprint = w1.sessions.find((s) => s.key === 'tue-sprint')!
+    const pyramid = w1.sessions.find((s) => s.key === 'fri-pyramid')!
+    expect(sprint.dayOfWeek).toBe(1)
+    expect(sprint.timeOfDay).toBe('18:00')
+    expect(pyramid.dayOfWeek).toBe(4)
+    expect(pyramid.timeOfDay).toBe('17:30')
   })
 })
