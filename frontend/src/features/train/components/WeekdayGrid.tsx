@@ -8,7 +8,7 @@ const RUN = 'var(--info)'
 
 export function WeekdayGrid({ value, onChange }: { value: number; onChange: (dayOfWeek: number) => void }) {
   return (
-    <div className="row gap-xs">
+    <div className="row gap-xs" role="group" aria-label="Nap">
       {DAY_ORDER.map((d, i) => {
         const active = i === value
         return (

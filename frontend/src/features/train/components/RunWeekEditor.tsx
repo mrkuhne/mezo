@@ -78,7 +78,7 @@ function SessionCard({ session, structure, weekNumber, onStructure, children }: 
           aria-label={`${session.label} időpont`}
           value={session.timeOfDay ?? ''}
           onChange={(e) => onStructure(setSessionTime(structure, session.key, e.target.value))}
-          style={{ background: 'var(--surface-2)', border: '1px solid rgba(96,165,250,.3)', color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 13, fontWeight: 600, padding: '6px 10px' }}
+          style={{ background: 'var(--surface-2)', border: '1px solid color-mix(in srgb, var(--info) 30%, transparent)', color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 13, fontWeight: 600, padding: '6px 10px' }}
         />
       </div>
 
