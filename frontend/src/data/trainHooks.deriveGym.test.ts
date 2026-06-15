@@ -22,7 +22,10 @@ test('deriveGymSchedule leaves time null when no slot matches the gym day', () =
 })
 
 test('deriveGymSchedule ignores a slot whose weekday has no gym day', () => {
+  // Kedd is the only gym day; the orphan Sze slot has no matching gym day.
   const sched = deriveGymSchedule(meso([{ day: 'Kedd', exerciseCount: 4, type: 'Plyo Power' }]),
     [{ dayOfWeek: 2, time: '07:00' }]) // Sze slot, no Sze gym day
   expect(sched!.weeklyTimes.find((w) => w.day === 'Sze')!.active).toBe(false)
+  // The orphan Sze slot must not leak its time onto the real Kedd gym day.
+  expect(sched!.weeklyTimes.find((w) => w.day === 'Kedd')!.time).toBeNull()
 })
