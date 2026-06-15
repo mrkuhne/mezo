@@ -8,6 +8,7 @@
 // brand-glow card tints follow the existing Insights/Fuel slice convention.
 // ============================================================
 import { useState } from 'react'
+import { useStickyTab } from '@/lib/useStickyTab'
 import { useTrain } from '@/data/hooks'
 import { isMockMode } from '@/lib/mode'
 import type { SportSchedule, SportSession, CrossLoadRow as CrossLoadRowData } from '@/data/types'
@@ -41,7 +42,8 @@ const RPE_EXPLAINER =
 
 export function SportView() {
   const { sport, logSportSession, saveSportSchedule } = useTrain()
-  const [view, setView] = useState<SportSubView>('week')
+  // Sticky so returning here restores the segment the user left from — see useStickyTab.
+  const [view, setView] = useStickyTab<SportSubView>('train.sport.view', 'week')
   const [logOpen, setLogOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
 

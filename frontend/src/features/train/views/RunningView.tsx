@@ -11,6 +11,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useStickyTab } from '@/lib/useStickyTab'
 import { useRunning } from '@/data/hooks'
 import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest } from '@/lib/runningApi'
 import { newDraft } from '@/data/runningDraft'
@@ -53,7 +54,9 @@ const STATUS_LABELS: Record<RunningBlockResponse['status'], string> = {
 
 export function RunningView() {
   const { runningBlocks, activeRunningBlock, runSessions, runningPending, saveRunningBlock, logRunSession } = useRunning()
-  const [view, setView] = useState<RunSubView>('week')
+  // Sticky so returning from the builder (＋ Új terv) lands back on the segment
+  // the user left from (e.g. Tervek), not the default — see useStickyTab.
+  const [view, setView] = useStickyTab<RunSubView>('train.futas.view', 'week')
   const navigate = useNavigate()
 
   const openBuilder = (id: string) => navigate(`/train/futas/${id}`)

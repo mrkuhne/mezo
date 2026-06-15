@@ -57,6 +57,18 @@ describe('RunningView (mock mode)', () => {
     expect(screen.getByText('Téli base 02')).toBeInTheDocument()
   })
 
+  test('restores the last segment after a remount (breadcrumb-back → Tervek, not the default)', async () => {
+    const first = renderView()
+    await userEvent.click(screen.getByRole('button', { name: 'Tervek' }))
+    expect(screen.getByText('Robbanékonyság 01')).toBeInTheDocument() // on Tervek
+    first.unmount() // simulate navigating into the /train/futas/:id builder
+
+    renderView() // simulate breadcrumb-back to /train/futas (a fresh mount)
+    // Restored on Tervek, NOT snapped back to the default "E heti edzés" segment.
+    expect(screen.getByRole('button', { name: 'Tervek' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText('Robbanékonyság 01')).toBeInTheDocument()
+  })
+
   test('logging a prescribed session opens the RunLogSheet (date-independent)', async () => {
     renderView()
     // Each RunSessionCard in the E-heti view exposes a "Naplózás ▸" button.

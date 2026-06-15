@@ -30,4 +30,13 @@ installStorage('sessionStorage')
 // existing suite is unaffected.
 beforeAll(() => server.listen({ onUnhandledRequest: 'bypass' }))
 afterEach(() => server.resetHandlers())
+// Sticky in-view tabs (useStickyTab) persist to sessionStorage; clear it between
+// tests so a remembered segment never leaks into the next test's default.
+afterEach(() => {
+  try {
+    sessionStorage.clear()
+  } catch {
+    /* ignore */
+  }
+})
 afterAll(() => server.close())
