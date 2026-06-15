@@ -69,3 +69,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606141210_mezo-b4n_create_run_session_log.sql
+  - changeSet:
+      id: "1.0.0:202606151500_mezo-auk_create_gym_schedule_slot"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606151500_mezo-auk_create_gym_schedule_slot.sql
