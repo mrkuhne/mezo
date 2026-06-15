@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -7,6 +7,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { DAY_ORDER } from '@/data/train'
+import { localDateString } from '@/lib/dates'
 
 // Asserts Phase-1 mock meso/gym data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -189,4 +190,98 @@ test('real mode shows the volleyball today-card when a slot falls on today', asy
   expect(screen.getByRole('button', { name: /Logold a session-t/ })).toBeInTheDocument()
   // gym rest day + vb today -> no rest-day card
   expect(screen.queryByText(/Ma pihenőnap/)).not.toBeInTheDocument()
+})
+
+test('real mode: volleyball logged today ⇒ hero flips to the done summary, not the log CTA', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+      HttpResponse.json([
+        { id: 'e1f3a0e2-0000-4000-8000-0000000000aa', dayOfWeek: todayIdx, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      ]),
+    ),
+    // a session logged for TODAY (ISO date == today) — the hero must reflect it
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'ss-today', sport: 'volleyball', date: localDateString(), time: '18:15', duration: 90, setsPlayed: 5, intensity: 7, rpe: 7, shoulderStrain: 6, jumpCount: null, notes: null },
+      ]),
+    ),
+  )
+  renderView()
+  expect(await screen.findByText(/Volleyball · 18:15/)).toBeInTheDocument()
+  // done state: muted summary present, the "log it" CTA gone, the chip reads "Kész"
+  expect(screen.getByText(/Logolva · RPE 7 · 90p/)).toBeInTheDocument()
+  expect(screen.getByText('Kész')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
+})
+
+test('real mode: saving the volleyball log flips the hero to done (the reported bug)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  // Stateful backend: GET reflects what POST persisted, so the invalidate→refetch
+  // after save delivers the just-logged session — exactly the user's flow.
+  const store: Array<Record<string, unknown>> = []
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+      HttpResponse.json([
+        { id: 'e1f3a0e2-0000-4000-8000-0000000000aa', dayOfWeek: todayIdx, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      ]),
+    ),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json(store)),
+    http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      const created = { id: 'ss-new', sport: 'volleyball', date: localDateString(), time: '18:15', intensity: null, jumpCount: null, notes: null, ...body }
+      store.push(created)
+      return HttpResponse.json(created, { status: 201 })
+    }),
+  )
+  renderView()
+  // Initially the log CTA is shown (nothing logged today yet)
+  fireEvent.click(await screen.findByRole('button', { name: /Logold a session-t/ }))
+  // The sheet opens with sane defaults (90p / RPE 7); just save
+  fireEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
+  // After save the hero flips to the done summary and the log CTA is gone
+  expect(await screen.findByText(/Logolva · RPE 7 · 90p/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
+})
+
+test('real mode: prescribed run logged today ⇒ run hero flips to the done summary, not the log CTA', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  const runBlock = {
+    id: 'rb-1', title: 'Robbanékonyság', goal: 'sprint', kind: 'interval', status: 'active',
+    startDate: '2026-06-01', endDate: '2026-08-01', weeks: 4, currentWeek: 1, summary: null,
+    structure: {
+      weeks: [{
+        weekNumber: 1, phaseLabel: 'Alapozás',
+        sessions: [{
+          key: 'today-sprint', dayOfWeek: todayIdx, timeOfDay: '08:00', label: 'Reggeli sprint',
+          kind: 'sprint', rpeTarget: { min: 9, max: 10 }, rounds: 6, segments: [],
+        }],
+      }],
+    },
+  }
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/running-blocks`, () => HttpResponse.json([runBlock])),
+    // the prescribed run is logged for this block/week/session — hero must reflect it
+    http.get(`${API_BASE}/api/train/run-sessions`, () =>
+      HttpResponse.json([
+        { id: 'rl-1', blockId: 'rb-1', weekNumber: 1, sessionKey: 'today-sprint', date: localDateString(), completedRounds: 6, rpeActual: 9, hrRecoverySec: null, sprintLandmark: null, durationMin: 24, notes: null },
+      ]),
+    ),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+  )
+  renderView()
+  expect(await screen.findByText('Futás · ma')).toBeInTheDocument()
+  expect(screen.getByText(/Logolva · RPE 9/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
 })

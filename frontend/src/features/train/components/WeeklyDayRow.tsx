@@ -17,12 +17,16 @@ export interface WeeklyAgendaDay {
 
 interface WeeklyDayRowProps {
   agenda: WeeklyAgendaDay
+  /** Today's volleyball slot already has a logged session ⇒ show the done chip. */
+  vbLogged?: boolean
+  /** Today's prescribed run (by key) already has a logged session ⇒ show the done chip. */
+  isRunLogged?: (key: string) => boolean
   onStartGym: () => void
   onLogVolleyball: () => void
   onLogRun?: (s: RunPrescribedSession) => void
 }
 
-export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball, onLogRun }: WeeklyDayRowProps) {
+export function WeeklyDayRow({ agenda, vbLogged, isRunLogged, onStartGym, onLogVolleyball, onLogRun }: WeeklyDayRowProps) {
   const { day, isToday } = agenda
   // Time-ordered flat session list — gym/volleyball/running interleave by
   // time-of-day so a morning run renders above an evening gym (untimed last).
@@ -139,9 +143,13 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball, onLogRun }: 
                   {isToday && (
                     <span
                       className="chip"
-                      style={{ fontSize: 8, padding: '2px 5px', color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}
+                      style={{
+                        fontSize: 8, padding: '2px 5px',
+                        color: vbLogged ? 'var(--success)' : 'var(--cat-tendency)',
+                        borderColor: `color-mix(in srgb, ${vbLogged ? 'var(--success)' : 'var(--cat-tendency)'} 40%, transparent)`,
+                      }}
                     >
-                      log
+                      {vbLogged ? 'kész' : 'log'}
                     </span>
                   )}
                 </button>
@@ -172,9 +180,13 @@ export function WeeklyDayRow({ agenda, onStartGym, onLogVolleyball, onLogRun }: 
                 {isToday && (
                   <span
                     className="chip"
-                    style={{ fontSize: 8, padding: '2px 5px', color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }}
+                    style={{
+                      fontSize: 8, padding: '2px 5px',
+                      color: isRunLogged?.(run.key) ? 'var(--success)' : 'var(--info)',
+                      borderColor: `color-mix(in srgb, ${isRunLogged?.(run.key) ? 'var(--success)' : 'var(--info)'} 40%, transparent)`,
+                    }}
                   >
-                    log
+                    {isRunLogged?.(run.key) ? 'kész' : 'log'}
                   </span>
                 )}
               </button>

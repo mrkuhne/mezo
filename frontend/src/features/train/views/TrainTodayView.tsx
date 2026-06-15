@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTrain, useRunning } from '@/data/hooks'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train'
 import { runSessionsForDay, todayIdx } from '@/data/runningAgenda'
+import { huMonthDayDow, localDateString } from '@/lib/dates'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Display } from '@/components/ui/Display'
@@ -25,7 +26,7 @@ type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; labe
 
 export function TrainTodayView() {
   const { workout, gymSchedule, sport, activeMeso, logSportSession } = useTrain()
-  const { activeRunningBlock, logRunSession } = useRunning()
+  const { activeRunningBlock, runSessions, logRunSession } = useRunning()
   const navigate = useNavigate()
   const [vbLogOpen, setVbLogOpen] = useState(false)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
@@ -95,6 +96,17 @@ export function TrainTodayView() {
   // Active meso phase for the current week (Week 3 ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
   const openSession = () => navigate('/train/session')
+
+  // "Logged today" signals drive the hero/weekly done-state. Volleyball has no
+  // schedule↔log link, so we match the logged SportSession by today's date (the
+  // mapped session carries the HU display date). Running carries the prescribed
+  // tuple back, so we match on block + week + sessionKey.
+  const todayHu = huMonthDayDow(localDateString())
+  const loggedVb = sport.sessions.find((s) => s.sport === 'volleyball' && s.date === todayHu) ?? null
+  const runLoggedFor = (key: string) =>
+    runSessions.find(
+      (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
+    ) ?? null
 
   return (
     <>
@@ -176,24 +188,48 @@ export function TrainTodayView() {
                   </div>
                   <span
                     className="chip notch-4"
-                    style={{ fontSize: 9, color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}
+                    style={{
+                      fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
+                      color: loggedVb ? 'var(--success)' : 'var(--cat-tendency)',
+                      borderColor: `color-mix(in srgb, ${loggedVb ? 'var(--success)' : 'var(--cat-tendency)'} 40%, transparent)`,
+                    }}
                   >
-                    MA
+                    {loggedVb ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
                   </span>
                 </div>
-                <CtaGhost
-                  className="notch-4 mt-md"
-                  onClick={() => setVbLogOpen(true)}
-                  style={{ borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)', color: 'var(--cat-tendency)' }}
-                >
-                  <Icon name="plus" size={12} /> Logold a session-t
-                </CtaGhost>
+                {loggedVb ? (
+                  // Done-state: a muted, tappable summary of the logged effort
+                  // (re-opens the sheet — an in-place edit needs a backend PUT, mezo-0p3 follow-up).
+                  <button
+                    type="button"
+                    onClick={() => setVbLogOpen(true)}
+                    className="row notch-4 mt-md"
+                    style={{
+                      width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
+                      background: 'rgba(52, 211, 153, 0.08)',
+                      border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
+                      color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
+                    }}
+                  >
+                    <Icon name="check" size={12} />
+                    <span>Logolva · RPE {loggedVb.rpe} · {loggedVb.duration}p · váll {loggedVb.shoulderStrain}</span>
+                  </button>
+                ) : (
+                  <CtaGhost
+                    className="notch-4 mt-md"
+                    onClick={() => setVbLogOpen(true)}
+                    style={{ borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)', color: 'var(--cat-tendency)' }}
+                  >
+                    <Icon name="plus" size={12} /> Logold a session-t
+                  </CtaGhost>
+                )}
               </div>
             </div>
           )
         }
 
         const s = item.running
+        const rl = runLoggedFor(s.key)
         return (
           <div key={s.key} style={{ padding: '0 24px 12px' }}>
             <div
@@ -230,25 +266,53 @@ export function TrainTodayView() {
                 </div>
                 <span
                   className="chip notch-4"
-                  style={{ fontSize: 9, color: 'var(--info)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }}
+                  style={{
+                    fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
+                    color: rl ? 'var(--success)' : 'var(--info)',
+                    borderColor: `color-mix(in srgb, ${rl ? 'var(--success)' : 'var(--info)'} 40%, transparent)`,
+                  }}
                 >
-                  MA
+                  {rl ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
                 </span>
               </div>
-              <CtaGhost
-                className="notch-4 mt-md"
-                onClick={() => setRunLogCtx({
-                  blockId: activeRunningBlock!.id,
-                  weekNumber: activeRunningBlock!.currentWeek,
-                  sessionKey: s.key,
-                  label: s.label,
-                  isSprint: s.kind === 'sprint',
-                  defaultRounds: s.rounds ?? undefined,
-                })}
-                style={{ borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)', color: 'var(--info)' }}
-              >
-                <Icon name="plus" size={12} /> Naplózd a futást
-              </CtaGhost>
+              {rl ? (
+                <button
+                  type="button"
+                  onClick={() => setRunLogCtx({
+                    blockId: activeRunningBlock!.id,
+                    weekNumber: activeRunningBlock!.currentWeek,
+                    sessionKey: s.key,
+                    label: s.label,
+                    isSprint: s.kind === 'sprint',
+                    defaultRounds: s.rounds ?? undefined,
+                  })}
+                  className="row notch-4 mt-md"
+                  style={{
+                    width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px', position: 'relative',
+                    background: 'rgba(52, 211, 153, 0.08)',
+                    border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
+                    color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
+                  }}
+                >
+                  <Icon name="check" size={12} />
+                  <span>Logolva · RPE {rl.rpeActual ?? '–'}{rl.completedRounds != null ? ` · ${rl.completedRounds} kör` : ''}</span>
+                </button>
+              ) : (
+                <CtaGhost
+                  className="notch-4 mt-md"
+                  onClick={() => setRunLogCtx({
+                    blockId: activeRunningBlock!.id,
+                    weekNumber: activeRunningBlock!.currentWeek,
+                    sessionKey: s.key,
+                    label: s.label,
+                    isSprint: s.kind === 'sprint',
+                    defaultRounds: s.rounds ?? undefined,
+                  })}
+                  style={{ borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)', color: 'var(--info)' }}
+                >
+                  <Icon name="plus" size={12} /> Naplózd a futást
+                </CtaGhost>
+              )}
             </div>
           </div>
         )
@@ -277,6 +341,8 @@ export function TrainTodayView() {
             <WeeklyDayRow
               key={a.day}
               agenda={a}
+              vbLogged={Boolean(loggedVb)}
+              isRunLogged={(key) => Boolean(runLoggedFor(key))}
               onStartGym={openSession}
               onLogVolleyball={() => setVbLogOpen(true)}
               onLogRun={(s) => setRunLogCtx({

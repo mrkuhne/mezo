@@ -16,3 +16,25 @@ test('renders the morning run before the evening gym and shows the run time', ()
   expect(within(buttons[0]).getByText('Sprint-intervallum')).toBeInTheDocument()
   expect(within(buttons[0]).getByText(/08:00/)).toBeInTheDocument()
 })
+
+test('today volleyball row shows the "log" chip, or the done chip once logged', () => {
+  const agenda = {
+    day: 'Hét', isToday: true,
+    gym: null,
+    volleyball: { day: 'Hét', time: '18:00', duration: 120, court: '', intensity: '', role: 'edzés' },
+    running: [],
+  } as never
+  const { rerender } = render(
+    <WeeklyDayRow agenda={agenda} onStartGym={() => {}} onLogVolleyball={() => {}} />,
+  )
+  // not logged -> the "log" chip
+  expect(screen.getByText('log')).toBeInTheDocument()
+  expect(screen.queryByText('kész')).not.toBeInTheDocument()
+
+  // logged today -> the done chip replaces it
+  rerender(
+    <WeeklyDayRow agenda={agenda} vbLogged onStartGym={() => {}} onLogVolleyball={() => {}} />,
+  )
+  expect(screen.getByText('kész')).toBeInTheDocument()
+  expect(screen.queryByText('log')).not.toBeInTheDocument()
+})

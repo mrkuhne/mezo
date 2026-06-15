@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
-import { huMonthDay, huMonthDayDow } from '@/lib/dates'
+import { huMonthDay, huMonthDayDow, localDateString } from '@/lib/dates'
 import {
   trainApi,
   type ExerciseCatalogItem,
@@ -315,11 +315,28 @@ export function useTrain(): TrainData {
     onSuccess: invalidateToday,
   })
 
-  // T3 sport mutations: mock no-ops; real persists then refetches the affected query.
+  // T3 sport mutations: real persists then refetches the affected query. Mock
+  // appends the logged session to the cache (mirrors running's mock log) so the
+  // Mai hero flips to its done-state and the Napló reflects it without a backend.
   const logSportMutation = useMutation({
     mutationFn: mock
-      ? async (_req: SportSessionCreateRequest) => undefined
-      : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
+      ? async (req: SportSessionCreateRequest) => {
+          qc.setQueryData<{ sessions: SportSession[]; week: SportWeek | null }>(
+            ['train', 'sportSessions'],
+            (prev) => {
+              const now = new Date()
+              const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+              const logged: SportSession = {
+                id: `ss-${performance.now()}`, sport: 'volleyball',
+                date: huMonthDayDow(localDateString()), time: hhmm,
+                duration: req.duration, setsPlayed: req.setsPlayed, intensity: null,
+                rpe: req.rpe, shoulderStrain: req.shoulderStrain, jumpCount: null, notes: null,
+              }
+              return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
+            },
+          )
+        }
+      : (req: SportSessionCreateRequest) => trainApi.logSportSession(req).then(() => undefined),
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }) },
   })
   const sportScheduleMutation = useMutation({
