@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Deep Current v2")
 type: feature-platform
 status: done
-updated: 2026-06-14
+updated: 2026-06-17
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -42,6 +42,7 @@ The design system has no "flows" of its own; it provides the chrome and the idio
 2. **Theme toggle.** `Me → Profil → gear → SettingsSheet` (`frontend/src/features/me/SettingsSheet.tsx`) flips dark/light via `useTheme().toggle()`. The choice persists to `localStorage` and is applied as `data-theme="light"` on `<html>`. **Dark is the default via _absence_ of the attribute** (`applyTheme` _removes_ it for dark — `theme.ts:16–20`).
 3. **Bottom sheets.** Every modal interaction (quick input, check-in, settings, pickers, score detail) slides a `Sheet` up from the bottom, dismissible by backdrop tap, `Escape`, the in-sheet X, or a drag-down on the grab handle.
 4. **Ghost / empty states.** In real mode, when a section has no data yet, views render `GhostState` — a faint skeleton + a one-line Hungarian message + an optional CTA (e.g. `"A statisztikáid az első logolt session után jelennek meg."`).
+5. **Reorderable lists.** `SortableList` (`@dnd-kit`-backed) gives any list touch/pointer **drag-to-reorder** via a dedicated grip handle plus an always-visible ▲▼ button fallback (a11y/keyboard), labelled `${name} feljebb`/`lejjebb`. Generic over `{ id; label? }[]`, it calls `onReorder(ids)` with the new id order; consumers remap their items to that order. Backs the meso builder/planner exercise reorder (real, was fake in Phase 1) and the active-workout in-session reorder.
 
 ---
 
