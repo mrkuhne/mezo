@@ -204,13 +204,15 @@ export function WorkoutComplete({
               null,
             )
             const isSkipped = skippedExerciseIds.includes(workout.exercises[i].id)
+            const hasSets = e.sets.length > 0
             return (
               <div key={i} className="card notch-4" style={{ padding: 12 }}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1, paddingRight: 8 }}>
                     {e.name}
                   </span>
-                  {isSkipped ? (
+                  {isSkipped && !hasSets ? (
+                    // Fully skipped — never logged a set: struck "kihagyva", no count.
                     <span
                       className="label-mono"
                       style={{ fontSize: 10, color: 'var(--text-tertiary)', textDecoration: 'line-through' }}
@@ -218,12 +220,21 @@ export function WorkoutComplete({
                       kihagyva
                     </span>
                   ) : (
-                    <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
-                      {e.sets.length}/{workout.exercises[i].sets} szet
+                    // Has logged sets (incl. partially-done-then-skipped): real count,
+                    // counted in the totals. A muted marker flags the skipped remainder.
+                    <span className="row gap-xs" style={{ alignItems: 'baseline' }}>
+                      <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
+                        {e.sets.length}/{workout.exercises[i].sets} szet
+                      </span>
+                      {isSkipped && (
+                        <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                          · kihagyva
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>
-                {!isSkipped && best && (
+                {best && (
                   <div
                     className="row gap-md mt-sm"
                     style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}

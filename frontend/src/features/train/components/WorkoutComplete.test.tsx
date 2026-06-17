@@ -14,7 +14,7 @@ const WORKOUT: WorkoutPlan = {
   challenges: [],
 }
 
-test('recap marks a skipped exercise as "kihagyva" instead of a set count', () => {
+test('recap marks a fully-skipped exercise (no logged sets) as "kihagyva" instead of a set count', () => {
   render(
     <WorkoutComplete
       workout={WORKOUT}
@@ -24,12 +24,34 @@ test('recap marks a skipped exercise as "kihagyva" instead of a set count', () =
       skippedExerciseIds={['ex1']}
     />,
   )
-  // Skipped exercise shows the "kihagyva" marker.
+  // Fully-skipped exercise (0 logged sets) shows the "kihagyva" marker.
   expect(screen.getByText('kihagyva')).toBeInTheDocument()
   // A never-skipped exercise still shows its set count.
   expect(screen.getByText('1/4 szet')).toBeInTheDocument()
-  // The skipped exercise must NOT render a 0/n set count (visually distinct from never-attempted).
+  // The fully-skipped exercise must NOT render a 0/n set count (visually distinct from never-attempted).
   expect(screen.queryByText('0/3 szet')).not.toBeInTheDocument()
+})
+
+test('recap keeps the real set count AND adds a "kihagyva" marker for a partially-skipped exercise', () => {
+  render(
+    <WorkoutComplete
+      workout={WORKOUT}
+      completedSets={{
+        // ex0 (4 target sets) was logged 2× then skipped — sets are real and counted.
+        ex0: [
+          { weight: 100, reps: 8, rir: 2 },
+          { weight: 100, reps: 7, rir: 1 },
+        ],
+      }}
+      hadPR={false}
+      onExit={() => {}}
+      skippedExerciseIds={['ex0']}
+    />,
+  )
+  // The 2 logged sets stay visible as the real count (counted in "Mai mérleg").
+  expect(screen.getByText('2/4 szet')).toBeInTheDocument()
+  // ...and a muted marker still communicates the remainder was skipped.
+  expect(screen.getByText(/kihagyva/)).toBeInTheDocument()
 })
 
 test('recap shows the set count when no exercise is skipped', () => {
