@@ -93,6 +93,19 @@ test('reordering remaining exercises changes which exercise comes next', async (
   expect(await screen.findByText('Cable Pull-Around')).toBeInTheDocument()
 })
 
+test('＋ Szett adds an extra set: dots grow 4→5 with a dashed extra dot and the header reads /5', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))          // active, current = Chest Supported Row (4 planned sets)
+  expect(screen.getByText(/Set 1\/4/)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('＋ Szett'))             // adds one extra set; sheet closes
+  expect(screen.getByText(/Set 1\/5/)).toBeInTheDocument()
+  const dots = document.querySelectorAll('.set-dot')
+  expect(dots).toHaveLength(5)
+  expect(document.querySelectorAll('.set-dot[data-extra]')).toHaveLength(1) // only the 5th is extra
+})
+
 // ---- real-mode block: the session drives the T2 write endpoints ----
 
 const REAL_MESO = {
@@ -214,4 +227,25 @@ test('real mode: the last set debrief persists feedback and finish fires', async
   await waitFor(() => expect(calls).toContain('feedback:w-1'))
   await waitFor(() => expect(calls).toContain('finish:w-1'))
   expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument() // WorkoutComplete
+})
+
+test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts with setIndex 1', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], sets: 1 }] },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  expect(screen.getByText(/Set 1\/1/)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('＋ Szett')) // 1 planned set -> 2 effective
+  expect(screen.getByText(/Set 1\/2/)).toBeInTheDocument() // the extra set grew the count to 2
+  await user.click(screen.getByText('Set kész')) // set 1 (setIndex 0)
+  expect(screen.getByText(/Set 2\/2/)).toBeInTheDocument() // still mid-exercise, not overflowed
+  await user.click(screen.getByText('Set kész')) // extra set (setIndex 1) -> last set, opens FeedbackModal
+  await waitFor(() => expect(calls.some((c) => c.startsWith('set:w-1:e-1:1'))).toBe(true))
 })

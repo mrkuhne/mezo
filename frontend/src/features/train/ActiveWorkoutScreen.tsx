@@ -15,6 +15,7 @@ import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from 
 import type { SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/lib/trainApi'
 import {
   type Session,
+  addExtraSet,
   advance,
   completeSet as completeSetModel,
   currentExerciseId,
@@ -407,6 +408,7 @@ function ActiveWorkoutSession({
   const activeChallenge = W.challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
   const exHistory = session.logged[current.id] ?? []
   const currentSetCount = effectiveSetCount(session, current.id)
+  const plannedCount = session.planned[current.id] ?? currentSetCount
 
   // Reorderable segment for the ⋯ action sheet: the done + current exercises
   // stay FIXED; only the FUTURE exercises (after the current one in session.order)
@@ -444,6 +446,7 @@ function ActiveWorkoutSession({
           exerciseName={current.name}
           remaining={remaining}
           onReorder={handleReorder}
+          onAddSet={() => setSession((s) => addExtraSet(s, currentExerciseId(s)))}
           onClose={() => setActionSheetOpen(false)}
         />
       )}
@@ -575,12 +578,17 @@ function ActiveWorkoutSession({
             {/* Set dots */}
             <div className="row mt-lg" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="set-dots">
-                {Array.from({ length: currentSetCount }, (_, i) => (
-                  <div
-                    key={i}
-                    className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '')}
-                  />
-                ))}
+                {Array.from({ length: currentSetCount }, (_, i) => {
+                  const isExtra = i >= plannedCount
+                  return (
+                    <div
+                      key={i}
+                      {...(isExtra ? { 'data-extra': true } : {})}
+                      className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '') + (isExtra ? ' extra' : '')}
+                      style={isExtra ? { borderStyle: 'dashed', borderWidth: 1, borderColor: 'var(--brand-glow)' } : undefined}
+                    />
+                  )
+                })}
               </div>
               <span className="label-mono" style={{ fontSize: 10 }}>
                 {session.setIdx}/{currentSetCount} done
