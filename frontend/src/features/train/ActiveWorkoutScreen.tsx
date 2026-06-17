@@ -479,7 +479,7 @@ function ActiveWorkoutSession({
         />
       )}
       {addSetPrompt && (
-        <Sheet onClose={() => setAddSetPrompt(null)} labelledBy="add-set-prompt-title">
+        <Sheet onClose={() => setAddSetPrompt(null)} labelledBy="add-set-prompt-title" className="sheet-nested">
           {(close) => (
             <div style={{ padding: '4px 2px 2px' }}>
               <span className="eyebrow brand">Extra szett hozzáadva</span>
