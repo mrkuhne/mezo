@@ -103,3 +103,34 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
   expect(puts[0].body[1].catalogId).toBe('f1e3a0e2-0000-4000-8000-000000000071')
   expect(puts[0].body[0].catalogId).toBeUndefined()
 })
+
+test('reordering a day exercise via ▲ persists the new order (PUT) in real mode', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const puts: { body: { name: string }[] }[] = []
+  const MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
+  const DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([{
+      id: MESO_ID, title: 'Valódi blokk', shortTitle: 'Valódi', status: 'active',
+      startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6, currentWeek: 1,
+      split: 'PPL', style: 'RP', phaseCurve: ['MEV'],
+      days: [{ id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 2, current: true,
+        exercises: [
+          { id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' },
+          { id: 'e-2', name: 'Lat Pulldown', muscle: 'back', sets: 3, targetReps: '10-12', targetRIR: 1, type: 'compound' },
+        ] }],
+    }])),
+    http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, async ({ request }) => {
+      puts.push({ body: (await request.json()) as { name: string }[] })
+      return HttpResponse.json({ id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 2, exercises: [] })
+    }),
+  )
+  const router = createMemoryRouter(routes, { initialEntries: [`/train/mesocycles/${MESO_ID}`] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument())
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
+  // move the 2nd exercise up → order becomes [Lat Pulldown, Chest Supported Row]
+  await userEvent.click(await screen.findByRole('button', { name: 'Lat Pulldown feljebb' }))
+  await waitFor(() => expect(puts).toHaveLength(1))
+  expect(puts[0].body.map((e) => e.name)).toEqual(['Lat Pulldown', 'Chest Supported Row'])
+})

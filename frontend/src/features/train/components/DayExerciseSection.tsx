@@ -8,6 +8,7 @@
 // ============================================================
 import type { MesoDay } from '@/data/types'
 import { Icon } from '@/components/ui/Icon'
+import { SortableList } from '@/components/ui/SortableList'
 import { ExerciseEditRow } from './ExerciseEditRow'
 
 interface DayExerciseSectionProps {
@@ -16,9 +17,10 @@ interface DayExerciseSectionProps {
   onToggle: () => void
   onAdd: () => void
   onRemoveExercise: (exId: string) => void
+  onReorderExercises: (ids: string[]) => void
 }
 
-export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExercise }: DayExerciseSectionProps) {
+export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExercise, onReorderExercises }: DayExerciseSectionProps) {
   const exercises = day.exercises ?? []
   const isTraining = exercises.length > 0
   const totalSets = exercises.reduce((a, e) => a + e.sets, 0)
@@ -97,11 +99,11 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
       {expanded && isTraining && (
         <div style={{ padding: '0 14px 14px', paddingLeft: day.current ? 16 : 14 }}>
           <div style={{ height: 1, background: 'var(--border-subtle)', marginBottom: 12 }} />
-          <div className="col gap-sm">
-            {exercises.map((e) => (
-              <ExerciseEditRow key={e.id} ex={e} onRemove={() => onRemoveExercise(e.id)} />
-            ))}
-          </div>
+          <SortableList
+            items={exercises.map((e) => ({ ...e, label: e.name }))}
+            onReorder={onReorderExercises}
+            renderItem={(e) => <ExerciseEditRow ex={e} onRemove={() => onRemoveExercise(e.id)} />}
+          />
 
           {/* Add-exercise CTA */}
           <button

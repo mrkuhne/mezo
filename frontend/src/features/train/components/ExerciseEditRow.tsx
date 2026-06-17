@@ -1,9 +1,9 @@
 // ============================================================
 // Mezo · ExerciseEditRow — one editable exercise line inside a builder day.
-// Drag handle (VISUAL ONLY — Phase 1 ships no real DnD), name, muscle label,
-// sets × reps · RIR, optional warning, plus a settings chip that toggles an
-// inline editor (EditorChip tiles + Csere / Variáns) and a ✕ chip that removes
-// the exercise from the parent's local day-state.
+// Name, muscle label, sets × reps · RIR, optional warning, plus a settings chip
+// that toggles an inline editor (EditorChip tiles + Csere / Variáns) and a ✕ chip
+// that removes the exercise from the parent's local day-state. The row is rendered
+// as a SortableList item, which supplies the real drag grip + ▲▼ reorder controls.
 // Ported from prototype mesocycles.jsx ExerciseEditRow.
 // ============================================================
 import { useState } from 'react'
@@ -24,29 +24,6 @@ export function ExerciseEditRow({ ex, onRemove }: ExerciseEditRowProps) {
     <div className="card notch-4" style={{ padding: 0, background: 'var(--surface-2)' }}>
       <div style={{ padding: '10px 12px' }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          {/* Drag handle — visual only (no DnD wired in Phase 1) */}
-          <span
-            aria-hidden="true"
-            style={{
-              cursor: 'grab',
-              padding: 4,
-              color: 'var(--text-tertiary)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 2,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: 2,
-            }}
-          >
-            {[0, 1, 2].map((row) => (
-              <span key={row} style={{ display: 'flex', gap: 2 }}>
-                <span style={{ width: 2, height: 2, background: 'currentColor', borderRadius: '50%' }} />
-                <span style={{ width: 2, height: 2, background: 'currentColor', borderRadius: '50%' }} />
-              </span>
-            ))}
-          </span>
-
           <div className="col flex-1" style={{ minWidth: 0 }}>
             <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.3 }}>{ex.name}</span>
             <div className="row gap-sm mt-xs flex-wrap">
