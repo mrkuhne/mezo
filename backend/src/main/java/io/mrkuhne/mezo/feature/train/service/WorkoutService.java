@@ -206,6 +206,14 @@ public class WorkoutService {
             .filter(e -> createdBy.equals(e.getCreatedBy())
                 && instance.getTemplateSessionId().equals(e.getWorkoutSessionId()))
             .orElseThrow(WorkoutService::notFound);
+        // Idempotent: a skip marker already present for this (instance, exercise) is a no-op
+        // (mirrors saveFeedback's find-or-create intent — no duplicate marker rows).
+        boolean alreadySkipped = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
+            .anyMatch(s -> s.getExerciseId().equals(exerciseId) && s.isSkipped());
+        if (alreadySkipped) {
+            return;
+        }
         int nextIndex = (int) exerciseSetRepository
             .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
             .filter(s -> s.getExerciseId().equals(exerciseId))

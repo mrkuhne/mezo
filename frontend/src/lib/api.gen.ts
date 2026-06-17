@@ -786,6 +786,11 @@ export interface components {
             /** @description L|B|R */
             side?: string;
             note?: string;
+            /**
+             * @description true for a whole-exercise skip marker row (no perf data)
+             * @default false
+             */
+            skipped: boolean;
         };
         WorkoutStartRequest: {
             /** Format: uuid */

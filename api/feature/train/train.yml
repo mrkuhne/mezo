@@ -1340,6 +1340,10 @@ components:
           description: L|B|R
         note:
           type: string
+        skipped:
+          type: boolean
+          default: false
+          description: true for a whole-exercise skip marker row (no perf data)
     WorkoutStartRequest:
       type: object
       required:

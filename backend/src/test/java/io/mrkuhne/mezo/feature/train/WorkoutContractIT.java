@@ -196,6 +196,20 @@ class WorkoutContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testSkipWorkoutExercise_shouldReturn409_whenWorkoutCompleted() {
+        UUID owner = ownerId();
+        WorkoutSessionEntity template = templateDayForToday(owner);
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+        WorkoutSessionEntity completed =
+            trainPopulator.createWorkoutInstance(owner, template, LocalDate.now(), "completed");
+
+        String body = postForBody("/api/train/workouts/" + completed.getId() + "/skip",
+            WorkoutSkipRequest.builder().exerciseId(exercise.getId()).build(),
+            ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(body, "TRAIN_WORKOUT_NOT_ACTIVE");
+    }
+
+    @Test
     void testSkipWorkoutExercise_shouldReturn401_whenUnauthenticated() {
         postForBody("/api/train/workouts/" + UUID.randomUUID() + "/skip",
             WorkoutSkipRequest.builder().exerciseId(UUID.randomUUID()).build(),
