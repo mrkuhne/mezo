@@ -103,7 +103,7 @@ test('＋ Szett adds an extra set: dots grow 4→5 with a dashed extra dot and t
   expect(screen.getByText(/Set 1\/5/)).toBeInTheDocument()
   const dots = document.querySelectorAll('.set-dot')
   expect(dots).toHaveLength(5)
-  expect(document.querySelectorAll('.set-dot[data-extra]')).toHaveLength(1) // only the 5th is extra
+  expect(document.querySelectorAll('.set-dot.extra')).toHaveLength(1) // only the 5th is extra
 })
 
 // ---- real-mode block: the session drives the T2 write endpoints ----

@@ -583,9 +583,7 @@ function ActiveWorkoutSession({
                   return (
                     <div
                       key={i}
-                      {...(isExtra ? { 'data-extra': true } : {})}
                       className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '') + (isExtra ? ' extra' : '')}
-                      style={isExtra ? { borderStyle: 'dashed', borderWidth: 1, borderColor: 'var(--brand-glow)' } : undefined}
                     />
                   )
                 })}
