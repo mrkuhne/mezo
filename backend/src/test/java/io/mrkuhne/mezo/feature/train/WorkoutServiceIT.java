@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
+import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
@@ -537,5 +538,71 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         assertThat(today.getOpenWorkout()).isNotNull();
         assertThat(today.getOpenWorkout().getId()).isEqualTo(started.getId());
         assertThat(today.getOpenWorkout().getSets()).hasSize(1);
+    }
+
+    @Test
+    void testSaveExerciseNote_shouldPersistAndSurfaceOnGetToday_whenOwnedExercise() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+
+        workoutService.saveExerciseNote(user, exercise.getId(), "4-es ülés");
+        entityManager.flush();
+        entityManager.clear();
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+        assertThat(today.getExercises())
+            .filteredOn(e -> exercise.getId().equals(e.getId()))
+            .singleElement()
+            .extracting(TodayExercise::getNote)
+            .isEqualTo("4-es ülés");
+    }
+
+    @Test
+    void testSaveExerciseNote_shouldClearNote_whenSavedNull() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+
+        workoutService.saveExerciseNote(user, exercise.getId(), "4-es ülés");
+        entityManager.flush();
+        entityManager.clear();
+
+        WorkoutTodayResponse withNote = workoutService.getToday(user);
+        assertThat(withNote.getExercises())
+            .filteredOn(e -> exercise.getId().equals(e.getId()))
+            .singleElement()
+            .extracting(TodayExercise::getNote)
+            .isEqualTo("4-es ülés");
+
+        workoutService.saveExerciseNote(user, exercise.getId(), null);
+        entityManager.flush();
+        entityManager.clear();
+
+        WorkoutTodayResponse cleared = workoutService.getToday(user);
+        assertThat(cleared.getExercises())
+            .filteredOn(e -> exercise.getId().equals(e.getId()))
+            .singleElement()
+            .extracting(TodayExercise::getNote)
+            .isNull();
+    }
+
+    @Test
+    void testSaveExerciseNote_shouldThrowNotFound_whenForeignExercise() {
+        UUID owner = databasePopulator.populateUser("workout@test.local");
+        UUID stranger = databasePopulator.populateUser("stranger@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+
+        assertThatThrownBy(() -> workoutService.saveExerciseNote(stranger, exercise.getId(), "idegen jegyzet"))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+        assertThatThrownBy(() -> workoutService.saveExerciseNote(owner, UUID.randomUUID(), "nem létező"))
+            .isInstanceOf(SystemRuntimeErrorException.class);
     }
 }

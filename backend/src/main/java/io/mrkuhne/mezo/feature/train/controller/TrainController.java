@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.controller;
 
 import io.mrkuhne.mezo.api.controller.TrainApi;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
+import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
@@ -139,6 +140,11 @@ public class TrainController implements TrainApi {
     @Override
     public void skipWorkoutExercise(UUID id, WorkoutSkipRequest workoutSkipRequest) {
         workoutService.skipExercise(currentUserId.get(), id, workoutSkipRequest.getExerciseId());
+    }
+
+    @Override
+    public void saveExerciseNote(UUID exerciseId, ExerciseNoteRequest exerciseNoteRequest) {
+        workoutService.saveExerciseNote(currentUserId.get(), exerciseId, exerciseNoteRequest.getNote());
     }
 
     @Override

@@ -53,6 +53,7 @@ function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): WorkoutPlan 
     exercises: r.exercises.map((e) => ({
       id: e.id, name: e.name, muscle: e.muscle, sets: e.sets,
       targetReps: e.targetReps, targetRIR: e.targetRIR, type: e.type,
+      note: e.note ?? null,
       lastWeek: e.lastWeek
         ? { weight: Number(e.lastWeek.weightKg), reps: e.lastWeek.reps, rir: e.lastWeek.rir }
         : null,
@@ -207,6 +208,7 @@ type TrainData = {
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   logSet: (workoutId: string, set: SetLogRequest) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
+  saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string) => void
   logSportSession: (req: SportSessionCreateRequest, opts?: MutateOpts) => void
@@ -313,6 +315,14 @@ export function useTrain(): TrainData {
       : (args: { workoutId: string; exerciseId: string }) => trainApi.skip(args.workoutId, args.exerciseId),
     onSuccess: invalidateToday,
   })
+  // F4 durable per-exercise note: real persists then refetches /today so the note
+  // survives a reload; mock no-ops (the screen keeps a local override for parity).
+  const noteMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { exerciseId: string; note: string }) => undefined
+      : (args: { exerciseId: string; note: string }) => trainApi.saveExerciseNote(args.exerciseId, args.note),
+    onSuccess: invalidateToday,
+  })
   const feedbackMutation = useMutation({
     mutationFn: mock
       ? async (_args: { workoutId: string; items: WorkoutFeedbackInput[] }) => undefined
@@ -393,6 +403,10 @@ export function useTrain(): TrainData {
     (workoutId: string, exerciseId: string) => skipMutation.mutate({ workoutId, exerciseId }),
     [skipMutation],
   )
+  const saveExerciseNote = useCallback(
+    (exerciseId: string, note: string) => noteMutation.mutate({ exerciseId, note }),
+    [noteMutation],
+  )
   const saveWorkoutFeedback = useCallback(
     (workoutId: string, items: WorkoutFeedbackInput[]) => feedbackMutation.mutate({ workoutId, items }),
     [feedbackMutation],
@@ -445,6 +459,7 @@ export function useTrain(): TrainData {
     startWorkout,
     logSet,
     skipExercise,
+    saveExerciseNote,
     saveWorkoutFeedback,
     finishWorkout,
     logSportSession,

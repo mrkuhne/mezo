@@ -503,6 +503,7 @@ export interface LoggedWorkoutExercise {
   type: ExerciseKind
   muscle: string
   lastWeek: LastWeekSet | null // null on the first-ever workout (no previous completed instance)
+  note?: string | null // durable per-exercise note (F4); absent in Phase-1 statics
 }
 export interface ChallengeRef { kind: string; label: string }
 export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo'

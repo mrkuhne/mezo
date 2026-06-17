@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
@@ -213,6 +214,53 @@ class WorkoutContractIT extends ApiIntegrationTest {
     void testSkipWorkoutExercise_shouldReturn401_whenUnauthenticated() {
         postForBody("/api/train/workouts/" + UUID.randomUUID() + "/skip",
             WorkoutSkipRequest.builder().exerciseId(UUID.randomUUID()).build(),
+            null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testSaveExerciseNote_shouldReturn204AndSurfaceOnToday_whenOwnedExercise() {
+        UUID owner = ownerId();
+        WorkoutSessionEntity template = templateDayForToday(owner);
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+        HttpHeaders headers = ownerAuthHeaders();
+
+        putForBody("/api/train/exercises/" + exercise.getId() + "/note",
+            ExerciseNoteRequest.builder().note("dropset az utolsón").build(),
+            headers, HttpStatus.NO_CONTENT, Void.class);
+
+        WorkoutTodayResponse today = getForBody("/api/train/workouts/today",
+            headers, HttpStatus.OK, WorkoutTodayResponse.class);
+        assertThat(today.getExercises())
+            .filteredOn(e -> exercise.getId().equals(e.getId()))
+            .singleElement()
+            .satisfies(e -> assertThat(e.getNote()).isEqualTo("dropset az utolsón"));
+    }
+
+    @Test
+    void testSaveExerciseNote_shouldReturn400_whenNoteTooLong() {
+        UUID owner = ownerId();
+        WorkoutSessionEntity template = templateDayForToday(owner);
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+
+        String body = putForBody("/api/train/exercises/" + exercise.getId() + "/note",
+            ExerciseNoteRequest.builder().note("x".repeat(501)).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "note", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testSaveExerciseNote_shouldReturn404_whenExerciseUnknown() {
+        ownerId();
+        String body = putForBody("/api/train/exercises/" + UUID.randomUUID() + "/note",
+            ExerciseNoteRequest.builder().note("nem létezik").build(),
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testSaveExerciseNote_shouldReturn401_whenUnauthenticated() {
+        putForBody("/api/train/exercises/" + UUID.randomUUID() + "/note",
+            ExerciseNoteRequest.builder().note("akármi").build(),
             null, HttpStatus.UNAUTHORIZED, Void.class);
     }
 

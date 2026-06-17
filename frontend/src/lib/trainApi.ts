@@ -21,6 +21,7 @@ export type GymScheduleSlotInput = components['schemas']['GymScheduleSlotInput']
 export type GymScheduleSlotResponse = components['schemas']['GymScheduleSlotResponse']
 export type ExerciseCatalogItem = components['schemas']['ExerciseCatalogItem']
 export type ExerciseRecordResponse = components['schemas']['ExerciseRecordResponse']
+export type ExerciseNoteRequest = components['schemas']['ExerciseNoteRequest']
 
 export const trainApi = {
   mesocycles: (): Promise<MesocycleResponse[]> => apiFetch<MesocycleResponse[]>('/api/train/mesocycles'),
@@ -74,4 +75,9 @@ export const trainApi = {
     apiFetch<ExerciseCatalogItem[]>('/api/train/exercises'),
   exerciseRecords: (): Promise<ExerciseRecordResponse[]> =>
     apiFetch<ExerciseRecordResponse[]>('/api/train/exercise-records'),
+  saveExerciseNote: (exerciseId: string, note: string): Promise<void> =>
+    apiFetch<void>(`/api/train/exercises/${exerciseId}/note`, {
+      method: 'PUT',
+      body: JSON.stringify({ note } satisfies ExerciseNoteRequest),
+    }),
 }

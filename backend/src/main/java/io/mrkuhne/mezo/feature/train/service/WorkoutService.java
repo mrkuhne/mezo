@@ -253,6 +253,19 @@ public class WorkoutService {
         }
     }
 
+    /**
+     * Set the durable per-exercise note (F4) — preloaded on the next session via {@link #getToday}.
+     * Owner-scoped write; a foreign or missing exercise is a 404. A null/blank note clears it.
+     */
+    @Transactional
+    public void saveExerciseNote(UUID createdBy, UUID exerciseId, String note) {
+        ExerciseEntity exercise = exerciseRepository.findById(exerciseId)
+            .filter(e -> createdBy.equals(e.getCreatedBy()))
+            .orElseThrow(WorkoutService::notFound);
+        exercise.setNote(note);
+        exerciseRepository.save(exercise);
+    }
+
     @Transactional
     public WorkoutInstanceResponse finishWorkout(UUID createdBy, UUID workoutId) {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);

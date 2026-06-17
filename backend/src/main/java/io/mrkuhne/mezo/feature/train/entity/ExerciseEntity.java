@@ -64,6 +64,10 @@ public class ExerciseEntity extends OwnedEntity {
     @Column
     private String warning;
 
+    /** Durable per-exercise note, F4 — preloaded next session. */
+    @Column
+    private String note;
+
     /** Optional reference to the exercise_catalog row this exercise was picked from. */
     @Column(name = "catalog_id")
     private UUID catalogId;
