@@ -42,8 +42,10 @@ export function effectiveSetCount(s: Session, id: string): number {
 }
 
 /**
- * The first exercise in session order that is neither skipped nor fully
- * logged. Falls back to the last id in order if every exercise is done.
+ * Returns the first non-skipped, not-fully-logged exercise id in `order`.
+ * When EVERY exercise is fully logged or skipped, returns the LAST id in
+ * `order` — the "workout complete" sentinel. Assumes a non-empty exercise
+ * list (an active workout always has ≥1 exercise — the screen's guard).
  */
 export function currentExerciseId(s: Session): string {
   for (const id of s.order) {
@@ -102,6 +104,8 @@ export function seedFromOpen(
 ): Session {
   const base = makeSession(exercises)
   const logged: Record<string, LoggedSet[]> = {}
+  // setIndex only ORDERS the sets here, not the stored index — `logged[id].length`
+  // is a pure count, so we assume the persistence layer emits contiguous (gap-free) indices.
   const ordered = [...open.sets].sort((x, y) => x.setIndex - y.setIndex)
   for (const set of ordered) {
     const entry: LoggedSet = {

@@ -67,4 +67,13 @@ test('seedFromOpen rebuilds logged sets + cursor by exerciseId from persisted se
   expect(s.setIdx).toBe(1) // b has 1 logged -> next is index 1
 })
 
+test('currentExerciseId returns the last exercise once all are done (complete sentinel)', () => {
+  let s = makeSession(EX)
+  for (const e of EX) {
+    for (let i = 0; i < e.sets; i++) s = completeSet(s, { weight: 1, reps: 1, rir: 1 })
+    s = advance(s)
+  }
+  expect(currentExerciseId(s)).toBe('c')
+})
+
 })
