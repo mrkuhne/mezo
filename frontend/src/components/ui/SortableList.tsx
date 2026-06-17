@@ -98,7 +98,15 @@ function SortableRow({
   moveUp,
   moveDown,
 }: SortableRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id,
     disabled,
   })
@@ -122,6 +130,7 @@ function SortableRow({
       {/* Drag handle — only this element starts a pointer/keyboard drag, so the
           ▲▼ buttons and the row content stay independently interactive. */}
       <button
+        ref={setActivatorNodeRef}
         type="button"
         aria-label={`${label} áthelyezése`}
         disabled={disabled}
@@ -136,7 +145,7 @@ function SortableRow({
           border: 'none',
           background: 'transparent',
           color: 'var(--text-secondary, currentColor)',
-          cursor: disabled ? 'default' : 'grab',
+          cursor: disabled ? 'default' : isDragging ? 'grabbing' : 'grab',
           touchAction: 'none',
           padding: 0,
           opacity: disabled ? 0.4 : 1,
