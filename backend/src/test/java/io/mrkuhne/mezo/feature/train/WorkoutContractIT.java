@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutSkipRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -161,6 +162,44 @@ class WorkoutContractIT extends ApiIntegrationTest {
                 .pump(5).jointPain(1).workload(2).build()),
             headers, HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "pump", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testSkipWorkoutExercise_shouldReturn204_whenExerciseInActiveInstance() {
+        UUID owner = ownerId();
+        WorkoutSessionEntity template = templateDayForToday(owner);
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+        HttpHeaders headers = ownerAuthHeaders();
+        WorkoutInstanceResponse started = postForBody("/api/train/workouts",
+            start(template), headers, HttpStatus.CREATED, WorkoutInstanceResponse.class);
+
+        postForBody("/api/train/workouts/" + started.getId() + "/skip",
+            WorkoutSkipRequest.builder().exerciseId(exercise.getId()).build(),
+            headers, HttpStatus.NO_CONTENT, Void.class);
+    }
+
+    @Test
+    void testSkipWorkoutExercise_shouldReturn404_whenExerciseForeign() {
+        UUID owner = ownerId();
+        WorkoutSessionEntity template = templateDayForToday(owner);
+        WorkoutSessionEntity otherDay = trainPopulator.createWorkoutSession(
+            owner, template.getMesocycleId(), "Pén", "Push Day", 1, "planned");
+        ExerciseEntity foreign = trainPopulator.createExercise(owner, otherDay.getId(), "Bench", 0);
+        HttpHeaders headers = ownerAuthHeaders();
+        WorkoutInstanceResponse started = postForBody("/api/train/workouts",
+            start(template), headers, HttpStatus.CREATED, WorkoutInstanceResponse.class);
+
+        String body = postForBody("/api/train/workouts/" + started.getId() + "/skip",
+            WorkoutSkipRequest.builder().exerciseId(foreign.getId()).build(),
+            headers, HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testSkipWorkoutExercise_shouldReturn401_whenUnauthenticated() {
+        postForBody("/api/train/workouts/" + UUID.randomUUID() + "/skip",
+            WorkoutSkipRequest.builder().exerciseId(UUID.randomUUID()).build(),
+            null, HttpStatus.UNAUTHORIZED, Void.class);
     }
 
     @Test

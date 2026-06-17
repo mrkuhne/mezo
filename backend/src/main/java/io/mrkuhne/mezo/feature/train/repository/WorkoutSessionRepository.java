@@ -27,13 +27,15 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
      * Distinct dates of the owner's gym workout INSTANCES (templateSessionId not null) within
      * [from, to] that carry at least one logged set — the "gym done that day" signal driving the
      * Mai done-state. Status-agnostic on purpose (any logged set counts, finished or not).
+     * Skip markers (es.skipped = true) are NOT logged sets, so a skip-only instance stays not-done.
      */
     @Query("""
         SELECT DISTINCT s.date FROM WorkoutSessionEntity s
         WHERE s.createdBy = :createdBy
           AND s.templateSessionId IS NOT NULL
           AND s.date BETWEEN :from AND :to
-          AND EXISTS (SELECT 1 FROM ExerciseSetEntity es WHERE es.workoutSessionId = s.id)
+          AND EXISTS (SELECT 1 FROM ExerciseSetEntity es
+                      WHERE es.workoutSessionId = s.id AND es.skipped = false)
         """)
     List<LocalDate> findDoneInstanceDates(
         @Param("createdBy") UUID createdBy, @Param("from") LocalDate from, @Param("to") LocalDate to);

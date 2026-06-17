@@ -507,6 +507,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/workouts/{id}/skip:
+    post:
+      tags: [Train]
+      operationId: skipWorkoutExercise
+      summary: Skip a whole exercise in an active workout instance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutSkipRequest'
+      responses:
+        '204':
+          description: Skip recorded
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout/exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: Workout already completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/workouts/{id}/finish:
     post:
       tags: [Train]
@@ -1337,6 +1382,14 @@ components:
         note:
           type: string
           maxLength: 500
+    WorkoutSkipRequest:
+      type: object
+      required:
+        - exerciseId
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
     WorkoutFeedbackInput:
       type: object
       required:
