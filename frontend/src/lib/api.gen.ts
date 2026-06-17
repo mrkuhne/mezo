@@ -317,6 +317,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/exercises/{exerciseId}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set the durable note on an exercise */
+        put: operations["saveExerciseNote"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/workouts/{id}/finish": {
         parameters: {
             query?: never;
@@ -755,6 +772,8 @@ export interface components {
             /** @enum {string} */
             type: "compound" | "isolation" | "plyo";
             warning?: string;
+            /** @description durable per-exercise note */
+            note?: string | null;
             lastWeek?: components["schemas"]["LastWeekRef"];
         };
         /** @description Top set of the previous completed instance of the same template day */
@@ -809,6 +828,10 @@ export interface components {
         WorkoutSkipRequest: {
             /** Format: uuid */
             exerciseId: string;
+        };
+        /** @description Set (or clear) the durable per-exercise note */
+        ExerciseNoteRequest: {
+            note?: string | null;
         };
         WorkoutFeedbackInput: {
             /** Format: uuid */
@@ -1964,6 +1987,57 @@ export interface operations {
             };
             /** @description Workout already completed */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    saveExerciseNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                exerciseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExerciseNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Note saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Exercise not found or not owned */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

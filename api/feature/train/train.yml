@@ -552,6 +552,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/exercises/{exerciseId}/note:
+    put:
+      tags: [Train]
+      operationId: saveExerciseNote
+      summary: Set the durable note on an exercise
+      parameters:
+        - name: exerciseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseNoteRequest'
+      responses:
+        '204':
+          description: Note saved
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Exercise not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/workouts/{id}/finish:
     post:
       tags: [Train]
@@ -1273,6 +1312,11 @@ components:
           enum: [compound, isolation, plyo]
         warning:
           type: string
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: durable per-exercise note
         lastWeek:
           $ref: '#/components/schemas/LastWeekRef'
     LastWeekRef:
@@ -1394,6 +1438,14 @@ components:
         exerciseId:
           type: string
           format: uuid
+    ExerciseNoteRequest:
+      type: object
+      description: Set (or clear) the durable per-exercise note
+      properties:
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
     WorkoutFeedbackInput:
       type: object
       required:
