@@ -8,11 +8,20 @@
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainScreen).
 // ============================================================
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/lib/trainApi'
+import {
+  type Session,
+  advance,
+  completeSet as completeSetModel,
+  currentExerciseId,
+  effectiveSetCount,
+  makeSession,
+  seedFromOpen,
+} from './workoutState'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Chip } from '@/components/ui/Chip'
 import { Display } from '@/components/ui/Display'
@@ -88,22 +97,6 @@ function prefill(e: LoggedWorkoutExercise): LastWeekSet {
   return e.lastWeek ?? { weight: 0, reps: parseInt(e.targetReps, 10) || 10, rir: e.targetRIR }
 }
 
-// Resume: rebuild the local completed-set map (+cursor) from the open instance's logged sets.
-function seedFromOpen(open: WorkoutInstanceResponse | null, exercises: LoggedWorkoutExercise[]) {
-  if (!open) return { completed: {} as CompletedSets, exerciseIdx: 0, setIdx: 0, phase: 'prep' as Phase }
-  const completed: CompletedSets = {}
-  for (const s of open.sets) {
-    const i = exercises.findIndex((e) => e.id === s.exerciseId)
-    if (i < 0) continue
-    const k = 'ex' + i
-    completed[k] = [...(completed[k] ?? []), { weight: Number(s.weightKg ?? 0), reps: s.reps ?? 0, rir: s.rir ?? 0 }]
-  }
-  let exerciseIdx = exercises.findIndex((e, i) => (completed['ex' + i]?.length ?? 0) < e.sets)
-  if (exerciseIdx < 0) exerciseIdx = exercises.length - 1
-  const setIdx = Math.min(completed['ex' + exerciseIdx]?.length ?? 0, exercises[exerciseIdx].sets - 1)
-  return { completed, exerciseIdx, setIdx, phase: 'active' as Phase }
-}
-
 function ActiveWorkoutSession({
   workout, activeMeso, todaySession, startWorkout, logSet, saveWorkoutFeedback, finishWorkout,
 }: SessionProps) {
@@ -116,25 +109,30 @@ function ActiveWorkoutSession({
 
   const open = todaySession?.openWorkout ?? null
   // Seed once on mount — a mid-workout reload resumes straight into 'active'.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const seeded = useMemo(() => seedFromOpen(open, W.exercises), [])
+  // The exerciseId-keyed pure model owns the per-set bookkeeping (workoutState.ts).
+  const [initialSession] = useState<Session>(() =>
+    open ? seedFromOpen(W.exercises, { sets: open.sets }) : makeSession(W.exercises),
+  )
+  const initialPhase: Phase = open ? 'active' : 'prep'
   // The logging panel opens pre-filled with the current exercise's last-week
   // numbers (same source used to prefill exercises 1..N after each debrief).
-  const startPrefill = prefill(W.exercises[seeded.exerciseIdx])
+  const resumeExercise = W.exercises.find((e) => e.id === currentExerciseId(initialSession)) ?? W.exercises[0]
+  const startPrefill = prefill(resumeExercise)
 
-  const [phase, setPhase] = useState<Phase>(seeded.phase)
-  const [exerciseIdx, setExerciseIdx] = useState(seeded.exerciseIdx)
-  const [setIdx, setSetIdx] = useState(seeded.setIdx)
+  const [phase, setPhase] = useState<Phase>(initialPhase)
+  const [session, setSession] = useState<Session>(initialSession)
   const [weight, setWeight] = useState(startPrefill.weight)
   const [reps, setReps] = useState(startPrefill.reps)
   const [rir, setRir] = useState(startPrefill.rir)
-  const [completedSets, setCompletedSets] = useState<CompletedSets>(seeded.completed)
   const [workoutId, setWorkoutId] = useState<string | null>(open?.id ?? null)
   const [side, setSide] = useState<Side | null>(null)
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
   const [showPR, setShowPR] = useState<PRState | null>(null)
-  const [showFeedback, setShowFeedback] = useState(false)
+  // The just-finished exercise pinned for the debrief modal (and the active card
+  // it overlays): `currentExerciseId` jumps to the NEXT exercise the moment the
+  // last set is logged, so we keep an explicit feedback target until it resolves.
+  const [feedbackEx, setFeedbackEx] = useState<LoggedWorkoutExercise | null>(null)
   const [niggleConfirmed, setNiggleConfirmed] = useState(false)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
 
@@ -145,7 +143,10 @@ function ActiveWorkoutSession({
     return () => clearTimeout(t)
   }, [showPR])
 
-  const ex = W.exercises[exerciseIdx]
+  // On-screen exercise: the pinned feedback target while debriefing, else the
+  // model's derived current exercise. Drives the active card, dots, history & PR.
+  const current = feedbackEx ?? W.exercises.find((e) => e.id === currentExerciseId(session)) ?? W.exercises[0]
+  const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
   const acceptedMap: Record<string, boolean> = Object.fromEntries(
     acceptedChallenges.map((id) => [id, true]),
   )
@@ -169,14 +170,14 @@ function ActiveWorkoutSession({
   }
 
   const completeSet = () => {
-    const k = 'ex' + exerciseIdx
-    setCompletedSets((prev) => ({
-      ...prev,
-      [k]: [...(prev[k] ?? []), { weight, reps, rir }],
-    }))
+    const finishing = current // the exercise being logged right now
+    const finishingIdx = W.exercises.findIndex((e) => e.id === finishing.id)
+    const wasSetIdx = session.setIdx // pre-update cursor (for the PR trigger + persisted setIndex)
+    const next = completeSetModel(session, { weight, reps, rir })
+    setSession(next)
     if (workoutId) {
       logSet(workoutId, {
-        exerciseId: ex.id, setIndex: setIdx, weightKg: weight, reps, rir,
+        exerciseId: finishing.id, setIndex: wasSetIdx, weightKg: weight, reps, rir,
         ...(side ? { side } : {}), ...(note.trim() ? { note: note.trim() } : {}),
       })
     }
@@ -185,7 +186,7 @@ function ActiveWorkoutSession({
     // PR demo: only set 3 of the first exercise at/above the threshold counts,
     // and only when a last-week reference exists to compare against.
     const firstLastWeek = W.exercises[0].lastWeek
-    if (exerciseIdx === 0 && setIdx === 2 && firstLastWeek && weight >= PR_DEMO_THRESHOLD_KG) {
+    if (finishingIdx === 0 && wasSetIdx === 2 && firstLastWeek && weight >= PR_DEMO_THRESHOLD_KG) {
       setShowPR({
         delta: (weight - firstLastWeek.weight).toFixed(1),
         prev: firstLastWeek.weight,
@@ -193,31 +194,35 @@ function ActiveWorkoutSession({
       })
     }
 
-    if (setIdx + 1 >= ex.sets) {
-      // Last set of the exercise → debrief feedback sheet.
-      setShowFeedback(true)
-    } else {
-      setSetIdx(setIdx + 1)
+    // Last set of this exercise → pin it for the debrief sheet. Otherwise
+    // completeSetModel already advanced the cursor for the same exercise.
+    if (wasSetIdx + 1 >= effectiveSetCount(session, finishing.id)) {
+      setFeedbackEx(finishing)
     }
   }
 
   // The save button of the debrief persists the RP values for the just-finished exercise.
   const saveFeedback = (vals: ExerciseFeedbackValues) => {
-    if (workoutId) saveWorkoutFeedback(workoutId, [{ exerciseId: ex.id, ...vals }])
+    if (workoutId && feedbackEx) saveWorkoutFeedback(workoutId, [{ exerciseId: feedbackEx.id, ...vals }])
   }
 
   // Feedback resolution (skip or save both advance). Prefill the next
   // exercise's logging panel from its last-week numbers, or finish.
   const advanceAfterFeedback = () => {
-    setShowFeedback(false)
+    setFeedbackEx(null)
     setSide(null)
-    if (exerciseIdx + 1 < W.exercises.length) {
-      const next = prefill(W.exercises[exerciseIdx + 1])
-      setExerciseIdx(exerciseIdx + 1)
-      setSetIdx(0)
-      setWeight(next.weight)
-      setReps(next.reps)
-      setRir(next.rir)
+    // All exercises resolved now? (the last set is already in `session`.)
+    const allDone = W.exercises.every(
+      (e) => session.skipped.includes(e.id) || (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id),
+    )
+    if (!allDone) {
+      const advanced = advance(session)
+      setSession(advanced)
+      const nextEx = W.exercises.find((e) => e.id === currentExerciseId(advanced)) ?? W.exercises[0]
+      const p = prefill(nextEx)
+      setWeight(p.weight)
+      setReps(p.reps)
+      setRir(p.rir)
     } else {
       if (workoutId) finishWorkout(workoutId)
       setPhase('complete')
@@ -382,25 +387,32 @@ function ActiveWorkoutSession({
 
   // ---------- COMPLETE ----------
   if (phase === 'complete') {
-    const hadPR = !!showPR || (completedSets['ex0'] ?? []).some((s) => s.weight >= PR_DEMO_THRESHOLD_KG)
+    // WorkoutComplete is index-keyed (unchanged) — adapt the exerciseId-keyed
+    // session into its `ex{i}` shape at the boundary.
+    const completedByIdx: CompletedSets = Object.fromEntries(
+      W.exercises.map((e, i) => ['ex' + i, session.logged[e.id] ?? []]),
+    )
+    const hadPR =
+      !!showPR || (session.logged[W.exercises[0].id] ?? []).some((s) => s.weight >= PR_DEMO_THRESHOLD_KG)
     return (
-      <WorkoutComplete workout={W} completedSets={completedSets} hadPR={hadPR} onExit={onExit} />
+      <WorkoutComplete workout={W} completedSets={completedByIdx} hadPR={hadPR} onExit={onExit} />
     )
   }
 
   // ---------- ACTIVE ----------
-  const totalSets = W.exercises.reduce((a, e) => a + e.sets, 0)
-  const doneSets = Object.values(completedSets).reduce((a, arr) => a + arr.length, 0)
-  const activeChallenge = W.challenges.find((c) => c.exerciseId === ex.id && acceptedMap[c.id])
-  const exHistory = completedSets['ex' + exerciseIdx] ?? []
+  const totalSets = W.exercises.reduce((a, e) => a + effectiveSetCount(session, e.id), 0)
+  const doneSets = Object.values(session.logged).reduce((a, arr) => a + arr.length, 0)
+  const activeChallenge = W.challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
+  const exHistory = session.logged[current.id] ?? []
+  const currentSetCount = effectiveSetCount(session, current.id)
 
   return (
     <>
       {showPR && <PRToast pr={showPR} />}
-      {showFeedback && (
+      {feedbackEx && (
         <FeedbackModal
-          ex={ex}
-          isLastExercise={exerciseIdx + 1 >= W.exercises.length}
+          ex={feedbackEx}
+          isLastExercise={W.exercises.findIndex((e) => e.id === feedbackEx.id) + 1 >= W.exercises.length}
           onResolve={advanceAfterFeedback}
           onSave={saveFeedback}
         />
@@ -415,7 +427,7 @@ function ActiveWorkoutSession({
               <span className="eyebrow">Bezárás</span>
             </button>
             <span className="label-mono">
-              {exerciseIdx + 1}/{W.exercises.length} · {doneSets}/{totalSets} szet
+              {currentIdx + 1}/{W.exercises.length} · {doneSets}/{totalSets} szet
             </span>
           </div>
           <div className="bar mt-sm">
@@ -424,7 +436,7 @@ function ActiveWorkoutSession({
         </div>
 
         {/* Niggle banner if active */}
-        {niggleActive && exerciseIdx <= 1 && (
+        {niggleActive && currentIdx <= 1 && (
           <div style={{ padding: '8px 24px' }}>
             <div
               style={{
@@ -437,7 +449,7 @@ function ActiveWorkoutSession({
                 letterSpacing: '0.08em',
               }}
             >
-              ⚠ Jobb váll aktív · {exerciseIdx === 1 ? 'pronated grif' : 'óvatos, először warm-up'}
+              ⚠ Jobb váll aktív · {currentIdx === 1 ? 'pronated grif' : 'óvatos, először warm-up'}
             </div>
           </div>
         )}
@@ -470,18 +482,18 @@ function ActiveWorkoutSession({
             )}
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="eyebrow brand">
-                {ex.type === 'compound' ? 'Compound' : 'Isolation'} · Set {setIdx + 1}/{ex.sets}
+                {current.type === 'compound' ? 'Compound' : 'Isolation'} · Set {session.setIdx + 1}/{currentSetCount}
               </span>
               <span className="chip brand" style={{ fontSize: 9, padding: '3px 8px' }}>
-                Cél · {ex.targetReps} @ RIR {ex.targetRIR}
+                Cél · {current.targetReps} @ RIR {current.targetRIR}
               </span>
             </div>
             <div style={{ marginTop: 10 }}>
-              <Display size="lg">{ex.name}</Display>
+              <Display size="lg">{current.name}</Display>
             </div>
 
             {/* Múlt hét — hero comparison block (only with a previous completed instance) */}
-            {ex.lastWeek && (
+            {current.lastWeek && (
               <div
                 className="mt-lg"
                 style={{
@@ -496,11 +508,11 @@ function ActiveWorkoutSession({
                   <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>7 napja</span>
                 </div>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end', gap: 8 }}>
-                  <LastWeekStat label="Súly" val={ex.lastWeek.weight} unit="kg" />
+                  <LastWeekStat label="Súly" val={current.lastWeek.weight} unit="kg" />
                   <div style={{ width: 1, height: 32, background: 'var(--border-subtle)' }} />
-                  <LastWeekStat label="Reps" val={'× ' + ex.lastWeek.reps} />
+                  <LastWeekStat label="Reps" val={'× ' + current.lastWeek.reps} />
                   <div style={{ width: 1, height: 32, background: 'var(--border-subtle)' }} />
-                  <LastWeekStat label="RIR" val={ex.lastWeek.rir} />
+                  <LastWeekStat label="RIR" val={current.lastWeek.rir} />
                 </div>
                 <div
                   className="row mt-md gap-sm"
@@ -508,10 +520,10 @@ function ActiveWorkoutSession({
                 >
                   <Icon name="sparkle" size={11} color="var(--brand-glow)" />
                   <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                    {ex.lastWeek.rir >= 2 ? (
-                      <SafeMarkdown text={`RIR ${ex.lastWeek.rir} maradt — **+2.5–5 kg** ma logikus`} />
+                    {current.lastWeek.rir >= 2 ? (
+                      <SafeMarkdown text={`RIR ${current.lastWeek.rir} maradt — **+2.5–5 kg** ma logikus`} />
                     ) : (
-                      `RIR ${ex.lastWeek.rir} — közel a limithez, súly tartás vagy +1 rep`
+                      `RIR ${current.lastWeek.rir} — közel a limithez, súly tartás vagy +1 rep`
                     )}
                   </span>
                 </div>
@@ -521,15 +533,15 @@ function ActiveWorkoutSession({
             {/* Set dots */}
             <div className="row mt-lg" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="set-dots">
-                {Array.from({ length: ex.sets }, (_, i) => (
+                {Array.from({ length: currentSetCount }, (_, i) => (
                   <div
                     key={i}
-                    className={'set-dot' + (i < setIdx ? ' done' : i === setIdx ? ' active' : '')}
+                    className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '')}
                   />
                 ))}
               </div>
               <span className="label-mono" style={{ fontSize: 10 }}>
-                {setIdx}/{ex.sets} done
+                {session.setIdx}/{currentSetCount} done
               </span>
             </div>
 
@@ -540,8 +552,8 @@ function ActiveWorkoutSession({
                   Mai szetek
                 </span>
                 {exHistory.map((s, i) => {
-                  const delta = ex.lastWeek ? s.weight - ex.lastWeek.weight : 0
-                  const isPR = exerciseIdx === 0 && s.weight >= PR_DEMO_THRESHOLD_KG
+                  const delta = current.lastWeek ? s.weight - current.lastWeek.weight : 0
+                  const isPR = currentIdx === 0 && s.weight >= PR_DEMO_THRESHOLD_KG
                   return (
                     <div
                       key={i}
@@ -642,7 +654,7 @@ function ActiveWorkoutSession({
                   ))}
                 </div>
               </div>
-              {ex.type === 'isolation' && (
+              {current.type === 'isolation' && (
                 <div style={{ background: 'var(--surface-2)', padding: '5px 8px', flexShrink: 0 }}>
                   <div className="label-mono" style={{ fontSize: 8, marginBottom: 4 }}>Side</div>
                   <div className="row gap-xs">
