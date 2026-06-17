@@ -78,6 +78,21 @@ test('the weight value is tap-to-edit and honors an exact (non-2.5) typed value'
   expect(kg.value).toBe('93')
 })
 
+test('reordering remaining exercises changes which exercise comes next', async () => {
+  const user = userEvent.setup()
+  setup() // mock mode (file pins VITE_USE_MOCK=true)
+  await user.click(screen.getByText(/Kezdjük el/)) // active, current = Chest Supported Row (ex1)
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' })) // open ⋯
+  await user.click(screen.getByText('Áthelyezés')) // reorder sub-view (remaining = ex2..ex5)
+  await user.click(screen.getByRole('button', { name: 'Cable Pull-Around feljebb' })) // ex3 up → next becomes ex3
+  await user.keyboard('{Escape}') // close the sheet
+  // complete Chest Supported Row's 4 sets, then advance through the debrief
+  for (let i = 0; i < 4; i++) await user.click(screen.getByText('Set kész'))
+  await user.click(await screen.findByText('Mentés · tovább')) // debrief advance (non-last)
+  // the next active exercise is now Cable Pull-Around (was Lat Pulldown before the reorder)
+  expect(await screen.findByText('Cable Pull-Around')).toBeInTheDocument()
+})
+
 // ---- real-mode block: the session drives the T2 write endpoints ----
 
 const REAL_MESO = {
