@@ -162,6 +162,27 @@ test('mock mode: editing a note via ⋯ → Jegyzet renders the note pill with t
   expect(pill).toHaveTextContent('Lassú excentrikus')
 })
 
+test('mock mode: clearing the note via the editor removes the pill', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // 1. add a note → the pill renders with the typed text.
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Jegyzet'))
+  const textarea = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
+  await user.type(textarea, 'Lassú excentrikus')
+  await user.click(screen.getByText('Mentés'))
+  expect(await screen.findByLabelText('Gyakorlat-jegyzet')).toHaveTextContent('Lassú excentrikus')
+  // 2. reopen the editor (row label now reads "Jegyzet szerkesztése"), empty it, save.
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Jegyzet szerkesztése'))
+  const reopened = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
+  await user.clear(reopened)
+  await user.click(screen.getByText('Mentés'))
+  // 3. the pill is gone — clearing to empty hides it (effectiveNote falls to '').
+  await waitFor(() => expect(screen.queryByLabelText('Gyakorlat-jegyzet')).not.toBeInTheDocument())
+})
+
 // ---- real-mode block: the session drives the T2 write endpoints ----
 
 const REAL_MESO = {
