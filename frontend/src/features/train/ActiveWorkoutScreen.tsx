@@ -12,9 +12,10 @@ import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
-import type { SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/lib/trainApi'
+import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/lib/trainApi'
 import {
   type Session,
+  addExtraSet,
   advance,
   completeSet as completeSetModel,
   currentExerciseId,
@@ -27,6 +28,7 @@ import { Chip } from '@/components/ui/Chip'
 import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary } from '@/components/ui/Cta'
+import { Sheet } from '@/components/ui/Sheet'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
 import { CompactStepper } from './components/CompactStepper'
 import { LastWeekStat } from './components/LastWeekStat'
@@ -64,7 +66,7 @@ const PR_TOAST_MS = 4500
 // — a conditional early return between hook calls would break the hook order
 // now that `workout` is query-driven (T2).
 export function ActiveWorkoutScreen() {
-  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, saveWorkoutFeedback, finishWorkout } = useTrain()
+  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Hold rendering until loaded.
   if (workoutPending) return null
@@ -79,6 +81,7 @@ export function ActiveWorkoutScreen() {
       logSet={logSet}
       saveWorkoutFeedback={saveWorkoutFeedback}
       finishWorkout={finishWorkout}
+      saveDayExercises={saveDayExercises}
     />
   )
 }
@@ -91,6 +94,7 @@ interface SessionProps {
   logSet: (workoutId: string, set: SetLogRequest) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string) => void
+  saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
 }
 
 // First-ever workout has no last week: prefill from the exercise targets instead.
@@ -99,7 +103,7 @@ function prefill(e: LoggedWorkoutExercise): LastWeekSet {
 }
 
 function ActiveWorkoutSession({
-  workout, activeMeso, todaySession, startWorkout, logSet, saveWorkoutFeedback, finishWorkout,
+  workout, activeMeso, todaySession, startWorkout, logSet, saveWorkoutFeedback, finishWorkout, saveDayExercises,
 }: SessionProps) {
   const W = workout
   const navigate = useNavigate()
@@ -137,6 +141,8 @@ function ActiveWorkoutSession({
   const [niggleConfirmed, setNiggleConfirmed] = useState(false)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
   const [actionSheetOpen, setActionSheetOpen] = useState(false)
+  // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
+  const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
 
   // Auto-hide the PR toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -407,6 +413,7 @@ function ActiveWorkoutSession({
   const activeChallenge = W.challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
   const exHistory = session.logged[current.id] ?? []
   const currentSetCount = effectiveSetCount(session, current.id)
+  const plannedCount = session.planned[current.id] ?? currentSetCount
 
   // Reorderable segment for the ⋯ action sheet: the done + current exercises
   // stay FIXED; only the FUTURE exercises (after the current one in session.order)
@@ -428,6 +435,25 @@ function ActiveWorkoutSession({
       return { ...s, order: [...fixed, ...newRemaining] }
     })
 
+  // F2 "Minden hétre": persist the extra set to the TEMPLATE by bumping this
+  // exercise's set count in its meso day and reusing the day-exercises PUT. The
+  // day is the one whose exercise list contains the current exercise (by id).
+  const writeExtraSetToTemplate = (exerciseId: string) => {
+    const day = activeMeso.days?.find((d) => d.exercises?.some((e) => e.id === exerciseId))
+    if (!day?.id) return
+    const exercises: GymExerciseInput[] = day.exercises.map((e) => ({
+      name: e.name,
+      muscle: e.muscle,
+      sets: e.id === exerciseId ? e.sets + 1 : e.sets,
+      targetReps: e.targetReps,
+      targetRIR: e.targetRIR,
+      type: e.type,
+      ...(e.warning ? { warning: e.warning } : {}),
+      ...(e.catalogId ? { catalogId: e.catalogId } : {}),
+    }))
+    saveDayExercises(activeMeso.id, day.id, exercises)
+  }
+
   return (
     <>
       {showPR && <PRToast pr={showPR} />}
@@ -444,8 +470,52 @@ function ActiveWorkoutSession({
           exerciseName={current.name}
           remaining={remaining}
           onReorder={handleReorder}
+          onAddSet={() => {
+            const id = currentExerciseId(session)
+            setSession((s) => addExtraSet(s, currentExerciseId(s)))
+            setAddSetPrompt({ exerciseId: id })
+          }}
           onClose={() => setActionSheetOpen(false)}
         />
+      )}
+      {addSetPrompt && (
+        <Sheet onClose={() => setAddSetPrompt(null)} labelledBy="add-set-prompt-title" className="sheet-nested">
+          {(close) => (
+            <div style={{ padding: '4px 2px 2px' }}>
+              <span className="eyebrow brand">Extra szett hozzáadva</span>
+              <h3
+                id="add-set-prompt-title"
+                style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}
+              >
+                A tervbe is felvegyük?
+              </h3>
+              <p style={{ fontSize: 13, marginTop: 8, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                Csak erre az alkalomra szól, vagy minden hétre — ilyenkor a mesociklus terve is eggyel több szettet ír elő ennél a gyakorlatnál.
+              </p>
+              <div className="col gap-sm" style={{ marginTop: 16 }}>
+                <button
+                  type="button"
+                  className="cta-primary notch-8"
+                  style={{ padding: '12px 18px', fontSize: 14 }}
+                  onClick={() => {
+                    writeExtraSetToTemplate(addSetPrompt.exerciseId)
+                    close()
+                  }}
+                >
+                  Minden hétre
+                </button>
+                <button
+                  type="button"
+                  className="cta-ghost notch-4"
+                  style={{ padding: 12, fontSize: 13 }}
+                  onClick={close}
+                >
+                  Csak ma
+                </button>
+              </div>
+            </div>
+          )}
+        </Sheet>
       )}
 
       <div>
@@ -575,12 +645,15 @@ function ActiveWorkoutSession({
             {/* Set dots */}
             <div className="row mt-lg" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="set-dots">
-                {Array.from({ length: currentSetCount }, (_, i) => (
-                  <div
-                    key={i}
-                    className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '')}
-                  />
-                ))}
+                {Array.from({ length: currentSetCount }, (_, i) => {
+                  const isExtra = i >= plannedCount
+                  return (
+                    <div
+                      key={i}
+                      className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '') + (isExtra ? ' extra' : '')}
+                    />
+                  )
+                })}
               </div>
               <span className="label-mono" style={{ fontSize: 10 }}>
                 {session.setIdx}/{currentSetCount} done
