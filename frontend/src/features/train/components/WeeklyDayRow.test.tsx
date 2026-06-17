@@ -17,6 +17,18 @@ test('renders the morning run before the evening gym and shows the run time', ()
   expect(within(buttons[0]).getByText(/08:00/)).toBeInTheDocument()
 })
 
+test('a PAST gym day with a logged workout shows the done chip (no isToday needed)', () => {
+  render(<WeeklyDayRow
+    agenda={{
+      day: 'Hét', date: '2026-06-15', isToday: false,
+      gym: { day: 'Hét', active: true, time: '18:30', duration: null, type: 'Plyo Power' } as never,
+      volleyball: null, running: [],
+    }}
+    gymLogged
+    onStartGym={() => {}} onLogVolleyball={() => {}} />)
+  expect(screen.getByText('kész')).toBeInTheDocument()
+})
+
 test('today volleyball row shows the "log" chip, or the done chip once logged', () => {
   const agenda = {
     day: 'Hét', isToday: true,

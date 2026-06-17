@@ -250,6 +250,28 @@ test('real mode: saving the volleyball log flips the hero to done (the reported 
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
+test('real mode: gym logged today ⇒ hero flips to done (Kész + logged summary, no start CTA)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
+        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+        openWorkout: null,
+        // server says today's gym workout has a logged set — the hero must reflect it
+        weekDoneDates: [localDateString()],
+      }),
+    ),
+  )
+  renderView()
+  expect(await screen.findByText(/Mai edzés logolva/)).toBeInTheDocument()
+  expect(screen.getByText('Kész')).toBeInTheDocument() // hero done chip (capitalised)
+  expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+})
+
 test('real mode: prescribed run logged today ⇒ run hero flips to the done summary, not the log CTA', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const todayIdx = (new Date().getDay() + 6) % 7

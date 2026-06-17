@@ -57,12 +57,17 @@ public class WorkoutService {
 
     public WorkoutTodayResponse getToday(UUID createdBy) {
         WorkoutTodayResponse empty = new WorkoutTodayResponse();
+        empty.setWeekDoneDates(List.of());
         MesocycleEntity activeMeso = mesocycleRepository
             .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
             .stream().findFirst().orElse(null);
         if (activeMeso == null) {
             return empty;
         }
+        // Gym done-state signal: this week's instance dates with >=1 logged set. Computed
+        // regardless of whether today is a gym day, so the weekly rows can mark PAST done days.
+        List<LocalDate> weekDoneDates = doneDatesThisWeek(createdBy);
+        empty.setWeekDoneDates(weekDoneDates);
         String todayLabel = HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
         WorkoutSessionEntity day = workoutSessionRepository
             .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()))
@@ -93,7 +98,15 @@ public class WorkoutService {
                 return t;
             }).toList())
             .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
+            .weekDoneDates(weekDoneDates)
             .build();
+    }
+
+    /** Dates (this Mon–Sun week) with a gym instance carrying >=1 logged set — gym done-state. */
+    private List<LocalDate> doneDatesThisWeek(UUID createdBy) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+        return workoutSessionRepository.findDoneInstanceDates(createdBy, monday, monday.plusDays(6));
     }
 
     /**

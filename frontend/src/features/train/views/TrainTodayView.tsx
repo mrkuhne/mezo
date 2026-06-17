@@ -25,7 +25,7 @@ import { daySessions } from '../agenda'
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
 export function TrainTodayView() {
-  const { workout, gymSchedule, sport, activeMeso, logSportSession } = useTrain()
+  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates } = useTrain()
   const { activeRunningBlock, runSessions, logRunSession } = useRunning()
   const navigate = useNavigate()
   const [vbLogOpen, setVbLogOpen] = useState(false)
@@ -61,14 +61,20 @@ export function TrainTodayView() {
     )
   }
 
-  // Combine gym schedule + volleyball sessions into a unified weekly map.
+  // Combine gym schedule + volleyball sessions into a unified weekly map. Each row carries
+  // its calendar ISO date (this week's Monday + index) so done-state can be matched per day.
   const gymTimes = gymSchedule?.weeklyTimes ?? []
   const vbSessions = sport.schedule?.volleyball.sessions ?? []
-  const agenda: WeeklyAgendaDay[] = DAY_ORDER.map((d) => {
+  const weekDateIso = (i: number) => {
+    const base = new Date()
+    return localDateString(new Date(base.getFullYear(), base.getMonth(), base.getDate() - todayIdx() + i))
+  }
+  const agenda: WeeklyAgendaDay[] = DAY_ORDER.map((d, i) => {
     const g = gymTimes.find((x) => x.day === d)
     const v = vbSessions.find((x) => x.day === d)
     return {
       day: d,
+      date: weekDateIso(i),
       gym: g && g.active ? g : null,
       volleyball: v ?? null,
       running: runSessionsForDay(activeRunningBlock, DAY_ORDER.indexOf(d)),
@@ -103,10 +109,16 @@ export function TrainTodayView() {
   // tuple back, so we match on block + week + sessionKey.
   const todayHu = huMonthDayDow(localDateString())
   const loggedVb = sport.sessions.find((s) => s.sport === 'volleyball' && s.date === todayHu) ?? null
+  // Gym done-state: today's date is in the server-computed set of this week's logged-set dates.
+  const loggedGym = gymDoneDates.includes(localDateString())
   const runLoggedFor = (key: string) =>
     runSessions.find(
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
     ) ?? null
+  // A weekly row's done-state matches by its calendar date: volleyball by the mapped HU date,
+  // gym by the ISO date in gymDoneDates. (Running matches by block+week+sessionKey, date-agnostic.)
+  const vbDoneOn = (iso?: string) =>
+    Boolean(iso) && sport.sessions.some((s) => s.sport === 'volleyball' && s.date === huMonthDayDow(iso!))
 
   return (
     <>
@@ -144,18 +156,44 @@ export function TrainTodayView() {
                       </span>
                     )}
                   </div>
-                  <span className="chip brand notch-4" style={{ fontSize: 9 }}>MA</span>
+                  <span
+                    className="chip notch-4"
+                    style={{
+                      fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
+                      color: loggedGym ? 'var(--success)' : 'var(--brand-glow)',
+                      borderColor: loggedGym ? 'color-mix(in srgb, var(--success) 40%, transparent)' : 'var(--border-brand)',
+                    }}
+                  >
+                    {loggedGym ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
+                  </span>
                 </div>
                 <div className="row gap-sm mt-md">
                   <span className="chip notch-4">{workout.exercises.length} gyakorlat</span>
                   <span className="chip notch-4">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szet</span>
                   {workout.durationEst > 0 && <span className="chip notch-4">~{workout.durationEst}p</span>}
                 </div>
-                <CtaPrimary className="mt-md" onClick={openSession}>
-                  <span>Indítsuk</span>
-                  <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span>
-                  <span>{workout.title}</span>
-                </CtaPrimary>
+                {loggedGym ? (
+                  // Done-state: a muted summary in place of the start CTA (re-entry/edit is the
+                  // active-workout-v2 follow-up; gym sessions have no in-place edit sheet yet).
+                  <div
+                    className="row notch-4 mt-md"
+                    style={{
+                      justifyContent: 'center', gap: 6, padding: '10px 12px',
+                      background: 'rgba(52, 211, 153, 0.08)',
+                      border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
+                      color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
+                    }}
+                  >
+                    <Icon name="check" size={12} />
+                    <span>Mai edzés logolva</span>
+                  </div>
+                ) : (
+                  <CtaPrimary className="mt-md" onClick={openSession}>
+                    <span>Indítsuk</span>
+                    <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span>
+                    <span>{workout.title}</span>
+                  </CtaPrimary>
+                )}
               </div>
             </div>
           )
@@ -341,7 +379,8 @@ export function TrainTodayView() {
             <WeeklyDayRow
               key={a.day}
               agenda={a}
-              vbLogged={Boolean(loggedVb)}
+              gymLogged={Boolean(a.date) && gymDoneDates.includes(a.date!)}
+              vbLogged={vbDoneOn(a.date)}
               isRunLogged={(key) => Boolean(runLoggedFor(key))}
               onStartGym={openSession}
               onLogVolleyball={() => setVbLogOpen(true)}

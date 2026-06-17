@@ -371,6 +371,44 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetToday_shouldMarkTodayDone_whenInstanceHasLoggedSet() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        // an ACTIVE (not finished) instance today with one logged set — "any logged set" counts
+        WorkoutSessionEntity instance =
+            trainPopulator.createWorkoutInstance(user, template, LocalDate.now(), "active");
+        trainPopulator.createLoggedSet(user, exercise.getId(), instance.getId(), 0, "100.0", 8, 2);
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getWeekDoneDates()).contains(LocalDate.now());
+    }
+
+    @Test
+    void testGetToday_shouldExcludeSetlessAndOutOfWeekInstances_fromDoneDates() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        LocalDate monday = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1L);
+        // (a) in-week instance with NO logged sets -> not done
+        trainPopulator.createWorkoutInstance(user, template, monday, "active");
+        // (b) last week's instance WITH a set -> out of this Mon–Sun window
+        WorkoutSessionEntity lastWeek =
+            trainPopulator.createWorkoutInstance(user, template, monday.minusDays(1), "completed");
+        trainPopulator.createLoggedSet(user, exercise.getId(), lastWeek.getId(), 0, "90.0", 8, 2);
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getWeekDoneDates()).doesNotContain(monday); // setless instance excluded
+        assertThat(today.getWeekDoneDates()).doesNotContain(monday.minusDays(1)); // out-of-week excluded
+    }
+
+    @Test
     void testGetToday_shouldCarryOpenWorkoutWithSets_whenInstanceActive() {
         UUID user = databasePopulator.populateUser("workout@test.local");
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");

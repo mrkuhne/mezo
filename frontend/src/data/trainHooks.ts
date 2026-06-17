@@ -196,6 +196,8 @@ type TrainData = {
   exerciseLibrary: ExerciseLibraryItem[]
   exerciseRecords: ExerciseRecordResponse[]
   todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
+  /** ISO dates (this Mon–Sun week) with a logged gym workout — drives the Mai gym done-state. Real mode only. */
+  gymDoneDates: string[]
   /** True while the meso//today queries are still loading (real mode) — guards must not redirect yet. */
   workoutPending: boolean
   createMesocycle: (req: MesocycleCreateRequest, opts?: MutateOpts) => void
@@ -416,6 +418,9 @@ export function useTrain(): TrainData {
     todaySession: !mock && todayData?.templateSessionId
       ? { templateSessionId: todayData.templateSessionId, openWorkout: todayData.openWorkout ?? null }
       : null,
+    // Gym done-state dates: real mode reads them from /today (computed server-side);
+    // mock mode has no persisted instances, so the gym never flips to done offline.
+    gymDoneDates: mock ? [] : (todayData?.weekDoneDates ?? []),
     workoutPending: !mock && (mesoPending || todayPending),
     sport: mock
       ? { ...sport, sessions: sportData?.sessions ?? [] }

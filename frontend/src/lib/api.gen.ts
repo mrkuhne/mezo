@@ -713,7 +713,7 @@ export interface components {
             /** @description Top set of the last 5 sessions, oldest first (sparkline order), max 5 */
             recentTopSets: components["schemas"]["RecordSetRef"][];
         };
-        /** @description All fields absent when there is no active meso or today is a rest day */
+        /** @description templateSessionId/exercises/openWorkout are absent when there is no active meso or today is a rest day; weekDoneDates is always present (possibly empty). */
         WorkoutTodayResponse: {
             /** Format: uuid */
             templateSessionId?: string;
@@ -724,6 +724,8 @@ export interface components {
             durationEst?: number;
             exercises?: components["schemas"]["TodayExercise"][];
             openWorkout?: components["schemas"]["WorkoutInstanceResponse"];
+            /** @description ISO dates within the current Mon–Sun week that have a gym workout instance with >=1 logged set. Drives the Mai gym done-state (today) and the weekly-row done chips (past days). Present even on rest days and when today is not a gym day. */
+            weekDoneDates?: string[];
         };
         TodayExercise: {
             /** Format: uuid */

@@ -1729,7 +1729,10 @@ components:
             $ref: '#/components/schemas/RecordSetRef'
     WorkoutTodayResponse:
       type: object
-      description: All fields absent when there is no active meso or today is a rest day
+      description: >-
+        templateSessionId/exercises/openWorkout are absent when there is no
+        active meso or today is a rest day; weekDoneDates is always present
+        (possibly empty).
       properties:
         templateSessionId:
           type: string
@@ -1748,6 +1751,16 @@ components:
             $ref: '#/components/schemas/TodayExercise'
         openWorkout:
           $ref: '#/components/schemas/WorkoutInstanceResponse'
+        weekDoneDates:
+          type: array
+          description: >-
+            ISO dates within the current Mon–Sun week that have a gym workout
+            instance with >=1 logged set. Drives the Mai gym done-state (today)
+            and the weekly-row done chips (past days). Present even on rest days
+            and when today is not a gym day.
+          items:
+            type: string
+            format: date
     TodayExercise:
       type: object
       required:

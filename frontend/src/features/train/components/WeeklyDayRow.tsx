@@ -9,6 +9,8 @@ import { daySessions } from '../agenda'
 
 export interface WeeklyAgendaDay {
   day: string
+  /** ISO date of this row's day in the current week — used by the parent to derive done-state. */
+  date?: string
   gym: GymScheduleDay | null
   volleyball: VolleyballSession | null
   running: RunPrescribedSession[]
@@ -17,16 +19,18 @@ export interface WeeklyAgendaDay {
 
 interface WeeklyDayRowProps {
   agenda: WeeklyAgendaDay
-  /** Today's volleyball slot already has a logged session ⇒ show the done chip. */
+  /** This day's gym workout has a logged set ⇒ show the done chip (today or a past day). */
+  gymLogged?: boolean
+  /** This day's volleyball slot has a logged session ⇒ show the done chip (today or a past day). */
   vbLogged?: boolean
-  /** Today's prescribed run (by key) already has a logged session ⇒ show the done chip. */
+  /** This day's prescribed run (by key) has a logged session ⇒ show the done chip. */
   isRunLogged?: (key: string) => boolean
   onStartGym: () => void
   onLogVolleyball: () => void
   onLogRun?: (s: RunPrescribedSession) => void
 }
 
-export function WeeklyDayRow({ agenda, vbLogged, isRunLogged, onStartGym, onLogVolleyball, onLogRun }: WeeklyDayRowProps) {
+export function WeeklyDayRow({ agenda, gymLogged, vbLogged, isRunLogged, onStartGym, onLogVolleyball, onLogRun }: WeeklyDayRowProps) {
   const { day, isToday } = agenda
   // Time-ordered flat session list — gym/volleyball/running interleave by
   // time-of-day so a morning run renders above an evening gym (untimed last).
@@ -115,7 +119,20 @@ export function WeeklyDayRow({ agenda, vbLogged, isRunLogged, onStartGym, onLogV
                       {gym.duration ? `${gym.duration}p · gym` : 'gym'}
                     </span>
                   </div>
-                  {isToday && <Icon name="chevron-right" size={11} color="var(--brand-glow)" />}
+                  {gymLogged ? (
+                    <span
+                      className="chip"
+                      style={{
+                        fontSize: 8, padding: '2px 5px',
+                        color: 'var(--success)',
+                        borderColor: 'color-mix(in srgb, var(--success) 40%, transparent)',
+                      }}
+                    >
+                      kész
+                    </span>
+                  ) : isToday ? (
+                    <Icon name="chevron-right" size={11} color="var(--brand-glow)" />
+                  ) : null}
                 </button>
               )
             }
@@ -140,7 +157,7 @@ export function WeeklyDayRow({ agenda, vbLogged, isRunLogged, onStartGym, onLogV
                       {[`${volleyball.duration}p`, volleyball.role, volleyball.intensity].filter(Boolean).join(' · ')}
                     </span>
                   </div>
-                  {isToday && (
+                  {(vbLogged || isToday) && (
                     <span
                       className="chip"
                       style={{
@@ -177,7 +194,7 @@ export function WeeklyDayRow({ agenda, vbLogged, isRunLogged, onStartGym, onLogV
                     {`${run.kind === 'sprint' ? 'Sprint' : 'Piramis'} · futás`}
                   </span>
                 </div>
-                {isToday && (
+                {(isRunLogged?.(run.key) || isToday) && (
                   <span
                     className="chip"
                     style={{
