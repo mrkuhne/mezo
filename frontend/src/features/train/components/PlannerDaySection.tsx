@@ -7,6 +7,7 @@
 // ============================================================
 import type { PlannerDay } from '../planner'
 import { Icon } from '@/components/ui/Icon'
+import { SortableList } from '@/components/ui/SortableList'
 import { PlannerExerciseRow } from './PlannerExerciseRow'
 
 interface PlannerDaySectionProps {
@@ -14,12 +15,13 @@ interface PlannerDaySectionProps {
   expanded: boolean
   onToggle: () => void
   onRemove: (exId: string) => void
+  onReorder: (ids: string[]) => void
   onAdd: () => void
   /** Renames the day (custom splits start empty and user-named — mezo-9wv). */
   onRename?: (name: string) => void
 }
 
-export function PlannerDaySection({ day, expanded, onToggle, onRemove, onAdd, onRename }: PlannerDaySectionProps) {
+export function PlannerDaySection({ day, expanded, onToggle, onRemove, onReorder, onAdd, onRename }: PlannerDaySectionProps) {
   // Type-based: an empty (not yet filled) training day is still a training day,
   // it must keep the add-exercise affordance instead of rendering as "off".
   const isTraining = day.type !== 'Rest' && day.type !== 'Volleyball'
@@ -92,11 +94,11 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onAdd, on
               />
             </div>
           )}
-          <div className="col gap-sm">
-            {day.exercises.map((e) => (
-              <PlannerExerciseRow key={e.id} ex={e} onRemove={() => onRemove(e.id)} />
-            ))}
-          </div>
+          <SortableList
+            items={day.exercises.map((e) => ({ ...e, label: e.name }))}
+            onReorder={onReorder}
+            renderItem={(e) => <PlannerExerciseRow ex={e} onRemove={() => onRemove(e.id)} />}
+          />
           <button
             type="button"
             onClick={onAdd}

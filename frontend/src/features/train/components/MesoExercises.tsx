@@ -5,8 +5,8 @@
 // DayExerciseSection per day, and a footer set-volume summary. Add/remove/pick
 // all mutate the local state only (no persistence in Phase 1). The exercise
 // picker (ExercisePickerSheet) opens per-day and appends to that day's list.
-// Drag-rendezés is VISUAL ONLY in Phase 1 — the drag handle renders but no DnD
-// reorder is wired (see ExerciseEditRow port note).
+// Reorder is wired via the shared SortableList primitive (grip drag + ▲▼);
+// each reorder mutates local state and fires the same full-list PUT as add/remove.
 // Ported from prototype mesocycles.jsx MesoExercises.
 // ============================================================
 import { useState } from 'react'
@@ -97,6 +97,17 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
     persistDay(next.find((d) => d.day === dayKey))
   }
 
+  const reorderExercises = (dayKey: string, ids: string[]) => {
+    const next = days.map((d) => {
+      if (d.day !== dayKey) return d
+      const byId = new Map(d.exercises.map((e) => [e.id, e]))
+      const exercises = ids.map((id) => byId.get(id)).filter(Boolean) as typeof d.exercises
+      return { ...d, exercises }
+    })
+    setDays(next)
+    persistDay(next.find((d) => d.day === dayKey))
+  }
+
   return (
     <div className="col">
       <div style={{ padding: '12px 24px' }}>
@@ -126,6 +137,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
               onToggle={() => setExpandedDay((cur) => (cur === d.day ? null : d.day))}
               onAdd={() => setPickerDay(d.day)}
               onRemoveExercise={(exId) => removeExercise(d.day, exId)}
+              onReorderExercises={(ids) => reorderExercises(d.day, ids)}
             />
           ))}
         </div>

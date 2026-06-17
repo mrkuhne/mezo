@@ -1,8 +1,8 @@
 // ============================================================
 // Mezo · PlannerExerciseRow — one exercise row in the planner's program
-// review (step 3). Visual drag handle, name + muscle + set/rep/RIR scheme,
-// optional niggle warning, settings + remove (✕) affordances.
-// Drag is VISUAL ONLY in Phase 1 (the handle renders, no DnD reorder).
+// review (step 3). Name + muscle + set/rep/RIR scheme, optional niggle warning,
+// settings + remove (✕) affordances. The row is rendered as a SortableList item,
+// which supplies the real drag grip + ▲▼ reorder controls.
 // Ported from prototype meso-planner.jsx PlannerExerciseRow.
 // ============================================================
 import type { GymExercise } from '@/data/types'
@@ -12,27 +12,6 @@ export function PlannerExerciseRow({ ex, onRemove }: { ex: GymExercise; onRemove
   return (
     <div className="card notch-4" style={{ padding: '10px 12px', background: 'var(--surface-2)' }}>
       <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-        <button
-          type="button"
-          aria-label="Átrendezés"
-          style={{
-            cursor: 'grab',
-            padding: 4,
-            color: 'var(--text-tertiary)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            alignItems: 'center',
-            marginTop: 2,
-          }}
-        >
-          {[0, 1, 2].map((r) => (
-            <span key={r} style={{ display: 'flex', gap: 2 }}>
-              <span style={{ width: 2, height: 2, background: 'currentColor', borderRadius: '50%' }} />
-              <span style={{ width: 2, height: 2, background: 'currentColor', borderRadius: '50%' }} />
-            </span>
-          ))}
-        </button>
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.3 }}>{ex.name}</span>
           <div className="row gap-sm mt-xs flex-wrap">

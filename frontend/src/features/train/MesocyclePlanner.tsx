@@ -759,6 +759,19 @@ function Step3Program({
     )
   }
 
+  // Draft-only reorder: maps the day's exercises into the new id order and
+  // updates local program state. No PUT — the whole draft is saved at the end.
+  const reorderExercises = (dayName: string, ids: string[]) => {
+    setProgram((prev) =>
+      (prev ?? []).map((d) => {
+        if (d.day !== dayName) return d
+        const byId = new Map(d.exercises.map((e) => [e.id, e]))
+        const exercises = ids.map((id) => byId.get(id)).filter(Boolean) as typeof d.exercises
+        return { ...d, exercises }
+      }),
+    )
+  }
+
   // Custom-split days are user-named (mezo-9wv); the day key stays, only the label changes.
   const renameDay = (dayName: string, name: string) => {
     setProgram((prev) =>
@@ -840,6 +853,7 @@ function Step3Program({
             expanded={expandedDay === d.day}
             onToggle={() => setExpandedDay((cur) => (cur === d.day ? null : d.day))}
             onRemove={(exId) => removeExercise(d.day, exId)}
+            onReorder={(ids) => reorderExercises(d.day, ids)}
             onAdd={() => setPickerDay(d.day)}
             onRename={d.muscle === 'custom' ? (name) => renameDay(d.day, name) : undefined}
           />
