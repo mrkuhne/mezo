@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-06-15
+updated: 2026-06-17
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -112,7 +112,7 @@ const mutation = useMutation({
 
 - **Optimistic cache emulation** (mock) → `setQueryData`: `useGoals.logWeight`, `useSleep.logSleep`, `useTrain.logSportSession` (appends a synthesized `SportSession` stamped with today's date to `['train','sportSessions']` so the `Mai` done-state flips offline — mezo-pyc; **real mode still POSTs to `/api/train/sport-sessions` + invalidates**, the DB is the source of truth), and all of `useRunning`'s mock mutations (`upsertMock`/`lifecycleMock`/`logMock` in `data/runningHooks.ts:38`) which fully re-implement create/update/activate/close/delete/log in-cache so mock interactions behave like a server — including **server-derived fields**: `upsertMock` computes `currentWeek` via `currentWeekOf` (`lib/dates.ts`) exactly as the backend's `clampWeek` does, so a mock-created block isn't stuck on week 0 (mezo-478).
   - **Exception — real-mode *create* also `setQueryData`s** (mezo-11m, `runningHooks.ts:52`): `useRunning`'s save mutation's `onSuccess` branches — for a real-mode *create* (`!mock && !args.id`) it inserts the returned block into `['running','blocks']` **synchronously** and skips the invalidate, because the server response is authoritative for the just-created row and an async refetch races a navigate-into-the-builder (read-after-write could transiently drop it). Real-mode *updates* and all mock paths still `invalidate()`. This is the one place a real-mode mutation patches the cache directly instead of refetching truth.
-- **Pure no-op** (mock) → `async () => undefined`, real → persist + `invalidateQueries`: `useTrain`'s remaining **ten** write mutations (all except `logSportSession`, which now does a mock cache-append — see above; incl. `gymScheduleMutation` → PUT `/gym-schedule`, invalidates `['train','gymSchedule']`, `data/trainHooks.ts:331`); rationale in-code — "mock mode no-ops (Phase-1 local behavior stays untouched)".
+- **Pure no-op** (mock) → `async () => undefined`, real → persist + `invalidateQueries`: `useTrain`'s remaining **twelve** write mutations (all except `logSportSession`, which now does a mock cache-append — see above; incl. `gymScheduleMutation` → PUT `/gym-schedule`, invalidates `['train','gymSchedule']`, and the active-workout-v2 writes `skipExercise` → POST `/workouts/{id}/skip` and `saveExerciseNote` → PUT `/exercises/{id}/note`, both invalidating `['train','workoutToday']`); rationale in-code — "mock mode no-ops (Phase-1 local behavior stays untouched)".
 - **Local `useState` (no query at all)**: `useCheckins` (`hooks.ts:41`) and `usePeople` (`hooks.ts:131`). `useCheckins` is a hybrid — it always updates local state synchronously and, **only in real mode**, additionally fires `checkinApi.save` as a fire-and-forget mutation (errors just `console.error`, no rollback). `usePeople.logMention` is mock-only (mints a `Mention` with `crypto.randomUUID()` and prepends it).
 
 ### The "no static fallback in real mode → ghost-guard" rule
@@ -136,7 +136,7 @@ The FE↔BE boundary types are **generated, never hand-written** (see `docs/refe
 **Endpoints by client:**
 
 - `biometricsApi` (`lib/biometricsApi.ts`): `GET/POST /api/biometrics/weight`, `GET/POST /api/biometrics/sleep`, `GET ?date= / POST /api/biometrics/checkin`. Types `WeightLogResponse`/`LogWeightRequest`, `SleepLogResponse`/`LogSleepRequest`, `CheckInResponse`/`SaveCheckInRequest`.
-- `trainApi` (`lib/trainApi.ts`): `mesocycles` (GET), `sport-sessions` (GET), mesocycle `create`/`:id/activate`/`:id/close`, `:mesoId/days/:dayId/exercises` (PUT), `workouts/today` (GET), `workouts` (start), `workouts/:id/sets` (logSet), `workouts/:id/feedback`, `workouts/:id/finish`, `sport-schedule` (GET/PUT), `gym-schedule` (GET/PUT — `gymSchedule`/`replaceGymSchedule`), `exercises` (catalog GET), `exercise-records` (GET). 18 endpoints.
+- `trainApi` (`lib/trainApi.ts`): `mesocycles` (GET), `sport-sessions` (GET), mesocycle `create`/`:id/activate`/`:id/close`, `:mesoId/days/:dayId/exercises` (PUT), `workouts/today` (GET), `workouts` (start), `workouts/:id/sets` (logSet), `workouts/:id/skip` (skipExercise, F3), `workouts/:id/feedback`, `workouts/:id/finish`, `exercises/:exerciseId/note` (saveExerciseNote PUT, F4), `sport-schedule` (GET/PUT), `gym-schedule` (GET/PUT — `gymSchedule`/`replaceGymSchedule`), `exercises` (catalog GET), `exercise-records` (GET). 20 endpoints.
 - `runningApi` (`lib/runningApi.ts`): `running-blocks` (GET/POST), `running-blocks/:id` (PUT/DELETE), `:id/activate`, `:id/close`, `run-sessions` (GET/POST).
 - `auth` (`lib/auth.ts`): `POST /api/auth/login` → `TokenResponse`.
 
@@ -218,7 +218,7 @@ pnpm build                      # tsc -b && vite build
 ## 10. Key files
 
 - `frontend/src/data/hooks.ts` — **THE single FE↔data boundary**; ~22 hooks, re-exports `useTrain`/`useRunning`.
-- `frontend/src/data/trainHooks.ts` — `useTrain` (richest dual-mode hook: 7 queries, 11 mutations, DTO→display mappers).
+- `frontend/src/data/trainHooks.ts` — `useTrain` (richest dual-mode hook: 7 queries, 13 mutations, DTO→display mappers).
 - `frontend/src/data/runningHooks.ts` — `useRunning` (cleanest idiom: full `setQueryData` mock emulation, generated types as view model).
 - `frontend/src/lib/mode.ts` — `isMockMode()`, the per-call mode switch.
 - `frontend/src/lib/api.ts` — `apiFetch`, `API_BASE`, `setToken`, `ApiError`, `SystemMessage`.
