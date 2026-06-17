@@ -139,6 +139,29 @@ test('a skipped exercise is marked "kihagyva" in the recap', async () => {
   expect(await screen.findByText('kihagyva')).toBeInTheDocument()
 })
 
+// ---- F4 note: durable per-exercise note pill + editor (mock-mode) ----
+
+test('mock mode: no note pill on the active card when the exercise has no note', async () => {
+  const user = userEvent.setup()
+  setup() // mock exercises carry no note
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+  expect(screen.queryByLabelText('Gyakorlat-jegyzet')).not.toBeInTheDocument()
+})
+
+test('mock mode: editing a note via ⋯ → Jegyzet renders the note pill with the typed text', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Jegyzet'))
+  const textarea = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
+  await user.type(textarea, 'Lassú excentrikus')
+  await user.click(screen.getByText('Mentés'))
+  const pill = await screen.findByLabelText('Gyakorlat-jegyzet')
+  expect(pill).toHaveTextContent('Lassú excentrikus')
+})
+
 // ---- real-mode block: the session drives the T2 write endpoints ----
 
 const REAL_MESO = {
@@ -146,11 +169,16 @@ const REAL_MESO = {
   startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6, currentWeek: 2,
   split: 'Pull / Push · 2×/hét', style: 'RP · 6 hét', phaseCurve: ['MEV', 'MAV'],
 }
+type RealExercise = {
+  id: string; name: string; muscle: string; sets: number; targetReps: string
+  targetRIR: number; type: string; note?: string | null
+  lastWeek: { weightKg: number; reps: number; rir: number }
+}
 const REAL_TODAY = {
   templateSessionId: 'd-1', dayLabel: 'Ma', title: 'Pull Day', durationEst: 60,
   exercises: [
     { id: 'e-1', name: 'Chest Supported Row', muscle: 'back', sets: 2, targetReps: '8-10', targetRIR: 1, type: 'compound', lastWeek: { weightKg: 102.5, reps: 9, rir: 2 } },
-  ],
+  ] as RealExercise[],
   openWorkout: null as unknown,
 }
 
@@ -181,6 +209,11 @@ function useRealHandlers(today: typeof REAL_TODAY, calls: string[]) {
     http.post(`${API_BASE}/api/train/workouts/:id/finish`, ({ params }) => {
       calls.push(`finish:${params.id}`)
       return HttpResponse.json({ id: String(params.id), templateSessionId: 'd-1', date: '2026-06-12', status: 'completed', sets: [] })
+    }),
+    http.put(`${API_BASE}/api/train/exercises/:exerciseId/note`, async ({ params, request }) => {
+      const body = (await request.json()) as { note?: string | null }
+      calls.push(`note:${params.exerciseId}:${body.note ?? ''}`)
+      return new HttpResponse(null, { status: 204 })
     }),
   )
 }
@@ -310,6 +343,37 @@ test('real mode: ⋯ Kihagyás POSTs the skip for the current exercise', async (
   await user.click(screen.getByText('Kihagyás'))
   await waitFor(() => expect(calls).toContain('skip:w-1:e-1'))
   expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
+})
+
+test('real mode: a /today exercise WITH a note renders the pill on the active card', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], note: '4-es ülés' }] },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  const pill = await screen.findByLabelText('Gyakorlat-jegyzet')
+  expect(pill).toHaveTextContent('4-es ülés')
+})
+
+test('real mode: editing + saving a note PUTs it for the current exercise', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Jegyzet'))
+  const textarea = await screen.findByLabelText('Gyakorlat-jegyzet szerkesztése')
+  await user.type(textarea, 'Tartsd a könyököt')
+  await user.click(screen.getByText('Mentés'))
+  await waitFor(() => expect(calls).toContain('note:e-1:Tartsd a könyököt'))
+  const pill = await screen.findByLabelText('Gyakorlat-jegyzet')
+  expect(pill).toHaveTextContent('Tartsd a könyököt')
 })
 
 // --- F2 add-set: optional "Minden hétre" template write (reuses the day-exercises PUT) ---

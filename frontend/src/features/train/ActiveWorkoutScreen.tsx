@@ -67,7 +67,7 @@ const PR_TOAST_MS = 4500
 // — a conditional early return between hook calls would break the hook order
 // now that `workout` is query-driven (T2).
 export function ActiveWorkoutScreen() {
-  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, skipExercise, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
+  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Hold rendering until loaded.
   if (workoutPending) return null
@@ -81,6 +81,7 @@ export function ActiveWorkoutScreen() {
       startWorkout={startWorkout}
       logSet={logSet}
       skipExercise={skipExercise}
+      saveExerciseNote={saveExerciseNote}
       saveWorkoutFeedback={saveWorkoutFeedback}
       finishWorkout={finishWorkout}
       saveDayExercises={saveDayExercises}
@@ -95,6 +96,7 @@ interface SessionProps {
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   logSet: (workoutId: string, set: SetLogRequest) => void
   skipExercise: (workoutId: string, exerciseId: string) => void
+  saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
@@ -106,7 +108,7 @@ function prefill(e: LoggedWorkoutExercise): LastWeekSet {
 }
 
 function ActiveWorkoutSession({
-  workout, activeMeso, todaySession, startWorkout, logSet, skipExercise, saveWorkoutFeedback, finishWorkout, saveDayExercises,
+  workout, activeMeso, todaySession, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises,
 }: SessionProps) {
   const W = workout
   const navigate = useNavigate()
@@ -146,6 +148,11 @@ function ActiveWorkoutSession({
   const [actionSheetOpen, setActionSheetOpen] = useState(false)
   // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
   const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
+  // F4 durable per-exercise note: the edit sheet's open flag + a per-exercise
+  // local override so the pill updates instantly in BOTH modes (mock no-ops the
+  // mutation; real refetches /today, but the override avoids a flash in between).
+  const [noteEditOpen, setNoteEditOpen] = useState(false)
+  const [localNotes, setLocalNotes] = useState<Record<string, string>>({})
 
   // Auto-hide the PR toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -158,6 +165,9 @@ function ActiveWorkoutSession({
   // model's derived current exercise. Drives the active card, dots, history & PR.
   const current = feedbackEx ?? W.exercises.find((e) => e.id === currentExerciseId(session)) ?? W.exercises[0]
   const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
+  // Effective note for the on-screen exercise: a just-saved local override wins,
+  // else the backend/mock note, else empty (drives the pill + the editor prefill).
+  const effectiveNote = localNotes[current.id] ?? current.note ?? ''
   const acceptedMap: Record<string, boolean> = Object.fromEntries(
     acceptedChallenges.map((id) => [id, true]),
   )
@@ -504,7 +514,19 @@ function ActiveWorkoutSession({
             setSession((s) => addExtraSet(s, currentExerciseId(s)))
             setAddSetPrompt({ exerciseId: id })
           }}
+          onEditNote={() => setNoteEditOpen(true)}
+          hasNote={!!effectiveNote}
           onClose={() => setActionSheetOpen(false)}
+        />
+      )}
+      {noteEditOpen && (
+        <NoteEditSheet
+          initialNote={effectiveNote}
+          onClose={() => setNoteEditOpen(false)}
+          onSave={(text) => {
+            saveExerciseNote(current.id, text)
+            setLocalNotes((prev) => ({ ...prev, [current.id]: text }))
+          }}
         />
       )}
       {addSetPrompt && (
@@ -632,6 +654,26 @@ function ActiveWorkoutSession({
             <div style={{ marginTop: 10 }}>
               <Display size="lg">{current.name}</Display>
             </div>
+
+            {/* Durable per-exercise note pill (F4) — always visible while a note exists */}
+            {effectiveNote && (
+              <div
+                aria-label="Gyakorlat-jegyzet"
+                className="exercise-note-pill row gap-sm mt-sm"
+                style={{
+                  alignItems: 'center',
+                  padding: '6px 10px',
+                  background: 'var(--surface-2)',
+                  borderLeft: '2px solid var(--brand-glow)',
+                  fontSize: 12,
+                  color: 'var(--text-secondary)',
+                  lineHeight: 1.4,
+                }}
+              >
+                <Icon name="tool" size={11} color="var(--brand-glow)" />
+                <span style={{ flex: 1 }}>{effectiveNote}</span>
+              </div>
+            )}
 
             {/* Múlt hét — hero comparison block (only with a previous completed instance) */}
             {current.lastWeek && (
@@ -862,5 +904,68 @@ function ActiveWorkoutSession({
         </div>
       </div>
     </>
+  )
+}
+
+// F4 durable per-exercise note editor — a nested sheet (mirrors the add-set
+// prompt). Prefilled with the effective note; "Mentés" persists + closes,
+// "Mégse"/backdrop dismiss without saving. maxLength matches the contract (500).
+function NoteEditSheet({
+  initialNote,
+  onSave,
+  onClose,
+}: {
+  initialNote: string
+  onSave: (note: string) => void
+  onClose: () => void
+}) {
+  const [text, setText] = useState(initialNote)
+  return (
+    <Sheet onClose={onClose} labelledBy="note-edit-title" className="sheet-nested">
+      {(close) => (
+        <div style={{ padding: '4px 2px 2px' }}>
+          <span className="eyebrow brand">Gyakorlat-jegyzet</span>
+          <h3
+            id="note-edit-title"
+            style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}
+          >
+            Jegyzet a gyakorlathoz
+          </h3>
+          <textarea
+            aria-label="Gyakorlat-jegyzet szerkesztése"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            maxLength={500}
+            rows={4}
+            placeholder="Forma-emlékeztető, beállítás, fájdalom-jelzés…"
+            style={{
+              width: '100%',
+              marginTop: 14,
+              fontSize: 13,
+              padding: '10px 12px',
+              background: 'var(--surface-2)',
+              lineHeight: 1.5,
+              resize: 'none',
+            }}
+          />
+          <div className="col gap-sm" style={{ marginTop: 16 }}>
+            <button
+              type="button"
+              className="cta-primary notch-8"
+              style={{ padding: '12px 18px', fontSize: 14 }}
+              onClick={() => {
+                onSave(text.trim())
+                close()
+              }}
+            >
+              Mentés
+            </button>
+            <button type="button" className="cta-ghost notch-4" style={{ padding: 12, fontSize: 13 }} onClick={close}>
+              Mégse
+            </button>
+          </div>
+        </div>
+      )}
+    </Sheet>
   )
 }
