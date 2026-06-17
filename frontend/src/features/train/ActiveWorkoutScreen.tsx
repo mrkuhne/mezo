@@ -22,6 +22,7 @@ import {
   effectiveSetCount,
   makeSession,
   seedFromOpen,
+  skipExercise as skipExerciseModel,
 } from './workoutState'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Chip } from '@/components/ui/Chip'
@@ -66,7 +67,7 @@ const PR_TOAST_MS = 4500
 // — a conditional early return between hook calls would break the hook order
 // now that `workout` is query-driven (T2).
 export function ActiveWorkoutScreen() {
-  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
+  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, skipExercise, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Hold rendering until loaded.
   if (workoutPending) return null
@@ -79,6 +80,7 @@ export function ActiveWorkoutScreen() {
       todaySession={todaySession}
       startWorkout={startWorkout}
       logSet={logSet}
+      skipExercise={skipExercise}
       saveWorkoutFeedback={saveWorkoutFeedback}
       finishWorkout={finishWorkout}
       saveDayExercises={saveDayExercises}
@@ -92,6 +94,7 @@ interface SessionProps {
   todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   logSet: (workoutId: string, set: SetLogRequest) => void
+  skipExercise: (workoutId: string, exerciseId: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
@@ -103,7 +106,7 @@ function prefill(e: LoggedWorkoutExercise): LastWeekSet {
 }
 
 function ActiveWorkoutSession({
-  workout, activeMeso, todaySession, startWorkout, logSet, saveWorkoutFeedback, finishWorkout, saveDayExercises,
+  workout, activeMeso, todaySession, startWorkout, logSet, skipExercise, saveWorkoutFeedback, finishWorkout, saveDayExercises,
 }: SessionProps) {
   const W = workout
   const navigate = useNavigate()
@@ -234,6 +237,31 @@ function ActiveWorkoutSession({
     } else {
       if (workoutId) finishWorkout(workoutId)
       setPhase('complete')
+    }
+  }
+
+  // Skip the current exercise (NO debrief): persist the skip marker, then either
+  // finish (if it was the last unresolved exercise) or advance to the next one,
+  // prefilling the logging panel from its targets. Mirrors advanceAfterFeedback.
+  const handleSkip = () => {
+    const exId = currentExerciseId(session)
+    if (workoutId) skipExercise(workoutId, exId)
+    const afterSkip = skipExerciseModel(session, exId)
+    const allDone = W.exercises.every(
+      (e) => afterSkip.skipped.includes(e.id) || (afterSkip.logged[e.id]?.length ?? 0) >= effectiveSetCount(afterSkip, e.id),
+    )
+    if (allDone) {
+      if (workoutId) finishWorkout(workoutId)
+      setSession(afterSkip)
+      setPhase('complete')
+    } else {
+      const advanced = advance(afterSkip)
+      setSession(advanced)
+      const nextEx = W.exercises.find((e) => e.id === currentExerciseId(advanced)) ?? W.exercises[0]
+      const p = prefill(nextEx)
+      setWeight(p.weight)
+      setReps(p.reps)
+      setRir(p.rir)
     }
   }
 
@@ -403,7 +431,7 @@ function ActiveWorkoutSession({
     const hadPR =
       !!showPR || (session.logged[W.exercises[0].id] ?? []).some((s) => s.weight >= PR_DEMO_THRESHOLD_KG)
     return (
-      <WorkoutComplete workout={W} completedSets={completedByIdx} hadPR={hadPR} onExit={onExit} />
+      <WorkoutComplete workout={W} completedSets={completedByIdx} hadPR={hadPR} onExit={onExit} skippedExerciseIds={session.skipped} />
     )
   }
 
@@ -470,6 +498,7 @@ function ActiveWorkoutSession({
           exerciseName={current.name}
           remaining={remaining}
           onReorder={handleReorder}
+          onSkip={handleSkip}
           onAddSet={() => {
             const id = currentExerciseId(session)
             setSession((s) => addExtraSet(s, currentExerciseId(s)))

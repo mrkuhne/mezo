@@ -67,6 +67,18 @@ test('seedFromOpen rebuilds logged sets + cursor by exerciseId from persisted se
   expect(s.setIdx).toBe(1) // b has 1 logged -> next is index 1
 })
 
+test('seedFromOpen routes skip markers to skipped, not logged', () => {
+  const open = { sets: [
+    { exerciseId: 'a', setIndex: 0, weightKg: 100, reps: 8, rir: 2 },
+    { exerciseId: 'b', setIndex: 0, skipped: true },
+  ] }
+  const s = seedFromOpen(EX, open)
+  expect(s.skipped).toContain('b')
+  expect(s.logged['b']).toBeUndefined()
+  // a has 1 logged of 2 planned (1 < 2) so the cursor stays on 'a'.
+  expect(currentExerciseId(s)).toBe('a')
+})
+
 test('currentExerciseId returns the last exercise once all are done (complete sentinel)', () => {
   let s = makeSession(EX)
   for (const e of EX) {

@@ -106,6 +106,39 @@ test('＋ Szett adds an extra set: dots grow 4→5 with a dashed extra dot and t
   expect(document.querySelectorAll('.set-dot.extra')).toHaveLength(1) // only the 5th is extra
 })
 
+test('⋯ Kihagyás advances to the next exercise without opening the debrief', async () => {
+  const user = userEvent.setup()
+  setup() // mock mode, current = Chest Supported Row (ex1)
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Kihagyás'))
+  // Advances straight to the next exercise — no FeedbackModal / debrief CTA.
+  expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
+  expect(screen.queryByText('Mentés · tovább')).not.toBeInTheDocument()
+  expect(screen.queryByText('Edzés vége →')).not.toBeInTheDocument()
+})
+
+test('a skipped exercise is marked "kihagyva" in the recap', async () => {
+  const user = userEvent.setup()
+  setup() // mock mode, 5 exercises, current = Chest Supported Row (ex1)
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Skip the first exercise.
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Kihagyás'))
+  expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
+  // Drive the remaining 4 exercises to completion (each: log all 3 sets, then
+  // resolve the debrief). The last debrief CTA reads "Edzés vége →" and finishes.
+  for (let ex = 0; ex < 4; ex++) {
+    for (let s = 0; s < 3; s++) await user.click(screen.getByText('Set kész'))
+    const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
+    await user.click(cta) // close() runs the Sheet slide-down, then onResolve advances
+    if (ex < 3) await screen.findByText(/Set 1\/\d/) // wait for the next exercise's panel
+  }
+  // WorkoutComplete recap: the skipped first exercise reads "kihagyva".
+  expect(await screen.findByText('kihagyva')).toBeInTheDocument()
+})
+
 // ---- real-mode block: the session drives the T2 write endpoints ----
 
 const REAL_MESO = {
@@ -135,6 +168,11 @@ function useRealHandlers(today: typeof REAL_TODAY, calls: string[]) {
       const body = (await request.json()) as { exerciseId: string; setIndex: number; weightKg: number }
       calls.push(`set:${params.id}:${body.exerciseId}:${body.setIndex}:${body.weightKg}`)
       return HttpResponse.json({ id: 'st-' + body.setIndex, exerciseId: body.exerciseId, setIndex: body.setIndex }, { status: 201 })
+    }),
+    http.post(`${API_BASE}/api/train/workouts/:id/skip`, async ({ params, request }) => {
+      const body = (await request.json()) as { exerciseId: string }
+      calls.push(`skip:${params.id}:${body.exerciseId}`)
+      return new HttpResponse(null, { status: 204 })
     }),
     http.post(`${API_BASE}/api/train/workouts/:id/feedback`, ({ params }) => {
       calls.push(`feedback:${params.id}`)
@@ -248,6 +286,30 @@ test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts w
   expect(screen.getByText(/Set 2\/2/)).toBeInTheDocument() // still mid-exercise, not overflowed
   await user.click(screen.getByText('Set kész')) // extra set (setIndex 1) -> last set, opens FeedbackModal
   await waitFor(() => expect(calls.some((c) => c.startsWith('set:w-1:e-1:1'))).toBe(true))
+})
+
+test('real mode: ⋯ Kihagyás POSTs the skip for the current exercise', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  // Two exercises so the skip advances (not finishes) and the POST is isolated.
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        REAL_TODAY.exercises[0],
+        { id: 'e-2', name: 'Lat Pulldown · Pronated', muscle: 'lats', sets: 2, targetReps: '10-12', targetRIR: 2, type: 'compound', lastWeek: { weightKg: 72, reps: 11, rir: 2 } },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Kihagyás'))
+  await waitFor(() => expect(calls).toContain('skip:w-1:e-1'))
+  expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
 })
 
 // --- F2 add-set: optional "Minden hétre" template write (reuses the day-exercises PUT) ---

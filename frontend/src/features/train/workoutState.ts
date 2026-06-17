@@ -91,12 +91,16 @@ interface PersistedSet {
   weightKg?: number | null
   reps?: number | null
   rir?: number | null
+  /** Whole-exercise skip marker (no perf data) — routes to `skipped`, not `logged`. */
+  skipped?: boolean
 }
 
 /**
  * Rebuild a session from persisted sets (resume an open workout):
  * group sets by exerciseId (ordered by setIndex) into `logged`, then
- * point the cursor at the next set of the current exercise.
+ * point the cursor at the next set of the current exercise. A persisted
+ * skip marker (`skipped === true`, null perf) adds its exerciseId to
+ * `session.skipped` instead of `logged` so a resume lands past it.
  */
 export function seedFromOpen(
   exercises: { id: string; sets: number }[],
@@ -104,10 +108,15 @@ export function seedFromOpen(
 ): Session {
   const base = makeSession(exercises)
   const logged: Record<string, LoggedSet[]> = {}
+  const skipped: string[] = []
   // setIndex only ORDERS the sets here, not the stored index — `logged[id].length`
   // is a pure count, so we assume the persistence layer emits contiguous (gap-free) indices.
   const ordered = [...open.sets].sort((x, y) => x.setIndex - y.setIndex)
   for (const set of ordered) {
+    if (set.skipped) {
+      if (!skipped.includes(set.exerciseId)) skipped.push(set.exerciseId)
+      continue
+    }
     const entry: LoggedSet = {
       weight: Number(set.weightKg ?? 0),
       reps: set.reps ?? 0,
@@ -115,6 +124,6 @@ export function seedFromOpen(
     }
     ;(logged[set.exerciseId] ??= []).push(entry)
   }
-  const seeded: Session = { ...base, logged }
+  const seeded: Session = { ...base, logged, skipped }
   return { ...seeded, setIdx: seeded.logged[currentExerciseId(seeded)]?.length ?? 0 }
 }

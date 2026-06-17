@@ -72,11 +72,14 @@ export function WorkoutComplete({
   completedSets,
   hadPR,
   onExit,
+  skippedExerciseIds = [],
 }: {
   workout: WorkoutPlan
   completedSets: CompletedSets
   hadPR: boolean
   onExit: () => void
+  /** Exercise ids the user skipped — marked "kihagyva" in the recap (vs. a 0/n count). */
+  skippedExerciseIds?: string[]
 }) {
   const totalSets = Object.values(completedSets).reduce((a, arr) => a + arr.length, 0)
   const totalVolume = Object.values(completedSets).reduce(
@@ -200,17 +203,27 @@ export function WorkoutComplete({
               (b, s) => (s.weight > (b?.weight ?? 0) ? s : b),
               null,
             )
+            const isSkipped = skippedExerciseIds.includes(workout.exercises[i].id)
             return (
               <div key={i} className="card notch-4" style={{ padding: 12 }}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1, paddingRight: 8 }}>
                     {e.name}
                   </span>
-                  <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
-                    {e.sets.length}/{workout.exercises[i].sets} szet
-                  </span>
+                  {isSkipped ? (
+                    <span
+                      className="label-mono"
+                      style={{ fontSize: 10, color: 'var(--text-tertiary)', textDecoration: 'line-through' }}
+                    >
+                      kihagyva
+                    </span>
+                  ) : (
+                    <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
+                      {e.sets.length}/{workout.exercises[i].sets} szet
+                    </span>
+                  )}
                 </div>
-                {best && (
+                {!isSkipped && best && (
                   <div
                     className="row gap-md mt-sm"
                     style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}
