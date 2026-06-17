@@ -34,6 +34,7 @@ import { PRToast, type PRState } from './components/PRToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from './components/FeedbackModal'
 import { WorkoutComplete } from './components/WorkoutComplete'
 import { ChallengesCarousel } from './components/ChallengesCarousel'
+import { ExerciseActionSheet } from './components/ExerciseActionSheet'
 
 type Phase = 'prep' | 'active' | 'complete'
 type CompletedSets = Record<string, LastWeekSet[]>
@@ -135,6 +136,7 @@ function ActiveWorkoutSession({
   const [feedbackEx, setFeedbackEx] = useState<LoggedWorkoutExercise | null>(null)
   const [niggleConfirmed, setNiggleConfirmed] = useState(false)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
+  const [actionSheetOpen, setActionSheetOpen] = useState(false)
 
   // Auto-hide the PR toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -406,6 +408,26 @@ function ActiveWorkoutSession({
   const exHistory = session.logged[current.id] ?? []
   const currentSetCount = effectiveSetCount(session, current.id)
 
+  // Reorderable segment for the ⋯ action sheet: the done + current exercises
+  // stay FIXED; only the FUTURE exercises (after the current one in session.order)
+  // can be reordered. Reorder is client-only / ephemeral — it just replaces
+  // session.order, never persists.
+  const remaining = (() => {
+    const currentId = currentExerciseId(session)
+    const ci = session.order.indexOf(currentId)
+    return session.order.slice(ci + 1).map((id) => {
+      const e = W.exercises.find((x) => x.id === id)!
+      return { id, label: e.name }
+    })
+  })()
+  const handleReorder = (newRemaining: string[]) =>
+    setSession((s) => {
+      // Recompute fixed segment from the latest session to avoid a stale closure.
+      const ci = s.order.indexOf(currentExerciseId(s))
+      const fixed = s.order.slice(0, ci + 1)
+      return { ...s, order: [...fixed, ...newRemaining] }
+    })
+
   return (
     <>
       {showPR && <PRToast pr={showPR} />}
@@ -417,6 +439,14 @@ function ActiveWorkoutSession({
           onSave={saveFeedback}
         />
       )}
+      {actionSheetOpen && (
+        <ExerciseActionSheet
+          exerciseName={current.name}
+          remaining={remaining}
+          onReorder={handleReorder}
+          onClose={() => setActionSheetOpen(false)}
+        />
+      )}
 
       <div>
         {/* Header — pinned below the status bar so progress stays visible (mezo-wdk) */}
@@ -426,9 +456,20 @@ function ActiveWorkoutSession({
               <Icon name="x" size={16} color="var(--text-secondary)" />
               <span className="eyebrow">Bezárás</span>
             </button>
-            <span className="label-mono">
-              {currentIdx + 1}/{W.exercises.length} · {doneSets}/{totalSets} szet
-            </span>
+            <div className="row gap-sm" style={{ alignItems: 'center' }}>
+              <span className="label-mono">
+                {currentIdx + 1}/{W.exercises.length} · {doneSets}/{totalSets} szet
+              </span>
+              <button
+                type="button"
+                aria-label="Gyakorlat műveletek"
+                onClick={() => setActionSheetOpen(true)}
+                className="chip notch-4"
+                style={{ padding: '6px 10px', fontSize: 14, lineHeight: 1 }}
+              >
+                ⋯
+              </button>
+            </div>
           </div>
           <div className="bar mt-sm">
             <div className="bar-fill glow" style={{ width: (doneSets / totalSets) * 100 + '%' }} />
