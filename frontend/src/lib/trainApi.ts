@@ -11,6 +11,7 @@ export type WorkoutTodayResponse = components['schemas']['WorkoutTodayResponse']
 export type WorkoutInstanceResponse = components['schemas']['WorkoutInstanceResponse']
 export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
 export type SetLogRequest = components['schemas']['SetLogRequest']
+export type WorkoutSkipRequest = components['schemas']['WorkoutSkipRequest']
 export type ExerciseSetResponse = components['schemas']['ExerciseSetResponse']
 export type WorkoutFeedbackInput = components['schemas']['WorkoutFeedbackInput']
 export type SportSessionCreateRequest = components['schemas']['SportSessionCreateRequest']
@@ -46,6 +47,11 @@ export const trainApi = {
     apiFetch<ExerciseSetResponse>(`/api/train/workouts/${workoutId}/sets`, {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+  skip: (workoutId: string, exerciseId: string): Promise<void> =>
+    apiFetch<void>(`/api/train/workouts/${workoutId}/skip`, {
+      method: 'POST',
+      body: JSON.stringify({ exerciseId } satisfies WorkoutSkipRequest),
     }),
   saveWorkoutFeedback: (workoutId: string, body: WorkoutFeedbackInput[]): Promise<void> =>
     apiFetch<void>(`/api/train/workouts/${workoutId}/feedback`, {

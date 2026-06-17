@@ -20,6 +20,8 @@ import org.hibernate.annotations.SQLRestriction;
  * {@code ON DELETE CASCADE}). Sets are ordered within an exercise by {@code setIndex}; the optional
  * {@code side} is {@code L|B|R} (DB CHECK) and the performance fields stay null until logged.
  *
+ * <p>{@code skipped} marks a whole-exercise skip marker row (F3 skip flow).
+ *
  * <p>{@code createdBy}, {@code is_deleted} and {@code created_at} come from {@link OwnedEntity}.
  */
 @Getter
@@ -61,6 +63,9 @@ public class ExerciseSetEntity extends OwnedEntity {
 
     @Column
     private String note;
+
+    @Column(nullable = false)
+    private boolean skipped = false;
 
     @Column(name = "done_at")
     private Instant doneAt;

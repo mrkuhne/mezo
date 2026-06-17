@@ -72,11 +72,14 @@ export function WorkoutComplete({
   completedSets,
   hadPR,
   onExit,
+  skippedExerciseIds = [],
 }: {
   workout: WorkoutPlan
   completedSets: CompletedSets
   hadPR: boolean
   onExit: () => void
+  /** Exercise ids the user skipped — marked "kihagyva" in the recap (vs. a 0/n count). */
+  skippedExerciseIds?: string[]
 }) {
   const totalSets = Object.values(completedSets).reduce((a, arr) => a + arr.length, 0)
   const totalVolume = Object.values(completedSets).reduce(
@@ -200,15 +203,36 @@ export function WorkoutComplete({
               (b, s) => (s.weight > (b?.weight ?? 0) ? s : b),
               null,
             )
+            const isSkipped = skippedExerciseIds.includes(workout.exercises[i].id)
+            const hasSets = e.sets.length > 0
             return (
               <div key={i} className="card notch-4" style={{ padding: 12 }}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1, paddingRight: 8 }}>
                     {e.name}
                   </span>
-                  <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
-                    {e.sets.length}/{workout.exercises[i].sets} szet
-                  </span>
+                  {isSkipped && !hasSets ? (
+                    // Fully skipped — never logged a set: struck "kihagyva", no count.
+                    <span
+                      className="label-mono"
+                      style={{ fontSize: 10, color: 'var(--text-tertiary)', textDecoration: 'line-through' }}
+                    >
+                      kihagyva
+                    </span>
+                  ) : (
+                    // Has logged sets (incl. partially-done-then-skipped): real count,
+                    // counted in the totals. A muted marker flags the skipped remainder.
+                    <span className="row gap-xs" style={{ alignItems: 'baseline' }}>
+                      <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
+                        {e.sets.length}/{workout.exercises[i].sets} szet
+                      </span>
+                      {isSkipped && (
+                        <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                          · kihagyva
+                        </span>
+                      )}
+                    </span>
+                  )}
                 </div>
                 {best && (
                   <div

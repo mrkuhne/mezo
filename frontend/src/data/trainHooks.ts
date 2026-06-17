@@ -206,6 +206,7 @@ type TrainData = {
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   logSet: (workoutId: string, set: SetLogRequest) => void
+  skipExercise: (workoutId: string, exerciseId: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string) => void
   logSportSession: (req: SportSessionCreateRequest, opts?: MutateOpts) => void
@@ -306,6 +307,12 @@ export function useTrain(): TrainData {
       : (args: { workoutId: string; set: SetLogRequest }) => trainApi.logSet(args.workoutId, args.set),
     onSuccess: invalidateToday,
   })
+  const skipMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { workoutId: string; exerciseId: string }) => undefined
+      : (args: { workoutId: string; exerciseId: string }) => trainApi.skip(args.workoutId, args.exerciseId),
+    onSuccess: invalidateToday,
+  })
   const feedbackMutation = useMutation({
     mutationFn: mock
       ? async (_args: { workoutId: string; items: WorkoutFeedbackInput[] }) => undefined
@@ -382,6 +389,10 @@ export function useTrain(): TrainData {
     (workoutId: string, set: SetLogRequest) => logSetMutation.mutate({ workoutId, set }),
     [logSetMutation],
   )
+  const skipExercise = useCallback(
+    (workoutId: string, exerciseId: string) => skipMutation.mutate({ workoutId, exerciseId }),
+    [skipMutation],
+  )
   const saveWorkoutFeedback = useCallback(
     (workoutId: string, items: WorkoutFeedbackInput[]) => feedbackMutation.mutate({ workoutId, items }),
     [feedbackMutation],
@@ -433,6 +444,7 @@ export function useTrain(): TrainData {
     saveDayExercises,
     startWorkout,
     logSet,
+    skipExercise,
     saveWorkoutFeedback,
     finishWorkout,
     logSportSession,

@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutSkipRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
@@ -133,6 +134,11 @@ public class TrainController implements TrainApi {
     @Override
     public void saveWorkoutFeedback(UUID id, List<WorkoutFeedbackInput> workoutFeedbackInput) {
         workoutService.saveFeedback(currentUserId.get(), id, workoutFeedbackInput);
+    }
+
+    @Override
+    public void skipWorkoutExercise(UUID id, WorkoutSkipRequest workoutSkipRequest) {
+        workoutService.skipExercise(currentUserId.get(), id, workoutSkipRequest.getExerciseId());
     }
 
     @Override

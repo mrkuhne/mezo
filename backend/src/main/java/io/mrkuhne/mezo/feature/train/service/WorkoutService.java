@@ -187,6 +187,47 @@ public class WorkoutService {
         return mapper.toSetResponse(exerciseSetRepository.save(set));
     }
 
+    /**
+     * Skip a whole exercise in an active instance: persist a skip-marker {@link ExerciseSetEntity}
+     * (skipped=true, no performance fields). Mirrors {@link #logSet}'s guards — owned active
+     * instance + exercise must hang off the instance's template day. A skip marker is NOT a logged
+     * set: it carries the next free set index but does not flip the gym done-state (see
+     * {@link WorkoutSessionRepository#findDoneInstanceDates}).
+     */
+    @Transactional
+    public void skipExercise(UUID createdBy, UUID workoutId, UUID exerciseId) {
+        WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
+        if (!"active".equals(instance.getStatus())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_WORKOUT_NOT_ACTIVE").build(), HttpStatus.CONFLICT);
+        }
+        // The exercise must hang off the instance's template day — child writes verify the chain.
+        exerciseRepository.findById(exerciseId)
+            .filter(e -> createdBy.equals(e.getCreatedBy())
+                && instance.getTemplateSessionId().equals(e.getWorkoutSessionId()))
+            .orElseThrow(WorkoutService::notFound);
+        // Idempotent: a skip marker already present for this (instance, exercise) is a no-op
+        // (mirrors saveFeedback's find-or-create intent — no duplicate marker rows).
+        boolean alreadySkipped = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
+            .anyMatch(s -> s.getExerciseId().equals(exerciseId) && s.isSkipped());
+        if (alreadySkipped) {
+            return;
+        }
+        int nextIndex = (int) exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
+            .filter(s -> s.getExerciseId().equals(exerciseId))
+            .count();
+        ExerciseSetEntity marker = new ExerciseSetEntity();
+        marker.setCreatedBy(createdBy); // server-side ownership — never from the client
+        marker.setExerciseId(exerciseId);
+        marker.setWorkoutSessionId(instance.getId());
+        marker.setSetIndex(nextIndex);
+        marker.setSkipped(true); // marker, not a logged set: perf fields stay null
+        marker.setDoneAt(Instant.now());
+        exerciseSetRepository.save(marker);
+    }
+
     @Transactional
     public void saveFeedback(UUID createdBy, UUID workoutId, List<WorkoutFeedbackInput> items) {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);

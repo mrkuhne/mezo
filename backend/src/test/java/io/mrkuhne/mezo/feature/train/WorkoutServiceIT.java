@@ -241,6 +241,120 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
             .isEqualTo(org.springframework.http.HttpStatus.CONFLICT);
     }
 
+    @Test
+    void testSkipExercise_shouldRecordSkipMarker_whenExerciseInActiveInstance() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+
+        workoutService.skipExercise(user, started.getId(), exercise.getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        List<ExerciseSetEntity> rows = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(user, started.getId());
+        assertThat(rows).hasSize(1);
+        ExerciseSetEntity marker = rows.get(0);
+        assertThat(marker.getExerciseId()).isEqualTo(exercise.getId());
+        assertThat(marker.isSkipped()).isTrue();
+        assertThat(marker.getSetIndex()).isEqualTo(0); // first marker for this exercise
+        assertThat(marker.getWeightKg()).isNull();
+        assertThat(marker.getReps()).isNull();
+        assertThat(marker.getRir()).isNull();
+        assertThat(marker.getSide()).isNull();
+        assertThat(marker.getDoneAt()).isNotNull();
+        assertThat(marker.getCreatedBy()).isEqualTo(user); // ownership stamped server-side
+    }
+
+    @Test
+    void testSkipExercise_shouldThrowNotFound_whenExerciseNotInTemplateDay() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        WorkoutSessionEntity otherDay =
+            trainPopulator.createWorkoutSession(user, meso.getId(), "Pén", "Push Day", 1, "planned");
+        ExerciseEntity foreignExercise = trainPopulator.createExercise(user, otherDay.getId(), "Bench", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+
+        assertThatThrownBy(() -> workoutService.skipExercise(user, started.getId(), foreignExercise.getId()))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testSkipExercise_shouldThrowConflict_whenWorkoutCompleted() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutSessionEntity completed =
+            trainPopulator.createWorkoutInstance(user, template, LocalDate.now(), "completed");
+
+        assertThatThrownBy(() -> workoutService.skipExercise(user, completed.getId(), exercise.getId()))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .extracting(e -> ((SystemRuntimeErrorException) e).getStatus())
+            .isEqualTo(org.springframework.http.HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void testSkipExercise_shouldBeIdempotent_whenCalledTwice() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+
+        workoutService.skipExercise(user, started.getId(), exercise.getId());
+        workoutService.skipExercise(user, started.getId(), exercise.getId()); // second skip = no-op
+        entityManager.flush();
+        entityManager.clear();
+
+        List<ExerciseSetEntity> markers = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(user, started.getId()).stream()
+            .filter(s -> exercise.getId().equals(s.getExerciseId()) && s.isSkipped())
+            .toList();
+        assertThat(markers).hasSize(1); // exactly one skip marker — no duplicate
+    }
+
+    @Test
+    void testFindDoneDates_shouldIncludeInstance_whenRealSetLoggedAlongsideSkip() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity skipped = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        ExerciseEntity logged = trainPopulator.createExercise(user, template.getId(), "Pulldown", 1);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+        // a skip marker AND a real logged set on the same instance — the positive es.skipped=false branch
+        workoutService.skipExercise(user, started.getId(), skipped.getId());
+        workoutService.logSet(user, started.getId(), setRequest(logged, 0, "100", 8, 1));
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getWeekDoneDates()).contains(LocalDate.now());
+    }
+
+    @Test
+    void testFindDoneDates_shouldExcludeSkipOnlyInstance_whenNoRealSetLogged() {
+        UUID user = databasePopulator.populateUser("workout@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
+        WorkoutSessionEntity template =
+            trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
+        WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
+        // ONLY a skip marker — no real logged set — must not flip the gym done-state.
+        workoutService.skipExercise(user, started.getId(), exercise.getId());
+
+        WorkoutTodayResponse today = workoutService.getToday(user);
+
+        assertThat(today.getWeekDoneDates()).doesNotContain(LocalDate.now());
+    }
+
     private static WorkoutFeedbackInput feedbackInput(ExerciseEntity exercise, int pump, int jointPain,
         int workload) {
         return WorkoutFeedbackInput.builder().exerciseId(exercise.getId())
