@@ -1,0 +1,116 @@
+// ============================================================
+// Mezo · Active-workout session state — pure, React-free model.
+//
+// A Session is the in-flight state of one active workout, keyed by
+// exerciseId (not array index). All exported functions are PURE:
+// no side effects, no mutation — they always return a new Session.
+// Later slices import these names verbatim.
+// ============================================================
+
+export interface LoggedSet {
+  weight: number
+  reps: number
+  rir: number
+}
+
+export interface Session {
+  /** Exercise ids in session (display) order. Reorder = replace this array. */
+  order: string[]
+  /** Cursor: next set index for the current exercise. */
+  setIdx: number
+  /** Completed sets per exerciseId, in completion order. */
+  logged: Record<string, LoggedSet[]>
+  /** Extra (ad-hoc) sets added beyond the plan, per exerciseId. */
+  extra: Record<string, number>
+  /** Exercise ids the user chose to skip. */
+  skipped: string[]
+  /** Planned set count per exerciseId (immutable baseline). */
+  planned: Record<string, number>
+}
+
+/** Build a fresh session from the planned exercise list. */
+export function makeSession(exercises: { id: string; sets: number }[]): Session {
+  const order = exercises.map((e) => e.id)
+  const planned: Record<string, number> = {}
+  for (const e of exercises) planned[e.id] = e.sets
+  return { order, setIdx: 0, logged: {}, extra: {}, skipped: [], planned }
+}
+
+/** Planned sets + any extra sets added for this exercise. */
+export function effectiveSetCount(s: Session, id: string): number {
+  return (s.planned[id] ?? 0) + (s.extra[id] ?? 0)
+}
+
+/**
+ * The first exercise in session order that is neither skipped nor fully
+ * logged. Falls back to the last id in order if every exercise is done.
+ */
+export function currentExerciseId(s: Session): string {
+  for (const id of s.order) {
+    if (s.skipped.includes(id)) continue
+    const done = s.logged[id]?.length ?? 0
+    if (done < effectiveSetCount(s, id)) return id
+  }
+  return s.order[s.order.length - 1]
+}
+
+/** Append a completed set to the current exercise and advance the cursor. */
+export function completeSet(s: Session, set: LoggedSet): Session {
+  const id = currentExerciseId(s)
+  const next = [...(s.logged[id] ?? []), set]
+  return {
+    ...s,
+    logged: { ...s.logged, [id]: next },
+    setIdx: next.length,
+  }
+}
+
+/** Re-sync the cursor to the (re-derived) current exercise. */
+export function advance(s: Session): Session {
+  const id = currentExerciseId(s)
+  return { ...s, setIdx: s.logged[id]?.length ?? 0 }
+}
+
+/** Grow the effective set count for one exercise by a single extra set. */
+export function addExtraSet(s: Session, id: string): Session {
+  return { ...s, extra: { ...s.extra, [id]: (s.extra[id] ?? 0) + 1 } }
+}
+
+/** Mark an exercise as skipped (idempotent). */
+export function skipExercise(s: Session, id: string): Session {
+  if (s.skipped.includes(id)) return s
+  return { ...s, skipped: [...s.skipped, id] }
+}
+
+/** Persisted-set shape used when resuming an in-flight workout. */
+interface PersistedSet {
+  exerciseId: string
+  setIndex: number
+  weightKg?: number | null
+  reps?: number | null
+  rir?: number | null
+}
+
+/**
+ * Rebuild a session from persisted sets (resume an open workout):
+ * group sets by exerciseId (ordered by setIndex) into `logged`, then
+ * point the cursor at the next set of the current exercise.
+ */
+export function seedFromOpen(
+  exercises: { id: string; sets: number }[],
+  open: { sets: PersistedSet[] },
+): Session {
+  const base = makeSession(exercises)
+  const logged: Record<string, LoggedSet[]> = {}
+  const ordered = [...open.sets].sort((x, y) => x.setIndex - y.setIndex)
+  for (const set of ordered) {
+    const entry: LoggedSet = {
+      weight: Number(set.weightKg ?? 0),
+      reps: set.reps ?? 0,
+      rir: set.rir ?? 0,
+    }
+    ;(logged[set.exerciseId] ??= []).push(entry)
+  }
+  const seeded: Session = { ...base, logged }
+  return { ...seeded, setIdx: seeded.logged[currentExerciseId(seeded)]?.length ?? 0 }
+}
