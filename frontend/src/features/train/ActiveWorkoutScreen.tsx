@@ -439,7 +439,7 @@ function ActiveWorkoutSession({
           onSave={saveFeedback}
         />
       )}
-      {actionSheetOpen && (
+      {actionSheetOpen && !feedbackEx && (
         <ExerciseActionSheet
           exerciseName={current.name}
           remaining={remaining}
@@ -463,6 +463,7 @@ function ActiveWorkoutSession({
               <button
                 type="button"
                 aria-label="Gyakorlat műveletek"
+                disabled={!!feedbackEx}
                 onClick={() => setActionSheetOpen(true)}
                 className="chip notch-4"
                 style={{ padding: '6px 10px', fontSize: 14, lineHeight: 1 }}

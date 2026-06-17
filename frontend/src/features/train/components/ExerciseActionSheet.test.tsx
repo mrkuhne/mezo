@@ -38,6 +38,19 @@ test('moving a remaining exercise up calls onReorder with the new id order', asy
   expect(onReorder).toHaveBeenLastCalledWith(['ex3', 'ex2'])
 })
 
+test('reorder view shows the empty message when fewer than 2 remaining', async () => {
+  render(
+    <ExerciseActionSheet
+      exerciseName="Chest Supported Row"
+      remaining={[{ id: 'ex2', label: 'Lat Pulldown' }]}
+      onReorder={vi.fn()}
+      onClose={vi.fn()}
+    />,
+  )
+  await userEvent.click(screen.getByText('Áthelyezés'))
+  expect(screen.getByText('Nincs átrendezhető gyakorlat')).toBeInTheDocument()
+})
+
 test('the un-wired action rows (Kihagyás, Szett, Jegyzet) are present but disabled', () => {
   render(
     <ExerciseActionSheet
