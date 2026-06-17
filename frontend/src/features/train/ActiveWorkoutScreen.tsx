@@ -604,8 +604,8 @@ function ActiveWorkoutSession({
         <div style={{ padding: '12px 24px 0' }}>
           <div className="card notch-8" style={{ padding: 10 }}>
             <div className="row gap-sm">
-              <CompactStepper label="kg" value={weight} step={2.5} onChange={setWeight} primary />
-              <CompactStepper label="reps" value={reps} step={1} onChange={setReps} integer />
+              <CompactStepper label="kg" value={weight} step={2.5} onChange={setWeight} primary min={0} max={999} />
+              <CompactStepper label="reps" value={reps} step={1} onChange={setReps} integer min={1} max={100} />
             </div>
 
             {/* RIR + Side row */}

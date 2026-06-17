@@ -57,12 +57,22 @@ test('NumberStep clamps to min/max bounds', async () => {
   expect(onChange).toHaveBeenLastCalledWith(15) // floor holds
 })
 
+test('NumberStep accepts direct keyboard entry and clamps to max on blur', async () => {
+  const onChange = vi.fn()
+  render(<NumberStep label="X" val={90} step={15} min={15} max={600} onChange={onChange} />)
+  const input = screen.getByLabelText('X') as HTMLInputElement
+  await userEvent.clear(input)
+  await userEvent.type(input, '750')
+  await userEvent.tab() // blur commits
+  expect(onChange).toHaveBeenLastCalledWith(600) // typed value clamped to max
+})
+
 test('duration stepper never goes below 15 minutes', async () => {
   setup()
   const minus = screen.getByRole('button', { name: 'Idő · perc csökkentése' })
   for (let i = 0; i < 7; i++) await userEvent.click(minus) // 90 - 7×15 would be < 0
-  const display = minus.closest('.stepper')!.querySelector('.stepper-display')!
-  expect(display.textContent).toBe('15')
+  const display = minus.closest('.stepper')!.querySelector('.stepper-display') as HTMLInputElement
+  expect(display.value).toBe('15')
 })
 
 test('Mégse does not call onSave', async () => {

@@ -67,6 +67,17 @@ test('logging a PR-weight third set on the first exercise fires the PR toast', a
   expect(screen.getByText('+2.5 kg')).toBeInTheDocument()
 })
 
+test('the weight value is tap-to-edit and honors an exact (non-2.5) typed value', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  const kg = screen.getByLabelText('kg') as HTMLInputElement
+  await user.clear(kg)
+  await user.type(kg, '93')
+  await user.tab() // blur commits + clamps
+  expect(kg.value).toBe('93')
+})
+
 // ---- real-mode block: the session drives the T2 write endpoints ----
 
 const REAL_MESO = {

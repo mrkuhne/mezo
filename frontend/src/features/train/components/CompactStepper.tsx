@@ -1,9 +1,12 @@
 // ============================================================
 // Mezo · CompactStepper — tight weight/reps stepper for the active
 // logging panel. 44px ± buttons, brand display for the primary (kg)
-// stepper, integer-clamped reps. Ported from prototype train.jsx.
+// stepper, integer-clamped reps. The center value is tap-to-edit (type
+// the number straight in) so reaching e.g. 100 kg needs no tap-spam.
+// Ported from prototype train.jsx.
 // ============================================================
 import { Icon } from '@/components/ui/Icon'
+import { useEditableNumber } from './useEditableNumber'
 
 export function CompactStepper({
   label,
@@ -12,6 +15,8 @@ export function CompactStepper({
   onChange,
   integer = false,
   primary = false,
+  min = 0,
+  max,
 }: {
   label: string
   value: number
@@ -19,10 +24,17 @@ export function CompactStepper({
   onChange: (next: number) => void
   integer?: boolean
   primary?: boolean
+  min?: number
+  max?: number
 }) {
+  const clamp = (n: number) => {
+    const lo = Math.max(min, n)
+    return max != null ? Math.min(max, lo) : lo
+  }
   const decrement = () =>
-    onChange(integer ? Math.max(0, value - step) : Math.max(0, +(value - step).toFixed(1)))
-  const increment = () => onChange(integer ? value + step : +(value + step).toFixed(1))
+    onChange(clamp(integer ? value - step : +(value - step).toFixed(1)))
+  const increment = () => onChange(clamp(integer ? value + step : +(value + step).toFixed(1)))
+  const editable = useEditableNumber({ value, onChange, min, max, integer })
 
   return (
     <div
@@ -55,29 +67,34 @@ export function CompactStepper({
       >
         <Icon name="minus" size={14} />
       </button>
-      <div style={{ flex: 1, textAlign: 'center' }}>
-        <div
+      <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 2 }}>
+        <input
+          {...editable}
+          aria-label={label}
           style={{
+            width: 60,
             fontFamily: 'var(--ff-display)',
             fontSize: 22,
             fontWeight: 600,
             color: primary ? 'var(--brand-glow)' : 'var(--text-primary)',
             lineHeight: 1,
+            textAlign: 'center',
+            background: 'transparent',
+            border: 'none',
+            padding: 0,
+            minWidth: 0,
+          }}
+        />
+        <span
+          style={{
+            fontFamily: 'var(--ff-mono)',
+            fontSize: 10,
+            color: 'var(--text-tertiary)',
+            fontWeight: 500,
           }}
         >
-          {value}
-          <span
-            style={{
-              fontFamily: 'var(--ff-mono)',
-              fontSize: 10,
-              color: 'var(--text-tertiary)',
-              marginLeft: 2,
-              fontWeight: 500,
-            }}
-          >
-            {label}
-          </span>
-        </div>
+          {label}
+        </span>
       </div>
       <button
         type="button"

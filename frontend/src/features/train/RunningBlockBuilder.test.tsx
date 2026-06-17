@@ -36,10 +36,10 @@ test('the sprint kör stepper shows the week value and increments on +', async (
   const user = userEvent.setup()
   setup()
   // rb-active-01 currentWeek=3 -> week 3 sprint rounds = 6 selected initially.
-  const stepper = screen.getByText('kör').closest('div')!
-  expect(stepper).toHaveTextContent('6')
+  const input = screen.getByLabelText('kör') as HTMLInputElement
+  expect(input.value).toBe('6')
   await user.click(screen.getByRole('button', { name: 'kör növelése' }))
-  expect(stepper).toHaveTextContent('7')
+  expect(input.value).toBe('7')
 })
 
 test('editing the sprint weekday updates it across the plan', async () => {

@@ -11,10 +11,12 @@ import { Icon } from '@/components/ui/Icon'
 import { Display } from '@/components/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 import type { SportSessionCreateRequest } from '@/lib/trainApi'
+import { useEditableNumber } from './useEditableNumber'
 
 // --- NumberStep: label + mono value + 44px ± buttons (reuses .stepper) ---
 // min/max clamp the stepped value to the API contract bounds so the sheets can
-// never produce a payload the backend's @Valid rejects with a 400.
+// never produce a payload the backend's @Valid rejects with a 400. The center
+// display is tap-to-edit (type the value in); the same min/max clamp on blur.
 export function NumberStep({
   label,
   val,
@@ -32,6 +34,7 @@ export function NumberStep({
   min?: number
   max?: number
 }) {
+  const editable = useEditableNumber({ value: val, onChange, min, max, integer: true })
   return (
     <div className="col gap-sm">
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -56,7 +59,12 @@ export function NumberStep({
         >
           <Icon name="minus" size={14} />
         </button>
-        <span className="stepper-display">{val}</span>
+        <input
+          {...editable}
+          aria-label={label}
+          className="stepper-display"
+          style={{ border: 'none', background: 'transparent', width: '100%', minWidth: 0, padding: 0 }}
+        />
         <button
           type="button"
           aria-label={`${label} növelése`}
