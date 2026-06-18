@@ -27,6 +27,7 @@ import { ChatView } from '@/features/insights/views/ChatView'
 import { PredictionsView } from '@/features/insights/views/PredictionsView'
 import { ExperimentsView } from '@/features/insights/views/ExperimentsView'
 import { MeScreen, type MeOutletContext } from '@/features/me/MeScreen'
+import { GoalPlanner } from '@/features/me/GoalPlanner'
 import { ProfileView } from '@/features/me/views/ProfileView'
 import { GoalsView } from '@/features/me/views/GoalsView'
 import { WeightView } from '@/features/me/views/WeightView'
@@ -98,6 +99,7 @@ export const routes: RouteObject[] = [
           { path: 'knowledge', element: <KnowledgeView /> },
         ],
       },
+      { path: 'me/goals/new', element: <GoalPlanner /> },
       { path: '*', element: <Navigate to="/today" replace /> },
     ],
   },

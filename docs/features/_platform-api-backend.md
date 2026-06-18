@@ -41,7 +41,7 @@ Drift between the two sides becomes a **compile error**, not a runtime surprise.
 | **Biometrics — sleep** | `api/feature/sleep/sleep.yml` | ✅ `feature/biometrics/sleep` | `lib/biometricsApi.ts` → `useSleep()` | ✅ Real, dual-mode. |
 | **Biometrics — check-in** | `api/feature/checkin/checkin.yml` | ✅ `feature/biometrics/checkin` | `lib/biometricsApi.ts` → `useCheckins()` | ✅ Real (mutation fires real in non-mock; read stays local state). |
 | **Biometrics — profile** | `api/feature/biometrics-profile/biometrics-profile.yml` | ✅ `feature/biometrics/profile` | `lib/biometricProfileApi.ts` (no hook yet) | ✅ Real backend (G1, `mezo-2hp`). FE wiring deferred. |
-| **Goal** (`Cél`) | `api/feature/goal/goal.yml` | ✅ `feature/goal` | `lib/goalApi.ts` + `lib/goalLinkApi.ts` → `useGoal()` (read-only) | ✅ Real (G1 `mezo-2hp` + G3 `mezo-3sc`). CRUD + activate/archive lifecycle; G3 adds the `goal_plan_link` aggregate (timeline + attach/detach) — FE reads active goal **and** its real linked plans, no write yet (G4). |
+| **Goal** (`Cél`) | `api/feature/goal/goal.yml` | ✅ `feature/goal` | `lib/goalApi.ts` + `lib/goalLinkApi.ts` → `useGoal()` (read) + `useGoalCreation()` (G4a write) | ✅ Real (G1 `mezo-2hp` + G3 `mezo-3sc` + G4a `mezo-pqt`). CRUD + activate/archive lifecycle; G3 adds the `goal_plan_link` aggregate (timeline + attach/detach). FE reads active goal + real linked plans; **G4a wires the first write** — `useGoalCreation` POSTs a new goal (+ `biometric_profile` upsert + optional activate) via the `GoalPlanner` wizard. Editing an existing goal is G4b. |
 | **Train** (meso · workout-exec · sport · catalog · records · running) | `api/feature/train/train.yml` | ✅ `feature/train` | `lib/trainApi.ts` + `lib/runningApi.ts` → `trainHooks.ts` / `runningHooks.ts` | ✅ Real, dual-mode. |
 | **Fuel** | — | ❌ | `data/fuel.ts`, `data/pantry.ts`, `data/fuelWeek.ts` | 🔶 mock-only. |
 | **Insights** | — | ❌ | `data/insights.ts` | 🔶 mock-only. |
@@ -317,7 +317,7 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 
 **Frontend seam**
 - `frontend/src/lib/api.ts` (`apiFetch`, `ApiError`, `setToken`, `API_BASE`), `lib/mode.ts` (`isMockMode`), `lib/auth.ts` (`bootstrapOwnerToken`), `lib/api.gen.ts` (generated), `lib/biometricsApi.ts`, `lib/trainApi.ts`, `lib/runningApi.ts`, `lib/goalApi.ts`, `lib/goalLinkApi.ts` (G3 timeline/attach/detach), `lib/biometricProfileApi.ts`
-- `frontend/src/data/hooks.ts` (single FE↔data boundary), `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` (dual-mode; G3 `useGoal` populates real linked plans from the timeline)
+- `frontend/src/data/hooks.ts` (single FE↔data boundary), `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` (dual-mode; G3 `useGoal` populates real linked plans from the timeline; G4a adds `useGoalCreation` — the first goal write)
 - mock-only (no backend yet): `frontend/src/data/fuel.ts`, `pantry.ts`, `fuelWeek.ts`, `insights.ts`, `people.ts`
 
 **House-standard references (linked, not restated)**

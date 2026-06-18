@@ -1,6 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
-import { goalApi, type GoalResponse } from '@/lib/goalApi'
+import { useCallback } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { goalApi, type GoalResponse, type GoalUpsertRequest } from '@/lib/goalApi'
 import { goalLinkApi, type GoalTimelineResponse } from '@/lib/goalLinkApi'
+import { biometricProfileApi, type BiometricProfileUpsertRequest } from '@/lib/biometricProfileApi'
 import { isMockMode } from '@/lib/mode'
 import { huMonthDay } from '@/lib/dates'
 import { goal as mockGoal, linkedMesocycles as mockLinkedMesocycles } from './goals'
@@ -85,4 +87,38 @@ export function useGoal() {
   const linkedMesocycles = timeline ? toLinkedMesocycles(timeline) : {}
   goal.mesocycles = timeline ? timeline.links.map(l => l.planId) : []
   return { goal, linkedMesocycles }
+}
+
+// Goal-creation wizard (slice G4a) save chain. Real mode runs the writes in
+// order: upsert the biometric profile, create the goal, optionally activate it,
+// then invalidate ['goals']. Mock mode no-ops and resolves with null so the
+// wizard's onSuccess(null) still fires and it navigates back (Phase-1 parity
+// with MesocyclePlanner).
+export type GoalCreationInput = {
+  profile: BiometricProfileUpsertRequest
+  goal: GoalUpsertRequest
+  activate: boolean
+}
+
+export function useGoalCreation() {
+  const qc = useQueryClient()
+  const mock = isMockMode()
+  const mutation = useMutation({
+    mutationFn: async (input: GoalCreationInput): Promise<GoalResponse | null> => {
+      if (mock) return null // Phase-1 no-op; the wizard just navigates back
+      await biometricProfileApi.upsert(input.profile)
+      const created = await goalApi.create(input.goal)
+      if (input.activate) await goalApi.activate(created.id)
+      return created
+    },
+    onSuccess: () => {
+      if (!mock) qc.invalidateQueries({ queryKey: ['goals'] })
+    },
+  })
+  const submit = useCallback(
+    (input: GoalCreationInput, opts?: { onSuccess?: (goal: GoalResponse | null) => void }) =>
+      mutation.mutate(input, { onSuccess: opts?.onSuccess }),
+    [mutation],
+  )
+  return { submit, pending: mutation.isPending }
 }
