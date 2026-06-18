@@ -110,6 +110,18 @@ class GoalServiceIT extends AbstractIntegrationTest {
         assertThat(goalRepository.findByIdAndCreatedByAndDeletedFalse(g.getId(), user)).isEmpty();
     }
 
+    @Test
+    void testActivateGoal_shouldArchivePreviousActive_whenAnotherIsActivated() {
+        UUID user = databasePopulator.populateUser("goal@test.local");
+        var first = goalPopulator.createGoal(user, "cut", "active");
+        var second = goalPopulator.createGoal(user, "bulk", "planned");
+        goalService.activateGoal(user, second.getId());
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(goalRepository.findById(first.getId()).orElseThrow().getStatus()).isEqualTo("archived");
+        assertThat(goalRepository.findById(second.getId()).orElseThrow().getStatus()).isEqualTo("active");
+    }
+
     private static GoalUpsertRequest upsertReq() {
         return GoalUpsertRequest.builder()
             .title("Nyári cut").trajectory("cut").guards(List.of("strength", "muscle"))

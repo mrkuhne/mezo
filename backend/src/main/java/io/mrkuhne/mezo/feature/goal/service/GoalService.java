@@ -16,9 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Goal CRUD. Lifecycle (activate/archive + the single-active invariant) is owned by a separate
- * service/endpoint, so {@code createGoal} fixes {@code status=planned} and {@code updateGoal}
- * deliberately never touches {@code status}.
+ * Goal CRUD + lifecycle. {@code createGoal} fixes {@code status=planned} and {@code updateGoal}
+ * deliberately never touches {@code status}; status transitions go through the dedicated
+ * {@link #activateGoal} / {@link #archiveGoal} methods, which own the single-active invariant.
  */
 @Service
 @RequiredArgsConstructor
@@ -58,6 +58,30 @@ public class GoalService {
     @Transactional
     public void deleteGoal(UUID userId, UUID id) {
         goalRepository.delete(requireOwned(userId, id)); // @SQLDelete soft-deletes
+    }
+
+    @Transactional
+    public GoalResponse activateGoal(UUID userId, UUID id) {
+        GoalEntity target = requireOwned(userId, id);
+        // Single-active invariant: activating archives every other active goal (dirty-checking flushes).
+        for (GoalEntity other : goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active")) {
+            if (!other.getId().equals(id)) {
+                other.setStatus("archived");
+            }
+        }
+        if (!"active".equals(target.getStatus())) {
+            target.setStatus("active");
+        }
+        return goalMapper.toResponse(target);
+    }
+
+    @Transactional
+    public GoalResponse archiveGoal(UUID userId, UUID id) {
+        GoalEntity e = requireOwned(userId, id);
+        if (!"archived".equals(e.getStatus())) {
+            e.setStatus("archived");
+        }
+        return goalMapper.toResponse(e);
     }
 
     private void applyUpsert(GoalEntity e, GoalUpsertRequest req) {
