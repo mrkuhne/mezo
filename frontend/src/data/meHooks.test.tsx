@@ -1,6 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { useGoals } from './hooks'
+import { useWeight } from './weightHooks'
 import { useSleep } from './hooks'
 import { usePeople } from './hooks'
 import { people } from './people'
@@ -10,8 +10,8 @@ import { QueryWrapper } from '@/test/queryWrapper'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('useGoals.logWeight appends a mapped WeightEntry to the log', async () => {
-  const { result } = renderHook(() => useGoals(), { wrapper: QueryWrapper })
+test('useWeight.logWeight appends a mapped WeightEntry to the log', async () => {
+  const { result } = renderHook(() => useWeight(), { wrapper: QueryWrapper })
   await waitFor(() => expect(result.current.weightLog.length).toBeGreaterThan(0))
   const before = result.current.weightLog.length
   act(() => {

@@ -5,7 +5,7 @@ import { isMockMode } from '@/lib/mode'
 import { weightLog as initialWeightLog, weightTrends } from './goals'
 import type { WeightEntry, WeightLogInput } from './types'
 
-// The weight half of the former useGoals — same ['weightLog'] cache key, same
+// The weight half of the former combined goals hook — same ['weightLog'] cache key, same
 // dual-mode query+mutation. weightTrends stays the static mock until the G5
 // engine computes real trends.
 export function useWeight() {

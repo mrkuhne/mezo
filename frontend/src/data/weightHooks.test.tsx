@@ -1,7 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { useGoals } from './hooks'
+import { useWeight } from './weightHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -13,13 +13,13 @@ afterEach(() => {
   vi.unstubAllEnvs()
 })
 
-test('useGoals (real mode) loads the weight log from the API', async () => {
-  const { result } = renderHook(() => useGoals(), { wrapper: makeHookWrapper() })
+test('useWeight (real mode) loads the weight log from the API', async () => {
+  const { result } = renderHook(() => useWeight(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.weightLog.length).toBe(1))
   expect(result.current.weightLog[0]).toMatchObject({ date: '2026-06-01', value: 82.5 })
 })
 
-test('useGoals.logWeight POSTs and the new entry appears after invalidation', async () => {
+test('useWeight.logWeight POSTs and the new entry appears after invalidation', async () => {
   let posted = false
   // After the POST fires, the GET must return the appended list (server-side truth).
   server.use(
@@ -40,7 +40,7 @@ test('useGoals.logWeight POSTs and the new entry appears after invalidation', as
     ),
   )
 
-  const { result } = renderHook(() => useGoals(), { wrapper: makeHookWrapper() })
+  const { result } = renderHook(() => useWeight(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.weightLog.length).toBe(1))
 
   act(() => {
