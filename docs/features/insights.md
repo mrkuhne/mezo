@@ -92,7 +92,7 @@ View (PatternsView, WeeklyView, …)
       → [PHASE-3 GAP: no api client, no apiFetch, no backend, no db]
 ```
 
-Contrast with a real-mode feature (e.g. `useGoals`/`useSleep`, `hooks.ts:80-129`) which switches on `isMockMode()` between static `initialData` and a real `*Api` call over `apiFetch`. The Insights hooks have **none of that machinery** — no TanStack Query, no `initialData`, no mutation, no mode switch:
+Contrast with a real-mode feature (e.g. `useWeight` in `weightHooks.ts` / `useSleep` in `hooks.ts:79`) which switches on `isMockMode()` between static `initialData` and a real `*Api` call over `apiFetch`. The Insights hooks have **none of that machinery** — no TanStack Query, no `initialData`, no mutation, no mode switch:
 
 - `useInsights()` (`hooks.ts:156-158`) → `{ patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports.
 - `useKnowledge()` (`hooks.ts:152-154`) → `{ facts, edges, activeCount: facts.filter(f => f.active).length }`.
@@ -197,7 +197,7 @@ Today these return **synchronous static data** (safe to read in render with no l
 5. Add a Vitest test mirroring the existing per-view + per-data tests (§8).
 
 ### 7.2 Make it real (Phase 3 / Slice D) — the recipe
-The boundary is **engineered for this swap**: rewrite `useInsights`/`useKnowledge`/`useChat` to dual-mode on `isMockMode()` exactly like `useGoals`/`useSleep` (`hooks.ts:80-129`) — `initialData: mock ? <static> : undefined`, `queryFn: mock ? async()=>static : insightsApi.list`. Follow, in order, the house standards (do **not** duplicate them here):
+The boundary is **engineered for this swap**: rewrite `useInsights`/`useKnowledge`/`useChat` to dual-mode on `isMockMode()` exactly like `useWeight` (`weightHooks.ts:11`) / `useSleep` (`hooks.ts:79`) — `initialData: mock ? <static> : undefined`, `queryFn: mock ? async()=>static : insightsApi.list`. Follow, in order, the house standards (do **not** duplicate them here):
 
 - **`docs/references/api_contract_conventions.md`** — contract-first: write `api/feature/insights/insights.yml` (+ `knowledge`, `chat`/`conversation`) **before** code, merge via `api/generate`, regenerate FE types (`frontend/src/lib/api.gen.ts`) + BE `*Api` interfaces.
 - **`docs/references/liquibase_conventions.md`** — create `pattern` / `knowledge_fact` / `knowledge_edge` / `ai_conversation` tables; changeset `{YYYYMMDDHHMM}_{bd-id}_{desc}.sql`; UUID PKs; seed in Java `@Profile("demodata")` (never SQL).
