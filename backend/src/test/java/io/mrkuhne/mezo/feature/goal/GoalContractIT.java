@@ -47,6 +47,14 @@ class GoalContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCreateGoal_shouldReturn400_whenTargetDateBeforeStartDate() {
+        String body = postForBody("/api/goals",
+            req().startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 5, 1)).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "targetDate", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
     void testActivateGoal_shouldFlipStatusToActive_whenCalled() {
         HttpHeaders auth = ownerAuthHeaders();
         GoalResponse created = postForBody("/api/goals", req().build(), auth, HttpStatus.CREATED, GoalResponse.class);

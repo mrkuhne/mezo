@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-06-18
+updated: 2026-06-19
 tags: [train, running, sport, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/train
@@ -141,7 +141,7 @@ A **standalone** owner-scoped weekly schedule answering only *when* the user tra
 - **Endpoints:** `GET/POST /api/train/running-blocks`, `PUT/DELETE /api/train/running-blocks/{id}`, `POST .../{id}/activate`, `POST .../{id}/close`, `GET/POST /api/train/run-sessions`. `RunningService` enforces single-active on activate; `deleteBlock` is soft delete.
 - **`currentWeek` is server-derived, not client-owned (mezo-478).** `applyUpsert` sets it to `clampWeek(startDate, weeks)` — the 1-based week containing today, clamped to `[1, weeks]` (week 1 before the start) — ignoring the request's `currentWeek` (mirrors `TrainService` for mesocycles). Reads additionally **heal** a stale/invalid stored value (null, `<1`, or `>weeks`) via `RunningService.toResponse`, so a block written before this (e.g. the legacy `currentWeek 0` that rendered "az aktuális hét (0) nincs a tervben" for a plan starting today) self-corrects on the next fetch. Weeks are 1-indexed; the `RunWeekView` `weeks.find(w => w.weekNumber === currentWeek)` therefore always resolves for an in-range plan. Mock mode mirrors the derivation via `currentWeekOf` (`lib/dates.ts`). _Known limitation:_ like mesocycles, the stored value only re-derives on write/activate; the read-time heal only fires for out-of-range values, so a valid block does not auto-advance week-to-week without a write.
 - **DTOs:** `RunningBlockResponse`/`RunningBlockUpsertRequest`, `RunningBlockStructureDto`, `RunWeek`, `RunPrescribedSession`, `RunSegment`, `RpeTarget`, `RunSessionLogResponse`/`RunSessionLogRequest`.
-- **Seed:** `RunningSeedData` is `@Profile("demodata")` (not `demofixtures` like Train) — a plain `demodata` app already has the 3 blocks (active/planned/archived).
+- **Seed:** `RunningSeedData` is `@Profile("demofixtures")` (same as `TrainSeedData`, since `mezo-uuv`) — a plain `demodata` (prod) app starts **clean** with no running blocks; the 3 demo blocks (active/planned/archived) require the opt-in `demodata,demofixtures` profile combo.
 
 ---
 

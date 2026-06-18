@@ -1,3 +1,5 @@
+import type { GoalTimelineResponse } from '@/lib/goalLinkApi'
+import type { GoalResponse } from '@/lib/goalApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from './types'
 
 export const goal: Goal = {
@@ -8,12 +10,28 @@ export const goal: Goal = {
   startWeight: 81.4,
   currentWeight: 78.6,
   targetWeight: 73.0,
-  unit: 'kg',
-  startDate: 'Ápr 1',
-  targetDate: 'Aug 15',
-  rateTarget: { value: 0.5, unit: 'kg/hét', direction: 'down' },
+  // Target/cél pace is %BW/week (mirrors goalResponse.rateTargetPctPerWeek below) —
+  // a DIFFERENT quantity from the observed kg/hét trend the hero shows (mezo-5om).
+  rateTarget: { value: 0.6, unit: '%/hét', direction: 'down' },
   mesocycles: ['meso-hyp-04', 'meso-str-02', 'meso-maint-01'],
   identityFrame: 'Egészséges erő · nem csak alak — a teljes energiám jobb 73kg-on a Reta cycle után.',
+}
+
+// Mock raw GoalResponse — the G4b command-center hero reads the contract shape
+// (trajectory/guards/window/weights) directly, so mock mode supplies the same
+// envelope the backend returns. ISO dates here; the hero formats them via huMonthDay.
+export const goalResponse: GoalResponse = {
+  id: goal.id,
+  title: goal.title,
+  trajectory: 'cut',
+  guards: ['strength', 'muscle'],
+  status: 'active',
+  startDate: '2026-04-01',
+  targetDate: '2026-08-15',
+  startWeightKg: goal.startWeight,
+  targetWeightKg: goal.targetWeight,
+  rateTargetPctPerWeek: 0.6,
+  identityFrame: goal.identityFrame,
 }
 
 export const weightLog: WeightEntry[] = [
@@ -55,4 +73,50 @@ export const linkedMesocycles: Record<string, LinkedMeso> = {
   'meso-hyp-04': { id: 'meso-hyp-04', shortTitle: 'Hypertrophy 04', status: 'active', startDate: 'Máj 1', endDate: 'Jún 12', weeks: 6 },
   'meso-str-02': { id: 'meso-str-02', shortTitle: 'Strength 02', status: 'planned', startDate: 'Jún 16', endDate: 'Aug 4', weeks: 7 },
   'meso-maint-01': { id: 'meso-maint-01', shortTitle: 'Maintenance', status: 'planned', startDate: 'Aug 7', endDate: 'Aug 28', weeks: 3 },
+}
+
+// Static mock timeline — Decision A (G4b). Mirrors `linkedMesocycles` (the three
+// gym mesocycles as `mesocycle` links) and adds a sample `running_block` link +
+// an uncovered gym-lane gap so the GoalTimeline lane component renders the same
+// lanes/gaps in mock mode as in real mode. `goalId` + `weeks` track the mock goal
+// window (Ápr 1 → Aug 15 ≈ 20 weeks). ISO dates here — `useGoal`/the lane format
+// them, matching how real `GoalTimelineResponse` arrives from the backend.
+export const goalTimeline: GoalTimelineResponse = {
+  goalId: goal.id,
+  weeks: 20,
+  links: [
+    {
+      id: 'link-hyp-04',
+      planType: 'mesocycle',
+      planId: 'meso-hyp-04',
+      startWeek: 5,
+      endWeek: 10,
+      plan: { title: 'Hypertrophy 04', status: 'active', startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6 },
+    },
+    {
+      id: 'link-str-02',
+      planType: 'mesocycle',
+      planId: 'meso-str-02',
+      startWeek: 11,
+      endWeek: 17,
+      plan: { title: 'Strength 02', status: 'planned', startDate: '2026-06-16', endDate: '2026-08-04', weeks: 7 },
+    },
+    {
+      id: 'link-maint-01',
+      planType: 'mesocycle',
+      planId: 'meso-maint-01',
+      startWeek: 18,
+      endWeek: 20,
+      plan: { title: 'Maintenance', status: 'planned', startDate: '2026-08-07', endDate: '2026-08-28', weeks: 3 },
+    },
+    {
+      id: 'link-run-01',
+      planType: 'running_block',
+      planId: 'run-base-01',
+      startWeek: 6,
+      endWeek: 13,
+      plan: { title: 'Base Build · 5K', status: 'active', startDate: '2026-05-08', endDate: '2026-07-03', weeks: 8 },
+    },
+  ],
+  gaps: [{ fromWeek: 1, toWeek: 4 }],
 }
