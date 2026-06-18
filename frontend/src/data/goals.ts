@@ -1,4 +1,5 @@
 import type { GoalTimelineResponse } from '@/lib/goalLinkApi'
+import type { GoalResponse } from '@/lib/goalApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from './types'
 
 export const goal: Goal = {
@@ -9,12 +10,26 @@ export const goal: Goal = {
   startWeight: 81.4,
   currentWeight: 78.6,
   targetWeight: 73.0,
-  unit: 'kg',
-  startDate: 'Ápr 1',
-  targetDate: 'Aug 15',
   rateTarget: { value: 0.5, unit: 'kg/hét', direction: 'down' },
   mesocycles: ['meso-hyp-04', 'meso-str-02', 'meso-maint-01'],
   identityFrame: 'Egészséges erő · nem csak alak — a teljes energiám jobb 73kg-on a Reta cycle után.',
+}
+
+// Mock raw GoalResponse — the G4b command-center hero reads the contract shape
+// (trajectory/guards/window/weights) directly, so mock mode supplies the same
+// envelope the backend returns. ISO dates here; the hero formats them via huMonthDay.
+export const goalResponse: GoalResponse = {
+  id: goal.id,
+  title: goal.title,
+  trajectory: 'cut',
+  guards: ['strength', 'muscle'],
+  status: 'active',
+  startDate: '2026-04-01',
+  targetDate: '2026-08-15',
+  startWeightKg: goal.startWeight,
+  targetWeightKg: goal.targetWeight,
+  rateTargetPctPerWeek: 0.6,
+  identityFrame: goal.identityFrame,
 }
 
 export const weightLog: WeightEntry[] = [

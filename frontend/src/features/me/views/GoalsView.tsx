@@ -7,18 +7,27 @@ import { Icon } from '@/components/ui/Icon'
 import { GhostState } from '@/components/ui/GhostState'
 import { ToolChipRow } from '@/components/ui/ToolChipRow'
 import type { Tool } from '@/components/ui/ToolChip'
-import { useGoal, useWeight } from '@/data/hooks'
-import type { GoalKind } from '@/data/types'
+import { useGoal, useGoalActions, useWeight } from '@/data/hooks'
+import type { GoalResponse } from '@/lib/goalApi'
+import { huMonthDay } from '@/lib/dates'
 import { FactorCard } from '../components/FactorCard'
 import { InsightCard } from '../components/InsightCard'
 import { GoalStat } from '../components/GoalStat'
-import { LinkedMesoCard } from '../components/LinkedMesoCard'
+import { GoalTimeline } from '../components/GoalTimeline'
 import { EditGoalSheet } from '../EditGoalSheet'
+// LinkedMesoCard was the per-row card the GoalTimeline lane view replaced in G4b.
 
-const KIND_LABEL: Record<GoalKind, string> = {
+// Contract-native trajectory + guard labels — the hero reads these straight off
+// the raw GoalResponse (G4b Decision C: window/trajectory/guards/weights no longer
+// pass through the toGoal back-compat mapper).
+const TRAJECTORY_LABEL: Record<GoalResponse['trajectory'], string> = {
   cut: 'Fogyás',
   bulk: 'Hízás',
-  maintenance: 'Maintenance',
+  maintain: 'Maintenance',
+}
+const GUARD_LABEL: Record<string, string> = {
+  strength: 'Erő-gard',
+  muscle: 'Izom-gard',
 }
 
 const FACTOR_TOOLS: Tool[] = [
@@ -30,13 +39,16 @@ const FACTOR_TOOLS: Tool[] = [
 
 export function GoalsView() {
   const navigate = useNavigate()
-  const { goal, linkedMesocycles } = useGoal()
+  const { goal, goalResponse, timeline, goalId } = useGoal()
+  const { detachPlan } = useGoalActions()
   const { weightTrends } = useWeight()
   const [sheet, setSheet] = useState<'goal' | null>(null)
 
   // Real mode with no active goal: empty "set up a goal" state (mezo-72d). Must
-  // come BEFORE any goal.X read below, and stays null-safe for the whole render.
-  if (!goal) {
+  // come BEFORE any goal.X / goalResponse.X read below, and stays null-safe for
+  // the whole render. `goal` and `goalResponse` go null together (both derive from
+  // the same active GoalResponse), so this one guard narrows both.
+  if (!goal || !goalResponse) {
     return (
       <>
         <div className="page-header">
@@ -61,6 +73,10 @@ export function GoalsView() {
   const remaining = goal.currentWeight - goal.targetWeight
   const totalRange = goal.startWeight - goal.targetWeight
   const progressPct = Math.min(100, (progressed / totalRange) * 100)
+
+  // Hero reads the raw contract directly (Decision C): trajectory/guards/window.
+  const targetWeightKg = goalResponse.targetWeightKg ?? goalResponse.startWeightKg
+  const guards = goalResponse.guards ?? []
 
   return (
     <>
@@ -106,11 +122,24 @@ export function GoalsView() {
           <div style={{ position: 'relative' }}>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div className="col">
-                <Eyebrow brand>{KIND_LABEL[goal.kind]} · aktív</Eyebrow>
-                <Display size="lg" className="mt-sm">{goal.title}</Display>
+                <Eyebrow brand>{TRAJECTORY_LABEL[goalResponse.trajectory]} · aktív</Eyebrow>
+                <Display size="lg" className="mt-sm">{goalResponse.title}</Display>
                 <span className="text-secondary mt-sm" style={{ fontSize: 12, fontFamily: 'var(--ff-mono)' }}>
-                  {goal.startDate} → {goal.targetDate}
+                  {huMonthDay(goalResponse.startDate)} → {huMonthDay(goalResponse.targetDate)}
                 </span>
+                {guards.length > 0 && (
+                  <div className="row gap-sm mt-sm" style={{ flexWrap: 'wrap' }}>
+                    {guards.map((g) => (
+                      <span
+                        key={g}
+                        className="chip"
+                        style={{ fontSize: 9, padding: '2px 7px', color: 'var(--brand-glow)', borderColor: 'var(--border-brand)' }}
+                      >
+                        {GUARD_LABEL[g] ?? g}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <Icon name="settings" size={16} color="var(--text-tertiary)" />
             </div>
@@ -133,7 +162,7 @@ export function GoalsView() {
                   >
                     {goal.currentWeight}
                     <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 3 }}>
-                      {goal.unit}
+                      kg
                     </span>
                   </span>
                 </div>
@@ -148,9 +177,9 @@ export function GoalsView() {
                       marginTop: 2,
                     }}
                   >
-                    {goal.targetWeight}
+                    {targetWeightKg}
                     <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>
-                      {goal.unit}
+                      kg
                     </span>
                   </span>
                 </div>
@@ -180,7 +209,7 @@ export function GoalsView() {
               </div>
               <div className="row mt-sm" style={{ justifyContent: 'space-between' }}>
                 <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                  {goal.startWeight} kg · start
+                  {goalResponse.startWeightKg} kg · start
                 </span>
                 <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
                   −{progressed.toFixed(1)} kg · {progressPct.toFixed(0)}%
@@ -238,21 +267,27 @@ export function GoalsView() {
         </div>
       </div>
 
-      {/* Linked mesocycles */}
+      {/* Timeline — the goal as a horizontal time axis: gym/run lanes + gap chips +
+          the ambient volleyball band (G4b command-center finale, replaces the old
+          "Cél alatt fut" cards). The lane component consumes the raw timeline; each
+          plan bar's ✕ detaches the link via useGoalActions().detachPlan. */}
       <div style={{ padding: '0 24px 24px' }}>
         <div style={{ marginBottom: 12 }}>
-          <Eyebrow>Cél alatt fut · {goal.mesocycles.length} meso</Eyebrow>
+          <Eyebrow>Cél alatt fut · idővonal</Eyebrow>
         </div>
-        <div className="col gap-sm">
-          {goal.mesocycles.map(mid => {
-            const m = linkedMesocycles[mid]
-            if (!m) return null
-            return <LinkedMesoCard key={mid} meso={m} />
-          })}
-        </div>
+        {timeline ? (
+          <GoalTimeline
+            timeline={timeline}
+            onDetach={goalId ? (linkId) => detachPlan(goalId, linkId) : undefined}
+          />
+        ) : (
+          <GhostState lines={3} message="Még nincs terv a cél alá csatolva — tervezz egy mesót, és itt jelenik meg az idővonalon." />
+        )}
       </div>
 
-      {sheet === 'goal' && <EditGoalSheet onClose={() => setSheet(null)} goal={goal} />}
+      {sheet === 'goal' && goalId && (
+        <EditGoalSheet onClose={() => setSheet(null)} goal={goal} goalId={goalId} />
+      )}
     </>
   )
 }

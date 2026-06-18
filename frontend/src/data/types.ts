@@ -160,6 +160,12 @@ export interface TrendInsight { type: TrendInsightType; text: string }
 // --- Cél (goals) ---
 export type GoalKind = 'cut' | 'bulk' | 'maintenance'
 export type GoalStatus = 'active' | 'planned' | 'archived'
+// Domain Goal — the thin back-compat shape useGoal still exposes for consumers
+// that read flattened weights/identity (WeightView, FuelStackView's linked plans,
+// EditGoalSheet's rateTarget). The GoalsView command-center hero now reads the raw
+// `GoalResponse` (trajectory/guards/window/weights) directly; `startDate`,
+// `targetDate` and `unit` were retired from this shape in G4b (Decision C) since
+// nothing consumes them anymore. `kind`/`rateTarget` stay (hook tests + Task 6).
 export interface Goal {
   id: string
   title: string
@@ -168,9 +174,6 @@ export interface Goal {
   startWeight: number
   currentWeight: number
   targetWeight: number
-  unit: string
-  startDate: string
-  targetDate: string
   rateTarget: { value: number; unit: string; direction: 'down' | 'up' }
   mesocycles: string[]
   identityFrame: string

@@ -5,13 +5,16 @@ import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } fr
 import { biometricProfileApi, type BiometricProfileUpsertRequest } from '@/lib/biometricProfileApi'
 import { isMockMode } from '@/lib/mode'
 import { huMonthDay } from '@/lib/dates'
-import { goal as mockGoal, linkedMesocycles as mockLinkedMesocycles, goalTimeline as mockTimeline } from './goals'
+import { goal as mockGoal, goalResponse as mockGoalResponse, linkedMesocycles as mockLinkedMesocycles, goalTimeline as mockTimeline } from './goals'
 import type { Goal, GoalKind, LinkedMeso, WeightEntry } from './types'
 
-// GoalResponse (new contract) -> existing Goal domain shape, so GoalsView is
-// untouched (its full restructure is slice G4). currentWeight derives from the
-// latest weight entry (falls back to startWeightKg when the cache is empty);
-// trajectory 'maintain' maps to the existing 'maintenance' GoalKind.
+// GoalResponse (new contract) -> the thin back-compat Goal shape, kept for the
+// consumers that still read flattened weights/identity (WeightView, FuelStackView,
+// EditGoalSheet's rateTarget). currentWeight derives from the latest weight entry
+// (falls back to startWeightKg when the cache is empty); trajectory 'maintain' maps
+// to the existing 'maintenance' GoalKind. G4b (Decision C) retired the window
+// (startDate/targetDate) + unit fields: the GoalsView hero now reads those — plus
+// trajectory/guards — straight off the raw GoalResponse `useGoal` also exposes.
 function toGoal(res: GoalResponse, weightLog: WeightEntry[]): Goal {
   const latest = weightLog.length ? weightLog[weightLog.length - 1].value : Number(res.startWeightKg)
   const kind: GoalKind = res.trajectory === 'maintain' ? 'maintenance' : res.trajectory
@@ -23,12 +26,9 @@ function toGoal(res: GoalResponse, weightLog: WeightEntry[]): Goal {
     startWeight: Number(res.startWeightKg),
     currentWeight: latest,
     targetWeight: Number(res.targetWeightKg ?? res.startWeightKg),
-    unit: 'kg',
-    startDate: huMonthDay(res.startDate),
-    targetDate: huMonthDay(res.targetDate),
     // rateTarget: the contract carries a %/week magnitude; the legacy mock used
     // kg/hét. Keep the raw % value with a '%/hét' unit and derive the arrow from
-    // the trajectory (bulk = up, cut/maintain = down) — G4 reworks this panel.
+    // the trajectory (bulk = up, cut/maintain = down) — Task 6 (mezo-5om) reworks this.
     rateTarget: { value: Number(res.rateTargetPctPerWeek), unit: '%/hét', direction: res.trajectory === 'bulk' ? 'up' : 'down' },
     mesocycles: [], // populated from the goal timeline (G3) — see useGoal
     identityFrame: res.identityFrame ?? '',
@@ -81,6 +81,7 @@ export function useGoal() {
     // real mode. goalId tracks the mock goal so the attach/detach hub targets it.
     return {
       goal: mockGoal as Goal | null,
+      goalResponse: mockGoalResponse as GoalResponse | null,
       linkedMesocycles: mockLinkedMesocycles,
       timeline: mockTimeline as GoalTimelineResponse | null,
       goalId: mockGoal.id as string | null,
@@ -91,15 +92,17 @@ export function useGoal() {
   // back to mockGoal here, which surfaced the demo placeholder to real users —
   // see mezo-72d.) GoalsView guards on `goal === null` and renders the setup CTA.
   if (!activeGoal) {
-    return { goal: null, linkedMesocycles: {}, timeline: null, goalId: null }
+    return { goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null }
   }
 
   const goal: Goal = toGoal(activeGoal, (weightLog as WeightEntry[]) ?? [])
   const linkedMesocycles = timeline ? toLinkedMesocycles(timeline) : {}
   goal.mesocycles = timeline ? timeline.links.map(l => l.planId) : []
-  // Expose the raw timeline (the lane component consumes timeline.links[] for lane
-  // positions — LinkedMeso can't drive lanes) + goalId (attach/detach target).
-  return { goal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id }
+  // Expose the raw GoalResponse (the G4b hero reads trajectory/guards/window/weights
+  // straight off the contract — Decision C) + the raw timeline (the lane component
+  // consumes timeline.links[] for lane positions — LinkedMeso can't drive lanes) +
+  // goalId (attach/detach target).
+  return { goal, goalResponse: activeGoal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id }
 }
 
 // Goal-management mutations (slice G4b). Real mode runs the write, then in
