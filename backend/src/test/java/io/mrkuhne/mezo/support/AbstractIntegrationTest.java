@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.support;
 
 import io.mrkuhne.mezo.TestcontainersConfiguration;
+import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -27,7 +28,7 @@ import org.springframework.context.annotation.Import;
  */
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
-    TrainPopulator.class, GoalPopulator.class, ResetDatabase.class})
+    TrainPopulator.class, GoalPopulator.class, BiometricProfilePopulator.class, ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
 
     @Autowired
