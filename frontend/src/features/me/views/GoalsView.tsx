@@ -14,6 +14,7 @@ import { FactorCard } from '../components/FactorCard'
 import { InsightCard } from '../components/InsightCard'
 import { GoalStat } from '../components/GoalStat'
 import { GoalTimeline } from '../components/GoalTimeline'
+import { GoalPlanSlots } from '../components/GoalPlanSlots'
 import { EditGoalSheet } from '../EditGoalSheet'
 // LinkedMesoCard was the per-row card the GoalTimeline lane view replaced in G4b.
 
@@ -271,7 +272,7 @@ export function GoalsView() {
           the ambient volleyball band (G4b command-center finale, replaces the old
           "Cél alatt fut" cards). The lane component consumes the raw timeline; each
           plan bar's ✕ detaches the link via useGoalActions().detachPlan. */}
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: '0 24px 16px' }}>
         <div style={{ marginBottom: 12 }}>
           <Eyebrow>Cél alatt fut · idővonal</Eyebrow>
         </div>
@@ -284,6 +285,19 @@ export function GoalsView() {
           <GhostState lines={3} message="Még nincs terv a cél alá csatolva — tervezz egy mesót, és itt jelenik meg az idővonalon." />
         )}
       </div>
+
+      {/* Plan slots — the hub-and-spoke assembly UX (G4b, goal-funnel.html Funnel B):
+          Mesociklus + Futóblokk slots, each launching the existing planner
+          (＋ Tervezd) or attaching an owned plan (＋ Csatolj meglévőt → AttachPlanSheet).
+          Volleyball stays ambient/read-only in the timeline band — not a slot. */}
+      {goalId && (
+        <div style={{ padding: '0 24px 24px' }}>
+          <div style={{ marginBottom: 12 }}>
+            <Eyebrow>Építsd fel a tervet alá</Eyebrow>
+          </div>
+          <GoalPlanSlots goalId={goalId} />
+        </div>
+      )}
 
       {sheet === 'goal' && goalId && (
         <EditGoalSheet onClose={() => setSheet(null)} goal={goal} goalId={goalId} />
