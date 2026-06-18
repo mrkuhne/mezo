@@ -92,6 +92,13 @@ public class GoalService {
     }
 
     private void applyUpsert(GoalEntity e, GoalUpsertRequest req) {
+        // Reject an inverted window (targetDate < startDate) up front so it never reaches
+        // GoalTimelineService, where a negative window length would blow up with a 500.
+        if (req.getStartDate() != null && req.getTargetDate() != null
+                && req.getTargetDate().isBefore(req.getStartDate())) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("VALIDATION_INVALID_VALUE", "targetDate").build(), HttpStatus.BAD_REQUEST);
+        }
         e.setTitle(req.getTitle());
         e.setTrajectory(req.getTrajectory());
         e.setGuards(req.getGuards() == null ? List.of() : req.getGuards());
