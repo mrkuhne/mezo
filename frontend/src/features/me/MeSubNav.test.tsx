@@ -10,11 +10,17 @@ function renderAt(path: string) {
   )
 }
 
-test('renders all five sub-nav items with verbatim labels', () => {
+test('renders all sub-nav items with verbatim labels', () => {
   renderAt('/me')
-  for (const label of ['Profil', 'Cél', 'Alvás', 'Emberek', 'Tudás']) {
+  for (const label of ['Profil', 'Cél', 'Súly', 'Alvás', 'Emberek', 'Tudás']) {
     expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
   }
+})
+
+test('MeSubNav exposes a Súly tab linking to /me/weight', () => {
+  renderAt('/me')
+  const link = screen.getByRole('link', { name: 'Súly' })
+  expect(link).toHaveAttribute('href', '/me/weight')
 })
 
 test('marks the active sub-view from the URL', () => {

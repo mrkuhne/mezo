@@ -6,8 +6,9 @@ test('renders the goal hero, weights and identity frame', () => {
   render(<GoalsView />, { wrapper: QueryWrapper })
   expect(screen.getByRole('heading', { level: 1, name: /Hosszú cél/ })).toBeInTheDocument()
   expect(screen.getByText('Fogyás · Nyári forma')).toBeInTheDocument()
-  expect(screen.getAllByText('78.6').length).toBeGreaterThan(0) // current weight (hero + chart label)
+  expect(screen.getAllByText('78.6').length).toBeGreaterThan(0) // current weight
   expect(screen.getByText(/Egészséges erő/)).toBeInTheDocument() // identityFrame
+  expect(screen.queryByText('7 nap')).not.toBeInTheDocument() // trend cells moved to /me/weight
 })
 
 test('renders the factors section with tool chips', () => {
