@@ -236,7 +236,7 @@ pnpm parity          # playwright pixel-parity vs prototype
 **App shell** (`frontend/src/app/`)
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell.
 - `TabBar.tsx` / `Fab.tsx` / `AppLayout.tsx` — 5-tab nav + mic FAB + layout (anchor-mode wiring).
-- `router.tsx` — route tree (screen/subnav/view structure).
+- `router.tsx` — route tree (screen/subnav/view structure) plus full-screen builder/wizard siblings registered outside the tab tree (e.g. `train/mesocycles/new`, `me/goals/new` → `GoalPlanner`).
 - `ThemeProvider.tsx` — `useTheme()` context.
 
 **Lib helpers**

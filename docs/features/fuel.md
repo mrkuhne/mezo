@@ -28,7 +28,7 @@ Driving design: **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`]
 
 ## 2. User-facing behavior
 
-`/fuel` renders `FuelScreen.tsx` with a sub-nav (`FuelSubNav.tsx`); routes declared in `frontend/src/app/router.tsx`:
+`/fuel` renders `FuelScreen.tsx` with a sub-nav (`FuelSubNav.tsx`); routes declared in `frontend/src/app/router.tsx` (Fuel owns only the `/fuel` tab block — full-screen builder/wizard siblings like `train/mesocycles/new` or `me/goals/new` live outside any tab tree):
 
 | Route | Sub-nav label (HU) | View | What the user does |
 |---|---|---|---|
