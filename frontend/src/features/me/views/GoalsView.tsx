@@ -10,14 +10,8 @@ import type { GoalKind } from '@/data/types'
 import { FactorCard } from '../components/FactorCard'
 import { InsightCard } from '../components/InsightCard'
 import { GoalStat } from '../components/GoalStat'
-import { TrendCell } from '../components/TrendCell'
-import { WeightChart } from '../components/WeightChart'
 import { LinkedMesoCard } from '../components/LinkedMesoCard'
-import { WeightLogSheet } from '../WeightLogSheet'
 import { EditGoalSheet } from '../EditGoalSheet'
-
-type Period = '7d' | '30d' | 'all'
-const PERIODS: Period[] = ['7d', '30d', 'all']
 
 const KIND_LABEL: Record<GoalKind, string> = {
   cut: 'Fogyás',
@@ -34,9 +28,8 @@ const FACTOR_TOOLS: Tool[] = [
 
 export function GoalsView() {
   const { goal, linkedMesocycles } = useGoal()
-  const { weightLog, weightTrends, logWeight } = useWeight()
-  const [period, setPeriod] = useState<Period>('30d')
-  const [sheet, setSheet] = useState<'weight' | 'goal' | null>(null)
+  const { weightTrends } = useWeight()
+  const [sheet, setSheet] = useState<'goal' | null>(null)
 
   const progressed = goal.startWeight - goal.currentWeight
   const remaining = goal.currentWeight - goal.targetWeight
@@ -51,9 +44,6 @@ export function GoalsView() {
           <Eyebrow brand>Me · Goals</Eyebrow>
           <PageTitle className="mt-sm">Hosszú cél</PageTitle>
         </div>
-        <button className="chip" style={{ padding: '8px 10px' }} onClick={() => setSheet('weight')}>
-          <Icon name="plus" size={12} /> Súly
-        </button>
       </div>
 
       {/* Goal hero (tap to open EditGoalSheet) */}
@@ -191,46 +181,6 @@ export function GoalsView() {
         </div>
       </div>
 
-      {/* Weight chart */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-          <Eyebrow>Súly · trend</Eyebrow>
-          <div className="row gap-xs">
-            {PERIODS.map(p => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={'chip' + (period === p ? ' brand' : '')}
-                style={{ fontSize: 9, padding: '3px 8px' }}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        </div>
-        <WeightChart entries={weightLog} startWeight={goal.startWeight} targetWeight={goal.targetWeight} period={period} />
-      </div>
-
-      {/* Trend bar */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="row gap-sm">
-          <TrendCell
-            label="7 nap"
-            avg={weightTrends.last7d.avg}
-            delta={weightTrends.last7d.deltaVsPrev}
-            rate={weightTrends.last7d.weeklyRate}
-            onTrack={weightTrends.last7d.onTrack}
-          />
-          <TrendCell
-            label="4 hét"
-            avg={weightTrends.last4w.avg}
-            delta={weightTrends.last4w.deltaVsStart}
-            rate={weightTrends.last4w.weeklyRate}
-            onTrack={weightTrends.last4w.onTrack}
-          />
-        </div>
-      </div>
-
       {/* Mezo insights */}
       <div style={{ padding: '0 24px 16px' }}>
         <div style={{ marginBottom: 12 }}>
@@ -272,14 +222,6 @@ export function GoalsView() {
           })}
         </div>
       </div>
-
-      {sheet === 'weight' && (
-        <WeightLogSheet
-          onClose={() => setSheet(null)}
-          onSave={logWeight}
-          currentWeight={goal.currentWeight}
-        />
-      )}
 
       {sheet === 'goal' && <EditGoalSheet onClose={() => setSheet(null)} goal={goal} />}
     </>
