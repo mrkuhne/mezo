@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-06-17
+updated: 2026-06-18
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -37,16 +37,18 @@ Drift between the two sides becomes a **compile error**, not a runtime surprise.
 | Domain | Contract fragment | Backend | FE wiring | Status |
 |---|---|---|---|---|
 | **Auth** | `api/feature/auth/auth.yml` | ✅ `feature/auth` | `lib/auth.ts` (`bootstrapOwnerToken`) | ✅ Real. Single-user thin auth, JWT HS256. |
-| **Biometrics — weight** | `api/feature/weight/weight.yml` | ✅ `feature/biometrics/weight` | `lib/biometricsApi.ts` → `useGoals()` | ✅ Real, dual-mode. |
+| **Biometrics — weight** | `api/feature/weight/weight.yml` | ✅ `feature/biometrics/weight` | `lib/biometricsApi.ts` → `useWeight()` | ✅ Real, dual-mode. |
 | **Biometrics — sleep** | `api/feature/sleep/sleep.yml` | ✅ `feature/biometrics/sleep` | `lib/biometricsApi.ts` → `useSleep()` | ✅ Real, dual-mode. |
 | **Biometrics — check-in** | `api/feature/checkin/checkin.yml` | ✅ `feature/biometrics/checkin` | `lib/biometricsApi.ts` → `useCheckins()` | ✅ Real (mutation fires real in non-mock; read stays local state). |
+| **Biometrics — profile** | `api/feature/biometrics-profile/biometrics-profile.yml` | ✅ `feature/biometrics/profile` | `lib/biometricProfileApi.ts` (no hook yet) | ✅ Real backend (G1, `mezo-2hp`). FE wiring deferred. |
+| **Goal** (`Cél`) | `api/feature/goal/goal.yml` | ✅ `feature/goal` | `lib/goalApi.ts` → `useGoal()` (read-only) | ✅ Real (G1, `mezo-2hp`). CRUD + activate/archive lifecycle; FE reads active goal, no write yet (G4). |
 | **Train** (meso · workout-exec · sport · catalog · records · running) | `api/feature/train/train.yml` | ✅ `feature/train` | `lib/trainApi.ts` + `lib/runningApi.ts` → `trainHooks.ts` / `runningHooks.ts` | ✅ Real, dual-mode. |
 | **Fuel** | — | ❌ | `data/fuel.ts`, `data/pantry.ts`, `data/fuelWeek.ts` | 🔶 mock-only. |
 | **Insights** | — | ❌ | `data/insights.ts` | 🔶 mock-only. |
 | **People** | — | ❌ | `data/people.ts` | 🔶 mock-only. |
 | **AI brain** (Spring AI, pgvector, RAG) | — | ❌ | — | 🟣 Phase-3 deferred. |
 
-Confirmed by grep: only `data/hooks.ts`, `data/trainHooks.ts`, `data/runningHooks.ts` reference `isMockMode`; `fuel.ts`/`insights.ts`/`people.ts`/`pantry.ts` contain **no** `apiFetch`. `api/base.yml` `info.title` is "mezo API".
+Confirmed by grep: only `data/hooks.ts`, `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` reference `isMockMode`; `fuel.ts`/`insights.ts`/`people.ts`/`pantry.ts` contain **no** `apiFetch`. `api/base.yml` `info.title` is "mezo API".
 
 **Driving specs/ADRs:** Phase-2 design `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`; deploy ADR `docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`; roadmap `docs/milestones/roadmap.md`. House standards: `docs/references/*.md` (all linked below).
 
@@ -90,7 +92,7 @@ For the actual screen flows that *consume* this spine, see the per-feature docs 
 
 **The view→DB path, traced (weight slice, the smallest full CRUD):**
 
-- View → `useGoals()` (`frontend/src/data/hooks.ts:80`) → `weightApi` (`frontend/src/lib/biometricsApi.ts`) → `apiFetch` (`frontend/src/lib/api.ts`) → `POST /api/biometrics/weight` / `GET /api/biometrics/weight`.
+- View → `useWeight()` (`frontend/src/data/weightHooks.ts:11`) → `weightApi` (`frontend/src/lib/biometricsApi.ts`) → `apiFetch` (`frontend/src/lib/api.ts`) → `POST /api/biometrics/weight` / `GET /api/biometrics/weight`.
 - Backend: `WeightLogController implements WeightApi` (`feature/biometrics/weight/controller/WeightLogController.java`) → `WeightLogService` → `WeightLogMapper` → `WeightLogRepository extends OwnedRepository<WeightLogEntity>` → `WeightLogEntity` → table `weight_log`.
 
 **Dual-mode behavior** (the FE seam): `isMockMode()` (`frontend/src/lib/mode.ts`, reads `VITE_USE_MOCK`, default mock) switches each hook between mock static data (TanStack Query `initialData`, synchronous, no network) and the real `*Api` client. Real-mode mutations `invalidateQueries`; mock-mode mutations emulate the server via `queryClient.setQueryData`. **Hook signatures are the FE's own stable contract and are NOT generated** — only the DTOs/types crossing the wire are.
@@ -103,7 +105,7 @@ For the actual screen flows that *consume* this spine, see the per-feature docs 
 
 - `api/base.yml` — `info` / `servers` (`http://localhost:8090`) / global `bearerAuth` security; `paths: {}`. Merge base — its info/servers/security win.
 - `api/common/common-schemas.yml` — `SystemMessage` (fields `level` enum ERROR/WARNING/INFO, `code`, `params`, `message`, `fieldName`, `type` enum REQUEST/FIELD, `exceptionTraceId` uuid) + `SystemMessageList` (array). **Every non-2xx response references `#/components/schemas/SystemMessageList`.**
-- `api/generate/merge.yml` — the ordered `inputs:` list (base → common → auth → weight → sleep → checkin → train). **Forgetting to append a new fragment here silently drops it from the merge.**
+- `api/generate/merge.yml` — the ordered `inputs:` list (base → common → auth → weight → sleep → checkin → train → goal → biometrics-profile). **Forgetting to append a new fragment here silently drops it from the merge.**
 - `api/generate/package.json` — `openapi-merge-cli ^1.3.2`, script `generate:api`.
 - `api/openapi.yml` — committed merged output. `frontend/src/lib/api.gen.ts` is its committed TS projection (`components['schemas']['X']`, `operations`, `paths`).
 
@@ -117,7 +119,7 @@ For the actual screen flows that *consume* this spine, see the per-feature docs 
 
 ### 4b. The persistence layer (every owned table)
 
-UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Column(columnDefinition="uuid")` in Java). Every owned table carries `created_by uuid NOT NULL` (FK→`app_user(id) ON DELETE CASCADE`), `is_deleted boolean`, `created_at` — supplied by the `OwnedEntity` `@MappedSuperclass`. Soft delete via `@SQLDelete(... set is_deleted = true ...)` + `@SQLRestriction("is_deleted = false")`. Typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto a *typed record*, never `String` (live: `MesocycleEntity.volumeRecompute`→`VolumeRecomputeJson`, `RunningBlockEntity.structure`→`RunningBlockStructure`, and the signature provenance envelope `ProvenanceEnvelope` persisted as one jsonb column in `muscle_group_volume_log.source`). Typed Postgres `text[]` via `@JdbcTypeCode(SqlTypes.ARRAY)` (`MesocycleEntity.phaseCurve`, a `List<String>` so Hibernate dirty-checks element changes). **Additive fields on a jsonb-backed record need no migration** — e.g. `RunPrescribedSession.timeOfDay` (nullable `HH:mm`) was added straight onto `RunningBlockStructure` and rides the existing `running_block.structure` column; the only contract touch was `api/feature/train/train.yml` (`pattern: '^\d{2}:\d{2}$'`, `nullable`) regenerated into `api/openapi.yml`, with **no Liquibase changeset**. **Derived fields are computed server-side, never trusted from the request** (same principle as `created_by`): e.g. `currentWeek` is set to `clampWeek(startDate, weeks)` in both `TrainService` (mesocycles) and `RunningService` (blocks), and the running read path additionally heals a stale/out-of-range stored value (mezo-478).
+UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Column(columnDefinition="uuid")` in Java). Every owned table carries `created_by uuid NOT NULL` (FK→`app_user(id) ON DELETE CASCADE`), `is_deleted boolean`, `created_at` — supplied by the `OwnedEntity` `@MappedSuperclass`. Soft delete via `@SQLDelete(... set is_deleted = true ...)` + `@SQLRestriction("is_deleted = false")`. Typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto a *typed record*, never `String` (live: `MesocycleEntity.volumeRecompute`→`VolumeRecomputeJson`, `RunningBlockEntity.structure`→`RunningBlockStructure`, and the signature provenance envelope `ProvenanceEnvelope` persisted as one jsonb column in `muscle_group_volume_log.source`). Typed Postgres `text[]` via `@JdbcTypeCode(SqlTypes.ARRAY)` (`MesocycleEntity.phaseCurve` and, G1, `GoalEntity.guards` — both `List<String>` so Hibernate dirty-checks element changes). **Not every owned aggregate uses `OwnedRepository`** — that superclass's `findAllOwned` requires an `e.date` field, so **date-less owned aggregates extend `JpaRepository` directly** with bespoke `findBy…CreatedByAndDeletedFalse` finders (G1's `GoalRepository`/`BiometricProfileRepository`; both entities still `extends OwnedEntity` for the ownership+soft-delete columns). **Additive fields on a jsonb-backed record need no migration** — e.g. `RunPrescribedSession.timeOfDay` (nullable `HH:mm`) was added straight onto `RunningBlockStructure` and rides the existing `running_block.structure` column; the only contract touch was `api/feature/train/train.yml` (`pattern: '^\d{2}:\d{2}$'`, `nullable`) regenerated into `api/openapi.yml`, with **no Liquibase changeset**. **Derived fields are computed server-side, never trusted from the request** (same principle as `created_by`): e.g. `currentWeek` is set to `clampWeek(startDate, weeks)` in both `TrainService` (mesocycles) and `RunningService` (blocks), and the running read path additionally heals a stale/out-of-range stored value (mezo-478).
 
 ### 4c. REST endpoints (backed features only)
 
@@ -127,6 +129,8 @@ UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Colu
 | `POST /biometrics/weight`, `GET /biometrics/weight` | `WeightApi` | log / list weight |
 | `POST /biometrics/sleep`, `GET /biometrics/sleep` | `SleepApi` | log / list sleep |
 | `POST /biometrics/checkin` (+read) | `CheckInApi` | daily check-in upsert |
+| `GET/PUT /biometrics/profile` | `BiometricProfileApi` | body-composition profile (one row/owner; G1) |
+| `GET/POST /goals`, `GET/PUT/DELETE /goals/{id}`, `POST /goals/{id}/{activate,archive}` | `GoalApi` | goal CRUD + lifecycle (single-active enforced in service; G1) |
 | Train surface (`/train/...`, running, sport, gym-schedule, catalog, records) | `TrainApi` (fans to 7 services) | see Train feature doc + `api/feature/train/train.yml` |
 
 **Mock-only domains (no backend, no fragment):** Fuel shape lives in `frontend/src/data/fuel.ts` / `pantry.ts` / `fuelWeek.ts`; Insights in `data/insights.ts`; People in `data/people.ts`. The backend will plug in by adding `api/feature/<x>/<x>.yml`, a `feature/<x>` backend package, and swapping the mock hook to dual-mode — exactly the recipe in §7. (`ProvenanceEnvelope`'s docstring already forward-references "Fuel reuses this pattern for meal score".)
@@ -160,12 +164,12 @@ Two consumer surfaces.
 **(a) Frontend — use an existing backed hook.** Import the hook from the single boundary, never the `*Api.ts` client directly:
 
 ```ts
-import { useGoals } from '@/data/hooks'
+import { useWeight } from '@/data/hooks'
 
 function WeightPanel() {
-  const { weight, logWeight } = useGoals()   // dual-mode: real or mock, transparently
-  // weight: WeightEntry[]  (the hook's own shape, not the generated DTO)
-  return <button onClick={() => logWeight({ value: 82.4, date: today })}>Mentés</button>
+  const { weightLog, logWeight } = useWeight()   // dual-mode: real or mock, transparently
+  // weightLog: WeightEntry[]  (the hook's own shape, not the generated DTO)
+  return <button onClick={() => logWeight({ date: today, weightKg: 82.4, note: null })}>Mentés</button>
 }
 ```
 
@@ -265,7 +269,7 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - `api/generate/merge.yml` — ordered fragment input list (append new fragments here)
 - `api/generate/package.json` — `openapi-merge-cli`, `generate:api`
 - `api/openapi.yml` — committed merged contract (source of truth)
-- `api/feature/{auth,weight,sleep,checkin,train}/*.yml` — per-feature fragments
+- `api/feature/{auth,weight,sleep,checkin,train,goal,biometrics-profile}/*.yml` — per-feature fragments
 
 **Backend generator config**
 - `backend/pom.xml` (~175-215) — `openapi-generator-maven-plugin` (spring), configOptions, Lombok DTO annotations
@@ -279,6 +283,10 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 **Reference feature (weight — smallest full slice)**
 - `feature/biometrics/weight/controller/WeightLogController.java`, `service/WeightLogService.java`, `mapper/WeightLogMapper.java`, `repository/WeightLogRepository.java`, `entity/WeightLogEntity.java`
 
+**Goal + biometric profile (G1, `mezo-2hp` — date-less owned aggregates)**
+- `feature/goal/{controller/GoalController,service/GoalService,mapper/GoalMapper,repository/GoalRepository,entity/GoalEntity}.java` + `feature/goal/GoalSeedData.java` (demodata active goal)
+- `feature/biometrics/profile/{controller/BiometricProfileController,service/BiometricProfileService,mapper/BiometricProfileMapper,repository/BiometricProfileRepository,entity/BiometricProfileEntity}.java`
+
 **Auth**
 - `feature/auth/...` (`AuthController`, `AuthService`, `OwnerProperties`, `OwnerSeedData`, `entity/AppUserEntity`, `UserProfileEntity`)
 
@@ -288,20 +296,20 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - content/seed: `ExerciseCatalogLoader.java` (master content, all profiles), `TrainSeedData.java`, `RunningSeedData.java` (demodata)
 
 **Liquibase**
-- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (11 changesets, bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk)
+- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk + `202606181200_mezo-2hp_create_goal.sql` for `goal` + `biometric_profile`)
 
 **Test framework**
-- `support/AbstractIntegrationTest.java`, `ApiIntegrationTest.java`, `ResetDatabase.java`, `DatabasePopulator.java`, `populator/{UserPopulator,TrainPopulator,RunningPopulator}.java`
-- canonical ITs: `feature/biometrics/BiometricsContractIT.java`, `feature/train/ProvenanceRoundTripIT.java`
+- `support/AbstractIntegrationTest.java`, `ApiIntegrationTest.java`, `ResetDatabase.java` (TRUNCATE list now incl. `goal, biometric_profile`), `DatabasePopulator.java`, `populator/{UserPopulator,TrainPopulator,RunningPopulator,GoalPopulator,BiometricProfilePopulator}.java`
+- canonical ITs: `feature/biometrics/BiometricsContractIT.java`, `feature/train/ProvenanceRoundTripIT.java`; G1: `feature/goal/{GoalServiceIT,GoalContractIT}.java`, `feature/biometrics/profile/{BiometricProfileServiceIT,BiometricProfileContractIT}.java`
 
 **Frontend seam**
-- `frontend/src/lib/api.ts` (`apiFetch`, `ApiError`, `setToken`, `API_BASE`), `lib/mode.ts` (`isMockMode`), `lib/auth.ts` (`bootstrapOwnerToken`), `lib/api.gen.ts` (generated), `lib/biometricsApi.ts`, `lib/trainApi.ts`, `lib/runningApi.ts`
-- `frontend/src/data/hooks.ts` (single FE↔data boundary), `data/trainHooks.ts`, `data/runningHooks.ts` (dual-mode)
+- `frontend/src/lib/api.ts` (`apiFetch`, `ApiError`, `setToken`, `API_BASE`), `lib/mode.ts` (`isMockMode`), `lib/auth.ts` (`bootstrapOwnerToken`), `lib/api.gen.ts` (generated), `lib/biometricsApi.ts`, `lib/trainApi.ts`, `lib/runningApi.ts`, `lib/goalApi.ts`, `lib/biometricProfileApi.ts`
+- `frontend/src/data/hooks.ts` (single FE↔data boundary), `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` (dual-mode)
 - mock-only (no backend yet): `frontend/src/data/fuel.ts`, `pantry.ts`, `fuelWeek.ts`, `insights.ts`, `people.ts`
 
 **House-standard references (linked, not restated)**
 - `docs/references/api_contract_conventions.md`, `java_package_structure.md`, `spring_patterns.md`, `error_handling.md`, `liquibase_conventions.md`, `testing_standards.md`, `integration_test_framework.md`, `configuration_conventions.md`
 
 **Cross-link to existing docs**
-- Phase-2 design: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`; Train write/clean-slate: `2026-06-11-train-write-clean-slate-design.md`; running slice: `2026-06-14-train-running-slice-design.md`; plans under `docs/superpowers/plans/`
+- Phase-2 design: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`; Train write/clean-slate: `2026-06-11-train-write-clean-slate-design.md`; running slice: `2026-06-14-train-running-slice-design.md`; goal-system G1: `2026-06-18-goal-system-design.md`; plans under `docs/superpowers/plans/`
 - ADR: `docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`; roadmap: `docs/milestones/roadmap.md`; infra: `docs/infrastructure/`
