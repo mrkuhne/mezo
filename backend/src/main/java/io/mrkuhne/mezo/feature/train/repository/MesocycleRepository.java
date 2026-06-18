@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -13,6 +14,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface MesocycleRepository extends JpaRepository<MesocycleEntity, UUID> {
 
     List<MesocycleEntity> findByCreatedByAndDeletedFalseOrderByStartDateAsc(UUID createdBy);
+
+    /** Owned-by-id lookup — the goal-plan link service validates the referenced plan (read-only). */
+    Optional<MesocycleEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
     /** All owned mesocycles in one status — the activate flow archives the previous active ones. */
     List<MesocycleEntity> findByCreatedByAndStatusAndDeletedFalse(UUID createdBy, String status);

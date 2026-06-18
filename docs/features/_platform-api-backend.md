@@ -41,7 +41,7 @@ Drift between the two sides becomes a **compile error**, not a runtime surprise.
 | **Biometrics — sleep** | `api/feature/sleep/sleep.yml` | ✅ `feature/biometrics/sleep` | `lib/biometricsApi.ts` → `useSleep()` | ✅ Real, dual-mode. |
 | **Biometrics — check-in** | `api/feature/checkin/checkin.yml` | ✅ `feature/biometrics/checkin` | `lib/biometricsApi.ts` → `useCheckins()` | ✅ Real (mutation fires real in non-mock; read stays local state). |
 | **Biometrics — profile** | `api/feature/biometrics-profile/biometrics-profile.yml` | ✅ `feature/biometrics/profile` | `lib/biometricProfileApi.ts` (no hook yet) | ✅ Real backend (G1, `mezo-2hp`). FE wiring deferred. |
-| **Goal** (`Cél`) | `api/feature/goal/goal.yml` | ✅ `feature/goal` | `lib/goalApi.ts` → `useGoal()` (read-only) | ✅ Real (G1, `mezo-2hp`). CRUD + activate/archive lifecycle; FE reads active goal, no write yet (G4). |
+| **Goal** (`Cél`) | `api/feature/goal/goal.yml` | ✅ `feature/goal` | `lib/goalApi.ts` + `lib/goalLinkApi.ts` → `useGoal()` (read-only) | ✅ Real (G1 `mezo-2hp` + G3 `mezo-3sc`). CRUD + activate/archive lifecycle; G3 adds the `goal_plan_link` aggregate (timeline + attach/detach) — FE reads active goal **and** its real linked plans, no write yet (G4). |
 | **Train** (meso · workout-exec · sport · catalog · records · running) | `api/feature/train/train.yml` | ✅ `feature/train` | `lib/trainApi.ts` + `lib/runningApi.ts` → `trainHooks.ts` / `runningHooks.ts` | ✅ Real, dual-mode. |
 | **Fuel** | — | ❌ | `data/fuel.ts`, `data/pantry.ts`, `data/fuelWeek.ts` | 🔶 mock-only. |
 | **Insights** | — | ❌ | `data/insights.ts` | 🔶 mock-only. |
@@ -131,9 +131,21 @@ UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Colu
 | `POST /biometrics/checkin` (+read) | `CheckInApi` | daily check-in upsert |
 | `GET/PUT /biometrics/profile` | `BiometricProfileApi` | body-composition profile (one row/owner; G1) |
 | `GET/POST /goals`, `GET/PUT/DELETE /goals/{id}`, `POST /goals/{id}/{activate,archive}` | `GoalApi` | goal CRUD + lifecycle (single-active enforced in service; G1) |
+| `GET /goals/{id}/timeline`, `POST /goals/{id}/plans`, `DELETE /goals/{id}/plans/{linkId}` | `GoalApi` | goal-plan-link timeline / attach / detach (G3, `mezo-3sc`) — see §4d |
 | Train surface (`/train/...`, running, sport, gym-schedule, catalog, records) | `TrainApi` (fans to 7 services) | see Train feature doc + `api/feature/train/train.yml` |
 
 **Mock-only domains (no backend, no fragment):** Fuel shape lives in `frontend/src/data/fuel.ts` / `pantry.ts` / `fuelWeek.ts`; Insights in `data/insights.ts`; People in `data/people.ts`. The backend will plug in by adding `api/feature/<x>/<x>.yml`, a `feature/<x>` backend package, and swapping the mock hook to dual-mode — exactly the recipe in §7. (`ProvenanceEnvelope`'s docstring already forward-references "Fuel reuses this pattern for meal score".)
+
+### 4d. The goal-plan-link aggregate (G3 — timeline coupling, `mezo-3sc`)
+
+The first **cross-feature** owned aggregate: it positions an owned *train* plan on a *goal*'s timeline. The table `goal_plan_link` (`db/changelog/1.0.0/script/202606181600_mezo-3sc_create_goal_plan_link.sql`) carries `goal_id` (FK→`goal ON DELETE CASCADE`), `plan_type` (CHECK `('mesocycle','running_block')`), `plan_id`, and a `[start_week, end_week]` 1-based span (CHECK `start_week >= 1 AND end_week >= start_week`), plus the usual `OwnedEntity` columns. Entity `feature/goal/entity/GoalPlanLinkEntity.java:29` — a **date-less owned aggregate**, so its repository `feature/goal/repository/GoalPlanLinkRepository.java:9` extends `JpaRepository` with bespoke `findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc` / `findByIdAndCreatedByAndDeletedFalse` finders (same pattern as `GoalRepository`).
+
+Three endpoints fan off the existing `GoalController` (`feature/goal/controller/GoalController.java:64-76`) into two new services:
+
+- **`GoalPlanLinkService`** (`feature/goal/service/GoalPlanLinkService.java`) — the write/resolve side. `attachPlan` (`:46`) ownership-checks the goal **and** the referenced plan, then derives `endWeek = startWeek + plan.weeks - 1` server-side (`:55`) — `end_week` is **never trusted from the request**, matching the `created_by`/`currentWeek` derived-field rule (§4b). `detachPlan` (`:60`) soft-deletes via `@SQLDelete` after a this-goal ownership filter. `resolvePlan` (`:69`) reads the train repos **READ-ONLY** to build the display `GoalPlanRef` (title/status/dates/weeks). **The only train-side change is one additive read finder** `MesocycleRepository.findByIdAndCreatedByAndDeletedFalse` (`feature/train/repository/MesocycleRepository.java:19`); the running counterpart already existed. Train behavior is unchanged.
+- **`GoalTimelineService`** (`feature/goal/service/GoalTimelineService.java`) — the read assembly. `getTimeline` (`:43`) lists the links + resolves each plan-ref, then scans gym-lane coverage: only `mesocycle`-type links tile coverage (`:53`), running blocks are episodic, volleyball is ambient and never a link. Weeks no mesocycle spans become soft, non-blocking `GoalGap`s (`:62-73`); the window length is derived from the goal's `startDate..targetDate` span (`:84`), not stored. Pure read — no `@Transactional`.
+
+`GoalPlanLinkMapper` (`feature/goal/mapper/GoalPlanLinkMapper.java:22`) maps `(entity, resolved GoalPlanRef) → GoalPlanLinkResponse`, converting the `String planType` to the generated inner enum via `fromValue`. **Cascade on goal delete** is handled in Java, not the DB FK: `GoalService.deleteGoal` (`feature/goal/service/GoalService.java:63-67`) soft-deletes the goal's links first (the FK `ON DELETE CASCADE` only fires on a *physical* delete, which the soft-delete path never triggers), so a re-used goal id never inherits ghost links. Demodata links the demo meso + running block to the demo goal (`feature/goal/GoalSeedData.java`, `demodata` profile). Contract fragment: the same `api/feature/goal/goal.yml` (POST `/plans` → **201**, DELETE `/plans/{linkId}` → **204**, GET `/timeline` → **200**; schemas `GoalPlanAttachRequest`/`GoalPlanLinkResponse`/`GoalPlanRef`/`GoalTimelineResponse`/`GoalGap`). ITs: `feature/goal/{GoalPlanLinkServiceIT,GoalTimelineServiceIT,GoalTimelineContractIT}.java`. FE read-side: `lib/goalLinkApi.ts` → `useGoal()` builds real `linkedMesocycles` + `goal.mesocycles` from the timeline (see Me feature doc + `_platform-data-layer.md`).
 
 ---
 
@@ -218,7 +230,7 @@ References: `docs/references/testing_standards.md` + `integration_test_framework
 
 - `support/AbstractIntegrationTest.java` — `@SpringBootTest`, imports `TestcontainersConfiguration`, `DatabasePopulator`, `UserPopulator`, `TrainPopulator`, `ResetDatabase`; `@BeforeEach` runs `ResetDatabase.resetExceptMasterData()`. Service-level subclasses add their own `@Transactional` for rollback.
 - `support/ApiIntegrationTest.java extends AbstractIntegrationTest` — `@ActiveProfiles("demodata")`, `RANDOM_PORT`, `TestRestTemplate`. **Not `@Transactional`** (server commits in its own tx; cleanup via `ResetDatabase`). Provides `ownerAuthHeaders()` (logs in via `/api/auth/login` with credentials from `OwnerProperties`, never hardcoded); verb helpers `getForBody/getForList/postForBody/putForBody/deleteAndExpect/exchangeForBody` where the **expected status is always a param and always asserted**; `exchangeForResponse` for header inspection (CORS); and `assertHasFieldError(body, field, code)` / `assertHasRequestError(body, code)` that parse the `List<SystemMessage>` JSON and match on **code/type/field, never resolved text** (codes are the contract). (SB4 → Jackson 3, `tools.jackson.databind.ObjectMapper`.)
-- `support/ResetDatabase.java` — one `TRUNCATE ... CASCADE` over all owned domain tables + `DELETE` of non-owner users/profiles. **Growth rule (mandatory): every new owned table is added here in the same change; `exercise_catalog` is master data and must NOT be truncated.**
+- `support/ResetDatabase.java` — one `TRUNCATE ... CASCADE` over all owned domain tables (now incl. `goal_plan_link`) + `DELETE` of non-owner users/profiles. **Growth rule (mandatory): every new owned table is added here in the same change; `exercise_catalog` is master data and must NOT be truncated.**
 - `support/populator/{UserPopulator,TrainPopulator,RunningPopulator}.java` — one `<Aggregate>Populator` per aggregate; `DatabasePopulator` is the facade. **Growth rule: each new aggregate gets its own populator in the same change.**
 - DB target: fixed `mezo_test` compose DB by default; throwaway Testcontainers via `-Dmezo.test.use-testcontainers=true`. Surefire also runs `*IT.java` (Failsafe deliberately unconfigured to avoid double execution).
 - Canonical examples: `feature/biometrics/BiometricsContractIT.java` (round-trips weight POST/GET, asserts a 400 FIELD error, asserts check-in upsert); `feature/train/ProvenanceRoundTripIT.java` (proves the typed-jsonb envelope survives a DB round-trip).
@@ -284,7 +296,8 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - `feature/biometrics/weight/controller/WeightLogController.java`, `service/WeightLogService.java`, `mapper/WeightLogMapper.java`, `repository/WeightLogRepository.java`, `entity/WeightLogEntity.java`
 
 **Goal + biometric profile (G1, `mezo-2hp` — date-less owned aggregates)**
-- `feature/goal/{controller/GoalController,service/GoalService,mapper/GoalMapper,repository/GoalRepository,entity/GoalEntity}.java` + `feature/goal/GoalSeedData.java` (demodata active goal)
+- `feature/goal/{controller/GoalController,service/GoalService,mapper/GoalMapper,repository/GoalRepository,entity/GoalEntity}.java` + `feature/goal/GoalSeedData.java` (demodata active goal + G3 plan links)
+- **G3 plan-link aggregate (`mezo-3sc`):** `feature/goal/entity/GoalPlanLinkEntity.java`, `repository/GoalPlanLinkRepository.java`, `service/{GoalPlanLinkService,GoalTimelineService}.java`, `mapper/GoalPlanLinkMapper.java`; cascade in `service/GoalService.java#deleteGoal`; read-only train finder `feature/train/repository/MesocycleRepository.java#findByIdAndCreatedByAndDeletedFalse`
 - `feature/biometrics/profile/{controller/BiometricProfileController,service/BiometricProfileService,mapper/BiometricProfileMapper,repository/BiometricProfileRepository,entity/BiometricProfileEntity}.java`
 
 **Auth**
@@ -296,15 +309,15 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - content/seed: `ExerciseCatalogLoader.java` (master content, all profiles), `TrainSeedData.java`, `RunningSeedData.java` (demodata)
 
 **Liquibase**
-- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk + `202606181200_mezo-2hp_create_goal.sql` for `goal` + `biometric_profile`)
+- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk + `202606181200_mezo-2hp_create_goal.sql` for `goal` + `biometric_profile` + `202606181600_mezo-3sc_create_goal_plan_link.sql` for `goal_plan_link`)
 
 **Test framework**
 - `support/AbstractIntegrationTest.java`, `ApiIntegrationTest.java`, `ResetDatabase.java` (TRUNCATE list now incl. `goal, biometric_profile`), `DatabasePopulator.java`, `populator/{UserPopulator,TrainPopulator,RunningPopulator,GoalPopulator,BiometricProfilePopulator}.java`
-- canonical ITs: `feature/biometrics/BiometricsContractIT.java`, `feature/train/ProvenanceRoundTripIT.java`; G1: `feature/goal/{GoalServiceIT,GoalContractIT}.java`, `feature/biometrics/profile/{BiometricProfileServiceIT,BiometricProfileContractIT}.java`
+- canonical ITs: `feature/biometrics/BiometricsContractIT.java`, `feature/train/ProvenanceRoundTripIT.java`; G1: `feature/goal/{GoalServiceIT,GoalContractIT}.java`, `feature/biometrics/profile/{BiometricProfileServiceIT,BiometricProfileContractIT}.java`; G3: `feature/goal/{GoalPlanLinkServiceIT,GoalTimelineServiceIT,GoalTimelineContractIT}.java`
 
 **Frontend seam**
-- `frontend/src/lib/api.ts` (`apiFetch`, `ApiError`, `setToken`, `API_BASE`), `lib/mode.ts` (`isMockMode`), `lib/auth.ts` (`bootstrapOwnerToken`), `lib/api.gen.ts` (generated), `lib/biometricsApi.ts`, `lib/trainApi.ts`, `lib/runningApi.ts`, `lib/goalApi.ts`, `lib/biometricProfileApi.ts`
-- `frontend/src/data/hooks.ts` (single FE↔data boundary), `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` (dual-mode)
+- `frontend/src/lib/api.ts` (`apiFetch`, `ApiError`, `setToken`, `API_BASE`), `lib/mode.ts` (`isMockMode`), `lib/auth.ts` (`bootstrapOwnerToken`), `lib/api.gen.ts` (generated), `lib/biometricsApi.ts`, `lib/trainApi.ts`, `lib/runningApi.ts`, `lib/goalApi.ts`, `lib/goalLinkApi.ts` (G3 timeline/attach/detach), `lib/biometricProfileApi.ts`
+- `frontend/src/data/hooks.ts` (single FE↔data boundary), `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` (dual-mode; G3 `useGoal` populates real linked plans from the timeline)
 - mock-only (no backend yet): `frontend/src/data/fuel.ts`, `pantry.ts`, `fuelWeek.ts`, `insights.ts`, `people.ts`
 
 **House-standard references (linked, not restated)**

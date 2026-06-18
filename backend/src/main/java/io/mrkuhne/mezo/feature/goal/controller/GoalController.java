@@ -1,9 +1,14 @@
 package io.mrkuhne.mezo.feature.goal.controller;
 
 import io.mrkuhne.mezo.api.controller.GoalApi;
+import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
+import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
+import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
+import io.mrkuhne.mezo.feature.goal.service.GoalTimelineService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
 import java.util.UUID;
@@ -16,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class GoalController implements GoalApi {
 
     private final GoalService goalService;
+    private final GoalPlanLinkService goalPlanLinkService;
+    private final GoalTimelineService goalTimelineService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -51,5 +58,20 @@ public class GoalController implements GoalApi {
     @Override
     public GoalResponse archiveGoal(UUID id) {
         return goalService.archiveGoal(currentUserId.get(), id);
+    }
+
+    @Override
+    public GoalTimelineResponse listGoalTimeline(UUID id) {
+        return goalTimelineService.getTimeline(currentUserId.get(), id);
+    }
+
+    @Override
+    public GoalPlanLinkResponse attachGoalPlan(UUID id, GoalPlanAttachRequest goalPlanAttachRequest) {
+        return goalPlanLinkService.attachPlan(currentUserId.get(), id, goalPlanAttachRequest);
+    }
+
+    @Override
+    public void detachGoalPlan(UUID id, UUID linkId) {
+        goalPlanLinkService.detachPlan(currentUserId.get(), id, linkId);
     }
 }

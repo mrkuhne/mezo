@@ -29,13 +29,13 @@ The **Me** area is the user's personal hub: who they are (`Profil`), their long-
 | Sub-feature | Route | FE mock | FE real | Backend |
 |---|---|---|---|---|
 | `Profil` | `/me` (index) | ✅ | n/a (no endpoint consumed) | ✅ `biometric_profile` (G1) — table+API exist, FE not yet wired |
-| `Cél` (goal/strategy) | `/me/goals` | ✅ | ✅ active goal | ✅ `goal` (G1; insights/factors/links still mock) |
+| `Cél` (goal/strategy) | `/me/goals` | ✅ | ✅ active goal | ✅ `goal` (G1) + `goal_plan_link` links (G3); insights/factors still mock |
 | `Súly` (weight log + trend) | `/me/weight` | ✅ | ✅ weight log | ✅ `weight_log` (G1; trends still mock) |
 | `Alvás` (sleep) | `/me/sleep` | ✅ | ✅ sleep log | ✅ `sleep_log` (trends/target still mock) |
 | `Emberek` (People) | `/me/people` | ✅ | n/a (no endpoint) | 🔶 none |
 | `Tudás` (Knowledge) | `/me/knowledge` | ✅ | n/a | 🔶 Insights-domain data (see §5.5 — out of Me scope) |
 
-Only the *log arrays* (`weightLog`, `sleepLog`) and the **active goal** swap mock↔real; weight/sleep trends, target, factors, insights, linked mesocycles, people, and patterns are **always mock**, even in real mode — they describe the Phase-3 AI brain that does not yet compute them.
+Only the *log arrays* (`weightLog`, `sleepLog`), the **active goal**, and (since G3) its **linked mesocycles** swap mock↔real; weight/sleep trends, target, factors, insights, people, and patterns are **always mock**, even in real mode — they describe the Phase-3 AI brain that does not yet compute them.
 
 **`Súly` is now a first-class tab (goal-system slice G2, issue `mezo-9sv`):** the daily weight log + trend chart + trend cells were lifted out of `GoalsView` into a dedicated **`WeightView`** at `/me/weight` (`router.tsx:95`, `MeSubNav.tsx:7`), leaving `Cél`/`GoalsView` as **goal/strategy only** (hero + Mezo insights + factors + linked mesos). The split is pure IA — no backend change, both views reuse the same G1 hooks (`useWeight`/`useGoal`).
 
@@ -51,7 +51,7 @@ Specs of record: **[`docs/superpowers/specs/2026-06-08-me-domain-sheets-design.m
 Read-only dashboard: concentric avatar + `user.name`/`handle`, member/streak/mesocycle stats (`ProfileStat`), an "Identity goal" card (`identityGoal.quote`), "Aktív területek" PERMA-style bars (`areas`), two `EntryCard` shortcuts that `navigate('/me/knowledge')` and `navigate('/me/people')`, quick-setting rows, and a version footer. The gear chip calls `onOpenSettings()` → `SettingsSheet` (theme toggle via `useTheme` + a read-only notification overview).
 
 ### `Cél` (`views/GoalsView.tsx`) — ✅ goal/strategy only
-The long-term goal & strategy surface — **no daily weight log here anymore** (that moved to `Súly`, G2). A tappable goal hero (kg progress track start→target, tempo/projection stats, identity frame) opens **`EditGoalSheet`** — **display-only by deliberate decision** (the G1 goal write/lifecycle endpoints exist on the backend but `EditGoalSheet` does not yet POST; the writable editor is G4). In real mode the hero renders the **server's active goal** (mapped via `toGoal`); in mock it is the static `mockGoal`. Below the hero: Mezo `InsightCard`s (`weightTrends.insights`), `FactorCard`s + a decorative `ToolChipRow`, and linked-mesocycle cards (`LinkedMesoCard`, still mock — G3). `GoalsView` calls `useGoal()` (goal + linkedMesocycles) and `useWeight()` **only for `weightTrends`** (the hero's tempo/projection stats) — `GoalsView.tsx:30-31`. The `WeightChart`/`TrendCell`/`WeightLogSheet`/period-toggle it used to own are now in `WeightView`.
+The long-term goal & strategy surface — **no daily weight log here anymore** (that moved to `Súly`, G2). A tappable goal hero (kg progress track start→target, tempo/projection stats, identity frame) opens **`EditGoalSheet`** — **display-only by deliberate decision** (the G1 goal write/lifecycle endpoints exist on the backend but `EditGoalSheet` does not yet POST; the writable editor is G4). In real mode the hero renders the **server's active goal** (mapped via `toGoal`); in mock it is the static `mockGoal`. Below the hero: Mezo `InsightCard`s (`weightTrends.insights`), `FactorCard`s + a decorative `ToolChipRow`, and linked-mesocycle cards (`LinkedMesoCard`) — **real in real mode since G3** (built from the goal's plan-link timeline; static `mockGoal.mesocycles` in mock). `GoalsView` calls `useGoal()` (goal + linkedMesocycles) and `useWeight()` **only for `weightTrends`** (the hero's tempo/projection stats) — `GoalsView.tsx:30-31`. The `WeightChart`/`TrendCell`/`WeightLogSheet`/period-toggle it used to own are now in `WeightView`.
 
 ### `Súly` (`views/WeightView.tsx`) — ✅ weight backed (G2)
 The daily body-weight log + trend, split out of `Cél` so weight is a first-class tab (`/me/weight`). A daily-log hero shows the latest weight number + 7-day rate/avg and a **"Súly naplózása"** CTA that opens **`WeightLogSheet`** (±0.1/±0.5 stepper, note ≤200 chars, a contextual "mezo observation" line) → `logWeight`. A period toggle (`7d` / `30d` / `all`) feeds **`WeightChart`** (start/target reference lines from the goal — see below). Below: two **`TrendCell`**s (7d / 4w). `WeightView` calls `useWeight()` (`weightLog`/`weightTrends`/`logWeight`) and `useGoal()` **only for the chart's `startWeight`/`targetWeight` reference lines + a `currentWeight` fallback when `weightLog` is empty** (`WeightView.tsx:14-15,19,63`) — the same goal-coupling pattern flagged in `mezo-4nu` (the target line on the weight chart is a real product feature; `useGoal` always resolves a goal, falling back to `mockGoal` in real mode).
@@ -73,9 +73,11 @@ The single FE↔data boundary is **`frontend/src/data/hooks.ts`**. Each hook bra
 WeightView ─ useWeight() ┬─ mock:  initialWeightLog (initialData, sync)
 (weightHooks.ts:11)      └─ real:  weightApi.list ──► GET  /api/biometrics/weight
                                    weightApi.log  ──► POST /api/biometrics/weight ──► weight_log
-GoalsView ─┬─ useGoal()  ─┬─ mock:  mockGoal (initialData=null query)
-(goalHooks.ts:35)        └─ real:  goalApi.list ──► GET /api/goals
+GoalsView ─┬─ useGoal()  ─┬─ mock:  mockGoal + static linkedMesocycles
+(goalHooks.ts:54)        └─ real:  goalApi.list ──► GET /api/goals
                                    pick active → toGoal(res, weightLog) ──► Goal domain shape
+                                   + goalLinkApi.timeline(goalId) ──► GET /api/goals/{id}/timeline
+                                        toLinkedMesocycles(links) → linkedMesocycles + goal.mesocycles
                                         │
                           GoalController (implements api GoalApi)
                             └─ GoalService ─ GoalRepository (JpaRepository, not OwnedRepository)
@@ -90,11 +92,12 @@ GoalsView ─┬─ useGoal()  ─┬─ mock:  mockGoal (initialData=null query
 - `weightTrends` stays the static mock until the G5 engine computes real trends.
 - `weightApi` (`frontend/src/lib/biometricsApi.ts:13-23`): `GET/POST /api/biometrics/weight` over `apiFetch`. POST body `{date, weightKg, note}` typed `satisfies LogWeightRequest`.
 
-**Goal (`useGoal`, `frontend/src/data/goalHooks.ts:35-53`):** a **real** hook now.
+**Goal (`useGoal`, `frontend/src/data/goalHooks.ts:54`):** a **real** hook now.
 - Reads the active goal: `useQuery(['goals'], queryFn = mock ? () => null : goalApi.list)`; in real mode picks `goals.find(g => g.status === 'active')` (falls back to the first goal, else `mockGoal`).
 - Also reads `['weightLog']` (no `queryFn`, shares the `useWeight` cache) so `toGoal` can derive `currentWeight` from the latest weight entry.
-- **`toGoal(res, weightLog)` (`goalHooks.ts:12-33`)** is a **back-compat adapter**: maps the new `GoalResponse` onto the existing `Goal` domain type so `GoalsView` stays untouched (G4 restructures it). Notable mappings: trajectory `maintain → 'maintenance'` `GoalKind`; `rateTargetPctPerWeek` kept as a raw `%` magnitude with unit `'%/hét'` + arrow derived from trajectory (legacy mock was kg/hét — G4 reworks this panel); `mesocycles: []` (populated by `GoalPlanLink` in G3).
-- Returns `{ goal, linkedMesocycles }` — `linkedMesocycles` is still the static mock (G3 wires the real plan links).
+- **`toGoal(res, weightLog)`** is a **back-compat adapter**: maps the new `GoalResponse` onto the existing `Goal` domain type so `GoalsView` stays untouched (G4 restructures it). Notable mappings: trajectory `maintain → 'maintenance'` `GoalKind`; `rateTargetPctPerWeek` kept as a raw `%` magnitude with unit `'%/hét'` + arrow derived from trajectory (legacy mock was kg/hét — G4 reworks this panel); `mesocycles: []` from `toGoal` itself (then **filled from the timeline** — next bullet).
+- **Real linked plans (G3):** a third `useQuery(['goal', goalId, 'timeline'], () => goalLinkApi.timeline(goalId), { enabled: !mock && !!goalId })` fetches the active goal's plan-link timeline; `toLinkedMesocycles(timeline)` maps each `GoalTimelineResponse.links[i].plan` (`GoalPlanRef`) into the legacy `LinkedMeso` (`plan.title→shortTitle`, `plan.status→status`, `huMonthDay(plan.startDate/endDate)`, `plan.weeks`), and `goal.mesocycles = links.map(l => l.planId)`. So `GoalsView`'s "Cél alatt fut" `LinkedMesoCard`s render **real** links with no GoalsView change.
+- Returns `{ goal, linkedMesocycles }` — in real mode both are server-derived (mock keeps `mockGoal` + the static `linkedMesocycles`).
 
 **Sleep (`useSleep`, `hooks.ts:104-129`):** identical shape via `sleepApi` (`biometricsApi.ts:25-39`), `GET/POST /api/biometrics/sleep`. `useSleep` exposes `lastNight = sleepLog[sleepLog.length-1]` — this **silently depends on the date-ascending ordering** the backend `OwnedRepository.findAllOwned` guarantees.
 
@@ -145,8 +148,8 @@ The Me area's seams are mostly **conceptual/narrative** in the mock (illustratin
 ### 5.1 Today ↔ Me (wired)
 `useProfile()` re-exports the same `user: UserMeta` object defined in `data/today.ts` (imported into `hooks.ts`). The whole `biometrics` backend feature is shared: Today's check-ins (`useCheckins` → `checkinApi`, `POST /api/biometrics/checkin`) are siblings of Me's weight/sleep under one backend package `feature/biometrics/{weight,sleep,checkin}` and one API client file `frontend/src/lib/biometricsApi.ts`. **Contract crossing the seam:** `UserMeta` (profile), `CheckInResponse`/`SaveCheckInRequest` (Today). `user.mesoLabel`/streak shown in `ProfileView` come from Today's mock.
 
-### 5.2 Train ↔ `Cél` (mock narrative → G3 plan-links)
-`Goal.mesocycles: string[]` holds meso IDs (`meso-hyp-04`…) resolved via `linkedMesocycles` (`data/goals.ts`) and rendered by `LinkedMesoCard`. In **real mode** `toGoal` sets `mesocycles: []` (the `GoalResponse` carries no plan-links yet); in mock they remain the static strings. The join to the real Train backend (`feature/train`) is **goal-system slice G3** (`GoalPlanLink`). **Contract that would cross when wired:** a goal↔mesocycle plan-link (id/label pair).
+### 5.2 Train ↔ `Cél` (real plan-links since G3)
+`Goal.mesocycles: string[]` holds plan IDs resolved via `linkedMesocycles` and rendered by `LinkedMesoCard`. **Real since G3:** `useGoal` fetches `goalLinkApi.timeline(goalId)` (`GET /api/goals/{id}/timeline`) and builds both `goal.mesocycles` (= `links.map(l => l.planId)`) and `linkedMesocycles` (`Record<planId, LinkedMeso>` from each `link.plan`). In **mock mode** they remain the static strings + `data/goals.ts` `linkedMesocycles`. **Contract crossing the seam:** `GoalTimelineResponse` (`links[]` of `GoalPlanLinkResponse`, each with an embedded `GoalPlanRef` plan summary).
 
 ### 5.3 Fuel ↔ `Alvás` (deferred seam — explicit)
 `SleepLogResponse.mealToSleep` is hardcoded `0` (`SleepLogMapper.java`, `constant = "0"`) "until Fuel lands." This is *the* documented future seam where Fuel meal-timing feeds the sleep view's meal-to-sleep stat. Sleep `FactorCard`s ("Kitchen close 21:30", magnézium stack) are narrative only today.
@@ -205,7 +208,7 @@ Create `api/feature/people/people.yml` (mention + person endpoints), a `feature/
 `useWeight`/`useSleep` are the templates: a `useQuery` with `queryFn = mock ? () => mockSeed : api.list`, `initialData` only in mock; a `useMutation` whose `onSuccess` does `setQueryData` in mock and `invalidateQueries` in real. Keep the hook's returned shape unchanged so views don't move. (`useGoal` is the *read-only* variant — a `useQuery` with no mutation yet.)
 
 ### Make `EditGoal` writable (G4) — the Goal backend already exists
-The **Goal backend is live** (G1): contract `api/feature/goal/goal.yml`, `feature/goal/` package, `goalApi` client (`frontend/src/lib/goalApi.ts` — `list/get/create/update/remove/activate/archive`), and a real read-path in `useGoal()`. What remains for **G4** is to make `EditGoalSheet` *write*: add a `createGoal`/`updateGoal`/`activate`/`archive` mutator to `useGoal()` (dual-mode, mirroring `useWeight`'s mutation), wire the sheet, and restructure `GoalsView` to render the real `GoalResponse` natively (dropping the `toGoal` back-compat adapter). G3 adds the plan-links that fill `Goal.mesocycles`; G4/G5 add the TDEE/prescription engine. (The Súly-tab UI move already shipped in G2 — `WeightView` at `/me/weight`.) To wire the **`biometric_profile`** into the FE (also a later slice): add a `useBiometricProfile()` hook over `biometricProfileApi` (`frontend/src/lib/biometricProfileApi.ts`, `get`/`upsert`) and a profile editor.
+The **Goal backend is live** (G1): contract `api/feature/goal/goal.yml`, `feature/goal/` package, `goalApi` client (`frontend/src/lib/goalApi.ts` — `list/get/create/update/remove/activate/archive`), and a real read-path in `useGoal()`. What remains for **G4** is to make `EditGoalSheet` *write*: add a `createGoal`/`updateGoal`/`activate`/`archive` mutator to `useGoal()` (dual-mode, mirroring `useWeight`'s mutation), wire the sheet, and restructure `GoalsView` to render the real `GoalResponse` natively (dropping the `toGoal` back-compat adapter). G3 has wired the plan-links that fill `Goal.mesocycles` (real `linkedMesocycles` via `goalLinkApi.timeline`); G4/G5 add the TDEE/prescription engine. (The Súly-tab UI move already shipped in G2 — `WeightView` at `/me/weight`.) To wire the **`biometric_profile`** into the FE (also a later slice): add a `useBiometricProfile()` hook over `biometricProfileApi` (`frontend/src/lib/biometricProfileApi.ts`, `get`/`upsert`) and a profile editor.
 
 Obligations that apply to every change here: **contract-first** for any boundary DTO, **dual-mode** parity (mock + real), and **both FE test modes green** plus the backend ITs. House standards: **[`docs/references/`](../references/)** (`java_package_structure`, `spring_patterns`, `error_handling`, `liquibase_conventions`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `api_contract_conventions`).
 
@@ -220,7 +223,7 @@ Obligations that apply to every change here: **contract-first** for any boundary
 
 **Frontend (Vitest + MSW, both modes):**
 - `data/weightHooks.test.tsx` (renamed from `goalsHooks.test.tsx`) / `data/sleepHooks.test.tsx`: real-mode (`vi.stubEnv('VITE_USE_MOCK','false')`) — assert `useQuery` loads from MSW and that `logWeight`/`logSleep` POST and the entry appears after invalidation (server-truth re-fetch). Sleep asserts `durationH` mapping and `lastNight` recompute.
-- `data/goalHooks.test.tsx` (G1): asserts `useGoal` picks the active goal from `GET /api/goals` (MSW) and that `toGoal` maps `GoalResponse → Goal` (currentWeight from the latest weight entry, trajectory→kind).
+- `data/goalHooks.test.tsx` (G1+G3): asserts `useGoal` picks the active goal from `GET /api/goals` (MSW) and that `toGoal` maps `GoalResponse → Goal` (currentWeight from the latest weight entry, trajectory→kind); a second test stubs `GET /api/goals/g1/timeline` with one mesocycle link and asserts `goal.mesocycles === ['meso-1']` + `linkedMesocycles['meso-1']` is built from the link's plan.
 - `data/meData.test.tsx`, `meData2.test.tsx`, `meHooks.test.tsx`: mock-data shape/hook tests (profile, people).
 - Per-sheet: `WeightLogSheet.test.tsx`, `SleepLogSheet.test.tsx`, `EditGoalSheet.test.tsx`, `PersonLogSheet.test.tsx`, `PersonDetailSheet.test.tsx`, `SettingsSheet.test.tsx`. Per-view: `WeightView.test.tsx` (G2 — Súly header + trend cells + log CTA opens `WeightLogSheet`), `GoalsView.test.tsx` (asserts the trend cells are **absent** — moved to `/me/weight`), `SleepView.test.tsx`, `ProfileView.test.tsx`, `PeopleView.test.tsx`. Plus `MeScreen.test.tsx`, `MeSubNav.test.tsx` (asserts the `Súly` tab links to `/me/weight`), `TimePicker.test.tsx`, shared-card tests, and `app/navigation.test.tsx` (exercises `/me` + the settings theme toggle).
 
@@ -247,7 +250,7 @@ cd frontend && pnpm parity                      # Playwright parity screenshots
 - **`OwnedRepository.findAllOwned` requires a `date` field** (JPQL `order by e.date asc`); both weight/sleep have one. `useSleep.lastNight` silently depends on this ordering — a date-less owned entity would need its own finder.
 - **Belt-and-braces soft delete:** `findAllOwned` filters `deleted=false` AND each entity carries `@SQLRestriction` — intentional, keep both.
 - **Mock-only, no backend:** `Emberek`/People, and all weight/sleep-trend/factor/insight/pattern/linked-meso data and `ToolChipRow`s. (The legacy `user_profiles` table is still unexposed; `Profil` reads only static mock. The active **goal** is now backed — no longer in this list.)
-- **Deferred to later goal-system slices (G3/G4/G5):** the Train→`Cél` mesocycle plan-links that fill `Goal.mesocycles` (G3); a writable `EditGoalSheet` + native `GoalResponse` rendering in `GoalsView` (dropping `toGoal`) (G4); the TDEE/prescription engine + real weight/goal trends (G4/G5); wiring `biometric_profile` into the FE (`useBiometricProfile`). (The Súly-tab UI move shipped in G2.)
+- **Deferred to later goal-system slices (G4/G5):** a writable `EditGoalSheet` + native `GoalResponse` rendering in `GoalsView` (dropping `toGoal`) (G4); the TDEE/prescription engine + real weight/goal trends (G4/G5); wiring `biometric_profile` into the FE (`useBiometricProfile`); the timeline-lane UI + attach/detach hub (G4). (The Train→`Cél` mesocycle plan-links that fill `Goal.mesocycles` shipped in G3; the Súly-tab UI move shipped in G2.)
 - **Deferred to Phase 3** (Spring AI, pgvector, RAG — see [`docs/milestones/roadmap.md`](../milestones/roadmap.md)): the pattern engine that the factors/insights/relation-patterns *describe* but do not compute; the Fuel→Sleep `mealToSleep` join; a People backend.
 
 ## 10. Key files
@@ -265,11 +268,12 @@ cd frontend && pnpm parity                      # Playwright parity screenshots
 **Frontend — data layer**
 - `frontend/src/data/hooks.ts` — the boundary (`useProfile`:75, `useSleep`:79, `usePeople`:106; re-exports `useWeight`:179, `useGoal`:180)
 - `frontend/src/data/weightHooks.ts` — `useWeight` (weight log+trend, dual-mode)
-- `frontend/src/data/goalHooks.ts` — `useGoal` (real active-goal read; `toGoal` adapter at :12)
+- `frontend/src/data/goalHooks.ts` — `useGoal` (real active-goal read + real plan-link timeline; `toGoal` + `toLinkedMesocycles` adapters)
 - `frontend/src/data/{me,goals,sleep,people}.ts` — mock data (`mockGoal`/`linkedMesocycles` in `goals.ts`) + people affect helpers
 - `frontend/src/data/types.ts:140-287` — Me domain types + write-contract input DTOs
 - `frontend/src/lib/biometricsApi.ts` — `weightApi`/`sleepApi`/`checkinApi` clients
 - `frontend/src/lib/goalApi.ts` — `goalApi` (`list/get/create/update/remove/activate/archive`)
+- `frontend/src/lib/goalLinkApi.ts` — `goalLinkApi` (`timeline`/`attach`/`detach`; G3 — `useGoal` consumes `timeline`)
 - `frontend/src/lib/biometricProfileApi.ts` — `biometricProfileApi` (`get`/`upsert`; not yet consumed)
 - `frontend/src/lib/mode.ts` (`isMockMode`), `frontend/src/lib/api.ts` (`apiFetch`)
 - Consumers: `frontend/src/features/me/views/WeightView.tsx:14-15` (`useWeight` log/trend + `useGoal` chart reference lines), `frontend/src/features/me/views/GoalsView.tsx:30-31` (`useGoal` hero + `useWeight` for `weightTrends`), `frontend/src/features/fuel/views/FuelStackView.tsx` (`useGoal().linkedMesocycles`)

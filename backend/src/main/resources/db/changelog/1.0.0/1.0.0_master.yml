@@ -97,3 +97,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606181200_mezo-2hp_create_goal.sql
+  - changeSet:
+      id: "1.0.0:202606181600_mezo-3sc_create_goal_plan_link"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606181600_mezo-3sc_create_goal_plan_link.sql
