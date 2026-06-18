@@ -21,12 +21,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Seeds ONE active demo goal for the owner under {@code @Profile("demodata")} so the Cél hero
+ * Seeds ONE active demo goal ("Nyári cut") + its plan-links for the owner as
+ * <strong>opt-in demo data</strong>: active only under {@code @Profile("demofixtures")}, so a plain
+ * {@code demodata} app starts clean with the owner only
+ * ({@link io.mrkuhne.mezo.feature.auth.OwnerSeedData}) — a real user starts with NO goal and creates
+ * one via the wizard (empty-state CTA). Run with
+ * {@code --spring.profiles.active=demodata,demofixtures} to load the demo content so the Cél hero
  * renders in REAL mode. Mirrors {@link io.mrkuhne.mezo.feature.train.RunningSeedData}'s owner
  * resolution + idempotency. Idempotent: no-op if any goal already exists.
  */
 @Component
-@Profile("demodata")
+@Profile("demofixtures")
 @Order(120) // after OwnerSeedData (0) and the train/running seeds (100/110) — needs the seeded owner
 @RequiredArgsConstructor
 public class GoalSeedData implements CommandLineRunner {

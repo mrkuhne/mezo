@@ -22,10 +22,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Seeds the owner's "Futás" (interval-running) blocks under {@code @Profile("demodata")} so a plain
- * demodata app starts with the running plan present (alongside the owner from
- * {@link io.mrkuhne.mezo.feature.auth.OwnerSeedData}). Mirrors {@link TrainSeedData}'s owner
- * resolution + idempotency pattern.
+ * Seeds the owner's "Futás" (interval-running) blocks as <strong>opt-in demo data</strong>: active
+ * only under {@code @Profile("demofixtures")}, so a plain {@code demodata} app starts clean with the
+ * owner only ({@link io.mrkuhne.mezo.feature.auth.OwnerSeedData}). Run with
+ * {@code --spring.profiles.active=demodata,demofixtures} to load the demo content; every block is
+ * owned by the seeded owner ({@code demodata} supplies it, hence the dependency on both profiles).
+ * Mirrors {@link TrainSeedData}'s owner resolution + idempotency pattern.
  *
  * <p>Seeds THREE blocks: an active 8-week explosiveness plan (the user's real plan: Kedd sprint +
  * Péntek pyramid, progressive), a planned aerobic-base block, and an archived winter base block.
@@ -35,7 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
  * and in tests).
  */
 @Component
-@Profile("demodata")
+@Profile("demofixtures")
 @Order(110) // after OwnerSeedData (and after TrainSeedData's 100) — needs the seeded owner
 @RequiredArgsConstructor
 public class RunningSeedData implements CommandLineRunner {
