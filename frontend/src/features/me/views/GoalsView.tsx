@@ -4,6 +4,7 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
+import { GhostState } from '@/components/ui/GhostState'
 import { ToolChipRow } from '@/components/ui/ToolChipRow'
 import type { Tool } from '@/components/ui/ToolChip'
 import { useGoal, useWeight } from '@/data/hooks'
@@ -32,6 +33,29 @@ export function GoalsView() {
   const { goal, linkedMesocycles } = useGoal()
   const { weightTrends } = useWeight()
   const [sheet, setSheet] = useState<'goal' | null>(null)
+
+  // Real mode with no active goal: empty "set up a goal" state (mezo-72d). Must
+  // come BEFORE any goal.X read below, and stays null-safe for the whole render.
+  if (!goal) {
+    return (
+      <>
+        <div className="page-header">
+          <div>
+            <Eyebrow brand>Me · Cél</Eyebrow>
+            <PageTitle className="mt-sm">Hosszú cél</PageTitle>
+          </div>
+        </div>
+        <div style={{ padding: '8px 24px 16px' }}>
+          <GhostState
+            lines={3}
+            message="Még nincs aktív célod — hozz létre egyet, és a Mezo köré szervezi a terveket."
+            ctaLabel="＋ Új cél"
+            onCta={() => navigate('/me/goals/new')}
+          />
+        </div>
+      </>
+    )
+  }
 
   const progressed = goal.startWeight - goal.currentWeight
   const remaining = goal.currentWeight - goal.targetWeight

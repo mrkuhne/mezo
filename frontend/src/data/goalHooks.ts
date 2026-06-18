@@ -76,11 +76,14 @@ export function useGoal() {
   })
 
   if (mock) {
-    return { goal: mockGoal, linkedMesocycles: mockLinkedMesocycles }
+    return { goal: mockGoal as Goal | null, linkedMesocycles: mockLinkedMesocycles }
   }
 
+  // Real mode with no active goal: empty "set up a goal" state. (G1 used to fall
+  // back to mockGoal here, which surfaced the demo placeholder to real users —
+  // see mezo-72d.) GoalsView guards on `goal === null` and renders the setup CTA.
   if (!activeGoal) {
-    return { goal: mockGoal, linkedMesocycles: mockLinkedMesocycles }
+    return { goal: null, linkedMesocycles: {} }
   }
 
   const goal: Goal = toGoal(activeGoal, (weightLog as WeightEntry[]) ?? [])

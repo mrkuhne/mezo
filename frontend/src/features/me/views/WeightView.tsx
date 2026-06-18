@@ -16,7 +16,11 @@ export function WeightView() {
   const [period, setPeriod] = useState<Period>('30d')
   const [logOpen, setLogOpen] = useState(false)
 
-  const latest = weightLog.length ? weightLog[weightLog.length - 1].value : goal.currentWeight
+  // goal may be null in real mode when no goal is set up yet (mezo-72d). Fall back
+  // to the latest logged weight for the hero number and the chart reference lines.
+  const latest = weightLog.length ? weightLog[weightLog.length - 1].value : (goal?.currentWeight ?? 0)
+  const chartStart = goal?.startWeight ?? latest
+  const chartTarget = goal?.targetWeight ?? latest
 
   return (
     <>
@@ -60,7 +64,7 @@ export function WeightView() {
             ))}
           </div>
         </div>
-        <WeightChart entries={weightLog} startWeight={goal.startWeight} targetWeight={goal.targetWeight} period={period} />
+        <WeightChart entries={weightLog} startWeight={chartStart} targetWeight={chartTarget} period={period} />
       </div>
 
       {/* Trend cells */}
