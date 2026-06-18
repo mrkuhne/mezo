@@ -39,6 +39,9 @@ test('useGoal (real mode) maps the active GoalResponse to the Goal shape', async
   await waitFor(() => expect(result.current.goal?.title).toBe('Nyári cut'))
   expect(result.current.goal?.kind).toBe('cut')
   expect(result.current.goal?.targetWeight).toBe(80)
+  // rateTarget is the goal's TARGET pace in %BW/week (rateTargetPctPerWeek) —
+  // contract-native %/hét, NOT the observed kg/hét trend (mezo-5om).
+  expect(result.current.goal?.rateTarget).toEqual({ value: 0.7, unit: '%/hét', direction: 'down' })
 })
 
 test('useGoal (real mode) returns a null goal + empty links when no goal exists', async () => {

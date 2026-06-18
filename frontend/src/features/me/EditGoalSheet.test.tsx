@@ -17,6 +17,18 @@ test('shows the goal fields read-only', () => {
   expect(screen.getByText(`${goal.targetWeight} kg`)).toBeInTheDocument()
 })
 
+// The target/cél pace must render as %/hét (sourced from rateTargetPctPerWeek →
+// goal.rateTarget), with the Hungarian decimal comma. It is the GOAL TARGET, NOT
+// the observed kg/hét trend the hero shows — the two are distinct quantities.
+test('shows the target pace as %/hét with a Hungarian decimal comma', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  render(<EditGoalSheet onClose={() => {}} goal={goal} goalId={goal.id} />, { wrapper: QueryWrapper })
+  expect(screen.getByText('Cél tempó')).toBeInTheDocument()
+  expect(screen.getByText('0,6 %/hét')).toBeInTheDocument()
+  // the stale kg/hét unit must NOT be surfaced on the goal target field
+  expect(screen.queryByText(/kg\/hét/)).not.toBeInTheDocument()
+})
+
 test('closes on Kész', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   const onClose = vi.fn()

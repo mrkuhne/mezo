@@ -26,9 +26,10 @@ function toGoal(res: GoalResponse, weightLog: WeightEntry[]): Goal {
     startWeight: Number(res.startWeightKg),
     currentWeight: latest,
     targetWeight: Number(res.targetWeightKg ?? res.startWeightKg),
-    // rateTarget: the contract carries a %/week magnitude; the legacy mock used
-    // kg/hét. Keep the raw % value with a '%/hét' unit and derive the arrow from
-    // the trajectory (bulk = up, cut/maintain = down) — Task 6 (mezo-5om) reworks this.
+    // rateTarget = the goal's TARGET pace. The contract carries it as %BW/week
+    // (rateTargetPctPerWeek), so the unit is '%/hét' — NOT the kg/hét the legacy
+    // mock assumed, and NOT the observed kg/hét trend the hero shows. The arrow is
+    // derived from the trajectory (bulk = up, cut/maintain = down). (mezo-5om)
     rateTarget: { value: Number(res.rateTargetPctPerWeek), unit: '%/hét', direction: res.trajectory === 'bulk' ? 'up' : 'down' },
     mesocycles: [], // populated from the goal timeline (G3) — see useGoal
     identityFrame: res.identityFrame ?? '',

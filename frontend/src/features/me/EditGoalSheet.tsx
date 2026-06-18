@@ -41,7 +41,12 @@ export function EditGoalSheet({
             <FieldRow label="Típus" val="Fogyás · cut" />
             <FieldRow label="Start súly" val={`${goal.startWeight} kg`} />
             <FieldRow label="Cél súly" val={`${goal.targetWeight} kg`} />
-            <FieldRow label="Heti tempó" val={`${goal.rateTarget.value} ${goal.rateTarget.unit}`} />
+            {/* Target/cél pace = rateTargetPctPerWeek (%BW/week → %/hét), NOT the
+                observed kg/hét trend the hero shows (mezo-5om). HU decimal comma. */}
+            <FieldRow
+              label="Cél tempó"
+              val={`${String(goal.rateTarget.value).replace('.', ',')} ${goal.rateTarget.unit}`}
+            />
 
             <div className="col gap-sm mt-md">
               <LabelMono>Identity frame</LabelMono>

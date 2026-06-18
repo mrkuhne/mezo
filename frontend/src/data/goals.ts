@@ -10,7 +10,9 @@ export const goal: Goal = {
   startWeight: 81.4,
   currentWeight: 78.6,
   targetWeight: 73.0,
-  rateTarget: { value: 0.5, unit: 'kg/hét', direction: 'down' },
+  // Target/cél pace is %BW/week (mirrors goalResponse.rateTargetPctPerWeek below) —
+  // a DIFFERENT quantity from the observed kg/hét trend the hero shows (mezo-5om).
+  rateTarget: { value: 0.6, unit: '%/hét', direction: 'down' },
   mesocycles: ['meso-hyp-04', 'meso-str-02', 'meso-maint-01'],
   identityFrame: 'Egészséges erő · nem csak alak — a teljes energiám jobb 73kg-on a Reta cycle után.',
 }
