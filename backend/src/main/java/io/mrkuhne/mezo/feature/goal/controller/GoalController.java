@@ -1,7 +1,10 @@
 package io.mrkuhne.mezo.feature.goal.controller;
 
 import io.mrkuhne.mezo.api.controller.GoalApi;
+import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
+import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -51,5 +54,23 @@ public class GoalController implements GoalApi {
     @Override
     public GoalResponse archiveGoal(UUID id) {
         return goalService.archiveGoal(currentUserId.get(), id);
+    }
+
+    @Override
+    public GoalTimelineResponse listGoalTimeline(UUID id) {
+        // G3 Task 6 (mezo-3sc): replace with real timeline-service delegation
+        throw new UnsupportedOperationException("G3 Task 6: mezo-3sc");
+    }
+
+    @Override
+    public GoalPlanLinkResponse attachGoalPlan(UUID id, GoalPlanAttachRequest goalPlanAttachRequest) {
+        // G3 Task 6 (mezo-3sc): replace with real plan-link-service delegation
+        throw new UnsupportedOperationException("G3 Task 6: mezo-3sc");
+    }
+
+    @Override
+    public void detachGoalPlan(UUID id, UUID linkId) {
+        // G3 Task 6 (mezo-3sc): replace with real plan-link-service delegation
+        throw new UnsupportedOperationException("G3 Task 6: mezo-3sc");
     }
 }
