@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-06-17
+updated: 2026-06-18
 tags: [train, running, sport, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/train
