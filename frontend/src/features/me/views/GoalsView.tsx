@@ -5,7 +5,7 @@ import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
 import { ToolChipRow } from '@/components/ui/ToolChipRow'
 import type { Tool } from '@/components/ui/ToolChip'
-import { useGoals } from '@/data/hooks'
+import { useGoal, useWeight } from '@/data/hooks'
 import type { GoalKind } from '@/data/types'
 import { FactorCard } from '../components/FactorCard'
 import { InsightCard } from '../components/InsightCard'
@@ -33,7 +33,8 @@ const FACTOR_TOOLS: Tool[] = [
 ]
 
 export function GoalsView() {
-  const { goal, weightLog, weightTrends, linkedMesocycles, logWeight } = useGoals()
+  const { goal, linkedMesocycles } = useGoal()
+  const { weightLog, weightTrends, logWeight } = useWeight()
   const [period, setPeriod] = useState<Period>('30d')
   const [sheet, setSheet] = useState<'weight' | 'goal' | null>(null)
 

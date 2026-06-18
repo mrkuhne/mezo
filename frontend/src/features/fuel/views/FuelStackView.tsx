@@ -29,7 +29,7 @@ import {
   useStackRecommendations,
   useToday,
   useProfile,
-  useGoals,
+  useGoal,
 } from '@/data/hooks'
 import { buildProtocol } from '@/features/fuel/buildProtocol'
 import { StackPickerSheet } from '@/features/fuel/StackPickerSheet'
@@ -52,7 +52,7 @@ export function FuelStackView() {
   const { recommendations } = useStackRecommendations()
   const { today } = useToday()
   const { user } = useProfile()
-  const { linkedMesocycles } = useGoals()
+  const { linkedMesocycles } = useGoal()
 
   const [selectedIds, setSelectedIds] = useState<string[]>(() =>
     stash.filter(s => s.type !== 'medication').map(s => s.id),

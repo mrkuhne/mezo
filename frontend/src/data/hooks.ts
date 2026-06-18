@@ -3,11 +3,10 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
 import { localDateString } from '@/lib/dates'
-import { weightApi, sleepApi, checkinApi } from '@/lib/biometricsApi'
+import { sleepApi, checkinApi } from '@/lib/biometricsApi'
 import { today, user, briefing, briefingVariants, workout, volleyballSessions, fuelToday } from './today'
 import { initialCheckins } from './checkins'
 import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
-import { goal, weightLog as initialWeightLog, weightTrends, linkedMesocycles } from './goals'
 import { sleepLog as initialSleepLog, sleepTrends } from './sleep'
 import { peopleSummary, people, mentions as initialMentions, relationPatterns } from './people'
 import { facts, edges } from './knowledge'
@@ -16,7 +15,7 @@ import { initialChat } from './chat'
 import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './fuel'
 import { ingredients, recipes, pantrySources, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
-import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, WeightEntry, WeightLogInput, SleepEntry, SleepLogInput, Mention, MentionLogInput } from './types'
+import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, SleepEntry, SleepLogInput, Mention, MentionLogInput } from './types'
 
 export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
@@ -75,30 +74,6 @@ export function useFuelPreview() {
 
 export function useProfile() {
   return { user, identityGoal, areas, quickSettings, notifSettings, version: appVersion }
-}
-
-export function useGoals() {
-  const qc = useQueryClient()
-  const mock = isMockMode()
-  const { data: weightLog = [] } = useQuery({
-    queryKey: ['weightLog'],
-    queryFn: mock ? async () => initialWeightLog : weightApi.list,
-    // Mock mode seeds synchronously so the first render matches the Phase-1
-    // useState behavior exactly (parity + component tests). Real mode loads.
-    initialData: mock ? initialWeightLog : undefined,
-  })
-  const mutation = useMutation({
-    mutationFn: mock
-      ? async (input: WeightLogInput): Promise<WeightEntry> =>
-          ({ date: input.date, value: input.weightKg, note: input.note })
-      : weightApi.log,
-    onSuccess: (entry) => {
-      if (mock) qc.setQueryData<WeightEntry[]>(['weightLog'], prev => [...(prev ?? []), entry])
-      else qc.invalidateQueries({ queryKey: ['weightLog'] })
-    },
-  })
-  const logWeight = useCallback((input: WeightLogInput) => mutation.mutate(input), [mutation])
-  return { goal, weightLog, weightTrends, linkedMesocycles, logWeight }
 }
 
 export function useSleep() {
@@ -201,3 +176,5 @@ export function useStackRecommendations() {
 // re-exported here so consumer import paths stay `@/data/hooks`.
 export { useTrain } from './trainHooks'
 export { useRunning } from './runningHooks'
+export { useWeight } from './weightHooks'
+export { useGoal } from './goalHooks'
