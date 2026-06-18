@@ -2,7 +2,7 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: mock-only
-updated: 2026-06-14
+updated: 2026-06-18
 tags: [fuel, frontend, data-layer]
 key_files:
   - frontend/src/features/fuel

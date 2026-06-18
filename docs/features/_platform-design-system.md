@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Deep Current v2")
 type: feature-platform
 status: done
-updated: 2026-06-17
+updated: 2026-06-18
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
