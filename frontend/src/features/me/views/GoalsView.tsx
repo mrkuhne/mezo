@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Display } from '@/components/ui/Display'
@@ -27,6 +28,7 @@ const FACTOR_TOOLS: Tool[] = [
 ]
 
 export function GoalsView() {
+  const navigate = useNavigate()
   const { goal, linkedMesocycles } = useGoal()
   const { weightTrends } = useWeight()
   const [sheet, setSheet] = useState<'goal' | null>(null)
@@ -44,6 +46,9 @@ export function GoalsView() {
           <Eyebrow brand>Me · Goals</Eyebrow>
           <PageTitle className="mt-sm">Hosszú cél</PageTitle>
         </div>
+        <button type="button" className="chip" onClick={() => navigate('/me/goals/new')}>
+          <Icon name="plus" size={12} /> Új cél
+        </button>
       </div>
 
       {/* Goal hero (tap to open EditGoalSheet) */}
