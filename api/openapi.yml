@@ -22,6 +22,10 @@ tags:
     description: Daily check-in slots (biometrics)
   - name: Train
     description: Training domain — mesocycles (with volume provenance) and sport sessions
+  - name: Goal
+    description: Goal domain — goal-rooted timeline (trajectory + quality guards + window)
+  - name: BiometricProfile
+    description: Body-composition profile — the TDEE bootstrap inputs (one per owner)
 paths:
   /api/auth/login:
     post:
@@ -1068,6 +1072,273 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RunSessionLogResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/goals:
+    get:
+      tags:
+        - Goal
+      operationId: listGoals
+      summary: List the owner's goals (active first)
+      responses:
+        '200':
+          description: Goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Goal
+      operationId: createGoal
+      summary: Create a goal (status = planned)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalUpsertRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}':
+    get:
+      tags:
+        - Goal
+      operationId: getGoal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Goal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Goal
+      operationId: updateGoal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalUpsertRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Goal
+      operationId: deleteGoal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/activate':
+    post:
+      tags:
+        - Goal
+      operationId: activateGoal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/archive':
+    post:
+      tags:
+        - Goal
+      operationId: archiveGoal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Archived
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/biometrics/profile:
+    get:
+      tags:
+        - BiometricProfile
+      operationId: getBiometricProfile
+      summary: The owner's biometric profile
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiometricProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No profile yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - BiometricProfile
+      operationId: upsertBiometricProfile
+      summary: Create or replace the owner's biometric profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BiometricProfileUpsertRequest'
+      responses:
+        '200':
+          description: Upserted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BiometricProfileResponse'
         '400':
           description: Validation error
           content:
@@ -2441,3 +2712,138 @@ components:
         notes:
           type: string
           nullable: true
+    GoalResponse:
+      type: object
+      required:
+        - id
+        - title
+        - trajectory
+        - guards
+        - status
+        - startDate
+        - targetDate
+        - startWeightKg
+        - rateTargetPctPerWeek
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        trajectory:
+          type: string
+          enum:
+            - cut
+            - bulk
+            - maintain
+        guards:
+          type: array
+          items:
+            type: string
+            enum:
+              - strength
+              - muscle
+        status:
+          type: string
+          enum:
+            - planned
+            - active
+            - archived
+        startDate:
+          type: string
+          format: date
+        targetDate:
+          type: string
+          format: date
+        startWeightKg:
+          type: number
+        targetWeightKg:
+          type: number
+          nullable: true
+        rateTargetPctPerWeek:
+          type: number
+        identityFrame:
+          type: string
+          nullable: true
+    GoalUpsertRequest:
+      type: object
+      required:
+        - title
+        - trajectory
+        - startDate
+        - targetDate
+        - startWeightKg
+        - rateTargetPctPerWeek
+      properties:
+        title:
+          type: string
+          minLength: 1
+        trajectory:
+          type: string
+          pattern: ^(cut|bulk|maintain)$
+        guards:
+          type: array
+          items:
+            type: string
+            pattern: ^(strength|muscle)$
+        startDate:
+          type: string
+          format: date
+        targetDate:
+          type: string
+          format: date
+        startWeightKg:
+          type: number
+          minimum: 0
+        targetWeightKg:
+          type: number
+          nullable: true
+          minimum: 0
+        rateTargetPctPerWeek:
+          type: number
+          minimum: 0
+        identityFrame:
+          type: string
+          nullable: true
+    BiometricProfileResponse:
+      type: object
+      required:
+        - sex
+        - heightCm
+        - birthDate
+      properties:
+        sex:
+          type: string
+          enum:
+            - M
+            - F
+        heightCm:
+          type: number
+        birthDate:
+          type: string
+          format: date
+        bodyFatPct:
+          type: number
+          nullable: true
+    BiometricProfileUpsertRequest:
+      type: object
+      required:
+        - sex
+        - heightCm
+        - birthDate
+      properties:
+        sex:
+          type: string
+          pattern: ^(M|F)$
+        heightCm:
+          type: number
+          minimum: 50
+          maximum: 260
+        birthDate:
+          type: string
+          format: date
+        bodyFatPct:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 75
