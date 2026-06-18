@@ -29,6 +29,7 @@ import { ExperimentsView } from '@/features/insights/views/ExperimentsView'
 import { MeScreen, type MeOutletContext } from '@/features/me/MeScreen'
 import { ProfileView } from '@/features/me/views/ProfileView'
 import { GoalsView } from '@/features/me/views/GoalsView'
+import { WeightView } from '@/features/me/views/WeightView'
 import { SleepView } from '@/features/me/views/SleepView'
 import { PeopleView } from '@/features/me/views/PeopleView'
 import { KnowledgeView } from '@/features/me/views/KnowledgeView'
@@ -91,6 +92,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <ProfileRoute /> },
           { path: 'goals', element: <GoalsView /> },
+          { path: 'weight', element: <WeightView /> },
           { path: 'sleep', element: <SleepView /> },
           { path: 'people', element: <PeopleView /> },
           { path: 'knowledge', element: <KnowledgeView /> },
