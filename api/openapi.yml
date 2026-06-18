@@ -1296,6 +1296,115 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/timeline':
+    get:
+      tags:
+        - Goal
+      operationId: listGoalTimeline
+      summary: The goal's positioned plan links + uncovered gym-lane gaps
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Timeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalTimelineResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/plans':
+    post:
+      tags:
+        - Goal
+      operationId: attachGoalPlan
+      summary: Attach an owned mesocycle or running block at a week position
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalPlanAttachRequest'
+      responses:
+        '201':
+          description: Linked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalPlanLinkResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Goal or plan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/plans/{linkId}':
+    delete:
+      tags:
+        - Goal
+      operationId: detachGoalPlan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: linkId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Detached
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/biometrics/profile:
     get:
       tags:
@@ -2805,6 +2914,105 @@ components:
         identityFrame:
           type: string
           nullable: true
+    GoalPlanRef:
+      type: object
+      required:
+        - title
+        - status
+        - startDate
+        - endDate
+        - weeks
+      properties:
+        title:
+          type: string
+        status:
+          type: string
+          enum:
+            - planned
+            - active
+            - archived
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        weeks:
+          type: integer
+    GoalPlanLinkResponse:
+      type: object
+      required:
+        - id
+        - planType
+        - planId
+        - startWeek
+        - endWeek
+        - plan
+      properties:
+        id:
+          type: string
+          format: uuid
+        planType:
+          type: string
+          enum:
+            - mesocycle
+            - running_block
+        planId:
+          type: string
+          format: uuid
+        startWeek:
+          type: integer
+        endWeek:
+          type: integer
+        plan:
+          $ref: '#/components/schemas/GoalPlanRef'
+    GoalPlanAttachRequest:
+      type: object
+      required:
+        - planType
+        - planId
+        - startWeek
+      properties:
+        planType:
+          type: string
+          pattern: ^(mesocycle|running_block)$
+        planId:
+          type: string
+          format: uuid
+        startWeek:
+          type: integer
+          minimum: 1
+    GoalGap:
+      type: object
+      required:
+        - fromWeek
+        - toWeek
+      properties:
+        fromWeek:
+          type: integer
+        toWeek:
+          type: integer
+    GoalTimelineResponse:
+      type: object
+      required:
+        - goalId
+        - weeks
+        - links
+        - gaps
+      properties:
+        goalId:
+          type: string
+          format: uuid
+        weeks:
+          type: integer
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalPlanLinkResponse'
+        gaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoalGap'
     BiometricProfileResponse:
       type: object
       required:

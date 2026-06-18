@@ -505,6 +505,56 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/{id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The goal's positioned plan links + uncovered gym-lane gaps */
+        get: operations["listGoalTimeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{id}/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attach an owned mesocycle or running block at a week position */
+        post: operations["attachGoalPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{id}/plans/{linkId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["detachGoalPlan"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/biometrics/profile": {
         parameters: {
             query?: never;
@@ -1115,6 +1165,44 @@ export interface components {
             targetWeightKg?: number | null;
             rateTargetPctPerWeek: number;
             identityFrame?: string | null;
+        };
+        GoalPlanRef: {
+            title: string;
+            /** @enum {string} */
+            status: "planned" | "active" | "archived";
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            weeks: number;
+        };
+        GoalPlanLinkResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            planType: "mesocycle" | "running_block";
+            /** Format: uuid */
+            planId: string;
+            startWeek: number;
+            endWeek: number;
+            plan: components["schemas"]["GoalPlanRef"];
+        };
+        GoalPlanAttachRequest: {
+            planType: string;
+            /** Format: uuid */
+            planId: string;
+            startWeek: number;
+        };
+        GoalGap: {
+            fromWeek: number;
+            toWeek: number;
+        };
+        GoalTimelineResponse: {
+            /** Format: uuid */
+            goalId: string;
+            weeks: number;
+            links: components["schemas"]["GoalPlanLinkResponse"][];
+            gaps: components["schemas"]["GoalGap"][];
         };
         BiometricProfileResponse: {
             /** @enum {string} */
@@ -2746,6 +2834,138 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GoalResponse"];
                 };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listGoalTimeline: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Timeline */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalTimelineResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    attachGoalPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalPlanAttachRequest"];
+            };
+        };
+        responses: {
+            /** @description Linked */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalPlanLinkResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Goal or plan not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    detachGoalPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                linkId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Detached */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Missing/invalid token */
             401: {
