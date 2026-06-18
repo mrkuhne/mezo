@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info:
+  title: ''
+  version: ''
+tags:
+  - name: BiometricProfile
+    description: Body-composition profile — the TDEE bootstrap inputs (one per owner)
+paths:
+  /api/biometrics/profile:
+    get:
+      tags: [BiometricProfile]
+      operationId: getBiometricProfile
+      summary: The owner's biometric profile
+      responses:
+        '200': { description: Profile, content: { application/json: { schema: { $ref: '#/components/schemas/BiometricProfileResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: No profile yet, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    put:
+      tags: [BiometricProfile]
+      operationId: upsertBiometricProfile
+      summary: Create or replace the owner's biometric profile
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/BiometricProfileUpsertRequest' } } }
+      responses:
+        '200': { description: Upserted, content: { application/json: { schema: { $ref: '#/components/schemas/BiometricProfileResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    BiometricProfileResponse:
+      type: object
+      required: [sex, heightCm, birthDate]
+      properties:
+        sex: { type: string, enum: [M, F] }
+        heightCm: { type: number }
+        birthDate: { type: string, format: date }
+        bodyFatPct: { type: number, nullable: true }
+    BiometricProfileUpsertRequest:
+      type: object
+      required: [sex, heightCm, birthDate]
+      properties:
+        sex: { type: string, pattern: '^(M|F)$' }
+        heightCm: { type: number, minimum: 50, maximum: 260 }
+        birthDate: { type: string, format: date }
+        bodyFatPct: { type: number, nullable: true, minimum: 0, maximum: 75 }

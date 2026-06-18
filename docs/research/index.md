@@ -1,7 +1,7 @@
 ---
 title: Research Wiki — Catalog
 type: summary
-updated: 2026-06-14
+updated: 2026-06-18
 tags: [tooling]
 related: [SCHEMA.md, log.md, README.md]
 ---
@@ -26,4 +26,4 @@ _No pages yet — filed on first ingest._
 
 ## Queries
 
-_No pages yet — filed on first ingest._
+- [Goal engine — grounded numbers (TDEE, activity energy, muscle/strength retention)](queries/2026-06-18-goal-engine-numbers.md) — sport-science constants for the goal engine; consumed by the goal-system spec §6. `confidence: high`.

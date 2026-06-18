@@ -1,6 +1,8 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { useProfile, useGoals, useSleep } from './hooks'
+import { useProfile, useSleep } from './hooks'
+import { useGoal } from './goalHooks'
+import { useWeight } from './weightHooks'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // These assert the Phase-1 mock dataset, so pin mock mode explicitly — they must
@@ -18,13 +20,17 @@ test('useProfile returns the extended user + Profil consts', () => {
   expect(result.current.version).toMatch(/v2\.0\.1/)
 })
 
-test('useGoals returns the active cut goal + trends + linked mesocycles', async () => {
-  const { result } = renderHook(() => useGoals(), { wrapper: QueryWrapper })
+test('useGoal returns the active cut goal + linked mesocycles', () => {
+  const { result } = renderHook(() => useGoal(), { wrapper: QueryWrapper })
   expect(result.current.goal.kind).toBe('cut')
   expect(result.current.goal.currentWeight).toBe(78.6)
+  expect(result.current.linkedMesocycles['meso-hyp-04'].status).toBe('active')
+})
+
+test('useWeight returns the log + trends', async () => {
+  const { result } = renderHook(() => useWeight(), { wrapper: QueryWrapper })
   await waitFor(() => expect(result.current.weightLog.length).toBe(15))
   expect(result.current.weightTrends.factors).toHaveLength(4)
-  expect(result.current.linkedMesocycles['meso-hyp-04'].status).toBe('active')
 })
 
 test('useSleep returns the log, trends, and last night', async () => {
