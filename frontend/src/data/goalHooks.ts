@@ -1,11 +1,11 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { goalApi, type GoalResponse, type GoalUpsertRequest } from '@/lib/goalApi'
-import { goalLinkApi, type GoalTimelineResponse } from '@/lib/goalLinkApi'
+import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } from '@/lib/goalLinkApi'
 import { biometricProfileApi, type BiometricProfileUpsertRequest } from '@/lib/biometricProfileApi'
 import { isMockMode } from '@/lib/mode'
 import { huMonthDay } from '@/lib/dates'
-import { goal as mockGoal, linkedMesocycles as mockLinkedMesocycles } from './goals'
+import { goal as mockGoal, linkedMesocycles as mockLinkedMesocycles, goalTimeline as mockTimeline } from './goals'
 import type { Goal, GoalKind, LinkedMeso, WeightEntry } from './types'
 
 // GoalResponse (new contract) -> existing Goal domain shape, so GoalsView is
@@ -76,20 +76,89 @@ export function useGoal() {
   })
 
   if (mock) {
-    return { goal: mockGoal as Goal | null, linkedMesocycles: mockLinkedMesocycles }
+    // Decision A (G4b): mock mode returns a static GoalTimelineResponse (not null)
+    // so the GoalTimeline lane component renders the same lanes/gaps it would in
+    // real mode. goalId tracks the mock goal so the attach/detach hub targets it.
+    return {
+      goal: mockGoal as Goal | null,
+      linkedMesocycles: mockLinkedMesocycles,
+      timeline: mockTimeline as GoalTimelineResponse | null,
+      goalId: mockGoal.id as string | null,
+    }
   }
 
   // Real mode with no active goal: empty "set up a goal" state. (G1 used to fall
   // back to mockGoal here, which surfaced the demo placeholder to real users —
   // see mezo-72d.) GoalsView guards on `goal === null` and renders the setup CTA.
   if (!activeGoal) {
-    return { goal: null, linkedMesocycles: {} }
+    return { goal: null, linkedMesocycles: {}, timeline: null, goalId: null }
   }
 
   const goal: Goal = toGoal(activeGoal, (weightLog as WeightEntry[]) ?? [])
   const linkedMesocycles = timeline ? toLinkedMesocycles(timeline) : {}
   goal.mesocycles = timeline ? timeline.links.map(l => l.planId) : []
-  return { goal, linkedMesocycles }
+  // Expose the raw timeline (the lane component consumes timeline.links[] for lane
+  // positions — LinkedMeso can't drive lanes) + goalId (attach/detach target).
+  return { goal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id }
+}
+
+// Goal-management mutations (slice G4b). Real mode runs the write, then in
+// onSuccess invalidates ['goals'] (+ the goal's timeline for attach/detach so the
+// lane re-renders). Mock mode no-ops and resolves so the command-center UI can
+// fire-and-forget in Phase-1 parity. Each action returns the mutation promise so
+// callers can await / chain navigation.
+export function useGoalActions() {
+  const qc = useQueryClient()
+  const mock = isMockMode()
+
+  const invalidateGoals = () => { if (!mock) qc.invalidateQueries({ queryKey: ['goals'] }) }
+  const invalidateTimeline = (goalId: string) => {
+    if (!mock) qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+  }
+
+  const archiveM = useMutation({
+    mutationFn: async (id: string) => { if (mock) return null; return goalApi.archive(id) },
+    onSuccess: () => invalidateGoals(),
+  })
+  const removeM = useMutation({
+    mutationFn: async (id: string) => { if (mock) return; await goalApi.remove(id) },
+    onSuccess: () => invalidateGoals(),
+  })
+  const activateM = useMutation({
+    mutationFn: async (id: string) => { if (mock) return null; return goalApi.activate(id) },
+    onSuccess: () => invalidateGoals(),
+  })
+  const attachM = useMutation({
+    mutationFn: async ({ goalId, body }: { goalId: string; body: GoalPlanAttachRequest }) => {
+      if (mock) return null
+      return goalLinkApi.attach(goalId, body)
+    },
+    onSuccess: (_data, { goalId }) => { invalidateGoals(); invalidateTimeline(goalId) },
+  })
+  const detachM = useMutation({
+    mutationFn: async ({ goalId, linkId }: { goalId: string; linkId: string }) => {
+      if (mock) return
+      await goalLinkApi.detach(goalId, linkId)
+    },
+    onSuccess: (_data, { goalId }) => { invalidateGoals(); invalidateTimeline(goalId) },
+  })
+
+  const archive = useCallback((id: string) => archiveM.mutateAsync(id), [archiveM])
+  const remove = useCallback((id: string) => removeM.mutateAsync(id), [removeM])
+  const activate = useCallback((id: string) => activateM.mutateAsync(id), [activateM])
+  const attachPlan = useCallback(
+    (goalId: string, body: GoalPlanAttachRequest) => attachM.mutateAsync({ goalId, body }),
+    [attachM],
+  )
+  const detachPlan = useCallback(
+    (goalId: string, linkId: string) => detachM.mutateAsync({ goalId, linkId }),
+    [detachM],
+  )
+
+  const pending =
+    archiveM.isPending || removeM.isPending || activateM.isPending || attachM.isPending || detachM.isPending
+
+  return { archive, remove, activate, attachPlan, detachPlan, pending }
 }
 
 // Goal-creation wizard (slice G4a) save chain. Real mode runs the writes in
