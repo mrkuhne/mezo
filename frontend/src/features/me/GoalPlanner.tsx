@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGoalCreation, useWeight } from '@/data/hooks'
 import { Icon, type IconName } from '@/components/ui/Icon'
@@ -290,14 +290,250 @@ export function GoalPlanner() {
   )
 }
 
-// Steps 1 + 2 are filled in by Task 3 — stubbed here so the file compiles and the
-// step-0 test passes. The wizard renders them only on step 1/2, which the step-0
-// test never reaches. The permissive prop type lets the call sites pass the full
-// step-1/2 state spread now; Task 3 narrows these to real prop interfaces.
-function Step1(_props: Record<string, unknown>) {
-  return null
+// Step 1 — window + weights. Props are exactly the step-1 state slice that
+// GoalPlanner spreads at its call site; target weight is hidden for `maintain`.
+function Step1({
+  title,
+  setTitle,
+  startDateIso,
+  setStartDateIso,
+  targetDateIso,
+  setTargetDateIso,
+  startWeight,
+  setStartWeight,
+  targetWeight,
+  setTargetWeight,
+  rate,
+  setRate,
+  identity,
+  setIdentity,
+  trajectory,
+}: {
+  title: string
+  setTitle: (v: string) => void
+  startDateIso: string
+  setStartDateIso: (v: string) => void
+  targetDateIso: string
+  setTargetDateIso: (v: string) => void
+  startWeight: number
+  setStartWeight: (v: number) => void
+  targetWeight: number
+  setTargetWeight: (v: number) => void
+  rate: number
+  setRate: (v: number) => void
+  identity: string
+  setIdentity: (v: string) => void
+  trajectory: Trajectory | null
+}) {
+  const field = (label: string, input: ReactNode) => (
+    <div className="col gap-sm">
+      <span className="label-mono">{label}</span>
+      <div className="card notch-4" style={{ padding: 10 }}>
+        {input}
+      </div>
+    </div>
+  )
+  const numStyle = { width: '100%', fontSize: 14, color: 'var(--text-primary)' } as const
+  const dateStyle = { width: '100%', fontSize: 13, color: 'var(--text-primary)', colorScheme: 'dark' } as const
+  return (
+    <div style={{ padding: '8px 24px' }}>
+      <div className="col gap-md">
+        {field(
+          'Cél neve',
+          <input
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            aria-label="Cél neve"
+            placeholder="pl. Nyári cut"
+            style={numStyle}
+          />,
+        )}
+        <div className="row gap-sm">
+          <div className="flex-1">
+            {field(
+              'Kezdés',
+              <input
+                type="date"
+                value={startDateIso}
+                onChange={e => setStartDateIso(e.target.value)}
+                aria-label="Kezdés"
+                style={dateStyle}
+              />,
+            )}
+          </div>
+          <div className="flex-1">
+            {field(
+              'Cél dátum',
+              <input
+                type="date"
+                value={targetDateIso}
+                onChange={e => setTargetDateIso(e.target.value)}
+                aria-label="Cél dátum"
+                style={dateStyle}
+              />,
+            )}
+          </div>
+        </div>
+        <div className="row gap-sm">
+          <div className="flex-1">
+            {field(
+              'Start súly (kg)',
+              <input
+                type="number"
+                step="0.1"
+                value={startWeight}
+                onChange={e => setStartWeight(Number(e.target.value))}
+                aria-label="Start súly"
+                style={numStyle}
+              />,
+            )}
+          </div>
+          {trajectory !== 'maintain' && (
+            <div className="flex-1">
+              {field(
+                'Cél súly (kg)',
+                <input
+                  type="number"
+                  step="0.1"
+                  value={targetWeight}
+                  onChange={e => setTargetWeight(Number(e.target.value))}
+                  aria-label="Cél súly"
+                  style={numStyle}
+                />,
+              )}
+            </div>
+          )}
+        </div>
+        {field(
+          'Heti tempó (%/hét)',
+          <input
+            type="number"
+            step="0.1"
+            value={rate}
+            onChange={e => setRate(Number(e.target.value))}
+            aria-label="Heti tempó"
+            style={numStyle}
+          />,
+        )}
+        {field(
+          'Identity frame · opcionális',
+          <textarea
+            value={identity}
+            onChange={e => setIdentity(e.target.value.slice(0, 200))}
+            aria-label="Identity frame"
+            placeholder='pl. "Erő megtartva — nem csak a szám."'
+            style={{ ...numStyle, minHeight: 48, resize: 'none', lineHeight: 1.45 }}
+          />,
+        )}
+      </div>
+    </div>
+  )
 }
 
-function Step2(_props: Record<string, unknown>) {
-  return null
+// Step 2 — BiometricProfile inputs that feed the TDEE estimate. Body-fat optional.
+function Step2({
+  sex,
+  setSex,
+  heightCm,
+  setHeightCm,
+  birthDateIso,
+  setBirthDateIso,
+  bodyFat,
+  setBodyFat,
+}: {
+  sex: 'M' | 'F'
+  setSex: (v: 'M' | 'F') => void
+  heightCm: number
+  setHeightCm: (v: number) => void
+  birthDateIso: string
+  setBirthDateIso: (v: string) => void
+  bodyFat: number | ''
+  setBodyFat: (v: number | '') => void
+}) {
+  const field = (label: string, input: ReactNode) => (
+    <div className="col gap-sm">
+      <span className="label-mono">{label}</span>
+      <div className="card notch-4" style={{ padding: 10 }}>
+        {input}
+      </div>
+    </div>
+  )
+  const numStyle = { width: '100%', fontSize: 14, color: 'var(--text-primary)' } as const
+  return (
+    <div style={{ padding: '8px 24px' }}>
+      <div className="col gap-md">
+        <div className="col gap-sm">
+          <span className="label-mono">Nem</span>
+          <div className="row gap-xs">
+            {(['M', 'F'] as const).map(s => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={sex === s}
+                onClick={() => setSex(s)}
+                className="flex-1 notch-4"
+                style={{
+                  padding: '12px 0',
+                  background:
+                    sex === s
+                      ? 'color-mix(in srgb, var(--brand-glow) 12%, transparent)'
+                      : 'var(--surface-1)',
+                  border: `1px solid ${sex === s ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
+                  color: sex === s ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                  fontFamily: 'var(--ff-display)',
+                  fontSize: 14,
+                  fontWeight: 600,
+                }}
+              >
+                {s === 'M' ? 'Férfi' : 'Nő'}
+              </button>
+            ))}
+          </div>
+        </div>
+        {field(
+          'Testmagasság (cm)',
+          <input
+            type="number"
+            value={heightCm}
+            onChange={e => setHeightCm(Number(e.target.value))}
+            aria-label="Testmagasság"
+            style={numStyle}
+          />,
+        )}
+        {field(
+          'Születési dátum',
+          <input
+            type="date"
+            value={birthDateIso}
+            onChange={e => setBirthDateIso(e.target.value)}
+            aria-label="Születési dátum"
+            style={{ ...numStyle, fontSize: 13, colorScheme: 'dark' }}
+          />,
+        )}
+        {field(
+          'Testzsír % · opcionális',
+          <input
+            type="number"
+            step="0.1"
+            value={bodyFat}
+            onChange={e => setBodyFat(e.target.value === '' ? '' : Number(e.target.value))}
+            aria-label="Testzsír"
+            placeholder="pl. 15"
+            style={numStyle}
+          />,
+        )}
+      </div>
+      <div
+        className="card notch-4 mt-lg"
+        style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 6%, transparent)' }}
+      >
+        <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
+          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+            Ezekből számolja a Mezo a napi energiaigényedet (TDEE). Ha megadod a testzsírt, pontosabb a becslés.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
 }
