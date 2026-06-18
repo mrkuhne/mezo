@@ -22,8 +22,8 @@ test('useProfile returns the extended user + Profil consts', () => {
 
 test('useGoal returns the active cut goal + linked mesocycles', () => {
   const { result } = renderHook(() => useGoal(), { wrapper: QueryWrapper })
-  expect(result.current.goal.kind).toBe('cut')
-  expect(result.current.goal.currentWeight).toBe(78.6)
+  expect(result.current.goal?.kind).toBe('cut')
+  expect(result.current.goal?.currentWeight).toBe(78.6)
   expect(result.current.linkedMesocycles['meso-hyp-04'].status).toBe('active')
 })
 

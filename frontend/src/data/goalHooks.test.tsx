@@ -34,9 +34,19 @@ test('useGoal (real mode) maps the active GoalResponse to the Goal shape', async
     http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
   )
   const { result } = renderHook(() => useGoal(), { wrapper: makeHookWrapper() })
-  await waitFor(() => expect(result.current.goal.title).toBe('Nyári cut'))
-  expect(result.current.goal.kind).toBe('cut')
-  expect(result.current.goal.targetWeight).toBe(80)
+  await waitFor(() => expect(result.current.goal?.title).toBe('Nyári cut'))
+  expect(result.current.goal?.kind).toBe('cut')
+  expect(result.current.goal?.targetWeight).toBe(80)
+})
+
+test('useGoal (real mode) returns a null goal + empty links when no goal exists', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+  )
+  const { result } = renderHook(() => useGoal(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.goal).toBeNull())
+  expect(result.current.linkedMesocycles).toEqual({})
 })
 
 test('useGoal (real mode) builds linkedMesocycles + goal.mesocycles from the timeline links', async () => {
@@ -83,7 +93,7 @@ test('useGoal (real mode) builds linkedMesocycles + goal.mesocycles from the tim
     ),
   )
   const { result } = renderHook(() => useGoal(), { wrapper: makeHookWrapper() })
-  await waitFor(() => expect(result.current.goal.mesocycles).toEqual(['meso-1']))
+  await waitFor(() => expect(result.current.goal?.mesocycles).toEqual(['meso-1']))
   expect(result.current.linkedMesocycles['meso-1']).toEqual({
     id: 'meso-1',
     shortTitle: 'Hypertrophy 04',
