@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
+import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
+import io.mrkuhne.mezo.feature.goal.service.GoalTimelineService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
 import java.util.UUID;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class GoalController implements GoalApi {
 
     private final GoalService goalService;
+    private final GoalPlanLinkService goalPlanLinkService;
+    private final GoalTimelineService goalTimelineService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -58,19 +62,16 @@ public class GoalController implements GoalApi {
 
     @Override
     public GoalTimelineResponse listGoalTimeline(UUID id) {
-        // G3 Task 6 (mezo-3sc): replace with real timeline-service delegation
-        throw new UnsupportedOperationException("G3 Task 6: mezo-3sc");
+        return goalTimelineService.getTimeline(currentUserId.get(), id);
     }
 
     @Override
     public GoalPlanLinkResponse attachGoalPlan(UUID id, GoalPlanAttachRequest goalPlanAttachRequest) {
-        // G3 Task 6 (mezo-3sc): replace with real plan-link-service delegation
-        throw new UnsupportedOperationException("G3 Task 6: mezo-3sc");
+        return goalPlanLinkService.attachPlan(currentUserId.get(), id, goalPlanAttachRequest);
     }
 
     @Override
     public void detachGoalPlan(UUID id, UUID linkId) {
-        // G3 Task 6 (mezo-3sc): replace with real plan-link-service delegation
-        throw new UnsupportedOperationException("G3 Task 6: mezo-3sc");
+        goalPlanLinkService.detachPlan(currentUserId.get(), id, linkId);
     }
 }

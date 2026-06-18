@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.mapper.GoalMapper;
+import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GoalService {
 
     private final GoalRepository goalRepository;
+    private final GoalPlanLinkRepository linkRepository;
     private final GoalMapper goalMapper;
 
     /** Active goal first, then by start date desc (DB ordering, service hoists active). */
@@ -57,7 +59,12 @@ public class GoalService {
 
     @Transactional
     public void deleteGoal(UUID userId, UUID id) {
-        goalRepository.delete(requireOwned(userId, id)); // @SQLDelete soft-deletes
+        GoalEntity goal = requireOwned(userId, id);
+        // Cascade: soft-delete the goal's plan links first, so a re-used goal id never
+        // inherits ghost links (the DB FK only cascades the physical delete path).
+        linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(id, userId)
+            .forEach(linkRepository::delete); // @SQLDelete soft-deletes
+        goalRepository.delete(goal); // @SQLDelete soft-deletes
     }
 
     @Transactional
