@@ -107,13 +107,15 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 | `pal.{sedentary,light,moderate,very,extra}` | 1.2 / 1.375 / **1.55** / 1.725 / 1.9 | `TdeeBootstrapService` (PAL lookup; moderate = default) |
 | `kcalPerKg` | 7700 (band 6000–7700) | `GoalProjectionService` (energy balance ↔ rate) |
 | `protein.gPerKgBwDefault/…/gPerKgBwCap` | 2.0 … 2.6 | `GoalEvaluationService.proteinTargetGrams` |
-| `rate.{targetPctPerWeek,capPctPerWeek,bandLow,bandHigh}` | 0.7 / 1.0 / 0.5 / 1.0 | `GoalEvaluationService` (rate realism) + `GuardEvaluationService` (rate-cap) |
+| `rate.{capPctPerWeek,bandLow,bandHigh}` | 1.0 / 0.5 / 1.0 | `GoalEvaluationService` (rate realism) + `GuardEvaluationService` (rate-cap) |
 | `volume.{maintenanceSets,warnBelow}` | 8 / 6 | `GuardEvaluationService` (muscle guard) |
 | `strength.e1rmBreachPct` | −5.0 | `GuardEvaluationService` (strength breach gate) |
 | `ewma.halfLifeDays` | 10 (band 10–14) | `WeightTrendService` (α) |
 | `met.{hypertrophy,intervalRun,volleyballRec,volleyballComp}Kcal` | 325 / 500 / 500 / 1150 (84 kg basis) | `GoalProjectionService` (running block-boundary delta) |
 | `thermogenesisHaircutKcalPerDay` | 0 (off; band 100–200) | reserved (adaptive haircut) |
 | `bootstrapUncertaintyKcal` | 300 | uncertainty band |
+
+**Reserved / tuning surface (defined but not yet consumed):** `rate.targetPctPerWeek` (0.7), `protein.gPerKgLbmLow`, `protein.gPerKgBwFloor`/`gPerKgBwCeil`, the non-`intervalRun` MET deltas (`hypertrophy`/`volleyballRec`/`volleyballComp`Kcal — only `intervalRunKcal` is read by the running block-boundary delta), `thermogenesisHaircutKcalPerDay`, and `bootstrapUncertaintyKcal` are wired into `GoalEngineProperties` ahead of the slices that will read them; no service consumes them today.
 
 These are the empirical-tuning surface (research §7): EWMA half-life, kcal/kg, the −5% e1RM breach, and the rate bands are all tunable from real data without a code change.
 

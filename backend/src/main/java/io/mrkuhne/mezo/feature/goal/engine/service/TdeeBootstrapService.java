@@ -90,7 +90,8 @@ public class TdeeBootstrapService {
 
     /** Katch-McArdle: LBM = weight·(1 − bodyFatPct/100); BMR = 370 + 21.6·LBM. */
     private BigDecimal katchMcArdle(BigDecimal weightKg, BigDecimal bodyFatPct) {
-        BigDecimal leanFraction = BigDecimal.ONE.subtract(bodyFatPct.divide(ONE_HUNDRED));
+        BigDecimal leanFraction =
+            BigDecimal.ONE.subtract(bodyFatPct.divide(ONE_HUNDRED, 6, RoundingMode.HALF_UP));
         BigDecimal lbm = weightKg.multiply(leanFraction);
         return KATCH_BASE.add(KATCH_PER_KG_LBM.multiply(lbm));
     }
