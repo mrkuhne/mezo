@@ -2,7 +2,7 @@
 title: Auth & Security
 type: feature-platform
 status: mixed
-updated: 2026-06-14
+updated: 2026-06-19
 tags: [platform, auth, backend, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth
@@ -136,7 +136,7 @@ Entity: `…/feature/auth/entity/UserProfileEntity.java`. Repository: `UserProfi
 
 `OwnerSeedData` (`…/feature/auth/OwnerSeedData.java`): `@Component @Profile("demodata") @Order(0)` `CommandLineRunner`. `@Order(0)` because later runners (e.g. `TrainSeedData`) depend on the owner existing. Idempotent (`if (existsByEmail(...)) return;`). Creates `AppUserEntity` (BCrypt-hashed) + a `UserProfileEntity` with `createdBy = owner.getId()`. **No owner exists without `demodata`** → login is impossible on a bare run (`./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata` is the minimum to log in).
 
-`OwnerProperties` (`…/feature/auth/OwnerProperties.java`) — `@Validated @ConfigurationProperties("mezo.auth")` record: `ownerEmail @NotBlank @Email`, `ownerPassword @NotBlank`, `ownerName @NotBlank`, `jwtSecret @NotBlank @Size(min = 32)` (HS256 needs ≥256 bits — a shorter secret fails **at bind/boot**, not at sign time). Bound in `application.yml` with env overrides + dev defaults: `MEZO_JWT_SECRET:dev-only-change-me-32-bytes-minimum-secret`, `MEZO_OWNER_EMAIL:owner@mezo.local`, `MEZO_OWNER_PASSWORD:owner`, `MEZO_OWNER_NAME:Owner`.
+`OwnerProperties` (`…/feature/auth/OwnerProperties.java`) — `@Validated @ConfigurationProperties("mezo.auth")` record: `ownerEmail @NotBlank @Email`, `ownerPassword @NotBlank`, `ownerName @NotBlank`, `jwtSecret @NotBlank @Size(min = 32)` (HS256 needs ≥256 bits — a shorter secret fails **at bind/boot**, not at sign time). Bound in `application.yml` with env overrides + dev defaults: `MEZO_JWT_SECRET:dev-only-change-me-32-bytes-minimum-secret`, `MEZO_OWNER_EMAIL:owner@mezo.local`, `MEZO_OWNER_PASSWORD:owner`, `MEZO_OWNER_NAME:Owner`. (`application.yml` also carries unrelated `mezo:` sub-trees — `mezo.cors.*` here, and since G5 `mezo.goal.*` for the goal engine, bound by their own `*Properties` records; auth binds only `mezo.auth.*`/`mezo.cors.*`.)
 
 ### CORS
 
