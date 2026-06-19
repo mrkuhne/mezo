@@ -6,17 +6,23 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 /**
- * Entity -> {@link BiometricProfileResponse}. The entity stores {@code sex} as a plain
- * {@code String} (M|F); the generated DTO uses the inner {@link BiometricProfileResponse.SexEnum},
- * so it is converted explicitly via {@code SexEnum.fromValue(String)}. {@code heightCm},
- * {@code birthDate} and {@code bodyFatPct} map 1:1 (matching {@code BigDecimal}/{@code LocalDate}).
+ * Entity -> {@link BiometricProfileResponse}. The entity stores {@code sex} and
+ * {@code activityLevel} as plain {@code String} (M|F and SEDENTARY|..|EXTRA); the generated DTO uses
+ * inner enums, so each is converted explicitly via the enum's {@code fromValue(String)}.
+ * {@code heightCm}, {@code birthDate} and {@code bodyFatPct} map 1:1 (matching
+ * {@code BigDecimal}/{@code LocalDate}). {@code activityLevel} is nullable until captured.
  */
 @Mapper(componentModel = "spring")
 public interface BiometricProfileMapper {
 
-    // Task 3 (mezo-g1u): the entity has no activityLevel yet — ignore until the field + DDL land.
-    @Mapping(target = "activityLevel", ignore = true)
     @Mapping(target = "sex",
         expression = "java(BiometricProfileResponse.SexEnum.fromValue(entity.getSex()))")
+    @Mapping(target = "activityLevel",
+        expression = "java(toActivityLevelEnum(entity.getActivityLevel()))")
     BiometricProfileResponse toResponse(BiometricProfileEntity entity);
+
+    default BiometricProfileResponse.ActivityLevelEnum toActivityLevelEnum(String activityLevel) {
+        return activityLevel == null ? null
+            : BiometricProfileResponse.ActivityLevelEnum.fromValue(activityLevel);
+    }
 }
