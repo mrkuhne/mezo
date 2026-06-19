@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.LogWeightRequest;
 import io.mrkuhne.mezo.api.dto.WeightLogResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightLogService;
+import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class WeightLogController implements WeightApi {
 
     private final WeightLogService service;
+    private final WeightTrendService weightTrendService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -30,7 +32,6 @@ public class WeightLogController implements WeightApi {
 
     @Override
     public WeightTrendResponse getWeightTrend() {
-        // TODO Task 10 (mezo-g1u): replace with real EWMA weight-trend-service delegation
-        throw new UnsupportedOperationException("G5 Task 10: mezo-g1u");
+        return weightTrendService.computeTrend(currentUserId.get());
     }
 }

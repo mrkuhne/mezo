@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
+import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
 import io.mrkuhne.mezo.feature.goal.service.GoalTimelineService;
@@ -23,6 +24,7 @@ public class GoalController implements GoalApi {
     private final GoalService goalService;
     private final GoalPlanLinkService goalPlanLinkService;
     private final GoalTimelineService goalTimelineService;
+    private final GoalEngineService goalEngineService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -67,8 +69,11 @@ public class GoalController implements GoalApi {
 
     @Override
     public GoalResponse evaluateGoal(UUID id) {
-        // TODO Task 10 (mezo-g1u): replace with real goal-evaluation-engine delegation
-        throw new UnsupportedOperationException("G5 Task 10: mezo-g1u");
+        UUID userId = currentUserId.get();
+        // The engine assembles + persists the prescription (+ tdeeBootstrap) onto the goal; re-fetch via
+        // the standard get path so the response carries the freshly-persisted jsonb (mapped by GoalMapper).
+        goalEngineService.evaluate(userId, id);
+        return goalService.getGoal(userId, id);
     }
 
     @Override
