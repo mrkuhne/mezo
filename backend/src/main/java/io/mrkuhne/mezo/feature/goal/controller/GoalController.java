@@ -66,6 +66,12 @@ public class GoalController implements GoalApi {
     }
 
     @Override
+    public GoalResponse evaluateGoal(UUID id) {
+        // TODO Task 10 (mezo-g1u): replace with real goal-evaluation-engine delegation
+        throw new UnsupportedOperationException("G5 Task 10: mezo-g1u");
+    }
+
+    @Override
     public GoalPlanLinkResponse attachGoalPlan(UUID id, GoalPlanAttachRequest goalPlanAttachRequest) {
         return goalPlanLinkService.attachPlan(currentUserId.get(), id, goalPlanAttachRequest);
     }

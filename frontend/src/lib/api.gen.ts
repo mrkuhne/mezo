@@ -39,6 +39,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/biometrics/weight/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** EWMA weight trend (ground-truth scale spine for the goal engine) */
+        get: operations["getWeightTrend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/biometrics/sleep": {
         parameters: {
             query?: never;
@@ -522,6 +539,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/{id}/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run the TDEE/recept engine — computes + persists tdeeBootstrap + prescription, returns the goal */
+        post: operations["evaluateGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals/{id}/plans": {
         parameters: {
             query?: never;
@@ -624,6 +658,28 @@ export interface components {
             /** @description Weight in kilograms (frontend field name) */
             value: number;
             note?: string;
+        };
+        WeightTrendPoint: {
+            /** Format: date */
+            date: string;
+            /** @description EWMA-smoothed weight (kg) at this date */
+            trendKg: number;
+        };
+        WeightTrendResponse: {
+            ewmaSeries: components["schemas"]["WeightTrendPoint"][];
+            /** @description Latest EWMA trend value (kg) */
+            latestTrendKg: number;
+            /** @description Current weekly rate of change (kg/week) from the EWMA trend */
+            weeklyRateKgPerWeek: number;
+            /** @description Current weekly rate as percent of body weight per week */
+            weeklyRatePctPerWeek: number;
+            /** @description Weekly rate (kg/week) averaged over the last 4 weeks */
+            last4wRateKgPerWeek: number;
+            /**
+             * @description How much logged weight data backs the trend
+             * @enum {string}
+             */
+            dataSufficiency: "none" | "provisional" | "full";
         };
         LogSleepRequest: {
             /** Format: date */
@@ -1152,6 +1208,68 @@ export interface components {
             targetWeightKg?: number | null;
             rateTargetPctPerWeek: number;
             identityFrame?: string | null;
+            tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
+            prescription?: components["schemas"]["GoalPrescription"] | null;
+        };
+        /** @description Formula-TDEE bootstrap snapshot computed at first evaluation. */
+        TdeeBootstrap: {
+            /** @description Basal metabolic rate (kcal/day) */
+            bmr: number;
+            /** @description Total daily energy expenditure (kcal/day) */
+            tdee: number;
+            /** @description Physical-activity-level multiplier */
+            pal: number;
+            /**
+             * @description MSJ = Mifflin-St Jeor, KATCH = Katch-McArdle
+             * @enum {string}
+             */
+            formula: "MSJ" | "KATCH";
+            /** Format: date-time */
+            computedAt: string;
+        };
+        /** @description Segmented recept produced by the engine — kcal/protein/sleep/rest per timeline segment, plus guard + feasibility status. */
+        GoalPrescription: {
+            /** Format: date-time */
+            generatedAt: string;
+            /** @enum {string} */
+            basis: "formula" | "adaptive";
+            segments: components["schemas"]["GoalPrescriptionSegment"][];
+            guardStatus: components["schemas"]["GoalGuardStatus"];
+            feasibility: components["schemas"]["GoalFeasibility"];
+        };
+        GoalPrescriptionSegment: {
+            fromWeek: number;
+            toWeek: number;
+            label: string;
+            kcal: number;
+            proteinG: number;
+            sleepTargetH: number;
+            restDays: number[];
+            projectedRateKgPerWk: number;
+            rationale: string;
+        };
+        GoalGuardStatus: {
+            strength: components["schemas"]["GoalStrengthGuardStatus"];
+            muscle: components["schemas"]["GoalMuscleGuardStatus"];
+        };
+        GoalStrengthGuardStatus: {
+            active: boolean;
+            e1rmTrendPct: number;
+            breached: boolean;
+            notes: string[];
+        };
+        GoalMuscleGuardStatus: {
+            active: boolean;
+            minWeeklySetsPerMuscle: number;
+            belowMaintenanceMuscles: string[];
+            rateWithinCap: boolean;
+            proteinMonitored: boolean;
+            notes: string[];
+        };
+        GoalFeasibility: {
+            /** @enum {string} */
+            verdict: "feasible" | "feasible-with-warnings" | "aggressive";
+            notes: string[];
         };
         GoalUpsertRequest: {
             title: string;
@@ -1211,6 +1329,8 @@ export interface components {
             /** Format: date */
             birthDate: string;
             bodyFatPct?: number | null;
+            /** @enum {string|null} */
+            activityLevel?: "SEDENTARY" | "LIGHT" | "MODERATE" | "VERY" | "EXTRA" | null;
         };
         BiometricProfileUpsertRequest: {
             sex: string;
@@ -1218,6 +1338,8 @@ export interface components {
             /** Format: date */
             birthDate: string;
             bodyFatPct?: number | null;
+            /** @enum {string|null} */
+            activityLevel?: "SEDENTARY" | "LIGHT" | "MODERATE" | "VERY" | "EXTRA" | null;
         };
     };
     responses: never;
@@ -1328,6 +1450,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWeightTrend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Weight trend */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeightTrendResponse"];
                 };
             };
             /** @description Missing/invalid token */
@@ -2873,6 +3024,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoalTimelineResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    evaluateGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Evaluated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalResponse"];
                 };
             };
             /** @description Missing/invalid token */

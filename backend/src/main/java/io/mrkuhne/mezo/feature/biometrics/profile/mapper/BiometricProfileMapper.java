@@ -14,6 +14,8 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface BiometricProfileMapper {
 
+    // Task 3 (mezo-g1u): the entity has no activityLevel yet — ignore until the field + DDL land.
+    @Mapping(target = "activityLevel", ignore = true)
     @Mapping(target = "sex",
         expression = "java(BiometricProfileResponse.SexEnum.fromValue(entity.getSex()))")
     BiometricProfileResponse toResponse(BiometricProfileEntity entity);

@@ -55,6 +55,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/biometrics/weight/trend:
+    get:
+      tags: [Weight]
+      operationId: getWeightTrend
+      summary: EWMA weight trend (ground-truth scale spine for the goal engine)
+      responses:
+        '200':
+          description: Weight trend
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeightTrendResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   schemas:
     LogWeightRequest:
@@ -92,3 +110,45 @@ components:
           description: Weight in kilograms (frontend field name)
         note:
           type: string
+    WeightTrendPoint:
+      type: object
+      required:
+        - date
+        - trendKg
+      properties:
+        date:
+          type: string
+          format: date
+        trendKg:
+          type: number
+          description: EWMA-smoothed weight (kg) at this date
+    WeightTrendResponse:
+      type: object
+      required:
+        - ewmaSeries
+        - latestTrendKg
+        - weeklyRateKgPerWeek
+        - weeklyRatePctPerWeek
+        - last4wRateKgPerWeek
+        - dataSufficiency
+      properties:
+        ewmaSeries:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeightTrendPoint'
+        latestTrendKg:
+          type: number
+          description: Latest EWMA trend value (kg)
+        weeklyRateKgPerWeek:
+          type: number
+          description: Current weekly rate of change (kg/week) from the EWMA trend
+        weeklyRatePctPerWeek:
+          type: number
+          description: Current weekly rate as percent of body weight per week
+        last4wRateKgPerWeek:
+          type: number
+          description: Weekly rate (kg/week) averaged over the last 4 weeks
+        dataSufficiency:
+          type: string
+          enum: [none, provisional, full]
+          description: How much logged weight data backs the trend

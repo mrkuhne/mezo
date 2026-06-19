@@ -84,6 +84,16 @@ paths:
         '200': { description: Timeline, content: { application/json: { schema: { $ref: '#/components/schemas/GoalTimelineResponse' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/goals/{id}/evaluate:
+    post:
+      tags: [Goal]
+      operationId: evaluateGoal
+      summary: Run the TDEE/recept engine — computes + persists tdeeBootstrap + prescription, returns the goal
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        '200': { description: Evaluated, content: { application/json: { schema: { $ref: '#/components/schemas/GoalResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/goals/{id}/plans:
     post:
       tags: [Goal]
@@ -126,6 +136,72 @@ components:
         targetWeightKg: { type: number, nullable: true }
         rateTargetPctPerWeek: { type: number }
         identityFrame: { type: string, nullable: true }
+        # Engine outputs — null until the goal is evaluated (POST /api/goals/{id}/evaluate).
+        tdeeBootstrap: { allOf: [ { $ref: '#/components/schemas/TdeeBootstrap' } ], nullable: true }
+        prescription: { allOf: [ { $ref: '#/components/schemas/GoalPrescription' } ], nullable: true }
+    TdeeBootstrap:
+      type: object
+      description: Formula-TDEE bootstrap snapshot computed at first evaluation.
+      required: [bmr, tdee, pal, formula, computedAt]
+      properties:
+        bmr: { type: number, description: Basal metabolic rate (kcal/day) }
+        tdee: { type: number, description: Total daily energy expenditure (kcal/day) }
+        pal: { type: number, description: Physical-activity-level multiplier }
+        formula: { type: string, enum: [MSJ, KATCH], description: 'MSJ = Mifflin-St Jeor, KATCH = Katch-McArdle' }
+        computedAt: { type: string, format: date-time }
+    GoalPrescription:
+      type: object
+      description: Segmented recept produced by the engine — kcal/protein/sleep/rest per timeline segment, plus guard + feasibility status.
+      required: [generatedAt, basis, segments, guardStatus, feasibility]
+      properties:
+        generatedAt: { type: string, format: date-time }
+        basis: { type: string, enum: [formula, adaptive] }
+        segments: { type: array, items: { $ref: '#/components/schemas/GoalPrescriptionSegment' } }
+        guardStatus: { $ref: '#/components/schemas/GoalGuardStatus' }
+        feasibility: { $ref: '#/components/schemas/GoalFeasibility' }
+    GoalPrescriptionSegment:
+      type: object
+      required: [fromWeek, toWeek, label, kcal, proteinG, sleepTargetH, restDays, projectedRateKgPerWk, rationale]
+      properties:
+        fromWeek: { type: integer }
+        toWeek: { type: integer }
+        label: { type: string }
+        kcal: { type: integer }
+        proteinG: { type: integer }
+        sleepTargetH: { type: number }
+        restDays: { type: array, items: { type: integer } }
+        projectedRateKgPerWk: { type: number }
+        rationale: { type: string }
+    GoalGuardStatus:
+      type: object
+      required: [strength, muscle]
+      properties:
+        strength: { $ref: '#/components/schemas/GoalStrengthGuardStatus' }
+        muscle: { $ref: '#/components/schemas/GoalMuscleGuardStatus' }
+    GoalStrengthGuardStatus:
+      type: object
+      required: [active, e1rmTrendPct, breached, notes]
+      properties:
+        active: { type: boolean }
+        e1rmTrendPct: { type: number }
+        breached: { type: boolean }
+        notes: { type: array, items: { type: string } }
+    GoalMuscleGuardStatus:
+      type: object
+      required: [active, minWeeklySetsPerMuscle, belowMaintenanceMuscles, rateWithinCap, proteinMonitored, notes]
+      properties:
+        active: { type: boolean }
+        minWeeklySetsPerMuscle: { type: integer }
+        belowMaintenanceMuscles: { type: array, items: { type: string } }
+        rateWithinCap: { type: boolean }
+        proteinMonitored: { type: boolean }
+        notes: { type: array, items: { type: string } }
+    GoalFeasibility:
+      type: object
+      required: [verdict, notes]
+      properties:
+        verdict: { type: string, enum: [feasible, feasible-with-warnings, aggressive] }
+        notes: { type: array, items: { type: string } }
     GoalUpsertRequest:
       type: object
       required: [title, trajectory, startDate, targetDate, startWeightKg, rateTargetPctPerWeek]
