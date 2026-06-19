@@ -92,6 +92,12 @@ public class TrainPopulator {
     }
 
     public MuscleGroupVolumeLogEntity createVolumeLog(UUID createdBy, UUID mesocycleId, String muscle) {
+        return createVolumeLog(createdBy, mesocycleId, muscle, 14);
+    }
+
+    /** Volume log with an explicit prescribed weekly hard-set count (muscle-guard tests). */
+    public MuscleGroupVolumeLogEntity createVolumeLog(
+        UUID createdBy, UUID mesocycleId, String muscle, int currentSets) {
         MuscleGroupVolumeLogEntity v = new MuscleGroupVolumeLogEntity();
         v.setCreatedBy(createdBy);
         v.setMesocycleId(mesocycleId);
@@ -99,7 +105,7 @@ public class TrainPopulator {
         v.setMev(8);
         v.setMav(14);
         v.setMrv(20);
-        v.setCurrentSets(14);
+        v.setCurrentSets(currentSets);
         v.setSource(new ProvenanceEnvelope(
             new ProvenanceEnvelope.Baseline("RP guidelines · intermediate", 8, 12, 18),
             List.of(new ProvenanceEnvelope.Adjustment("pattern", "test", Map.of("mrv", 2), null)),
