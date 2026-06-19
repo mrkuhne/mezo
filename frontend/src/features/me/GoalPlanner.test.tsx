@@ -27,9 +27,11 @@ test('GoalPlanner step 0 picks a trajectory and a guard', () => {
 test('GoalPlanner real-mode save posts profile+goal and activates in order', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
+  let profileBody: { activityLevel?: string } | null = null
   server.use(
-    http.put(`${API_BASE}/api/biometrics/profile`, () => {
+    http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
       calls.push('profile')
+      profileBody = (await request.json()) as { activityLevel?: string }
       return HttpResponse.json({ sex: 'M', heightCm: 180, birthDate: '1991-03-01' })
     }),
     http.post(`${API_BASE}/api/goals`, () => {
@@ -55,8 +57,14 @@ test('GoalPlanner real-mode save posts profile+goal and activates in order', asy
   // canNext, so just a title is needed
   fireEvent.change(screen.getByLabelText('Cél neve'), { target: { value: 'Nyári cut' } })
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
-  // Step 2: create + activate
+  // Step 2: the activity-level picker renders (default MODERATE); pick VERY so the
+  // upsert carries a non-default value.
+  expect(screen.getByText('Aktivitási szint')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /nagyon aktív/i }))
+  // create + activate
   fireEvent.click(screen.getByRole('button', { name: /létrehozása \+ aktiválás/i }))
   await waitFor(() => expect(calls).toEqual(['profile', 'goal', 'activate']))
+  expect(profileBody).not.toBeNull()
+  expect(profileBody!.activityLevel).toBe('VERY')
   vi.unstubAllEnvs()
 })

@@ -9,6 +9,7 @@ type SleepLogResponse = components['schemas']['SleepLogResponse']
 type LogSleepRequest = components['schemas']['LogSleepRequest']
 export type CheckInResponse = components['schemas']['CheckInResponse']
 export type SaveCheckInBody = components['schemas']['SaveCheckInRequest']
+export type WeightTrendResponse = components['schemas']['WeightTrendResponse']
 
 export const weightApi = {
   // WeightLogResponse is structurally assignable to the domain WeightEntry — checked by tsc.
@@ -20,6 +21,10 @@ export const weightApi = {
         date: input.date, weightKg: input.weightKg, note: input.note,
       } satisfies LogWeightRequest),
     }),
+  // G5 real EWMA trend (mezo-g1u). The backend computes the weekly rates from the
+  // weight-log spine; useWeight folds these real numbers into the WeightTrends shape.
+  trend: (): Promise<WeightTrendResponse> =>
+    apiFetch<WeightTrendResponse>('/api/biometrics/weight/trend'),
 }
 
 export const sleepApi = {

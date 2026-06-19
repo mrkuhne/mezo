@@ -43,6 +43,23 @@ const TIMELINE = {
   gaps: [{ fromWeek: 7, toWeek: 8 }],
 }
 
+// A real-mode goal that already carries an engine prescription (G5) — drives the
+// recept card in real mode.
+const PRESCRIPTION = {
+  generatedAt: '2026-06-10T06:00:00Z',
+  basis: 'formula',
+  segments: [
+    { fromWeek: 1, toWeek: 6, label: 'Deficit blokk', kcal: 2200, proteinG: 168, sleepTargetH: 7.5, restDays: [3, 7], projectedRateKgPerWk: -0.5, rationale: 'Deficit a gym blokk alatt.' },
+    { fromWeek: 7, toWeek: 8, label: 'Befutó', kcal: 2400, proteinG: 160, sleepTargetH: 8, restDays: [4, 7], projectedRateKgPerWk: -0.3, rationale: 'Lassítunk a végén.' },
+  ],
+  guardStatus: {
+    strength: { active: true, e1rmTrendPct: 0.8, breached: false, notes: [] },
+    muscle: { active: true, minWeeklySetsPerMuscle: 8, belowMaintenanceMuscles: [], rateWithinCap: true, proteinMonitored: false, notes: [] },
+  },
+  feasibility: { verdict: 'feasible', notes: [] },
+}
+const GOAL_WITH_RX = { ...GOAL, prescription: PRESCRIPTION }
+
 function useGoalHandlers() {
   server.use(
     http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL])),
@@ -78,6 +95,24 @@ describe('mock mode (demo goal)', () => {
     expect(screen.getByText(/Hypertrophy 04 · 6 hét/)).toBeInTheDocument()
     // The old "Cél alatt fut · N meso" card-section header is gone.
     expect(screen.queryByText(/Cél alatt fut · \d+ meso/)).not.toBeInTheDocument()
+    // The G5 placeholder is gone — the real recept card renders instead.
+    expect(screen.queryByText('G5 · hamarosan')).not.toBeInTheDocument()
+  })
+
+  test('renders the static G5 recept card (verdict + segments + guard pills)', () => {
+    render(<GoalsView />, { wrapper: Wrapper })
+    // Feasibility verdict from the mock prescription (feasible-with-warnings).
+    expect(screen.getByText('Reális, figyelmeztetésekkel')).toBeInTheDocument()
+    // Both mock segments render with their labels + kcal.
+    expect(screen.getByText('Mély deficit · Reta cycle')).toBeInTheDocument()
+    expect(screen.getByText('Lassú befutó · taper')).toBeInTheDocument()
+    expect(screen.getByText(/2150/)).toBeInTheDocument()
+    expect(screen.getByText(/163/)).toBeInTheDocument()
+    // Guard pills: strength e1RM trend + muscle sets + protein "Fuel-re vár".
+    // ("e1RM" appears in both the pill and the strength note in the mock rx.)
+    expect(screen.getAllByText(/e1RM/).length).toBeGreaterThan(0)
+    expect(screen.getByText(/Fuel-re vár/)).toBeInTheDocument()
+    expect(screen.getByText(/8 szett/)).toBeInTheDocument()
   })
 })
 
@@ -96,6 +131,41 @@ describe('real mode (active goal + timeline)', () => {
     expect(screen.getByText(/Base Build · 4 hét/)).toBeInTheDocument()
     expect(screen.getByText(/W7–8 fedezetlen/)).toBeInTheDocument()
     expect(screen.getByTestId('ruler-week-8')).toBeInTheDocument()
+  })
+
+  test('renders the recept card from a goal that already carries a prescription', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+    )
+    render(<GoalsView />, { wrapper: Wrapper })
+    expect(await screen.findByText('Reális')).toBeInTheDocument() // feasible verdict
+    expect(screen.getByText('Deficit blokk')).toBeInTheDocument()
+    expect(screen.getByText('Befutó')).toBeInTheDocument()
+    expect(screen.getByText(/2200/)).toBeInTheDocument()
+    expect(screen.getByText(/168/)).toBeInTheDocument()
+    // no evaluate CTA when a prescription is already present
+    expect(screen.queryByRole('button', { name: /Értékeld a célt/ })).not.toBeInTheDocument()
+  })
+
+  test('null prescription → the "Értékeld a célt" CTA evaluates the goal (POST /evaluate)', async () => {
+    const calls: string[] = []
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL])), // GOAL has no prescription
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+      http.post(`${API_BASE}/api/goals/g1/evaluate`, () => {
+        calls.push('evaluate')
+        return HttpResponse.json(GOAL_WITH_RX)
+      }),
+    )
+    render(<GoalsView />, { wrapper: Wrapper })
+    const cta = await screen.findByRole('button', { name: /Értékeld a célt/ })
+    await userEvent.click(cta)
+    await waitFor(() => expect(calls).toEqual(['evaluate']))
+    // after the invalidation refetch serves the same goal (still no rx in this stub),
+    // but the POST was made — that's the contract this test guards.
   })
 
   test('the manage sheet Archiválás archives the goal, then closes', async () => {

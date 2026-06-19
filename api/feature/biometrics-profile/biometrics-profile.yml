@@ -36,6 +36,9 @@ components:
         heightCm: { type: number }
         birthDate: { type: string, format: date }
         bodyFatPct: { type: number, nullable: true }
+        # Physical-activity level (PAL bucket) — a TDEE-bootstrap input. Nullable until set;
+        # defaulted to MODERATE server-side when absent.
+        activityLevel: { type: string, enum: [SEDENTARY, LIGHT, MODERATE, VERY, EXTRA], nullable: true }
     BiometricProfileUpsertRequest:
       type: object
       required: [sex, heightCm, birthDate]
@@ -44,3 +47,5 @@ components:
         heightCm: { type: number, minimum: 50, maximum: 260 }
         birthDate: { type: string, format: date }
         bodyFatPct: { type: number, nullable: true, minimum: 0, maximum: 75 }
+        # Optional PAL bucket; server defaults to MODERATE when omitted.
+        activityLevel: { type: string, enum: [SEDENTARY, LIGHT, MODERATE, VERY, EXTRA], nullable: true }

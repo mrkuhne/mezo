@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,7 +32,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
-    BiometricProfilePopulator.class, ResetDatabase.class})
+    BiometricProfilePopulator.class, WeightLogPopulator.class, ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
 
     @Autowired

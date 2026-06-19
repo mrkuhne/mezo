@@ -54,4 +54,13 @@ public class GoalEntity extends OwnedEntity {
     @Column(name = "target_weight_kg") private BigDecimal targetWeightKg;
     @NotNull @Column(name = "rate_target_pct_per_week", nullable = false) private BigDecimal rateTargetPctPerWeek;
     @Column(name = "identity_frame") private String identityFrame;
+
+    // Engine outputs — null until the first evaluate (G5). Typed jsonb, app-ObjectMapper serialized.
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tdee_bootstrap", columnDefinition = "jsonb")
+    private TdeeBootstrapJson tdeeBootstrap;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "prescription", columnDefinition = "jsonb")
+    private GoalPrescriptionJson prescription;
 }

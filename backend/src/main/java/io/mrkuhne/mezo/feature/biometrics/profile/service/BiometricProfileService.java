@@ -45,6 +45,7 @@ public class BiometricProfileService {
         e.setHeightCm(req.getHeightCm());
         e.setBirthDate(req.getBirthDate());
         e.setBodyFatPct(req.getBodyFatPct());
+        e.setActivityLevel(req.getActivityLevel() == null ? null : req.getActivityLevel().getValue());
         return mapper.toResponse(repository.save(e));
     }
 }

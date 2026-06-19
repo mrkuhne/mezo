@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.goal.service;
 
 import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
+import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.mapper.GoalMapper;
 import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
@@ -28,6 +29,7 @@ public class GoalService {
     private final GoalRepository goalRepository;
     private final GoalPlanLinkRepository linkRepository;
     private final GoalMapper goalMapper;
+    private final GoalEngineService goalEngineService;
 
     /** Active goal first, then by start date desc (DB ordering, service hoists active). */
     public List<GoalResponse> listGoals(UUID userId) {
@@ -79,6 +81,10 @@ public class GoalService {
         if (!"active".equals(target.getStatus())) {
             target.setStatus("active");
         }
+        // Recompute the prescription at birth (G5 trigger): the just-activated goal becomes the
+        // owner's spine. Graceful on a missing profile — evaluate returns the "profile required"
+        // note rather than throwing, so the activation never breaks (same tx, cheap, synchronous).
+        goalEngineService.evaluate(userId, id);
         return goalMapper.toResponse(target);
     }
 

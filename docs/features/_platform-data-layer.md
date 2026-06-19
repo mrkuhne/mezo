@@ -13,7 +13,7 @@ key_files:
   - frontend/src/lib/mode.ts
   - frontend/src/lib/api.ts
   - frontend/src/app/providers/QueryProvider.tsx
-related: [_platform-api-backend, _platform-auth-security, train, me]
+related: [_platform-api-backend, _platform-auth-security, train, me, goal-engine]
 ---
 
 # Platform · Data Layer & Dual-Mode — Feature Documentation
@@ -39,9 +39,9 @@ Three API clients exist; only those three domains are wired to a real backend. E
 
 | Hook(s) | Domain | Status |
 |---|---|---|
-| `useWeight` (`logWeight`), `useSleep` (`logSleep`), `useCheckins` (`saveCheckIn`) | Biometrics (weight / sleep / check-in) | ✅ **dual-mode, real backend done** (Phase 2 Slice A). Client `lib/biometricsApi.ts`. `useWeight` (`data/weightHooks.ts`) is the weight half of the former `useGoals`. |
+| `useWeight` (`logWeight`), `useSleep` (`logSleep`), `useCheckins` (`saveCheckIn`) | Biometrics (weight / sleep / check-in) | ✅ **dual-mode, real backend done** (Phase 2 Slice A). Client `lib/biometricsApi.ts`. `useWeight` (`data/weightHooks.ts`) is the weight half of the former `useGoals`. **G5 (`mezo-g1u`) made the weight *trend* real too:** real mode now runs a second `['weightTrend']` query (`weightApi.trend` → `GET /api/biometrics/weight/trend`) and folds the backend's EWMA weekly rates into the `weightTrends` shape; mock mode keeps the static `mockWeightTrends`. The qualitative legs the engine does not yet produce (factors/insights/projection) stay mock as a fallback. |
 | `useGoal` (read-only) | Goal (`Cél`) | ✅ **dual-mode read, real backend done** (goal-system G1 `mezo-2hp` + G3 `mezo-3sc` + G4b `mezo-tji`). Hook `data/goalHooks.ts:57`, clients `lib/goalApi.ts` + `lib/goalLinkApi.ts`. Reads the active goal **and its real linked plans** (G3 timeline). **Since G4b the return shape is additively wider** — `{ goal, goalResponse, linkedMesocycles, timeline, goalId }`: the raw `goalResponse` (so the command-center hero reads trajectory/guards/window/weights straight off the contract — Decision C), the raw `timeline` (the `<GoalTimeline>` lane consumes `timeline.links[]` for lane positions), and `goalId` (the attach/detach target). Goal **management** (archive/delete/attach/detach) ships as a separate mutation hook ↓; goal **creation** ships as another ↓. |
-| `useGoalActions` (`archive`/`remove`/`activate`/`attachPlan`/`detachPlan`/`pending`) | Goal management (`Cél`) | ✅ **dual-mode write, real backend done** (goal-system G4b `mezo-tji`). Hook `data/goalHooks.ts:114`, clients `lib/goalApi.ts` + `lib/goalLinkApi.ts`. The command-center's goal mutations — `archive`/`remove`/`activate` (→ `goalApi.*`) and `attachPlan`/`detachPlan` (→ `goalLinkApi.attach`/`detach`). Real mode invalidates `['goals']` after every action **and additionally `['goal', goalId, 'timeline']` for attach/detach** (so the lane re-renders); **mock no-ops** (resolves so the UI fire-and-forgets). Each action returns the mutation promise (callers `await`/chain navigation); `pending` ORs all five mutations' `isPending`. |
+| `useGoalActions` (`archive`/`remove`/`activate`/`attachPlan`/`detachPlan`/**`evaluate`**/`pending`/`evaluating`) | Goal management + **engine** (`Cél`) | ✅ **dual-mode write, real backend done** (goal-system G4b `mezo-tji`; **`evaluate` added G5 `mezo-g1u`**). Hook `data/goalHooks.ts:114`, clients `lib/goalApi.ts` + `lib/goalLinkApi.ts`. The command-center's goal mutations — `archive`/`remove`/`activate` (→ `goalApi.*`), `attachPlan`/`detachPlan` (→ `goalLinkApi.attach`/`detach`), and **`evaluate(goalId)`** (→ `goalApi.evaluate` → `POST /api/goals/{id}/evaluate`, runs the G5 TDEE/recept engine). Real mode invalidates `['goals']` after every action **and additionally `['goal', goalId, 'timeline']` for attach/detach/evaluate** (so the lane + the fresh `prescription` re-render); **mock no-ops** (resolves so the UI fire-and-forgets). Each action returns the mutation promise (callers `await`/chain navigation); `pending` ORs all six mutations' `isPending`, plus a dedicated `evaluating` flag for the evaluate-CTA spinner. The prescription itself is **read** via `useGoal().goalResponse.prescription` (no separate hook). |
 | `useGoalCreation` (`submit`/`pending`) | Goal creation (`Cél`) | ✅ **dual-mode write, real backend done** (goal-system G4a `mezo-pqt`). Hook `data/goalHooks.ts:179`. The first goal **write** path: `submit` runs a `useMutation` that (real) `biometricProfileApi.upsert` → `goalApi.create` → optional `goalApi.activate`, then invalidates `['goals']`; **mock no-ops** (resolves `null` so the wizard navigates back). Drives the `GoalPlanner` wizard. |
 | `useTrain` (mesocycles, workout-execution, sport, exercise catalog/records) | Train | ✅ **dual-mode, real backend done** (Slice B + T0–T3 + catalog/records). Hook `data/trainHooks.ts`, client `lib/trainApi.ts`. |
 | `useRunning` ("Futás") | Running | ✅ **dual-mode, real backend done** (R0–R4). Hook `data/runningHooks.ts`, client `lib/runningApi.ts`. |
@@ -88,7 +88,7 @@ React view (features/**/*.tsx)
 
 ### The dual-mode pattern (the load-bearing recipe)
 
-Canonical read+write example, `useWeight` (`frontend/src/data/weightHooks.ts:11`):
+Canonical read+write example, `useWeight` (`frontend/src/data/weightHooks.ts:33`):
 
 ```ts
 const mock = isMockMode()
@@ -98,6 +98,14 @@ const { data: weightLog = [] } = useQuery({
   // Mock seeds SYNCHRONOUSLY so the first render matches Phase-1 useState (parity + tests).
   initialData: mock ? initialWeightLog : undefined,
 })
+// G5 (mezo-g1u): the trend is now REAL in real mode — a SECOND query on its own key.
+const { data: weightTrends = mockWeightTrends } = useQuery({
+  queryKey: ['weightTrend'],
+  queryFn: mock
+    ? async () => mockWeightTrends
+    : async () => foldTrend(await weightApi.trend()),   // GET /api/biometrics/weight/trend
+  initialData: mock ? mockWeightTrends : undefined,
+})
 const mutation = useMutation({
   mutationFn: mock
     ? async (input: WeightLogInput): Promise<WeightEntry> =>          // emulate server response
@@ -105,12 +113,17 @@ const mutation = useMutation({
     : weightApi.log,                                                  // real POST
   onSuccess: (entry) => {
     if (mock) qc.setQueryData<WeightEntry[]>(['weightLog'], prev => [...(prev ?? []), entry])  // patch cache
-    else qc.invalidateQueries({ queryKey: ['weightLog'] })                                     // refetch truth
+    else {
+      qc.invalidateQueries({ queryKey: ['weightLog'] })    // refetch the log
+      qc.invalidateQueries({ queryKey: ['weightTrend'] })  // a weigh-in shifts the EWMA → refetch the trend too
+    }
   },
 })
 ```
 
 `initialData` in mock mode means the query is never "pending" — the first render already has data, matching the old Phase-1 synchronous `useState`. This is what keeps parity screenshots and component tests green. In real mode `initialData` is `undefined`, so the query loads and the view must ghost-guard.
+
+**The trend fold (G5, `mezo-g1u`)** is the one place a hook reconciles a *real partial backend* with a *static remainder*: `foldTrend` (`weightHooks.ts:15`) overwrites only the fields the backend `WeightTrendResponse` actually computes — `last7d.avg ← latestTrendKg`, `last7d.weeklyRate ← weeklyRateKgPerWeek`, `last4w.weeklyRate ← last4wRateKgPerWeek` — and spreads the static `mockWeightTrends` for the legs the engine doesn't yet produce (factors/insights/`sinceStart.projected*`). So the goal hero's "Tempó" + the Súly rate cells are real in real mode, while the qualitative copy stays mock until Fuel intake + the Insights pipeline land. The hook's return signature is unchanged — consumers read the same `WeightTrends` field names.
 
 **Three mutation flavors across the codebase:**
 
@@ -119,7 +132,7 @@ const mutation = useMutation({
 - **Pure no-op** (mock) → `async () => undefined`, real → persist + `invalidateQueries`: `useTrain`'s remaining **twelve** write mutations (all except `logSportSession`, which now does a mock cache-append — see above; incl. `gymScheduleMutation` → PUT `/gym-schedule`, invalidates `['train','gymSchedule']`, and the active-workout-v2 writes `skipExercise` → POST `/workouts/{id}/skip` and `saveExerciseNote` → PUT `/exercises/{id}/note`, both invalidating `['train','workoutToday']`); rationale in-code — "mock mode no-ops (Phase-1 local behavior stays untouched)".
 - **Local `useState` (no query at all)**: `useCheckins` (`hooks.ts:40`) and `usePeople` (`hooks.ts:106`). `useCheckins` is a hybrid — it always updates local state synchronously and, **only in real mode**, additionally fires `checkinApi.save` as a fire-and-forget mutation (errors just `console.error`, no rollback). `usePeople.logMention` is mock-only (mints a `Mention` with `crypto.randomUUID()` and prepends it).
 - **Read-only, with a derived/mapped result** (no mutation): `useGoal` (`data/goalHooks.ts:57`, G1+G3+G4b) reads `['goals']` (`queryFn = mock ? () => null : goalApi.list`), picks the active goal, and maps `GoalResponse → Goal` via `toGoal` so the legacy consumers (`WeightView`/`FuelStackView`/`EditGoalSheet`) keep the flattened domain shape. It **also reads `['weightLog']` with no `queryFn`** — deliberately sharing the cache `useWeight` owns — to derive `currentWeight` from the latest weight entry without a second fetch. Two queries on one cache key (one owns the fetch, the other rides it) is the idiom G1 introduces. **G3 adds a third query** `['goal', goalId, 'timeline']` (`queryFn = goalLinkApi.timeline`, `enabled: !mock && !!goalId`) — its `links` are mapped to the legacy `linkedMesocycles` (`Record<planId, LinkedMeso>`) and `goal.mesocycles` (`toLinkedMesocycles`, `data/goalHooks.ts:42`). **G4b widened the return shape additively** (`data/goalHooks.ts:106`): it now also exposes the **raw `goalResponse`** (the command-center hero reads trajectory/guards/window/weights straight off the contract, so `toGoal` could retire its `startDate`/`targetDate`/`unit` fields — Decision C), the **raw `timeline`** (the `<GoalTimeline>` lane needs `timeline.links[]` for lane positions, which `LinkedMeso` can't carry), and **`goalId`** (the attach/detach target). Mock mode (`data/goalHooks.ts:79`) returns the static `mockGoal`/`mockGoalResponse`/`linkedMesocycles` **plus a static `goalTimeline`** (`data/goals.ts:84` — Decision A: a real `GoalTimelineResponse`, not `null`, so the lane renders the same lanes/gaps offline) and `goalId = mockGoal.id`.
-- **Sibling mutation hook to a read hook** (G4b): `useGoalActions` (`data/goalHooks.ts:114`) carries the command-center's five goal mutations — `archive`/`remove`/`activate` (→ `goalApi.archive`/`remove`/`activate`) and `attachPlan`/`detachPlan` (→ `goalLinkApi.attach`/`detach`). The split mirrors the read/write separation of `useGoal` vs `useGoalCreation`: `useGoal` stays a pure read, mutations live in their own hook so a view subscribes to only what it needs. **Real-mode invalidation is two-tier** — every action's `onSuccess` invalidates `['goals']`; attach/detach **additionally** invalidate `['goal', goalId, 'timeline']` (the lane's source) — while **mock no-ops** (each `mutationFn` early-returns under `isMockMode()`). Every action wraps `mutateAsync` (returns the promise, so callers `await`/chain a navigate); `pending` ORs all five `isPending` flags.
+- **Sibling mutation hook to a read hook** (G4b + G5): `useGoalActions` (`data/goalHooks.ts:114`) carries the command-center's **six** goal mutations — `archive`/`remove`/`activate` (→ `goalApi.archive`/`remove`/`activate`), `attachPlan`/`detachPlan` (→ `goalLinkApi.attach`/`detach`), and **`evaluate`** (G5 `mezo-g1u`, → `goalApi.evaluate` → `POST /api/goals/{id}/evaluate`, runs the backend TDEE/recept engine). The split mirrors the read/write separation of `useGoal` vs `useGoalCreation`: `useGoal` stays a pure read, mutations live in their own hook so a view subscribes to only what it needs. **Real-mode invalidation is two-tier** — every action's `onSuccess` invalidates `['goals']`; attach/detach **and `evaluate`** additionally invalidate `['goal', goalId, 'timeline']` (the lane's source + so the fresh `prescription` reappears) — while **mock no-ops** (each `mutationFn` early-returns under `isMockMode()`, since `mockGoalResponse.prescription` already renders the static recept). Every action wraps `mutateAsync` (returns the promise, so callers `await`/chain a navigate); `pending` ORs all six `isPending` flags, plus a dedicated `evaluating` flag drives the evaluate-CTA spinner. **The prescription/tdeeBootstrap the engine produces are not a separate query** — they ride `useGoal().goalResponse` (the engine persists them onto the goal, so the `['goals']` refetch surfaces them).
 - **Sequential multi-write mutation** (G4a): `useGoalCreation` (`data/goalHooks.ts:179`) is the data layer's first **chained** write — its `mutationFn` awaits three calls **in order** (`biometricProfileApi.upsert` → `goalApi.create` → optional `goalApi.activate`) before `onSuccess` invalidates `['goals']`. Mock mode returns `null` (no-op). Exposes `{ submit, pending }` and takes a per-call `{ onSuccess }` so the `GoalPlanner` wizard can navigate back; the input is the typed `GoalCreationInput = { profile: BiometricProfileUpsertRequest; goal: GoalUpsertRequest; activate: boolean }` (`goalHooks.ts:173`).
 
 ### The "no static fallback in real mode → ghost-guard" rule
@@ -142,8 +155,8 @@ The FE↔BE boundary types are **generated, never hand-written** (see `docs/refe
 
 **Endpoints by client:**
 
-- `biometricsApi` (`lib/biometricsApi.ts`): `GET/POST /api/biometrics/weight`, `GET/POST /api/biometrics/sleep`, `GET ?date= / POST /api/biometrics/checkin`. Types `WeightLogResponse`/`LogWeightRequest`, `SleepLogResponse`/`LogSleepRequest`, `CheckInResponse`/`SaveCheckInRequest`.
-- `goalApi` (`lib/goalApi.ts`, G1): `GET/POST /api/goals`, `GET/PUT/DELETE /api/goals/:id`, `POST /api/goals/:id/activate`, `POST /api/goals/:id/archive`. Types `GoalResponse`/`GoalUpsertRequest`. (`useGoal` consumes only `list` today.)
+- `biometricsApi` (`lib/biometricsApi.ts`): `GET/POST /api/biometrics/weight`, **`GET /api/biometrics/weight/trend`** (the EWMA trend, G5 `mezo-g1u` — `weightApi.trend` → `WeightTrendResponse`), `GET/POST /api/biometrics/sleep`, `GET ?date= / POST /api/biometrics/checkin`. Types `WeightLogResponse`/`LogWeightRequest`, `WeightTrendResponse`, `SleepLogResponse`/`LogSleepRequest`, `CheckInResponse`/`SaveCheckInRequest`.
+- `goalApi` (`lib/goalApi.ts`, G1; `evaluate` G5): `GET/POST /api/goals`, `GET/PUT/DELETE /api/goals/:id`, `POST /api/goals/:id/activate`, `POST /api/goals/:id/archive`, **`POST /api/goals/:id/evaluate`** (G5 `mezo-g1u` — runs the engine, returns the goal carrying the fresh `prescription`/`tdeeBootstrap`). Types `GoalResponse`/`GoalUpsertRequest`. (`useGoal` consumes `list`; `useGoalActions` consumes `archive`/`remove`/`activate`/`evaluate`.)
 - `goalLinkApi` (`lib/goalLinkApi.ts`, G3): `GET /api/goals/:id/timeline`, `POST /api/goals/:id/plans`, `DELETE /api/goals/:id/plans/:linkId`. Types `GoalTimelineResponse`/`GoalPlanLinkResponse`/`GoalPlanAttachRequest`. (`useGoal` consumes only `timeline` today; attach/detach are wired but unused until the G4 UI.)
 - `biometricProfileApi` (`lib/biometricProfileApi.ts`, G1): `GET/PUT /api/biometrics/profile`. Types `BiometricProfileResponse`/`BiometricProfileUpsertRequest`. **No hook consumes it yet** (FE wiring is a later slice).
 - `trainApi` (`lib/trainApi.ts`): `mesocycles` (GET), `sport-sessions` (GET), mesocycle `create`/`:id/activate`/`:id/close`, `:mesoId/days/:dayId/exercises` (PUT), `workouts/today` (GET), `workouts` (start), `workouts/:id/sets` (logSet), `workouts/:id/skip` (skipExercise, F3), `workouts/:id/feedback`, `workouts/:id/finish`, `exercises/:exerciseId/note` (saveExerciseNote PUT, F4), `sport-schedule` (GET/PUT), `gym-schedule` (GET/PUT — `gymSchedule`/`replaceGymSchedule`), `exercises` (catalog GET), `exercise-records` (GET). 20 endpoints.
@@ -230,8 +243,8 @@ pnpm build                      # tsc -b && vite build
 - `frontend/src/data/hooks.ts` — **THE single FE↔data boundary**; ~22 hooks, re-exports `useTrain`/`useRunning`/`useWeight`/`useGoal`.
 - `frontend/src/data/trainHooks.ts` — `useTrain` (richest dual-mode hook: 7 queries, 13 mutations, DTO→display mappers).
 - `frontend/src/data/runningHooks.ts` — `useRunning` (cleanest idiom: full `setQueryData` mock emulation, generated types as view model).
-- `frontend/src/data/weightHooks.ts` — `useWeight` (weight log+trend; the weight half of the former `useGoals`).
-- `frontend/src/data/goalHooks.ts` — `useGoal` (G1+G3+G4b; real active-goal read at :57, `toGoal` back-compat adapter at :18, shares the `['weightLog']` cache; G3 `toLinkedMesocycles` at :42 builds real `linkedMesocycles` from the `goalLinkApi.timeline` query; G4b additively exposes raw `goalResponse`/`timeline`/`goalId`) + `useGoalActions` (G4b; the five command-center mutations at :114 — archive/remove/activate + attach/detach — two-tier `['goals']`/timeline invalidation, mock no-ops) + `useGoalCreation` (G4a; chained profile-upsert→create→activate write at :179, `GoalCreationInput` at :173).
+- `frontend/src/data/weightHooks.ts` — `useWeight` (weight log+trend; the weight half of the former `useGoals`). G5 (`mezo-g1u`) added the real `['weightTrend']` query + `foldTrend` (:15) folding the backend EWMA rates into `weightTrends`.
+- `frontend/src/data/goalHooks.ts` — `useGoal` (G1+G3+G4b; real active-goal read at :57, `toGoal` back-compat adapter at :18, shares the `['weightLog']` cache; G3 `toLinkedMesocycles` at :42 builds real `linkedMesocycles` from the `goalLinkApi.timeline` query; G4b additively exposes raw `goalResponse`/`timeline`/`goalId` — the latter now also carries the engine's `prescription`/`tdeeBootstrap`) + `useGoalActions` (G4b+G5; the **six** command-center mutations at :114 — archive/remove/activate + attach/detach + **evaluate** (:153, runs the engine) — two-tier `['goals']`/timeline invalidation, `evaluating` flag, mock no-ops) + `useGoalCreation` (G4a; chained profile-upsert→create→activate write at :179, `GoalCreationInput` at :173).
 - `frontend/src/lib/mode.ts` — `isMockMode()`, the per-call mode switch.
 - `frontend/src/lib/api.ts` — `apiFetch`, `API_BASE`, `setToken`, `ApiError`, `SystemMessage`.
 - `frontend/src/lib/auth.ts` — `bootstrapOwnerToken` (silent owner login).

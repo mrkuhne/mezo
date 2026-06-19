@@ -32,6 +32,59 @@ export const goalResponse: GoalResponse = {
   targetWeightKg: goal.targetWeight,
   rateTargetPctPerWeek: 0.6,
   identityFrame: goal.identityFrame,
+  // G5 engine output (mock) — a feasible-with-warnings verdict + two recept
+  // segments (deficit during the gym blocks, taper near the target) + the guard
+  // status the recept card renders. Mirrors the GoalPrescription contract so the
+  // card renders offline in mock mode without a backend evaluate. (mezo-g1u)
+  tdeeBootstrap: { bmr: 1720, tdee: 2666, pal: 1.55, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z' },
+  prescription: {
+    generatedAt: '2026-05-22T06:05:00Z',
+    basis: 'formula',
+    segments: [
+      {
+        fromWeek: 1,
+        toWeek: 12,
+        label: 'Mély deficit · Reta cycle',
+        kcal: 2150,
+        proteinG: 163,
+        sleepTargetH: 7.5,
+        restDays: [3, 7],
+        projectedRateKgPerWk: -0.55,
+        rationale: 'A Reta cycle alatt agresszívabb deficit fér bele — a fehérje magasan tartja az izmot, az alvás védi a regenerációt.',
+      },
+      {
+        fromWeek: 13,
+        toWeek: 20,
+        label: 'Lassú befutó · taper',
+        kcal: 2380,
+        proteinG: 155,
+        sleepTargetH: 8,
+        restDays: [4, 7],
+        projectedRateKgPerWk: -0.35,
+        rationale: 'A célsúly közeledtével lassítunk, hogy az erő-gardot ne sértsük és a forma stabil maradjon a deadline-ra.',
+      },
+    ],
+    guardStatus: {
+      strength: {
+        active: true,
+        e1rmTrendPct: 1.2,
+        breached: false,
+        notes: ['Az e1RM trend pozitív — a deficit eddig nem nyomta le az erőt.'],
+      },
+      muscle: {
+        active: true,
+        minWeeklySetsPerMuscle: 8,
+        belowMaintenanceMuscles: [],
+        rateWithinCap: true,
+        proteinMonitored: false,
+        notes: ['Minden izomcsoport eléri a heti 8 fenntartó szettet.'],
+      },
+    },
+    feasibility: {
+      verdict: 'feasible-with-warnings',
+      notes: ['A tempó a cap közelében van — a befutóban lassítunk.', 'A fehérje-cél Fuel-logolás nélkül még nem ellenőrzött.'],
+    },
+  },
 }
 
 export const weightLog: WeightEntry[] = [

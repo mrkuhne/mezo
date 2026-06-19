@@ -41,6 +41,44 @@ public class RunningPopulator {
         return blockRepository.saveAndFlush(e);
     }
 
+    /**
+     * Block whose structure carries exactly {@code weeks} weeks, each with {@code sessionsPerWeek}
+     * sprint sessions — lets the projection's running energy-delta (sessions/week) be asserted
+     * deterministically. {@code weeks} also sets the entity's {@code weeks} field.
+     */
+    public RunningBlockEntity createBlockWithSessions(
+        UUID createdBy, String title, String status, int weeks, int sessionsPerWeek) {
+        RunningBlockEntity e = new RunningBlockEntity();
+        e.setCreatedBy(createdBy);
+        e.setTitle(title);
+        e.setKind("interval");
+        e.setStatus(status);
+        e.setStartDate(LocalDate.parse("2026-06-01"));
+        e.setEndDate(LocalDate.parse("2026-06-01").plusWeeks(weeks).minusDays(1));
+        e.setWeeks(weeks);
+        e.setCurrentWeek(1);
+        e.setStructure(structureWithSessions(weeks, sessionsPerWeek));
+        return blockRepository.saveAndFlush(e);
+    }
+
+    private static RunningBlockStructure structureWithSessions(int weeks, int sessionsPerWeek) {
+        java.util.List<RunWeek> weekList = new java.util.ArrayList<>();
+        for (int w = 1; w <= weeks; w++) {
+            java.util.List<RunPrescribedSession> sessions = new java.util.ArrayList<>();
+            for (int s = 0; s < sessionsPerWeek; s++) {
+                sessions.add(new RunPrescribedSession(
+                    "w" + w + "-s" + s, s % 7, "18:00", "Sprint-intervallum", "sprint",
+                    new RpeTarget(9, 10), 6,
+                    List.of(new RunSegment("warmup", 300, null),
+                            new RunSegment("work", 15, null),
+                            new RunSegment("rest", 45, null),
+                            new RunSegment("cooldown", 300, null))));
+            }
+            weekList.add(new RunWeek(w, "Alapozás", sessions));
+        }
+        return new RunningBlockStructure(weekList);
+    }
+
     public RunSessionLogEntity createLog(UUID createdBy, UUID blockId, int week, String key) {
         RunSessionLogEntity e = new RunSessionLogEntity();
         e.setCreatedBy(createdBy);
