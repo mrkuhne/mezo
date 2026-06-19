@@ -67,6 +67,26 @@ public record GoalEngineProperties(
         @NotNull @Positive Double very,      // 1.725
         @NotNull @Positive Double extra      // 1.9
     ) {
+
+        /**
+         * Maps a {@code BiometricProfile.activityLevel} value (SEDENTARY | LIGHT | MODERATE |
+         * VERY | EXTRA, case-insensitive) to its PAL multiplier. Falls back to {@link #moderate}
+         * (1.55) for {@code null} or any unknown value — {@code activity_level} is nullable until
+         * captured, and the engine's documented default is MODERATE.
+         */
+        public Double forLevel(String activityLevel) {
+            if (activityLevel == null) {
+                return moderate;
+            }
+            return switch (activityLevel.trim().toUpperCase()) {
+                case "SEDENTARY" -> sedentary;
+                case "LIGHT" -> light;
+                case "MODERATE" -> moderate;
+                case "VERY" -> very;
+                case "EXTRA" -> extra;
+                default -> moderate;
+            };
+        }
     }
 
     /** Protein-target tunables — body-weight (BW) and lean-body-mass (LBM) bases. */
