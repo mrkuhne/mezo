@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.service;
 import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
 import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanRef;
+import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPlanLinkEntity;
 import io.mrkuhne.mezo.feature.goal.mapper.GoalPlanLinkMapper;
@@ -35,6 +36,7 @@ public class GoalPlanLinkService {
     private final MesocycleRepository mesocycleRepository;
     private final RunningBlockRepository runningBlockRepository;
     private final GoalPlanLinkMapper mapper;
+    private final GoalEngineService goalEngineService;
 
     /** Owned links for the goal, ordered by start_week (the timeline service consumes these). */
     public List<GoalPlanLinkEntity> listLinks(UUID userId, UUID goalId) {
@@ -53,7 +55,12 @@ public class GoalPlanLinkService {
         e.setPlanId(req.getPlanId());
         e.setStartWeek(req.getStartWeek());
         e.setEndWeek(req.getStartWeek() + plan.getWeeks() - 1); // derived — request never sets end_week
-        return mapper.toResponse(linkRepository.save(e), plan);
+        GoalPlanLinkResponse resp = mapper.toResponse(linkRepository.save(e), plan);
+        // The timeline changed → recompute the goal whose links changed (G5 trigger). Simplest
+        // gate: recompute this goal regardless of its status — an inactive goal's prescription still
+        // reflects its plan. Graceful on a missing profile (evaluate never throws).
+        goalEngineService.evaluate(userId, goalId);
+        return resp;
     }
 
     @Transactional
@@ -63,6 +70,8 @@ public class GoalPlanLinkService {
             .filter(l -> l.getGoalId().equals(goalId)) // the link must belong to THIS goal
             .orElseThrow(this::notFound);
         linkRepository.delete(link); // @SQLDelete soft-deletes
+        // The timeline changed → recompute the goal whose link was removed (G5 trigger).
+        goalEngineService.evaluate(userId, goalId);
     }
 
     /** Resolve + ownership-check the referenced plan, returning the display ref the response carries. */
