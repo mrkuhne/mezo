@@ -17,4 +17,8 @@ export const goalApi = {
     apiFetch<GoalResponse>(`/api/goals/${id}/activate`, { method: 'POST' }),
   archive: (id: string): Promise<GoalResponse> =>
     apiFetch<GoalResponse>(`/api/goals/${id}/archive`, { method: 'POST' }),
+  // Run the TDEE/recept engine — computes + persists tdeeBootstrap + prescription,
+  // returns the updated goal (G5). Surfaced via useGoalActions().evaluate.
+  evaluate: (id: string): Promise<GoalResponse> =>
+    apiFetch<GoalResponse>(`/api/goals/${id}/evaluate`, { method: 'POST' }),
 }

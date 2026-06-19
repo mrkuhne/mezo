@@ -235,36 +235,9 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
           {ambientBandText}
         </div>
       </div>
-
-      {/* RECEPT-SEGMENT STRIP — G5 placeholder (no engine logic in G4b) */}
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', margin: '14px 0 6px' }}>
-        <span className="eyebrow">Recept · szakaszonként</span>
-        <span
-          className="tag"
-          style={{
-            fontFamily: 'var(--ff-mono)',
-            fontSize: 8,
-            letterSpacing: '.06em',
-            padding: '1px 6px',
-            border: '1px solid var(--border-subtle)',
-            color: 'var(--text-tertiary)',
-          }}
-        >
-          G5 · hamarosan
-        </span>
-      </div>
-      <div
-        className="card notch-4"
-        style={{
-          padding: '10px 11px',
-          background: 'rgba(94, 234, 212, 0.04)',
-          fontFamily: 'var(--ff-mono)',
-          fontSize: 9,
-          color: 'var(--text-tertiary)',
-        }}
-      >
-        A blokkhatárok tolják majd a receptet — a motor a G5-ben érkezik.
-      </div>
+      {/* The per-segment recept lane that used to be a G5 placeholder here now
+          lives in GoalRecept (rendered by GoalsView from the engine's
+          prescription) — the timeline stays purely the time-axis lanes. (mezo-g1u) */}
     </div>
   )
 }

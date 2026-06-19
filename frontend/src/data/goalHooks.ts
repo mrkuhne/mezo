@@ -146,6 +146,14 @@ export function useGoalActions() {
     },
     onSuccess: (_data, { goalId }) => { invalidateGoals(); invalidateTimeline(goalId) },
   })
+  // Run the G5 TDEE/recept engine on the goal. Real mode POSTs /evaluate then
+  // invalidates ['goals'] (so the fresh prescription appears) + the goal's timeline
+  // (segments derive from block boundaries). Mock no-ops (the static prescription
+  // already renders). (mezo-g1u)
+  const evaluateM = useMutation({
+    mutationFn: async (id: string) => { if (mock) return null; return goalApi.evaluate(id) },
+    onSuccess: (_data, id) => { invalidateGoals(); invalidateTimeline(id) },
+  })
 
   const archive = useCallback((id: string) => archiveM.mutateAsync(id), [archiveM])
   const remove = useCallback((id: string) => removeM.mutateAsync(id), [removeM])
@@ -158,11 +166,12 @@ export function useGoalActions() {
     (goalId: string, linkId: string) => detachM.mutateAsync({ goalId, linkId }),
     [detachM],
   )
+  const evaluate = useCallback((id: string) => evaluateM.mutateAsync(id), [evaluateM])
 
   const pending =
-    archiveM.isPending || removeM.isPending || activateM.isPending || attachM.isPending || detachM.isPending
+    archiveM.isPending || removeM.isPending || activateM.isPending || attachM.isPending || detachM.isPending || evaluateM.isPending
 
-  return { archive, remove, activate, attachPlan, detachPlan, pending }
+  return { archive, remove, activate, attachPlan, detachPlan, evaluate, pending, evaluating: evaluateM.isPending }
 }
 
 // Goal-creation wizard (slice G4a) save chain. Real mode runs the writes in

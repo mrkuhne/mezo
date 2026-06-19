@@ -14,6 +14,7 @@ import { FactorCard } from '../components/FactorCard'
 import { InsightCard } from '../components/InsightCard'
 import { GoalStat } from '../components/GoalStat'
 import { GoalTimeline } from '../components/GoalTimeline'
+import { GoalRecept } from '../components/GoalRecept'
 import { GoalPlanSlots } from '../components/GoalPlanSlots'
 import { EditGoalSheet } from '../EditGoalSheet'
 // LinkedMesoCard was the per-row card the GoalTimeline lane view replaced in G4b.
@@ -41,7 +42,7 @@ const FACTOR_TOOLS: Tool[] = [
 export function GoalsView() {
   const navigate = useNavigate()
   const { goal, goalResponse, timeline, goalId } = useGoal()
-  const { detachPlan } = useGoalActions()
+  const { detachPlan, evaluate, evaluating } = useGoalActions()
   const { weightTrends } = useWeight()
   const [sheet, setSheet] = useState<'goal' | null>(null)
 
@@ -284,6 +285,19 @@ export function GoalsView() {
         ) : (
           <GhostState lines={3} message="Még nincs terv a cél alá csatolva — tervezz egy mesót, és itt jelenik meg az idővonalon." />
         )}
+      </div>
+
+      {/* Recept — the G5 engine finale: the segmented prescription (kcal/protein/
+          sleep/rest per block + projected rate + rationale), the feasibility verdict
+          and the guard-status pills. Replaces G4b's "G5 · hamarosan" placeholder.
+          Null prescription (real, not yet evaluated) → the "Értékeld a célt" CTA that
+          runs the engine via useGoalActions().evaluate. (mezo-g1u) */}
+      <div style={{ padding: '0 24px 16px' }}>
+        <GoalRecept
+          prescription={goalResponse.prescription}
+          onEvaluate={goalId ? () => evaluate(goalId) : undefined}
+          evaluating={evaluating}
+        />
       </div>
 
       {/* Plan slots — the hub-and-spoke assembly UX (G4b, goal-funnel.html Funnel B):
