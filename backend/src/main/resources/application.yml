@@ -25,6 +25,43 @@ mezo:
     # and bypass CORS entirely.
     allowed-origins:
       - http://localhost:5180
+  goal:
+    # G5 goal-engine tunables (grounded research). Binds onto GoalEngineProperties; the engine
+    # services (Tasks 5–8) read these so no magic numbers / @Value live downstream.
+    # PAL multipliers (BMR -> TDEE); moderate is the engine default when activity level is unknown.
+    pal:
+      sedentary: 1.2
+      light: 1.375
+      moderate: 1.55
+      very: 1.725
+      extra: 1.9
+    kcal-per-kg: 7700               # band 6000–7700
+    protein:
+      g-per-kg-bw-default: 2.0
+      g-per-kg-bw-floor: 1.6
+      g-per-kg-bw-ceil: 2.2
+      g-per-kg-lbm-low: 2.3
+      g-per-kg-lbm-high: 3.1
+      g-per-kg-bw-cap: 2.6
+    rate:
+      target-pct-per-week: 0.7
+      cap-pct-per-week: 1.0
+      band-low: 0.5
+      band-high: 1.0
+    volume:
+      maintenance-sets: 8
+      warn-below: 6
+    strength:
+      e1rm-breach-pct: -5.0
+    ewma:
+      half-life-days: 10           # band 10–14
+    met:                           # per-session kcal deltas, 84 kg basis
+      hypertrophy-kcal: 325
+      interval-run-kcal: 500
+      volleyball-rec-kcal: 500
+      volleyball-comp-kcal: 1150
+    thermogenesis-haircut-kcal-per-day: 0   # default off; optional band 100–200
+    bootstrap-uncertainty-kcal: 300
 management:
   endpoints:
     web:
