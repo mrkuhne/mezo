@@ -63,6 +63,34 @@ public class TrainPopulator {
         return mesocycleRepository.saveAndFlush(m);
     }
 
+    /**
+     * Meso with a uniform single-phase curve of length {@code weeks} — keeps the projection's
+     * segmentation driven solely by running on/off (no meso-phase boundaries), so the worked TDEE
+     * step numbers stay clean.
+     */
+    public MesocycleEntity createMesocycleWithPhase(
+        UUID createdBy, String title, String status, int weeks, String phase) {
+        MesocycleEntity m = new MesocycleEntity();
+        m.setCreatedBy(createdBy);
+        m.setTitle(title);
+        m.setShortTitle(title);
+        m.setStatus(status);
+        m.setStartDate(LocalDate.parse("2026-06-01"));
+        m.setEndDate(LocalDate.parse("2026-06-01").plusWeeks(weeks).minusDays(1));
+        m.setWeeks(weeks);
+        m.setCurrentWeek(1);
+        m.setSplit("Pull / Push / Legs · 5×/hét");
+        m.setStyle("RP · " + weeks + " hét");
+        List<String> curve = new java.util.ArrayList<>();
+        for (int i = 0; i < weeks; i++) {
+            curve.add(phase);
+        }
+        m.setPhaseCurve(curve);
+        m.setVolumeRecompute(new VolumeRecomputeJson("Vasárnap", "Vasárnap", "batch",
+            List.of(new VolumeRecomputeJson.Change("back", "MRV +2", "stabil", null))));
+        return mesocycleRepository.saveAndFlush(m);
+    }
+
     public MuscleGroupVolumeLogEntity createVolumeLog(UUID createdBy, UUID mesocycleId, String muscle) {
         MuscleGroupVolumeLogEntity v = new MuscleGroupVolumeLogEntity();
         v.setCreatedBy(createdBy);
