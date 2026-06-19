@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-06-18
+updated: 2026-06-19
 tags: [me, biometrics, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/me
@@ -30,7 +30,7 @@ The **Me** area is the user's personal hub: who they are (`Profil`), their long-
 |---|---|---|---|---|
 | `Profil` | `/me` (index) | ✅ | n/a (no endpoint consumed) | ✅ `biometric_profile` (G1) — table+API exist, FE not yet wired |
 | `Cél` (goal/strategy) | `/me/goals` (+ `/me/goals/new` wizard) | ✅ | ✅ active goal + **goal creation** (G4a) | ✅ `goal` (G1) + `goal_plan_link` links (G3); insights/factors still mock |
-| `Súly` (weight log + trend) | `/me/weight` | ✅ | ✅ weight log | ✅ `weight_log` (G1; trends still mock) |
+| `Súly` (weight log + trend) | `/me/weight` | ✅ | ✅ weight log + EWMA trend | ✅ `weight_log` (G1) + real EWMA trend (G5) |
 | `Alvás` (sleep) | `/me/sleep` | ✅ | ✅ sleep log | ✅ `sleep_log` (trends/target still mock) |
 | `Emberek` (People) | `/me/people` | ✅ | n/a (no endpoint) | 🔶 none |
 | `Tudás` (Knowledge) | `/me/knowledge` | ✅ | n/a | 🔶 Insights-domain data (see §5.5 — out of Me scope) |
@@ -60,7 +60,7 @@ The long-term goal & strategy surface — **no daily weight log here anymore** (
 **Goal creation (G4a):** a `+ Új cél` chip in the `GoalsView` header (`GoalsView.tsx:49-51`) `navigate`s to the sibling route `/me/goals/new` → **`GoalPlanner`** (`frontend/src/features/me/GoalPlanner.tsx`), a 3-step wizard:
 1. **Trajektória + guards** (`GoalPlanner.tsx:132-209`) — pick `cut`/`bulk`/`maintain` + optional `strength`/`muscle` guards.
 2. **Window + weights + tempo + identity** (`Step1`, `GoalPlanner.tsx:295`) — title, start/target dates, start/target weight (target hidden for `maintain`), `rateTargetPctPerWeek`, optional identity frame. `canNext` requires `targetDateIso > startDateIso` (mitigates the inverted-date 500 from the UI — backend guard is `mezo-b0k`).
-3. **BiometricProfile TDEE inputs** (`Step2`, `GoalPlanner.tsx:434`) — sex, height, birth date, optional body-fat % (the TDEE-bootstrap body composition).
+3. **BiometricProfile TDEE inputs** (`Step2`, `GoalPlanner.tsx:447`) — sex, height, birth date, optional body-fat % (the TDEE-bootstrap body composition), and the **activity-level picker** (G5, `mezo-g1u`): 5 segmented options with HU label + a one-line PAL hint (`ACTIVITY_LEVELS`, `GoalPlanner.tsx:14-22`) → `BiometricProfileUpsertRequest.activityLevel` (`SEDENTARY`/`LIGHT`/`MODERATE`/`VERY`/`EXTRA`), default `MODERATE`. The engine's TDEE = BMR × PAL reads this off the saved profile.
 
 `save(activate)` (`GoalPlanner.tsx:58-83`) builds a `GoalCreationInput` and calls `useGoalCreation().submit(input, { onSuccess: () => navigate('/me/goals') })` — two CTAs on step 3: **"Cél létrehozása + aktiválás"** (`activate=true`) and **"Mentés tervezettként"** (`activate=false`). Step weights default from the latest `useWeight` entry. In **mock mode** the submit no-ops and just navigates back (Phase-1 parity with `MesocyclePlanner`).
 
@@ -81,9 +81,10 @@ Renders knowledge facts from `useKnowledge`. The route lives under `/me/knowledg
 The single FE↔data boundary is **`frontend/src/data/hooks.ts`**. Each hook branches on `isMockMode()` (`frontend/src/lib/mode.ts` — `import.meta.env.VITE_USE_MOCK !== 'false'`, **default mock**). Views import only from `@/data/hooks`, never deeper.
 
 ```
-WeightView ─ useWeight() ┬─ mock:  initialWeightLog (initialData, sync)
-(weightHooks.ts:11)      └─ real:  weightApi.list ──► GET  /api/biometrics/weight
-                                   weightApi.log  ──► POST /api/biometrics/weight ──► weight_log
+WeightView ─ useWeight() ┬─ mock:  initialWeightLog + mockWeightTrends (initialData, sync)
+(weightHooks.ts)         └─ real:  weightApi.list  ──► GET  /api/biometrics/weight
+                                   weightApi.trend ──► GET  /api/biometrics/weight/trend (EWMA, G5)
+                                   weightApi.log   ──► POST /api/biometrics/weight ──► weight_log
 GoalsView ─┬─ useGoal()  ─┬─ mock:  mockGoal + static linkedMesocycles
 (goalHooks.ts:54)        └─ real:  goalApi.list ──► GET /api/goals
                                    pick active → toGoal(res, weightLog) ──► Goal domain shape
@@ -99,9 +100,9 @@ GoalsView ─┬─ useGoal()  ─┬─ mock:  mockGoal + static linkedMesocycl
 
 **Weight (`useWeight`, `frontend/src/data/weightHooks.ts:11-33`):** the weight half lifted out verbatim — same `['weightLog']` cache key.
 - *read* — `useQuery(['weightLog'])`, `queryFn = mock ? () => initialWeightLog : weightApi.list`. Mock seeds `initialData` synchronously (parity with the old Phase-1 `useState`); **real mode has no `initialData`** → `[]` until the fetch resolves.
-- *write* — `useMutation`, `mutationFn = mock ? (emulate WeightEntry) : weightApi.log`. `onSuccess`: mock → `qc.setQueryData(['weightLog'], append)`; real → `qc.invalidateQueries(['weightLog'])` (re-fetches server truth).
-- `weightTrends` stays the static mock until the G5 engine computes real trends.
-- `weightApi` (`frontend/src/lib/biometricsApi.ts:13-23`): `GET/POST /api/biometrics/weight` over `apiFetch`. POST body `{date, weightKg, note}` typed `satisfies LogWeightRequest`.
+- *write* — `useMutation`, `mutationFn = mock ? (emulate WeightEntry) : weightApi.log`. `onSuccess`: mock → `qc.setQueryData(['weightLog'], append)`; real → invalidate **both** `['weightLog']` and `['weightTrend']` (a new weigh-in shifts the EWMA trend).
+- **`weightTrends` is now REAL in real mode (G5, `mezo-g1u`):** a second `useQuery(['weightTrend'])` — mock → the static `mockWeightTrends` literal (synchronous `initialData`, so the FE renders offline); real → `foldTrend(await weightApi.trend())` (`weightHooks.ts`). `foldTrend` overwrites the fields the views read off the backend `WeightTrendResponse`: `last7d.weeklyRate ← weeklyRateKgPerWeek`, `last7d.avg ← latestTrendKg`, `last4w.weeklyRate ← last4wRateKgPerWeek` (so the hero "Tempó" + the Súly rate cells become real). The **qualitative legs the engine does not yet produce** — `factors`/`insights`/`sinceStart.projected*` + the 4-week `avg`/`delta` — keep the static mock values as a fallback (these go real once Fuel intake + the Insights pipeline land). The hook return signature is unchanged (consumers read the same `WeightTrends` field names).
+- `weightApi` (`frontend/src/lib/biometricsApi.ts`): `GET/POST /api/biometrics/weight` + `GET /api/biometrics/weight/trend` (the EWMA trend, G5) over `apiFetch`. POST body `{date, weightKg, note}` typed `satisfies LogWeightRequest`.
 
 **Goal (`useGoal`, `frontend/src/data/goalHooks.ts:54`):** a **real** hook now.
 - Reads the active goal: `useQuery(['goals'], queryFn = mock ? () => null : goalApi.list)`; in real mode picks `goals.find(g => g.status === 'active')` (falls back to the first goal, else **`null`** — `mezo-72d` ended the old `mockGoal` fallback so real users with no goal get an empty state, not the demo placeholder).
@@ -144,8 +145,9 @@ GoalsView ─┬─ useGoal()  ─┬─ mock:  mockGoal + static linkedMesocycl
 - `GoalUpsertRequest` uses `pattern` (not `enum`) on request `trajectory`/`guards` (a bad enum would 500 in Jackson, a `pattern` mismatch 400s — the house gotcha); `GoalResponse` uses `enum`. Ownership gate returns **404 for missing *or* foreign** (no existence leak).
 
 **Biometric profile** (G1, `api/feature/biometrics-profile/biometrics-profile.yml`; tag `BiometricProfile` → `BiometricProfileApi`):
-- `GET /api/biometrics/profile` → `BiometricProfileResponse {sex, heightCm, birthDate, bodyFatPct?}` — **404 when the owner has no profile yet** (`BiometricProfileService.getProfile`).
-- `PUT /api/biometrics/profile` — `BiometricProfileUpsertRequest {sex (M|F), heightCm (50–260), birthDate, bodyFatPct? (0–75)}` → 200; **find-or-create by `createdBy`** (insert once, update thereafter — one row per owner).
+- `GET /api/biometrics/profile` → `BiometricProfileResponse {sex, heightCm, birthDate, bodyFatPct?, activityLevel?}` — **404 when the owner has no profile yet** (`BiometricProfileService.getProfile`).
+- `PUT /api/biometrics/profile` — `BiometricProfileUpsertRequest {sex (M|F), heightCm (50–260), birthDate, bodyFatPct? (0–75), activityLevel? (SEDENTARY|LIGHT|MODERATE|VERY|EXTRA)}` → 200; **find-or-create by `createdBy`** (insert once, update thereafter — one row per owner). The `GoalPlanner` wizard sends `activityLevel` (default `MODERATE`, G5 `mezo-g1u`).
+- `GET /api/biometrics/weight/trend` → `WeightTrendResponse {ewmaSeries[], latestTrendKg, weeklyRateKgPerWeek, weeklyRatePctPerWeek, last4wRateKgPerWeek, dataSufficiency}` — the real EWMA weight trend (G5); `useWeight` folds it into `weightTrends` (§4).
 - 401 on all → `SystemMessageList`. There is still **no** mention/People endpoint, and the `goal` write/lifecycle endpoints exist but the FE does not yet POST to them (read-only consumption — §6).
 
 ### FE types (`frontend/src/data/types.ts:140-287`)

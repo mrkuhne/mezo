@@ -5,9 +5,20 @@ import { Icon, type IconName } from '@/components/ui/Icon'
 
 type Trajectory = 'cut' | 'bulk' | 'maintain'
 type Guard = 'strength' | 'muscle'
+type ActivityLevel = 'SEDENTARY' | 'LIGHT' | 'MODERATE' | 'VERY' | 'EXTRA'
 
 const STEP_TITLES = ['Mit építünk?', 'Mennyi időnk van?', 'Profil a TDEE-hez'] as const
 const STEP_COUNT = 3
+
+// HU labels + a one-line "mit jelent" hint per PAL level → the BiometricProfile
+// activityLevel enum. Default MODERATE (mezo-g1u): the engine's TDEE = BMR × PAL.
+const ACTIVITY_LEVELS: { id: ActivityLevel; label: string; hint: string }[] = [
+  { id: 'SEDENTARY', label: 'Ülő', hint: 'kevés mozgás, irodai munka' },
+  { id: 'LIGHT', label: 'Enyhén aktív', hint: 'heti 1–2 edzés' },
+  { id: 'MODERATE', label: 'Mérsékelten aktív', hint: 'heti 3–5 edzés' },
+  { id: 'VERY', label: 'Nagyon aktív', hint: 'heti 6–7 edzés' },
+  { id: 'EXTRA', label: 'Extra aktív', hint: 'napi kemény edzés / fizikai munka' },
+]
 
 const TRAJECTORIES: { id: Trajectory; label: string; sub: string; icon: IconName }[] = [
   { id: 'cut', label: 'Fogyás', sub: '↓ deficit', icon: 'minus' },
@@ -45,6 +56,7 @@ export function GoalPlanner() {
   const [heightCm, setHeightCm] = useState(180)
   const [birthDateIso, setBirthDateIso] = useState('1991-03-01')
   const [bodyFat, setBodyFat] = useState<number | ''>('')
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel>('MODERATE')
 
   const backToGoals = () => navigate('/me/goals')
   const toggleGuard = (g: Guard) =>
@@ -63,6 +75,7 @@ export function GoalPlanner() {
           sex,
           heightCm,
           birthDate: birthDateIso,
+          activityLevel,
           ...(bodyFat !== '' ? { bodyFatPct: Number(bodyFat) } : {}),
         },
         goal: {
@@ -231,7 +244,9 @@ export function GoalPlanner() {
         />
       )}
       {step === 2 && (
-        <Step2 {...{ sex, setSex, heightCm, setHeightCm, birthDateIso, setBirthDateIso, bodyFat, setBodyFat }} />
+        <Step2
+          {...{ sex, setSex, heightCm, setHeightCm, birthDateIso, setBirthDateIso, bodyFat, setBodyFat, activityLevel, setActivityLevel }}
+        />
       )}
 
       {/* Nav */}
@@ -440,6 +455,8 @@ function Step2({
   setBirthDateIso,
   bodyFat,
   setBodyFat,
+  activityLevel,
+  setActivityLevel,
 }: {
   sex: 'M' | 'F'
   setSex: (v: 'M' | 'F') => void
@@ -449,6 +466,8 @@ function Step2({
   setBirthDateIso: (v: string) => void
   bodyFat: number | ''
   setBodyFat: (v: number | '') => void
+  activityLevel: ActivityLevel
+  setActivityLevel: (v: ActivityLevel) => void
 }) {
   const field = (label: string, input: ReactNode) => (
     <div className="col gap-sm">
@@ -522,6 +541,48 @@ function Step2({
             style={numStyle}
           />,
         )}
+        {/* Aktivitási szint → PAL: a TDEE = BMR × PAL szorzó. Default MODERATE. */}
+        <div className="col gap-sm">
+          <span className="label-mono">Aktivitási szint</span>
+          <div className="col gap-xs">
+            {ACTIVITY_LEVELS.map(a => {
+              const sel = activityLevel === a.id
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  aria-pressed={sel}
+                  onClick={() => setActivityLevel(a.id)}
+                  className="card notch-4"
+                  style={{
+                    padding: '10px 12px',
+                    textAlign: 'left',
+                    width: '100%',
+                    background: sel
+                      ? 'color-mix(in srgb, var(--brand-glow) 10%, transparent)'
+                      : 'var(--surface-1)',
+                    borderColor: sel ? 'var(--brand-glow)' : 'var(--border-subtle)',
+                  }}
+                >
+                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--ff-display)',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: sel ? 'var(--brand-glow)' : 'var(--text-primary)',
+                      }}
+                    >
+                      {sel ? '✓ ' : ''}
+                      {a.label}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{a.hint}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
       <div
         className="card notch-4 mt-lg"

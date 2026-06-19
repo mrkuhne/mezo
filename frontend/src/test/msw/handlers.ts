@@ -17,6 +17,17 @@ export const handlers = [
       { status: 201 },
     )
   }),
+  // G5 EWMA trend (mezo-g1u) — default happy-path; tests override with server.use().
+  http.get(`${API_BASE}/api/biometrics/weight/trend`, () =>
+    HttpResponse.json({
+      ewmaSeries: [{ date: '2026-06-01', trendKg: 82.5 }],
+      latestTrendKg: 82.5,
+      weeklyRateKgPerWeek: -0.4,
+      weeklyRatePctPerWeek: -0.48,
+      last4wRateKgPerWeek: -0.6,
+      dataSufficiency: 'full',
+    }),
+  ),
 
   http.get(`${API_BASE}/api/biometrics/sleep`, () =>
     HttpResponse.json([

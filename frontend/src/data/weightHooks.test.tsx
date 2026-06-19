@@ -19,6 +19,27 @@ test('useWeight (real mode) loads the weight log from the API', async () => {
   expect(result.current.weightLog[0]).toMatchObject({ date: '2026-06-01', value: 82.5 })
 })
 
+test('useWeight (real mode) folds the backend EWMA trend into weightTrends', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/biometrics/weight/trend`, () =>
+      HttpResponse.json({
+        ewmaSeries: [{ date: '2026-06-01', trendKg: 82.5 }],
+        latestTrendKg: 82.5,
+        weeklyRateKgPerWeek: -0.42,
+        weeklyRatePctPerWeek: -0.51,
+        last4wRateKgPerWeek: -0.63,
+        dataSufficiency: 'full',
+      }),
+    ),
+  )
+  const { result } = renderHook(() => useWeight(), { wrapper: makeHookWrapper() })
+  // The real EWMA weekly rates land in the WeightTrends shape the views read.
+  await waitFor(() => expect(result.current.weightTrends.last7d.weeklyRate).toBe(-0.42))
+  expect(result.current.weightTrends.last4w.weeklyRate).toBe(-0.63)
+  // The hero number (last7d.avg) tracks the latest EWMA trend.
+  expect(result.current.weightTrends.last7d.avg).toBe(82.5)
+})
+
 test('useWeight.logWeight POSTs and the new entry appears after invalidation', async () => {
   let posted = false
   // After the POST fires, the GET must return the appended list (server-side truth).
