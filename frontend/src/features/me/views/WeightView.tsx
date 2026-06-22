@@ -67,11 +67,13 @@ export function WeightView() {
         <WeightChart entries={weightLog} startWeight={chartStart} targetWeight={chartTarget} period={period} />
       </div>
 
-      {/* Trend cells */}
+      {/* Trend cells — only the real EWMA figures: the weekly rate (7d + 4w) and
+          the 7-day trend weight. The 4-week average is not engine-derived, so it
+          is omitted rather than shown as a mock value. */}
       <div style={{ padding: '0 24px 24px' }}>
         <div className="row gap-sm">
-          <TrendCell label="7 nap" avg={weightTrends.last7d.avg} delta={weightTrends.last7d.deltaVsPrev} rate={weightTrends.last7d.weeklyRate} onTrack={weightTrends.last7d.onTrack} />
-          <TrendCell label="4 hét" avg={weightTrends.last4w.avg} delta={weightTrends.last4w.deltaVsStart} rate={weightTrends.last4w.weeklyRate} onTrack={weightTrends.last4w.onTrack} />
+          <TrendCell label="7 nap" rate={weightTrends.last7d.weeklyRate} avg={weightTrends.last7d.avg} />
+          <TrendCell label="4 hét" rate={weightTrends.last4w.weeklyRate} />
         </div>
       </div>
 

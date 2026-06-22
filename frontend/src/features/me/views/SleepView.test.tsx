@@ -20,13 +20,6 @@ test('renders the last-night hero', () => {
   expect(screen.getAllByText('7').length).toBeGreaterThan(0)
 })
 
-test('renders sleep factors (incl. the warning factor) with tool chips', () => {
-  render(<SleepView />, { wrapper: QueryWrapper })
-  expect(screen.getByText('Magnézium 21:00 stack megtartva')).toBeInTheDocument()
-  expect(screen.getByText('Caffeine 14:00 utáni napok')).toBeInTheDocument()
-  expect(screen.getByText(/get_sleep_log/)).toBeInTheDocument()
-})
-
 test('renders the recent log (last 7 nights, newest first)', () => {
   const { container } = render(<SleepView />, { wrapper: QueryWrapper })
   expect(container.querySelectorAll('[data-sleep-log-row]')).toHaveLength(7)

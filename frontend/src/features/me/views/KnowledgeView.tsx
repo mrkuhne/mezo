@@ -1,20 +1,9 @@
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
-import { Chip } from '@/components/ui/Chip'
-import { Icon } from '@/components/ui/Icon'
-import { LabelMono } from '@/components/ui/LabelMono'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import type { Tool } from '@/components/ui/ToolChip'
 import { useKnowledge } from '@/data/hooks'
 import { FACT_CATEGORIES, factCategoryColor } from '@/data/knowledge'
 import { CategoryHeader } from '../components/CategoryHeader'
 import { KnowledgeFactCard } from '../components/KnowledgeFactCard'
-
-const KNOWLEDGE_TOOLS: Tool[] = [
-  { type: 'read', name: 'get_knowledge_facts' },
-  { type: 'read', name: 'get_edges' },
-  { type: 'compute', name: 'recomputeGraphLayout' },
-]
 
 export function KnowledgeView() {
   const { facts, edges, activeCount } = useKnowledge()
@@ -27,10 +16,6 @@ export function KnowledgeView() {
           <Eyebrow brand>Me · Tudás</Eyebrow>
           <PageTitle className="mt-sm">Knowledge graph</PageTitle>
         </div>
-        {/* Search chip is inert */}
-        <Chip style={{ padding: '8px 10px' }}>
-          <Icon name="search" size={12} />
-        </Chip>
       </div>
 
       {/* Summary band */}
@@ -59,24 +44,8 @@ export function KnowledgeView() {
         </div>
       </div>
 
-      {/* Graph view — deferred to Slice 4 */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div
-          className="card notch-12"
-          style={{
-            padding: 16,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'var(--canvas)',
-          }}
-        >
-          <LabelMono>Gráf nézet · hamarosan (Slice 4)</LabelMono>
-        </div>
-      </div>
-
       {/* Facts by category */}
-      <div style={{ padding: '0 24px 16px' }}>
+      <div style={{ padding: '0 24px 32px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
           <Eyebrow>Kategóriánként</Eyebrow>
           <Eyebrow brand>{facts.length}</Eyebrow>
@@ -96,23 +65,6 @@ export function KnowledgeView() {
               </div>
             )
           })}
-        </div>
-        <div className="mt-md">
-          <ToolChipRow tools={KNOWLEDGE_TOOLS} />
-        </div>
-      </div>
-
-      {/* LearnedFact transparency footer */}
-      <div style={{ padding: '0 24px 32px' }}>
-        <div className="card notch-4" style={{ padding: 12 }}>
-          <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-            <Icon name="sparkle" size={11} color="var(--brand-glow)" />
-            <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
-              <span style={{ color: 'var(--brand-glow)' }}>LearnedFact transzparencia.</span>{' '}
-              Egy fact akkor kerül a promptodba, ha aktív. Húzz egy csomópontot a gráfon, és állítsd át — Mezo a következő
-              üzenetben tükrözi.
-            </p>
-          </div>
         </div>
       </div>
     </>

@@ -130,20 +130,8 @@ export const weightLog: WeightEntry[] = [
 ]
 
 export const weightTrends: WeightTrends = {
-  last7d: { avg: 78.96, deltaVsPrev: -0.6, weeklyRate: -0.5, onTrack: true },
-  last4w: { avg: 79.85, deltaVsStart: -2.8, weeklyRate: -0.7, onTrack: true },
-  sinceStart: { delta: -2.8, daysIn: 30, projectedEndDate: 'Aug 12', projectedRateGap: 3 },
-  factors: [
-    { kind: 'positive', title: 'Reta D3-D5 alacsony étvágy', impact: '−0.4 kg várható', evidence: 'Múlt 4 ciklusban D3-D5 átlagos súlyvesztés 0.5kg', confidence: 0.84 },
-    { kind: 'positive', title: 'Kalória pacing 91% target alatt', impact: '−0.3 kg/hét', evidence: 'Heti kcal 21,300 vs 23,400 target', confidence: 0.78 },
-    { kind: 'neutral', title: 'Volleyball szombat folyadékvesztés', impact: '+1.0 kg vasárnap reggel torzítás', evidence: '5 mérés egymás után: vasárnap reggel pre-bathroom +1kg átlag', confidence: 0.91 },
-    { kind: 'watch', title: 'Magnézium-glicinát kihagyott napok', impact: 'Lehet hogy vizesedés', evidence: 'Mg + alvás-minőség párral korrelál vizesedés-csökkentéssel', confidence: 0.62 },
-  ],
-  insights: [
-    { type: 'milestone', text: 'Ma elértük a 78.6-ot — 30 nap alatt 2.8kg. A target tempó 0.5kg/hét, mi 0.7-en megyünk. Ha ez tart, augusztus 12-én 73kg, **3 nappal a deadline előtt**.' },
-    { type: 'pattern', text: 'Friss minta: a Reta D1-D2 napokon kb. 0.3-0.5kg vízsúly-felemelkedés látható, ami D4-re visszaáll. Ezt **mindig a heti átlagban nézzük**, nem napi raw értékben.' },
-    { type: 'warning', text: 'Az elmúlt 2 hétben háromszor kihagytuk a 21:00 magnézium-stack-et. Pattern P2 alapján az alvás-onset + vizesedés ezzel korrelál — érdemes lenne stabilizálni.' },
-  ],
+  last7d: { avg: 78.96, weeklyRate: -0.5 },
+  last4w: { weeklyRate: -0.7 },
 }
 
 export const linkedMesocycles: Record<string, LinkedMeso> = {

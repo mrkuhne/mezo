@@ -5,13 +5,9 @@ import { PageTitle } from '@/components/ui/PageTitle'
 import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
 import { GhostState } from '@/components/ui/GhostState'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import type { Tool } from '@/components/ui/ToolChip'
 import { useGoal, useGoalActions, useWeight, useBiometricProfile } from '@/data/hooks'
 import type { GoalResponse } from '@/lib/goalApi'
 import { huMonthDay } from '@/lib/dates'
-import { FactorCard } from '../components/FactorCard'
-import { InsightCard } from '../components/InsightCard'
 import { GoalStat } from '../components/GoalStat'
 import { GoalTimeline } from '../components/GoalTimeline'
 import { GoalRecept } from '../components/GoalRecept'
@@ -32,13 +28,6 @@ const GUARD_LABEL: Record<string, string> = {
   strength: 'Erő-gard',
   muscle: 'Izom-gard',
 }
-
-const FACTOR_TOOLS: Tool[] = [
-  { type: 'read', name: 'get_weight_log', args: '30d' },
-  { type: 'read', name: 'get_meal_history', args: '7d' },
-  { type: 'read', name: 'get_sport_load' },
-  { type: 'compute', name: 'computeWeightFactors' },
-]
 
 export function GoalsView() {
   const navigate = useNavigate()
@@ -235,15 +224,11 @@ export function GoalsView() {
               </div>
             </div>
 
-            {/* Stats */}
+            {/* Stats — only backend-derived figures: remaining kg (weight-log derived)
+                and the real EWMA 4-week rate. */}
             <div className="row gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
               <GoalStat label="Hátra" val={remaining.toFixed(1)} unit="kg" />
               <GoalStat label="Tempó" val={String(weightTrends.last4w.weeklyRate)} unit="kg/hét" highlight />
-              <GoalStat
-                label="Vége"
-                val={weightTrends.sinceStart.projectedEndDate}
-                sub={weightTrends.sinceStart.projectedRateGap > 0 ? `${weightTrends.sinceStart.projectedRateGap}n előtt` : ''}
-              />
             </div>
 
             {/* Identity */}
@@ -254,34 +239,6 @@ export function GoalsView() {
               "{goal.identityFrame}"
             </p>
           </div>
-        </div>
-      </div>
-
-      {/* Mezo insights */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div style={{ marginBottom: 12 }}>
-          <Eyebrow>Mezo · mit látunk</Eyebrow>
-        </div>
-        <div className="col gap-sm">
-          {weightTrends.insights.map((ins, i) => (
-            <InsightCard key={i} insight={ins} />
-          ))}
-        </div>
-      </div>
-
-      {/* Factors */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-          <Eyebrow>Hatások · ami most mozgatja</Eyebrow>
-          <Eyebrow brand>{weightTrends.factors.length}</Eyebrow>
-        </div>
-        <div className="col gap-sm">
-          {weightTrends.factors.map((f, i) => (
-            <FactorCard key={i} factor={f} />
-          ))}
-        </div>
-        <div className="mt-md">
-          <ToolChipRow tools={FACTOR_TOOLS} />
         </div>
       </div>
 

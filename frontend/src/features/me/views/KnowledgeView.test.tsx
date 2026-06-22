@@ -13,8 +13,7 @@ test('renders category headers in order with counts', () => {
   expect(screen.getByText(/Fiziológia · 2/)).toBeInTheDocument()
 })
 
-test('renders 15 fact cards and the tool chips', () => {
+test('renders 15 fact cards', () => {
   const { container } = render(<KnowledgeView />)
   expect(container.querySelectorAll('[data-fact-card]')).toHaveLength(15)
-  expect(screen.getByText(/get_knowledge_facts/)).toBeInTheDocument()
 })

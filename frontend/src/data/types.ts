@@ -138,25 +138,6 @@ export interface PantryItem {
   stashRefId?: string
 }
 
-// --- Profil extras (hardcoded in prototype JSX → typed consts here) ---
-export interface IdentityGoalCard { eyebrow: string; quote: string; note: string }
-export interface AreaRow { area: string; weight: number; last: string }
-export interface QuickSettingRow { icon: IconName; label: string; val: string }
-export interface NotifSetting { icon: IconName; label: string; val: string }
-
-// --- Shared insight/factor shapes (Cél + Alvás reuse these) ---
-export type FactorKind = 'positive' | 'neutral' | 'negative' | 'watch'
-export interface Factor {
-  kind: FactorKind
-  title: string
-  impact: string
-  evidence: string
-  confidence: number
-  warning?: boolean
-}
-export type TrendInsightType = 'milestone' | 'pattern' | 'warning'
-export interface TrendInsight { type: TrendInsightType; text: string }
-
 // --- Cél (goals) ---
 export type GoalKind = 'cut' | 'bulk' | 'maintenance'
 export type GoalStatus = 'active' | 'planned' | 'archived'
@@ -181,12 +162,12 @@ export interface Goal {
 export interface WeightEntry { date: string; value: number; note?: string }
 /** Phase 2 REST DTO — POST /weight-log. `date` is stamped to today by the caller (no UI date picker). */
 export interface WeightLogInput { date: string; weightKg: number; note?: string }
+// Only the backend-derived EWMA figures the views render: the 7-day trend weight
+// (avg) and the weekly rates (kg/hét). The qualitative legs (factors/insights/
+// projection) the engine does not yet produce were dropped with the placeholder UI.
 export interface WeightTrends {
-  last7d: { avg: number; deltaVsPrev: number; weeklyRate: number; onTrack: boolean }
-  last4w: { avg: number; deltaVsStart: number; weeklyRate: number; onTrack: boolean }
-  sinceStart: { delta: number; daysIn: number; projectedEndDate: string; projectedRateGap: number }
-  factors: Factor[]
-  insights: TrendInsight[]
+  last7d: { avg: number; weeklyRate: number }
+  last4w: { weeklyRate: number }
 }
 export interface LinkedMeso {
   id: string
@@ -213,36 +194,10 @@ export interface SleepLogInput {
   date: string; bedtime: string; wakeup: string
   durationH: number; quality: number; awakenings: number; note?: string
 }
-export interface SleepTrends {
-  target: { duration: number; quality: number; bedtime: string; wakeup: string }
-  last7d: { avgDuration: number; avgQuality: number; nightsUnder7h: number; awakeningsAvg: number; onTrack: boolean }
-  last14d: { avgDuration: number; avgQuality: number; nightsUnder7h: number; awakeningsAvg: number; onTrack: boolean }
-  factors: Factor[]
-  insights: TrendInsight[]
-}
-
 // --- Emberek (people) ---
 export type Affect = 'positive' | 'neutral' | 'mixed' | 'negative'
 export type Relationship = 'partner' | 'teammate' | 'mentee'
 export type MentionSource = 'voice' | 'camera' | 'chip' | 'text'
-export interface Ritual {
-  kind: string
-  title: string
-  whenLabel: string
-  daysAway: number
-  attendees: string[]
-  lastHeldLabel: string
-}
-export interface AttentionItem { kind: 'watch' | 'celebrate'; person: string; reason: string }
-export interface PeopleSummary {
-  activeCount: number
-  mentionsThisWeek: number
-  mentionsLastWeek: number
-  affectScoreWeek: number
-  creditTrend: 'rising' | 'stable' | 'falling'
-  ritualUpcoming: Ritual
-  attention: AttentionItem[]
-}
 export interface PersonEntry {
   id: string
   name: string
@@ -279,14 +234,6 @@ export interface MentionLogInput {
   personId: string
   tone: Affect
   text?: string
-}
-export interface RelationPattern {
-  id: string
-  title: string
-  evidence: string
-  kind: 'positive' | 'watch' | 'negative'
-  confidence: number
-  involves: string[]
 }
 
 // --- Fuel · weekly (Terv) + replan + gym schedule ---

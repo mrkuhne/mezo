@@ -6,9 +6,8 @@ import { localDateString } from '@/lib/dates'
 import { sleepApi, checkinApi } from '@/lib/biometricsApi'
 import { today, user, briefing, briefingVariants, workout, volleyballSessions, fuelToday } from './today'
 import { initialCheckins } from './checkins'
-import { identityGoal, areas, quickSettings, notifSettings, appVersion } from './me'
-import { sleepLog as initialSleepLog, sleepTrends } from './sleep'
-import { peopleSummary, people, mentions as initialMentions, relationPatterns } from './people'
+import { sleepLog as initialSleepLog } from './sleep'
+import { people, mentions as initialMentions } from './people'
 import { facts, edges } from './knowledge'
 import { patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments } from './insights'
 import { initialChat } from './chat'
@@ -73,7 +72,7 @@ export function useFuelPreview() {
 }
 
 export function useProfile() {
-  return { user, identityGoal, areas, quickSettings, notifSettings, version: appVersion }
+  return { user }
 }
 
 export function useSleep() {
@@ -100,7 +99,7 @@ export function useSleep() {
     },
   })
   const logSleep = useCallback((input: SleepLogInput) => mutation.mutate(input), [mutation])
-  return { sleepLog, sleepTrends, lastNight: sleepLog[sleepLog.length - 1], logSleep }
+  return { sleepLog, lastNight: sleepLog[sleepLog.length - 1], logSleep }
 }
 
 export function usePeople() {
@@ -121,7 +120,7 @@ export function usePeople() {
     }
     setMentions(prev => [newMention, ...prev])
   }, [])
-  return { summary: peopleSummary, people, mentions, patterns: relationPatterns, logMention }
+  return { people, mentions, logMention }
 }
 
 export function useKnowledge() {
