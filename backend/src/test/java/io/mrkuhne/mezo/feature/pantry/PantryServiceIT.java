@@ -95,4 +95,42 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
         assertThat(service.getPantry(other).getIngredients()).isEmpty();
     }
+
+    @Test
+    void testGetPantry_shouldDeriveStimulantType_whenStimItem() {
+        PantryItemRequest req = new PantryItemRequest();
+        req.setKind(PantryItemRequest.KindEnum.STIM);
+        req.setName("Koffein");
+        req.setDose("6g");
+
+        service.createItem(owner, req);
+
+        var stash = service.getPantry(owner).getStash();
+        assertThat(stash).hasSize(1);
+        assertThat(stash.get(0).getType().getValue()).isEqualTo("stimulant");
+    }
+
+    @Test
+    void testGetPantry_shouldDeriveMedicationType_whenMedItem() {
+        PantryItemRequest req = new PantryItemRequest();
+        req.setKind(PantryItemRequest.KindEnum.MED);
+        req.setName("D-vitamin");
+        req.setDose("2000 IU");
+
+        service.createItem(owner, req);
+
+        var stash = service.getPantry(owner).getStash();
+        assertThat(stash).hasSize(1);
+        assertThat(stash.get(0).getType().getValue()).isEqualTo("medication");
+    }
+
+    @Test
+    void testCreateItem_shouldReject_whenSupplementMissingDose() {
+        PantryItemRequest req = new PantryItemRequest();
+        req.setKind(PantryItemRequest.KindEnum.SUPPLEMENT);
+        req.setName("Kreatin");
+
+        assertThatThrownBy(() -> service.createItem(owner, req))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
 }

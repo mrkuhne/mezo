@@ -92,7 +92,7 @@ export interface TodayScenario { dayState: DayState; retaDay: number; niggle: bo
 
 // --- Pantry (Kamra) + Recipes (Receptek) ---
 export interface PantryCategoryMeta { label: string; color: string }
-export interface IngredientStock { qty: number; unit: string; expires: string; lowExpiry?: boolean }
+export interface IngredientStock { qty: number; unit: string; expires: string | null; lowExpiry?: boolean }
 export interface Ingredient {
   id: string; name: string; brand: string; source: PantrySourceKey; category: string
   per: number; unit: string
