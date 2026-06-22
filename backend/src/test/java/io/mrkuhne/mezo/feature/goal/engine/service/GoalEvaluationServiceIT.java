@@ -137,6 +137,35 @@ class GoalEvaluationServiceIT extends AbstractIntegrationTest {
             .anyMatch(n -> n.toLowerCase().contains("erő") || n.toLowerCase().contains("futás"));
     }
 
+    // ── Conflict escalation: warnings-band rate (NOT over-cap) + running + strength → aggressive ───
+
+    /**
+     * G6 (mezo-06n) widened {@code overBand} to the whole over-target band, so a rate that grades
+     * {@code feasible-with-warnings} on its own (0.85 %BW/wk — over the 0.7 target but under the 1.0
+     * cap, so NOT aggressive by rate) escalates to {@code aggressive} via the conflict rule when an
+     * active running block + an active strength guard co-occur. This proves the verdict came from the
+     * conflict rule, not from the rate alone.
+     */
+    @Test
+    void testEvaluate_shouldEscalateToAggressive_whenWarningsBandRateConflictsWithRunningAndStrengthGuard() {
+        UUID user = databasePopulator.populateUser("eval-escalate@test.local");
+        profilePopulator.create(user);
+        seedWeight(user, "84.00");
+        // 0.85 %BW/wk: over the 0.7 recommended target, under the 1.0 cap → warnings band (NOT aggressive).
+        GoalEntity g = goal(user, "cut", "0.85", List.of("strength"));
+        MesocycleEntity meso = trainPopulator.createMesocycleWithPhase(user, "RP", "active", 8, "MAV");
+        RunningBlockEntity run = runningPopulator.createBlockWithSessions(user, "intervals", "planned", 8, 4);
+        linkPopulator.createLink(user, g.getId(), "mesocycle", meso.getId(), 1, 8);
+        linkPopulator.createLink(user, g.getId(), "running_block", run.getId(), 1, 8);
+
+        GoalPrescriptionJson rx = engine.evaluate(user, g.getId());
+
+        // The rate alone is only a warning; the conflict rule escalates the verdict to aggressive.
+        assertThat(rx.feasibility().verdict()).isEqualTo("aggressive");
+        assertThat(rx.feasibility().notes())
+            .anyMatch(n -> n.toLowerCase().contains("konfliktus"));
+    }
+
     // ── Bulk: a coherent SURPLUS recept — kcal > tdee, positive rate, sane protein (spec §9.4) ────
 
     @Test

@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mock-only
-updated: 2026-06-19
+updated: 2026-06-22
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -87,16 +87,16 @@ The Insights data flow is a **degenerate (truncated) version** of mezo's standar
 
 ```
 View (PatternsView, WeeklyView, …)
-  → hook (useInsights / useKnowledge / useChat — frontend/src/data/hooks.ts:152-162)
+  → hook (useInsights / useKnowledge / useChat — frontend/src/data/hooks.ts:127-135)
     → static module import (data/insights.ts, data/knowledge.ts, data/chat.ts)
       → [PHASE-3 GAP: no api client, no apiFetch, no backend, no db]
 ```
 
 Contrast with a real-mode feature (e.g. `useWeight` in `weightHooks.ts` / `useSleep` in `hooks.ts:79`) which switches on `isMockMode()` between static `initialData` and a real `*Api` call over `apiFetch`. The Insights hooks have **none of that machinery** — no TanStack Query, no `initialData`, no mutation, no mode switch:
 
-- `useInsights()` (`hooks.ts:156-158`) → `{ patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports.
-- `useKnowledge()` (`hooks.ts:152-154`) → `{ facts, edges, activeCount: facts.filter(f => f.active).length }`.
-- `useChat()` (`hooks.ts:160-162`) → `{ initialChat }`.
+- `useInsights()` (`hooks.ts:131-133`) → `{ patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports.
+- `useKnowledge()` (`hooks.ts:127-129`) → `{ facts, edges, activeCount: facts.filter(f => f.active).length }`.
+- `useChat()` (`hooks.ts:135-137`) → `{ initialChat }`.
 
 All "interactivity" (pattern Confirm/Monitor/Reject, knowledge Toggle, memoir reactions, chat send) lives in **component-local `useState`** and evaporates on unmount. The single FE↔data boundary (`hooks.ts`) is intact and ready — when Phase 3 lands, these three hooks are the **exact swap points**, by design.
 
@@ -129,7 +129,7 @@ All "interactivity" (pattern Confirm/Monitor/Reject, knowledge Toggle, memoir re
 
 **Chat** (`types.ts:410-418`): `ChatRole = 'user'|'assistant'`, `ChatRef { kind; id }`, `ChatMessage { role; ts; text; tools?: Tool[]; refs?: ChatRef[] }`. `Tool` is imported from `@/components/ui/ToolChip` (`{ type: ToolType; name; args? }`, `ToolType = 'read'|'compute'|'write'`). `initialChat` = 3 messages (assistant → user → assistant).
 
-**Endpoints / contract: NONE.** `api/feature/` contains only `auth/checkin/sleep/train/weight` (no `insights`/`knowledge`/`chat`). The `ChatView` mock copy *names* fictional tool calls (`get_recent_workouts(days=3)`, `get_sleep(days=7)`, `get_reta_phase()`, `predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) — these are **UI-transparency theater**, not real endpoints, but they sketch the Phase-3 tool surface. The planned Slice-D tables are `pattern` / `knowledge_fact` / `ai_conversation` (seed-only, no AI). **Where the backend plugs in:** rewrite the three hooks in `hooks.ts:152-162` to dual-mode on `isMockMode()` — see §7.
+**Endpoints / contract: NONE.** `api/feature/` contains only `auth/checkin/sleep/train/weight/goal/biometrics-profile` (no `insights`/`knowledge`/`chat`). The `ChatView` mock copy *names* fictional tool calls (`get_recent_workouts(days=3)`, `get_sleep(days=7)`, `get_reta_phase()`, `predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) — these are **UI-transparency theater**, not real endpoints, but they sketch the Phase-3 tool surface. The planned Slice-D tables are `pattern` / `knowledge_fact` / `ai_conversation` (seed-only, no AI). **Where the backend plugs in:** rewrite the three hooks in `hooks.ts:127-137` to dual-mode on `isMockMode()` — see §7.
 
 ---
 
@@ -138,7 +138,7 @@ All "interactivity" (pattern Confirm/Monitor/Reject, knowledge Toggle, memoir re
 Insights is the **hub the other tabs point *toward*** and is itself **fed conceptually by a cross-system "pattern engine."** Today these are **mock-level cross-references** (shared copy / shared data module), not live data flows — but they define the contracts Phase 3 must honor.
 
 ### 5.1 `useKnowledge` is shared by THREE views across TWO features — co-design any backend
-`useKnowledge()` (`hooks.ts:152`) backs the Insights `KnowledgeListView` **and** the Me-tab `KnowledgeView` (`frontend/src/features/me/views/KnowledgeView.tsx:20`) **and** `ProfileView` (`frontend/src/features/me/views/ProfileView.tsx:15`). Responsibility splits:
+`useKnowledge()` (`hooks.ts:127`) backs the Insights `KnowledgeListView` **and** the Me-tab `KnowledgeView` (`frontend/src/features/me/views/KnowledgeView.tsx:20`) **and** `ProfileView` (`frontend/src/features/me/views/ProfileView.tsx:18`). Responsibility splits:
 - **Insights/Knowledge** = flat editable list with prompt-active toggles (consumes `facts`).
 - **Me/Knowledge** = the "Knowledge graph" / "Élő mindmap" view (consumes `facts` **and** `edges` + `activeCount`; the graph render itself "deferred to Slice 4", `KnowledgeView.tsx:62`; the placeholder reads "Gráf nézet · hamarosan (Slice 4)", `:74`).
 - The Insights footer literally routes across: *"A graph nézethez · Me → Knowledge."* (`KnowledgeListView.tsx`).
@@ -260,7 +260,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `insights.ts` — patterns, weekly, memoir, predictions, experiments + `MIN_PATTERN_CONFIDENCE`, `patternCategoryColor`
 - `knowledge.ts` — facts, edges, `FACT_CATEGORIES`, `factCategoryColor`
 - `chat.ts` — `initialChat`
-- `hooks.ts:152-162` — `useKnowledge`, `useInsights`, `useChat` (the boundary / Phase-3 swap point)
+- `hooks.ts:127-137` — `useKnowledge`, `useInsights`, `useChat` (the boundary / Phase-3 swap point)
 - `types.ts:349-418` — all Insights/Knowledge/Chat types
 - Tests: `insightsData.test.tsx`, `chatData.test.tsx`
 

@@ -1,12 +1,15 @@
 package io.mrkuhne.mezo.feature.goal.controller;
 
 import io.mrkuhne.mezo.api.controller.GoalApi;
+import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
+import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
 import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
+import io.mrkuhne.mezo.feature.goal.engine.service.GoalFeasibilityService;
 import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
 import io.mrkuhne.mezo.feature.goal.service.GoalTimelineService;
@@ -25,6 +28,7 @@ public class GoalController implements GoalApi {
     private final GoalPlanLinkService goalPlanLinkService;
     private final GoalTimelineService goalTimelineService;
     private final GoalEngineService goalEngineService;
+    private final GoalFeasibilityService goalFeasibilityService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -74,6 +78,15 @@ public class GoalController implements GoalApi {
         // the standard get path so the response carries the freshly-persisted jsonb (mapped by GoalMapper).
         goalEngineService.evaluate(userId, id);
         return goalService.getGoal(userId, id);
+    }
+
+    @Override
+    public FeasibilityPreviewResponse feasibilityPreview(FeasibilityPreviewRequest feasibilityPreviewRequest) {
+        // Stateless realism preview for the 2-step wizard (G6 §3.2): derive + grade a DRAFT window before
+        // any goal is saved. Resolve the principal per controller convention, but the compute ignores it —
+        // there is no goal, no persistence, no ownership.
+        currentUserId.get();
+        return goalFeasibilityService.preview(feasibilityPreviewRequest);
     }
 
     @Override

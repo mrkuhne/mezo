@@ -27,6 +27,18 @@ paths:
         '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/GoalResponse' } } } }
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/goals/feasibility-preview:
+    post:
+      tags: [Goal]
+      operationId: feasibilityPreview
+      summary: Stateless preview — derive the weekly rate + realism verdict (+ a realistic target date) from a draft, before any goal is saved
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/FeasibilityPreviewRequest' } } }
+      responses:
+        '200': { description: Preview, content: { application/json: { schema: { $ref: '#/components/schemas/FeasibilityPreviewResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/goals/{id}:
     get:
       tags: [Goal]
@@ -204,7 +216,9 @@ components:
         notes: { type: array, items: { type: string } }
     GoalUpsertRequest:
       type: object
-      required: [title, trajectory, startDate, targetDate, startWeightKg, rateTargetPctPerWeek]
+      # rateTargetPctPerWeek is NOT an input — it is server-derived from
+      # |startWeightKg − targetWeightKg| / startWeightKg / weeks (see GoalService.applyUpsert).
+      required: [title, trajectory, startDate, targetDate, startWeightKg]
       properties:
         title: { type: string, minLength: 1 }
         trajectory: { type: string, pattern: '^(cut|bulk|maintain)$' }
@@ -213,8 +227,26 @@ components:
         targetDate: { type: string, format: date }
         startWeightKg: { type: number, minimum: 0 }
         targetWeightKg: { type: number, nullable: true, minimum: 0 }
-        rateTargetPctPerWeek: { type: number, minimum: 0 }
         identityFrame: { type: string, nullable: true }
+    FeasibilityPreviewRequest:
+      type: object
+      description: A draft goal window — feeds the stateless realism preview (no persistence, no ownership).
+      required: [trajectory, startWeightKg, startDate, targetDate]
+      properties:
+        trajectory: { type: string, pattern: '^(cut|bulk|maintain)$' }
+        startWeightKg: { type: number, minimum: 0 }
+        targetWeightKg: { type: number, nullable: true, minimum: 0 }
+        startDate: { type: string, format: date }
+        targetDate: { type: string, format: date }
+    FeasibilityPreviewResponse:
+      type: object
+      description: The server-derived weekly rate + realism verdict for a draft window; suggestedTargetDate is set only when the draft is over the rate cap.
+      required: [derivedRatePctPerWeek, withinSafeBand, verdict]
+      properties:
+        derivedRatePctPerWeek: { type: number, description: 'Unsigned weekly rate magnitude (%BW/wk) derived from |startW − targetW| / startW / weeks.' }
+        withinSafeBand: { type: boolean, description: 'true when derivedRate ≤ the rate cap (mezo.goal.rate.capPctPerWeek).' }
+        verdict: { type: string, enum: [feasible, feasible-with-warnings, aggressive] }
+        suggestedTargetDate: { type: string, format: date, nullable: true, description: 'The earliest cap-paced target date; present ONLY when derivedRate is over the cap.' }
     GoalPlanRef:
       type: object
       required: [title, status, startDate, endDate, weeks]

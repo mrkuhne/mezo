@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.BiometricProfileResponse;
 import io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest;
+import io.mrkuhne.mezo.api.dto.LogWeightRequest;
+import io.mrkuhne.mezo.api.dto.WeightLogResponse;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -40,6 +42,47 @@ class BiometricProfileContractIT extends ApiIntegrationTest {
         assertThat(got.getHeightCm()).isEqualByComparingTo(new BigDecimal("180.0"));
         assertThat(got.getBirthDate()).isEqualTo(LocalDate.of(1991, 3, 1));
         assertThat(got.getBodyFatPct()).isEqualByComparingTo(new BigDecimal("15.0"));
+    }
+
+    @Test
+    void testGetProfile_shouldCarryDerivedTdeeBootstrap_whenProfileAndWeighInExist() {
+        HttpHeaders auth = ownerAuthHeaders();
+        BiometricProfileUpsertRequest profile = BiometricProfileUpsertRequest.builder()
+            .sex("M")
+            .heightCm(new BigDecimal("180.0"))
+            .birthDate(LocalDate.of(1991, 3, 1))
+            .bodyFatPct(new BigDecimal("15.0"))
+            .activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MODERATE)
+            .build();
+        putForBody("/api/biometrics/profile", profile, auth, HttpStatus.OK, BiometricProfileResponse.class);
+        postForBody("/api/biometrics/weight",
+            new LogWeightRequest(LocalDate.of(2026, 6, 1), new BigDecimal("84.00"), null),
+            auth, HttpStatus.CREATED, WeightLogResponse.class);
+
+        BiometricProfileResponse got =
+            getForBody("/api/biometrics/profile", auth, HttpStatus.OK, BiometricProfileResponse.class);
+
+        // Derived (NOT persisted) — present once a profile-and-weigh-in pair exists.
+        assertThat(got.getTdeeBootstrap()).isNotNull();
+        assertThat(got.getTdeeBootstrap().getBmr()).isPositive();
+        assertThat(got.getTdeeBootstrap().getTdee()).isPositive();
+    }
+
+    @Test
+    void testGetProfile_shouldOmitTdeeBootstrap_whenNoWeighIn() {
+        HttpHeaders auth = ownerAuthHeaders();
+        BiometricProfileUpsertRequest profile = BiometricProfileUpsertRequest.builder()
+            .sex("M")
+            .heightCm(new BigDecimal("180.0"))
+            .birthDate(LocalDate.of(1991, 3, 1))
+            .build();
+        putForBody("/api/biometrics/profile", profile, auth, HttpStatus.OK, BiometricProfileResponse.class);
+
+        BiometricProfileResponse got =
+            getForBody("/api/biometrics/profile", auth, HttpStatus.OK, BiometricProfileResponse.class);
+
+        // Profile but no weigh-in → derived bootstrap is null.
+        assertThat(got.getTdeeBootstrap()).isNull();
     }
 
     @Test

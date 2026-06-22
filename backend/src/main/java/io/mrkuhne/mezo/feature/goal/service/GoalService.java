@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.service;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
+import io.mrkuhne.mezo.feature.goal.engine.service.GoalFeasibilityService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.mapper.GoalMapper;
 import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
@@ -30,6 +31,7 @@ public class GoalService {
     private final GoalPlanLinkRepository linkRepository;
     private final GoalMapper goalMapper;
     private final GoalEngineService goalEngineService;
+    private final GoalFeasibilityService goalFeasibilityService;
 
     /** Active goal first, then by start date desc (DB ordering, service hoists active). */
     public List<GoalResponse> listGoals(UUID userId) {
@@ -112,7 +114,14 @@ public class GoalService {
         e.setTargetDate(req.getTargetDate());
         e.setStartWeightKg(req.getStartWeightKg());
         e.setTargetWeightKg(req.getTargetWeightKg());
-        e.setRateTargetPctPerWeek(req.getRateTargetPctPerWeek());
+        // G6 (mezo-06n): the weekly rate is server-DERIVED from the window + weights, no longer a
+        // client input. Stored as an UNSIGNED magnitude — the G5 engine applies the trajectory sign
+        // downstream. Re-runs on every upsert, so editing target weight/date re-derives it. Delegates
+        // to GoalFeasibilityService so the persisted rate is exactly what the feasibility preview reports.
+        e.setRateTargetPctPerWeek(
+            goalFeasibilityService.deriveRatePctPerWeek(
+                req.getTrajectory(), req.getStartWeightKg(), req.getTargetWeightKg(),
+                req.getStartDate(), req.getTargetDate()));
         e.setIdentityFrame(req.getIdentityFrame());
     }
 

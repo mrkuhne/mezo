@@ -26,18 +26,21 @@ import org.springframework.stereotype.Service;
  * <h2>Feasibility checks (deterministic, per trajectory)</h2>
  * <ol>
  *   <li><b>Rate realism (§6.5).</b> The goal's {@code rateTargetPctPerWeek} is graded against the
- *       rate band ({@code mezo.goal.rate}): {@code maintain} expects ≈0; {@code cut}/{@code bulk} use
- *       the same symmetric band — within {@code bandHigh} (1.0 %/wk) is clean, over {@code bandHigh}
- *       but within {@code capPctPerWeek} (1.0; here equal) warns, strictly over {@code capPctPerWeek}
- *       is <b>aggressive</b>. The "bias lower as leaner" advice (cut, low bf%) adds a softer note when
- *       a lean athlete sits in the upper half of the band.</li>
+ *       shared band ({@code mezo.goal.rate}) via {@link GoalFeasibilityService#verdictForRate}, so the
+ *       eval gate and the stateless feasibility preview agree: {@code maintain} expects ≈0;
+ *       {@code cut}/{@code bulk} use the same symmetric band — {@code ≤ targetPctPerWeek} (0.7 %/wk) is
+ *       <b>feasible</b>, over the target but {@code ≤ capPctPerWeek} (1.0 %/wk) is
+ *       <b>feasible-with-warnings</b>, strictly over {@code capPctPerWeek} is <b>aggressive</b>. The
+ *       "bias lower as leaner" advice (cut, low bf%) adds a softer note when a lean athlete sits in the
+ *       upper half of the band.</li>
  *   <li><b>Guard satisfiability (§6.5).</b> From {@link GuardStatus} (Task 7): if the muscle guard is
  *       active and any muscle sits below maintenance volume → a warning note; the prescribed protein
  *       target is always emitted but {@code proteinMonitored=false} (Fuel not built) → a note records
  *       it. A breached strength e1RM trend → a warning note.</li>
- *   <li><b>Conflict detection (§5.1).</b> An aggressive (over-band) rate + an active running block +
- *       an active strength guard → a note flagging the likely strength breach and suggesting easing
- *       the deficit or shifting the run block.</li>
+ *   <li><b>Conflict detection (§5.1).</b> An over-band rate (over the recommended target — the
+ *       warnings band <em>or</em> over-cap aggressive) + an active running block + an active strength
+ *       guard → escalates the verdict to <b>aggressive</b> with a note flagging the likely strength
+ *       breach and suggesting easing the deficit or shifting the run block.</li>
  * </ol>
  *
  * <p><b>Verdict.</b> {@code aggressive} when the rate is strictly over the cap or a conflict is
@@ -66,6 +69,7 @@ public class GoalEvaluationService {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final GoalEngineProperties props;
+    private final GoalFeasibilityService feasibilityService;
 
     /**
      * Grade feasibility + assemble the full prescription artifact. Pure: no I/O, no throw.
@@ -150,8 +154,10 @@ public class GoalEvaluationService {
 
     /**
      * Grade {@code rateTargetPctPerWeek} against the band. The cut/bulk machinery is symmetric (only
-     * the trajectory wording differs); maintain expects ≈0. Strictly over the cap → aggressive; over
-     * the band-high but within the cap → a warning; otherwise clean.
+     * the trajectory wording differs); maintain expects ≈0. The cap/band → verdict classification is
+     * delegated to {@link GoalFeasibilityService#verdictForRate(BigDecimal)} so the eval gate and the
+     * stateless feasibility preview share ONE band definition: {@code aggressive} (over cap),
+     * {@code feasible-with-warnings} (over the recommended target but within the cap), else clean.
      */
     private RateGrade gradeRate(GoalEntity goal) {
         String trajectory = trajectory(goal);
@@ -169,18 +175,17 @@ public class GoalEvaluationService {
             return new RateGrade(false, false, false, notes);
         }
 
-        BigDecimal cap = new BigDecimal(String.valueOf(props.rate().capPctPerWeek()));
-        BigDecimal bandHigh = new BigDecimal(String.valueOf(props.rate().bandHigh()));
         String word = TRAJ_BULK.equals(trajectory) ? "tömegelő (zsírnyereség)" : "fogyási";
+        String verdict = feasibilityService.verdictForRate(rate);
 
-        if (rate.compareTo(cap) > 0) {
+        if (VERDICT_AGGRESSIVE.equals(verdict)) {
             notes.add("Agresszív " + word + " ütem: " + rate.toPlainString() + " %BW/hét > "
                 + props.rate().capPctPerWeek() + " %BW/hét sapka.");
             return new RateGrade(true, false, true, notes);
         }
-        if (rate.compareTo(bandHigh) > 0) {
-            notes.add("Magas " + word + " ütem: " + rate.toPlainString() + " %BW/hét a fenntartható "
-                + "sáv (" + props.rate().bandLow() + "–" + props.rate().bandHigh() + " %BW/hét) felett.");
+        if (VERDICT_WARNINGS.equals(verdict)) {
+            notes.add("Magas " + word + " ütem: " + rate.toPlainString() + " %BW/hét a javasolt "
+                + "ütem (" + props.rate().targetPctPerWeek() + " %BW/hét) felett.");
             return new RateGrade(false, true, true, notes);
         }
         return new RateGrade(false, false, false, notes);

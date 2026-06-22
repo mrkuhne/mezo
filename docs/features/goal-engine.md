@@ -1,8 +1,8 @@
 ---
-title: Goal Engine (G5)
+title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-06-19
+updated: 2026-06-22
 tags: [goal, engine, backend, tdee, projection, guards]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/GoalEngineProperties.java
@@ -10,13 +10,13 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalProjectionService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GuardEvaluationService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalEvaluationService.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalFeasibilityService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/TdeeBootstrapService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/weight/service/WeightTrendService.java
-  - backend/src/main/resources/application.yml
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalService.java
 related: [me, _platform-api-backend, _platform-data-layer]
 ---
 
-# Goal Engine (G5) — Feature Documentation
+# Goal Engine (G5–G6) — Feature Documentation
 
 > One-line: the backend **TDEE-bootstrap → segmented projection → soft-guards → feasibility-graded prescription** engine that turns a `Cél` goal + its plan timeline + the EWMA weight trend into a per-segment "recept". **Status: ✅ backend done (goal-system G5, `mezo-g1u`)**; FE surfacing is the recept card in Me/`Cél` (see [`me.md`](me.md) §2). This is a *domain* feature with no route of its own — it produces data the `Cél` surface renders. Phase-3 (adaptive TDEE, AI evaluator) is deferred (§9).
 
@@ -60,13 +60,16 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 - **`TdeeBootstrapService`** (`engine/service/TdeeBootstrapService.java`) — the **formula TDEE**. Katch-McArdle when body-fat % is known (`BMR = 370 + 21.6·LBM`, `formula="KATCH"`), else Mifflin-St Jeor (`formula="MSJ"`); `TDEE = BMR × PAL` with PAL from `activityLevel` (default MODERATE 1.55). Pure; the caller supplies current weight, so it needs no repository. **Anti-double-count:** PAL already bakes in average activity → no per-session MET deltas here (that's the projection's job).
 - **`GoalProjectionService`** (`engine/service/GoalProjectionService.java`) — the **segmented projection** (spec §4). Walks the window week-by-week in goal-week space, resolves the active load per week (meso phase class from `phaseCurve` + running on/off), collapses contiguous identical loads into `ProjectionSegment`s, and computes per segment the TDEE, daily kcal target, and projected rate for all three trajectories. **Block-boundary TDEE delta policy (§6.3):** running on/off is the *only* TDEE delta (`intervalRunKcal × sessions ÷ 7`); a meso-phase change splits a segment but is a *zero* TDEE delta (its effect is on volume, the muscle guard); volleyball is ambient and never a boundary. **Reconciliation:** once the trend is ≥ `provisional`, the observed trailing-4w rate becomes the spine, replacing the formula seed.
 - **`GuardEvaluationService`** (`engine/service/GuardEvaluationService.java`) — the **soft guards** (spec §5.3, D9 — WARN, never block). Strength: reuses the `ExerciseRecordService` aggregation idiom (group sets by lift identity = `catalog_id` else `name`, Epley e1RM `weight × (30 + reps)/30`, reps ≤ 10), main lift = the identity with the most sets, `breached` when its e1RM trend % drops to `strength.e1rmBreachPct` (−5%). Muscle: per-muscle weekly hard sets from `MuscleGroupVolumeLog` across the linked mesos vs `volume.warnBelow` (6), plus a rate-cap on the trailing-4w EWMA slope vs `rate.capPctPerWeek`. **Protein leg deferred** — `proteinMonitored=false` always (Fuel intake not built).
-- **`GoalEvaluationService`** (`engine/service/GoalEvaluationService.java`) — the **heuristic feasibility gate + prescription assembly** (spec §5.1/§5.4). Grades rate realism (band vs cap), guard satisfiability, and a conflict rule (aggressive rate + active running + active strength guard); folds segments + guards + a protein target (`proteinTargetGrams`, BW path vs LBM path, capped) into the `GoalPrescriptionJson`. Pure, no I/O, never throws.
+- **`GoalEvaluationService`** (`engine/service/GoalEvaluationService.java`) — the **heuristic feasibility gate + prescription assembly** (spec §5.1/§5.4). Grades rate realism, guard satisfiability, and a conflict rule (`grade(...)`, `GoalEvaluationService.java:145-149`); folds segments + guards + a protein target (`proteinTargetGrams`, BW path vs LBM path, capped) into the `GoalPrescriptionJson`. Pure, no I/O, never throws. Its `gradeRate` delegates the cap/band → verdict classification to `GoalFeasibilityService.verdictForRate` so the eval gate and the wizard preview share **one** band definition. **Conflict escalation:** the rule's rate trigger is `RateGrade.overBand()`, which is true for **both** the 0.7–1.0 warnings band **and** the over-cap aggressive band — so a rate that on its own would only be `feasible-with-warnings` (0.7–1.0 %BW/wk) **escalates to `aggressive`** when it coincides with an active running block (a segment whose `activeSystems` contains `"run"`) **and** an active `strength` guard (likely strength breach; adds the "enyhítsd a deficitet vagy told arrébb a futóblokkot" note). Covered by `GoalEvaluationServiceIT`.
+- **`GoalFeasibilityService`** (`engine/service/GoalFeasibilityService.java`, G6 `mezo-06n`) — the **stateless realism core**: the single source of (a) the rate-magnitude derivation `deriveRatePctPerWeek` = `|startW − targetW| / startW * 100 / weeks` (maintain/null-target/weeks≤0 → 0; `GoalService.applyUpsert` delegates here so the persisted rate equals the previewed rate), (b) the `verdictForRate` band mapping, and (c) `preview(FeasibilityPreviewRequest)` which derives + grades a draft and — only over the cap — suggests `startDate + ceil(weeksAtCap)` (`weeksAtCap = magnitude / capPctPerWeek`). Pure, config-driven (`GoalEngineProperties`), no I/O.
+
+**Derived weekly rate (G6 `mezo-06n`).** `rateTargetPctPerWeek` is **server-derived**, not a client input: `GoalService.applyUpsert` calls `GoalFeasibilityService.deriveRatePctPerWeek(...)` on every create/update (stored as an unsigned magnitude; the G5 engine applies the trajectory sign). It was dropped from `GoalUpsertRequest` and stays on `GoalResponse`.
 
 `GoalEngineService` is the *only* `@Transactional` link (it writes the goal); every other service is pure/read-only so it is trivially testable in isolation.
 
 ### Recompute triggers
 
-`evaluate` is called from **four** places (every event that moves a model input), all in the same transaction as the triggering write, all graceful on a missing profile:
+`evaluate` is called from **five** places (every event that moves a model input), all in the same transaction as the triggering write, all graceful on a missing profile:
 
 | Trigger | Caller | Scope |
 |---|---|---|
@@ -74,16 +77,17 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 | **Plan attached** | `GoalPlanLinkService.attachPlan` (`:62`) | the goal whose links changed (regardless of status) |
 | **Plan detached** | `GoalPlanLinkService.detachPlan` (`:74`) | same |
 | **Weigh-in logged** | `WeightLogService.log` → `recomputeActiveGoal` (`feature/biometrics/weight/service/WeightLogService.java:43,48`) | the owner's single **active** goal (no-op when none) |
-| **Explicit** | `GoalController.evaluateGoal` → `POST /api/goals/{id}/evaluate` (`:71`) | the addressed goal |
+| **Biometric profile changed** (G6, `mezo-06n`) | `BiometricProfileService.upsertProfile` → `recomputeActiveGoal` (`feature/biometrics/profile/service/BiometricProfileService.java`) | the owner's single **active** goal (no-op when none) — the profile feeds BMR/PAL, so a change must refresh the prescription |
+| **Explicit** | `GoalController.evaluateGoal` → `POST /api/goals/{id}/evaluate` (`:75`) | the addressed goal |
 
-**Transaction note:** because each trigger's enclosing method is already `@Transactional`, `evaluate` joins the same transaction — the recompute is part of the triggering write's atomic unit (a failed evaluate would roll back the weigh-in/attach). The weigh-in path deliberately depends on **no** goal: if the owner has no active goal, `recomputeActiveGoal` returns without calling `evaluate` (a weigh-in must never require a goal).
+**Transaction note:** because each trigger's enclosing method is already `@Transactional`, `evaluate` joins the same transaction — the recompute is part of the triggering write's atomic unit (a failed evaluate would roll back the weigh-in/profile-save). The weigh-in and profile-change paths deliberately depend on **no** goal: if the owner has no active goal, `recomputeActiveGoal` returns without calling `evaluate` (a weigh-in/profile-save must never require a goal).
 
 ## 4. Data model & API
 
 **Persistence** — two jsonb columns added to `goal` + one column on `biometric_profile` by migration `backend/src/main/resources/db/changelog/1.0.0/script/202606191000_mezo-g1u_goal_prescription_and_activity_level.sql` (additive only — existing rows carry none until first evaluate):
 
-- `goal.tdee_bootstrap jsonb` → `TdeeBootstrapJson` (`feature/goal/entity/TdeeBootstrapJson.java`: `bmr`, `tdee`, `pal`, `formula` MSJ|KATCH, `computedAt`). Field `GoalEntity.tdeeBootstrap` (`:59`, `@JdbcTypeCode(SqlTypes.JSON)`).
-- `goal.prescription jsonb` → `GoalPrescriptionJson` (`feature/goal/entity/GoalPrescriptionJson.java`: `generatedAt`, `basis`, `segments[]` {fromWeek, toWeek, label, kcal, proteinG, sleepTargetH, restDays[], projectedRateKgPerWk, rationale}, `guardStatus` {strength, muscle}, `feasibility` {verdict, notes[]}). Field `GoalEntity.prescription` (`:63`).
+- `goal.tdee_bootstrap jsonb` → `TdeeBootstrapJson` (`feature/goal/entity/TdeeBootstrapJson.java`: `bmr`, `tdee`, `pal`, `formula` MSJ|KATCH, `computedAt`). Field `GoalEntity.tdeeBootstrap` (`:61`, `@JdbcTypeCode(SqlTypes.JSON)`).
+- `goal.prescription jsonb` → `GoalPrescriptionJson` (`feature/goal/entity/GoalPrescriptionJson.java`: `generatedAt`, `basis`, `segments[]` {fromWeek, toWeek, label, kcal, proteinG, sleepTargetH, restDays[], projectedRateKgPerWk, rationale}, `guardStatus` {strength, muscle}, `feasibility` {verdict, notes[]}). Field `GoalEntity.prescription` (`:65`).
 - `biometric_profile.activity_level text` (CHECK `ck_biometric_profile_activity_level IN (SEDENTARY|LIGHT|MODERATE|VERY|EXTRA)`) → `BiometricProfileEntity.activityLevel` (`:56`, nullable). The PAL lookup input.
 
 Both jsonb records are **plain records, no Jackson/Hibernate annotations** — the app `ObjectMapper` serializes them via `@JdbcTypeCode(SqlTypes.JSON)` (the `ProvenanceEnvelope` idiom). `GoalMapper` (`feature/goal/mapper/GoalMapper.java:39-41`) projects them to the contract DTOs (`TdeeBootstrap`/`GoalPrescription`), mapping the `String` `formula`/`verdict` to the generated enums.
@@ -93,8 +97,10 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 | Verb | Path | Returns | Notes |
 |---|---|---|---|
 | POST | `/api/goals/{id}/evaluate` | `GoalResponse` (with `prescription`/`tdeeBootstrap`) | runs the engine, persists, re-fetches via `getGoal`. No-profile → **200 + graceful feasibility note** (never 4xx, so triggers don't break); foreign/missing → **404**. |
+| POST | `/api/goals/feasibility-preview` (G6, `mezo-06n`) | `FeasibilityPreviewResponse` {`derivedRatePctPerWeek`, `withinSafeBand`, `verdict`, `suggestedTargetDate?`} | **stateless** realism preview for the 2-step wizard from a `FeasibilityPreviewRequest` draft {`trajectory`, `startWeightKg`, `targetWeightKg?`, `startDate`, `targetDate`} — derive + grade BEFORE the goal is saved. No persistence/ownership (principal resolved per convention, compute ignores it). `suggestedTargetDate` present only when over the cap (`startDate + ceil(weeksAtCap)`). |
 | GET | `/api/biometrics/weight/trend` | `WeightTrendResponse` {`ewmaSeries[]`, `latestTrendKg`, `weeklyRateKgPerWeek`, `weeklyRatePctPerWeek`, `last4wRateKgPerWeek`, `dataSufficiency`} | the EWMA spine, exposed for the FE. |
-| PUT | `/api/biometrics/profile` | `BiometricProfileResponse` | now carries `activityLevel` (the `GoalPlanner` wizard sends it). |
+| GET | `/api/biometrics/profile` (G6, `mezo-06n`) | `BiometricProfileResponse` (with a **derived** `tdeeBootstrap`) | the profile screen's base-TDEE. `tdeeBootstrap` is computed on read from the profile + the latest weigh-in via `TdeeBootstrapService.compute` (cross-`$ref` to the goal fragment's `TdeeBootstrap` schema) — **NOT persisted** (no column); **null** when there is no weigh-in. So the Profil "Biometria" card can show base-TDEE even with no goal. |
+| PUT | `/api/biometrics/profile` | `BiometricProfileResponse` (with derived `tdeeBootstrap`) | now carries `activityLevel` (the `GoalPlanner` wizard sends it); the save **recomputes the active goal** (trigger above). |
 
 `GoalResponse` additively gained `prescription` + `tdeeBootstrap` (both `nullable` — null until first evaluate). The HTTP surface and these contract shapes are documented in [`_platform-api-backend.md`](_platform-api-backend.md) §3 (the Goal/Biometrics rows) and [`me.md`](me.md) §4.
 
@@ -107,7 +113,7 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 | `pal.{sedentary,light,moderate,very,extra}` | 1.2 / 1.375 / **1.55** / 1.725 / 1.9 | `TdeeBootstrapService` (PAL lookup; moderate = default) |
 | `kcalPerKg` | 7700 (band 6000–7700) | `GoalProjectionService` (energy balance ↔ rate) |
 | `protein.gPerKgBwDefault/…/gPerKgBwCap` | 2.0 … 2.6 | `GoalEvaluationService.proteinTargetGrams` |
-| `rate.{capPctPerWeek,bandLow,bandHigh}` | 1.0 / 0.5 / 1.0 | `GoalEvaluationService` (rate realism) + `GuardEvaluationService` (rate-cap) |
+| `rate.{targetPctPerWeek,capPctPerWeek,bandLow,bandHigh}` | 0.7 / 1.0 / 0.5 / 1.0 | `GoalFeasibilityService` (`verdictForRate` band: ≤target → feasible, ≤cap → with-warnings, else aggressive; `withinSafeBand`/`suggestedTargetDate` key off cap) — reused by `GoalEvaluationService` (rate realism) + `GuardEvaluationService` (rate-cap) |
 | `volume.{maintenanceSets,warnBelow}` | 8 / 6 | `GuardEvaluationService` (muscle guard) |
 | `strength.e1rmBreachPct` | −5.0 | `GuardEvaluationService` (strength breach gate) |
 | `ewma.halfLifeDays` | 10 (band 10–14) | `WeightTrendService` (α) |
@@ -115,7 +121,7 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 | `thermogenesisHaircutKcalPerDay` | 0 (off; band 100–200) | reserved (adaptive haircut) |
 | `bootstrapUncertaintyKcal` | 300 | uncertainty band |
 
-**Reserved / tuning surface (defined but not yet consumed):** `rate.targetPctPerWeek` (0.7), `protein.gPerKgLbmLow`, `protein.gPerKgBwFloor`/`gPerKgBwCeil`, the non-`intervalRun` MET deltas (`hypertrophy`/`volleyballRec`/`volleyballComp`Kcal — only `intervalRunKcal` is read by the running block-boundary delta), `thermogenesisHaircutKcalPerDay`, and `bootstrapUncertaintyKcal` are wired into `GoalEngineProperties` ahead of the slices that will read them; no service consumes them today.
+**Reserved / tuning surface (defined but not yet consumed):** `protein.gPerKgLbmLow`, `protein.gPerKgBwFloor`/`gPerKgBwCeil`, the non-`intervalRun` MET deltas (`hypertrophy`/`volleyballRec`/`volleyballComp`Kcal — only `intervalRunKcal` is read by the running block-boundary delta), `thermogenesisHaircutKcalPerDay`, and `bootstrapUncertaintyKcal` are wired into `GoalEngineProperties` ahead of the slices that will read them; no service consumes them today.
 
 These are the empirical-tuning surface (research §7): EWMA half-life, kcal/kg, the −5% e1RM breach, and the rate bands are all tunable from real data without a code change.
 
@@ -155,9 +161,10 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 ## 8. Testing
 
 **Backend (integration-first, real Postgres — `cd backend && ./mvnw clean test`):**
-- Per-service ITs: `feature/goal/engine/service/TdeeBootstrapServiceIT` (MSJ vs Katch branch, PAL lookup), `GoalProjectionServiceIT` (segment collapse, running boundary delta, meso-phase zero-delta, trend reconciliation), `GuardEvaluationServiceIT` (e1RM trend + breach, muscle floor, rate-cap, deferred protein), `GoalEvaluationServiceIT` (rate grading, conflict rule, protein target, missing-profile artifact).
+- Per-service ITs: `feature/goal/engine/service/TdeeBootstrapServiceIT` (MSJ vs Katch branch, PAL lookup), `GoalProjectionServiceIT` (segment collapse, running boundary delta, meso-phase zero-delta, trend reconciliation), `GuardEvaluationServiceIT` (e1RM trend + breach, muscle floor, rate-cap, deferred protein), `GoalEvaluationServiceIT` (rate grading, conflict rule, protein target, missing-profile artifact), `GoalFeasibilityServiceIT` (G6 — shared rate derivation, `verdictForRate` band boundaries, over-cap suggested date). The HTTP preview round-trip is in `GoalContractIT`.
 - `feature/goal/engine/GoalEnginePropertiesIT` — the `mezo.goal.*` binding + validation.
-- `feature/goal/GoalEngineRecomputeIT` — the four recompute triggers fire `evaluate` (activate / attach / detach / weigh-in) and the no-active-goal weigh-in is a no-op.
+- `feature/goal/GoalEngineRecomputeIT` — the recompute triggers fire `evaluate` (activate / attach / detach / weigh-in) and the no-active-goal weigh-in is a no-op.
+- `feature/biometrics/profile/BiometricProfileServiceIT` / `BiometricProfileContractIT` (G6) — the GET carries a derived `tdeeBootstrap` (profile + weigh-in → non-null, matches `TdeeBootstrapService.compute`; no weigh-in → null) and the profile upsert recomputes the active goal (prescription was null → populated) yet succeeds with no active goal.
 - `feature/goal/GoalContractIT` — the HTTP `POST /api/goals/{id}/evaluate` surface (200 + prescription, 200 graceful no-profile, 404 foreign).
 
 **Frontend** — `frontend/src/features/me/components/GoalRecept.test.tsx` (verdict labels, segment metrics, guard pills incl. a breached strength guard, the null-prescription evaluate CTA) + the recept assertions in `GoalsView.test.tsx`; the trend fold in `data/weightHooks.test.tsx`. Both `pnpm test` (real) and `VITE_USE_MOCK=true pnpm test` (mock) must pass — see [`me.md`](me.md) §8.
@@ -188,13 +195,14 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 - `service/TdeeBootstrapService.java` — formula TDEE (MSJ / Katch-McArdle × PAL).
 - `service/GoalProjectionService.java` — the segmented projection (block-boundary deltas, trend reconciliation, all 3 trajectories).
 - `service/GuardEvaluationService.java` — strength (e1RM) + muscle-volume + rate-cap soft guards.
-- `service/GoalEvaluationService.java` — heuristic feasibility gate + prescription assembly (pure).
+- `service/GoalEvaluationService.java` — heuristic feasibility gate + prescription assembly (pure); delegates the band → verdict to `GoalFeasibilityService`.
+- `service/GoalFeasibilityService.java` (G6) — the stateless realism core: shared `deriveRatePctPerWeek` + `verdictForRate` + `preview` (`POST /api/goals/feasibility-preview`).
 
 **Spine / inputs:**
 - `backend/.../feature/biometrics/weight/service/WeightTrendService.java` — the EWMA weight-trend spine (`GET /api/biometrics/weight/trend`).
 - `backend/.../feature/biometrics/weight/service/WeightLogService.java` — the weigh-in recompute trigger.
 - `backend/.../feature/goal/service/{GoalService,GoalPlanLinkService}.java` — activate / attach / detach recompute triggers.
-- `backend/.../feature/goal/controller/GoalController.java` — `evaluateGoal` (`POST /api/goals/{id}/evaluate`).
+- `backend/.../feature/goal/controller/GoalController.java` — `evaluateGoal` (`POST /api/goals/{id}/evaluate`) + `feasibilityPreview` (`POST /api/goals/feasibility-preview`, G6).
 
 **Persistence / contract:**
 - `backend/.../feature/goal/entity/{GoalEntity,GoalPrescriptionJson,TdeeBootstrapJson}.java` — the jsonb columns + records.

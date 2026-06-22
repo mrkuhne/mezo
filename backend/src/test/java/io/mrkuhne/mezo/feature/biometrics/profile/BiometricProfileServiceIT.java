@@ -8,8 +8,14 @@ import io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
 import io.mrkuhne.mezo.feature.biometrics.profile.service.BiometricProfileService;
+import io.mrkuhne.mezo.feature.goal.engine.service.TdeeBootstrapService;
+import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
+import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -24,6 +30,10 @@ class BiometricProfileServiceIT extends AbstractIntegrationTest {
     @Autowired private BiometricProfileService service;
     @Autowired private BiometricProfileRepository repository;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private WeightLogPopulator weightLogPopulator;
+    @Autowired private GoalPopulator goalPopulator;
+    @Autowired private GoalRepository goalRepository;
+    @Autowired private TdeeBootstrapService tdeeBootstrapService;
 
     @Test
     void testUpsertProfile_shouldReplaceNotDuplicate_whenCalledTwice() {
@@ -79,6 +89,63 @@ class BiometricProfileServiceIT extends AbstractIntegrationTest {
         BiometricProfileResponse response = service.upsertProfile(user, req("M").build());
 
         assertThat(response.getActivityLevel()).isNull();
+    }
+
+    @Test
+    void testGetProfile_shouldDeriveTdeeBootstrap_whenProfileAndWeighInExist() {
+        UUID user = databasePopulator.populateUser("bp-tdee@test.local");
+        // 84kg / 180cm / 15% bodyfat / MODERATE PAL — derived from this exact pair.
+        service.upsertProfile(user,
+            req("M").activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MODERATE).build());
+        weightLogPopulator.createWeightLog(user, LocalDate.of(2026, 6, 1), new BigDecimal("84.00"));
+
+        BiometricProfileResponse response = service.getProfile(user);
+
+        // Same source of truth: assert the response matches TdeeBootstrapService.compute on the same inputs.
+        BiometricProfileEntity profile = repository.findByCreatedByAndDeletedFalse(user).orElseThrow();
+        TdeeBootstrapJson expected = tdeeBootstrapService.compute(profile, new BigDecimal("84.00"));
+        assertThat(response.getTdeeBootstrap()).isNotNull();
+        assertThat(response.getTdeeBootstrap().getBmr()).isEqualByComparingTo(expected.bmr());
+        assertThat(response.getTdeeBootstrap().getTdee()).isEqualByComparingTo(expected.tdee());
+        assertThat(response.getTdeeBootstrap().getPal()).isEqualByComparingTo(expected.pal());
+    }
+
+    @Test
+    void testGetProfile_shouldLeaveTdeeBootstrapNull_whenNoWeighIn() {
+        UUID user = databasePopulator.populateUser("bp-tdee-noweight@test.local");
+        service.upsertProfile(user, req("M").build());
+
+        BiometricProfileResponse response = service.getProfile(user);
+
+        // Profile exists but no weigh-in → TDEE basis is missing → derived bootstrap stays null.
+        assertThat(response.getTdeeBootstrap()).isNull();
+    }
+
+    @Test
+    void testUpsertProfile_shouldRecomputeActiveGoal_whenActiveGoalExists() {
+        UUID user = databasePopulator.populateUser("bp-recompute@test.local");
+        weightLogPopulator.createWeightLog(user, LocalDate.of(2026, 6, 1), new BigDecimal("84.00"));
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        // Fresh goal: prescription not yet generated.
+        assertThat(goal.getPrescription()).isNull();
+
+        // Upserting the profile gives the engine its inputs → it recomputes the active goal.
+        service.upsertProfile(user,
+            req("M").activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MODERATE).build());
+
+        GoalEntity recomputed = goalRepository.findById(goal.getId()).orElseThrow();
+        assertThat(recomputed.getPrescription()).isNotNull();
+        assertThat(recomputed.getTdeeBootstrap()).isNotNull();
+    }
+
+    @Test
+    void testUpsertProfile_shouldSucceed_whenNoActiveGoal() {
+        UUID user = databasePopulator.populateUser("bp-recompute-none@test.local");
+        // No active goal — the recompute trigger must be a graceful no-op, never break the save.
+        BiometricProfileResponse response = service.upsertProfile(user, req("M").build());
+
+        assertThat(response.getSex()).isEqualTo(BiometricProfileResponse.SexEnum.M);
+        assertThat(repository.findByCreatedByAndDeletedFalse(user)).isPresent();
     }
 
     @Test

@@ -46,7 +46,7 @@ class GoalTimelineContractIT extends ApiIntegrationTest {
             .title("Nyári cut").trajectory("cut").guards(List.of("strength", "muscle"))
             .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 7, 27)) // 8-week window
             .startWeightKg(new BigDecimal("84.20")).targetWeightKg(new BigDecimal("80.00"))
-            .rateTargetPctPerWeek(new BigDecimal("0.70")).identityFrame("Erő megtartva.");
+            .identityFrame("Erő megtartva."); // rate is server-derived (G6, mezo-06n)
     }
 
     private UUID createGoalOverHttp(HttpHeaders auth) {

@@ -10,6 +10,24 @@ export const handlers = [
   http.get(`${API_BASE}/api/biometrics/weight`, () =>
     HttpResponse.json([{ id: 'w1', date: '2026-06-01', value: 82.5, note: null }]),
   ),
+
+  // Biometric profile (G6, mezo-06n) — default complete profile + a derived
+  // base-TDEE bootstrap. Tests that want the 404 "no profile" state override
+  // with server.use(http.get(..., () => new HttpResponse(null, { status: 404 }))).
+  http.get(`${API_BASE}/api/biometrics/profile`, () =>
+    HttpResponse.json({
+      sex: 'M',
+      heightCm: 180,
+      birthDate: '1991-03-01',
+      bodyFatPct: 15,
+      activityLevel: 'MODERATE',
+      tdeeBootstrap: { bmr: 1910, tdee: 2960, pal: 1.55, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
+    }),
+  ),
+  http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ ...body, tdeeBootstrap: null })
+  }),
   http.post(`${API_BASE}/api/biometrics/weight`, async ({ request }) => {
     const body = (await request.json()) as { date: string; weightKg: number; note?: string | null }
     return HttpResponse.json(

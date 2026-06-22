@@ -1,5 +1,6 @@
 import type { GoalTimelineResponse } from '@/lib/goalLinkApi'
-import type { GoalResponse } from '@/lib/goalApi'
+import type { GoalResponse, FeasibilityPreviewResponse } from '@/lib/goalApi'
+import type { BiometricProfileResponse } from '@/lib/biometricProfileApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from './types'
 
 export const goal: Goal = {
@@ -85,6 +86,29 @@ export const goalResponse: GoalResponse = {
       notes: ['A tempó a cap közelében van — a befutóban lassítunk.', 'A fehérje-cél Fuel-logolás nélkül még nem ellenőrzött.'],
     },
   },
+}
+
+// Static biometric profile for mock mode (G6, mezo-06n) — a complete profile so
+// the Profile Biometria card + the goal-creation gate render offline without a
+// backend. The derived base-TDEE line on the card reads `tdeeBootstrap`; the
+// editor sheet prefills from these fields. (Katch → uses bodyFatPct.)
+export const biometricProfile: BiometricProfileResponse = {
+  sex: 'M',
+  heightCm: 180,
+  birthDate: '1991-03-01',
+  bodyFatPct: 15,
+  activityLevel: 'MODERATE',
+  tdeeBootstrap: { bmr: 1910, tdee: 2960, pal: 1.55, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
+}
+
+// Static realism preview for mock mode (G6, mezo-06n) — a feasible draft so the
+// cél step's live feasibility panel renders offline without a backend. The
+// aggressive branch (suggestedTargetDate present) is exercised via MSW in real
+// mode; mock mode always shows the safe-band state.
+export const feasibilityPreview: FeasibilityPreviewResponse = {
+  derivedRatePctPerWeek: 0.6,
+  withinSafeBand: true,
+  verdict: 'feasible',
 }
 
 export const weightLog: WeightEntry[] = [
