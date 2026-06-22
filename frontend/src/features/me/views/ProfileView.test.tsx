@@ -1,17 +1,20 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { ProfileView } from './ProfileView'
+import { QueryWrapper } from '@/test/queryWrapper'
 
 function renderProfile(onOpenSettings = () => {}) {
   return render(
-    <MemoryRouter initialEntries={['/me']}>
-      <Routes>
-        <Route path="/me" element={<ProfileView onOpenSettings={onOpenSettings} />} />
-        <Route path="/me/knowledge" element={<div>TUDAS ROUTE</div>} />
-        <Route path="/me/people" element={<div>EMBEREK ROUTE</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/me']}>
+        <Routes>
+          <Route path="/me" element={<ProfileView onOpenSettings={onOpenSettings} />} />
+          <Route path="/me/knowledge" element={<div>TUDAS ROUTE</div>} />
+          <Route path="/me/people" element={<div>EMBEREK ROUTE</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryWrapper>,
   )
 }
 
@@ -34,4 +37,19 @@ test('Tudás entry card navigates to /me/knowledge', async () => {
   renderProfile()
   await userEvent.click(screen.getByText(/Knowledge graph · Tudás/))
   expect(screen.getByText('TUDAS ROUTE')).toBeInTheDocument()
+})
+
+test('renders the Biometria card with the derived base-TDEE line', async () => {
+  renderProfile()
+  // Card resolves from useBiometricProfile (mock static / MSW default profile).
+  await waitFor(() => expect(screen.getByText('Biometria')).toBeInTheDocument())
+  expect(screen.getByText(/≈2960/)).toBeInTheDocument()
+})
+
+test('Szerkesztés opens the BiometricSheet', async () => {
+  renderProfile()
+  await waitFor(() => expect(screen.getByText('Biometria')).toBeInTheDocument())
+  await userEvent.click(screen.getByRole('button', { name: /Szerkesztés/ }))
+  // The sheet's title appears once open.
+  expect(screen.getByText('A motor ebből számol')).toBeInTheDocument()
 })

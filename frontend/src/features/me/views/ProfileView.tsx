@@ -1,18 +1,23 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
-import { useProfile, usePeople, useKnowledge } from '@/data/hooks'
+import { useProfile, usePeople, useKnowledge, useBiometricProfile } from '@/data/hooks'
 import { ConcentricAvatar } from '../components/ConcentricAvatar'
 import { ProfileStat } from '../components/ProfileStat'
 import { EntryCard } from '../components/EntryCard'
 import { SettingsListRow } from '../components/SettingsListRow'
+import { BiometricCard } from '../components/BiometricCard'
+import { BiometricSheet } from '../BiometricSheet'
 
 export function ProfileView({ onOpenSettings }: { onOpenSettings: () => void }) {
   const navigate = useNavigate()
   const { user, identityGoal, areas, quickSettings, version } = useProfile()
   const { summary, people } = usePeople()
   const { facts, edges, activeCount } = useKnowledge()
+  const { profile: biometric } = useBiometricProfile()
+  const [sheet, setSheet] = useState<'biometric' | null>(null)
 
   return (
     <>
@@ -82,6 +87,12 @@ export function ProfileView({ onOpenSettings }: { onOpenSettings: () => void }) 
             {identityGoal.note}
           </p>
         </div>
+      </div>
+
+      {/* Biometria — first-class Profile card; the engine computes the base-TDEE
+          from it (G6, mezo-06n). Edits open the BiometricSheet. */}
+      <div style={{ padding: '0 24px 16px' }}>
+        <BiometricCard profile={biometric} onEdit={() => setSheet('biometric')} />
       </div>
 
       {/* Aktív területek (PERMA-as-narrative) */}
@@ -157,6 +168,10 @@ export function ProfileView({ onOpenSettings }: { onOpenSettings: () => void }) 
           </span>
         </div>
       </div>
+
+      {sheet === 'biometric' && (
+        <BiometricSheet onClose={() => setSheet(null)} profile={biometric} />
+      )}
     </>
   )
 }
