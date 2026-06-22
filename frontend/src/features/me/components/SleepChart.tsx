@@ -1,4 +1,4 @@
-import type { SleepEntry, SleepTrends } from '@/data/types'
+import type { SleepEntry } from '@/data/types'
 
 type Period = '7d' | '14d'
 
@@ -8,11 +8,9 @@ function sliceForPeriod(entries: SleepEntry[], period: Period): SleepEntry[] {
 
 export function SleepChart({
   entries,
-  target,
   period,
 }: {
   entries: SleepEntry[]
-  target: SleepTrends['target']
   period: Period
 }) {
   const data = sliceForPeriod(entries, period)
@@ -37,7 +35,6 @@ export function SleepChart({
   const yForQual = (q: number) => padY + (1 - q / 10) * innerH
 
   const qualPath = data.map((d, i) => (i === 0 ? 'M' : 'L') + xFor(i) + ' ' + yForQual(d.quality)).join(' ')
-  const targetY = yForDur(target.duration)
 
   return (
     <div className="card notch-12" style={{ padding: 14 }}>
@@ -48,29 +45,6 @@ export function SleepChart({
             <stop offset="100%" stopColor="var(--cat-preference)" stopOpacity="0.25" />
           </linearGradient>
         </defs>
-
-        {/* Target duration line */}
-        <line
-          x1={padX}
-          x2={W - padX}
-          y1={targetY}
-          y2={targetY}
-          stroke="var(--cat-preference)"
-          strokeWidth="0.8"
-          strokeDasharray="4 4"
-          opacity="0.5"
-        />
-        <text
-          x={W - padX}
-          y={targetY - 4}
-          fontFamily="var(--ff-mono)"
-          fontSize="9"
-          fill="var(--cat-preference)"
-          textAnchor="end"
-          opacity="0.7"
-        >
-          target {target.duration}h
-        </text>
 
         {/* Duration bars */}
         {data.map((d, i) => {

@@ -1,24 +1,16 @@
 export function TrendCell({
   label,
-  avg,
-  delta,
   rate,
-  onTrack,
+  avg,
 }: {
   label: string
-  avg: number
-  delta: number
   rate: number
-  onTrack: boolean
+  // The EWMA trend weight — only the 7-day cell has a real value; omitted for 4w.
+  avg?: number
 }) {
   return (
     <div className="flex-1 card notch-4" style={{ padding: 12 }}>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <span className="label-mono" style={{ fontSize: 9 }}>{label}</span>
-        <span className="label-mono" style={{ fontSize: 8, color: onTrack ? 'var(--success)' : 'var(--warning)' }}>
-          {onTrack ? 'ON TRACK' : 'OFF'}
-        </span>
-      </div>
+      <span className="label-mono" style={{ fontSize: 9 }}>{label}</span>
       <div
         style={{
           fontFamily: 'var(--ff-display)',
@@ -29,17 +21,15 @@ export function TrendCell({
           lineHeight: 1,
         }}
       >
-        {avg.toFixed(1)}
-        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 3 }}>kg</span>
+        {rate > 0 ? '+' : ''}{rate.toFixed(2)}
+        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 3 }}>kg/hét</span>
       </div>
-      <div className="row mt-sm" style={{ justifyContent: 'space-between' }}>
-        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: delta < 0 ? 'var(--brand-glow)' : 'var(--warning)' }}>
-          {delta > 0 ? '+' : ''}{delta.toFixed(1)} kg
-        </span>
-        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>
-          {rate.toFixed(2)}/hét
-        </span>
-      </div>
+      {avg !== undefined && (
+        <div className="row mt-sm" style={{ justifyContent: 'space-between' }}>
+          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>trend</span>
+          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>{avg.toFixed(1)} kg</span>
+        </div>
+      )}
     </div>
   )
 }

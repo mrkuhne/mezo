@@ -2,13 +2,8 @@ import { useState } from 'react'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import type { Tool } from '@/components/ui/ToolChip'
 import { useSleep } from '@/data/hooks'
-import { FactorCard } from '../components/FactorCard'
-import { InsightCard } from '../components/InsightCard'
 import { SleepStat } from '../components/SleepStat'
-import { SleepCell } from '../components/SleepCell'
 import { SleepLogRow } from '../components/SleepLogRow'
 import { SleepChart } from '../components/SleepChart'
 import { SleepLogSheet } from '../SleepLogSheet'
@@ -16,17 +11,8 @@ import { SleepLogSheet } from '../SleepLogSheet'
 type Period = '7d' | '14d'
 const PERIODS: Period[] = ['7d', '14d']
 
-const FACTOR_TOOLS: Tool[] = [
-  { type: 'read', name: 'get_sleep_log', args: '14d' },
-  { type: 'read', name: 'get_meal_history', args: '7d' },
-  { type: 'read', name: 'get_supplement_log' },
-  { type: 'compute', name: 'computeSleepFactors' },
-]
-
-const SLEEP_ACCENT = 'var(--cat-preference)'
-
 export function SleepView() {
-  const { sleepLog, sleepTrends, lastNight, logSleep } = useSleep()
+  const { sleepLog, lastNight, logSleep } = useSleep()
   const [period, setPeriod] = useState<Period>('14d')
   const [logOpen, setLogOpen] = useState(false)
 
@@ -42,9 +28,9 @@ export function SleepView() {
     )
   }
 
-  const target = sleepTrends.target
-  const durDelta = lastNight.duration - target.duration
-  const qualOnTarget = lastNight.quality >= target.quality
+  // Color the (real) quality number good/bad on the same threshold SleepChart
+  // uses for "low" nights (quality <= 5) — a presentation heuristic, no mock target.
+  const goodQuality = lastNight.quality > 5
 
   return (
     <>
@@ -106,11 +92,6 @@ export function SleepView() {
                   style={{ fontSize: 11, marginTop: 6, fontFamily: 'var(--ff-mono)', display: 'block' }}
                 >
                   {lastNight.bedtime} → {lastNight.wakeup}
-                  {durDelta !== 0 && (
-                    <span style={{ color: durDelta >= 0 ? 'var(--brand-glow)' : 'var(--warning)', marginLeft: 8 }}>
-                      {durDelta > 0 ? '+' : ''}{durDelta.toFixed(1)}h target
-                    </span>
-                  )}
                 </span>
               </div>
               <div className="col" style={{ alignItems: 'flex-end' }}>
@@ -122,7 +103,7 @@ export function SleepView() {
                     fontWeight: 600,
                     lineHeight: 1,
                     marginTop: 4,
-                    color: qualOnTarget ? 'var(--brand-glow)' : 'var(--warning)',
+                    color: goodQuality ? 'var(--brand-glow)' : 'var(--warning)',
                   }}
                 >
                   {lastNight.quality}
@@ -132,10 +113,11 @@ export function SleepView() {
             </div>
 
             {/* Components */}
+            {/* Étkezés→alvás is a backend stub (mealToSleep hardcoded 0 until Fuel
+                lands — §5.3), so the strip (mezo-lfw) drops it; awakenings is real
+                (captured by the log sheet). */}
             <div className="row gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
               <SleepStat label="Ébredés" val={lastNight.awakenings} unit="× éjjel" />
-              <SleepStat label="Étkezés→alvás" val={lastNight.mealToSleep} unit="perc" highlight={lastNight.mealToSleep >= 120} />
-              <SleepStat label="Target" val={target.duration} unit="h" />
             </div>
 
             {lastNight.notes && (
@@ -167,43 +149,7 @@ export function SleepView() {
             ))}
           </div>
         </div>
-        <SleepChart entries={sleepLog} target={target} period={period} />
-      </div>
-
-      {/* Weekly stats */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="row gap-sm">
-          <SleepCell label="7 nap" stats={sleepTrends.last7d} />
-          <SleepCell label="14 nap" stats={sleepTrends.last14d} />
-        </div>
-      </div>
-
-      {/* Mezo insights */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div style={{ marginBottom: 12 }}>
-          <Eyebrow>Mezo · mit látunk</Eyebrow>
-        </div>
-        <div className="col gap-sm">
-          {sleepTrends.insights.map((ins, i) => (
-            <InsightCard key={i} insight={ins} accentColor={SLEEP_ACCENT} />
-          ))}
-        </div>
-      </div>
-
-      {/* Factors */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-          <Eyebrow>Hatások · mi mozgatja az alvást</Eyebrow>
-          <Eyebrow brand>{sleepTrends.factors.length}</Eyebrow>
-        </div>
-        <div className="col gap-sm">
-          {sleepTrends.factors.map((f, i) => (
-            <FactorCard key={i} factor={f} />
-          ))}
-        </div>
-        <div className="mt-md">
-          <ToolChipRow tools={FACTOR_TOOLS} />
-        </div>
+        <SleepChart entries={sleepLog} period={period} />
       </div>
 
       {/* Recent log */}

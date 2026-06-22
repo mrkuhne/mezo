@@ -1,24 +1,4 @@
-import type { PeopleSummary, PersonEntry, Mention, RelationPattern, Affect } from './types'
-
-export const peopleSummary: PeopleSummary = {
-  activeCount: 5,
-  mentionsThisWeek: 23,
-  mentionsLastWeek: 18,
-  affectScoreWeek: 0.74,
-  creditTrend: 'rising',
-  ritualUpcoming: {
-    kind: 'mizu-velunk',
-    title: 'Mizu Velünk · havi 1:1',
-    whenLabel: 'Péntek · Máj 29 · 19:30',
-    daysAway: 5,
-    attendees: ['Ádám', 'Réka', 'Márk'],
-    lastHeldLabel: 'Április 24',
-  },
-  attention: [
-    { kind: 'watch', person: 'Réka', reason: '3 hete egyre vegyesebb affect, utolsó említés nehéz hónapról' },
-    { kind: 'celebrate', person: 'Petra', reason: "Hat hét óta a leghosszabb stabil 'positive' sáv" },
-  ],
-}
+import type { PersonEntry, Mention, Affect } from './types'
 
 export const people: PersonEntry[] = [
   {
@@ -250,33 +230,6 @@ export const mentions: Mention[] = [
     excerpt: 'Áprilisi 1:1 — Márk megérzései a gain & loss framingről. Erre érdemes később visszatérni.',
     tone: 'positive',
     tiedTo: { kind: 'event', label: 'Mizu Velünk · havi' },
-  },
-]
-
-export const relationPatterns: RelationPattern[] = [
-  {
-    id: 'pp-pat1',
-    title: 'Mizu-péntek után szombat reggel +0.8 SD energia',
-    evidence: 'Utolsó 4 Mizu Velünk-péntekből 4× szombat reggel 8+/10 morning energy, csak 5.2 az átlagod.',
-    kind: 'positive',
-    confidence: 0.78,
-    involves: ['pp-adam', 'pp-reka', 'pp-mark'],
-  },
-  {
-    id: 'pp-pat2',
-    title: 'Réka-említés után 22:00 utáni snack ×2 ezen a héten',
-    evidence: 'Múlt hét óta 3-ból 2 Réka-mention után 22:00+ szénhidrát log. Kapcsolati támogatás ↔ saját önszabályozás.',
-    kind: 'watch',
-    confidence: 0.61,
-    involves: ['pp-reka'],
-  },
-  {
-    id: 'pp-pat3',
-    title: 'Petra-vita estéje után 0.7h-val kevesebb mély alvás',
-    evidence: 'Februárig visszamenve 6 ilyen este: deep sleep medián 1.2h vs heti 1.9h.',
-    kind: 'watch',
-    confidence: 0.67,
-    involves: ['pp-petra'],
   },
 ]
 

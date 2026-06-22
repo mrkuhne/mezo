@@ -12,7 +12,7 @@ function renderApp(path: string) {
 
 test('/me shows Profil with the sub-nav', () => {
   renderApp('/me')
-  expect(screen.getByRole('heading', { level: 1, name: 'Daniel' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Profil' })).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Cél' })).toBeInTheDocument()
 })
 

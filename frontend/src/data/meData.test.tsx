@@ -10,14 +10,12 @@ import { QueryWrapper } from '@/test/queryWrapper'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('useProfile returns the extended user + Profil consts', () => {
+test('useProfile exposes only the user meta', () => {
   const { result } = renderHook(() => useProfile())
+  // Shape guard: the Profil strip (mezo-lfw) cut useProfile down to just `user`;
+  // catches a stray re-add of identityGoal/areas/quickSettings/version.
+  expect(Object.keys(result.current)).toEqual(['user'])
   expect(result.current.user.name).toBe('Daniel')
-  expect(result.current.user.streakDays).toBe(27)
-  expect(result.current.identityGoal.quote).toMatch(/Peak performance/)
-  expect(result.current.areas).toHaveLength(4)
-  expect(result.current.quickSettings).toHaveLength(4)
-  expect(result.current.version).toMatch(/v2\.0\.1/)
 })
 
 test('useGoal returns the active cut goal + linked mesocycles', () => {
@@ -30,12 +28,11 @@ test('useGoal returns the active cut goal + linked mesocycles', () => {
 test('useWeight returns the log + trends', async () => {
   const { result } = renderHook(() => useWeight(), { wrapper: QueryWrapper })
   await waitFor(() => expect(result.current.weightLog.length).toBe(15))
-  expect(result.current.weightTrends.factors).toHaveLength(4)
+  expect(result.current.weightTrends.last7d.weeklyRate).toBe(-0.5)
 })
 
-test('useSleep returns the log, trends, and last night', async () => {
+test('useSleep returns the log and last night', async () => {
   const { result } = renderHook(() => useSleep(), { wrapper: QueryWrapper })
   await waitFor(() => expect(result.current.sleepLog.length).toBe(14))
   expect(result.current.lastNight.duration).toBe(7.4)
-  expect(result.current.sleepTrends.target.duration).toBe(7.5)
 })

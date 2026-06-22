@@ -7,11 +7,10 @@ function renderSheet(onClose = () => {}) {
   return render(<ThemeProvider><SettingsSheet onClose={onClose} /></ThemeProvider>)
 }
 
-test('renders the Téma and Értesítések sections', () => {
+test('renders the Téma section', () => {
   renderSheet()
   expect(screen.getByText('Téma')).toBeInTheDocument()
-  expect(screen.getByText('Értesítések')).toBeInTheDocument()
-  expect(screen.getByText('AnchorMode push')).toBeInTheDocument()
+  expect(screen.getByText(/Light mód|Dark mód/)).toBeInTheDocument()
 })
 
 test('the theme toggle flips data-theme via useTheme', async () => {

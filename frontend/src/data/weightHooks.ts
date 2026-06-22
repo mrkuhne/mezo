@@ -7,23 +7,13 @@ import type { WeightEntry, WeightLogInput, WeightTrends } from './types'
 
 // G5 (mezo-g1u): fold the backend EWMA trend into the WeightTrends shape the views
 // read so the Súly cells + the goal hero "Tempó" become REAL in real mode. The
-// backend computes the weekly rates (kg/hét) and the latest EWMA trend; the
-// qualitative legs the engine does not yet produce (factors/insights/projection,
-// the 4-week avg/delta) keep the static mock values so the views still render
-// (these become real once Fuel intake + the Insights pipeline land). The hero +
-// rate cells read weeklyRate/avg, which are the fields we overwrite here.
+// backend computes the weekly rates (kg/hét) and the latest EWMA trend weight;
+// those are the only figures the views render now (the qualitative legs were
+// dropped with the placeholder UI — mezo-lfw).
 function foldTrend(trend: WeightTrendResponse): WeightTrends {
   return {
-    ...mockWeightTrends,
-    last7d: {
-      ...mockWeightTrends.last7d,
-      avg: trend.latestTrendKg,
-      weeklyRate: trend.weeklyRateKgPerWeek,
-    },
-    last4w: {
-      ...mockWeightTrends.last4w,
-      weeklyRate: trend.last4wRateKgPerWeek,
-    },
+    last7d: { avg: trend.latestTrendKg, weeklyRate: trend.weeklyRateKgPerWeek },
+    last4w: { weeklyRate: trend.last4wRateKgPerWeek },
   }
 }
 

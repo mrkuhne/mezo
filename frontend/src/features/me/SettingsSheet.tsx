@@ -1,6 +1,6 @@
 // ============================================================
-// Mezo · SettingsSheet — Megjelenés & egyebek
-// Téma váltás (useTheme) + Értesítések áttekintés
+// Mezo · SettingsSheet — Megjelenés
+// Téma váltás (useTheme) — the only real, persisted setting.
 // Opened by the Profil gear chip (parent owns open/close state).
 // ============================================================
 import { Sheet } from '@/components/ui/Sheet'
@@ -10,7 +10,6 @@ import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
 import { Toggle } from '@/components/ui/Toggle'
 import { useTheme } from '@/app/ThemeProvider'
-import { notifSettings } from '@/data/me'
 
 export function SettingsSheet({ onClose }: { onClose: () => void }) {
   const { theme, toggle } = useTheme()
@@ -24,7 +23,7 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
               <Eyebrow brand>Beállítások</Eyebrow>
               {/* Display does not forward an `id`, so wrap to anchor aria-labelledby. */}
               <div id="settings-title">
-                <Display size="md">Megjelenés &amp; egyebek</Display>
+                <Display size="md">Megjelenés</Display>
               </div>
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close}>
@@ -50,19 +49,6 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
               </div>
               <Toggle on={light} onToggle={toggle} ariaLabel="Téma váltás" />
             </div>
-          </div>
-
-          <div className="col gap-sm">
-            <LabelMono>Értesítések</LabelMono>
-            {notifSettings.map((n) => (
-              <div key={n.label} className="card notch-4 row" style={{ justifyContent: 'space-between', padding: 14, gap: 12 }}>
-                <div className="row gap-md">
-                  <Icon name={n.icon} size={16} color="var(--text-secondary)" />
-                  <span>{n.label}</span>
-                </div>
-                <span className="label-mono">{n.val}</span>
-              </div>
-            ))}
           </div>
         </div>
       )}

@@ -101,12 +101,6 @@ describe('mock mode (demo goal)', () => {
     expect(screen.queryByText('7 nap')).not.toBeInTheDocument() // trend cells moved to /me/weight
   })
 
-  test('renders the factors section with tool chips', () => {
-    render(<GoalsView />, { wrapper: Wrapper })
-    expect(screen.getByText('Reta D3-D5 alacsony étvágy')).toBeInTheDocument()
-    expect(screen.getByText(/get_weight_log/)).toBeInTheDocument()
-  })
-
   test('renders the timeline lane (not the old linked-meso cards)', () => {
     render(<GoalsView />, { wrapper: Wrapper })
     // The GoalTimeline gym lane + a positioned plan bar replace the old cards.

@@ -2,13 +2,11 @@ export function GoalStat({
   label,
   val,
   unit,
-  sub,
   highlight = false,
 }: {
   label: string
   val: string
   unit?: string
-  sub?: string
   highlight?: boolean
 }) {
   return (
@@ -32,11 +30,6 @@ export function GoalStat({
           </span>
         )}
       </span>
-      {sub && (
-        <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)', marginTop: 2 }}>
-          {sub}
-        </span>
-      )}
     </div>
   )
 }
