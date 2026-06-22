@@ -1,5 +1,5 @@
 import type { GoalTimelineResponse } from '@/lib/goalLinkApi'
-import type { GoalResponse } from '@/lib/goalApi'
+import type { GoalResponse, FeasibilityPreviewResponse } from '@/lib/goalApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from './types'
 
 export const goal: Goal = {
@@ -85,6 +85,16 @@ export const goalResponse: GoalResponse = {
       notes: ['A tempó a cap közelében van — a befutóban lassítunk.', 'A fehérje-cél Fuel-logolás nélkül még nem ellenőrzött.'],
     },
   },
+}
+
+// Static realism preview for mock mode (G6, mezo-06n) — a feasible draft so the
+// cél step's live feasibility panel renders offline without a backend. The
+// aggressive branch (suggestedTargetDate present) is exercised via MSW in real
+// mode; mock mode always shows the safe-band state.
+export const feasibilityPreview: FeasibilityPreviewResponse = {
+  derivedRatePctPerWeek: 0.6,
+  withinSafeBand: true,
+  verdict: 'feasible',
 }
 
 export const weightLog: WeightEntry[] = [

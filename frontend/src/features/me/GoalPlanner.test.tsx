@@ -68,6 +68,98 @@ test('GoalPlanner has no manual rate input and no biometric fields', () => {
   expect(screen.queryByRole('button', { name: /^férfi$/i })).not.toBeInTheDocument()
 })
 
+test('GoalPlanner mock-mode cél step renders the static feasibility preview', async () => {
+  // Force mock mode so this passes in both `pnpm test` (real default) and the
+  // VITE_USE_MOCK=true run — the static preview comes from data/goals.ts, no MSW.
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  render(
+    <QueryWrapper>
+      <MemoryRouter>
+        <GoalPlanner />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
+  fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
+  // The static mock preview (data/goals.ts) is feasible at 0,6 %BW/hét.
+  await waitFor(() => expect(screen.getByText(/Reális/i)).toBeInTheDocument())
+  expect(screen.getByText(/0,6/)).toBeInTheDocument()
+  expect(screen.getByText(/%BW\s*\/\s*hét/i)).toBeInTheDocument()
+  vi.unstubAllEnvs()
+})
+
+test('GoalPlanner real-mode cél step renders the derived rate + verdict from the preview', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.post(`${API_BASE}/api/goals/feasibility-preview`, () =>
+      HttpResponse.json({
+        derivedRatePctPerWeek: 0.6,
+        withinSafeBand: true,
+        verdict: 'feasible',
+      }),
+    ),
+  )
+  render(
+    <QueryWrapper>
+      <MemoryRouter>
+        <GoalPlanner />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
+  fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
+  await waitFor(() => expect(screen.getByText(/✓\s*Reális/i)).toBeInTheDocument())
+  expect(screen.getByText(/0,6/)).toBeInTheDocument()
+  vi.unstubAllEnvs()
+})
+
+test('GoalPlanner real-mode aggressive preview offers a realistic date that re-previews on accept', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const bodies: Record<string, unknown>[] = []
+  server.use(
+    http.post(`${API_BASE}/api/goals/feasibility-preview`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      bodies.push(body)
+      // The first (default-window) draft is over the cap → aggressive + a suggestion.
+      // Once the date is bumped to the suggestion the window widens → feasible.
+      if (body.targetDate === '2026-09-15') {
+        return HttpResponse.json({ derivedRatePctPerWeek: 0.6, withinSafeBand: true, verdict: 'feasible' })
+      }
+      return HttpResponse.json({
+        derivedRatePctPerWeek: 1.3,
+        withinSafeBand: false,
+        verdict: 'aggressive',
+        suggestedTargetDate: '2026-09-15',
+      })
+    }),
+  )
+  render(
+    <QueryWrapper>
+      <MemoryRouter>
+        <GoalPlanner />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
+  fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
+  // The aggressive panel + the accept action appear.
+  await waitFor(() => expect(screen.getByText(/⚠\s*Agresszív/i)).toBeInTheDocument())
+  const accept = screen.getByRole('button', { name: /Elfogadom/i })
+  expect(accept).toBeInTheDocument()
+  // The first preview body carries the correct draft fields.
+  expect(bodies[0]).toMatchObject({ trajectory: 'cut', startWeightKg: 80, targetWeightKg: 80 })
+  expect(typeof bodies[0].startDate).toBe('string')
+  expect(typeof bodies[0].targetDate).toBe('string')
+
+  // Accepting the suggestion sets the cél-dátum input + fires a fresh preview.
+  fireEvent.click(accept)
+  expect((screen.getByLabelText('Cél dátum') as HTMLInputElement).value).toBe('2026-09-15')
+  await waitFor(() => expect(bodies.some(b => b.targetDate === '2026-09-15')).toBe(true))
+  // The new preview flips the panel to feasible.
+  await waitFor(() => expect(screen.getByText(/✓\s*Reális/i)).toBeInTheDocument())
+  vi.unstubAllEnvs()
+})
+
 test('GoalPlanner real-mode save posts the goal (no profile PUT) and activates', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []

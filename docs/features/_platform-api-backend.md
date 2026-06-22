@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-06-19
+updated: 2026-06-22
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml

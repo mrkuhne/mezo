@@ -1,8 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useGoalCreation, useWeight } from '@/data/hooks'
+import { useGoalCreation, useWeight, useFeasibilityPreview } from '@/data/hooks'
 import { Icon, type IconName } from '@/components/ui/Icon'
-import type { GoalUpsertRequest } from '@/lib/goalApi'
+import { huMonthDay } from '@/lib/dates'
+import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/lib/goalApi'
 
 type Trajectory = 'cut' | 'bulk' | 'maintain'
 type Guard = 'strength' | 'muscle'
@@ -48,6 +49,25 @@ export function GoalPlanner() {
   const backToGoals = () => navigate('/me/goals')
   const toggleGuard = (g: Guard) =>
     setGuards(cur => (cur.includes(g) ? cur.filter(x => x !== g) : [...cur, g]))
+
+  // Live realism preview (G6, mezo-06n): the backend derives the weekly pace from
+  // the draft window + weights and verdicts it. Skipped for `maintain` (no target
+  // weight → no rate) and for invalid windows (target before start). The hook
+  // debounces the inputs, so typing weights/dates doesn't spam the API.
+  const validWindow = targetDateIso > startDateIso
+  const previewable = trajectory !== null && trajectory !== 'maintain' && validWindow
+  const preview = useFeasibilityPreview(
+    previewable
+      ? {
+          trajectory: trajectory as Trajectory,
+          startWeightKg: startWeight,
+          targetWeightKg: targetWeight,
+          startDate: startDateIso,
+          targetDate: targetDateIso,
+        }
+      : null,
+    { enabled: previewable },
+  )
 
   // Step 1 (cél) is the terminal/save step — its guard stays title + a valid window.
   const canNext =
@@ -214,6 +234,7 @@ export function GoalPlanner() {
             identity,
             setIdentity,
             trajectory,
+            preview: previewable ? preview : undefined,
           }}
         />
       )}
@@ -290,6 +311,7 @@ function Step1({
   identity,
   setIdentity,
   trajectory,
+  preview,
 }: {
   title: string
   setTitle: (v: string) => void
@@ -304,6 +326,7 @@ function Step1({
   identity: string
   setIdentity: (v: string) => void
   trajectory: Trajectory | null
+  preview: FeasibilityPreviewResponse | undefined
 }) {
   const field = (label: string, input: ReactNode) => (
     <div className="col gap-sm">
@@ -315,6 +338,17 @@ function Step1({
   )
   const numStyle = { width: '100%', fontSize: 14, color: 'var(--text-primary)' } as const
   const dateStyle = { width: '100%', fontSize: 13, color: 'var(--text-primary)', colorScheme: 'dark' } as const
+
+  // HU decimals use a comma. The weeks/kg summary mirrors the backend's derivation
+  // basis (Δkg over the window in calendar weeks) so the panel narrates the same
+  // quantities the pace is built from.
+  const hu1 = (n: number) => n.toFixed(1).replace('.', ',')
+  const deltaKg = Math.abs(startWeight - targetWeight)
+  const weeks = Math.max(
+    1,
+    Math.round((Date.parse(targetDateIso) - Date.parse(startDateIso)) / (7 * 864e5)),
+  )
+
   return (
     <div style={{ padding: '8px 24px' }}>
       <div className="col gap-md">
@@ -384,6 +418,25 @@ function Step1({
             </div>
           )}
         </div>
+
+        {/* Live feasibility preview (G6, mezo-06n). maintain has no target weight
+            → a simple tartás note; otherwise the backend-derived pace + verdict. */}
+        {trajectory === 'maintain' ? (
+          <div className="card notch-8" style={{ padding: 13 }}>
+            <span className="label-mono" style={{ color: 'var(--text-tertiary)' }}>
+              ≈ Tartás — nincs súlyváltozási tempó.
+            </span>
+          </div>
+        ) : preview ? (
+          <FeasibilityPanel
+            preview={preview}
+            deltaKg={deltaKg}
+            weeks={weeks}
+            hu1={hu1}
+            onAccept={d => setTargetDateIso(d)}
+          />
+        ) : null}
+
         {field(
           'Identity frame · opcionális',
           <textarea
@@ -395,6 +448,96 @@ function Step1({
           />,
         )}
       </div>
+    </div>
+  )
+}
+
+// The cél step's live feasibility panel (mockup goal-wizard-v2.html). Two states:
+// withinSafeBand → brand-tinted "X,Y %BW/hét · ✓ Reális" + a kg/weeks summary;
+// otherwise (aggressive) → warning-tinted "X,Y %BW/hét · ⚠ Agresszív" + the
+// "↦ Reális dátum: <date> — Elfogadom" action that bumps the cél-dátum to the
+// cap-paced suggestion (re-previews → flips to feasible). The CTA itself stays
+// enabled (soft — the user MAY proceed); only the panel nudges.
+function FeasibilityPanel({
+  preview,
+  deltaKg,
+  weeks,
+  hu1,
+  onAccept,
+}: {
+  preview: FeasibilityPreviewResponse
+  deltaKg: number
+  weeks: number
+  hu1: (n: number) => string
+  onAccept: (dateIso: string) => void
+}) {
+  const ok = preview.withinSafeBand
+  const accent = ok ? 'var(--brand-glow)' : 'var(--warning)'
+  const withWarnings = ok && preview.verdict === 'feasible-with-warnings'
+  const label = ok ? (withWarnings ? '✓ Reális · figyelővel' : '✓ Reális') : '⚠ Agresszív'
+  return (
+    <div
+      className="card notch-8"
+      style={{
+        padding: '13px 14px',
+        background: ok
+          ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)'
+          : 'rgba(245,158,11,.06)',
+        borderColor: ok ? 'var(--border-brand)' : 'color-mix(in srgb, var(--warning) 42%, transparent)',
+      }}
+    >
+      <div className="row" style={{ alignItems: 'baseline', gap: 7 }}>
+        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, lineHeight: 1, color: accent }}>
+          {hu1(preview.derivedRatePctPerWeek)}
+        </span>
+        <span className="label-mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+          %BW / hét
+        </span>
+        <span
+          className="label-mono"
+          style={{ marginLeft: 'auto', fontSize: 9, letterSpacing: '0.1em', color: accent }}
+        >
+          {label}
+        </span>
+      </div>
+      <div
+        style={{ fontSize: 11.5, lineHeight: 1.45, color: 'var(--text-secondary)', marginTop: 7 }}
+      >
+        {ok ? (
+          <>
+            Fenntartható tempó a biztonságos sávban.{' '}
+            <b style={{ color: 'var(--text-primary)' }}>
+              ≈{hu1(deltaKg)} kg · {weeks} hét.
+            </b>
+          </>
+        ) : (
+          <>
+            A biztonságos sáv <b style={{ color: 'var(--text-primary)' }}>fölött</b> — izomvesztés- és
+            visszahízás-kockázat.
+          </>
+        )}
+      </div>
+      {!ok && preview.suggestedTargetDate && (
+        <button
+          type="button"
+          onClick={() => onAccept(preview.suggestedTargetDate!)}
+          className="notch-4"
+          style={{
+            marginTop: 11,
+            width: '100%',
+            padding: 9,
+            fontFamily: 'var(--ff-mono)',
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.04em',
+            background: 'rgba(245,158,11,.12)',
+            border: '1px solid color-mix(in srgb, var(--warning) 55%, transparent)',
+            color: 'var(--warning)',
+          }}
+        >
+          ↦ Reális dátum: {huMonthDay(preview.suggestedTargetDate)} — Elfogadom
+        </button>
+      )}
     </div>
   )
 }

@@ -1,10 +1,22 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { goalApi, type GoalResponse, type GoalUpsertRequest } from '@/lib/goalApi'
+import {
+  goalApi,
+  type GoalResponse,
+  type GoalUpsertRequest,
+  type FeasibilityPreviewRequest,
+  type FeasibilityPreviewResponse,
+} from '@/lib/goalApi'
 import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } from '@/lib/goalLinkApi'
 import { isMockMode } from '@/lib/mode'
 import { huMonthDay } from '@/lib/dates'
-import { goal as mockGoal, goalResponse as mockGoalResponse, linkedMesocycles as mockLinkedMesocycles, goalTimeline as mockTimeline } from './goals'
+import {
+  goal as mockGoal,
+  goalResponse as mockGoalResponse,
+  linkedMesocycles as mockLinkedMesocycles,
+  goalTimeline as mockTimeline,
+  feasibilityPreview as mockFeasibilityPreview,
+} from './goals'
 import type { Goal, GoalKind, LinkedMeso, WeightEntry } from './types'
 
 // GoalResponse (new contract) -> the thin back-compat Goal shape, kept for the
@@ -204,4 +216,42 @@ export function useGoalCreation() {
     [mutation],
   )
   return { submit, pending: mutation.isPending }
+}
+
+// Live realism preview for the goal-wizard cél step (G6, mezo-06n). The backend
+// (Task 2) owns the math — given a draft window + weights it returns the derived
+// %BW/wk pace + a verdict (and a cap-paced realistic date when over the cap). The
+// FE debounces the inputs (so dragging weight/date sliders doesn't spam the API)
+// and feeds them into a TanStack Query keyed on the debounced draft. Real mode
+// hits POST /api/goals/feasibility-preview; mock mode returns a static feasible
+// preview so the panel renders offline. `enabled` lets the caller skip the call
+// for incomplete drafts (e.g. maintain / no target weight / invalid window).
+export function useFeasibilityPreview(
+  draft: FeasibilityPreviewRequest | null,
+  opts?: { enabled?: boolean; debounceMs?: number },
+): FeasibilityPreviewResponse | undefined {
+  const mock = isMockMode()
+  const enabled = (opts?.enabled ?? true) && draft !== null
+  const debounceMs = opts?.debounceMs ?? 400
+
+  // Debounce the draft so rapid input edits collapse into a single query key.
+  const [debounced, setDebounced] = useState<FeasibilityPreviewRequest | null>(draft)
+  const key = draft ? JSON.stringify(draft) : null
+  useEffect(() => {
+    if (!enabled) return
+    const t = setTimeout(() => setDebounced(draft), debounceMs)
+    return () => clearTimeout(t)
+    // key captures every field of the draft; draft is read inside the timer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, enabled, debounceMs])
+
+  const { data } = useQuery({
+    queryKey: ['feasibilityPreview', mock ? 'mock' : 'real', debounced],
+    queryFn: mock
+      ? async () => mockFeasibilityPreview
+      : () => goalApi.feasibilityPreview(debounced as FeasibilityPreviewRequest),
+    enabled: enabled && debounced !== null,
+    initialData: mock && enabled ? mockFeasibilityPreview : undefined,
+  })
+  return enabled ? data : undefined
 }

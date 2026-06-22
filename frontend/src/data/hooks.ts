@@ -177,4 +177,4 @@ export function useStackRecommendations() {
 export { useTrain } from './trainHooks'
 export { useRunning } from './runningHooks'
 export { useWeight } from './weightHooks'
-export { useGoal, useGoalCreation, useGoalActions } from './goalHooks'
+export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from './goalHooks'
