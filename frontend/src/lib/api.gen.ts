@@ -1371,6 +1371,7 @@ export interface components {
             bodyFatPct?: number | null;
             /** @enum {string|null} */
             activityLevel?: "SEDENTARY" | "LIGHT" | "MODERATE" | "VERY" | "EXTRA" | null;
+            tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
         };
         BiometricProfileUpsertRequest: {
             sex: string;

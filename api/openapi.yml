@@ -3394,6 +3394,10 @@ components:
             - VERY
             - EXTRA
           nullable: true
+        tdeeBootstrap:
+          allOf:
+            - $ref: '#/components/schemas/TdeeBootstrap'
+          nullable: true
     BiometricProfileUpsertRequest:
       type: object
       required:

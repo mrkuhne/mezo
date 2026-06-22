@@ -39,6 +39,10 @@ components:
         # Physical-activity level (PAL bucket) — a TDEE-bootstrap input. Nullable until set;
         # defaulted to MODERATE server-side when absent.
         activityLevel: { type: string, enum: [SEDENTARY, LIGHT, MODERATE, VERY, EXTRA], nullable: true }
+        # Derived (NOT persisted) base-TDEE bootstrap — computed from this profile + the latest
+        # weigh-in. Null when there is no profile-and-weight pair. Cross-feature $ref to the goal
+        # fragment's TdeeBootstrap (the merge flattens all fragments into one components.schemas).
+        tdeeBootstrap: { allOf: [ { $ref: '#/components/schemas/TdeeBootstrap' } ], nullable: true }
     BiometricProfileUpsertRequest:
       type: object
       required: [sex, heightCm, birthDate]

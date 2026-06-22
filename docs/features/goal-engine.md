@@ -69,7 +69,7 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 
 ### Recompute triggers
 
-`evaluate` is called from **four** places (every event that moves a model input), all in the same transaction as the triggering write, all graceful on a missing profile:
+`evaluate` is called from **five** places (every event that moves a model input), all in the same transaction as the triggering write, all graceful on a missing profile:
 
 | Trigger | Caller | Scope |
 |---|---|---|
@@ -77,9 +77,10 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 | **Plan attached** | `GoalPlanLinkService.attachPlan` (`:62`) | the goal whose links changed (regardless of status) |
 | **Plan detached** | `GoalPlanLinkService.detachPlan` (`:74`) | same |
 | **Weigh-in logged** | `WeightLogService.log` → `recomputeActiveGoal` (`feature/biometrics/weight/service/WeightLogService.java:43,48`) | the owner's single **active** goal (no-op when none) |
+| **Biometric profile changed** (G6, `mezo-06n`) | `BiometricProfileService.upsertProfile` → `recomputeActiveGoal` (`feature/biometrics/profile/service/BiometricProfileService.java`) | the owner's single **active** goal (no-op when none) — the profile feeds BMR/PAL, so a change must refresh the prescription |
 | **Explicit** | `GoalController.evaluateGoal` → `POST /api/goals/{id}/evaluate` (`:71`) | the addressed goal |
 
-**Transaction note:** because each trigger's enclosing method is already `@Transactional`, `evaluate` joins the same transaction — the recompute is part of the triggering write's atomic unit (a failed evaluate would roll back the weigh-in/attach). The weigh-in path deliberately depends on **no** goal: if the owner has no active goal, `recomputeActiveGoal` returns without calling `evaluate` (a weigh-in must never require a goal).
+**Transaction note:** because each trigger's enclosing method is already `@Transactional`, `evaluate` joins the same transaction — the recompute is part of the triggering write's atomic unit (a failed evaluate would roll back the weigh-in/profile-save). The weigh-in and profile-change paths deliberately depend on **no** goal: if the owner has no active goal, `recomputeActiveGoal` returns without calling `evaluate` (a weigh-in/profile-save must never require a goal).
 
 ## 4. Data model & API
 
@@ -98,7 +99,8 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 | POST | `/api/goals/{id}/evaluate` | `GoalResponse` (with `prescription`/`tdeeBootstrap`) | runs the engine, persists, re-fetches via `getGoal`. No-profile → **200 + graceful feasibility note** (never 4xx, so triggers don't break); foreign/missing → **404**. |
 | POST | `/api/goals/feasibility-preview` (G6, `mezo-06n`) | `FeasibilityPreviewResponse` {`derivedRatePctPerWeek`, `withinSafeBand`, `verdict`, `suggestedTargetDate?`} | **stateless** realism preview for the 2-step wizard from a `FeasibilityPreviewRequest` draft {`trajectory`, `startWeightKg`, `targetWeightKg?`, `startDate`, `targetDate`} — derive + grade BEFORE the goal is saved. No persistence/ownership (principal resolved per convention, compute ignores it). `suggestedTargetDate` present only when over the cap (`startDate + ceil(weeksAtCap)`). |
 | GET | `/api/biometrics/weight/trend` | `WeightTrendResponse` {`ewmaSeries[]`, `latestTrendKg`, `weeklyRateKgPerWeek`, `weeklyRatePctPerWeek`, `last4wRateKgPerWeek`, `dataSufficiency`} | the EWMA spine, exposed for the FE. |
-| PUT | `/api/biometrics/profile` | `BiometricProfileResponse` | now carries `activityLevel` (the `GoalPlanner` wizard sends it). |
+| GET | `/api/biometrics/profile` (G6, `mezo-06n`) | `BiometricProfileResponse` (with a **derived** `tdeeBootstrap`) | the profile screen's base-TDEE. `tdeeBootstrap` is computed on read from the profile + the latest weigh-in via `TdeeBootstrapService.compute` (cross-`$ref` to the goal fragment's `TdeeBootstrap` schema) — **NOT persisted** (no column); **null** when there is no weigh-in. So the Profil "Biometria" card can show base-TDEE even with no goal. |
+| PUT | `/api/biometrics/profile` | `BiometricProfileResponse` (with derived `tdeeBootstrap`) | now carries `activityLevel` (the `GoalPlanner` wizard sends it); the save **recomputes the active goal** (trigger above). |
 
 `GoalResponse` additively gained `prescription` + `tdeeBootstrap` (both `nullable` — null until first evaluate). The HTTP surface and these contract shapes are documented in [`_platform-api-backend.md`](_platform-api-backend.md) §3 (the Goal/Biometrics rows) and [`me.md`](me.md) §4.
 
@@ -161,7 +163,8 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 **Backend (integration-first, real Postgres — `cd backend && ./mvnw clean test`):**
 - Per-service ITs: `feature/goal/engine/service/TdeeBootstrapServiceIT` (MSJ vs Katch branch, PAL lookup), `GoalProjectionServiceIT` (segment collapse, running boundary delta, meso-phase zero-delta, trend reconciliation), `GuardEvaluationServiceIT` (e1RM trend + breach, muscle floor, rate-cap, deferred protein), `GoalEvaluationServiceIT` (rate grading, conflict rule, protein target, missing-profile artifact), `GoalFeasibilityServiceIT` (G6 — shared rate derivation, `verdictForRate` band boundaries, over-cap suggested date). The HTTP preview round-trip is in `GoalContractIT`.
 - `feature/goal/engine/GoalEnginePropertiesIT` — the `mezo.goal.*` binding + validation.
-- `feature/goal/GoalEngineRecomputeIT` — the four recompute triggers fire `evaluate` (activate / attach / detach / weigh-in) and the no-active-goal weigh-in is a no-op.
+- `feature/goal/GoalEngineRecomputeIT` — the recompute triggers fire `evaluate` (activate / attach / detach / weigh-in) and the no-active-goal weigh-in is a no-op.
+- `feature/biometrics/profile/BiometricProfileServiceIT` / `BiometricProfileContractIT` (G6) — the GET carries a derived `tdeeBootstrap` (profile + weigh-in → non-null, matches `TdeeBootstrapService.compute`; no weigh-in → null) and the profile upsert recomputes the active goal (prescription was null → populated) yet succeeds with no active goal.
 - `feature/goal/GoalContractIT` — the HTTP `POST /api/goals/{id}/evaluate` surface (200 + prescription, 200 graceful no-profile, 404 foreign).
 
 **Frontend** — `frontend/src/features/me/components/GoalRecept.test.tsx` (verdict labels, segment metrics, guard pills incl. a breached strength guard, the null-prescription evaluate CTA) + the recept assertions in `GoalsView.test.tsx`; the trend fold in `data/weightHooks.test.tsx`. Both `pnpm test` (real) and `VITE_USE_MOCK=true pnpm test` (mock) must pass — see [`me.md`](me.md) §8.
