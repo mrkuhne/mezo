@@ -474,6 +474,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/feasibility-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stateless preview — derive the weekly rate + realism verdict (+ a realistic target date) from a draft, before any goal is saved */
+        post: operations["feasibilityPreview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals/{id}": {
         parameters: {
             query?: never;
@@ -1282,6 +1299,30 @@ export interface components {
             startWeightKg: number;
             targetWeightKg?: number | null;
             identityFrame?: string | null;
+        };
+        /** @description A draft goal window — feeds the stateless realism preview (no persistence, no ownership). */
+        FeasibilityPreviewRequest: {
+            trajectory: string;
+            startWeightKg: number;
+            targetWeightKg?: number | null;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            targetDate: string;
+        };
+        /** @description The server-derived weekly rate + realism verdict for a draft window; suggestedTargetDate is set only when the draft is over the rate cap. */
+        FeasibilityPreviewResponse: {
+            /** @description Unsigned weekly rate magnitude (%BW/wk) derived from |startW − targetW| / startW / weeks. */
+            derivedRatePctPerWeek: number;
+            /** @description true when derivedRate ≤ the rate cap (mezo.goal.rate.capPctPerWeek). */
+            withinSafeBand: boolean;
+            /** @enum {string} */
+            verdict: "feasible" | "feasible-with-warnings" | "aggressive";
+            /**
+             * Format: date
+             * @description The earliest cap-paced target date; present ONLY when derivedRate is over the cap.
+             */
+            suggestedTargetDate?: string | null;
         };
         GoalPlanRef: {
             title: string;
@@ -2772,6 +2813,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoalResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    feasibilityPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeasibilityPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeasibilityPreviewResponse"];
                 };
             };
             /** @description Validation error */

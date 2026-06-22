@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest;
+import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
+import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.api.dto.LogWeightRequest;
@@ -132,6 +134,35 @@ class GoalContractIT extends ApiIntegrationTest {
     void testEvaluateGoal_shouldReturn401_whenUnauthenticated() {
         postForBody("/api/goals/" + UUID.randomUUID() + "/evaluate", null, null,
             HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    // ── POST /api/goals/feasibility-preview (G6 Task 2: mezo-06n) — stateless realism preview ───────
+
+    @Test
+    void testFeasibilityPreview_shouldReturn200WithDerivedRateAndVerdict_whenAggressiveDraft() {
+        HttpHeaders auth = ownerAuthHeaders();
+        LocalDate start = LocalDate.of(2026, 6, 1);
+        // (84 − 78) / 84 * 100 / 5 weeks ≈ 1.43 %BW/wk → over the 1.0 cap → aggressive + cap-paced date.
+        FeasibilityPreviewRequest body = FeasibilityPreviewRequest.builder()
+            .trajectory("cut").startWeightKg(new BigDecimal("84.00")).targetWeightKg(new BigDecimal("78.00"))
+            .startDate(start).targetDate(start.plusWeeks(5)).build();
+
+        FeasibilityPreviewResponse res = postForBody("/api/goals/feasibility-preview", body, auth,
+            HttpStatus.OK, FeasibilityPreviewResponse.class);
+
+        assertThat(res.getDerivedRatePctPerWeek())
+            .isCloseTo(new BigDecimal("1.43"), within(new BigDecimal("0.01")));
+        assertThat(res.getWithinSafeBand()).isFalse();
+        assertThat(res.getVerdict()).isEqualTo(FeasibilityPreviewResponse.VerdictEnum.AGGRESSIVE);
+        assertThat(res.getSuggestedTargetDate()).isEqualTo(start.plusWeeks(8));
+    }
+
+    @Test
+    void testFeasibilityPreview_shouldReturn401_whenUnauthenticated() {
+        FeasibilityPreviewRequest body = FeasibilityPreviewRequest.builder()
+            .trajectory("cut").startWeightKg(new BigDecimal("84.00")).targetWeightKg(new BigDecimal("80.00"))
+            .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 7, 27)).build();
+        postForBody("/api/goals/feasibility-preview", body, null, HttpStatus.UNAUTHORIZED, Void.class);
     }
 
     private void seedProfile(HttpHeaders auth) {

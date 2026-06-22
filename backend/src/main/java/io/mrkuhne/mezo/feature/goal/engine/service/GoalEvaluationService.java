@@ -66,6 +66,7 @@ public class GoalEvaluationService {
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
     private final GoalEngineProperties props;
+    private final GoalFeasibilityService feasibilityService;
 
     /**
      * Grade feasibility + assemble the full prescription artifact. Pure: no I/O, no throw.
@@ -150,8 +151,10 @@ public class GoalEvaluationService {
 
     /**
      * Grade {@code rateTargetPctPerWeek} against the band. The cut/bulk machinery is symmetric (only
-     * the trajectory wording differs); maintain expects ≈0. Strictly over the cap → aggressive; over
-     * the band-high but within the cap → a warning; otherwise clean.
+     * the trajectory wording differs); maintain expects ≈0. The cap/band → verdict classification is
+     * delegated to {@link GoalFeasibilityService#verdictForRate(BigDecimal)} so the eval gate and the
+     * stateless feasibility preview share ONE band definition: {@code aggressive} (over cap),
+     * {@code feasible-with-warnings} (over the recommended target but within the cap), else clean.
      */
     private RateGrade gradeRate(GoalEntity goal) {
         String trajectory = trajectory(goal);
@@ -169,18 +172,17 @@ public class GoalEvaluationService {
             return new RateGrade(false, false, false, notes);
         }
 
-        BigDecimal cap = new BigDecimal(String.valueOf(props.rate().capPctPerWeek()));
-        BigDecimal bandHigh = new BigDecimal(String.valueOf(props.rate().bandHigh()));
         String word = TRAJ_BULK.equals(trajectory) ? "tömegelő (zsírnyereség)" : "fogyási";
+        String verdict = feasibilityService.verdictForRate(rate);
 
-        if (rate.compareTo(cap) > 0) {
+        if (VERDICT_AGGRESSIVE.equals(verdict)) {
             notes.add("Agresszív " + word + " ütem: " + rate.toPlainString() + " %BW/hét > "
                 + props.rate().capPctPerWeek() + " %BW/hét sapka.");
             return new RateGrade(true, false, true, notes);
         }
-        if (rate.compareTo(bandHigh) > 0) {
-            notes.add("Magas " + word + " ütem: " + rate.toPlainString() + " %BW/hét a fenntartható "
-                + "sáv (" + props.rate().bandLow() + "–" + props.rate().bandHigh() + " %BW/hét) felett.");
+        if (VERDICT_WARNINGS.equals(verdict)) {
+            notes.add("Magas " + word + " ütem: " + rate.toPlainString() + " %BW/hét a javasolt "
+                + "ütem (" + props.rate().targetPctPerWeek() + " %BW/hét) felett.");
             return new RateGrade(false, true, true, notes);
         }
         return new RateGrade(false, false, false, notes);
