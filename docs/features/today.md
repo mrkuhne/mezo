@@ -47,16 +47,16 @@ The single FE↔data boundary is `frontend/src/data/hooks.ts`. For Today, `isMoc
 
 ```
 TodayScreen.tsx (composition root)
-  ├─ useTodayScenario()   hooks.ts:21  — URL params → TodayScenario { dayState, retaDay, niggle, vulnerable, anchorMode }
-  ├─ useToday()           hooks.ts:37  — { today, user, briefing, workout, volleyballSessions, fuelToday }  (mock, no real swap)
-  ├─ useCheckins()        hooks.ts:41  — useState(initialCheckins) + useMutation(checkinApi.save)
-  ├─ resolveBriefing(ds)  hooks.ts:32  — briefing ⊕ briefingVariants[ds]
-  └─ useFuelPreview()     hooks.ts:67  — slices fuelToday.slots (mock only)
+  ├─ useTodayScenario()   hooks.ts:20  — URL params → TodayScenario { dayState, retaDay, niggle, vulnerable, anchorMode }
+  ├─ useToday()           hooks.ts:36  — { today, user, briefing, workout, volleyballSessions, fuelToday }  (mock, no real swap)
+  ├─ useCheckins()        hooks.ts:40  — useState(initialCheckins) + useMutation(checkinApi.save)
+  ├─ resolveBriefing(ds)  hooks.ts:31  — briefing ⊕ briefingVariants[ds]
+  └─ useFuelPreview()     hooks.ts:66  — slices fuelToday.slots (mock only)
 
 Real path — CHECK-IN SAVE ONLY (write-only):
-  saveCheckIn(idx, data)               hooks.ts:48
+  saveCheckIn(idx, data)               hooks.ts:47
     └─(real mode)→ mutation.mutate(SaveCheckInBody)
-        → checkinApi.save              lib/biometricsApi.ts:43
+        → checkinApi.save              lib/biometricsApi.ts:48
         → apiFetch POST /api/biometrics/checkin   (Bearer token via lib/api.ts setToken)
         → CheckInController.saveCheckIn (implements generated CheckInApi)
         → CheckInService.save           — @Transactional upsert on (createdBy, date, slotTime)
@@ -65,7 +65,7 @@ Real path — CHECK-IN SAVE ONLY (write-only):
 ```
 
 Key behavioral facts (all in `hooks.ts`):
-- `useTodayScenario` (21–30): `dayState` falls back to `'medium'` for anything other than `good`/`rough`; `anchorMode = dayState === 'rough'`. **Called in two places** — `TodayScreen` (branch to AnchorMode) and `AppLayout` (passes `anchor` to `PhoneFrame` for the warm canvas) — so both must derive `anchorMode` identically.
+- `useTodayScenario` (20–29): `dayState` falls back to `'medium'` for anything other than `good`/`rough`; `anchorMode = dayState === 'rough'`. **Called in two places** — `TodayScreen` (branch to AnchorMode) and `AppLayout` (passes `anchor` to `PhoneFrame` for the warm canvas) — so both must derive `anchorMode` identically.
 - `resolveBriefing` (32–35): `briefingVariants.medium` is `null`, so `medium` returns the base `briefing`; `good`/`rough` spread their `Partial<Briefing>` over the base.
 - `useCheckins` (41–65): local `useState`; `saveCheckIn` updates the slot in place, and in real mode builds a `SaveCheckInBody` (`date = localDateString()` local-tz, `slotTime = slot.time`, `state` defaulting to `'done'`, the four dims, the note) and fires `mutation.mutate`. On error it only `console.error`s — no UI rollback, no toast. The `CheckInResponse` (with the server `id`) is **discarded**; the strip is never reconciled with the server.
 - `useFuelPreview` (67–74): finds the `now` slot, returns 3 visible slots from there plus the next incomplete `nextStack` for the AI note line. Pure mock.
@@ -196,7 +196,7 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 - `components/`: `BrandRow.tsx`, `RetaPhaseSection.tsx`, `DateMesoHeader.tsx`, `BriefingCard.tsx`, `WorkoutTeaser.tsx`, `VolleyballCard.tsx`, `VulnerabilityCard.tsx`, `FuelTimelinePreview.tsx`, `QuickStatsRow.tsx`, `InsightsTeaser.tsx`.
 
 **Frontend — data & lib:**
-- `frontend/src/data/hooks.ts` (lines 21–74 are Today) — `useTodayScenario`, `resolveBriefing`, `useToday`, `useCheckins`, `useFuelPreview`.
+- `frontend/src/data/hooks.ts` (lines 20–73 are Today) — `useTodayScenario`, `resolveBriefing`, `useToday`, `useCheckins`, `useFuelPreview`.
 - `frontend/src/data/today.ts`, `checkins.ts`, `kindMeta.ts`, `types.ts` (:6–16, :80–91), `fuel.ts` (`fuelToday`).
 - `frontend/src/lib/biometricsApi.ts` (`checkinApi`), `lib/mode.ts`, `lib/dates.ts`, `lib/api.ts` (`apiFetch`/`setToken`), `lib/safeMarkdown.tsx`.
 - `frontend/src/components/ui/RetaPhaseBar.tsx`, `QuickStat.tsx` — shared primitives.

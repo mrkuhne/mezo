@@ -1,5 +1,5 @@
 ---
-title: Goal Engine (G5)
+title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
 updated: 2026-06-22
@@ -16,7 +16,7 @@ key_files:
 related: [me, _platform-api-backend, _platform-data-layer]
 ---
 
-# Goal Engine (G5) — Feature Documentation
+# Goal Engine (G5–G6) — Feature Documentation
 
 > One-line: the backend **TDEE-bootstrap → segmented projection → soft-guards → feasibility-graded prescription** engine that turns a `Cél` goal + its plan timeline + the EWMA weight trend into a per-segment "recept". **Status: ✅ backend done (goal-system G5, `mezo-g1u`)**; FE surfacing is the recept card in Me/`Cél` (see [`me.md`](me.md) §2). This is a *domain* feature with no route of its own — it produces data the `Cél` surface renders. Phase-3 (adaptive TDEE, AI evaluator) is deferred (§9).
 
@@ -78,7 +78,7 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 | **Plan detached** | `GoalPlanLinkService.detachPlan` (`:74`) | same |
 | **Weigh-in logged** | `WeightLogService.log` → `recomputeActiveGoal` (`feature/biometrics/weight/service/WeightLogService.java:43,48`) | the owner's single **active** goal (no-op when none) |
 | **Biometric profile changed** (G6, `mezo-06n`) | `BiometricProfileService.upsertProfile` → `recomputeActiveGoal` (`feature/biometrics/profile/service/BiometricProfileService.java`) | the owner's single **active** goal (no-op when none) — the profile feeds BMR/PAL, so a change must refresh the prescription |
-| **Explicit** | `GoalController.evaluateGoal` → `POST /api/goals/{id}/evaluate` (`:71`) | the addressed goal |
+| **Explicit** | `GoalController.evaluateGoal` → `POST /api/goals/{id}/evaluate` (`:75`) | the addressed goal |
 
 **Transaction note:** because each trigger's enclosing method is already `@Transactional`, `evaluate` joins the same transaction — the recompute is part of the triggering write's atomic unit (a failed evaluate would roll back the weigh-in/profile-save). The weigh-in and profile-change paths deliberately depend on **no** goal: if the owner has no active goal, `recomputeActiveGoal` returns without calling `evaluate` (a weigh-in/profile-save must never require a goal).
 
@@ -86,8 +86,8 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 
 **Persistence** — two jsonb columns added to `goal` + one column on `biometric_profile` by migration `backend/src/main/resources/db/changelog/1.0.0/script/202606191000_mezo-g1u_goal_prescription_and_activity_level.sql` (additive only — existing rows carry none until first evaluate):
 
-- `goal.tdee_bootstrap jsonb` → `TdeeBootstrapJson` (`feature/goal/entity/TdeeBootstrapJson.java`: `bmr`, `tdee`, `pal`, `formula` MSJ|KATCH, `computedAt`). Field `GoalEntity.tdeeBootstrap` (`:59`, `@JdbcTypeCode(SqlTypes.JSON)`).
-- `goal.prescription jsonb` → `GoalPrescriptionJson` (`feature/goal/entity/GoalPrescriptionJson.java`: `generatedAt`, `basis`, `segments[]` {fromWeek, toWeek, label, kcal, proteinG, sleepTargetH, restDays[], projectedRateKgPerWk, rationale}, `guardStatus` {strength, muscle}, `feasibility` {verdict, notes[]}). Field `GoalEntity.prescription` (`:63`).
+- `goal.tdee_bootstrap jsonb` → `TdeeBootstrapJson` (`feature/goal/entity/TdeeBootstrapJson.java`: `bmr`, `tdee`, `pal`, `formula` MSJ|KATCH, `computedAt`). Field `GoalEntity.tdeeBootstrap` (`:61`, `@JdbcTypeCode(SqlTypes.JSON)`).
+- `goal.prescription jsonb` → `GoalPrescriptionJson` (`feature/goal/entity/GoalPrescriptionJson.java`: `generatedAt`, `basis`, `segments[]` {fromWeek, toWeek, label, kcal, proteinG, sleepTargetH, restDays[], projectedRateKgPerWk, rationale}, `guardStatus` {strength, muscle}, `feasibility` {verdict, notes[]}). Field `GoalEntity.prescription` (`:65`).
 - `biometric_profile.activity_level text` (CHECK `ck_biometric_profile_activity_level IN (SEDENTARY|LIGHT|MODERATE|VERY|EXTRA)`) → `BiometricProfileEntity.activityLevel` (`:56`, nullable). The PAL lookup input.
 
 Both jsonb records are **plain records, no Jackson/Hibernate annotations** — the app `ObjectMapper` serializes them via `@JdbcTypeCode(SqlTypes.JSON)` (the `ProvenanceEnvelope` idiom). `GoalMapper` (`feature/goal/mapper/GoalMapper.java:39-41`) projects them to the contract DTOs (`TdeeBootstrap`/`GoalPrescription`), mapping the `String` `formula`/`verdict` to the generated enums.
