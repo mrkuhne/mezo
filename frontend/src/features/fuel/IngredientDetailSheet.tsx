@@ -68,13 +68,20 @@ export function IngredientDetailSheet({ item, onClose }: { item: PantryItem; onC
   const stockExpires = stock && isFullStock(stock) ? stock.expires : undefined
   const stockLowExpiry = stock && isFullStock(stock) ? stock.lowExpiry : undefined
 
+  // buildKamraItems prefixes stash (supplement/stim/med) card ids with 'stash-'
+  // to keep them collision-free against food ingredient ids in the card list.
+  // Mutations must target the BACKEND id — the raw mock id / real UUID — so strip
+  // the prefix once here and use it for every action (edit/update/delete). Food
+  // cards carry the raw ingredient id, so this is a no-op for them.
+  const backendId = item.id.startsWith('stash-') ? item.id.slice('stash-'.length) : item.id
+
   // Quick stock bump: re-persist the item with one more unit on the shelf.
   const bumpStock = () => {
     const base = inputFromItem(item)
-    updateItem(item.id, { ...base, stockQty: (base.stockQty ?? 0) + 1 })
+    updateItem(backendId, { ...base, stockQty: (base.stockQty ?? 0) + 1 })
   }
   const remove = () => {
-    deleteItem(item.id)
+    deleteItem(backendId)
     onClose()
   }
 
@@ -223,7 +230,7 @@ export function IngredientDetailSheet({ item, onClose }: { item: PantryItem; onC
     <AddPantryItemSheet
       open={editOpen}
       onClose={() => setEditOpen(false)}
-      editId={item.id}
+      editId={backendId}
       initial={inputFromItem(item)}
     />
     </>
