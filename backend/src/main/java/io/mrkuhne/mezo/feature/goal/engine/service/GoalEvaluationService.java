@@ -26,18 +26,21 @@ import org.springframework.stereotype.Service;
  * <h2>Feasibility checks (deterministic, per trajectory)</h2>
  * <ol>
  *   <li><b>Rate realism (§6.5).</b> The goal's {@code rateTargetPctPerWeek} is graded against the
- *       rate band ({@code mezo.goal.rate}): {@code maintain} expects ≈0; {@code cut}/{@code bulk} use
- *       the same symmetric band — within {@code bandHigh} (1.0 %/wk) is clean, over {@code bandHigh}
- *       but within {@code capPctPerWeek} (1.0; here equal) warns, strictly over {@code capPctPerWeek}
- *       is <b>aggressive</b>. The "bias lower as leaner" advice (cut, low bf%) adds a softer note when
- *       a lean athlete sits in the upper half of the band.</li>
+ *       shared band ({@code mezo.goal.rate}) via {@link GoalFeasibilityService#verdictForRate}, so the
+ *       eval gate and the stateless feasibility preview agree: {@code maintain} expects ≈0;
+ *       {@code cut}/{@code bulk} use the same symmetric band — {@code ≤ targetPctPerWeek} (0.7 %/wk) is
+ *       <b>feasible</b>, over the target but {@code ≤ capPctPerWeek} (1.0 %/wk) is
+ *       <b>feasible-with-warnings</b>, strictly over {@code capPctPerWeek} is <b>aggressive</b>. The
+ *       "bias lower as leaner" advice (cut, low bf%) adds a softer note when a lean athlete sits in the
+ *       upper half of the band.</li>
  *   <li><b>Guard satisfiability (§6.5).</b> From {@link GuardStatus} (Task 7): if the muscle guard is
  *       active and any muscle sits below maintenance volume → a warning note; the prescribed protein
  *       target is always emitted but {@code proteinMonitored=false} (Fuel not built) → a note records
  *       it. A breached strength e1RM trend → a warning note.</li>
- *   <li><b>Conflict detection (§5.1).</b> An aggressive (over-band) rate + an active running block +
- *       an active strength guard → a note flagging the likely strength breach and suggesting easing
- *       the deficit or shifting the run block.</li>
+ *   <li><b>Conflict detection (§5.1).</b> An over-band rate (over the recommended target — the
+ *       warnings band <em>or</em> over-cap aggressive) + an active running block + an active strength
+ *       guard → escalates the verdict to <b>aggressive</b> with a note flagging the likely strength
+ *       breach and suggesting easing the deficit or shifting the run block.</li>
  * </ol>
  *
  * <p><b>Verdict.</b> {@code aggressive} when the rate is strictly over the cap or a conflict is

@@ -1,13 +1,19 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { GoalPlanner } from './GoalPlanner'
 
-test('GoalPlanner step 0 picks a trajectory and a guard', () => {
+// The route-level biometric gate (G6, mezo-06n — review fix) renders the wizard
+// only once useBiometricProfile() resolves a COMPLETE profile (the default MSW
+// handler + the mock-mode static profile are both complete). So tests that drive
+// the wizard must first wait for its step-0 heading to mount.
+const waitForWizard = () => waitFor(() => expect(screen.getByText('Mit építünk?')).toBeInTheDocument())
+
+test('GoalPlanner step 0 picks a trajectory and a guard', async () => {
   render(
     <QueryWrapper>
       <MemoryRouter>
@@ -15,7 +21,7 @@ test('GoalPlanner step 0 picks a trajectory and a guard', () => {
       </MemoryRouter>
     </QueryWrapper>,
   )
-  expect(screen.getByText('Mit építünk?')).toBeInTheDocument()
+  await waitForWizard()
   // Tovább is disabled until a trajectory is picked
   expect(screen.getByRole('button', { name: /tovább/i })).toBeDisabled()
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
@@ -24,7 +30,7 @@ test('GoalPlanner step 0 picks a trajectory and a guard', () => {
   expect(screen.getByRole('button', { name: /tovább/i })).toBeEnabled()
 })
 
-test('GoalPlanner is a 2-step wizard (no third step) ending on the cél step', () => {
+test('GoalPlanner is a 2-step wizard (no third step) ending on the cél step', async () => {
   render(
     <QueryWrapper>
       <MemoryRouter>
@@ -32,6 +38,7 @@ test('GoalPlanner is a 2-step wizard (no third step) ending on the cél step', (
       </MemoryRouter>
     </QueryWrapper>,
   )
+  await waitForWizard()
   // The step indicator reads "01 / 02" — STEP_COUNT is 2, not 3.
   expect(screen.getByText('01 / 02')).toBeInTheDocument()
   // Exactly 2 step-progress segments are rendered.
@@ -45,7 +52,7 @@ test('GoalPlanner is a 2-step wizard (no third step) ending on the cél step', (
   expect(screen.getByRole('button', { name: /létrehozása \+ aktiválás/i })).toBeInTheDocument()
 })
 
-test('GoalPlanner has no manual rate input and no biometric fields', () => {
+test('GoalPlanner has no manual rate input and no biometric fields', async () => {
   render(
     <QueryWrapper>
       <MemoryRouter>
@@ -53,6 +60,7 @@ test('GoalPlanner has no manual rate input and no biometric fields', () => {
       </MemoryRouter>
     </QueryWrapper>,
   )
+  await waitForWizard()
   // Advance to the cél step where the rate input used to live.
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
@@ -79,6 +87,7 @@ test('GoalPlanner mock-mode cél step renders the static feasibility preview', a
       </MemoryRouter>
     </QueryWrapper>,
   )
+  await waitForWizard()
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
   // The static mock preview (data/goals.ts) is feasible at 0,6 %BW/hét.
@@ -106,6 +115,7 @@ test('GoalPlanner real-mode cél step renders the derived rate + verdict from th
       </MemoryRouter>
     </QueryWrapper>,
   )
+  await waitForWizard()
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
   await waitFor(() => expect(screen.getByText(/✓\s*Reális/i)).toBeInTheDocument())
@@ -140,6 +150,7 @@ test('GoalPlanner real-mode aggressive preview offers a realistic date that re-p
       </MemoryRouter>
     </QueryWrapper>,
   )
+  await waitForWizard()
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
   // The aggressive panel + the accept action appear.
@@ -187,6 +198,7 @@ test('GoalPlanner real-mode save posts the goal (no profile PUT) and activates',
       </MemoryRouter>
     </QueryWrapper>,
   )
+  await waitForWizard()
   // Step 0 -> 1 (cél): pick a trajectory, advance.
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
@@ -200,5 +212,49 @@ test('GoalPlanner real-mode save posts the goal (no profile PUT) and activates',
   expect(goalBody!).not.toHaveProperty('rateTargetPctPerWeek')
   expect(goalBody!).not.toHaveProperty('profile')
   expect(goalBody!.title).toBe('Nyári cut')
+  vi.unstubAllEnvs()
+})
+
+// --- route-level biometric gate (G6, mezo-06n — review fix) ------------------
+
+test('GoalPlanner redirects an incomplete-profile user away from the wizard (real mode, 404)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  // 404 = no biometric profile yet → incomplete → the route must NOT render the
+  // wizard; it redirects to /me/goals where the GoalGate setup flow lives.
+  server.use(
+    http.get(`${API_BASE}/api/biometrics/profile`, () => new HttpResponse(null, { status: 404 })),
+  )
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/me/goals/new']}>
+        <Routes>
+          <Route path="/me/goals" element={<div>cél-nézet</div>} />
+          <Route path="/me/goals/new" element={<GoalPlanner />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  // Lands on the Cél view, NOT the wizard.
+  await waitFor(() => expect(screen.getByText('cél-nézet')).toBeInTheDocument())
+  expect(screen.queryByText('Mit építünk?')).not.toBeInTheDocument()
+  vi.unstubAllEnvs()
+})
+
+test('GoalPlanner renders the wizard for a complete-profile user (real mode, default handler)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  // The default MSW handler returns a COMPLETE profile → the route renders the
+  // wizard (no redirect).
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/me/goals/new']}>
+        <Routes>
+          <Route path="/me/goals" element={<div>cél-nézet</div>} />
+          <Route path="/me/goals/new" element={<GoalPlanner />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  await waitFor(() => expect(screen.getByText('Mit építünk?')).toBeInTheDocument())
+  expect(screen.queryByText('cél-nézet')).not.toBeInTheDocument()
   vi.unstubAllEnvs()
 })

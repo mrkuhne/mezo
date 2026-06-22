@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useGoalCreation, useWeight, useFeasibilityPreview } from '@/data/hooks'
+import { Navigate, useNavigate } from 'react-router-dom'
+import { useGoalCreation, useWeight, useFeasibilityPreview, useBiometricProfile } from '@/data/hooks'
 import { Icon, type IconName } from '@/components/ui/Icon'
 import { huMonthDay } from '@/lib/dates'
 import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/lib/goalApi'
@@ -26,7 +26,22 @@ const GUARDS: { id: Guard; label: string }[] = [
   { id: 'muscle', label: 'Izom megtartása' },
 ]
 
+// Goal-creation hard gate as a route property (G6, mezo-06n — review fix): the
+// wizard derives its calorie target from a complete biometric profile, so the
+// direct route (back/forward, bookmark, manual URL) must not drop the user into
+// it without one. The two "Új cél" buttons in GoalsView already gate, but the
+// route itself didn't — this closes that bypass (spec D4). While the profile is
+// still loading we render nothing (do NOT bounce a complete-profile user mid
+// fetch); once loaded, an incomplete profile redirects to /me/goals (where the
+// GoalGate + "Biometria beállítása" flow lives); complete → the wizard.
 export function GoalPlanner() {
+  const { isComplete, isLoading } = useBiometricProfile()
+  if (isLoading) return null
+  if (!isComplete) return <Navigate to="/me/goals" replace />
+  return <GoalWizard />
+}
+
+function GoalWizard() {
   const navigate = useNavigate()
   const { submit, pending } = useGoalCreation()
   const { weightLog } = useWeight()
