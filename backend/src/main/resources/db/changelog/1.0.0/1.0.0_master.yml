@@ -111,3 +111,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606191000_mezo-g1u_goal_prescription_and_activity_level.sql
+  - changeSet:
+      id: "1.0.0:202606221200_mezo-9xu_create_pantry_item"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606221200_mezo-9xu_create_pantry_item.sql
