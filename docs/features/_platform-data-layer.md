@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-06-22
+updated: 2026-06-23
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
@@ -18,7 +18,7 @@ related: [_platform-api-backend, _platform-auth-security, train, me, goal-engine
 
 # Platform · Data Layer & Dual-Mode — Feature Documentation
 
-> The single FE↔data boundary (`frontend/src/data/hooks.ts`) + the `isMockMode()` dual-mode switch + the TanStack Query wiring + the typed REST clients. **Status:** ✅ done (cross-cutting platform layer; some hooks 🔶 mock-only — see §2). Not a screen — it sits under **every** route/tab; the wired domains are Me (biometrics) and Train/Futás.
+> The single FE↔data boundary (`frontend/src/data/hooks.ts`) + the `isMockMode()` dual-mode switch + the TanStack Query wiring + the typed REST clients. **Status:** ✅ done (cross-cutting platform layer; some hooks 🔶 mock-only — see §2). Not a screen — it sits under **every** route/tab; the wired domains are Me (biometrics + goal), Train/Futás, and Fuel's **Pantry/Kamra** (slice C).
 
 This is the cross-cutting plumbing every feature consumes, so this doc is named with a leading `_` (a platform doc, not a single user-facing slice). Read it before wiring any new domain to the backend.
 
@@ -35,7 +35,7 @@ Driving design: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (§
 
 ## 2. Status per domain (mock-vs-real — be precise)
 
-Three API clients exist; only those three domains are wired to a real backend. Everything else is **mock-only on the FE** (no API client, no backend table yet).
+Several API clients exist (biometrics · train · running · goal · goal-link · biometric-profile · **pantry**); only those domains are wired to a real backend. Everything else is **mock-only on the FE** (no API client, no backend table yet).
 
 | Hook(s) | Domain | Status |
 |---|---|---|
@@ -165,6 +165,7 @@ The FE↔BE boundary types are **generated, never hand-written** (see `docs/refe
 - `biometricProfileApi` (`lib/biometricProfileApi.ts`, G1; **consumed G6** `mezo-06n`): `GET/PUT /api/biometrics/profile` (`get`/`upsert`). Types `BiometricProfileResponse` (now carries a derived `tdeeBootstrap`)/`BiometricProfileUpsertRequest`. Consumed by `useBiometricProfile` (`get`, 404→null) + `useBiometricActions` (`upsert`).
 - `trainApi` (`lib/trainApi.ts`): `mesocycles` (GET), `sport-sessions` (GET), mesocycle `create`/`:id/activate`/`:id/close`, `:mesoId/days/:dayId/exercises` (PUT), `workouts/today` (GET), `workouts` (start), `workouts/:id/sets` (logSet), `workouts/:id/skip` (skipExercise, F3), `workouts/:id/feedback`, `workouts/:id/finish`, `exercises/:exerciseId/note` (saveExerciseNote PUT, F4), `sport-schedule` (GET/PUT), `gym-schedule` (GET/PUT — `gymSchedule`/`replaceGymSchedule`), `exercises` (catalog GET), `exercise-records` (GET). 20 endpoints.
 - `runningApi` (`lib/runningApi.ts`): `running-blocks` (GET/POST), `running-blocks/:id` (PUT/DELETE), `:id/activate`, `:id/close`, `run-sessions` (GET/POST).
+- `pantryApi` (`lib/pantryApi.ts`, Fuel slice C `mezo-9xu`): `GET /api/pantry` (the kind-split `PantryResponse` → `{ ingredients, stash }`), `POST /api/pantry`, `PUT/DELETE /api/pantry/:id`. Types `PantryResponse`/`PantryItemRequest`/`PantryItemResponse`/`IngredientResponse`/`SupplementStashResponse`. (`usePantry` consumes `list`; `usePantryActions` consumes `create`/`update`/`remove`.)
 - `auth` (`lib/auth.ts`): `POST /api/auth/login` → `TokenResponse`.
 
 Backend entities/conventions for the wired domains follow `docs/references/*.md`: UUID PKs (`gen_random_uuid()`), soft delete (`@SQLDelete`/`@SQLRestriction`), single-user ownership (`created_by` from the security principal, app-level filtering), typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)`, Liquibase changesets `{YYYYMMDDHHMM}_{bd-id}_{desc}.sql`, seed data in Java `@Profile("demodata")`. The per-feature design specs hold the table-level detail; see `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` and `2026-06-14-train-running-slice-design.md`.
@@ -250,10 +251,12 @@ pnpm build                      # tsc -b && vite build
 - `frontend/src/data/weightHooks.ts` — `useWeight` (weight log+trend; the weight half of the former `useGoals`). G5 (`mezo-g1u`) added the real `['weightTrend']` query + `foldTrend` (:15) folding the backend EWMA rates into `weightTrends`.
 - `frontend/src/data/goalHooks.ts` — `useGoal` (G1+G3+G4b; real active-goal read at :57, `toGoal` back-compat adapter at :18, shares the `['weightLog']` cache; G3 `toLinkedMesocycles` at :42 builds real `linkedMesocycles` from the `goalLinkApi.timeline` query; G4b additively exposes raw `goalResponse`/`timeline`/`goalId` — the latter now also carries the engine's `prescription`/`tdeeBootstrap`) + `useGoalActions` (G4b+G5; the **six** command-center mutations at :114 — archive/remove/activate + attach/detach + **evaluate** (:153, runs the engine) — two-tier `['goals']`/timeline invalidation, `evaluating` flag, mock no-ops) + `useGoalCreation` (G4a; create→activate write at :199, `GoalCreationInput` at :194 — the G6 profile-upsert step is gone) + `useFeasibilityPreview` (G6; debounced live preview at :229 → `goalApi.feasibilityPreview`).
 - `frontend/src/data/biometricHooks.ts` — **`useBiometricProfile`** (G6; `['biometricProfile']` read at :19, 404→null, `isComplete` gate predicate at :41) + **`useBiometricActions`** (G6; `upsert` at :51 → PUT, invalidates `['biometricProfile']`+`['goals']`).
+- `frontend/src/data/pantryHooks.ts` — **`usePantry`** (Fuel slice C · Pantry `mezo-9xu`; dual-mode read with the exact pre-existing `{ ingredients, stash, sources, categoryMeta, imports, suggestions }` shape — mock `initialData` + `staleTime: Infinity`, real `ingredients`/`stash` from `pantryApi.list()` while `imports`/`suggestions` stay `[]` deferred and `sources`/`categoryMeta` stay static config) + **`usePantryActions`** (`addItem`/`updateItem`/`deleteItem` — mock `setQueryData` on `['pantry']`, real `pantryApi.create/update/remove` + invalidate; the `useWeight` dual-mode pattern). Both re-exported from `hooks.ts`.
+- `frontend/src/lib/pantryApi.ts` — typed REST client for the Pantry slice: `list`/`create`/`update`/`remove` over `GET/POST/PUT/DELETE /api/pantry` (request bodies via `toRequest` → `PantryItemRequest`, `satisfies`); consumed only by `pantryHooks.ts`.
 - `frontend/src/lib/mode.ts` — `isMockMode()`, the per-call mode switch.
 - `frontend/src/lib/api.ts` — `apiFetch`, `API_BASE`, `setToken`, `ApiError`, `SystemMessage`.
 - `frontend/src/lib/auth.ts` — `bootstrapOwnerToken` (silent owner login).
-- `frontend/src/lib/biometricsApi.ts` / `trainApi.ts` / `runningApi.ts` / `goalApi.ts` / `goalLinkApi.ts` (G3) / `biometricProfileApi.ts` — typed REST clients over `apiFetch`.
+- `frontend/src/lib/biometricsApi.ts` / `trainApi.ts` / `runningApi.ts` / `goalApi.ts` / `goalLinkApi.ts` (G3) / `biometricProfileApi.ts` / `pantryApi.ts` (Fuel slice C) — typed REST clients over `apiFetch`.
 - `frontend/src/lib/api.gen.ts` — generated contract types (openapi-typescript; do not edit).
 - `frontend/src/lib/dates.ts` — ISO→Hungarian display formatting used by Train mappers.
 - `frontend/src/app/providers/QueryProvider.tsx` — app-wide `QueryClient` + real-mode token bootstrap gate.

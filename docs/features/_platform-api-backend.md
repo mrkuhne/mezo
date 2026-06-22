@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-06-22
+updated: 2026-06-23
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -11,15 +11,16 @@ key_files:
   - backend/pom.xml
   - backend/src/main/resources/messages.properties
   - frontend/src/lib/api.ts
+  - frontend/src/lib/pantryApi.ts
   - frontend/src/data/hooks.ts
-related: [_platform-data-layer, _platform-auth-security, train, today]
+related: [_platform-data-layer, _platform-auth-security, train, today, fuel]
 ---
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
 
-> One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/lib/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · Train; the durable backbone every backed feature flows through. Not a route/tab — it underlies all of them.
+> One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/lib/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · goal · Train · **Fuel Pantry (Kamra)**; the durable backbone every backed feature flows through. Not a route/tab — it underlies all of them.
 
-This is the platform doc: read it before, or alongside, any per-feature backend doc (auth, biometrics, Train). Fuel/Insights/People are still 🔶 mock-only and will *adopt* this spine when they leave mock status; Phase-3 AI is 🟣 deferred.
+This is the platform doc: read it before, or alongside, any per-feature backend doc (auth, biometrics, goal, Train, Fuel). **Fuel's Pantry/Kamra sub-slice is now backed** (slice C, `mezo-9xu`); the rest of Fuel + Insights + People are still 🔶 mock-only and will *adopt* this spine when they leave mock status; Phase-3 AI is 🟣 deferred.
 
 ---
 
@@ -43,12 +44,13 @@ Drift between the two sides becomes a **compile error**, not a runtime surprise.
 | **Biometrics — profile** | `api/feature/biometrics-profile/biometrics-profile.yml` | ✅ `feature/biometrics/profile` | `lib/biometricProfileApi.ts` → `useBiometricProfile()` + `useBiometricActions()` (G6) | ✅ Real, dual-mode (G1, `mezo-2hp`; **wired G6 `mezo-06n`**). **G6**: the GET now carries a **derived** `tdeeBootstrap` (base-TDEE from the profile + latest weigh-in via `TdeeBootstrapService.compute`; cross-`$ref` to the goal fragment's `TdeeBootstrap`; NOT persisted, null with no weigh-in), and `BiometricProfileService.upsertProfile` **recomputes the owner's active goal** (the biometric-profile-change engine trigger, the engine's **5th recompute trigger** — see [`goal-engine.md`](goal-engine.md) §3). FE: the Profil "Biometria" card + `BiometricSheet` editor consume the two hooks (read 404→null, base-TDEE display; write invalidates `['biometricProfile']`+`['goals']`), and a complete profile is the hard gate on goal creation. |
 | **Goal** (`Cél`) | `api/feature/goal/goal.yml` | ✅ `feature/goal` | `lib/goalApi.ts` + `lib/goalLinkApi.ts` → `useGoal()` (read) + `useGoalActions()` (G4b mgmt) + `useGoalCreation()` (G4a write) | ✅ Real (G1 `mezo-2hp` + G3 `mezo-3sc` + G4a `mezo-pqt` + G4b `mezo-tji`). CRUD + activate/archive lifecycle; G3 adds the `goal_plan_link` aggregate (timeline + attach/detach). FE reads active goal + real linked plans; **G4a wires the first write** — `useGoalCreation` POSTs a new goal (+ `biometric_profile` upsert + optional activate) via the `GoalPlanner` wizard; **G4b wires the command-center management** — `useGoalActions` drives archive/delete + plan attach/detach (FE-only over the existing endpoints), and adds the goal-upsert **inverted-window guard** in `GoalService` (see §4d). **G5 (`mezo-g1u`) lands the TDEE/prescription engine + its live HTTP surface** — `POST /api/goals/{id}/evaluate` (`GoalController` → `GoalEngineService.evaluate`) assembles + persists the segmented `prescription` + `tdeeBootstrap` jsonb onto the goal and re-fetches via `getGoal` (the `GoalMapper` projects both into `GoalResponse`); the no-profile case returns **200 with a graceful feasibility note** (never a 4xx, so the recompute triggers don't break), a foreign/missing goal still 404s. **G6 (`mezo-06n`)** derives the goal's target pace server-side: `GoalService.applyUpsert` computes `rateTargetPctPerWeek` from the target weight+date, so it was **dropped from `GoalUpsertRequest`** (still on `GoalResponse`); a new stateless `POST /api/goals/feasibility-preview` (`GoalFeasibilityService`) returns the derived %BW/wk pace + a verdict + a cap-paced realistic-date suggestion, with the verdict band shared (`verdictForRate`) between the preview and `GoalEvaluationService.gradeRate`. The band (≤`targetPctPerWeek` 0.7 → feasible · ≤`capPctPerWeek` 1.0 → feasible-with-warnings · over → aggressive) lives in exactly **one** method — `GoalFeasibilityService.verdictForRate` (single source of truth) — so the wizard's live preview and the persisted eval gate can never diverge. FE: the 2-step `GoalPlanner` wizard + the live feasibility preview in the cél step consume it (`useGoalCreation` no longer PUTs the profile; `useFeasibilityPreview`). |
 | **Train** (meso · workout-exec · sport · catalog · records · running) | `api/feature/train/train.yml` | ✅ `feature/train` | `lib/trainApi.ts` + `lib/runningApi.ts` → `trainHooks.ts` / `runningHooks.ts` | ✅ Real, dual-mode. |
-| **Fuel** | — | ❌ | `data/fuel.ts`, `data/pantry.ts`, `data/fuelWeek.ts` | 🔶 mock-only. |
+| **Fuel — Pantry (Kamra)** | `api/feature/pantry/pantry.yml` | ✅ `feature/pantry` | `lib/pantryApi.ts` → `usePantry()` + `usePantryActions()` | ✅ Real, dual-mode (slice C, `mezo-9xu`). Single `pantry_item` table (Model B), `kind` discriminator, kind-split projection — see §4c. |
+| **Fuel** (rest — day/timeline/week, recipes, stack, protocol) | — | ❌ | `data/fuel.ts`, `data/pantry.ts`, `data/fuelWeek.ts` | 🔶 mock-only. |
 | **Insights** | — | ❌ | `data/insights.ts` | 🔶 mock-only. |
 | **People** | — | ❌ | `data/people.ts` | 🔶 mock-only. |
 | **AI brain** (Spring AI, pgvector, RAG) | — | ❌ | — | 🟣 Phase-3 deferred. |
 
-Confirmed by grep: only `data/hooks.ts`, `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` reference `isMockMode`; `fuel.ts`/`insights.ts`/`people.ts`/`pantry.ts` contain **no** `apiFetch`. `api/base.yml` `info.title` is "mezo API".
+Confirmed by grep: only `data/hooks.ts`, `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/biometricHooks.ts`, `data/goalHooks.ts`, `data/pantryHooks.ts` reference `isMockMode`; `fuel.ts`/`insights.ts`/`people.ts`/`pantry.ts` (the static seeds) contain **no** `apiFetch` (real Pantry traffic flows through `lib/pantryApi.ts`, not the `data/pantry.ts` seed). `api/base.yml` `info.title` is "mezo API".
 
 **Driving specs/ADRs:** Phase-2 design `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`; deploy ADR `docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`; roadmap `docs/milestones/roadmap.md`. House standards: `docs/references/*.md` (all linked below).
 
@@ -135,8 +137,12 @@ UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Colu
 | `POST /goals/{id}/evaluate` | `GoalApi` | run the TDEE/prescription engine (G5, `mezo-g1u`) — persists `prescription`+`tdeeBootstrap`, no-profile → 200 feasibility note |
 | `POST /goals/feasibility-preview` | `GoalApi` | stateless realism preview (G6, `mezo-06n`) — derived %BW/wk pace + verdict + cap-paced realistic date; `GoalFeasibilityService`, no persistence |
 | Train surface (`/train/...`, running, sport, gym-schedule, catalog, records) | `TrainApi` (fans to 7 services) | see Train feature doc + `api/feature/train/train.yml` |
+| `GET /pantry` | `PantryApi` | the owner's pantry, projected by `kind` into `{ ingredients, stash }` (food → ingredients; supplement/stim/med → stash) — Fuel slice C, `mezo-9xu` |
+| `POST /pantry`, `PUT/DELETE /pantry/{id}` | `PantryApi` | add / update / soft-delete a pantry item; per-kind required-field validation in `PantryService.validatePerKind` (see the single-table note below) |
 
-**Mock-only domains (no backend, no fragment):** Fuel shape lives in `frontend/src/data/fuel.ts` / `pantry.ts` / `fuelWeek.ts`; Insights in `data/insights.ts`; People in `data/people.ts`. The backend will plug in by adding `api/feature/<x>/<x>.yml`, a `feature/<x>` backend package, and swapping the mock hook to dual-mode — exactly the recipe in §7. (`ProvenanceEnvelope`'s docstring already forward-references "Fuel reuses this pattern for meal score".)
+**The Pantry single-table model (Model B, `mezo-9xu`).** All pantry rows live in one `pantry_item` table (migration `db/changelog/1.0.0/script/202606221200_mezo-9xu_create_pantry_item.sql`), with a `kind` column (`food`/`supplement`/`stim`/`med`) acting as the discriminator. `feature/pantry/service/PantryService.getPantry` reads the owner's items once and **projects them by kind** into the `PantryResponse` shape `{ ingredients, stash }` — food rows map to `IngredientResponse`, supplement/stim/med rows to `SupplementStashResponse` (`PantryMapper`). Rather than DB CHECK constraints per kind, **per-kind required fields are validated in the service** (`PantryService.validatePerKind` — e.g. `food` needs macros/serving fields) so the single table stays flexible; entity micros are typed jsonb (`MicroFact` list via `@JdbcTypeCode(SqlTypes.JSON)`), with the usual UUID PK + `created_by` ownership + soft-delete columns. Scrape/import (`imports`), AI `suggestions`, recipe scoring, and pantry-logging are **deferred** — the read DTO carries `imports`/`suggestions` only as `[]` from the FE config side; the backend owns inventory CRUD only.
+
+**Mock-only domains (no backend, no fragment):** the rest of Fuel (day/timeline/week, recipes, stack, protocol) lives in `frontend/src/data/fuel.ts` / `pantry.ts` (the static seed, distinct from the now-backed Pantry inventory) / `fuelWeek.ts`; Insights in `data/insights.ts`; People in `data/people.ts`. The backend will plug in by adding `api/feature/<x>/<x>.yml`, a `feature/<x>` backend package, and swapping the mock hook to dual-mode — exactly the recipe in §7. (`ProvenanceEnvelope`'s docstring already forward-references "Fuel reuses this pattern for meal score".)
 
 ### 4d. The goal-plan-link aggregate (G3 — timeline coupling, `mezo-3sc`)
 
@@ -286,7 +292,7 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - `api/generate/merge.yml` — ordered fragment input list (append new fragments here)
 - `api/generate/package.json` — `openapi-merge-cli`, `generate:api`
 - `api/openapi.yml` — committed merged contract (source of truth)
-- `api/feature/{auth,weight,sleep,checkin,train,goal,biometrics-profile}/*.yml` — per-feature fragments
+- `api/feature/{auth,weight,sleep,checkin,train,goal,biometrics-profile,pantry}/*.yml` — per-feature fragments
 
 **Backend generator config**
 - `backend/pom.xml` (~175-215) — `openapi-generator-maven-plugin` (spring), configOptions, Lombok DTO annotations
@@ -305,6 +311,10 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - **G3 plan-link aggregate (`mezo-3sc`):** `feature/goal/entity/GoalPlanLinkEntity.java`, `repository/GoalPlanLinkRepository.java`, `service/{GoalPlanLinkService,GoalTimelineService}.java`, `mapper/GoalPlanLinkMapper.java`; cascade in `service/GoalService.java#deleteGoal`; read-only train finder `feature/train/repository/MesocycleRepository.java#findByIdAndCreatedByAndDeletedFalse`
 - `feature/biometrics/profile/{controller/BiometricProfileController,service/BiometricProfileService,mapper/BiometricProfileMapper,repository/BiometricProfileRepository,entity/BiometricProfileEntity}.java`
 
+**Fuel — Pantry (Kamra) (slice C, `mezo-9xu` — single `pantry_item` table, kind-projected)**
+- `feature/pantry/{controller/PantryController,service/PantryService,mapper/PantryMapper,repository/PantryItemRepository,entity/PantryItemEntity}.java` + typed-jsonb micros `entity/MicroFact.java`. `PantryService.getPantry` projects by `kind` into `{ ingredients, stash }`; `validatePerKind` holds the per-kind required-field rules (no DB CHECKs). No demodata seed (clean slate).
+- contract fragment `api/feature/pantry/pantry.yml` (tag `Pantry` → `PantryApi`; schemas `PantryResponse`/`PantryItemRequest`/`PantryItemResponse`/`IngredientResponse`/`SupplementStashResponse`/`PantryMacros`/`PantryMicro`/`PantryStock`)
+
 **Auth**
 - `feature/auth/...` (`AuthController`, `AuthService`, `OwnerProperties`, `OwnerSeedData`, `entity/AppUserEntity`, `UserProfileEntity`)
 
@@ -314,16 +324,16 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - content/seed: `ExerciseCatalogLoader.java` (master content, all profiles), `TrainSeedData.java`, `RunningSeedData.java` (demodata)
 
 **Liquibase**
-- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk + `202606181200_mezo-2hp_create_goal.sql` for `goal` + `biometric_profile` + `202606181600_mezo-3sc_create_goal_plan_link.sql` for `goal_plan_link`)
+- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk + `202606181200_mezo-2hp_create_goal.sql` for `goal` + `biometric_profile` + `202606181600_mezo-3sc_create_goal_plan_link.sql` for `goal_plan_link` + `202606221200_mezo-9xu_create_pantry_item.sql` for `pantry_item`)
 
 **Test framework**
-- `support/AbstractIntegrationTest.java`, `ApiIntegrationTest.java`, `ResetDatabase.java` (TRUNCATE list now incl. `goal, biometric_profile`), `DatabasePopulator.java`, `populator/{UserPopulator,TrainPopulator,RunningPopulator,GoalPopulator,BiometricProfilePopulator}.java`
-- canonical ITs: `feature/biometrics/BiometricsContractIT.java`, `feature/train/ProvenanceRoundTripIT.java`; G1: `feature/goal/{GoalServiceIT,GoalContractIT}.java`, `feature/biometrics/profile/{BiometricProfileServiceIT,BiometricProfileContractIT}.java`; G3: `feature/goal/{GoalPlanLinkServiceIT,GoalTimelineServiceIT,GoalTimelineContractIT}.java`
+- `support/AbstractIntegrationTest.java` (imports the populators, incl. `PantryItemPopulator`), `ApiIntegrationTest.java`, `ResetDatabase.java` (TRUNCATE list now incl. `goal, biometric_profile, pantry_item`), `DatabasePopulator.java`, `populator/{UserPopulator,TrainPopulator,RunningPopulator,GoalPopulator,BiometricProfilePopulator,PantryItemPopulator}.java`
+- canonical ITs: `feature/biometrics/BiometricsContractIT.java`, `feature/train/ProvenanceRoundTripIT.java`; G1: `feature/goal/{GoalServiceIT,GoalContractIT}.java`, `feature/biometrics/profile/{BiometricProfileServiceIT,BiometricProfileContractIT}.java`; G3: `feature/goal/{GoalPlanLinkServiceIT,GoalTimelineServiceIT,GoalTimelineContractIT}.java`; Pantry (`mezo-9xu`): `feature/pantry/{PantryItemRepositoryIT,PantryServiceIT,PantryApiIT}.java`
 
 **Frontend seam**
-- `frontend/src/lib/api.ts` (`apiFetch`, `ApiError`, `setToken`, `API_BASE`), `lib/mode.ts` (`isMockMode`), `lib/auth.ts` (`bootstrapOwnerToken`), `lib/api.gen.ts` (generated), `lib/biometricsApi.ts`, `lib/trainApi.ts`, `lib/runningApi.ts`, `lib/goalApi.ts`, `lib/goalLinkApi.ts` (G3 timeline/attach/detach), `lib/biometricProfileApi.ts`
-- `frontend/src/data/hooks.ts` (single FE↔data boundary), `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` (dual-mode; G3 `useGoal` populates real linked plans from the timeline; G4a adds `useGoalCreation` — the first goal write; G4b adds `useGoalActions` — archive/delete/attach/detach — and widens `useGoal` with raw `goalResponse`/`timeline`/`goalId`; **G6 adds `useFeasibilityPreview`** — debounced live preview, and drops the profile-upsert step from `useGoalCreation`), `data/biometricHooks.ts` (**G6 — `useBiometricProfile` 404→null + `useBiometricActions` upsert→invalidate `['biometricProfile']`+`['goals']`**)
-- mock-only (no backend yet): `frontend/src/data/fuel.ts`, `pantry.ts`, `fuelWeek.ts`, `insights.ts`, `people.ts`
+- `frontend/src/lib/api.ts` (`apiFetch`, `ApiError`, `setToken`, `API_BASE`), `lib/mode.ts` (`isMockMode`), `lib/auth.ts` (`bootstrapOwnerToken`), `lib/api.gen.ts` (generated), `lib/biometricsApi.ts`, `lib/trainApi.ts`, `lib/runningApi.ts`, `lib/goalApi.ts`, `lib/goalLinkApi.ts` (G3 timeline/attach/detach), `lib/biometricProfileApi.ts`, `lib/pantryApi.ts` (slice C — `/api/pantry` CRUD)
+- `frontend/src/data/hooks.ts` (single FE↔data boundary), `data/trainHooks.ts`, `data/runningHooks.ts`, `data/weightHooks.ts`, `data/goalHooks.ts` (dual-mode; G3 `useGoal` populates real linked plans from the timeline; G4a adds `useGoalCreation` — the first goal write; G4b adds `useGoalActions` — archive/delete/attach/detach — and widens `useGoal` with raw `goalResponse`/`timeline`/`goalId`; **G6 adds `useFeasibilityPreview`** — debounced live preview, and drops the profile-upsert step from `useGoalCreation`), `data/biometricHooks.ts` (**G6 — `useBiometricProfile` 404→null + `useBiometricActions` upsert→invalidate `['biometricProfile']`+`['goals']`**), `data/pantryHooks.ts` (**slice C `mezo-9xu` — `usePantry` dual-mode read kind-split + `usePantryActions` add/update/delete; re-exported from `hooks.ts`**) consuming `lib/pantryApi.ts`
+- mock-only (no backend yet): `frontend/src/data/fuel.ts`, `pantry.ts` (the static Pantry/recipe seed — the backed inventory CRUD flows through `lib/pantryApi.ts`, not this file), `fuelWeek.ts`, `insights.ts`, `people.ts`
 
 **House-standard references (linked, not restated)**
 - `docs/references/api_contract_conventions.md`, `java_package_structure.md`, `spring_patterns.md`, `error_handling.md`, `liquibase_conventions.md`, `testing_standards.md`, `integration_test_framework.md`, `configuration_conventions.md`
