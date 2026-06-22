@@ -138,6 +138,23 @@ export interface PantryItem {
   stashRefId?: string
 }
 
+/** Form payload for creating/editing a pantry item (maps to the PantryItemRequest contract). */
+export interface PantryItemInput {
+  kind: PantryItemKind
+  name: string
+  brand?: string
+  source?: PantrySourceKey
+  category?: string
+  notes?: string
+  per?: number; unit?: string
+  kcal?: number; proteinG?: number; carbsG?: number; fatG?: number
+  price?: number; priceUnit?: string; pkg?: string
+  micros?: { name: string; pct: number }[]
+  nova?: NovaGroup
+  stockQty?: number; stockUnit?: string; stockExpires?: string
+  dose?: string; form?: string; protocol?: string; timing?: string; caffeine?: boolean
+}
+
 // --- Cél (goals) ---
 export type GoalKind = 'cut' | 'bulk' | 'maintenance'
 export type GoalStatus = 'active' | 'planned' | 'archived'
