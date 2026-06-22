@@ -20,7 +20,7 @@ test('useGoalCreation (real) upserts profile, creates+activates the goal, then o
   const { result } = renderHook(() => useGoalCreation(), { wrapper: makeHookWrapper() })
   act(() => result.current.submit(
     { profile: { sex: 'M', heightCm: 180, birthDate: '1991-03-01' },
-      goal: { title: 'Nyári cut', trajectory: 'cut', guards: ['strength'], startDate: '2026-06-01', targetDate: '2026-07-27', startWeightKg: 84.2, rateTargetPctPerWeek: 0.7 },
+      goal: { title: 'Nyári cut', trajectory: 'cut', guards: ['strength'], startDate: '2026-06-01', targetDate: '2026-07-27', startWeightKg: 84.2 },
       activate: true },
     { onSuccess }))
   await waitFor(() => expect(onSuccess).toHaveBeenCalled())

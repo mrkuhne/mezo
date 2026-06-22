@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.goal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
@@ -24,7 +25,7 @@ class GoalContractIT extends ApiIntegrationTest {
             .title("Nyári cut").trajectory("cut").guards(List.of("strength", "muscle"))
             .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 7, 27))
             .startWeightKg(new BigDecimal("84.20")).targetWeightKg(new BigDecimal("80.00"))
-            .rateTargetPctPerWeek(new BigDecimal("0.70")).identityFrame("Erő megtartva.");
+            .identityFrame("Erő megtartva.");
     }
 
     @Test
@@ -38,6 +39,10 @@ class GoalContractIT extends ApiIntegrationTest {
         GoalResponse created = postForBody("/api/goals", req().build(), auth, HttpStatus.CREATED, GoalResponse.class);
         assertThat(created.getId()).isNotNull();
         assertThat(created.getStatus()).isEqualTo(GoalResponse.StatusEnum.PLANNED);
+        // rateTargetPctPerWeek is no longer an input — the response carries the server-derived value:
+        // (84.20 − 80.00) / 84.20 * 100 / 8 weeks ≈ 0.62.
+        assertThat(created.getRateTargetPctPerWeek())
+            .isCloseTo(new BigDecimal("0.62"), within(new BigDecimal("0.01")));
         List<GoalResponse> goals = getForList("/api/goals", auth, HttpStatus.OK, GoalResponse.class);
         assertThat(goals).extracting(GoalResponse::getId).contains(created.getId());
     }

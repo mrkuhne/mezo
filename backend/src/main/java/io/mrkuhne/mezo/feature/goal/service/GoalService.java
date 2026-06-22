@@ -9,6 +9,10 @@ import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -112,8 +116,42 @@ public class GoalService {
         e.setTargetDate(req.getTargetDate());
         e.setStartWeightKg(req.getStartWeightKg());
         e.setTargetWeightKg(req.getTargetWeightKg());
-        e.setRateTargetPctPerWeek(req.getRateTargetPctPerWeek());
+        // G6 (mezo-06n): the weekly rate is server-DERIVED from the window + weights, no longer a
+        // client input. Stored as an UNSIGNED magnitude — the G5 engine applies the trajectory sign
+        // downstream. Re-runs on every upsert, so editing target weight/date re-derives it.
+        e.setRateTargetPctPerWeek(
+            deriveRateTargetPctPerWeek(
+                req.getTrajectory(), req.getStartWeightKg(), req.getTargetWeightKg(),
+                req.getStartDate(), req.getTargetDate()));
         e.setIdentityFrame(req.getIdentityFrame());
+    }
+
+    private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
+    private static final String TRAJ_MAINTAIN = "maintain";
+    private static final int RATE_SCALE = 4; // stored precision; matches the G5 rate divides.
+
+    /**
+     * Derives the weekly rate magnitude: {@code |startW − targetW| / startW * 100 / weeks}. Returns
+     * {@link BigDecimal#ZERO} for maintain (or a missing target weight) and guards weeks == 0 (equal
+     * start/target date — the inverted-window case is already rejected upstream) against a
+     * divide-by-zero. Always non-null so the {@code NOT NULL rate_target_pct_per_week} column holds.
+     */
+    private BigDecimal deriveRateTargetPctPerWeek(
+            String trajectory, BigDecimal startWeightKg, BigDecimal targetWeightKg,
+            LocalDate startDate, LocalDate targetDate) {
+        if (TRAJ_MAINTAIN.equals(trajectory) || targetWeightKg == null
+                || startWeightKg == null || startWeightKg.signum() == 0
+                || startDate == null || targetDate == null) {
+            return BigDecimal.ZERO;
+        }
+        long weeks = ChronoUnit.WEEKS.between(startDate, targetDate);
+        if (weeks <= 0) {
+            return BigDecimal.ZERO; // equal dates (or <1 week apart) → no derivable rate.
+        }
+        return startWeightKg.subtract(targetWeightKg).abs()
+            .divide(startWeightKg, 10, RoundingMode.HALF_UP)
+            .multiply(ONE_HUNDRED)
+            .divide(BigDecimal.valueOf(weeks), RATE_SCALE, RoundingMode.HALF_UP);
     }
 
     /** Ownership gate: missing and foreign rows are indistinguishable (404). */

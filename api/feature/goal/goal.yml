@@ -204,7 +204,9 @@ components:
         notes: { type: array, items: { type: string } }
     GoalUpsertRequest:
       type: object
-      required: [title, trajectory, startDate, targetDate, startWeightKg, rateTargetPctPerWeek]
+      # rateTargetPctPerWeek is NOT an input — it is server-derived from
+      # |startWeightKg − targetWeightKg| / startWeightKg / weeks (see GoalService.applyUpsert).
+      required: [title, trajectory, startDate, targetDate, startWeightKg]
       properties:
         title: { type: string, minLength: 1 }
         trajectory: { type: string, pattern: '^(cut|bulk|maintain)$' }
@@ -213,7 +215,6 @@ components:
         targetDate: { type: string, format: date }
         startWeightKg: { type: number, minimum: 0 }
         targetWeightKg: { type: number, nullable: true, minimum: 0 }
-        rateTargetPctPerWeek: { type: number, minimum: 0 }
         identityFrame: { type: string, nullable: true }
     GoalPlanRef:
       type: object

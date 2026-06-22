@@ -3147,7 +3147,6 @@ components:
         - startDate
         - targetDate
         - startWeightKg
-        - rateTargetPctPerWeek
       properties:
         title:
           type: string
@@ -3172,9 +3171,6 @@ components:
         targetWeightKg:
           type: number
           nullable: true
-          minimum: 0
-        rateTargetPctPerWeek:
-          type: number
           minimum: 0
         identityFrame:
           type: string

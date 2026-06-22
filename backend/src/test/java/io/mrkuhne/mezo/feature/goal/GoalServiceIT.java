@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.goal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
@@ -65,7 +66,7 @@ class GoalServiceIT extends AbstractIntegrationTest {
     @Test
     void testCreateGoal_shouldDefaultStatusToPlanned_whenCreated() {
         UUID user = databasePopulator.populateUser("goal@test.local");
-        GoalResponse res = goalService.createGoal(user, upsertReq());
+        GoalResponse res = goalService.createGoal(user, upsertReq().build());
         assertThat(res.getStatus()).isEqualTo(GoalResponse.StatusEnum.PLANNED);
         assertThat(res.getTrajectory()).isEqualTo(GoalResponse.TrajectoryEnum.CUT);
         assertThat(res.getGuards())
@@ -99,7 +100,7 @@ class GoalServiceIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("goal@test.local");
         GoalEntity active = goalPopulator.createGoal(user, "cut", "active");
         GoalResponse res =
-            goalService.updateGoal(user, active.getId(), upsertReq().title("Updated"));
+            goalService.updateGoal(user, active.getId(), upsertReq().title("Updated").build());
         assertThat(res.getTitle()).isEqualTo("Updated");
         assertThat(res.getStatus()).isEqualTo(GoalResponse.StatusEnum.ACTIVE);
     }
@@ -177,11 +178,68 @@ class GoalServiceIT extends AbstractIntegrationTest {
         assertThat(reloaded.getPrescription()).isNull();
     }
 
-    private static GoalUpsertRequest upsertReq() {
+    @Test
+    void testCreateGoal_shouldDeriveRate_whenCutGoal() {
+        // (84 − 78) / 84 * 100 / 17 weeks = 0.42016806… → unsigned magnitude (engine signs by trajectory).
+        UUID user = databasePopulator.populateUser("goal-cut@test.local");
+        GoalResponse res = goalService.createGoal(user, upsertReq()
+            .trajectory("cut")
+            .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 9, 28)) // 17 weeks
+            .startWeightKg(new BigDecimal("84.00")).targetWeightKg(new BigDecimal("78.00"))
+            .build());
+        assertThat(res.getRateTargetPctPerWeek())
+            .isCloseTo(new BigDecimal("0.42"), within(new BigDecimal("0.005")));
+    }
+
+    @Test
+    void testCreateGoal_shouldDerivePositiveMagnitude_whenBulkGoal() {
+        // (84 − 80) / 80 * 100 / 10 weeks = 0.50 — stored unsigned (positive).
+        UUID user = databasePopulator.populateUser("goal-bulk@test.local");
+        GoalResponse res = goalService.createGoal(user, upsertReq()
+            .trajectory("bulk")
+            .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 8, 10)) // 10 weeks
+            .startWeightKg(new BigDecimal("80.00")).targetWeightKg(new BigDecimal("84.00"))
+            .build());
+        assertThat(res.getRateTargetPctPerWeek())
+            .isCloseTo(new BigDecimal("0.50"), within(new BigDecimal("0.005")));
+    }
+
+    @Test
+    void testCreateGoal_shouldDeriveZeroRate_whenMaintain() {
+        // maintain has no targetWeightKg → rate is forced to 0.
+        UUID user = databasePopulator.populateUser("goal-maintain@test.local");
+        GoalResponse res = goalService.createGoal(user, upsertReq()
+            .trajectory("maintain").targetWeightKg(null).build());
+        assertThat(res.getRateTargetPctPerWeek()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void testUpdateGoal_shouldReDeriveRate_whenTargetWeightOrDateChanges() {
+        UUID user = databasePopulator.populateUser("goal-rederive@test.local");
+        GoalResponse created = goalService.createGoal(user, upsertReq()
+            .trajectory("cut")
+            .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 9, 28)) // 17 weeks
+            .startWeightKg(new BigDecimal("84.00")).targetWeightKg(new BigDecimal("78.00"))
+            .build());
+        assertThat(created.getRateTargetPctPerWeek())
+            .isCloseTo(new BigDecimal("0.42"), within(new BigDecimal("0.005")));
+
+        // Halve the window (17 → 8 weeks, faster) and the magnitude must (re-)derive higher.
+        GoalResponse updated = goalService.updateGoal(user, created.getId(), upsertReq()
+            .trajectory("cut")
+            .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 7, 27)) // 8 weeks
+            .startWeightKg(new BigDecimal("84.00")).targetWeightKg(new BigDecimal("78.00"))
+            .build());
+        // (84 − 78) / 84 * 100 / 8 = 0.89285… → re-derived, clearly higher than the 17-week rate.
+        assertThat(updated.getRateTargetPctPerWeek())
+            .isCloseTo(new BigDecimal("0.89"), within(new BigDecimal("0.01")));
+    }
+
+    private static GoalUpsertRequest.GoalUpsertRequestBuilder upsertReq() {
         return GoalUpsertRequest.builder()
             .title("Nyári cut").trajectory("cut").guards(List.of("strength", "muscle"))
             .startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 7, 27))
             .startWeightKg(new BigDecimal("84.20")).targetWeightKg(new BigDecimal("80.00"))
-            .rateTargetPctPerWeek(new BigDecimal("0.70")).identityFrame("Erő megtartva.").build();
+            .identityFrame("Erő megtartva.");
     }
 }

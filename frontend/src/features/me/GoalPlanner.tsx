@@ -86,7 +86,8 @@ export function GoalPlanner() {
           targetDate: targetDateIso,
           startWeightKg: startWeight,
           ...(trajectory !== 'maintain' ? { targetWeightKg: targetWeight } : {}),
-          rateTargetPctPerWeek: rate,
+          // rateTargetPctPerWeek is no longer sent — the backend derives it from
+          // |startWeightKg − targetWeightKg| / startWeightKg / weeks (G6, mezo-06n).
           ...(identity ? { identityFrame: identity } : {}),
         },
         activate,

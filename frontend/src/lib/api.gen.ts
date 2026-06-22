@@ -1281,7 +1281,6 @@ export interface components {
             targetDate: string;
             startWeightKg: number;
             targetWeightKg?: number | null;
-            rateTargetPctPerWeek: number;
             identityFrame?: string | null;
         };
         GoalPlanRef: {
