@@ -98,11 +98,49 @@ function mockUpdate(qc: ReturnType<typeof useQueryClient>, id: string, input: Pa
   qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {
     const base = prev ?? mockData
     return {
-      ingredients: base.ingredients.map(i => i.id === id ? { ...i, name: input.name, brand: input.brand ?? i.brand } : i),
-      stash: base.stash.map(s => s.id === id ? { ...s, name: input.name, brand: input.brand ?? s.brand } : s),
+      ingredients: base.ingredients.map(i => i.id === id ? applyIngredientUpdate(i, input) : i),
+      stash: base.stash.map(s => s.id === id ? applyStashUpdate(s, input) : s),
     }
   })
   return undefined
+}
+
+// Apply a PantryItemInput onto an existing food ingredient, preserving any field
+// the form did not carry (so a quick stock bump never wipes macros, and an edit
+// keeps the original price/micros/nova).
+function applyIngredientUpdate(i: Ingredient, input: PantryItemInput): Ingredient {
+  return {
+    ...i,
+    name: input.name,
+    brand: input.brand ?? i.brand,
+    source: input.source ?? i.source,
+    category: input.category ?? i.category,
+    per: input.per ?? i.per,
+    unit: input.unit ?? i.unit,
+    macros: {
+      kcal: input.kcal ?? i.macros.kcal,
+      p: input.proteinG ?? i.macros.p,
+      c: input.carbsG ?? i.macros.c,
+      f: input.fatG ?? i.macros.f,
+    },
+    stock: input.stockQty != null
+      ? { qty: input.stockQty, unit: input.stockUnit ?? i.stock?.unit ?? i.unit, expires: input.stockExpires ?? i.stock?.expires ?? '' }
+      : i.stock,
+  }
+}
+
+function applyStashUpdate(s: SupplementStashItem, input: PantryItemInput): SupplementStashItem {
+  return {
+    ...s,
+    name: input.name,
+    brand: input.brand ?? s.brand,
+    category: input.category ?? s.category,
+    dose: input.dose ?? s.dose,
+    form: input.form ?? s.form,
+    protocol: input.protocol ?? s.protocol,
+    stock: input.stockQty ?? s.stock,
+    stockUnit: input.stockUnit ?? s.stockUnit,
+  }
 }
 function mockRemove(qc: ReturnType<typeof useQueryClient>, id: string) {
   qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {

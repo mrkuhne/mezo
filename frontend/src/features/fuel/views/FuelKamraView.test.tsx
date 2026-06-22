@@ -17,9 +17,17 @@ test('renders stats, type filters and grouped items', () => {
   expect(screen.getByRole('heading', { name: 'Polc' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Supplement' })).toBeInTheDocument()
 })
-test('Import opens the import sheet', async () => {
+test('header "Új tétel" opens the manual add-item sheet', async () => {
+  // Task 8: the header add affordance now opens the real manual CRUD form
+  // (AddPantryItemSheet), not the scrape wizard.
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Import' }))
+  await userEvent.click(screen.getByRole('button', { name: /Új tétel/ }))
+  expect(await screen.findByText('Új kamra-tétel')).toBeInTheDocument()
+})
+test('scrape-feed card still opens the scrape import sheet', async () => {
+  // The scrape wizard moved off the header chip onto the recent-imports feed card.
+  renderView()
+  await userEvent.click(screen.getByText(/Scrape feed/))
   expect(await screen.findByText('Új tétel a Kamrába')).toBeInTheDocument()
 })
 test('query filters to empty-state', async () => {

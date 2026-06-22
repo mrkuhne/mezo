@@ -31,6 +31,7 @@ import { KamraCard } from '@/features/fuel/components/KamraCard'
 import { SuggestionCard } from '@/features/fuel/components/SuggestionCard'
 import { IngredientDetailSheet } from '@/features/fuel/IngredientDetailSheet'
 import { ImportItemSheet } from '@/features/fuel/ImportItemSheet'
+import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
 
 const KAMRA_TYPE_FILTERS = [
   { id: 'all', label: 'Összes' },
@@ -55,6 +56,7 @@ export function FuelKamraView() {
   const [query, setQuery] = useState('')
   const [openIng, setOpenIng] = useState<PantryItem | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [addOpen, setAddOpen] = useState(false)
 
   const allItems = buildKamraItems(ingredients, stash)
   const ingItems = allItems.filter(it => !it.isStashOnly)
@@ -86,8 +88,8 @@ export function FuelKamraView() {
             <Eyebrow brand>Fuel · Kamra</Eyebrow>
             <PageTitle className="mt-sm">Polc</PageTitle>
           </div>
-          <button onClick={() => setImportOpen(true)} className="chip brand" style={{ padding: '8px 10px' }}>
-            <Icon name="plus" size={12} /> Import
+          <button onClick={() => setAddOpen(true)} className="chip brand" style={{ padding: '8px 10px' }}>
+            <Icon name="plus" size={12} /> Új tétel
           </button>
         </div>
 
@@ -233,6 +235,7 @@ export function FuelKamraView() {
 
       {openIng && <IngredientDetailSheet item={openIng} onClose={() => setOpenIng(null)} />}
       {importOpen && <ImportItemSheet onClose={() => setImportOpen(false)} />}
+      <AddPantryItemSheet open={addOpen} onClose={() => setAddOpen(false)} />
     </>
   )
 }

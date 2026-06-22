@@ -6,14 +6,16 @@
 //   used-in-recipes list → inert action buttons → scrape footer.
 // Ports prototype fuel-kamra.jsx:338-477 faithfully.
 // ============================================================
-import type { IngredientStock, PantryItem } from '@/data/types'
-import { usePantry, useRecipes } from '@/data/hooks'
+import { useState } from 'react'
+import type { IngredientStock, PantryItem, PantryItemInput } from '@/data/types'
+import { usePantry, usePantryActions, useRecipes } from '@/data/hooks'
 import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { StatCell } from '@/components/ui/StatCell'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SourceBadge } from '@/components/ui/SourceBadge'
+import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
 
 // The full IngredientStock carries expires/lowExpiry; the bare { qty, unit }
 // stock shape does not. Narrow once instead of fighting `in`-narrowing in JSX.
@@ -21,9 +23,38 @@ function isFullStock(s: NonNullable<PantryItem['stock']>): s is IngredientStock 
   return 'expires' in s
 }
 
+// Build a PantryItemInput from the displayed item — used both to prefill the
+// edit sheet and as the base for the quick stock "Frissítés" update so other
+// fields are preserved through the mutation.
+function inputFromItem(item: PantryItem): PantryItemInput {
+  const base: PantryItemInput = {
+    kind: item.kind,
+    name: item.name,
+    brand: item.brand,
+    source: item.source,
+    category: item.category,
+    per: item.per,
+    unit: item.unit,
+    stockQty: item.stock?.qty,
+    stockUnit: item.stock?.unit,
+  }
+  if (item.macros) {
+    base.kcal = item.macros.kcal
+    base.proteinG = item.macros.p
+    base.carbsG = item.macros.c
+    base.fatG = item.macros.f
+  }
+  if (item.dose) base.dose = item.dose
+  if (item.form) base.form = item.form
+  if (item.protocol) base.protocol = item.protocol
+  return base
+}
+
 export function IngredientDetailSheet({ item, onClose }: { item: PantryItem; onClose: () => void }) {
   const { categoryMeta } = usePantry()
   const { recipes } = useRecipes()
+  const { updateItem, deleteItem } = usePantryActions()
+  const [editOpen, setEditOpen] = useState(false)
   const catColor = categoryMeta[item.category]?.color ?? 'var(--text-secondary)'
   const usingRecipes = recipes.filter(r => r.ingredients.some(ri => ri.refId === item.id))
 
@@ -37,7 +68,18 @@ export function IngredientDetailSheet({ item, onClose }: { item: PantryItem; onC
   const stockExpires = stock && isFullStock(stock) ? stock.expires : undefined
   const stockLowExpiry = stock && isFullStock(stock) ? stock.lowExpiry : undefined
 
+  // Quick stock bump: re-persist the item with one more unit on the shelf.
+  const bumpStock = () => {
+    const base = inputFromItem(item)
+    updateItem(item.id, { ...base, stockQty: (base.stockQty ?? 0) + 1 })
+  }
+  const remove = () => {
+    deleteItem(item.id)
+    onClose()
+  }
+
   return (
+    <>
     <Sheet onClose={onClose} labelledBy="ingredient-detail-title">
       {(close) => (
         <>
@@ -142,19 +184,27 @@ export function IngredientDetailSheet({ item, onClose }: { item: PantryItem; onC
             </div>
           )}
 
-          {/* Actions (inert) */}
+          {/* Actions */}
           <div className="col gap-sm">
-            <button className="cta-primary notch-4">
+            {/* Logolás stays deferred — no logging slice yet. */}
+            <button className="cta-primary notch-4" disabled>
               <Icon name="plus" size={14} /> Logolás · mai étkezésbe
             </button>
             <div className="row gap-sm">
-              <button className="cta-ghost notch-4 flex-1">
-                <Icon name="tool" size={12} /> Frissítés a {item.source}-ról
+              <button className="cta-ghost notch-4 flex-1" onClick={bumpStock}>
+                <Icon name="tool" size={12} /> Frissítés · +1 polcra
               </button>
-              <button className="cta-ghost notch-4 flex-1">
+              <button className="cta-ghost notch-4 flex-1" onClick={() => setEditOpen(true)}>
                 <Icon name="settings" size={12} /> Szerkesztés
               </button>
             </div>
+            <button
+              className="cta-ghost notch-4"
+              onClick={remove}
+              style={{ color: 'var(--warning)', borderColor: 'var(--border-subtle)' }}
+            >
+              <Icon name="x" size={12} /> Törlés a kamrából
+            </button>
           </div>
 
           {item.scrapedAt && (
@@ -170,5 +220,12 @@ export function IngredientDetailSheet({ item, onClose }: { item: PantryItem; onC
         </>
       )}
     </Sheet>
+    <AddPantryItemSheet
+      open={editOpen}
+      onClose={() => setEditOpen(false)}
+      editId={item.id}
+      initial={inputFromItem(item)}
+    />
+    </>
   )
 }
