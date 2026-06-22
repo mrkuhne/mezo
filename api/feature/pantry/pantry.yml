@@ -1,0 +1,152 @@
+openapi: 3.0.3
+info: { title: '', version: '' }
+tags:
+  - name: Pantry
+    description: Pantry (Kamra) — food + supplement inventory (single pantry_item table, kind-projected)
+paths:
+  /api/pantry:
+    get:
+      tags: [Pantry]
+      operationId: getPantry
+      summary: The owner's pantry, projected by kind into ingredients + stash
+      responses:
+        '200': { description: Pantry, content: { application/json: { schema: { $ref: '#/components/schemas/PantryResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    post:
+      tags: [Pantry]
+      operationId: createPantryItem
+      summary: Add a pantry item (food or supplement/stim/med)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PantryItemRequest' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/PantryItemResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/pantry/{id}:
+    put:
+      tags: [Pantry]
+      operationId: updatePantryItem
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/PantryItemRequest' } } }
+      responses:
+        '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/PantryItemResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [Pantry]
+      operationId: deletePantryItem
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    PantryResponse:
+      type: object
+      required: [ingredients, stash]
+      properties:
+        ingredients: { type: array, items: { $ref: '#/components/schemas/IngredientResponse' } }
+        stash: { type: array, items: { $ref: '#/components/schemas/SupplementStashResponse' } }
+    PantryMacros:
+      type: object
+      required: [kcal, p, c, f]
+      properties:
+        kcal: { type: number }
+        p: { type: number }
+        c: { type: number }
+        f: { type: number }
+    PantryMicro:
+      type: object
+      required: [name, pct]
+      properties:
+        name: { type: string }
+        pct: { type: integer }
+    PantryStock:
+      type: object
+      required: [qty, unit]
+      properties:
+        qty: { type: number }
+        unit: { type: string }
+        expires: { type: string, nullable: true }
+        lowExpiry: { type: boolean, nullable: true }
+    IngredientResponse:
+      type: object
+      required: [id, name, brand, source, category, per, unit, macros, price, priceUnit, pkg, micros, nova, lastUsed, usedInRecipes]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        brand: { type: string }
+        source: { type: string, enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, manual] }
+        category: { type: string }
+        per: { type: number }
+        unit: { type: string }
+        macros: { $ref: '#/components/schemas/PantryMacros' }
+        price: { type: number }
+        priceUnit: { type: string }
+        pkg: { type: string }
+        micros: { type: array, items: { $ref: '#/components/schemas/PantryMicro' } }
+        nova: { type: integer, minimum: 1, maximum: 4 }
+        stock: { allOf: [ { $ref: '#/components/schemas/PantryStock' } ], nullable: true }
+        lastUsed: { type: string }
+        usedInRecipes: { type: integer }
+    SupplementStashResponse:
+      type: object
+      required: [id, name, brand, type, category, dose, form, protocol, timing, taken]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        brand: { type: string }
+        type: { type: string, enum: [supplement, stimulant, medication] }
+        category: { type: string }
+        dose: { type: string }
+        form: { type: string }
+        stock: { type: number, nullable: true }
+        stockUnit: { type: string, nullable: true }
+        protocol: { type: string }
+        timing: { type: string }
+        taken: { type: boolean }
+        caffeine: { type: boolean, nullable: true }
+    PantryItemRequest:
+      type: object
+      required: [kind, name]
+      properties:
+        kind: { type: string, enum: [food, supplement, stim, med] }
+        name: { type: string }
+        brand: { type: string, nullable: true }
+        source: { type: string, enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, manual], nullable: true }
+        category: { type: string, nullable: true }
+        notes: { type: string, nullable: true }
+        per: { type: number, nullable: true }
+        unit: { type: string, nullable: true }
+        kcal: { type: number, nullable: true }
+        proteinG: { type: number, nullable: true }
+        carbsG: { type: number, nullable: true }
+        fatG: { type: number, nullable: true }
+        price: { type: integer, nullable: true }
+        priceUnit: { type: string, nullable: true }
+        pkg: { type: string, nullable: true }
+        micros: { type: array, nullable: true, items: { $ref: '#/components/schemas/PantryMicro' } }
+        nova: { type: integer, minimum: 1, maximum: 4, nullable: true }
+        stockQty: { type: number, nullable: true }
+        stockUnit: { type: string, nullable: true }
+        stockExpires: { type: string, format: date, nullable: true }
+        dose: { type: string, nullable: true }
+        form: { type: string, nullable: true }
+        protocol: { type: string, nullable: true }
+        timing: { type: string, nullable: true }
+        caffeine: { type: boolean, nullable: true }
+    PantryItemResponse:
+      type: object
+      required: [id, kind, name]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [food, supplement, stim, med] }
+        name: { type: string }
+        brand: { type: string, nullable: true }
+        source: { type: string, nullable: true }
+        category: { type: string, nullable: true }

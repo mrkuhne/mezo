@@ -624,6 +624,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pantry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The owner's pantry, projected by kind into ingredients + stash */
+        get: operations["getPantry"];
+        put?: never;
+        /** Add a pantry item (food or supplement/stim/med) */
+        post: operations["createPantryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pantry/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updatePantryItem"];
+        post?: never;
+        delete: operations["deletePantryItem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1381,6 +1415,103 @@ export interface components {
             bodyFatPct?: number | null;
             /** @enum {string|null} */
             activityLevel?: "SEDENTARY" | "LIGHT" | "MODERATE" | "VERY" | "EXTRA" | null;
+        };
+        PantryResponse: {
+            ingredients: components["schemas"]["IngredientResponse"][];
+            stash: components["schemas"]["SupplementStashResponse"][];
+        };
+        PantryMacros: {
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+        };
+        PantryMicro: {
+            name: string;
+            pct: number;
+        };
+        PantryStock: {
+            qty: number;
+            unit: string;
+            expires?: string | null;
+            lowExpiry?: boolean | null;
+        };
+        IngredientResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            brand: string;
+            /** @enum {string} */
+            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual";
+            category: string;
+            per: number;
+            unit: string;
+            macros: components["schemas"]["PantryMacros"];
+            price: number;
+            priceUnit: string;
+            pkg: string;
+            micros: components["schemas"]["PantryMicro"][];
+            nova: number;
+            stock?: components["schemas"]["PantryStock"] | null;
+            lastUsed: string;
+            usedInRecipes: number;
+        };
+        SupplementStashResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            brand: string;
+            /** @enum {string} */
+            type: "supplement" | "stimulant" | "medication";
+            category: string;
+            dose: string;
+            form: string;
+            stock?: number | null;
+            stockUnit?: string | null;
+            protocol: string;
+            timing: string;
+            taken: boolean;
+            caffeine?: boolean | null;
+        };
+        PantryItemRequest: {
+            /** @enum {string} */
+            kind: "food" | "supplement" | "stim" | "med";
+            name: string;
+            brand?: string | null;
+            /** @enum {string|null} */
+            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | null;
+            category?: string | null;
+            notes?: string | null;
+            per?: number | null;
+            unit?: string | null;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            price?: number | null;
+            priceUnit?: string | null;
+            pkg?: string | null;
+            micros?: components["schemas"]["PantryMicro"][] | null;
+            nova?: number | null;
+            stockQty?: number | null;
+            stockUnit?: string | null;
+            /** Format: date */
+            stockExpires?: string | null;
+            dose?: string | null;
+            form?: string | null;
+            protocol?: string | null;
+            timing?: string | null;
+            caffeine?: boolean | null;
+        };
+        PantryItemResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "food" | "supplement" | "stim" | "med";
+            name: string;
+            brand?: string | null;
+            source?: string | null;
+            category?: string | null;
         };
     };
     responses: never;
@@ -3332,6 +3463,168 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getPantry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pantry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createPantryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PantryItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryItemResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updatePantryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PantryItemRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryItemResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deletePantryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
