@@ -7,9 +7,9 @@ tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts
   - frontend/src/data/trainHooks.ts
-  - frontend/src/data/runningHooks.ts
   - frontend/src/data/goalHooks.ts
   - frontend/src/data/biometricHooks.ts
+  - frontend/src/data/pantryHooks.ts
   - frontend/src/lib/mode.ts
   - frontend/src/lib/api.ts
   - frontend/src/app/providers/QueryProvider.tsx
@@ -48,7 +48,8 @@ Three API clients exist; only those three domains are wired to a real backend. E
 | `useBiometricActions` (`upsert`/`pending`) | Biometric profile write (`Profil` → Me) | ✅ **dual-mode write, real backend done** (goal-system G6 `mezo-06n`). Hook `data/biometricHooks.ts:51`, client `lib/biometricProfileApi.ts` (`upsert` → `PUT /api/biometrics/profile`). Real mode PUTs then invalidates **both `['biometricProfile']`** (card/gate re-read) **and `['goals']`** (the backend recomputes the active goal's `tdeeBootstrap`/`prescription` on profile change — the 5th recompute trigger). **Mock no-ops** (resolves `null` so the `BiometricSheet` editor `.then(close)`s). Returns the mutation promise. |
 | `useTrain` (mesocycles, workout-execution, sport, exercise catalog/records) | Train | ✅ **dual-mode, real backend done** (Slice B + T0–T3 + catalog/records). Hook `data/trainHooks.ts`, client `lib/trainApi.ts`. |
 | `useRunning` ("Futás") | Running | ✅ **dual-mode, real backend done** (R0–R4). Hook `data/runningHooks.ts`, client `lib/runningApi.ts`. |
-| `useToday`, `useProfile`, `useFuelPreview`, `useFuelDay`/`useFuelTimeline`/`useFuelWeek`, `usePantry`, `useRecipes`, `useStack`, `useProtocol`, `useReplanScenarios`, `useStackRecommendations`, `useInsights`, `useKnowledge`, `useChat`, `usePeople` (`logMention`) | Today, Me/Profile, **Fuel**, **Insights**, **People** | 🔶 **MOCK-ONLY.** Plain static returns or local `useState`; no API client, no `isMockMode` branch, no backend table. Slices C (Fuel) → D (Insights seed) → E (People) remain (`docs/milestones/roadmap.md`). |
+| `usePantry` (`{ ingredients, stash, sources, categoryMeta, imports, suggestions }`) + `usePantryActions` (`addItem`/`updateItem`/`deleteItem`) | Pantry / Kamra (**Fuel** slice C) | ✅ **dual-mode, real backend done** (Fuel slice C · Pantry `mezo-9xu`). Hooks `data/pantryHooks.ts` (re-exported from `hooks.ts`), client `lib/pantryApi.ts` (`GET/POST/PUT/DELETE /api/pantry`). `usePantry` keeps its exact pre-existing return shape: mock mode returns the static seed via `initialData` (`staleTime: Infinity` so mock-cache edits survive), real mode reads `ingredients`/`stash` from `pantryApi.list()` while `imports`/`suggestions` are `[]` (deferred) and `sources`/`categoryMeta` stay static config. `usePantryActions` mutates the `['pantry']` cache in mock mode, calls `pantryApi.create/update/remove` + invalidates in real mode (the `useWeight` dual-mode pattern). |
+| `useToday`, `useProfile`, `useFuelPreview`, `useFuelDay`/`useFuelTimeline`/`useFuelWeek`, `useRecipes`, `useStack`, `useProtocol`, `useReplanScenarios`, `useStackRecommendations`, `useInsights`, `useKnowledge`, `useChat`, `usePeople` (`logMention`) | Today, Me/Profile, **Fuel**, **Insights**, **People** | 🔶 **MOCK-ONLY.** Plain static returns or local `useState`; no API client, no `isMockMode` branch, no backend table. Remaining Fuel sub-slices (recipes/stack/protocol/week) → D (Insights seed) → E (People) remain (`docs/milestones/roadmap.md`). |
 | `useTodayScenario` | Today demo switch | 🔶 URL-param demo only (`?day=`/`retaDay=`/`niggle=`/`vulnerable=`), never backed. |
 
 🟣 Phase 3 (AI brain: Spring AI, pgvector, RAG) is later and out of scope here — anything labeled "Phase 3" in §9 is intentionally empty/null in real mode by design.

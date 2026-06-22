@@ -1,8 +1,16 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { FuelKamraView } from './FuelKamraView'
-const renderView = () => render(<MemoryRouter><FuelKamraView /></MemoryRouter>)
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// FuelKamraView reads usePantry (a dual-mode TanStack query since Task 7). Pin mock
+// mode for the static seed + wrap in a QueryClientProvider.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
+const renderView = () =>
+  render(<QueryWrapper><MemoryRouter><FuelKamraView /></MemoryRouter></QueryWrapper>)
 
 test('renders stats, type filters and grouped items', () => {
   renderView()

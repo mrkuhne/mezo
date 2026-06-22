@@ -1,28 +1,30 @@
 ---
 title: Fuel (Nutrition)
 type: feature-domain
-status: mock-only
-updated: 2026-06-18
+status: partial-backend
+updated: 2026-06-22
 tags: [fuel, frontend, data-layer]
 key_files:
   - frontend/src/features/fuel
   - frontend/src/data/fuel.ts
+  - frontend/src/data/pantryHooks.ts
+  - frontend/src/lib/pantryApi.ts
   - frontend/src/app/router.tsx
 related: [_platform-data-layer, _platform-design-system, train, today]
 ---
 
 # Fuel (Nutrition) — Feature Documentation
 
-> The `/fuel` tab — meal pacing, supplement stack/protocol, pantry (Kamra), recipes, and a weekly fuel rhythm. **Status: 🔶 mock-only** (Phase 1 FE done; Phase 2 backend **Slice C · Fuel not started**; AI scoring/replan/import is 🟣 Phase-3-planned, simulated client-side today).
+> The `/fuel` tab — meal pacing, supplement stack/protocol, pantry (Kamra), recipes, and a weekly fuel rhythm. **Status: 🔶 mostly mock** (Phase 1 FE done; Phase 2 backend **Slice C · Fuel — Pantry (Kamra) sub-slice now backend-backed**, the rest of Fuel still mock-only; AI scoring/replan/import is 🟣 Phase-3-planned, simulated client-side today). The Pantry inventory (`usePantry`/`usePantryActions`, mezo-9xu) is real dual-mode CRUD against `/api/pantry`; the scrape-feed (`imports`) and `suggestions` stay mock/deferred.
 
 ## 1. Summary
 
 Fuel is mezo's nutrition domain: five sub-views under the bottom-nav route `/fuel` covering today's meal/supplement **pacing** (`"Mai"`), the weekly **plan/rhythm** (`"Terv"`), an AI supplement-**protocol** builder (`"Stack"`), a **recipe** library (`"Receptek"`), and a **pantry/shelf** (`"Kamra"`). It exists to turn training + medication context (notably the **Retatrutide** appetite-cycle) into appetite-aware, time-boxed nutrition guidance.
 
 **Status per layer:**
-- **FE mock:** ✅ complete — all five views, all sheets, all nine hooks (`frontend/src/data/hooks.ts:164-198`) return static mock data synchronously.
-- **FE real:** ❌ none — there is no `isMockMode()` branch, no `fuelApi.ts` client, no TanStack `useQuery` for any Fuel hook (contrast `useWeight` at `weightHooks.ts:11`/`useSleep` at `hooks.ts:79`, which do branch).
-- **Backend:** ❌ none — `backend/.../feature/` has only `auth`, `biometrics`, `train`; `api/feature/` has no `fuel` fragment. The only nutrition references in backend/API are forward-looking comments (`ProvenanceEnvelope.java:10`: "Fuel reuses this pattern for meal score"; `api/openapi.yml` `mealToSleep` "always 0 until Fuel lands").
+- **FE mock:** ✅ complete — all five views, all sheets return static mock data synchronously; the Fuel hooks in `frontend/src/data/hooks.ts` are mock-only **except** the Pantry pair (`usePantry`/`usePantryActions` in `data/pantryHooks.ts`), which are dual-mode (mock returns the static seed synchronously via `initialData`).
+- **FE real:** 🔶 **Pantry only** — `usePantry`/`usePantryActions` branch on `isMockMode()` and hit `lib/pantryApi.ts` (`/api/pantry`) in real mode (the `useWeight` dual-mode pattern). The rest of Fuel still has no real path — no `fuelApi.ts`, no `useQuery` for the other Fuel hooks.
+- **Backend:** 🔶 **Pantry only** — `backend/.../feature/pantry` (single-table `pantry_item`, Model B, `kind` discriminator) + the `api/feature/fuel/pantry.yml` contract fragment (mezo-9xu) are live. The rest of Fuel backend is ❌ none; `train`/`biometrics`/`auth`/`pantry` are the only backend features. Other nutrition references remain forward-looking comments (`ProvenanceEnvelope.java:10`: "Fuel reuses this pattern for meal score"; `api/openapi.yml` `mealToSleep` "always 0 until Fuel lands").
 
 Driving design: **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`](../superpowers/specs/2026-06-10-phase2-backend-design.md)** (Slice C · Fuel: `food_item`/`meal`/`meal_item`/`recipe`/`supplement_intake`/`medication(_dose)`/`nutrition_targets` + a fuel-timeline **view**, wiring these same nine hooks). Fuel is sequenced **after** Train deliberately because Train de-risks the typed-jsonb provenance-envelope pattern (`@JdbcTypeCode(SqlTypes.JSON)`) that Fuel's meal `score` will reuse. Roadmap: **[`docs/milestones/roadmap.md`](../milestones/roadmap.md)**.
 
@@ -50,12 +52,13 @@ Driving design: **[`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`]
 
 ## 3. Architecture & data flow
 
-The single FE↔data boundary is `frontend/src/data/hooks.ts`. For Fuel the path **stops at mock data** — no API, no `isMockMode()`, no TanStack Query:
+The single FE↔data boundary is `frontend/src/data/hooks.ts`. For most of Fuel the path **stops at mock data** — no API, no `isMockMode()`, no TanStack Query. **Exception — Pantry (Kamra):** `usePantry`/`usePantryActions` moved to `frontend/src/data/pantryHooks.ts` (re-exported from `hooks.ts`) and are now dual-mode TanStack Query hooks (mezo-9xu). `usePantry` keeps its exact return shape `{ ingredients, stash, sources, categoryMeta, imports, suggestions }`: in **mock mode** it returns the static seed via `initialData` (synchronous first render; `staleTime: Infinity` so `usePantryActions` mock cache edits via `setQueryData` are not clobbered by a refetch); in **real mode** `ingredients`/`stash` come from `pantryApi.list()` (`GET /api/pantry`), while `imports`/`suggestions` are `[]` (deferred) and `sources`/`categoryMeta` stay static config. `usePantryActions` exposes `{ addItem, updateItem, deleteItem }` — mock mode mutates the `['pantry']` cache, real mode calls `pantryApi.create/update/remove` and invalidates (the `useWeight` dual-mode pattern). Any component reading `usePantry` (`FuelKamraView`, `KamraCard`, `RecipeCard`, `IngredientDetailSheet`, `NewRecipeSheet`, `RecipeDetailSheet`) now needs a `QueryClientProvider` in tests. The rest of Fuel:
 
 ```
 View (features/fuel/views/*.tsx)
-  → useFuelDay / useFuelTimeline / useStack / useProtocol / usePantry
-    / useRecipes / useFuelWeek / useReplanScenarios / useStackRecommendations   (hooks.ts:164-198)
+  → useFuelDay / useFuelTimeline / useStack / useProtocol
+    / useRecipes / useFuelWeek / useReplanScenarios / useStackRecommendations   (hooks.ts)
+      (usePantry/usePantryActions are the dual-mode exception — see prose above; data/pantryHooks.ts)
       → returns imported static consts:
           data/fuel.ts        (fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal)
           data/pantry.ts      (ingredients, recipes[derived], pantryCategoryMeta, pantryImports, pantrySuggestions)
@@ -101,7 +104,7 @@ Fuel is the most cross-coupled mock domain. Each seam below names the **contract
 - **Train (gym) ↔ Fuel (Fuel owns a private copy).** Fuel's weekly plan models gym sessions (`gymSchedule`, `data/fuelWeek.ts`) and pulls `volleyballSessions` (from `data/today.ts`). These are **Fuel's own copy** of the training schedule, NOT read from the Train domain's mesocycle data. `WeekRhythmGrid` overlays both and derives meal/caffeine/supplement timing from gym times (prose only). Crossing types: `GymScheduleDay`, `VolleyballSession`.
 - **Reta (medication) → cross-cutting.** `retaWeek`/`retaDay` is a Fuel-owned concept (the 7-day Retatrutide kinetic cycle: D1-2 Peak → D3-5 Stable → D6-7 Trough) but is surfaced on Today and across all Fuel sub-views. `retaDay` arrives via `useTodayScenario`.
 - **Replan cascade → Sleep / Insights / Train (Fuel exposes the ripple model).** `ReplanScenario.cascades[].system` is typed `'Fuel'|'Train'|'Sleep'|'Insights'` (`types.ts:304`); `ReplanSheet` color-codes per system. This is the explicit "context change ripples across domains" model — all simulated prose in `data/fuelWeek.ts`.
-- **Supplements ↔ Pantry (internal seam).** `supplementsStash` (`data/fuel.ts`) feeds `useStack`/`useProtocol` AND `usePantry` (`hooks.ts:181`); the Kamra merges the stash into pantry items, de-duping via `Ingredient.stashRefId` (`kamraItems.ts:17-18`).
+- **Supplements ↔ Pantry (internal seam).** `supplementsStash` (`data/fuel.ts`) feeds `useStack`/`useProtocol` AND `usePantry` (the mock-mode `stash`, now via `data/pantryHooks.ts`); the Kamra merges the stash into pantry items, de-duping via `Ingredient.stashRefId` (`kamraItems.ts:17-18`). In real mode the `stash` comes from `pantryApi.list()` instead.
 - **Recipes ↔ FuelDay (internal seam).** `data/pantry.ts` imports `fuelDay` to derive recipe `recentLogs` from logged meals — so scoring a meal and viewing a recipe's log history share one source (`pantry.ts:548-573`).
 - **Shared design primitives.** Fuel reuses `frontend/src/components/ui/` heavily: `Sheet`, `StatCell`, `ProgressBar`, `Eyebrow`, `PageTitle`, `Chip`, `Icon`, `ScoreRing`, `RetaPhaseBar`, `ToolChipRow`, `SourceBadge`, `NovaDot`, `MacroRow`, `SafeMarkdown`, `Toggle` — all "Deep Current v2" tokens from `frontend/src/styles/prototype.css`.
 

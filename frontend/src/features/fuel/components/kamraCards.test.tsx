@@ -1,8 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { KamraCard } from './KamraCard'
 import { SuggestionCard } from './SuggestionCard'
+import { QueryWrapper } from '@/test/queryWrapper'
 import type { PantryItem } from '@/data/types'
+
+// KamraCard reads usePantry (categoryMeta) — a dual-mode TanStack query since Task 7.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 const foodItem: PantryItem = {
   id: 'ing-x', name: 'Görög joghurt', brand: 'Mizo', source: 'kifli.hu',
@@ -13,7 +19,7 @@ const foodItem: PantryItem = {
 
 test('food card shows macros + stock; click opens', async () => {
   const onOpen = vi.fn()
-  render(<KamraCard item={foodItem} onOpen={onOpen} />)
+  render(<KamraCard item={foodItem} onOpen={onOpen} />, { wrapper: QueryWrapper })
   expect(screen.getByText('Görög joghurt')).toBeInTheDocument()
   expect(screen.getByText(/400g polcon/)).toBeInTheDocument()
   await userEvent.click(screen.getByText('Görög joghurt'))

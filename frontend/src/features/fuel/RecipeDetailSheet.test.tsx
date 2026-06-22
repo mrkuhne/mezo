@@ -1,13 +1,19 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { RecipeDetailSheet } from './RecipeDetailSheet'
 import { useRecipes } from '@/data/hooks'
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// RecipeDetailSheet's ingredient tab reads usePantry — a dual-mode TanStack query since Task 7.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 function setup() {
   const { result } = renderHook(() => useRecipes())
   const recipe = result.current.recipes.find(r => r.templateBreakdown)!
-  render(<RecipeDetailSheet recipe={recipe} onClose={() => {}} />)
+  render(<RecipeDetailSheet recipe={recipe} onClose={() => {}} />, { wrapper: QueryWrapper })
   return recipe
 }
 

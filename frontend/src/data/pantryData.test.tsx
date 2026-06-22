@@ -1,10 +1,18 @@
 import { renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { usePantry, useRecipes } from './hooks'
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// usePantry became a dual-mode TanStack query (Task 7, mezo-9xu). Pin mock mode so
+// it returns the static Phase-1 seed synchronously (initialData) and wrap the hook
+// in QueryWrapper so useQuery has a client.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 // NOTE: prototype pantry-data.js:20–157 actually has 18 ingredients (not 17 as the
 // task text stated). Counts reflect the real data per the task's "fix to true counts" rule.
 test('usePantry returns 18 ingredients, 4 imports, 3 suggestions, sources', () => {
-  const { result } = renderHook(() => usePantry())
+  const { result } = renderHook(() => usePantry(), { wrapper: QueryWrapper })
   expect(result.current.ingredients).toHaveLength(18)
   expect(result.current.imports).toHaveLength(4)
   expect(result.current.suggestions).toHaveLength(3)
