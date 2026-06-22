@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/Icon'
 import { GhostState } from '@/components/ui/GhostState'
 import { ToolChipRow } from '@/components/ui/ToolChipRow'
 import type { Tool } from '@/components/ui/ToolChip'
-import { useGoal, useGoalActions, useWeight } from '@/data/hooks'
+import { useGoal, useGoalActions, useWeight, useBiometricProfile } from '@/data/hooks'
 import type { GoalResponse } from '@/lib/goalApi'
 import { huMonthDay } from '@/lib/dates'
 import { FactorCard } from '../components/FactorCard'
@@ -17,6 +17,7 @@ import { GoalTimeline } from '../components/GoalTimeline'
 import { GoalRecept } from '../components/GoalRecept'
 import { GoalPlanSlots } from '../components/GoalPlanSlots'
 import { EditGoalSheet } from '../EditGoalSheet'
+import { GoalGate } from '../GoalGate'
 // LinkedMesoCard was the per-row card the GoalTimeline lane view replaced in G4b.
 
 // Contract-native trajectory + guard labels — the hero reads these straight off
@@ -44,7 +45,19 @@ export function GoalsView() {
   const { goal, goalResponse, timeline, goalId } = useGoal()
   const { detachPlan, evaluate, evaluating } = useGoalActions()
   const { weightTrends } = useWeight()
+  const { isComplete: biometricComplete } = useBiometricProfile()
   const [sheet, setSheet] = useState<'goal' | null>(null)
+  const [gateOpen, setGateOpen] = useState(false)
+
+  // "Új cél" hard gate (G6, mezo-06n — Task 7): goal creation requires a
+  // complete biometric profile (the engine derives the calorie target from it).
+  // Complete → straight to the wizard; incomplete → the gate interstitial that
+  // sets up the profile first, then continues. Shared by both entry points (the
+  // empty-state CTA + the header chip) so the rule lives in one place.
+  const startNewGoal = () => {
+    if (biometricComplete) navigate('/me/goals/new')
+    else setGateOpen(true)
+  }
 
   // Real mode with no active goal: empty "set up a goal" state (mezo-72d). Must
   // come BEFORE any goal.X / goalResponse.X read below, and stays null-safe for
@@ -64,9 +77,12 @@ export function GoalsView() {
             lines={3}
             message="Még nincs aktív célod — hozz létre egyet, és a Mezo köré szervezi a terveket."
             ctaLabel="＋ Új cél"
-            onCta={() => navigate('/me/goals/new')}
+            onCta={startNewGoal}
           />
         </div>
+        {gateOpen && (
+          <GoalGate onClose={() => setGateOpen(false)} onComplete={() => navigate('/me/goals/new')} />
+        )}
       </>
     )
   }
@@ -88,7 +104,7 @@ export function GoalsView() {
           <Eyebrow brand>Me · Goals</Eyebrow>
           <PageTitle className="mt-sm">Hosszú cél</PageTitle>
         </div>
-        <button type="button" className="chip" onClick={() => navigate('/me/goals/new')}>
+        <button type="button" className="chip" onClick={startNewGoal}>
           <Icon name="plus" size={12} /> Új cél
         </button>
       </div>
@@ -315,6 +331,10 @@ export function GoalsView() {
 
       {sheet === 'goal' && goalId && (
         <EditGoalSheet onClose={() => setSheet(null)} goal={goal} goalId={goalId} />
+      )}
+
+      {gateOpen && (
+        <GoalGate onClose={() => setGateOpen(false)} onComplete={() => navigate('/me/goals/new')} />
       )}
     </>
   )

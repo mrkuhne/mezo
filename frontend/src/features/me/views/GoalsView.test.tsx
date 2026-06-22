@@ -9,6 +9,15 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
+// The `+ Új cél` entries route via useNavigate; mock it so we can assert the
+// hard-gate decision (navigate to the wizard vs. open the gate interstitial)
+// without a full route tree.
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 // GoalsView's `+ Új cél` entry uses useNavigate, so it needs router context.
 function Wrapper({ children }: { children: ReactNode }) {
   return (
@@ -16,6 +25,16 @@ function Wrapper({ children }: { children: ReactNode }) {
       <MemoryRouter>{children}</MemoryRouter>
     </QueryWrapper>
   )
+}
+
+// A complete biometric profile (the gate's pass condition).
+const COMPLETE_PROFILE = {
+  sex: 'M',
+  heightCm: 180,
+  birthDate: '1991-03-01',
+  bodyFatPct: 15,
+  activityLevel: 'MODERATE',
+  tdeeBootstrap: null,
 }
 
 // A real-mode active goal + a timeline with a gym link, a run link and a gap —
@@ -219,5 +238,104 @@ describe('real mode (no goal)', () => {
     expect(screen.getByRole('button', { name: /Új cél/ })).toBeInTheDocument()
     // the mock placeholder hero must NOT appear
     expect(screen.queryByText('Fogyás · Nyári forma')).not.toBeInTheDocument()
+  })
+})
+
+// Task 7: the "Új cél" hard gate — goal creation requires a complete biometric
+// profile. Both entry points (empty-state CTA + header chip) route through the
+// gate: complete → straight to the wizard; incomplete → the gate interstitial
+// that opens the BiometricSheet, then continues to the wizard once complete.
+describe('Új cél hard gate (incomplete biometric profile)', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    mockNavigate.mockClear()
+  })
+  afterEach(() => vi.unstubAllEnvs())
+
+  function noProfile() {
+    // 404 = no biometric profile yet → isComplete = false.
+    server.use(
+      http.get(`${API_BASE}/api/biometrics/profile`, () => new HttpResponse(null, { status: 404 })),
+    )
+  }
+
+  test('empty-state CTA with no profile shows the gate, NOT the wizard', async () => {
+    noProfile()
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+    )
+    render(<GoalsView />, { wrapper: Wrapper })
+    await userEvent.click(await screen.findByRole('button', { name: /Új cél/ }))
+    expect(await screen.findByText(/Előbb: a/)).toBeInTheDocument()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  test('header chip with no profile shows the gate with missing-field chips', async () => {
+    noProfile()
+    useGoalHandlers()
+    render(<GoalsView />, { wrapper: Wrapper })
+    // Let the active-goal hero (and its header chip) render first.
+    await screen.findByText('Nyári cut')
+    await userEvent.click(screen.getByRole('button', { name: /Új cél/ }))
+    expect(await screen.findByText(/Előbb: a/)).toBeInTheDocument()
+    // all three required fields are missing → three warning chips.
+    expect(screen.getByText('⚠ hiányzik: nem')).toBeInTheDocument()
+    expect(screen.getByText('magasság', { selector: 'span.chip' })).toBeInTheDocument()
+    expect(screen.getByText('szül.dátum', { selector: 'span.chip' })).toBeInTheDocument()
+    expect(mockNavigate).not.toHaveBeenCalled()
+  })
+
+  test('the gate CTA opens the BiometricSheet; saving a complete profile continues to the wizard', async () => {
+    // Stateful profile: 404 until the PUT lands, then a complete profile.
+    let filled = false
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/profile`, () =>
+        filled ? HttpResponse.json(COMPLETE_PROFILE) : new HttpResponse(null, { status: 404 }),
+      ),
+      http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
+        filled = true
+        const body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ ...body, tdeeBootstrap: null })
+      }),
+    )
+    render(<GoalsView />, { wrapper: Wrapper })
+    await userEvent.click(await screen.findByRole('button', { name: /Új cél/ }))
+    // gate interstitial → CTA opens the editor sheet.
+    await userEvent.click(await screen.findByRole('button', { name: /Biometria beállítása/ }))
+    expect(await screen.findByText('A motor ebből számol')).toBeInTheDocument()
+    // save the (default-complete) profile → now complete → continue to the wizard.
+    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/new'))
+  })
+})
+
+describe('Új cél hard gate (complete biometric profile)', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('real mode: tapping Új cél navigates straight to the wizard, no gate', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    mockNavigate.mockClear()
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/profile`, () => HttpResponse.json(COMPLETE_PROFILE)),
+    )
+    render(<GoalsView />, { wrapper: Wrapper })
+    await userEvent.click(await screen.findByRole('button', { name: /Új cél/ }))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/new'))
+    expect(screen.queryByText(/Előbb: a/)).not.toBeInTheDocument()
+  })
+
+  test('mock mode: tapping Új cél navigates straight to the wizard (static complete profile)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    mockNavigate.mockClear()
+    render(<GoalsView />, { wrapper: Wrapper })
+    // header chip (mock mode renders the active-goal hero with the chip).
+    await userEvent.click(screen.getByRole('button', { name: /Új cél/ }))
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/new'))
+    expect(screen.queryByText(/Előbb: a/)).not.toBeInTheDocument()
   })
 })
