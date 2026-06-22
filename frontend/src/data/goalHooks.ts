@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { goalApi, type GoalResponse, type GoalUpsertRequest } from '@/lib/goalApi'
 import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } from '@/lib/goalLinkApi'
-import { biometricProfileApi, type BiometricProfileUpsertRequest } from '@/lib/biometricProfileApi'
 import { isMockMode } from '@/lib/mode'
 import { huMonthDay } from '@/lib/dates'
 import { goal as mockGoal, goalResponse as mockGoalResponse, linkedMesocycles as mockLinkedMesocycles, goalTimeline as mockTimeline } from './goals'
@@ -174,13 +173,13 @@ export function useGoalActions() {
   return { archive, remove, activate, attachPlan, detachPlan, evaluate, pending, evaluating: evaluateM.isPending }
 }
 
-// Goal-creation wizard (slice G4a) save chain. Real mode runs the writes in
-// order: upsert the biometric profile, create the goal, optionally activate it,
-// then invalidate ['goals']. Mock mode no-ops and resolves with null so the
-// wizard's onSuccess(null) still fires and it navigates back (Phase-1 parity
-// with MesocyclePlanner).
+// Goal-creation wizard save chain. Real mode creates the goal, optionally
+// activates it, then invalidates ['goals']. Biometrics are no longer part of
+// creation — they live on the Profile and are a precondition (the hard gate),
+// not a wizard payload (G6, mezo-06n). Mock mode no-ops and resolves with null
+// so the wizard's onSuccess(null) still fires and it navigates back (Phase-1
+// parity with MesocyclePlanner).
 export type GoalCreationInput = {
-  profile: BiometricProfileUpsertRequest
   goal: GoalUpsertRequest
   activate: boolean
 }
@@ -191,7 +190,6 @@ export function useGoalCreation() {
   const mutation = useMutation({
     mutationFn: async (input: GoalCreationInput): Promise<GoalResponse | null> => {
       if (mock) return null // Phase-1 no-op; the wizard just navigates back
-      await biometricProfileApi.upsert(input.profile)
       const created = await goalApi.create(input.goal)
       if (input.activate) await goalApi.activate(created.id)
       return created

@@ -24,18 +24,63 @@ test('GoalPlanner step 0 picks a trajectory and a guard', () => {
   expect(screen.getByRole('button', { name: /tovább/i })).toBeEnabled()
 })
 
-test('GoalPlanner real-mode save posts profile+goal and activates in order', async () => {
+test('GoalPlanner is a 2-step wizard (no third step) ending on the cél step', () => {
+  render(
+    <QueryWrapper>
+      <MemoryRouter>
+        <GoalPlanner />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  // The step indicator reads "01 / 02" — STEP_COUNT is 2, not 3.
+  expect(screen.getByText('01 / 02')).toBeInTheDocument()
+  // Exactly 2 step-progress segments are rendered.
+  expect(screen.getAllByRole('button', { name: /\d+\. lépés/ })).toHaveLength(2)
+  // Advance to the (final) cél step.
+  fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
+  fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
+  expect(screen.getByText('02 / 02')).toBeInTheDocument()
+  // The final step is the save step — no "Tovább", the create CTAs instead.
+  expect(screen.queryByRole('button', { name: /tovább/i })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /létrehozása \+ aktiválás/i })).toBeInTheDocument()
+})
+
+test('GoalPlanner has no manual rate input and no biometric fields', () => {
+  render(
+    <QueryWrapper>
+      <MemoryRouter>
+        <GoalPlanner />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  // Advance to the cél step where the rate input used to live.
+  fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
+  fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
+  // The cél step keeps title + dates + weights, but NO manual weekly-rate input.
+  expect(screen.getByLabelText('Cél neve')).toBeInTheDocument()
+  expect(screen.getByLabelText('Cél dátum')).toBeInTheDocument()
+  expect(screen.queryByLabelText('Heti tempó')).not.toBeInTheDocument()
+  // No biometric fields anywhere (moved to the Profile in G6).
+  expect(screen.queryByLabelText('Testmagasság')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Születési dátum')).not.toBeInTheDocument()
+  expect(screen.queryByLabelText('Testzsír')).not.toBeInTheDocument()
+  expect(screen.queryByText('Aktivitási szint')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /^férfi$/i })).not.toBeInTheDocument()
+})
+
+test('GoalPlanner real-mode save posts the goal (no profile PUT) and activates', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
-  let profileBody: { activityLevel?: string } | null = null
+  let goalBody: Record<string, unknown> | null = null
   server.use(
-    http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
+    // The biometric profile PUT must NOT fire during creation (G6, mezo-06n).
+    http.put(`${API_BASE}/api/biometrics/profile`, () => {
       calls.push('profile')
-      profileBody = (await request.json()) as { activityLevel?: string }
       return HttpResponse.json({ sex: 'M', heightCm: 180, birthDate: '1991-03-01' })
     }),
-    http.post(`${API_BASE}/api/goals`, () => {
+    http.post(`${API_BASE}/api/goals`, async ({ request }) => {
       calls.push('goal')
+      goalBody = (await request.json()) as Record<string, unknown>
       return HttpResponse.json({ id: 'g1', status: 'planned' })
     }),
     http.post(`${API_BASE}/api/goals/g1/activate`, () => {
@@ -50,21 +95,18 @@ test('GoalPlanner real-mode save posts profile+goal and activates in order', asy
       </MemoryRouter>
     </QueryWrapper>,
   )
-  // Step 0 -> 1: pick a trajectory, advance
+  // Step 0 -> 1 (cél): pick a trajectory, advance.
   fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
   fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
-  // Step 1 -> 2: the default target date (start + 56 days) already satisfies
-  // canNext, so just a title is needed
+  // The default target date (start + 56 days) already satisfies canNext; just a title.
   fireEvent.change(screen.getByLabelText('Cél neve'), { target: { value: 'Nyári cut' } })
-  fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
-  // Step 2: the activity-level picker renders (default MODERATE); pick VERY so the
-  // upsert carries a non-default value.
-  expect(screen.getByText('Aktivitási szint')).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /nagyon aktív/i }))
-  // create + activate
+  // create + activate — this is the final/save step (no third step).
   fireEvent.click(screen.getByRole('button', { name: /létrehozása \+ aktiválás/i }))
-  await waitFor(() => expect(calls).toEqual(['profile', 'goal', 'activate']))
-  expect(profileBody).not.toBeNull()
-  expect(profileBody!.activityLevel).toBe('VERY')
+  await waitFor(() => expect(calls).toEqual(['goal', 'activate']))
+  // The goal body carries NO rateTargetPctPerWeek (backend derives it) and NO profile.
+  expect(goalBody).not.toBeNull()
+  expect(goalBody!).not.toHaveProperty('rateTargetPctPerWeek')
+  expect(goalBody!).not.toHaveProperty('profile')
+  expect(goalBody!.title).toBe('Nyári cut')
   vi.unstubAllEnvs()
 })
