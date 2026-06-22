@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mezo · UX Design Directions v2 · Step-9 Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+
+  :root {
+    /* === Brand: Deep Current (renamed from Clinical Teal, Mary R9, Daniel-confirmed) === */
+    --brand-deep:    #064E5B;
+    --brand-core:    #0E7C7B;
+    --brand-primary: #14B8A6;
+    --brand-glow:    #5EEAD4;
+    --brand-tint:    #CCFBF1;
+
+    /* === Companion-mode surface (cold default) === */
+    --canvas:        #0A0F14;
+    --surface-1:     #121A22;
+    --surface-2:     #1A242E;
+    --surface-glass: rgba(255,255,255,0.04);
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-strong: rgba(255,255,255,0.12);
+
+    /* === Warm-derivative surface (Sally R9 dual-mode, Memoir / Anniversary / AnchorMode) === */
+    --canvas-warm:    #1A1410;
+    --surface-1-warm: #241C18;
+    --accent-warm:    #D97757;
+    --warm-deep:      #4A2A1C;
+
+    /* === Text === */
+    --text-primary:   #ECECF1;
+    --text-secondary: #9CA3AF;
+    --text-tertiary:  #6B7280;
+    --text-inverse:   #0A0F14;
+
+    /* === Semantic === */
+    --success: #34D399;
+    --warning: #F59E0B;
+    --error:   #F43F5E;
+
+    /* === Fonts === */
+    --ff-display: "Antonio", "Bebas Neue", sans-serif;
+    --ff-body:    "Inter", -apple-system, system-ui, sans-serif;
+    --ff-mono:    "JetBrains Mono", ui-monospace, monospace;
+
+    /* === Motion === */
+    --ease:     cubic-bezier(0.2, 0, 0, 1);
+    --dur-slow: 360ms;
+  }
+
+  html, body {
+    background: #050709;
+    color: var(--text-primary);
+    font-family: var(--ff-body);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 48px 32px 96px;
+  }
+
+  /* === Page header === */
+  .doc-header {
+    max-width: 1200px;
+    margin: 0 auto 48px;
+  }
+  .doc-eyebrow {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--brand-glow);
+    margin-bottom: 14px;
+  }
+  .doc-title {
+    font-family: var(--ff-display);
+    font-size: 48px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.0;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    margin-bottom: 18px;
+  }
+  .doc-title .accent { color: var(--brand-glow); }
+  .doc-sub {
+    font-family: var(--ff-body);
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 720px;
+    margin-bottom: 18px;
+  }
+  .doc-meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .doc-meta-item {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.06em;
+  }
+  .doc-meta-item .v {
+    color: var(--brand-glow);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* === Direction sections === */
+  .direction {
+    max-width: 1200px;
+    margin: 0 auto 72px;
+    display: grid;
+    grid-template-columns: 440px 1fr;
+    gap: 48px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .direction { grid-template-columns: 1fr; }
+  }
+
+  .direction-meta {
+    padding-top: 24px;
+  }
+  .direction-num {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--brand-glow);
+    margin-bottom: 8px;
+  }
+  .direction-title {
+    font-family: var(--ff-display);
+    font-size: 28px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+  }
+  .direction-chosen {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(20,184,166,0.16);
+    color: var(--brand-glow);
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    margin-bottom: 16px;
+  }
+  .direction-body {
+    font-family: var(--ff-body);
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  .direction-body strong { color: var(--text-primary); font-weight: 500; }
+  .direction-body code {
+    font-family: var(--ff-mono);
+    font-size: 12px;
+    background: var(--surface-1);
+    padding: 1px 6px;
+    color: var(--brand-glow);
+  }
+  .direction-rationale {
+    padding: 14px 16px;
+    background: var(--surface-1);
+    border-left: 2px solid var(--brand-primary);
+    font-family: var(--ff-body);
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .direction-rationale .lbl {
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--brand-glow);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  /* === iPhone chassis === */
+  .iphone {
+    width: 440px;
+    height: 956px;
+    border-radius: 62px;
+    background: linear-gradient(180deg, #1A1A1F 0%, #0E0E12 100%);
+    padding: 12px;
+    position: relative;
+    box-shadow:
+      0 0 0 1.5px #3A3A42 inset,
+      0 0 0 4px rgba(255,255,255,0.02) inset,
+      0 60px 140px -30px rgba(0,0,0,0.8),
+      0 20px 60px -10px rgba(20,184,166,0.08);
+  }
+  .iphone::after {
+    content: "";
+    position: absolute;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 124px;
+    height: 36px;
+    background: #000;
+    border-radius: 20px;
+    z-index: 30;
+  }
+  .iphone-screen {
+    width: 100%;
+    height: 100%;
+    border-radius: 52px;
+    overflow: hidden;
+    position: relative;
+    background:
+      radial-gradient(60% 50% at 50% 0%, rgba(20,184,166,0.06), transparent 70%),
+      var(--canvas);
+  }
+  /* Warm-mode iPhone screen variant */
+  .iphone-screen.warm {
+    background:
+      radial-gradient(60% 60% at 50% 0%, rgba(217,119,87,0.10), transparent 70%),
+      var(--canvas-warm);
+  }
+  .home-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 134px;
+    height: 5px;
+    background: rgba(232,234,240,0.4);
+    border-radius: 3px;
+    z-index: 40;
+  }
+
+  /* === Status bar === */
+  .status {
+    height: 54px;
+    padding: 18px 32px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    font-family: var(--ff-mono);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    position: relative;
+    z-index: 20;
+  }
+  .status-right { display: flex; gap: 6px; align-items: center; }
+
+  /* === Content layout === */
+  .content {
+    height: calc(100% - 54px - 90px);
+    overflow-y: auto;
+    padding: 8px 20px 24px;
+  }
+  .content::-webkit-scrollbar { display: none; }
+
+  /* === Common: wordmark + actions === */
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 4px 16px;
+  }
+  .wordmark {
+    font-family: var(--ff-display);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .wordmark .glyph { width: 18px; height: 18px; color: var(--brand-glow); }
+  .top-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    color: var(--text-secondary);
+  }
+
+  /* === Notched chamfer tag === */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-family: var(--ff-body);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .tag.brand { background: rgba(20,184,166,0.16); color: var(--brand-glow); }
+  .tag.muted { background: rgba(255,255,255,0.05); color: var(--text-secondary); }
+  .tag.success { background: rgba(52,211,153,0.14); color: var(--success); }
+  .tag.warning { background: rgba(245,158,11,0.12); color: var(--warning); }
+  .tag.warm { background: rgba(217,119,87,0.18); color: var(--accent-warm); }
+  .tag .dot { width: 5px; height: 5px; background: currentColor; }
+
+  /* === Bottom tab bar === */
+  .tabbar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 90px;
+    background: rgba(10,15,20,0.85);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border-top: 1px solid var(--border-subtle);
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    padding: 10px 16px 30px;
+    z-index: 10;
+  }
+  .tabbar.warm {
+    background: rgba(26,20,16,0.88);
+    border-top-color: rgba(217,119,87,0.10);
+  }
+  .tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    color: var(--text-tertiary);
+  }
+  .tab.active { color: var(--brand-glow); }
+  .tab.active.warm-active { color: var(--accent-warm); }
+  .tab svg { width: 24px; height: 24px; }
+  .tab-label {
+    font-family: var(--ff-body);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* === Direction 1 (Today) — HERO briefing card with subtle warm accent === */
+  .date-eyebrow {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    padding: 0 4px 12px;
+  }
+  .date-eyebrow .accent { color: var(--brand-glow); }
+  .meso-state {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 0 4px 24px;
+  }
+
+  /* HERO briefing card — Subtle warm-on-narrative-hero (Direction 2 chosen) */
+  .hero {
+    background:
+      linear-gradient(135deg, rgba(20,184,166,0.04), transparent 80%),
+      var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    padding: 24px 24px 20px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 24px; bottom: 24px;
+    width: 3px;
+    background: var(--brand-primary);
+    border-radius: 0 2px 2px 0;
+  }
+  /* Sunday-memoir / Anniversary briefing — subtle warm accent variant */
+  .hero.narrative-warm::before {
+    background: var(--accent-warm);
+    opacity: 0.65;
+  }
+  .hero.narrative-warm {
+    background:
+      linear-gradient(135deg, rgba(217,119,87,0.05), transparent 80%),
+      var(--surface-1);
+    border-color: rgba(217,119,87,0.10);
+  }
+
+  .hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .hero-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--brand-glow);
+  }
+  .hero.narrative-warm .hero-eyebrow { color: var(--accent-warm); }
+  .hero-badge {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    background: rgba(20,184,166,0.16);
+    color: var(--brand-glow);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+  .hero.narrative-warm .hero-badge {
+    background: rgba(217,119,87,0.16);
+    color: var(--accent-warm);
+  }
+  .hero-time {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.1em;
+  }
+
+  /* HERO DISPLAY title — Title-Case per Paige R9 narrative-chrome boundary */
+  .hero-display {
+    font-family: var(--ff-display);
+    font-size: 38px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.1;        /* ← Paige R9 line-height 1.0 → 1.1 */
+    text-transform: none;    /* ← Paige R9 narrative-chrome boundary: Title-Case for narrative hero */
+    color: var(--text-primary);
+    margin-bottom: 14px;
+  }
+  .hero-display .accent { color: var(--brand-glow); }
+  .hero.narrative-warm .hero-display .accent { color: var(--accent-warm); }
+
+  .hero-body {
+    font-family: var(--ff-body);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+    max-width: 38ch;
+  }
+  .hero-body .em { color: var(--text-primary); font-weight: 500; }
+
+  /* Citation chips inline */
+  .citation-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 6px;
+    background: rgba(94,234,212,0.08);
+    color: var(--brand-glow);
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    letter-spacing: -0.01em;
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+    margin-left: 4px;
+    vertical-align: baseline;
+  }
+  .hero.narrative-warm .citation-chip {
+    background: rgba(217,119,87,0.10);
+    color: var(--accent-warm);
+  }
+
+  .hero-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .hero-confidence {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+  }
+  .hero-confidence .bar {
+    width: 48px; height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+  .hero-confidence .bar::after {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 92%;
+    background: linear-gradient(90deg, var(--brand-primary), var(--brand-glow));
+  }
+  .hero.narrative-warm .hero-confidence .bar::after {
+    background: linear-gradient(90deg, var(--warm-deep), var(--accent-warm));
+  }
+  .hero-confidence .value { color: var(--brand-glow); font-weight: 600; }
+  .hero.narrative-warm .hero-confidence .value { color: var(--accent-warm); }
+  .hero-expand {
+    font-family: var(--ff-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 4px 14px;
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border-subtle), transparent);
+  }
+
+  /* Check-in strip + heartbeat */
+  .checkin-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+  }
+  .checkin-slot {
+    padding: 10px 8px;
+    text-align: center;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--border-subtle);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    position: relative;
+  }
+  .checkin-slot.done {
+    background: rgba(52,211,153,0.08);
+    border-color: rgba(52,211,153,0.2);
+  }
+  .checkin-slot.active {
+    background: rgba(20,184,166,0.12);
+    border-color: rgba(20,184,166,0.3);
+  }
+  .checkin-time {
+    font-family: var(--ff-mono);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+  .checkin-slot.done .checkin-time { color: var(--success); }
+  .checkin-slot.active .checkin-time { color: var(--brand-glow); }
+  .checkin-label {
+    font-family: var(--ff-body);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+
+  /* Workout teaser */
+  .workout-teaser {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .workout-teaser .icon-box {
+    width: 44px; height: 44px;
+    display: grid; place-items: center;
+    background: rgba(20,184,166,0.12);
+    color: var(--brand-glow);
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+    flex-shrink: 0;
+  }
+  .workout-teaser .info { flex: 1; min-width: 0; }
+  .workout-teaser .label {
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin-bottom: 2px;
+  }
+  .workout-teaser .title {
+    font-family: var(--ff-display);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+  .workout-teaser .meta {
+    font-family: var(--ff-body);
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+  .workout-teaser .chevron { color: var(--text-tertiary); }
+
+  /* Niggle-aware ribbon */
+  .niggle-ribbon {
+    padding: 8px 14px;
+    background: rgba(245,158,11,0.08);
+    border-left: 2px solid var(--warning);
+    margin-bottom: 14px;
+    font-family: var(--ff-body);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+  }
+  .niggle-ribbon .em { color: var(--warning); font-weight: 600; }
+
+  /* Primary CTA */
+  .cta-primary {
+    width: 100%;
+    padding: 18px 24px;
+    background: var(--brand-primary);
+    color: #04161A;
+    font-family: var(--ff-display);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 12px 32px -8px rgba(20,184,166,0.6);
+  }
+
+  /* QuickInputSheet FAB */
+  .fab {
+    position: absolute;
+    bottom: 110px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: var(--brand-primary);
+    color: #04161A;
+    display: grid;
+    place-items: center;
+    clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+    box-shadow: 0 12px 32px -8px rgba(20,184,166,0.7);
+    z-index: 9;
+  }
+
+  /* === Direction 1 (Train Heti Brief) === */
+  .train-nav {
+    padding: 8px 4px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .train-nav-title {
+    font-family: var(--ff-display);
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    flex: 1;
+  }
+  .train-eyebrow {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--brand-glow);
+    margin-bottom: 6px;
+  }
+
+  /* Weekly Plan narrative card (Heti Brief direction) */
+  .week-narrative {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--brand-primary);
+    border-radius: 0 18px 18px 0;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .week-narrative .week-title {
+    font-family: var(--ff-display);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.15;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+  }
+  .week-narrative .week-body {
+    font-family: var(--ff-body);
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+  .week-narrative .week-body .em { color: var(--text-primary); font-weight: 500; }
+
+  /* Day row in vertical list */
+  .day-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 4px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .day-row:first-of-type { border-top: none; }
+  .day-row .day-label {
+    width: 44px;
+    flex-shrink: 0;
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    text-align: center;
+  }
+  .day-row.today .day-label { color: var(--brand-glow); }
+  .day-row .day-content {
+    flex: 1;
+    min-width: 0;
+  }
+  .day-row .day-name {
+    font-family: var(--ff-display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .day-row .day-meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .day-row .day-icon-set {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .day-row .day-icon-set .ico {
+    width: 24px; height: 24px;
+    background: rgba(255,255,255,0.05);
+    color: var(--text-secondary);
+    display: grid; place-items: center;
+    border-radius: 5px;
+  }
+  .day-row.today .day-icon-set .ico {
+    background: rgba(20,184,166,0.14);
+    color: var(--brand-glow);
+  }
+
+  /* Approve CTA */
+  .approve-week {
+    width: 100%;
+    padding: 16px 20px;
+    margin-top: 18px;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+    font-family: var(--ff-display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    border: none;
+    cursor: pointer;
+    clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px);
+    box-shadow: 0 12px 32px -8px rgba(20,184,166,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .swap-hint {
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    text-align: center;
+    color: var(--text-tertiary);
+    letter-spacing: 0.08em;
+    margin-top: 10px;
+  }
+  .swap-hint .em { color: var(--brand-glow); }
+
+  /* === Direction 5 (PR overlay-card) === */
+  .pr-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 7, 9, 0.65);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .pr-overlay-card {
+    width: 100%;
+    background:
+      linear-gradient(135deg, rgba(20,184,166,0.10), transparent 70%),
+      var(--surface-1);
+    border: 1px solid rgba(20,184,166,0.30);
+    border-radius: 24px;
+    padding: 28px 24px 24px;
+    clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px);
+    box-shadow: 0 24px 60px -8px rgba(20,184,166,0.30);
+  }
+  .pr-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--brand-glow);
+    margin-bottom: 12px;
+  }
+  .pr-display {
+    font-family: var(--ff-display);
+    font-size: 36px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.1;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .pr-display .accent { color: var(--brand-glow); }
+  .pr-stat {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .pr-stat .val {
+    font-family: var(--ff-mono);
+    font-size: 38px;
+    font-weight: 600;
+    color: var(--brand-glow);
+    letter-spacing: -0.02em;
+    font-feature-settings: "tnum";
+  }
+  .pr-stat .unit {
+    font-family: var(--ff-mono);
+    font-size: 16px;
+    color: var(--text-secondary);
+  }
+  .pr-stat .delta {
+    font-family: var(--ff-mono);
+    font-size: 13px;
+    color: var(--success);
+    margin-left: auto;
+  }
+  .pr-narrative {
+    font-family: var(--ff-body);
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+    margin-bottom: 18px;
+  }
+  .pr-narrative .em { color: var(--text-primary); font-weight: 500; }
+  .pr-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .pr-dismiss {
+    flex: 1;
+    padding: 14px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-strong);
+    font-family: var(--ff-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+  }
+  .pr-continue {
+    flex: 1.5;
+    padding: 14px;
+    background: var(--brand-primary);
+    color: var(--text-inverse);
+    border: none;
+    font-family: var(--ff-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    box-shadow: 0 8px 20px -6px rgba(20,184,166,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  /* Faded workout flow visible behind backdrop */
+  .pr-bg-faded {
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  /* === Memoir card v2 (Direction 4 — warm-mode example) === */
+  .memoir-eyebrow {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent-warm);
+    margin-bottom: 16px;
+    padding: 0 4px;
+  }
+  .memoir-card {
+    background:
+      linear-gradient(135deg, rgba(217,119,87,0.07), transparent 80%),
+      var(--surface-1-warm);
+    border: 1px solid rgba(217,119,87,0.15);
+    border-radius: 24px;
+    padding: 24px;
+    margin-bottom: 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .memoir-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 24px; bottom: 24px;
+    width: 3px;
+    background: var(--accent-warm);
+    border-radius: 0 2px 2px 0;
+    opacity: 0.7;
+  }
+  .memoir-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .memoir-week {
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-warm);
+  }
+  .memoir-date {
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  /* Title-Case Antonio per narrative-chrome boundary */
+  .memoir-title {
+    font-family: var(--ff-display);
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.1;
+    text-transform: none;
+    color: var(--text-primary);
+    margin-bottom: 14px;
+  }
+  .memoir-body {
+    font-family: var(--ff-body);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+  .memoir-body .em { color: var(--text-primary); font-weight: 500; }
+  .memoir-anchors {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 14px 0;
+    border-top: 1px solid rgba(217,119,87,0.10);
+    border-bottom: 1px solid rgba(217,119,87,0.10);
+  }
+  .anchor-chip {
+    padding: 4px 10px;
+    background: rgba(217,119,87,0.10);
+    color: var(--accent-warm);
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    letter-spacing: -0.01em;
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  }
+  .memoir-reactions {
+    display: flex;
+    gap: 6px;
+  }
+  .reaction-btn {
+    flex: 1;
+    padding: 12px 10px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(217,119,87,0.08);
+    color: var(--text-secondary);
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  }
+
+  /* === Direction 4 (Knowledge Graph) === */
+  .kg-header {
+    padding: 8px 4px 18px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+  .kg-back {
+    width: 36px; height: 36px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    display: grid; place-items: center;
+    color: var(--text-secondary);
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .kg-title-block { flex: 1; }
+  .kg-title {
+    font-family: var(--ff-display);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.15;
+    color: var(--text-primary);
+  }
+  .kg-sub {
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    color: var(--brand-glow);
+    letter-spacing: 0.1em;
+    margin-top: 3px;
+  }
+  .kg-view-toggle {
+    display: flex;
+    gap: 4px;
+    padding: 2px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .kg-toggle-btn {
+    padding: 7px 11px;
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    background: transparent;
+    border: none;
+  }
+  .kg-toggle-btn.active {
+    background: rgba(20,184,166,0.16);
+    color: var(--brand-glow);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+
+  .kg-filters {
+    display: flex;
+    gap: 6px;
+    padding: 0 4px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+  }
+  .kg-filter {
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.025);
+    color: var(--text-tertiary);
+    font-family: var(--ff-body);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+    flex-shrink: 0;
+  }
+  .kg-filter.active {
+    background: rgba(20,184,166,0.16);
+    color: var(--brand-glow);
+  }
+
+  /* Fact card v2 in flat-list default */
+  .fact-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 10px;
+    border-left: 3px solid var(--brand-primary);
+  }
+  .fact-card.physiology { border-left-color: var(--brand-primary); }
+  .fact-card.trigger { border-left-color: var(--warning); }
+  .fact-card.preference { border-left-color: var(--brand-glow); }
+  .fact-card.response { border-left-color: var(--success); }
+  .fact-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .fact-cat {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    font-family: var(--ff-body);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  }
+  .fact-cat.physiology { background: rgba(20,184,166,0.14); color: var(--brand-glow); }
+  .fact-cat.trigger { background: rgba(245,158,11,0.14); color: var(--warning); }
+  .fact-cat.preference { background: rgba(94,234,212,0.10); color: var(--brand-glow); }
+  .fact-cat.response { background: rgba(52,211,153,0.12); color: var(--success); }
+  .fact-text {
+    font-family: var(--ff-body);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .fact-text .em { color: var(--brand-glow); font-weight: 600; }
+  .fact-meta {
+    display: flex;
+    gap: 12px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    color: var(--text-tertiary);
+  }
+  .fact-meta .v { color: var(--brand-glow); margin-left: 2px; }
+
+  /* === Direction 3 (QuickInputSheet voice-first) === */
+  .qis-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 7, 9, 0.78);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+  }
+  .qis-sheet {
+    width: 100%;
+    background: var(--surface-1);
+    border-top: 1px solid var(--border-strong);
+    padding: 24px 24px 36px;
+    max-height: 60%;
+    border-radius: 24px 24px 0 0;
+  }
+  .qis-handle {
+    width: 36px;
+    height: 4px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    margin: 0 auto 18px;
+  }
+  .qis-title {
+    font-family: var(--ff-display);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+    line-height: 1.15;
+    text-align: center;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .qis-sub {
+    font-family: var(--ff-body);
+    font-size: 13px;
+    text-align: center;
+    color: var(--text-secondary);
+    margin-bottom: 28px;
+  }
+  /* Voice-first primary mic */
+  .qis-voice {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 24px;
+    background:
+      radial-gradient(circle at 50% 50%, var(--brand-primary), var(--brand-core));
+    color: var(--text-inverse);
+    display: grid;
+    place-items: center;
+    clip-path: polygon(24px 0, 100% 0, 100% calc(100% - 24px), calc(100% - 24px) 100%, 0 100%, 0 24px);
+    box-shadow: 0 16px 48px -8px rgba(20,184,166,0.65);
+    position: relative;
+  }
+  .qis-voice::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    border: 2px solid rgba(94,234,212,0.30);
+    clip-path: polygon(26px 0, 100% 0, 100% calc(100% - 26px), calc(100% - 26px) 100%, 0 100%, 0 26px);
+  }
+  .qis-voice svg { width: 48px; height: 48px; }
+  .qis-voice-hint {
+    text-align: center;
+    font-family: var(--ff-mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--brand-glow);
+    margin-bottom: 28px;
+  }
+  /* Secondary modality icons */
+  .qis-secondary {
+    display: flex;
+    gap: 6px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .qis-mod {
+    flex: 1;
+    padding: 12px 6px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  }
+  .qis-mod svg { width: 18px; height: 18px; }
+  .qis-mod span {
+    font-family: var(--ff-body);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* Generic mockup label */
+  .label-pill {
+    display: inline-flex;
+    padding: 4px 10px;
+    background: rgba(20,184,166,0.10);
+    color: var(--brand-glow);
+    font-family: var(--ff-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    margin-bottom: 14px;
+  }
+  .label-pill.warm {
+    background: rgba(217,119,87,0.14);
+    color: var(--accent-warm);
+  }
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="doc-eyebrow">Step-9 · Design Direction Showcase · v2</div>
+  <h1 class="doc-title">UX Design <span class="accent">Directions</span></h1>
+  <p class="doc-sub">Visual demonstration of 5 stakeholder-confirmed design directions resolved in the bmad-create-ux-design workflow Step-9. All choices integrate prior Step-1c gap audit + Step-6 design system + Step-7 defining experience + Step-8 visual foundation (with R9 Deep Current rename + Paige typography corrections + Sally dual-mode visual + John strip-back rejected).</p>
+  <div class="doc-meta">
+    <div class="doc-meta-item">Brand palette · <span class="v">Deep Current</span></div>
+    <div class="doc-meta-item">Typography · <span class="v">Antonio + Inter + JBM Mono</span></div>
+    <div class="doc-meta-item">Dual-mode · <span class="v">Companion-mode cold + Warm derivative</span></div>
+    <div class="doc-meta-item">Status · <span class="v">Step 9 / 14 complete</span></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 1 · TODAY v2 — Subtle warm-on-narrative-hero briefing
+     (Sunday memoir-delivery briefing variant shown — see below for Monday cold default)
+     ============================================================ -->
+<div class="direction">
+  <div class="direction-meta">
+    <div class="direction-num">Direction 2 · in context of Today</div>
+    <h2 class="direction-title">Briefing card — Subtle warm-on-narrative-hero</h2>
+    <span class="direction-chosen">✓ Stakeholder chosen</span>
+    <p class="direction-body">
+      The defining-experience briefing card (<strong>Step-7</strong>) uses glass L2 elevation + Antonio Title-Case (post-Paige R9 narrative-chrome boundary) + citation chips inline. <strong>Daily Companion-mode briefings stay cold</strong> (brand-primary accent stripe). On <strong>Sunday-memoir-delivery briefings + Anniversary briefings</strong>, the accent-stripe shifts to a desaturated warm coral and a subtle warm radial gradient softens the card background — marking the emotional-narrative moment without diluting Companion-mode default integrity.
+    </p>
+    <div class="direction-rationale">
+      <span class="lbl">Rationale</span>
+      Sally R9 dual-mode framework + Sally R9 cold-as-PERFORMED-FOR-protection logic both honored. The briefing surface is the most-frequent companion turn; daily-cold protects against sentimental-wellness drift. The subtle-warm variant activates only on a handful of weekly/monthly moments where the emotional charge justifies it. Notice the Antonio Title-Case ("Visszanéztünk a Hetünkre") — narrative hero, NOT shouted UPPERCASE.
+    </div>
+    <p class="direction-body">Also visible: notched chamfer tags, check-in heartbeat strip, niggle-aware ribbon, voice-first FAB (Direction 3), workout teaser. The mockup here illustrates a <strong>Sunday morning briefing</strong> just before memoir delivery — subtle warm variant active.</p>
+  </div>
+  <div class="iphone">
+    <div class="iphone-screen">
+
+      <div class="status">
+        <span>8:14</span>
+        <span class="status-right">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="9" width="3" height="3" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M1 4.2A12 12 0 0 1 8.5 1.5 12 12 0 0 1 16 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3.7 6.7a8 8 0 0 1 4.8-1.6 8 8 0 0 1 4.8 1.6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/></svg>
+          <svg width="28" height="13" viewBox="0 0 28 13" fill="none"><rect x="0.5" y="0.5" width="24" height="12" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/></svg>
+        </span>
+      </div>
+
+      <div class="content">
+
+        <div class="top-row">
+          <div class="wordmark">
+            <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square">
+              <path d="M3 19 L3 5 L9 14 L12 9 L15 14 L21 5 L21 19"/>
+            </svg>
+            <span>Mezo</span>
+          </div>
+          <div class="top-actions">
+            <button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg></button>
+            <button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="5" cy="6" r="1.8" fill="currentColor"/><circle cx="12" cy="6" r="1.8"/><circle cx="19" cy="6" r="1.8" fill="currentColor"/><circle cx="5" cy="18" r="1.8"/><circle cx="12" cy="18" r="1.8" fill="currentColor"/><circle cx="19" cy="18" r="1.8"/></svg></button>
+          </div>
+        </div>
+
+        <div class="date-eyebrow">Vasárnap · Máj 17 · <span class="accent">Memoir nap</span></div>
+
+        <div class="meso-state">
+          <span class="tag brand"><span class="dot"></span>Week 3 · Day 7</span>
+          <span class="tag muted">Recovery</span>
+          <span class="tag warm"><span class="dot"></span>Reta D6</span>
+        </div>
+
+        <!-- HERO: Subtle warm-on-narrative briefing (Sunday memoir-delivery variant) -->
+        <div class="hero narrative-warm">
+          <div class="hero-top">
+            <div class="hero-eyebrow">
+              <span class="hero-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 19 L3 5 L9 14 L12 9 L15 14 L21 5 L21 19"/></svg>
+              </span>
+              Vasárnap esti briefing
+            </div>
+            <span class="hero-time">08:14</span>
+          </div>
+
+          <h2 class="hero-display">Visszanéztünk<br/>a <span class="accent">Hetünkre</span></h2>
+
+          <p class="hero-body">
+            Hét workout, három röpi, négy <span class="em">PR-elérés</span> <span class="citation-chip">[Achievement:May-15]</span>. A szerda nehéz volt — a Reta Day 3 mélypontján belevágtunk a leg-day-be <span class="citation-chip">[WorkoutSession:May-14]</span>. Vasárnap este 19:30-kor jön a memoir. <span class="em">Most pihenj — megérdemeled.</span>
+          </p>
+
+          <div class="hero-meta-row">
+            <div class="hero-confidence">
+              <span>Confidence</span>
+              <div class="bar"></div>
+              <span class="value">0.94</span>
+            </div>
+            <a class="hero-expand">Memoir →</a>
+          </div>
+        </div>
+
+        <div class="niggle-ribbon">
+          <span class="em">⚠ Jobb váll · aktív</span> — a heti memoir megemlíti, és csütörtökre szelíd mobility blokkot tervezünk.
+        </div>
+
+        <div class="divider">Mai check-in · 1/4</div>
+        <div class="checkin-strip">
+          <div class="checkin-slot active"><div class="checkin-time">08:14</div><div class="checkin-label">Reggel</div></div>
+          <div class="checkin-slot"><div class="checkin-time">10:00</div><div class="checkin-label">Délelőtt</div></div>
+          <div class="checkin-slot"><div class="checkin-time">14:00</div><div class="checkin-label">Délután</div></div>
+          <div class="checkin-slot"><div class="checkin-time">20:00</div><div class="checkin-label">Este</div></div>
+        </div>
+
+        <button class="cta-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+          Reggel jó · indulhatunk
+        </button>
+
+      </div>
+
+      <!-- QuickInputSheet FAB (Direction 3 voice-first) -->
+      <div class="fab">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="9" y="2" width="6" height="12" rx="3"/>
+          <path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
+        </svg>
+      </div>
+
+      <div class="tabbar">
+        <div class="tab active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <path d="M4 16 A8 8 0 0 1 20 16"/><path d="M4 16h2M18 16h2"/><path d="M7 9l1.2 1.2M16.8 10.2l1.2-1.2"/><path d="M12 5v2"/>
+            <circle cx="12" cy="16" r="1.8" fill="currentColor" stroke="none"/><path d="M12 16 L14.5 11"/>
+          </svg>
+          <span class="tab-label">Today</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <path d="M3 18 L7 14 L11 8 L15 6 L19 4"/>
+            <circle cx="7" cy="14" r="1.3" fill="currentColor"/><circle cx="11" cy="8" r="1.3" fill="currentColor"/>
+            <circle cx="15" cy="6" r="1.3" fill="currentColor"/><circle cx="19" cy="4" r="1.8" fill="currentColor"/>
+          </svg>
+          <span class="tab-label">Train</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <path d="M12 3 L20 7.5 L20 16.5 L12 21 L4 16.5 L4 7.5 Z"/>
+            <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none"/>
+          </svg>
+          <span class="tab-label">Fuel</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <circle cx="5" cy="6" r="1.5" fill="currentColor"/><circle cx="19" cy="8" r="1.5" fill="currentColor"/>
+            <circle cx="9" cy="15" r="1.5" fill="currentColor"/><circle cx="17" cy="18" r="1.5" fill="currentColor"/>
+            <path d="M5 6 L9 15 L17 18 L19 8 L5 6"/><circle cx="13" cy="11" r="2.2" fill="currentColor"/>
+          </svg>
+          <span class="tab-label">Insights</span>
+        </div>
+        <div class="tab">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square">
+            <circle cx="12" cy="12" r="8" stroke-opacity="0.3"/><circle cx="12" cy="12" r="5.5" stroke-opacity="0.55"/>
+            <circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/>
+          </svg>
+          <span class="tab-label">Me</span>
+        </div>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 1 · TRAIN v2 — Heti Brief weekly Plan view
+     ============================================================ -->
+<div class="direction">
+  <div class="direction-meta">
+    <div class="direction-num">Direction 1 · Train tab home view</div>
+    <h2 class="direction-title">Weekly Plan — Heti Brief style</h2>
+    <span class="direction-chosen">✓ Stakeholder chosen</span>
+    <p class="direction-body">
+      The Train tab home view (when no workout is in progress) shows the upcoming week as a single integrated plan. <strong>Narrative paragraph in companion voice</strong> opens the week's framing (energy state, mesocycle position, Reta-cycle context), then a <strong>vertical day list</strong> with mini icon-sets per day shows workout / sport / supplement / meal commitments. Long-tap a row → inline alternative swap dropdown. Approve "Ez lesz a hetem" CTA at bottom.
+    </p>
+    <div class="direction-rationale">
+      <span class="lbl">Rationale</span>
+      Smallest Phase 2-3 → Phase 4-5 transition cost. Phase 2-3 ships the same shell with manual `MesocycleWeek` entry; Phase 4-5 swaps in AI-proposed narrative. The mesocycle context already lives on Train tab, so the planning UX inherits its data-home naturally. Swap-pattern engagement metric (1-2 swaps = healthy per Mary R5 + John R5 + Notion phantom-acceptance precedent) is preserved.
+    </p>
+    <p class="direction-body">Mockup shows: <strong>Sunday evening 21:45</strong>, companion has just generated next week's proposal. Daniel can swap rows inline (Tuesday's pull-day has alternative chip), then approve. <strong>Swap count visible</strong> at bottom (0 swaps = phantom acceptance flag candidate).</p>
+  </div>
+  <div class="iphone">
+    <div class="iphone-screen">
+
+      <div class="status">
+        <span>21:47</span>
+        <span class="status-right">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="9" width="3" height="3" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M1 4.2A12 12 0 0 1 8.5 1.5 12 12 0 0 1 16 4.2" stroke="currentColor" stroke-width="1.6"/><path d="M3.7 6.7a8 8 0 0 1 4.8-1.6 8 8 0 0 1 4.8 1.6" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/></svg>
+          <svg width="28" height="13" viewBox="0 0 28 13" fill="none"><rect x="0.5" y="0.5" width="24" height="12" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/></svg>
+        </span>
+      </div>
+
+      <div class="content">
+
+        <div class="train-nav">
+          <div class="train-nav-title">Train</div>
+          <button class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h10M4 18h7"/></svg></button>
+        </div>
+
+        <div class="train-eyebrow">Heti Brief · vasárnap esti javaslat</div>
+
+        <div class="week-narrative">
+          <h2 class="week-title">Volume-csúcs Hetünk</h2>
+          <p class="week-body">
+            <span class="em">Week 4 közepe — a Q2 hypertrophy csúcsra megyünk.</span> A mai recovery után holnap kezdjük a pull-day-jel. Reta D7 → D1 az injekció szerdára esik; <span class="em">a kedd push-t előre vesszük</span>, hogy szerda este nyugodt legyél. Pénteken sport-day, szombaton enyhébb leg-day. A kifli.hu rendelés kedden érkezik — addig a meglévő készletből főzünk.
+          </p>
+        </div>
+
+        <div class="day-row today">
+          <div class="day-label">H 18</div>
+          <div class="day-content">
+            <div class="day-name">Pull Day · Week 4</div>
+            <div class="day-meta">
+              <div class="day-icon-set">
+                <div class="ico" title="Edzés"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/></svg></div>
+                <div class="ico" title="Kreatin"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></div>
+                <div class="ico" title="Stim-free pre-workout"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3v6a3 3 0 0 0 6 0V3M9 21V11M15 21V11"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <span class="tag muted">Today</span>
+        </div>
+
+        <div class="day-row">
+          <div class="day-label">K 19</div>
+          <div class="day-content">
+            <div class="day-name">Push Day <span style="color:var(--brand-glow);font-size:10px;font-family:var(--ff-mono);">⇄ swap?</span></div>
+            <div class="day-meta">
+              <div class="day-icon-set">
+                <div class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/></svg></div>
+                <div class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <span class="tag brand"><span class="dot"></span>Reta-aware</span>
+        </div>
+
+        <div class="day-row">
+          <div class="day-label">SZ 20</div>
+          <div class="day-content">
+            <div class="day-name">Rest · Reta D1</div>
+            <div class="day-meta">
+              <div class="day-icon-set">
+                <div class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg></div>
+              </div>
+            </div>
+          </div>
+          <span class="tag warm"><span class="dot"></span>Injekció</span>
+        </div>
+
+        <div class="day-row">
+          <div class="day-label">CS 21</div>
+          <div class="day-content">
+            <div class="day-name">Mobility + Recovery</div>
+            <div class="day-meta">
+              <div class="day-icon-set">
+                <div class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="day-row">
+          <div class="day-label">P 22</div>
+          <div class="day-content">
+            <div class="day-name">Volleyball · 19:00</div>
+            <div class="day-meta">
+              <div class="day-icon-set">
+                <div class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="day-row">
+          <div class="day-label">SZ 23</div>
+          <div class="day-content">
+            <div class="day-name">Leg Day · enyhe</div>
+            <div class="day-meta">
+              <div class="day-icon-set">
+                <div class="ico"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="2"/></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="day-row">
+          <div class="day-label">V 24</div>
+          <div class="day-content">
+            <div class="day-name">Memoir · Recovery</div>
+          </div>
+        </div>
+
+        <button class="approve-week">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+          Ez lesz a hetem
+        </button>
+        <p class="swap-hint"><span class="em">0 swap</span> · 1-2 swap = aktív engagement signal (Notion phantom-acceptance flag candidate)</p>
+
+      </div>
+
+      <div class="tabbar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16 A8 8 0 0 1 20 16"/><path d="M4 16h2M18 16h2"/><path d="M7 9l1.2 1.2M16.8 10.2l1.2-1.2"/><path d="M12 5v2"/><circle cx="12" cy="16" r="1.8" fill="currentColor"/></svg><span class="tab-label">Today</span></div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18 L7 14 L11 8 L15 6 L19 4"/><circle cx="7" cy="14" r="1.3" fill="currentColor"/><circle cx="11" cy="8" r="1.3" fill="currentColor"/><circle cx="15" cy="6" r="1.3" fill="currentColor"/><circle cx="19" cy="4" r="1.8" fill="currentColor"/></svg><span class="tab-label">Train</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 L20 7.5 L20 16.5 L12 21 L4 16.5 L4 7.5 Z"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg><span class="tab-label">Fuel</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="6" r="1.5" fill="currentColor"/><circle cx="19" cy="8" r="1.5" fill="currentColor"/><circle cx="9" cy="15" r="1.5" fill="currentColor"/><circle cx="17" cy="18" r="1.5" fill="currentColor"/><path d="M5 6 L9 15 L17 18 L19 8 L5 6"/><circle cx="13" cy="11" r="2.2" fill="currentColor"/></svg><span class="tab-label">Insights</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8" stroke-opacity="0.3"/><circle cx="12" cy="12" r="5.5" stroke-opacity="0.55"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg><span class="tab-label">Me</span></div>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 5 · PR celebration overlay-card 60-70%
+     ============================================================ -->
+<div class="direction">
+  <div class="direction-meta">
+    <div class="direction-num">Direction 5 · Train workout flow</div>
+    <h2 class="direction-title">PR celebration — 60-70% overlay-card</h2>
+    <span class="direction-chosen">✓ Stakeholder chosen</span>
+    <p class="direction-body">
+      Sally R8 corrected the original Hevy-toast pattern to a <strong>persistent overlay-card</strong> — large enough to honor the moment, NOT full-screen (which would break workout flow continuity). The card occupies ~65% of viewport with backdrop dim; Daniel dismisses with tap-outside or "Folytatjuk →" button. <strong>Copy is memory-anchored</strong>, not stat-toast — references past effort, prior mesocycle position, and contextualizes the PR.
+    </p>
+    <div class="direction-rationale">
+      <span class="lbl">Rationale</span>
+      Step-4 Principle #10 ("never rushes a moment that matters") + Principle #11 ("co-authorship") + Hevy-trigger-logic adoption + Mezo container correction (Sally R8). Full-screen modal would overshadow; bottom-sheet would under-emphasize. The 60-70% card is the visual middle ground that says "stop, this matters" without breaking the set-flow rhythm.
+    </p>
+    <p class="direction-body">Backdrop-blurred workout flow visible behind the card preserves spatial context. <strong>Stat is large + monospace + brand-glow</strong>; narrative is companion-voice first-person plural with explicit memory anchor.</p>
+  </div>
+  <div class="iphone">
+    <div class="iphone-screen">
+
+      <div class="status">
+        <span>10:42</span>
+        <span class="status-right">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="9" width="3" height="3" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M1 4.2A12 12 0 0 1 8.5 1.5 12 12 0 0 1 16 4.2" stroke="currentColor" stroke-width="1.6"/><path d="M3.7 6.7a8 8 0 0 1 4.8-1.6 8 8 0 0 1 4.8 1.6" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/></svg>
+          <svg width="28" height="13" viewBox="0 0 28 13" fill="none"><rect x="0.5" y="0.5" width="24" height="12" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/></svg>
+        </span>
+      </div>
+
+      <!-- Faded workout flow visible behind backdrop -->
+      <div class="content pr-bg-faded" style="height: 100%;">
+        <div class="train-nav">
+          <div class="train-nav-title">Pull Day</div>
+        </div>
+        <div class="workout-teaser">
+          <div class="icon-box"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 18 L7 14 L11 8 L15 6 L19 4"/></svg></div>
+          <div class="info">
+            <div class="label">Set 3/4 · 8 reps × RIR 1</div>
+            <div class="title">Chest Supported Row</div>
+            <div class="meta">37.5 kg × 9 @ RIR 1</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PR overlay-card backdrop -->
+      <div class="pr-backdrop">
+        <div class="pr-overlay-card">
+          <div class="pr-eyebrow">
+            <span style="display:grid;place-items:center;width:24px;height:24px;background:rgba(20,184,166,0.20);clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 19 L9 13 L13 16 L21 5"/></svg>
+            </span>
+            Új 1RM becslés
+          </div>
+
+          <h2 class="pr-display">PR — <span class="accent">Chest Row</span></h2>
+
+          <div class="pr-stat">
+            <span class="val">110.8</span>
+            <span class="unit">kg</span>
+            <span class="delta">+5.0 kg</span>
+          </div>
+
+          <p class="pr-narrative">
+            <span class="em">Március óta vártuk ezt</span> — pont a Week 4 csúcs előtt megdöntöttük 5 kg-mal. A héten 7.4h alvás vasárnap óta <span class="em">[SleepLog:May-12]</span>. Ez a hét.
+          </p>
+
+          <div class="pr-actions">
+            <button class="pr-dismiss">Később</button>
+            <button class="pr-continue">
+              Folytatjuk →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 2 extended · MEMOIR v2 — full warm-mode card example
+     ============================================================ -->
+<div class="direction">
+  <div class="direction-meta">
+    <div class="direction-num">Direction 2 extended · Insights → Memoir tab</div>
+    <h2 class="direction-title">Memoir card — full warm-mode</h2>
+    <span class="direction-chosen">✓ Dual-mode visual in operation</span>
+    <p class="direction-body">
+      Whereas the briefing card uses a <strong>subtle</strong> warm accent only on memoir-delivery mornings, the Memoir tab itself operates in <strong>full warm-mode</strong> — warm canvas (`--canvas-warm` #1A1410), warm surface (`--surface-1-warm` #241C18), warm coral accent (`--accent-warm` #D97757). This is Sally R9's dual-mode in its most explicit form: a separate visual climate for the most emotionally-narrative surface in the product.
+    </p>
+    <div class="direction-rationale">
+      <span class="lbl">Rationale</span>
+      The Memoir is the highest-stakes weekly companion deliverable (Step-3 Critical Success Moment #8). Step-4 Principle #2 ("Memory is the love language"). The Spotify Wrapped + Day One + Strava monthly precedents (Step-5) all share a narrative-warmth visual language. Mezo applies this only in the dedicated Memoir surface — the rest of the app stays in Companion-mode cold default. The Antonio title is Title-Case per Paige R9 narrative-chrome boundary; anchor entity chips are warm-tinted.
+    </p>
+    <p class="direction-body">Notice: <strong>tab bar bottom uses warm-active state</strong> when Memoir tab is selected (visual confirmation that the mode is "active"). 4 reaction buttons (like / love / save / dismiss) at bottom. 3 anchor entity chips show the cited memories.</p>
+  </div>
+  <div class="iphone">
+    <div class="iphone-screen warm">
+
+      <div class="status">
+        <span>19:32</span>
+        <span class="status-right">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="9" width="3" height="3" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M1 4.2A12 12 0 0 1 8.5 1.5 12 12 0 0 1 16 4.2" stroke="currentColor" stroke-width="1.6"/><path d="M3.7 6.7a8 8 0 0 1 4.8-1.6 8 8 0 0 1 4.8 1.6" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/></svg>
+          <svg width="28" height="13" viewBox="0 0 28 13" fill="none"><rect x="0.5" y="0.5" width="24" height="12" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/></svg>
+        </span>
+      </div>
+
+      <div class="content">
+
+        <div class="top-row">
+          <div class="wordmark">
+            <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="#D97757" stroke-width="1.6" stroke-linecap="square">
+              <path d="M3 19 L3 5 L9 14 L12 9 L15 14 L21 5 L21 19"/>
+            </svg>
+            <span>Mezo · Memoir</span>
+          </div>
+        </div>
+
+        <div class="memoir-eyebrow">Heti memoir · 17. hét</div>
+
+        <div class="memoir-card">
+          <div class="memoir-top">
+            <span class="memoir-week">Vasárnap · Memoir #17</span>
+            <span class="memoir-date">Máj 11–17</span>
+          </div>
+          <h2 class="memoir-title">A Hét, Amikor Visszajött a Bizalom</h2>
+          <p class="memoir-body">
+            Hét workout, három röpi, <span class="em">négy PR</span>. A szerda nehéz volt — Reta Day 3 mélypontján belevágtunk a leg-day-be, és <span class="em">RPE 9 volt</span>. A csütörtök más volt: alvás 8.1 óra, pull-day, és a Chest Row 1RM <span class="em">+5 kg</span>. Március óta vártuk ezt. <span class="em">Petra-val pénteken</span> kiváló volt a kommunikáció — emlékszel, két hete arról beszéltünk, hogy ki kéne mondanod, ha rosszul érzed magad? Megcsináltad. Vasárnap ülünk. Pihenj. Köszi a hetet.
+          </p>
+          <div class="memoir-anchors">
+            <span class="anchor-chip">[Achievement:May-15]</span>
+            <span class="anchor-chip">[PersonEntry:Petra]</span>
+            <span class="anchor-chip">[SleepLog:May-14]</span>
+            <span class="anchor-chip">[WorkoutSession:May-13]</span>
+          </div>
+          <div class="memoir-reactions">
+            <button class="reaction-btn">♡ Like</button>
+            <button class="reaction-btn">❤ Love</button>
+            <button class="reaction-btn">⭐ Save</button>
+            <button class="reaction-btn">✕ Hide</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tabbar warm">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16 A8 8 0 0 1 20 16"/><path d="M4 16h2M18 16h2"/><path d="M7 9l1.2 1.2M16.8 10.2l1.2-1.2"/><path d="M12 5v2"/><circle cx="12" cy="16" r="1.8" fill="currentColor"/></svg><span class="tab-label">Today</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18 L7 14 L11 8 L15 6 L19 4"/><circle cx="7" cy="14" r="1.3" fill="currentColor"/><circle cx="11" cy="8" r="1.3" fill="currentColor"/><circle cx="15" cy="6" r="1.3" fill="currentColor"/><circle cx="19" cy="4" r="1.8" fill="currentColor"/></svg><span class="tab-label">Train</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 L20 7.5 L20 16.5 L12 21 L4 16.5 L4 7.5 Z"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg><span class="tab-label">Fuel</span></div>
+        <div class="tab active warm-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="6" r="1.5" fill="currentColor"/><circle cx="19" cy="8" r="1.5" fill="currentColor"/><circle cx="9" cy="15" r="1.5" fill="currentColor"/><circle cx="17" cy="18" r="1.5" fill="currentColor"/><path d="M5 6 L9 15 L17 18 L19 8 L5 6"/><circle cx="13" cy="11" r="2.2" fill="currentColor"/></svg><span class="tab-label">Insights</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8" stroke-opacity="0.3"/><circle cx="12" cy="12" r="5.5" stroke-opacity="0.55"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg><span class="tab-label">Me</span></div>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 4 · Knowledge Graph flat-list-default-with-graph-toggle
+     ============================================================ -->
+<div class="direction">
+  <div class="direction-meta">
+    <div class="direction-num">Direction 4 · Me → Knowledge Graph</div>
+    <h2 class="direction-title">Knowledge Graph — flat-list default + graph toggle</h2>
+    <span class="direction-chosen">✓ Stakeholder chosen</span>
+    <p class="direction-body">
+      Me → Knowledge Graph opens as a <strong>category-grouped flat fact-card list</strong> (v1 mockup style retained) with a <strong>view toggle</strong> at the top-right to reveal force-directed graph mode. Accessibility-friendly, performant on low fact-count Phase 1-4, understandable without UX-onboarding. The graph mode preserves the brand-moat surface (Step-3 Opportunity #1) for when fact-count grows Phase 5+ (~50+ facts).
+    </p>
+    <div class="direction-rationale">
+      <span class="lbl">Rationale</span>
+      Step-1c open question F.5 explicit recommendation. Phase 1-4 typically has 5-30 facts — a graph would feel sparse and visually under-utilized. The flat list with category color-coding (physiology=brand-glow, trigger=warning, preference=brand-glow lighter, response=success) communicates the L3 memory state immediately. Toggle to graph mode is a 1-tap reveal. Phase 5+ may auto-switch the default once fact-count crosses a threshold.
+    </p>
+    <p class="direction-body">Notice the <strong>toggle indicator</strong> at top — "List | Graph" segmented control with "List" active. <strong>Filter row</strong> below for category filtering. <strong>Each fact card</strong> shows category, confidence, reinforcement count, and inline em-highlight for the key claim.</p>
+  </div>
+  <div class="iphone">
+    <div class="iphone-screen">
+
+      <div class="status">
+        <span>20:35</span>
+        <span class="status-right">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="9" width="3" height="3" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M1 4.2A12 12 0 0 1 8.5 1.5 12 12 0 0 1 16 4.2" stroke="currentColor" stroke-width="1.6"/><path d="M3.7 6.7a8 8 0 0 1 4.8-1.6 8 8 0 0 1 4.8 1.6" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/></svg>
+          <svg width="28" height="13" viewBox="0 0 28 13" fill="none"><rect x="0.5" y="0.5" width="24" height="12" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/></svg>
+        </span>
+      </div>
+
+      <div class="content">
+
+        <div class="kg-header">
+          <button class="kg-back"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 6L9 12L15 18"/></svg></button>
+          <div class="kg-title-block">
+            <div class="kg-title">Knowledge Graph</div>
+            <div class="kg-sub">23 facts · 18 in prompt · L3 memory</div>
+          </div>
+          <div class="kg-view-toggle">
+            <button class="kg-toggle-btn active">List</button>
+            <button class="kg-toggle-btn">Graph</button>
+          </div>
+        </div>
+
+        <div class="kg-filters">
+          <span class="kg-filter active">All · 23</span>
+          <span class="kg-filter">Physiology · 7</span>
+          <span class="kg-filter">Trigger · 5</span>
+          <span class="kg-filter">Preference · 6</span>
+          <span class="kg-filter">Response · 5</span>
+        </div>
+
+        <div class="fact-card physiology">
+          <div class="fact-top">
+            <span class="fact-cat physiology">Physiology</span>
+            <span class="tag muted" style="font-size:9px;padding:2px 6px;">0.92 · 12×</span>
+          </div>
+          <p class="fact-text">Sleep &lt; 7h után az <span class="em">RPE +1-gyel magasabb</span> a következő edzésen.</p>
+          <div class="fact-meta">
+            <span>First seen<span class="v">Apr 12</span></span>
+            <span>Reinforced<span class="v">12×</span></span>
+          </div>
+        </div>
+
+        <div class="fact-card trigger">
+          <div class="fact-top">
+            <span class="fact-cat trigger">Trigger</span>
+            <span class="tag muted" style="font-size:9px;padding:2px 6px;">0.88 · 9×</span>
+          </div>
+          <p class="fact-text"><span class="em">Koffein 14:00 után</span> 22%-kal rontja az alvásminőségem.</p>
+          <div class="fact-meta">
+            <span>First seen<span class="v">Mar 28</span></span>
+            <span>Reinforced<span class="v">9×</span></span>
+          </div>
+        </div>
+
+        <div class="fact-card preference">
+          <div class="fact-top">
+            <span class="fact-cat preference">Preference</span>
+            <span class="tag muted" style="font-size:9px;padding:2px 6px;">0.75 · 5×</span>
+          </div>
+          <p class="fact-text">A <span class="em">stim-free pre-workout</span> jobban illik a délutáni edzésekhez (pump magasabb, joint pain alacsonyabb).</p>
+          <div class="fact-meta">
+            <span>First seen<span class="v">Apr 30</span></span>
+            <span>Reinforced<span class="v">5×</span></span>
+          </div>
+        </div>
+
+        <div class="fact-card response">
+          <div class="fact-top">
+            <span class="fact-cat response">Response</span>
+            <span class="tag muted" style="font-size:9px;padding:2px 6px;">0.68 · 3×</span>
+          </div>
+          <p class="fact-text">Kreatin loading <span class="em">7+ nap után</span> stabilizálódik a teljesítmény (PR-küszöb +3-5%).</p>
+          <div class="fact-meta">
+            <span>First seen<span class="v">May 02</span></span>
+            <span>Reinforced<span class="v">3×</span></span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="tabbar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16 A8 8 0 0 1 20 16"/><path d="M4 16h2M18 16h2"/><path d="M7 9l1.2 1.2M16.8 10.2l1.2-1.2"/><path d="M12 5v2"/><circle cx="12" cy="16" r="1.8" fill="currentColor"/></svg><span class="tab-label">Today</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 18 L7 14 L11 8 L15 6 L19 4"/><circle cx="7" cy="14" r="1.3" fill="currentColor"/><circle cx="11" cy="8" r="1.3" fill="currentColor"/><circle cx="15" cy="6" r="1.3" fill="currentColor"/><circle cx="19" cy="4" r="1.8" fill="currentColor"/></svg><span class="tab-label">Train</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 3 L20 7.5 L20 16.5 L12 21 L4 16.5 L4 7.5 Z"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/></svg><span class="tab-label">Fuel</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="6" r="1.5" fill="currentColor"/><circle cx="19" cy="8" r="1.5" fill="currentColor"/><circle cx="9" cy="15" r="1.5" fill="currentColor"/><circle cx="17" cy="18" r="1.5" fill="currentColor"/><path d="M5 6 L9 15 L17 18 L19 8 L5 6"/><circle cx="13" cy="11" r="2.2" fill="currentColor"/></svg><span class="tab-label">Insights</span></div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8" stroke-opacity="0.3"/><circle cx="12" cy="12" r="5.5" stroke-opacity="0.55"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg><span class="tab-label">Me</span></div>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DIRECTION 3 · QuickInputSheet — voice-first single primary path
+     ============================================================ -->
+<div class="direction">
+  <div class="direction-meta">
+    <div class="direction-num">Direction 3 · Global QuickInputSheet</div>
+    <h2 class="direction-title">QuickInputSheet — voice-first primary</h2>
+    <span class="direction-chosen">✓ Stakeholder chosen</span>
+    <p class="direction-body">
+      When Daniel taps the global FAB (visible in every screen above), the QuickInputSheet opens with a <strong>single large voice-mic button as the primary modality</strong>. Other modalities (photo, choice-chips, number-tap, text) are accessible via a secondary icon row below, but visually deprioritized. <strong>IDENT-4 most literal interpretation</strong>: voice is the assumed path; everything else is fallback.
+    </p>
+    <div class="direction-rationale">
+      <span class="lbl">Rationale</span>
+      Daniel explicitly says "logging is hard" — the friction wall in every nutrition tracker, every workout app, is the form. Voice removes it. The companion AI parses the voice clip into the right entity (Meal / Niggle / PersonEntry / FreeNoteEntry / WorkoutNote) automatically. Other modalities visible-but-secondary preserves optionality without competing for primary attention. AI-routing (option C) is over-engineered before voice-first Phase 1 validation.
+    </p>
+    <p class="direction-body">Notice: <strong>brand-primary radial-gradient mic button</strong> with notched-chamfer 24px and brand-glow ring (recording-state indicator). <strong>Hint text</strong> below ("Mondd el, mi történt") frames voice as conversation, not command. <strong>5 secondary modalities</strong> below ranked by next-most-likely-use: Photo → Chip → Number → Text → Cancel.</p>
+  </div>
+  <div class="iphone">
+    <div class="iphone-screen">
+
+      <div class="status">
+        <span>13:08</span>
+        <span class="status-right">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="9" width="3" height="3" rx="1"/><rect x="5" y="6" width="3" height="6" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="none"><path d="M1 4.2A12 12 0 0 1 8.5 1.5 12 12 0 0 1 16 4.2" stroke="currentColor" stroke-width="1.6"/><path d="M3.7 6.7a8 8 0 0 1 4.8-1.6 8 8 0 0 1 4.8 1.6" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.5" fill="currentColor"/></svg>
+          <svg width="28" height="13" viewBox="0 0 28 13" fill="none"><rect x="0.5" y="0.5" width="24" height="12" rx="3" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="19" height="9" rx="1.5" fill="currentColor"/></svg>
+        </span>
+      </div>
+
+      <div class="content pr-bg-faded" style="height:100%;">
+        <div class="top-row">
+          <div class="wordmark">
+            <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 19 L3 5 L9 14 L12 9 L15 14 L21 5 L21 19"/></svg>
+            <span>Mezo</span>
+          </div>
+        </div>
+        <div class="date-eyebrow">Hétfő · Máj 18</div>
+        <div class="meso-state">
+          <span class="tag brand"><span class="dot"></span>Week 4 · Day 1</span>
+          <span class="tag muted">Pull Day</span>
+        </div>
+      </div>
+
+      <!-- QuickInputSheet backdrop + sheet -->
+      <div class="qis-backdrop">
+        <div class="qis-sheet">
+          <div class="qis-handle"></div>
+          <h2 class="qis-title">Mondd el, mi történt</h2>
+          <p class="qis-sub">Voice → AI extract → confirm</p>
+
+          <div class="qis-voice">
+            <svg fill="currentColor" viewBox="0 0 24 24">
+              <rect x="9" y="3" width="6" height="11" rx="3"/>
+              <path d="M5 11a7 7 0 0 0 14 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <line x1="12" y1="18" x2="12" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+
+          <p class="qis-voice-hint">Tap és beszélj · 5-30 másodperc</p>
+
+          <div class="qis-secondary">
+            <div class="qis-mod">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8a3 3 0 0 1 3-3h2l2-2h4l2 2h2a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z"/><circle cx="12" cy="13" r="4"/></svg>
+              <span>Photo</span>
+            </div>
+            <div class="qis-mod">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+              <span>Chip</span>
+            </div>
+            <div class="qis-mod">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 12h14M12 5v14"/></svg>
+              <span>Number</span>
+            </div>
+            <div class="qis-mod">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 6h16M4 12h10M4 18h7"/></svg>
+              <span>Text</span>
+            </div>
+            <div class="qis-mod">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6L18 18M18 6L6 18"/></svg>
+              <span>Cancel</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     Footer
+     ============================================================ -->
+<div class="doc-header" style="margin-top: 96px; margin-bottom: 48px; padding-top: 32px; border-top: 1px solid var(--border-subtle);">
+  <div class="doc-eyebrow">End of Step-9 Showcase</div>
+  <h2 class="doc-title" style="font-size: 24px; margin-bottom: 16px;">Phase 0 design refresh continues from here</h2>
+  <p class="doc-sub" style="font-size: 14px;">
+    This showcase visualizes the <strong style="color:var(--text-primary)">5 stakeholder-confirmed UI design directions</strong> from Step-9. The full Phase 0 design refresh deliverable requires per-screen v2 versions of all 6 v1 mockups (02-today / 03-train / 04-fuel / 05-recipe-maker / 06-insights / 07-me) plus new screens (Memoir tab full layout, Knowledge Graph graph-mode, AnchorMode crisis-state, QuickInputSheet expanded states, Today AnchorMode override). Step-9 establishes the design-direction-language; the implementation-ready mockups are downstream work after Step-14 workflow completion.
+  </p>
+  <div class="doc-meta">
+    <div class="doc-meta-item">Spec source · <span class="v">_bmad-output/planning-artifacts/ux-design-specification.md</span></div>
+    <div class="doc-meta-item">Direction count · <span class="v">5 / 5 chosen</span></div>
+    <div class="doc-meta-item">Next workflow step · <span class="v">Step-10 User Journeys</span></div>
+  </div>
+</div>
+
+</body>
+</html>

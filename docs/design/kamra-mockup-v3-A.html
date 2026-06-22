@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kamra · Irány A · valódi design-system primitívek</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ====== tokens (verbatim from ux-component-library-v2 / ux-screen-mockups-v2) ====== */
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+  button, input, select, textarea { font:inherit; color:inherit; background:none; border:none; appearance:none; -webkit-appearance:none; }
+  button { cursor:pointer; }
+  :root {
+    --brand-deep:#064E5B; --brand-core:#0E7C7B; --brand-primary:#14B8A6; --brand-glow:#5EEAD4; --brand-tint:#CCFBF1;
+    --canvas:#0A0F14; --surface-1:#121A22; --surface-2:#1A242E;
+    --border-subtle:rgba(255,255,255,0.06); --border-strong:rgba(255,255,255,0.12);
+    --text-primary:#ECECF1; --text-secondary:#9CA3AF; --text-tertiary:#6B7280; --text-inverse:#0A0F14;
+    --success:#34D399; --warning:#F59E0B; --error:#F43F5E;
+    --src-kifli:#7CB342; --src-mp:#A78BFA; --src-tesco:#60A5FA;
+    --food:#5EEAD4; --supp:#60A5FA; --stim:#F472B6;
+    --ff-display:"Antonio","Bebas Neue",sans-serif;
+    --ff-body:"Inter",-apple-system,system-ui,sans-serif;
+    --ff-mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  html, body { background:#050709; color:var(--text-primary); font-family:var(--ff-body); line-height:1.5; min-height:100vh; padding:44px 24px 90px;
+    background-image:radial-gradient(1200px 600px at 50% -200px,#0c1620 0%,#050709 70%); }
+
+  .pagehead { max-width:900px; margin:0 auto 36px; text-align:center; }
+  .pagehead .eyebrow { font-family:var(--ff-mono); font-size:11px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--brand-glow); margin-bottom:12px; }
+  .pagehead h1 { font-family:var(--ff-display); font-size:40px; font-weight:600; letter-spacing:.005em; text-transform:uppercase; line-height:1; margin-bottom:14px; }
+  .pagehead p { font-size:14px; color:var(--text-secondary); line-height:1.6; max-width:680px; margin:0 auto; }
+  .pagehead p strong { color:var(--text-primary); font-weight:500; }
+  .pagehead code { font-family:var(--ff-mono); font-size:12px; color:var(--brand-glow); }
+
+  .stage { display:flex; gap:48px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+
+  /* ====== iPhone (verbatim ux-screen-mockups-v2) ====== */
+  .iphone { width:440px; height:956px; border-radius:62px; background:linear-gradient(180deg,#1A1A1F 0%,#0E0E12 100%); padding:12px; position:relative; flex:none;
+    box-shadow:0 0 0 1.5px #3A3A42 inset,0 0 0 4px rgba(255,255,255,.02) inset,0 60px 140px -30px rgba(0,0,0,.8),0 20px 60px -10px rgba(20,184,166,.08); }
+  .iphone::after { content:""; position:absolute; top:24px; left:50%; transform:translateX(-50%); width:124px; height:36px; background:#000; border-radius:20px; z-index:30; }
+  .iphone-screen { width:100%; height:100%; border-radius:52px; overflow:hidden; position:relative; background:radial-gradient(60% 50% at 50% 0%,rgba(20,184,166,.06),transparent 70%),var(--canvas); }
+  .home-indicator { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:134px; height:5px; background:rgba(232,234,240,.4); border-radius:3px; z-index:40; }
+
+  .status { height:54px; padding:18px 32px 0; display:flex; justify-content:space-between; align-items:flex-start; font-family:var(--ff-mono); font-size:14px; font-weight:600; color:var(--text-primary); position:relative; z-index:20; }
+  .status-right { display:flex; gap:6px; align-items:center; }
+  .content { height:calc(100% - 54px - 90px); overflow-y:auto; padding:8px 20px 24px; }
+  .content::-webkit-scrollbar { display:none; }
+
+  .top-row { display:flex; justify-content:space-between; align-items:center; padding:8px 4px 14px; }
+  .page-title { font-family:var(--ff-display); font-size:28px; font-weight:600; letter-spacing:.005em; text-transform:uppercase; }
+  .page-title .sub { display:block; font-family:var(--ff-mono); font-size:9px; font-weight:600; letter-spacing:.16em; color:var(--text-tertiary); margin-top:4px; }
+  .top-actions { display:flex; gap:8px; }
+  .icon-btn { width:36px; height:36px; display:grid; place-items:center; background:var(--surface-1); border:1px solid var(--border-subtle); color:var(--text-secondary);
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .icon-btn.brand { background:rgba(20,184,166,.16); color:var(--brand-glow); border:none; }
+  .icon-btn svg { width:18px; height:18px; }
+
+  /* ====== Fuel sub-nav (verbatim .sub-nav/.sub-tab) ====== */
+  .sub-nav { display:flex; gap:5px; padding:0 4px; margin-bottom:16px; overflow-x:auto; }
+  .sub-nav::-webkit-scrollbar { display:none; }
+  .sub-tab { padding:8px 12px; background:rgba(255,255,255,.025); color:var(--text-tertiary); font-family:var(--ff-body); font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; white-space:nowrap;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .sub-tab.active { background:rgba(20,184,166,.16); color:var(--brand-glow); }
+
+  /* ====== Type segmented switcher (NEW molecule, built from system tokens) ====== */
+  .typebar { display:flex; gap:5px; padding:5px; background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:14px; margin-bottom:16px; }
+  .typeseg { flex:1; text-align:center; padding:9px 0 8px; cursor:pointer;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .typeseg .n { font-family:var(--ff-display); font-size:14px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; line-height:1; color:var(--text-secondary); }
+  .typeseg .c { font-family:var(--ff-mono); font-size:9px; color:var(--text-tertiary); margin-top:3px; }
+  .typeseg.active { background:var(--brand-primary); box-shadow:0 8px 20px -8px rgba(20,184,166,.6); }
+  .typeseg.active .n, .typeseg.active .c { color:var(--text-inverse); }
+
+  /* ====== Stats strip (verbatim .macro-row/.macro-cell visual) ====== */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:18px; }
+  .stat { background:rgba(255,255,255,.025); padding:10px 8px; text-align:center;
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px); }
+  .stat .v { font-family:var(--ff-mono); font-size:17px; font-weight:600; letter-spacing:-.02em; color:var(--text-primary); }
+  .stat .v.warn { color:var(--warning); }
+  .stat .l { font-family:var(--ff-body); font-size:9px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--text-tertiary); margin-top:4px; }
+
+  /* ====== Divider as type-section header (verbatim .divider + colored nub) ====== */
+  .divider { display:flex; align-items:center; gap:10px; padding:0 4px 12px; font-family:var(--ff-mono); font-size:10px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--text-tertiary); margin-top:6px; }
+  .divider .nub { width:8px; height:8px; flex:none; } /* hard square — matches design-system .tag .dot */
+  .divider .count { color:var(--brand-glow); }
+  .divider::after { content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--border-subtle),transparent); }
+
+  /* ====== Tag (verbatim) ====== */
+  .tag { display:inline-flex; align-items:center; gap:5px; padding:5px 10px; font-family:var(--ff-body); font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px); }
+  .tag.success { background:rgba(52,211,153,.14); color:var(--success); }
+  .tag.warning { background:rgba(245,158,11,.14); color:var(--warning); }
+  .tag.error { background:rgba(244,63,94,.12); color:var(--error); }
+  .tag .dot { width:4px; height:4px; background:currentColor; }
+
+  /* ====== MealCard (verbatim ux-screen-mockups-v2 .meal-card family) ====== */
+  /* notched chamfer (design-system signature) instead of border-radius; borderless like .tag/.macro-cell fills */
+  .meal-card { background:var(--surface-1); padding:12px 16px; margin-bottom:8px; display:flex; gap:12px; align-items:center;
+    clip-path:polygon(14px 0,100% 0,100% calc(100% - 14px),calc(100% - 14px) 100%,0 100%,0 14px); }
+  .meal-card.supp { box-shadow:inset 2px 0 0 0 color-mix(in srgb,var(--supp) 60%,transparent); }
+  .meal-card.stim { box-shadow:inset 2px 0 0 0 color-mix(in srgb,var(--stim) 65%,transparent); }
+  .meal-time { width:44px; flex-shrink:0; font-family:var(--ff-mono); font-size:13px; font-weight:600; color:var(--brand-glow); letter-spacing:.02em; text-align:center; line-height:1.1; }
+  .meal-time .u { display:block; font-size:8px; color:var(--text-tertiary); font-weight:600; letter-spacing:.08em; margin-top:2px; }
+  .meal-time.warn { color:var(--warning); }
+  .meal-info { flex:1; min-width:0; }
+  .meal-name { font-family:var(--ff-display); font-size:16px; font-weight:600; letter-spacing:.01em; text-transform:uppercase; color:var(--text-primary); line-height:1; margin-bottom:5px; }
+  .meal-meta { display:flex; gap:5px; align-items:center; flex-wrap:wrap; font-family:var(--ff-body); font-size:9px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+  .meal-meta .src { color:var(--brand-glow); }
+  .meal-meta .sep { color:var(--text-tertiary); }
+  .meal-meta .items { color:var(--text-tertiary); font-family:var(--ff-mono); letter-spacing:0; }
+  .meal-macros-line { margin-top:5px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-family:var(--ff-mono); font-size:9px; color:var(--text-tertiary); }
+  .meal-macros-line .em { color:var(--text-secondary); font-weight:600; }
+  .meal-macros-line .p { color:var(--success); font-weight:600; }
+  .meal-macros-line .exp.low { color:var(--error); font-weight:600; }
+  .meal-kcal { font-family:var(--ff-mono); font-size:16px; font-weight:600; color:var(--text-primary); text-align:right; flex-shrink:0; }
+  .meal-kcal .unit { font-size:9px; color:var(--text-tertiary); margin-left:1px; display:block; margin-top:1px; }
+  .meal-kcal.dose { color:var(--brand-glow); }
+
+  /* ====== Attention strip (verbatim .meal-window-push) ====== */
+  .push { padding:10px 14px; background:rgba(245,158,11,.07); border-left:2px solid var(--warning); margin:2px 0 14px; font-family:var(--ff-body); font-size:11px; color:var(--text-secondary); line-height:1.45;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .push .em { color:var(--warning); font-weight:600; }
+
+  /* ====== Bottom tab bar (verbatim .tabbar) ====== */
+  .tabbar { position:absolute; bottom:0; left:0; right:0; height:90px; background:rgba(10,15,20,.85); backdrop-filter:blur(24px) saturate(180%); -webkit-backdrop-filter:blur(24px) saturate(180%);
+    border-top:1px solid var(--border-subtle); display:grid; grid-template-columns:repeat(5,1fr); padding:10px 16px 30px; z-index:10; }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:5px; color:var(--text-tertiary); }
+  .tab.active { color:var(--brand-glow); }
+  .tab svg { width:24px; height:24px; }
+  .tab-label { font-family:var(--ff-body); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+
+  /* ====== caption ====== */
+  .caption { width:380px; flex:none; }
+  .caption h2 { font-family:var(--ff-display); font-size:22px; font-weight:600; text-transform:uppercase; letter-spacing:.01em; margin-bottom:14px; }
+  .caption .blk { background:var(--surface-1); border:1px solid var(--border-subtle); border-left:2px solid var(--brand-primary); border-radius:14px; padding:16px 18px; margin-bottom:14px; font-size:13px; line-height:1.6; color:var(--text-secondary); }
+  .caption .blk h3 { font-family:var(--ff-mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--brand-glow); margin-bottom:10px; }
+  .caption code { font-family:var(--ff-mono); font-size:12px; color:var(--brand-glow); }
+  .caption ul { padding-left:16px; margin-top:8px; }
+  .caption li { margin-bottom:7px; }
+  .caption .legend-row { display:flex; align-items:center; gap:9px; margin-bottom:8px; font-size:12px; }
+  .caption .sw { width:14px; height:14px; border-radius:4px; flex:none; }
+  .caption .map { font-family:var(--ff-mono); font-size:11.5px; line-height:1.7; color:var(--text-secondary); }
+  .caption .map b { color:var(--text-primary); font-weight:500; }
+  .caption .map .arrow { color:var(--brand-glow); }
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <div class="eyebrow">Fuel ▸ Kamra · Irány A · v3</div>
+  <h1>Kamra — design-system kártyák</h1>
+  <p>Az A irány újraépítve a <strong>valódi v2 primitívekből</strong>: a kitalált kártya helyett az igazi <code>.meal-card</code> (44px bal metrika · Antonio név · src/meta · makró-sor · jobb kcal), plus a rendszer <code>.sub-nav</code>, <code>.divider</code>, <code>.tag</code>, <code>.iphone</code> kerete és <code>.tabbar</code>-ja. A típus a fő váltó, a kártya letisztul.</p>
+</div>
+
+<div class="stage">
+
+  <div class="iphone">
+    <div class="iphone-screen">
+      <div class="status"><span>9:41</span><span class="status-right">5G ▴ 84%</span></div>
+      <div class="content">
+
+        <div class="top-row">
+          <div class="page-title">Kamra<span class="sub">21 tétel · 3 lejár · 2 fogy</span></div>
+          <div class="top-actions">
+            <button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button>
+            <button class="icon-btn brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+        </div>
+
+        <div class="sub-nav">
+          <div class="sub-tab">Mai</div>
+          <div class="sub-tab">Terv</div>
+          <div class="sub-tab">Stack</div>
+          <div class="sub-tab">Receptek</div>
+          <div class="sub-tab active">Kamra</div>
+        </div>
+
+        <div class="typebar">
+          <div class="typeseg active"><div class="n">Mind</div><div class="c">21</div></div>
+          <div class="typeseg"><div class="n">Étel</div><div class="c">16</div></div>
+          <div class="typeseg"><div class="n">Supp</div><div class="c">3</div></div>
+          <div class="typeseg"><div class="n">Stim</div><div class="c">2</div></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><div class="v">21</div><div class="l">Tétel</div></div>
+          <div class="stat"><div class="v">16</div><div class="l">Hozzáv.</div></div>
+          <div class="stat"><div class="v warn">3</div><div class="l">Lejár</div></div>
+          <div class="stat"><div class="v warn">2</div><div class="l">Fogy</div></div>
+        </div>
+
+        <div class="push"><span class="em">2 tétel holnap lejár</span> — Lazac és Spenót. 4 recept használná őket ma este.</div>
+
+        <!-- ÉTEL -->
+        <div class="divider"><span class="nub" style="background:var(--food)"></span><span>Étel</span><span class="count">16</span></div>
+
+        <div class="meal-card">
+          <div class="meal-time">400<span class="u">g</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Csirkemell · friss</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-kifli)">kifli.hu</span><span class="sep">·</span><span class="items">Bonafarm</span></div>
+            <div class="meal-macros-line"><span class="p">P 23</span><span>C 0</span><span>F 1.5</span><span class="em" style="color:var(--success)">NOVA 1</span><span class="exp">· lejár Máj 25</span></div>
+          </div>
+          <div class="meal-kcal">110<span class="unit">kcal</span></div>
+        </div>
+
+        <div class="meal-card">
+          <div class="meal-time">300<span class="u">g</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Lazacfilé · norvég</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-kifli)">kifli.hu</span><span class="sep">·</span><span class="items">Kifli Premium</span></div>
+            <div class="meal-macros-line"><span class="p">P 20</span><span>C 0</span><span>F 13</span><span class="em" style="color:var(--success)">NOVA 1</span><span class="exp low">· ⚠ lejár Máj 24</span></div>
+          </div>
+          <div class="meal-kcal">208<span class="unit">kcal</span></div>
+        </div>
+
+        <div class="meal-card">
+          <div class="meal-time">250<span class="u">g</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Túró · félzsíros</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-kifli)">kifli.hu</span><span class="sep">·</span><span class="items">Mizo</span></div>
+            <div class="meal-macros-line"><span class="p">P 18</span><span>C 3.5</span><span>F 5</span><span class="em" style="color:var(--warning)">NOVA 3</span><span class="exp">· lejár Máj 26</span></div>
+          </div>
+          <div class="meal-kcal">130<span class="unit">kcal</span></div>
+        </div>
+
+        <div class="meal-card">
+          <div class="meal-time">320<span class="u">g</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Zabpehely · gm.</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-kifli)">kifli.hu</span><span class="sep">·</span><span class="items">Naturmind</span></div>
+            <div class="meal-macros-line"><span>P 14</span><span class="p">C 60</span><span>F 7</span><span class="em" style="color:var(--success)">NOVA 1</span></div>
+          </div>
+          <div class="meal-kcal">372<span class="unit">kcal</span></div>
+        </div>
+
+        <div class="meal-card">
+          <div class="meal-time warn">150<span class="u">g</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Spenót · friss</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-kifli)">kifli.hu</span><span class="sep">·</span><span class="items">Bio Mo.</span></div>
+            <div class="meal-macros-line"><span class="p">P 2.9</span><span>C 3.6</span><span>F 0.4</span><span class="em" style="color:var(--success)">NOVA 1</span><span class="exp low">· ⚠ lejár Máj 24</span></div>
+          </div>
+          <div class="meal-kcal">23<span class="unit">kcal</span></div>
+        </div>
+
+        <div class="meal-card">
+          <div class="meal-time">380<span class="u">ml</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Olívaolaj · e.szűz</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-kifli)">kifli.hu</span><span class="sep">·</span><span class="items">11 receptben</span></div>
+            <div class="meal-macros-line"><span>P 0</span><span>C 0</span><span class="p">F 100</span><span class="em" style="color:#A3E635">NOVA 2</span></div>
+          </div>
+          <div class="meal-kcal">884<span class="unit">kcal</span></div>
+        </div>
+
+        <!-- SUPPLEMENT -->
+        <div class="divider"><span class="nub" style="background:var(--supp)"></span><span>Supplement</span><span class="count">3</span></div>
+
+        <div class="meal-card supp">
+          <div class="meal-time">86<span class="u">adag</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Kreatin monohidrát</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-mp)">myprotein</span><span class="sep">·</span><span class="items">reggel</span></div>
+            <div class="meal-macros-line"><span>Naponta egy adag · időponttól független</span></div>
+          </div>
+          <div class="meal-kcal dose">5g<span class="unit">dózis</span></div>
+        </div>
+
+        <div class="meal-card supp">
+          <div class="meal-time warn">24<span class="u">adag</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Impact Whey · csoki</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-mp)">myprotein</span><span class="sep">·</span><span class="items">pre/post · flex</span></div>
+            <div class="meal-macros-line"><span class="p">P 82</span><span>C 4</span><span>F 7.5</span><span class="exp low">· ⚠ fogytán</span></div>
+          </div>
+          <div class="meal-kcal dose">30g<span class="unit">scoop</span></div>
+        </div>
+
+        <div class="meal-card supp">
+          <div class="meal-time">58<span class="u">db</span></div>
+          <div class="meal-info">
+            <div class="meal-name">Magnézium-glicinát</div>
+            <div class="meal-meta"><span class="src" style="color:var(--text-tertiary)">Pure Encaps.</span><span class="sep">·</span><span class="items">este · alvás</span></div>
+            <div class="meal-macros-line"><span>21:00 · lefekvés előtt 2h · pattern P2</span></div>
+          </div>
+          <div class="meal-kcal dose">300<span class="unit">mg</span></div>
+        </div>
+
+        <!-- STIMULÁNS -->
+        <div class="divider"><span class="nub" style="background:var(--stim)"></span><span>Stimuláns</span><span class="count">2</span></div>
+
+        <div class="meal-card stim">
+          <div class="meal-time warn">18<span class="u">adag</span></div>
+          <div class="meal-info">
+            <div class="meal-name">AAKG · L-Arginine</div>
+            <div class="meal-meta"><span class="src" style="color:var(--src-mp)">myprotein</span><span class="sep">·</span><span class="items">pre-workout</span><span class="tag warning" style="padding:2px 6px;font-size:8px"><span class="dot"></span>STIM</span></div>
+            <div class="meal-macros-line"><span>Pre-workout T-30min · nem-koffeines pump</span><span class="exp low">· ⚠ fogytán</span></div>
+          </div>
+          <div class="meal-kcal dose" style="color:var(--stim)">6g<span class="unit">dózis</span></div>
+        </div>
+
+      </div>
+
+      <nav class="tabbar">
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg><span class="tab-label">Ma</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 7v10M18 7v10M4 12h16M9 9v6M15 9v6"/></svg><span class="tab-label">Edzés</span></div>
+        <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><circle cx="12" cy="12" r="2.2" fill="currentColor" stroke="none"/></svg><span class="tab-label">Fuel</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19V9M9 19V5M14 19v-7M19 19v-11"/></svg><span class="tab-label">Insights</span></div>
+        <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span class="tab-label">Én</span></div>
+      </nav>
+      <div class="home-indicator"></div>
+    </div>
+  </div>
+
+  <div class="caption">
+    <h2>Mi változott</h2>
+    <div class="blk">
+      <h3>A kártya = valódi <code>.meal-card</code></h3>
+      <div class="map">
+        <b>44px bal</b> <span class="arrow">→</span> készlet (volt: étkezés ideje)<br>
+        <b>meal-name</b> <span class="arrow">→</span> tétel neve (Antonio)<br>
+        <b>meal-meta</b> <span class="arrow">→</span> forrás · márka/timing<br>
+        <b>macros-line</b> <span class="arrow">→</span> P/C/F · NOVA · lejárat<br>
+        <b>meal-kcal jobb</b> <span class="arrow">→</span> kcal/100g · supp: dózis
+      </div>
+    </div>
+    <div class="blk">
+      <h3>Rendszer-primitívek</h3>
+      <ul>
+        <li><code>.sub-nav/.sub-tab</code> — a Fuel fülsor 1:1.</li>
+        <li><code>.divider</code> + színes nub — típus-szekció fej.</li>
+        <li><code>.tag</code> (warning) — a STIM jelölő.</li>
+        <li><code>.macro-cell</code> chamfer — a 4 stat-cella.</li>
+        <li><code>.meal-window-push</code> — a „figyelmet kér" csík.</li>
+        <li><code>.iphone</code> + <code>.tabbar</code> — valódi keret/sáv.</li>
+      </ul>
+    </div>
+    <div class="blk" style="border-left-color:var(--brand-glow)">
+      <h3>Típus-jelölés</h3>
+      <div class="legend-row"><span class="sw" style="background:var(--food)"></span> Étel — semleges kártya, makró-sor</div>
+      <div class="legend-row"><span class="sw" style="background:var(--supp)"></span> Supplement — bal kék szegély, dózis-fókusz</div>
+      <div class="legend-row"><span class="sw" style="background:var(--stim)"></span> Stimuláns — bal rózsa szegély + STIM tag</div>
+      <p style="margin-top:10px">Az egyetlen új molekula a <b>típus-váltó</b> (a kért hangsúlyos Mind/Étel/Supp/Stim) — de a rendszer chamfer + brand-fill nyelvén.</p>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,1833 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mezo · Component Library v2 · Step-11 Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+
+  :root {
+    --brand-deep:    #064E5B;
+    --brand-core:    #0E7C7B;
+    --brand-primary: #14B8A6;
+    --brand-glow:    #5EEAD4;
+    --brand-tint:    #CCFBF1;
+    --canvas:        #0A0F14;
+    --surface-1:     #121A22;
+    --surface-2:     #1A242E;
+    --surface-glass: rgba(255,255,255,0.04);
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-strong: rgba(255,255,255,0.12);
+    --canvas-warm:    #1A1410;
+    --surface-1-warm: #241C18;
+    --accent-warm:    #D97757;
+    --warm-deep:      #4A2A1C;
+    --text-primary:   #ECECF1;
+    --text-secondary: #9CA3AF;
+    --text-tertiary:  #6B7280;
+    --text-inverse:   #0A0F14;
+    --success: #34D399;
+    --warning: #F59E0B;
+    --error:   #F43F5E;
+    --ff-display: "Antonio", "Bebas Neue", sans-serif;
+    --ff-body:    "Inter", -apple-system, system-ui, sans-serif;
+    --ff-mono:    "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  html, body {
+    background: #050709;
+    color: var(--text-primary);
+    font-family: var(--ff-body);
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 48px 32px 96px;
+  }
+
+  /* === Page header === */
+  .doc-header {
+    max-width: 1300px;
+    margin: 0 auto 64px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .doc-eyebrow {
+    font-family: var(--ff-mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--brand-glow);
+    margin-bottom: 14px;
+  }
+  .doc-title {
+    font-family: var(--ff-display); font-size: 44px; font-weight: 600;
+    letter-spacing: 0.005em; line-height: 1.0; text-transform: uppercase;
+    color: var(--text-primary); margin-bottom: 16px;
+  }
+  .doc-title .accent { color: var(--brand-glow); }
+  .doc-sub {
+    font-family: var(--ff-body); font-size: 15px; color: var(--text-secondary);
+    max-width: 720px; line-height: 1.55;
+  }
+  .doc-sub strong { color: var(--text-primary); font-weight: 500; }
+  .doc-meta {
+    display: flex; gap: 24px; flex-wrap: wrap;
+    margin-top: 20px;
+  }
+  .doc-meta-item {
+    font-family: var(--ff-mono); font-size: 11px; color: var(--text-tertiary);
+    letter-spacing: 0.06em;
+  }
+  .doc-meta-item .v { color: var(--brand-glow); text-transform: uppercase; letter-spacing: 0.12em; }
+
+  /* === Phase section === */
+  .phase {
+    max-width: 1300px;
+    margin: 0 auto 80px;
+  }
+  .phase-header {
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .phase-num {
+    font-family: var(--ff-mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--brand-glow);
+    margin-bottom: 8px;
+  }
+  .phase-title {
+    font-family: var(--ff-display); font-size: 32px; font-weight: 600;
+    letter-spacing: 0.005em; line-height: 1.0; text-transform: uppercase;
+    color: var(--text-primary); margin-bottom: 10px;
+  }
+  .phase-sub {
+    font-family: var(--ff-body); font-size: 14px; color: var(--text-secondary);
+  }
+
+  /* === Component grid === */
+  .components {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 24px;
+  }
+  .components.wide {
+    grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+  }
+  .components.full {
+    grid-template-columns: 1fr;
+  }
+
+  /* === Component card === */
+  .component {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .component.warm-bg {
+    background: var(--surface-1-warm);
+    border-color: rgba(217,119,87,0.10);
+  }
+  .component-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .component-name {
+    font-family: var(--ff-display); font-size: 18px; font-weight: 600;
+    letter-spacing: 0.01em; text-transform: uppercase;
+    color: var(--text-primary); line-height: 1.0;
+  }
+  .component-tag {
+    font-family: var(--ff-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.12em; color: var(--brand-glow);
+    padding: 3px 8px; background: rgba(20,184,166,0.10);
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    white-space: nowrap;
+  }
+  .component-stage {
+    background: var(--canvas);
+    border: 1px dashed var(--border-subtle);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex; flex-direction: column; gap: 14px;
+    align-items: center; justify-content: center;
+    min-height: 140px;
+  }
+  .component-stage.warm-stage {
+    background: var(--canvas-warm);
+    border-color: rgba(217,119,87,0.10);
+  }
+  .component-stage.dense {
+    align-items: stretch;
+  }
+  .component-desc {
+    font-family: var(--ff-body); font-size: 12px; line-height: 1.5;
+    color: var(--text-secondary);
+  }
+  .component-desc strong { color: var(--text-primary); font-weight: 500; }
+  .component-desc code {
+    font-family: var(--ff-mono); font-size: 11px;
+    color: var(--brand-glow); background: rgba(255,255,255,0.03);
+    padding: 1px 5px; border-radius: 3px;
+  }
+  .variant-row {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .variant-label {
+    font-family: var(--ff-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-tertiary);
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  /* ====================================================
+     ATOMIC COMPONENTS
+     ==================================================== */
+
+  /* === Tag === */
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 5px 10px;
+    font-family: var(--ff-body); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+  }
+  .tag.brand { background: rgba(20,184,166,0.16); color: var(--brand-glow); }
+  .tag.muted { background: rgba(255,255,255,0.05); color: var(--text-secondary); }
+  .tag.success { background: rgba(52,211,153,0.14); color: var(--success); }
+  .tag.warning { background: rgba(245,158,11,0.14); color: var(--warning); }
+  .tag.error { background: rgba(244,63,94,0.12); color: var(--error); }
+  .tag.warm { background: rgba(217,119,87,0.18); color: var(--accent-warm); }
+  .tag .dot { width: 4px; height: 4px; background: currentColor; }
+
+  /* === MezoButton === */
+  .btn-primary {
+    background: var(--brand-primary); color: var(--text-inverse);
+    font-family: var(--ff-display); font-size: 14px; font-weight: 600;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    padding: 12px 22px; border: none; cursor: pointer;
+    clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+    box-shadow: 0 10px 24px -6px rgba(20,184,166,0.5);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-secondary {
+    background: transparent; color: var(--text-secondary);
+    font-family: var(--ff-display); font-size: 12px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 10px 18px; border: 1px solid var(--border-strong); cursor: pointer;
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .btn-text {
+    background: transparent; color: var(--brand-glow); border: none;
+    font-family: var(--ff-mono); font-size: 11px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 10px 8px; cursor: pointer;
+  }
+
+  /* === ConfidenceBar === */
+  .conf-bar {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--ff-mono); font-size: 11px; color: var(--text-secondary);
+  }
+  .conf-bar .track {
+    width: 48px; height: 4px; background: rgba(255,255,255,0.08);
+    overflow: hidden; position: relative; border-radius: 2px;
+  }
+  .conf-bar .fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--brand-primary), var(--brand-glow));
+  }
+  .conf-bar .fill.warm {
+    background: linear-gradient(90deg, var(--warm-deep), var(--accent-warm));
+  }
+  .conf-bar .v { color: var(--brand-glow); font-weight: 600; }
+  .conf-bar .v.warm { color: var(--accent-warm); }
+
+  /* === CheckInSlot === */
+  .checkin-slot {
+    padding: 8px 10px;
+    text-align: center;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--border-subtle);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    flex: 1; min-width: 70px;
+  }
+  .checkin-slot.done {
+    background: rgba(52,211,153,0.08);
+    border-color: rgba(52,211,153,0.2);
+  }
+  .checkin-slot.active {
+    background: rgba(20,184,166,0.12);
+    border-color: rgba(20,184,166,0.3);
+  }
+  .checkin-slot.missed {
+    background: rgba(244,63,94,0.05);
+    border-color: rgba(244,63,94,0.1);
+    opacity: 0.6;
+  }
+  .checkin-time {
+    font-family: var(--ff-mono); font-size: 11px; font-weight: 600;
+    color: var(--text-primary); margin-bottom: 1px;
+  }
+  .checkin-slot.done .checkin-time { color: var(--success); }
+  .checkin-slot.active .checkin-time { color: var(--brand-glow); }
+  .checkin-slot.missed .checkin-time { color: var(--text-tertiary); }
+  .checkin-label {
+    font-family: var(--ff-body); font-size: 8px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .checkin-slot.done .checkin-label { color: var(--success); }
+  .checkin-slot.active .checkin-label { color: var(--brand-glow); }
+
+  /* === RirChip === */
+  .rir-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%;
+  }
+  .rir-opt {
+    padding: 10px 6px;
+    background: var(--canvas); border: 1px solid var(--border-subtle);
+    text-align: center;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    font-family: var(--ff-mono); font-size: 16px; font-weight: 600;
+    color: var(--text-secondary);
+  }
+  .rir-opt.active {
+    background: rgba(20,184,166,0.16);
+    border-color: rgba(20,184,166,0.4);
+    color: var(--brand-glow);
+  }
+
+  /* === ToolChip === */
+  .tool-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 8px;
+    font-family: var(--ff-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.04em;
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  }
+  .tool-chip.read {
+    background: transparent;
+    border: 1px solid rgba(94,234,212,0.30);
+    color: var(--brand-glow);
+  }
+  .tool-chip.compute {
+    background: rgba(245,158,11,0.16);
+    color: var(--warning);
+  }
+  .tool-chip.write {
+    background: rgba(94,234,212,0.18);
+    color: var(--brand-glow);
+  }
+
+  /* === CitationRef === */
+  .citation-ref {
+    display: inline-flex; align-items: center;
+    padding: 2px 6px;
+    background: rgba(94,234,212,0.08);
+    color: var(--brand-glow);
+    font-family: var(--ff-mono); font-size: 10px;
+    letter-spacing: -0.01em;
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  }
+
+  /* ====================================================
+     MOLECULE COMPONENTS
+     ==================================================== */
+
+  /* === HeartbeatStrip === */
+  .heartbeat-strip {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    width: 100%;
+  }
+
+  /* === HydrationChip + ElectrolyteChip === */
+  .nutri-chip {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px;
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .nutri-chip .icon {
+    width: 24px; height: 24px;
+    background: rgba(94,234,212,0.10);
+    color: var(--brand-glow);
+    display: grid; place-items: center;
+    border-radius: 6px;
+  }
+  .nutri-chip .label {
+    font-family: var(--ff-body); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--text-tertiary); line-height: 1;
+    margin-bottom: 2px;
+  }
+  .nutri-chip .value {
+    font-family: var(--ff-mono); font-size: 13px; font-weight: 600;
+    color: var(--text-primary); letter-spacing: -0.01em;
+  }
+  .nutri-chip .value .unit { color: var(--text-tertiary); font-size: 10px; margin-left: 2px; }
+  .nutri-chip .progress {
+    margin-left: auto;
+    width: 36px; height: 3px;
+    background: rgba(255,255,255,0.06); border-radius: 2px;
+    overflow: hidden; position: relative;
+  }
+  .nutri-chip .progress::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--brand-glow);
+  }
+
+  /* === WorkoutTeaser === */
+  .workout-teaser {
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    border-radius: 16px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    width: 100%;
+  }
+  .workout-teaser .icon-box {
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    background: rgba(20,184,166,0.12);
+    color: var(--brand-glow);
+    clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px);
+    flex-shrink: 0;
+  }
+  .workout-teaser .info { flex: 1; min-width: 0; }
+  .workout-teaser .lbl {
+    font-family: var(--ff-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--text-tertiary); margin-bottom: 2px;
+  }
+  .workout-teaser .ttl {
+    font-family: var(--ff-display); font-size: 16px; font-weight: 600;
+    letter-spacing: 0.01em; text-transform: uppercase;
+    color: var(--text-primary); line-height: 1; margin-bottom: 3px;
+  }
+  .workout-teaser .meta {
+    font-family: var(--ff-body); font-size: 11px;
+    color: var(--text-secondary);
+  }
+  .workout-teaser .chev { color: var(--text-tertiary); margin-left: 6px; }
+
+  .niggle-ribbon {
+    padding: 8px 12px;
+    background: rgba(245,158,11,0.08);
+    border-left: 2px solid var(--warning);
+    margin-top: 8px;
+    font-family: var(--ff-body); font-size: 11px;
+    color: var(--text-secondary); line-height: 1.4;
+    width: 100%;
+  }
+  .niggle-ribbon .em { color: var(--warning); font-weight: 600; }
+
+  /* === MealCard === */
+  .meal-card {
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    border-radius: 14px; padding: 12px;
+    display: flex; gap: 12px; align-items: center;
+    width: 100%;
+  }
+  .meal-time {
+    width: 40px; flex-shrink: 0; text-align: center;
+    font-family: var(--ff-mono); font-size: 10px; font-weight: 600;
+    color: var(--brand-glow); letter-spacing: 0.04em;
+  }
+  .meal-info { flex: 1; min-width: 0; }
+  .meal-name {
+    font-family: var(--ff-display); font-size: 15px; font-weight: 600;
+    letter-spacing: 0.01em; text-transform: uppercase;
+    color: var(--text-primary); line-height: 1; margin-bottom: 4px;
+  }
+  .meal-meta {
+    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+    font-family: var(--ff-body); font-size: 9px; font-weight: 700;
+    letter-spacing: 0.10em; text-transform: uppercase;
+  }
+  .meal-meta .src { color: var(--brand-glow); }
+  .meal-meta .src.adhoc { color: var(--text-tertiary); }
+  .meal-meta .sep { color: var(--text-tertiary); }
+  .meal-meta .items { color: var(--text-tertiary); font-family: var(--ff-mono); font-size: 9px; letter-spacing: 0; }
+  .meal-kcal {
+    font-family: var(--ff-mono); font-size: 15px; font-weight: 600;
+    color: var(--text-primary); text-align: right;
+  }
+  .meal-kcal .unit { font-size: 9px; color: var(--text-tertiary); margin-left: 2px; }
+
+  /* === NigglePreFlag === */
+  .niggle-flag {
+    width: 100%;
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    border-radius: 14px; padding: 16px;
+  }
+  .niggle-flag .ttl {
+    font-family: var(--ff-display); font-size: 14px; font-weight: 600;
+    letter-spacing: 0.01em; text-transform: uppercase;
+    color: var(--text-primary); margin-bottom: 10px;
+  }
+  .niggle-body-map {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
+    margin-bottom: 10px;
+  }
+  .body-region {
+    padding: 7px 4px; text-align: center;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid var(--border-subtle);
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+    font-family: var(--ff-body); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+  }
+  .body-region.active {
+    background: rgba(245,158,11,0.14);
+    border-color: rgba(245,158,11,0.30);
+    color: var(--warning);
+  }
+  .severity {
+    font-family: var(--ff-mono); font-size: 10px;
+    color: var(--text-tertiary);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .severity .track {
+    flex: 1; height: 3px; background: rgba(255,255,255,0.06); position: relative;
+  }
+  .severity .track::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 60%; background: var(--warning);
+  }
+
+  /* ====================================================
+     ORGANISM COMPONENTS
+     ==================================================== */
+
+  /* === BriefingCard === */
+  .briefing-card {
+    background: linear-gradient(135deg, rgba(20,184,166,0.04), transparent 80%), var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 20px 20px 16px;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+  }
+  .briefing-card::before {
+    content: "";
+    position: absolute; left: 0; top: 20px; bottom: 20px;
+    width: 3px; background: var(--brand-primary);
+    border-radius: 0 2px 2px 0;
+  }
+  .briefing-card.warm {
+    background: linear-gradient(135deg, rgba(217,119,87,0.05), transparent 80%), var(--surface-1);
+    border-color: rgba(217,119,87,0.10);
+  }
+  .briefing-card.warm::before {
+    background: var(--accent-warm);
+    opacity: 0.65;
+  }
+  .briefing-eyebrow {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--ff-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--brand-glow);
+    margin-bottom: 12px;
+  }
+  .briefing-card.warm .briefing-eyebrow { color: var(--accent-warm); }
+  .briefing-badge {
+    width: 22px; height: 22px;
+    background: rgba(20,184,166,0.16);
+    color: var(--brand-glow);
+    display: grid; place-items: center;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  }
+  .briefing-card.warm .briefing-badge {
+    background: rgba(217,119,87,0.16);
+    color: var(--accent-warm);
+  }
+  /* Title-Case per Paige R9 */
+  .briefing-display {
+    font-family: var(--ff-display); font-size: 28px; font-weight: 600;
+    letter-spacing: 0.005em; line-height: 1.1;
+    text-transform: none;
+    color: var(--text-primary); margin-bottom: 10px;
+  }
+  .briefing-display .accent { color: var(--brand-glow); }
+  .briefing-card.warm .briefing-display .accent { color: var(--accent-warm); }
+  .briefing-body {
+    font-family: var(--ff-body); font-size: 13px; line-height: 1.55;
+    color: var(--text-secondary); margin-bottom: 12px;
+  }
+  .briefing-body .em { color: var(--text-primary); font-weight: 500; }
+
+  /* === MemoirCard === */
+  .memoir-card {
+    background: linear-gradient(135deg, rgba(217,119,87,0.07), transparent 80%), var(--surface-1-warm);
+    border: 1px solid rgba(217,119,87,0.15);
+    border-radius: 20px;
+    padding: 20px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+  }
+  .memoir-card::before {
+    content: "";
+    position: absolute; left: 0; top: 20px; bottom: 20px;
+    width: 3px; background: var(--accent-warm);
+    opacity: 0.7;
+  }
+  .memoir-eyebrow {
+    font-family: var(--ff-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent-warm); margin-bottom: 12px;
+  }
+  .memoir-title {
+    font-family: var(--ff-display); font-size: 22px; font-weight: 600;
+    letter-spacing: 0.005em; line-height: 1.1;
+    text-transform: none;
+    color: var(--text-primary); margin-bottom: 12px;
+  }
+  .memoir-body {
+    font-family: var(--ff-body); font-size: 12px; line-height: 1.6;
+    color: var(--text-secondary); margin-bottom: 14px;
+  }
+  .memoir-body .em { color: var(--text-primary); font-weight: 500; }
+  .memoir-anchors {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    padding: 10px 0;
+    border-top: 1px solid rgba(217,119,87,0.10);
+    border-bottom: 1px solid rgba(217,119,87,0.10);
+    margin-bottom: 12px;
+  }
+  .anchor-chip {
+    padding: 3px 7px;
+    background: rgba(217,119,87,0.10);
+    color: var(--accent-warm);
+    font-family: var(--ff-mono); font-size: 9px;
+    clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+  }
+  .memoir-reactions {
+    display: flex; gap: 5px;
+  }
+  .reaction-btn {
+    flex: 1; padding: 9px 6px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(217,119,87,0.08);
+    color: var(--text-secondary);
+    font-family: var(--ff-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  }
+
+  /* === FactCard === */
+  .fact-card {
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    border-radius: 14px; padding: 14px;
+    border-left: 3px solid var(--brand-primary);
+    width: 100%;
+  }
+  .fact-card.physiology { border-left-color: var(--brand-primary); }
+  .fact-card.trigger { border-left-color: var(--warning); }
+  .fact-card.preference { border-left-color: var(--brand-glow); }
+  .fact-card.response { border-left-color: var(--success); }
+  .fact-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .fact-cat {
+    padding: 3px 7px;
+    font-family: var(--ff-body); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  }
+  .fact-cat.physiology { background: rgba(20,184,166,0.14); color: var(--brand-glow); }
+  .fact-cat.trigger { background: rgba(245,158,11,0.14); color: var(--warning); }
+  .fact-cat.preference { background: rgba(94,234,212,0.10); color: var(--brand-glow); }
+  .fact-cat.response { background: rgba(52,211,153,0.12); color: var(--success); }
+  .fact-meta-mini {
+    font-family: var(--ff-mono); font-size: 9px; color: var(--text-tertiary);
+    letter-spacing: 0.04em;
+  }
+  .fact-text {
+    font-family: var(--ff-body); font-size: 12px; line-height: 1.4;
+    color: var(--text-primary);
+  }
+  .fact-text .em { color: var(--brand-glow); font-weight: 600; }
+
+  /* === PatternCard === */
+  .pattern-card {
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    border-radius: 16px; padding: 16px;
+    width: 100%;
+  }
+  .pattern-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+  .pattern-tags { display: flex; gap: 4px; }
+  .pattern-title {
+    font-family: var(--ff-display); font-size: 17px; font-weight: 600;
+    letter-spacing: 0.005em; line-height: 1.15;
+    text-transform: none;
+    color: var(--text-primary); margin-bottom: 8px;
+  }
+  .pattern-title .em { color: var(--brand-glow); }
+  .pattern-body {
+    font-family: var(--ff-body); font-size: 11px; line-height: 1.5;
+    color: var(--text-secondary); margin-bottom: 10px;
+  }
+  /* 4-factor critique micro-bars */
+  .critique-bars {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    margin-bottom: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .critique-bar {
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .critique-bar .lbl {
+    font-family: var(--ff-mono); font-size: 8px; font-weight: 700;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .critique-bar .track {
+    height: 3px; background: rgba(255,255,255,0.06); position: relative;
+  }
+  .critique-bar .track .fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--brand-glow);
+  }
+  .critique-bar .v {
+    font-family: var(--ff-mono); font-size: 9px;
+    color: var(--brand-glow);
+  }
+  .pattern-actions {
+    display: flex; gap: 6px;
+  }
+  .pa {
+    flex: 1; padding: 8px 6px;
+    background: transparent; border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    font-family: var(--ff-body); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+  }
+  .pa.confirm { background: rgba(20,184,166,0.16); color: var(--brand-glow); border: none; }
+  .pa.reject { background: rgba(244,63,94,0.10); color: var(--error); border: none; }
+
+  /* === ChatBubble === */
+  .chat-block {
+    width: 100%;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .msg { max-width: 92%; }
+  .msg.user { align-self: flex-end; }
+  .msg.assist { align-self: flex-start; }
+  .msg-role {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 5px;
+  }
+  .msg.user .msg-role { justify-content: flex-end; }
+  .role-badge {
+    width: 18px; height: 18px; display: grid; place-items: center;
+    background: rgba(20,184,166,0.16); color: var(--brand-glow);
+    clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px);
+  }
+  .role-label {
+    font-family: var(--ff-mono); font-size: 8px; font-weight: 600;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .msg-bubble {
+    padding: 10px 12px;
+    font-family: var(--ff-body); font-size: 12px; line-height: 1.5;
+    color: var(--text-primary);
+    clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  }
+  .msg.user .msg-bubble { background: var(--surface-2); }
+  .msg.assist .msg-bubble {
+    background: linear-gradient(135deg, rgba(20,184,166,0.05), transparent 70%);
+    border: 1px solid rgba(20,184,166,0.15);
+  }
+  .msg-bubble .em { color: var(--brand-glow); font-weight: 600; }
+  /* ToolChip row (above assistant bubble) */
+  .tool-chip-row {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  /* ChatRefsRow */
+  .refs {
+    margin-top: 8px; padding: 8px 10px;
+    background: rgba(255,255,255,0.025);
+    border-left: 2px solid var(--brand-glow);
+    font-family: var(--ff-body); font-size: 10px; line-height: 1.5;
+    color: var(--text-tertiary);
+  }
+  .refs-label {
+    font-family: var(--ff-mono); font-size: 8px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--brand-glow); margin-bottom: 5px;
+  }
+  .refs-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+  /* === SetLogger === */
+  .set-logger {
+    background: var(--surface-2); padding: 16px;
+    width: 100%; border-radius: 14px;
+  }
+  .log-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 14px;
+  }
+  .log-input {
+    background: var(--canvas); border: 1px solid var(--border-subtle);
+    border-radius: 10px; padding: 10px 6px; text-align: center;
+  }
+  .log-input .lbl {
+    font-family: var(--ff-body); font-size: 9px; font-weight: 700;
+    letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--text-tertiary); margin-bottom: 6px;
+  }
+  .log-stepper {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .stepper-btn {
+    width: 26px; height: 26px;
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+    display: grid; place-items: center;
+    font-family: var(--ff-mono); font-size: 14px;
+  }
+  .stepper-val {
+    flex: 1; text-align: center;
+    font-family: var(--ff-mono); font-size: 22px; font-weight: 600;
+    color: var(--text-primary);
+  }
+  .stepper-val .u { font-size: 11px; color: var(--text-tertiary); margin-left: 2px; }
+
+  /* === RetaPhaseGradientBar === */
+  .reta-bar {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;
+    width: 100%;
+    padding: 4px;
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+  }
+  .reta-seg {
+    height: 24px;
+    position: relative;
+    display: grid; place-items: center;
+    clip-path: polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px);
+  }
+  .reta-seg .num {
+    font-family: var(--ff-mono); font-size: 9px; font-weight: 600;
+    color: var(--text-inverse);
+    letter-spacing: 0.04em;
+  }
+  .reta-seg.d1 { background: var(--brand-primary); }
+  .reta-seg.d2 { background: linear-gradient(90deg, var(--brand-primary), var(--brand-core)); }
+  .reta-seg.d3 { background: var(--brand-core); }
+  .reta-seg.d4 { background: linear-gradient(90deg, var(--brand-core), var(--warning)); }
+  .reta-seg.d5 { background: var(--warning); }
+  .reta-seg.d6 { background: linear-gradient(90deg, var(--warning), var(--text-tertiary)); }
+  .reta-seg.d7 { background: var(--text-tertiary); }
+  .reta-seg.d6 .num, .reta-seg.d7 .num { color: var(--text-primary); }
+  .reta-current {
+    outline: 2px solid var(--brand-glow);
+    outline-offset: 1px;
+  }
+
+  /* === AnchorModeBanner === */
+  .anchor-mode {
+    background: var(--surface-1-warm); border: 1px solid rgba(217,119,87,0.12);
+    border-radius: 16px; padding: 18px;
+    width: 100%;
+    border-left: 3px solid var(--accent-warm);
+  }
+  .anchor-eyebrow {
+    font-family: var(--ff-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--accent-warm); margin-bottom: 10px;
+  }
+  .anchor-title {
+    font-family: var(--ff-display); font-size: 18px; font-weight: 600;
+    letter-spacing: 0.005em; line-height: 1.15;
+    text-transform: none;
+    color: var(--text-primary); margin-bottom: 8px;
+  }
+  .anchor-body {
+    font-family: var(--ff-body); font-size: 12px; line-height: 1.55;
+    color: var(--text-secondary); margin-bottom: 14px;
+  }
+  .anchor-rituals {
+    display: grid; grid-template-columns: 1fr; gap: 6px;
+  }
+  .ritual {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px;
+    background: rgba(217,119,87,0.06);
+    border: 1px solid rgba(217,119,87,0.08);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+  .ritual .ico {
+    width: 24px; height: 24px;
+    background: rgba(217,119,87,0.16);
+    color: var(--accent-warm);
+    display: grid; place-items: center;
+    border-radius: 5px;
+  }
+  .ritual .txt {
+    font-family: var(--ff-body); font-size: 12px;
+    color: var(--text-primary);
+  }
+
+  /* === WeeklyPlanApprovalSheet preview (compact) === */
+  .week-preview {
+    background: var(--surface-1); border: 1px solid var(--border-subtle);
+    border-radius: 16px; padding: 16px;
+    width: 100%;
+  }
+  .week-eyebrow {
+    font-family: var(--ff-mono); font-size: 10px; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--brand-glow);
+    margin-bottom: 8px;
+  }
+  .week-narrative-mini {
+    font-family: var(--ff-body); font-size: 12px; line-height: 1.55;
+    color: var(--text-secondary);
+    padding: 10px 12px;
+    background: rgba(20,184,166,0.04);
+    border-left: 2px solid var(--brand-primary);
+    margin-bottom: 12px;
+  }
+  .week-narrative-mini .em { color: var(--text-primary); font-weight: 500; }
+  .day-row-mini {
+    display: flex; gap: 10px; align-items: center;
+    padding: 8px 4px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .day-row-mini:first-of-type { border-top: none; }
+  .day-row-mini .dl {
+    width: 36px; flex-shrink: 0;
+    font-family: var(--ff-mono); font-size: 10px; font-weight: 600;
+    color: var(--text-tertiary); text-transform: uppercase; text-align: center;
+  }
+  .day-row-mini.today .dl { color: var(--brand-glow); }
+  .day-row-mini .dn {
+    flex: 1;
+    font-family: var(--ff-display); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.01em; text-transform: uppercase;
+    color: var(--text-primary);
+  }
+  .swap-hint-mini {
+    font-family: var(--ff-mono); font-size: 9px;
+    color: var(--brand-glow); letter-spacing: 0.05em;
+  }
+
+  /* === AnniversaryCard === */
+  .anniv-card {
+    background: var(--surface-1-warm); border: 1px solid rgba(217,119,87,0.12);
+    border-radius: 16px; padding: 18px;
+    width: 100%;
+    text-align: center;
+    border: 1px solid rgba(94,234,212,0.20);
+  }
+  .anniv-eyebrow {
+    font-family: var(--ff-mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.20em; text-transform: uppercase;
+    color: var(--brand-glow); margin-bottom: 10px;
+  }
+  .anniv-title {
+    font-family: var(--ff-display); font-size: 20px; font-weight: 600;
+    letter-spacing: 0.005em; line-height: 1.15;
+    text-transform: none;
+    color: var(--text-primary); margin-bottom: 10px;
+  }
+  .anniv-body {
+    font-family: var(--ff-body); font-size: 12px; line-height: 1.55;
+    color: var(--text-secondary);
+  }
+
+  /* === PlanRibbonBanner === */
+  .plan-ribbon {
+    padding: 10px 14px;
+    background: rgba(20,184,166,0.08);
+    border-left: 2px solid var(--brand-primary);
+    font-family: var(--ff-body); font-size: 12px; line-height: 1.4;
+    color: var(--text-primary);
+    width: 100%;
+    display: flex; align-items: center; gap: 10px;
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+  }
+  .plan-ribbon .em { color: var(--brand-glow); font-weight: 500; }
+  .plan-ribbon .why-btn {
+    margin-left: auto;
+    font-family: var(--ff-mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--brand-glow);
+    background: transparent; border: none;
+  }
+
+  /* === PersonChip === */
+  .person-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    background: rgba(217,119,87,0.10);
+    border: 1px solid rgba(217,119,87,0.15);
+    clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+    font-family: var(--ff-body); font-size: 11px;
+    color: var(--accent-warm);
+  }
+  .person-chip .person-icon {
+    width: 14px; height: 14px;
+    background: var(--accent-warm); color: var(--canvas-warm);
+    display: grid; place-items: center;
+    border-radius: 50%;
+    font-size: 8px; font-weight: 700;
+    font-family: var(--ff-display);
+  }
+
+</style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="doc-eyebrow">Step-11 · Component Library · v2</div>
+  <h1 class="doc-title">Component <span class="accent">Library</span></h1>
+  <p class="doc-sub">
+    22 critical components from the Mezo brand layer in isolation, organized by phase. Each component shown with variants and live states, reflecting the locked Step-6 design system + Step-8 R9 stakeholder decisions (Deep Current palette rename, Paige typography corrections, Sally dual-mode visual, John brand layer Phase 1 retention) + Step-9 design directions (Subtle warm-on-narrative-hero briefing, Heti Brief weekly Plan, voice-first QuickInputSheet, flat-list Knowledge Graph, 60-70% PR overlay-card). <strong>This is the Storybook-equivalent reference</strong> for downstream Phase 0 design refresh + Phase 1-5 implementation. Per-screen mockups follow this in a separate showcase.
+  </p>
+  <div class="doc-meta">
+    <div class="doc-meta-item">Components shown · <span class="v">22 of ~60+ catalog</span></div>
+    <div class="doc-meta-item">Phase coverage · <span class="v">1 → 5</span></div>
+    <div class="doc-meta-item">Brand palette · <span class="v">Deep Current</span></div>
+    <div class="doc-meta-item">Dual-mode · <span class="v">Cold + Warm derivative</span></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     PHASE 1 ATOMS (foundational baseline)
+     ============================================================ -->
+<section class="phase">
+  <div class="phase-header">
+    <div class="phase-num">Phase 1 · Atoms</div>
+    <h2 class="phase-title">Foundational primitives</h2>
+    <p class="phase-sub">Shipped in Phase 1 design refresh + foundations week. These atoms are the smallest brand-layer units, used across every other component.</p>
+  </div>
+  <div class="components">
+
+    <!-- Tag -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">Tag</div>
+        <div class="component-tag">Phase 1</div>
+      </div>
+      <div class="component-stage">
+        <div class="variant-row">
+          <span class="variant-label">Variants — 6 semantic</span>
+          <span class="tag brand"><span class="dot"></span>Week 3 · Day 4</span>
+          <span class="tag muted">Pull Day</span>
+          <span class="tag success"><span class="dot"></span>Logged</span>
+          <span class="tag warning"><span class="dot"></span>Pending</span>
+          <span class="tag error"><span class="dot"></span>Missed</span>
+          <span class="tag warm"><span class="dot"></span>Reta D6</span>
+        </div>
+      </div>
+      <p class="component-desc">
+        Notched 7px chamfer · Inter 10px uppercase · letter-spacing 0.1em. <strong>Brand</strong> for active state, <strong>muted</strong> for context, <strong>semantic</strong> (success/warning/error) for log status, <strong>warm</strong> for dual-mode contexts. Optional dot indicator (currentColor). Used in: meso-state rows, status-pill, recipe-source labels.
+      </p>
+    </div>
+
+    <!-- MezoButton -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">MezoButton</div>
+        <div class="component-tag">Phase 1</div>
+      </div>
+      <div class="component-stage">
+        <div class="variant-row">
+          <span class="variant-label">3 variants</span>
+          <button class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+            Start Pull Day
+          </button>
+          <button class="btn-secondary">Cancel</button>
+          <button class="btn-text">Show more →</button>
+        </div>
+      </div>
+      <p class="component-desc">
+        <strong>Primary</strong>: brand-primary fill · notched 10-12px · Antonio UPPERCASE · for hero CTAs. <strong>Secondary</strong>: ghost border · Antonio UPPERCASE smaller · for cancel/dismiss. <strong>Text</strong>: brand-glow · JBM Mono · for tertiary actions and expanders. Wraps <code>ui/button.tsx</code>.
+      </p>
+    </div>
+
+    <!-- ConfidenceBar -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">ConfidenceBar</div>
+        <div class="component-tag">Phase 1</div>
+      </div>
+      <div class="component-stage">
+        <div class="variant-row" style="flex-direction:column; align-items:flex-start; gap:8px;">
+          <div class="conf-bar">
+            <span>Confidence</span>
+            <div class="track"><div class="fill" style="width:92%"></div></div>
+            <span class="v">0.92</span>
+          </div>
+          <div class="conf-bar">
+            <span>Confidence</span>
+            <div class="track"><div class="fill" style="width:65%"></div></div>
+            <span class="v">0.65</span>
+          </div>
+          <div class="conf-bar">
+            <span>Confidence</span>
+            <div class="track"><div class="fill warm" style="width:84%"></div></div>
+            <span class="v warm">0.84</span>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        48×4px track · brand-primary → brand-glow gradient fill (cold) or warm-deep → accent-warm (warm-mode). JBM Mono numeric value with tnum. Used in: briefing card · pattern card · recipe AI score · weekly plan generation confidence.
+      </p>
+    </div>
+
+    <!-- CheckInSlot -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">CheckInSlot</div>
+        <div class="component-tag">Phase 1</div>
+      </div>
+      <div class="component-stage dense">
+        <span class="variant-label">4 states (HeartbeatStrip below shows composition)</span>
+        <div class="variant-row" style="gap:6px;">
+          <div class="checkin-slot done"><div class="checkin-time">06:30</div><div class="checkin-label">Done</div></div>
+          <div class="checkin-slot active"><div class="checkin-time">10:00</div><div class="checkin-label">Active</div></div>
+          <div class="checkin-slot"><div class="checkin-time">14:00</div><div class="checkin-label">Pending</div></div>
+          <div class="checkin-slot missed"><div class="checkin-time">20:00</div><div class="checkin-label">Missed</div></div>
+        </div>
+      </div>
+      <p class="component-desc">
+        Notched 6px · 4 states. <strong>Done</strong> = success-tinted (check-in completed). <strong>Active</strong> = brand-glow tinted (current heartbeat tick window). <strong>Pending</strong> = neutral (upcoming). <strong>Missed</strong> = dimmed muted (Daniel didn't engage; IDENT-3 silence-detection seed).
+      </p>
+    </div>
+
+    <!-- HeartbeatStrip -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">HeartbeatStrip</div>
+        <div class="component-tag">Phase 1</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="heartbeat-strip">
+          <div class="checkin-slot done"><div class="checkin-time">06:30</div><div class="checkin-label">Reggel</div></div>
+          <div class="checkin-slot active"><div class="checkin-time">10:00</div><div class="checkin-label">Délelőtt</div></div>
+          <div class="checkin-slot"><div class="checkin-time">14:00</div><div class="checkin-label">Délután</div></div>
+          <div class="checkin-slot"><div class="checkin-time">20:00</div><div class="checkin-label">Este</div></div>
+        </div>
+      </div>
+      <p class="component-desc">
+        4-slot grid composing <code>CheckInSlot</code> atoms. Times match HeartbeatScheduler cron ticks (06:30 / 10:00 / 14:00 / 20:00 per IDENT-3 SLA). On Today tab top. Tap a slot → check-in modal opens.
+      </p>
+    </div>
+
+    <!-- CitationRef -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">CitationRef</div>
+        <div class="component-tag">Phase 1 stub · Phase 4 full</div>
+      </div>
+      <div class="component-stage">
+        <div class="variant-row" style="gap:6px; flex-wrap:wrap;">
+          <span style="font-family:var(--ff-body);font-size:12px;color:var(--text-secondary);">Tegnap 7.4h alvás</span>
+          <span class="citation-ref">[SleepLog:May-17]</span>
+          <span style="font-family:var(--ff-body);font-size:12px;color:var(--text-secondary);">— recovery jó.</span>
+        </div>
+      </div>
+      <p class="component-desc">
+        Inline citation chip rendering <code>[entity_kind:row_id]</code> markers. Resolved via <code>lib/citationResolver.ts</code>. Tap → Power-mode opt-in expansion (Step-4 Principle #5 conditional). Phase 1 stub renders as plain text-chip; Phase 4 adds pgvector entity lookup + deep-link.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     PHASE 2-3 MOLECULES (training + nutrition core)
+     ============================================================ -->
+<section class="phase">
+  <div class="phase-header">
+    <div class="phase-num">Phase 2-3 · Molecules</div>
+    <h2 class="phase-title">Training + Nutrition core</h2>
+    <p class="phase-sub">Component-instances that compose the Train and Fuel tab interactions. RP-philosophy feedback patterns + niggle-aware logging + recipe-named meal cards.</p>
+  </div>
+  <div class="components wide">
+
+    <!-- RirChip -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">RirChip</div>
+        <div class="component-tag">Phase 2-3</div>
+      </div>
+      <div class="component-stage">
+        <div style="width:100%;">
+          <div class="variant-label">RIR row (reps in reserve)</div>
+          <div class="rir-row">
+            <div class="rir-opt">0</div>
+            <div class="rir-opt active">1</div>
+            <div class="rir-opt">2</div>
+            <div class="rir-opt">3</div>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        4-option chip-row (RIR 0/1/2/3) inside <code>SetLogger</code>. Notched 6px · JBM Mono 16px. Active state brand-glow. RP-philosophy adopted from Hevy taxonomy + RP Hypertrophy App.
+      </p>
+    </div>
+
+    <!-- SetLogger -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">SetLogger</div>
+        <div class="component-tag">Phase 2-3</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="set-logger">
+          <div class="log-row">
+            <div class="log-input">
+              <div class="lbl">Weight</div>
+              <div class="log-stepper">
+                <button class="stepper-btn">−</button>
+                <div class="stepper-val">37.5<span class="u">kg</span></div>
+                <button class="stepper-btn">+</button>
+              </div>
+            </div>
+            <div class="log-input">
+              <div class="lbl">Reps</div>
+              <div class="log-stepper">
+                <button class="stepper-btn">−</button>
+                <div class="stepper-val">9</div>
+                <button class="stepper-btn">+</button>
+              </div>
+            </div>
+          </div>
+          <div class="rir-row" style="margin-bottom:12px;">
+            <div class="rir-opt">0</div>
+            <div class="rir-opt active">1</div>
+            <div class="rir-opt">2</div>
+            <div class="rir-opt">3</div>
+          </div>
+          <button class="btn-primary" style="width:100%;justify-content:center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12l5 5L20 7"/></svg>
+            Complete Set
+          </button>
+        </div>
+      </div>
+      <p class="component-desc">
+        Composition: Weight stepper + Reps stepper + RIR chip-row + Complete CTA. Target: <strong>≤4 taps per set</strong> (Step-3). Background surface-2 (interaction-layer). Weight stepper default increment 2.5kg; long-press for 5kg jumps. Number-pad fallback via tap-on-value.
+      </p>
+    </div>
+
+    <!-- WorkoutTeaser -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">WorkoutTeaser</div>
+        <div class="component-tag">Phase 2-3</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="workout-teaser">
+          <div class="icon-box">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="square">
+              <path d="M3 18 L7 14 L11 8 L15 6 L19 4"/>
+              <circle cx="19" cy="4" r="1.6" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="info">
+            <div class="lbl">5 exercise · ~58 perc</div>
+            <div class="ttl">Pull Day</div>
+            <div class="meta">Assisted Pullup → Chest Row → Lat Pulldown → Curl</div>
+          </div>
+          <div class="chev"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 6l6 6-6 6"/></svg></div>
+        </div>
+        <div class="niggle-ribbon">
+          <span class="em">⚠ Jobb váll · aktív</span> — Lat Pulldown → Cable Pull-Around csere a heti tervben.
+        </div>
+      </div>
+      <p class="component-desc">
+        Today tab workout preview · composed icon-box + Antonio title + body meta + chevron. Variant with <code>niggle-ribbon</code> below when <code>NiggleEntry.active=true</code> for muscle group. L1 affordance per Step-10 P2 — substitution already applied, ribbon explains result not failure.
+      </p>
+    </div>
+
+    <!-- MealCard -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">MealCard</div>
+        <div class="component-tag">Phase 2-3</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="meal-card">
+          <div class="meal-time">07:30</div>
+          <div class="meal-info">
+            <div class="meal-name">Tojásos reggeli</div>
+            <div class="meal-meta">
+              <span class="src">Recipe</span>
+              <span class="sep">·</span>
+              <span class="items">3 items</span>
+            </div>
+          </div>
+          <div class="meal-kcal">380<span class="unit">kcal</span></div>
+        </div>
+        <div class="meal-card">
+          <div class="meal-time">13:00</div>
+          <div class="meal-info">
+            <div class="meal-name">Csirke + rizs bowl</div>
+            <div class="meal-meta">
+              <span class="src">Recipe</span>
+              <span class="sep">·</span>
+              <span class="items">3 items</span>
+              <span class="sep">·</span>
+              <span class="src" style="color:var(--brand-glow);font-size:8px;">AI 0.84</span>
+            </div>
+          </div>
+          <div class="meal-kcal">685<span class="unit">kcal</span></div>
+        </div>
+      </div>
+      <p class="component-desc">
+        <strong>Recipe-name dominant</strong> (Antonio uppercase 15px) — replaces v1's "Meal #1 + ingredient-1 + ingredient-2..." pattern with the actual recipe name. AI-score chip when recipe was AI-generated. JBM Mono kcal right-aligned with tnum.
+      </p>
+    </div>
+
+    <!-- HydrationChip + ElectrolyteChip -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">HydrationChip + ElectrolyteChip</div>
+        <div class="component-tag">Phase 3</div>
+      </div>
+      <div class="component-stage dense" style="gap:8px;">
+        <div class="nutri-chip">
+          <div class="icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c4 4 7 8 7 12a7 7 0 1 1-14 0c0-4 3-8 7-12z"/></svg>
+          </div>
+          <div>
+            <div class="label">Hydration</div>
+            <div class="value">1.6<span class="unit">/ 2.8 L</span></div>
+          </div>
+          <div class="progress" style="--w:57%;"></div>
+        </div>
+        <div class="nutri-chip">
+          <div class="icon" style="background:rgba(245,158,11,0.10);color:var(--warning);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2v20M2 12h20"/></svg>
+          </div>
+          <div>
+            <div class="label">Sodium</div>
+            <div class="value">2 100<span class="unit">/ 3 500 mg</span></div>
+          </div>
+          <div class="progress"></div>
+        </div>
+      </div>
+      <p class="component-desc">
+        Inline chip-pair on Fuel tab macro hero · ml/mg counter + progress bar. <strong>Hydration</strong>: brand-glow icon; <strong>Electrolyte (Na/K/Mg)</strong>: warning-amber icon (mineral context). Sport-day adjusted target (+500-1000ml on training days per FR-2.3.7).
+      </p>
+    </div>
+
+    <!-- NigglePreFlag -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">NigglePreFlag</div>
+        <div class="component-tag">Phase 2-3</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="niggle-flag">
+          <div class="ttl">Niggle Pre-Flag</div>
+          <div class="niggle-body-map">
+            <div class="body-region">L Shoulder</div>
+            <div class="body-region active">R Shoulder</div>
+            <div class="body-region">L Knee</div>
+            <div class="body-region">R Knee</div>
+            <div class="body-region">L Back</div>
+            <div class="body-region">R Back</div>
+            <div class="body-region">Neck</div>
+            <div class="body-region">Hip</div>
+          </div>
+          <div class="severity">
+            <span>Severity</span>
+            <div class="track"></div>
+            <span style="color:var(--warning);font-weight:600;">6/10</span>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        Pre-workout 5-second body-region tap → <code>NiggleEntry</code> persisted with body_region enum + severity 1-10 + active_until date. Triggers downstream auto-substitution in Heti Brief plan + briefing card niggle-ribbon. Voice fallback via QuickInputSheet voice ("jobb vállam fáj").
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     PHASE 4 ORGANISMS (AI memory + companion identity)
+     ============================================================ -->
+<section class="phase">
+  <div class="phase-header">
+    <div class="phase-num">Phase 4 · Organisms</div>
+    <h2 class="phase-title">AI memory + companion identity</h2>
+    <p class="phase-sub">Largest single-phase component delivery in the spec. Companion voice + L3 memory + chat + Pattern Inbox + Knowledge Graph + Power-mode transparency surfaces all activate here.</p>
+  </div>
+  <div class="components wide">
+
+    <!-- BriefingCard - Cold default -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">BriefingCard · Cold (default)</div>
+        <div class="component-tag">Phase 4</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="briefing-card">
+          <div class="briefing-eyebrow">
+            <span class="briefing-badge">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 19 L3 5 L9 14 L12 9 L15 14 L21 5 L21 19"/></svg>
+            </span>
+            Reggeli briefing · 06:30
+          </div>
+          <h3 class="briefing-display">PR-Próba <span class="accent">Chest Row-on</span></h3>
+          <p class="briefing-body">
+            <span class="em">7.4h alvás</span> <span class="citation-ref">[SleepLog:May-17]</span>, recovery jó. A Week 3 csúcson — csináljuk meg. Stim-free pre-workout 30 perccel, koffein-stop 14:00-kor.
+          </p>
+          <div class="conf-bar" style="font-size:10px;">
+            <span>Confidence</span>
+            <div class="track"><div class="fill" style="width:92%"></div></div>
+            <span class="v">0.92</span>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        Daily default for Mon-Sat briefings. Glass L2 elevation · brand-primary 3px accent stripe · Antonio Title-Case hero (per Paige R9 narrative-chrome boundary) · citation chips inline · ConfidenceBar. Companion-mode protects against PERFORMED-FOR anti-emotion.
+      </p>
+    </div>
+
+    <!-- BriefingCard - Subtle warm variant -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">BriefingCard · Subtle warm variant</div>
+        <div class="component-tag">Phase 4 · Sun memoir + Anniversary</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="briefing-card warm">
+          <div class="briefing-eyebrow">
+            <span class="briefing-badge">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 19 L3 5 L9 14 L12 9 L15 14 L21 5 L21 19"/></svg>
+            </span>
+            Vasárnap esti briefing · 19:30
+          </div>
+          <h3 class="briefing-display">Visszanéztünk a <span class="accent">Hetünkre</span></h3>
+          <p class="briefing-body">
+            Hét workout, három röpi, négy <span class="em">PR</span>. A szerda nehéz volt, de összeraktuk. <span class="em">Most pihenj — megérdemeled.</span>
+          </p>
+          <div class="conf-bar" style="font-size:10px;">
+            <span>Confidence</span>
+            <div class="track"><div class="fill warm" style="width:94%"></div></div>
+            <span class="v warm">0.94</span>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        Step-9 D2 chosen variant. Activates ONLY on Sunday-memoir-delivery briefings + Anniversary briefings. Accent stripe shifts to <code>accent-warm</code> coral · subtle warm radial gradient · ConfidenceBar fill warm. Background card surface stays surface-1 (NOT canvas-warm) — the briefing card remains in Today flow context.
+      </p>
+    </div>
+
+    <!-- ToolChip -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">ToolChip</div>
+        <div class="component-tag">Phase 4 · Power-mode</div>
+      </div>
+      <div class="component-stage">
+        <div class="variant-row">
+          <span class="variant-label">3 tool types color-coded</span>
+          <span class="tool-chip read">🔧 get_recent_sleep(7d)</span>
+          <span class="tool-chip compute">📊 compute_correlation</span>
+          <span class="tool-chip write">✍ propose_pattern</span>
+        </div>
+      </div>
+      <p class="component-desc">
+        Power-mode opt-in tool-call transparency. Appears as inline chip-row ABOVE assistant chat bubble when Daniel has enabled Power-mode toggle. <strong>Read</strong> = ghost border + brand-text. <strong>Compute</strong> = warning-amber fill. <strong>Write</strong> = brand-glow fill. Notched 4px (smaller chamfer for tight inline density per Step-1c).
+      </p>
+    </div>
+
+    <!-- ChatBubble + ChatRefsRow -->
+    <div class="component" style="grid-column: span 2;">
+      <div class="component-head">
+        <div class="component-name">ChatBubble + ChatRefsRow + ToolChip integration</div>
+        <div class="component-tag">Phase 4</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="chat-block">
+          <div class="msg user">
+            <div class="msg-role"><span class="role-label">You · 14:22</span></div>
+            <div class="msg-bubble">Mi javítaná a holnapi pull edzésem?</div>
+          </div>
+          <div class="msg assist">
+            <div class="msg-role">
+              <span class="role-badge">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 19 L3 5 L9 14 L12 9 L15 14 L21 5 L21 19"/></svg>
+              </span>
+              <span class="role-label">Mezo · 14:22</span>
+            </div>
+            <div class="tool-chip-row">
+              <span class="tool-chip read">🔧 get_recent_sleep(7d)</span>
+              <span class="tool-chip read">🔧 recallSharedMemory</span>
+            </div>
+            <div class="msg-bubble">
+              Holnap <span class="em">pull day Week 3 csúcson</span> — emlékszel, két hete a Chest Row-n is hasonló volt a setup. Három dolog: koffein-stop 14:00-kor, low-FODMAP vacsora, stim-free pre-workout 30 perccel.
+              <div class="refs">
+                <div class="refs-label">Hivatkozott · L3 + L1</div>
+                <div class="refs-tags">
+                  <span class="citation-ref">[SleepLog:7d]</span>
+                  <span class="citation-ref">[Pattern:caf-sleep]</span>
+                  <span class="citation-ref">[Pref:stim-free]</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        Composition: <strong>User bubble</strong> (right, surface-2 fill) → <strong>Assistant role badge + ToolChipRow</strong> (Power-mode opt-in showing which tools fired) → <strong>Assistant bubble</strong> (brand-tinted glass, em-highlights, citation-refs footer with retrievable entity tags). The bubble's <code>ChatRefsRow</code> at the bottom-left (Hivatkozott · L3 + L1) shows what context informed the response — Step-5 RAG-with-citations adoption.
+      </p>
+    </div>
+
+    <!-- PatternCard -->
+    <div class="component" style="grid-column: span 2;">
+      <div class="component-head">
+        <div class="component-name">PatternCard · with 4-factor critique micro-bars</div>
+        <div class="component-tag">Phase 4 · Insights</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="pattern-card">
+          <div class="pattern-top">
+            <div class="pattern-tags">
+              <span class="tag" style="background:rgba(20,184,166,0.12);color:var(--brand-glow);font-size:9px;padding:3px 7px;"><span class="dot"></span>Statistical</span>
+              <span class="tag muted" style="font-size:9px;padding:3px 7px;">Meds · Nutrition</span>
+            </div>
+            <div class="conf-bar" style="font-size:9px;">
+              <div class="track"><div class="fill" style="width:85%"></div></div>
+              <span class="v">0.85</span>
+            </div>
+          </div>
+          <h3 class="pattern-title">Retatrutide +36h → <span class="em">−35% étvágy</span></h3>
+          <p class="pattern-body">
+            A Reta-injekciót követő 36 órában a kalóriabeviteled átlagosan 35%-kal alacsonyabb, miközben az edzés-teljesítmény nem szenved.
+          </p>
+          <div class="critique-bars">
+            <div class="critique-bar">
+              <span class="lbl">Stat support</span>
+              <div class="track"><div class="fill" style="width:88%"></div></div>
+              <span class="v">0.88</span>
+            </div>
+            <div class="critique-bar">
+              <span class="lbl">Confounders</span>
+              <div class="track"><div class="fill" style="width:72%"></div></div>
+              <span class="v">0.72</span>
+            </div>
+            <div class="critique-bar">
+              <span class="lbl">L3 align</span>
+              <div class="track"><div class="fill" style="width:85%"></div></div>
+              <span class="v">0.85</span>
+            </div>
+            <div class="critique-bar">
+              <span class="lbl">Actionable</span>
+              <div class="track"><div class="fill" style="width:90%"></div></div>
+              <span class="v">0.90</span>
+            </div>
+          </div>
+          <div class="pattern-actions">
+            <button class="pa confirm">Confirm</button>
+            <button class="pa">Monitor</button>
+            <button class="pa reject">Reject</button>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        <strong>L2 affordance</strong> (Step-10 P2) — companion proposes, user approves with explicit ✓ / Monitor / ✗ vocabulary. <strong>4-factor critique micro-bars</strong> (Architecture §4.7): statistical_support / confounders / l3_alignment / actionability. Title-Case Antonio per Paige R9. Em-highlight on the key claim. Confirmed pattern promotes to L3 KnowledgeFact.
+      </p>
+    </div>
+
+    <!-- FactCard 4 variants -->
+    <div class="component" style="grid-column: span 2;">
+      <div class="component-head">
+        <div class="component-name">FactCard · 4 category variants</div>
+        <div class="component-tag">Phase 4 · Knowledge Graph flat-list</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="fact-card physiology">
+          <div class="fact-top">
+            <span class="fact-cat physiology">Physiology</span>
+            <span class="fact-meta-mini">0.92 · 12×</span>
+          </div>
+          <p class="fact-text">Sleep &lt; 7h után az <span class="em">RPE +1-gyel magasabb</span>.</p>
+        </div>
+        <div class="fact-card trigger">
+          <div class="fact-top">
+            <span class="fact-cat trigger">Trigger</span>
+            <span class="fact-meta-mini">0.88 · 9×</span>
+          </div>
+          <p class="fact-text"><span class="em">Koffein 14:00 után</span> 22%-kal rontja az alvást.</p>
+        </div>
+        <div class="fact-card preference">
+          <div class="fact-top">
+            <span class="fact-cat preference">Preference</span>
+            <span class="fact-meta-mini">0.75 · 5×</span>
+          </div>
+          <p class="fact-text"><span class="em">Stim-free pre-workout</span> jobban illik a délutáni edzésekhez.</p>
+        </div>
+        <div class="fact-card response">
+          <div class="fact-top">
+            <span class="fact-cat response">Response</span>
+            <span class="fact-meta-mini">0.68 · 3×</span>
+          </div>
+          <p class="fact-text">Kreatin <span class="em">7+ nap után</span> stabilizálódik.</p>
+        </div>
+      </div>
+      <p class="component-desc">
+        <strong>Step-9 D4 flat-list default</strong> in Me → Knowledge Graph. Category color-coded border-left (4 of 6 categories shown: physiology / trigger / preference / response — tendency + goal-state Phase 5). Confidence + reinforcement-count meta. Em-highlight body. Tap → fact detail panel + prompt-injection toggle.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     PHASE 5 ADVANCED (pattern engine + life context)
+     ============================================================ -->
+<section class="phase">
+  <div class="phase-header">
+    <div class="phase-num">Phase 5 · Advanced</div>
+    <h2 class="phase-title">Pattern engine + life context + crisis-state</h2>
+    <p class="phase-sub">Warm-mode derivative palette activates here for emotional-narrative surfaces. Forgotten Mention recovery pipeline lands. AnchorMode global crisis-state UI ships.</p>
+  </div>
+  <div class="components wide">
+
+    <!-- MemoirCard -->
+    <div class="component warm-bg" style="grid-column: span 2;">
+      <div class="component-head">
+        <div class="component-name">MemoirCard · full warm-mode</div>
+        <div class="component-tag">Phase 4-5</div>
+      </div>
+      <div class="component-stage warm-stage dense">
+        <div class="memoir-card">
+          <div class="memoir-eyebrow">Heti memoir · 17. hét · Máj 11–17</div>
+          <h3 class="memoir-title">A Hét, Amikor Visszajött a Bizalom</h3>
+          <p class="memoir-body">
+            Hét workout, három röpi, <span class="em">négy PR</span>. A szerda nehéz volt — Reta Day 3 mélypontján belevágtunk a leg-day-be, és RPE 9 volt. A csütörtök más volt: alvás 8.1 óra, pull-day, és a Chest Row 1RM <span class="em">+5 kg</span>. Március óta vártuk ezt. <span class="em">Petra-val pénteken</span> kiváló volt a kommunikáció.
+          </p>
+          <div class="memoir-anchors">
+            <span class="anchor-chip">[Achievement:May-15]</span>
+            <span class="anchor-chip">[PersonEntry:Petra]</span>
+            <span class="anchor-chip">[SleepLog:May-14]</span>
+            <span class="anchor-chip">[WorkoutSession:May-13]</span>
+          </div>
+          <div class="memoir-reactions">
+            <button class="reaction-btn">♡ Like</button>
+            <button class="reaction-btn">❤ Love</button>
+            <button class="reaction-btn">⭐ Save</button>
+            <button class="reaction-btn">✕ Hide</button>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        <strong>Full warm-mode</strong> example. Canvas-warm + surface-1-warm + accent-warm (Sally R9 dual-mode). Antonio Title-Case title (Paige R9). 3-5 anchor entity chips below body. 4 reaction buttons. Step-3 CSM #8 + Step-9 D2 extension. Spotify Wrapped + Day One + Strava monthly precedent (Step-5).
+      </p>
+    </div>
+
+    <!-- AnchorModeBanner -->
+    <div class="component warm-bg">
+      <div class="component-head">
+        <div class="component-name">AnchorModeBanner</div>
+        <div class="component-tag">Phase 5 · Crisis</div>
+      </div>
+      <div class="component-stage warm-stage dense">
+        <div class="anchor-mode">
+          <div class="anchor-eyebrow">Anchor Mode · 4 napja kezdődött</div>
+          <h3 class="anchor-title">Csak ennyit ma</h3>
+          <p class="anchor-body">
+            Nehéz hét. Tegnap is itt voltunk. Holnap is itt leszünk. Most három apró dolog elég:
+          </p>
+          <div class="anchor-rituals">
+            <div class="ritual">
+              <div class="ico">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 2c4 4 7 8 7 12a7 7 0 1 1-14 0c0-4 3-8 7-12z"/></svg>
+              </div>
+              <div class="txt">Igyál 2 liter vizet</div>
+            </div>
+            <div class="ritual">
+              <div class="ico">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3v9a2 2 0 0 0 4 0V3M8 12v9M16 3c-2 0-3 2-3 4s1 4 3 4v10"/></svg>
+              </div>
+              <div class="txt">Egy fehérje-étkezés</div>
+            </div>
+            <div class="ritual">
+              <div class="ico">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/></svg>
+              </div>
+              <div class="txt">10 perc séta</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        Global crisis-state overlay. Triggered by sleep&lt;5h × 3d + low mood + skipped logs (or user-flagged "nem megy ma"). Warm-mode palette across entire app · weekly Plan paused · 3 minimum rituals · supportive tone. Anti-pattern guard: NEVER warning/error tokens. Exit gradual over 7d recovery.
+      </p>
+    </div>
+
+    <!-- RetaPhaseGradientBar -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">RetaPhaseGradientBar</div>
+        <div class="component-tag">Phase 5</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="reta-bar">
+          <div class="reta-seg d1"><span class="num">D1</span></div>
+          <div class="reta-seg d2"><span class="num">D2</span></div>
+          <div class="reta-seg d3 reta-current"><span class="num">D3</span></div>
+          <div class="reta-seg d4"><span class="num">D4</span></div>
+          <div class="reta-seg d5"><span class="num">D5</span></div>
+          <div class="reta-seg d6"><span class="num">D6</span></div>
+          <div class="reta-seg d7"><span class="num">D7</span></div>
+        </div>
+      </div>
+      <p class="component-desc">
+        7-segment horizontal gradient bar at Today header. D1 (injection) brand-primary (peak agonism) → D4-5 warning amber (appetite-suppression mid-cycle low) → D7 text-tertiary (trough). Current day outlined with brand-glow. Tap a segment → kinetic phase tooltip ("Day 3: appetite-suppression peak — protein critical").
+      </p>
+    </div>
+
+    <!-- PlanRibbonBanner -->
+    <div class="component">
+      <div class="component-head">
+        <div class="component-name">PlanRibbonBanner</div>
+        <div class="component-tag">Phase 5 · Mid-week replan</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="plan-ribbon">
+          <span><span class="em">Hétfői pull-day csúszott</span> — kedd pull, szerda push, csütörtök rest. Pre-workout shake hozzáadva keddre.</span>
+          <button class="why-btn">Miért? →</button>
+        </div>
+      </div>
+      <p class="component-desc">
+        <strong>L1 affordance</strong> (Step-10 P2) — companion auto-decides the replan; Daniel sees the result, not the decision. 1-line ribbon at top of Today. "Miért?" expander reveals reasoning chain. Fires when Plan-deviation detected (skipped workout / sleep&lt;6h / weight delta &gt; threshold).
+      </p>
+    </div>
+
+    <!-- WeeklyPlanApprovalSheet preview -->
+    <div class="component" style="grid-column: span 2;">
+      <div class="component-head">
+        <div class="component-name">WeeklyPlanApprovalSheet · preview</div>
+        <div class="component-tag">Phase 4-5 · Heti Brief direction (Step-9 D1)</div>
+      </div>
+      <div class="component-stage dense">
+        <div class="week-preview">
+          <div class="week-eyebrow">Heti Brief · vasárnap esti javaslat</div>
+          <div class="week-narrative-mini">
+            <span class="em">Week 4 közepe — a Q2 hypertrophy csúcsra megyünk.</span> A mai recovery után holnap pull-day-jel kezdjük. Reta D7 → D1 az injekció szerdára esik; <span class="em">a kedd push-t előre vesszük</span>.
+          </div>
+          <div class="day-row-mini today">
+            <div class="dl">H 18</div>
+            <div class="dn">Pull Day · Week 4</div>
+            <span class="tag muted" style="font-size:8px;padding:2px 5px;">Today</span>
+          </div>
+          <div class="day-row-mini">
+            <div class="dl">K 19</div>
+            <div class="dn">Push Day <span class="swap-hint-mini">⇄ swap?</span></div>
+          </div>
+          <div class="day-row-mini">
+            <div class="dl">SZ 20</div>
+            <div class="dn">Rest · Reta D1</div>
+            <span class="tag warm" style="font-size:8px;padding:2px 5px;"><span class="dot"></span>Injekció</span>
+          </div>
+          <div class="day-row-mini">
+            <div class="dl">CS 21</div>
+            <div class="dn">Mobility + Recovery</div>
+          </div>
+          <div class="day-row-mini">
+            <div class="dl">P 22</div>
+            <div class="dn">Volleyball · 19:00</div>
+          </div>
+        </div>
+      </div>
+      <p class="component-desc">
+        <strong>Train tab home view</strong> when no workout in progress · Step-9 D1 Heti Brief direction. Companion narrative paragraph + vertical day-list with icon-sets + inline swap hint on Tuesday push-day. <strong>L2 affordance</strong> · 1-2 swap-engagement signal · 0-swap = phantom acceptance flag candidate · "Ez lesz a hetem" approve CTA (not shown in this preview).
+      </p>
+    </div>
+
+    <!-- AnniversaryCard -->
+    <div class="component warm-bg">
+      <div class="component-head">
+        <div class="component-name">AnniversaryCard</div>
+        <div class="component-tag">Phase 5</div>
+      </div>
+      <div class="component-stage warm-stage dense">
+        <div class="anniv-card">
+          <div class="anniv-eyebrow">⭐ Évforduló</div>
+          <h3 class="anniv-title">Egy éve együtt</h3>
+          <p class="anniv-body">
+            Egy éve mondtad nekem: "a röpi pályán szeretnék tarolni." Azóta <span style="color:var(--text-primary);font-weight:500;">47 PR-t</span> ünnepeltünk, és három mély PR-mountja volt a kommunikációdnak Petra-val.
+          </p>
+        </div>
+      </div>
+      <p class="component-desc">
+        Phase 5 milestone surface. Brand-glow accent border (NOT warm-mode default border) — special-event tone. Date-anchored to meaningful events (Daniel's stated IdentityGoal moments, first-PR-of-mesocycle, etc.) — NOT signup-date marketing. Lives in Insights → Memoir tab alongside weekly Memoir cards.
+      </p>
+    </div>
+
+    <!-- PersonChip -->
+    <div class="component warm-bg">
+      <div class="component-head">
+        <div class="component-name">PersonChip</div>
+        <div class="component-tag">Phase 5</div>
+      </div>
+      <div class="component-stage warm-stage">
+        <div class="variant-row">
+          <span class="variant-label">PersonEntry inline reference</span>
+          <span class="person-chip">
+            <span class="person-icon">P</span>
+            <span>Petra</span>
+          </span>
+          <span class="person-chip">
+            <span class="person-icon">B</span>
+            <span>Bence</span>
+          </span>
+          <span class="person-chip">
+            <span class="person-icon">M</span>
+            <span>Mária</span>
+          </span>
+        </div>
+      </div>
+      <p class="component-desc">
+        Inline reference for <code>PersonEntry</code> entities in memoir bodies, anniversary cards, briefing copy. Warm-mode palette (always — people are emotional anchors). Initial-circle + name. Tap → PersonEntry detail view in Me → People section.
+      </p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================
+     Footer
+     ============================================================ -->
+<div class="doc-header" style="margin-top: 96px; border-top: 1px solid var(--border-subtle); border-bottom: none;">
+  <div class="doc-eyebrow">End of Component Library Showcase</div>
+  <h2 class="doc-title" style="font-size: 24px; margin-bottom: 12px;">Per-screen mockups follow next</h2>
+  <p class="doc-sub" style="font-size: 14px;">
+    <strong>22 components shown.</strong> The remaining ~38 catalog entries (Phase 6+ recipe maker, gamification widgets, progress momentum, etc.) ship as Phase 0 design refresh continues. Next deliverable: per-screen v2 mockups for Train, Fuel, Insights, Me, Recipe Maker — showing these components composed into full-screen layouts.
+  </p>
+  <div class="doc-meta">
+    <div class="doc-meta-item">Components shown · <span class="v">22</span></div>
+    <div class="doc-meta-item">Catalog total · <span class="v">~60+</span></div>
+    <div class="doc-meta-item">Phase coverage · <span class="v">1 → 5</span></div>
+    <div class="doc-meta-item">Next · <span class="v">Per-screen v2 mockups</span></div>
+  </div>
+</div>
+
+</body>
+</html>

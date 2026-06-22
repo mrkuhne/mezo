@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kamra · entitás-modell mockupok (v2 design)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ---- global reset (standalone mockup: kill native control chrome) ---- */
+  *, *::before, *::after { box-sizing: border-box; }
+  button, input, select, textarea {
+    font: inherit; color: inherit; background: none; border: none;
+    margin: 0; padding: 0; appearance: none; -webkit-appearance: none;
+  }
+  button { cursor: pointer; }
+
+  :root {
+    --brand-deep:#064E5B; --brand-core:#0E7C7B; --brand-primary:#14B8A6;
+    --brand-glow:#5EEAD4; --brand-tint:#CCFBF1;
+    --canvas:#0A0F14; --surface-1:#121A22; --surface-2:#1A242E;
+    --border-subtle:rgba(255,255,255,.06); --border-strong:rgba(255,255,255,.12);
+    --text-primary:#ECECF1; --text-secondary:#9CA3AF; --text-tertiary:#6B7280; --text-inverse:#0A0F14;
+    --success:#34D399; --warning:#F59E0B; --error:#F43F5E;
+    --src-kifli:#7CB342; --src-mp:#A78BFA; --src-tesco:#60A5FA;
+    --cat-protein:#5EEAD4; --cat-carb:#F59E0B; --cat-fat:#A78BFA;
+    --cat-veggie:#34D399; --cat-fruit:#F472B6; --cat-dairy:#60A5FA; --cat-stim:#F472B6;
+  }
+  body {
+    margin:0; background:#050709; color:var(--text-primary);
+    font-family:'Inter',system-ui,sans-serif;
+    background-image:radial-gradient(1200px 600px at 50% -200px, #0c1620 0%, #050709 70%);
+    min-height:100vh; padding:40px 24px 80px;
+  }
+  .page-h { text-align:center; margin-bottom:6px; }
+  .page-h h1 { font-family:'Antonio'; text-transform:uppercase; letter-spacing:.04em; font-size:30px; font-weight:600; margin:0; }
+  .page-h p { color:var(--text-secondary); font-size:14px; max-width:760px; margin:10px auto 0; line-height:1.55; }
+  .page-h .meta { font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:.18em; font-size:10px; color:var(--text-tertiary); margin-top:14px; }
+
+  .rail { display:flex; gap:36px; justify-content:center; align-items:flex-start; flex-wrap:wrap; margin-top:40px; }
+  .col { width:412px; max-width:100%; }
+  .col-head { margin-bottom:14px; }
+  .col-head .tagline { font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:.16em; font-size:10px; color:var(--brand-glow); }
+  .col-head h2 { font-family:'Antonio'; text-transform:uppercase; letter-spacing:.02em; font-size:19px; font-weight:600; margin:4px 0 0; }
+  .col-head .ddl { font-family:'JetBrains Mono'; font-size:10.5px; color:var(--text-tertiary); margin-top:6px; line-height:1.5; }
+  .col-head .ddl b { color:var(--text-secondary); font-weight:500; }
+
+  /* phone */
+  .phone {
+    width:412px; max-width:100%; height:880px; background:var(--canvas);
+    border-radius:42px; border:1px solid var(--border-strong);
+    box-shadow:0 40px 90px rgba(0,0,0,.6), inset 0 0 0 8px #03060a;
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+  }
+  .notch { position:absolute; top:0; left:50%; transform:translateX(-50%); width:150px; height:26px; background:#03060a; border-radius:0 0 16px 16px; z-index:30; }
+  .statusbar { height:40px; flex:none; display:flex; align-items:flex-end; justify-content:space-between; padding:0 26px 4px; font-family:'JetBrains Mono'; font-size:11px; color:var(--text-secondary); }
+
+  .screen { flex:1; overflow-y:auto; overflow-x:hidden; }
+  .screen::-webkit-scrollbar { width:0; }
+
+  /* fuel sub-nav */
+  .subnav { display:flex; gap:6px; padding:6px 16px 10px; overflow-x:auto; border-bottom:1px solid var(--border-subtle); position:sticky; top:0; background:linear-gradient(180deg,var(--canvas) 70%, transparent); z-index:20; }
+  .subnav::-webkit-scrollbar { height:0; }
+  .sub-tab { flex:none; font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:.1em; font-size:10px; color:var(--text-tertiary); padding:7px 12px; background:var(--surface-1); border:1px solid var(--border-subtle);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .sub-tab.active { color:var(--brand-glow); background:rgba(20,184,166,.12); border-color:rgba(94,234,212,.3); }
+
+  .content { padding:12px 18px 28px; }
+
+  .page-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .page-head .title { font-family:'Antonio'; text-transform:uppercase; letter-spacing:.01em; font-size:26px; font-weight:600; line-height:1; }
+  .page-head .sub { font-family:'JetBrains Mono'; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-tertiary); margin-top:5px; }
+  .head-actions { display:flex; gap:8px; }
+  .icon-btn { width:34px; height:34px; display:grid; place-items:center; background:var(--surface-1); border:1px solid var(--border-subtle);
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px); color:var(--text-secondary); }
+  .icon-btn.brand { background:rgba(20,184,166,.14); border-color:rgba(94,234,212,.3); color:var(--brand-glow); }
+  .chip-btn { display:flex; align-items:center; gap:6px; padding:8px 12px; font-family:'JetBrains Mono'; font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--brand-glow); background:rgba(20,184,166,.1); border:1px solid rgba(94,234,212,.28);
+    clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px); }
+
+  /* segmented (variant C) */
+  .segmented { display:flex; gap:4px; padding:4px; background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:12px; margin-bottom:14px; }
+  .seg { flex:1; text-align:center; font-family:'JetBrains Mono'; text-transform:uppercase; letter-spacing:.1em; font-size:10px; padding:8px 0; color:var(--text-tertiary); border-radius:9px; }
+  .seg.active { background:var(--brand-primary); color:var(--text-inverse); font-weight:600; }
+
+  /* stats strip */
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+  .stat { background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:14px; padding:10px 8px; text-align:center; }
+  .stat .v { font-family:'JetBrains Mono'; font-size:18px; font-weight:600; color:var(--text-primary); }
+  .stat .v.warn { color:var(--warning); }
+  .stat .l { font-family:'JetBrains Mono'; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); margin-top:3px; }
+
+  /* scrape feed */
+  .scrape { background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:14px; padding:12px 14px; margin-bottom:14px; }
+  .scrape .row { display:flex; align-items:center; justify-content:space-between; }
+  .scrape .lbl { font-family:'JetBrains Mono'; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--text-tertiary); }
+  .scrape .feed { display:flex; flex-direction:column; gap:7px; margin-top:9px; }
+  .scrape .frow { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-secondary); }
+  .dot-src { width:8px; height:8px; border-radius:50%; flex:none; }
+  .scrape .when { margin-left:auto; font-family:'JetBrains Mono'; font-size:9px; color:var(--text-tertiary); }
+
+  /* search */
+  .search { display:flex; align-items:center; gap:9px; background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:12px; padding:10px 13px; margin-bottom:12px; }
+  .search input { width:100%; font-size:13px; color:var(--text-primary); }
+  .search input::placeholder { color:var(--text-tertiary); }
+
+  /* filter chips */
+  .filters { display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:8px; }
+  .filters::-webkit-scrollbar { height:0; }
+  .fchip { flex:none; font-family:'JetBrains Mono'; font-size:9.5px; letter-spacing:.08em; text-transform:uppercase; padding:6px 11px; color:var(--text-tertiary); background:var(--surface-1); border:1px solid var(--border-subtle);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .fchip.on { color:var(--brand-glow); background:rgba(20,184,166,.12); border-color:rgba(94,234,212,.3); }
+  .fchip .ct { color:var(--text-tertiary); margin-left:5px; }
+
+  /* category divider */
+  .cat-div { display:flex; align-items:center; gap:9px; margin:16px 2px 10px; }
+  .cat-div .nub { width:6px; height:6px; border-radius:2px; }
+  .cat-div .name { font-family:'JetBrains Mono'; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-secondary); }
+  .cat-div .ct { font-family:'JetBrains Mono'; font-size:9px; color:var(--text-tertiary); }
+  .cat-div .rule { flex:1; height:1px; background:linear-gradient(90deg,var(--border-subtle),transparent); }
+
+  /* kamra card */
+  .kcard { background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:16px; padding:13px 14px; margin-bottom:9px; position:relative; }
+  .kcard .top { display:flex; align-items:flex-start; gap:10px; }
+  .kcard .name { font-family:'Antonio'; text-transform:uppercase; letter-spacing:.005em; font-size:15px; font-weight:500; line-height:1.05; }
+  .kcard .brand { font-size:11px; color:var(--text-tertiary); margin-top:3px; }
+  .kcard .right { margin-left:auto; text-align:right; flex:none; }
+  .kcard .kcal { font-family:'JetBrains Mono'; font-size:15px; font-weight:600; }
+  .kcard .kcal span { font-size:9px; color:var(--text-tertiary); }
+  .macros { font-family:'JetBrains Mono'; font-size:10px; letter-spacing:.04em; color:var(--text-secondary); margin-top:8px; }
+  .macros b { color:var(--success); font-weight:600; }
+  .badge-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:9px; }
+  .tag { font-family:'JetBrains Mono'; font-size:8.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 7px; display:inline-flex; align-items:center; gap:4px;
+    clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px); border:1px solid var(--border-subtle); color:var(--text-secondary); }
+  .tag .sd { width:6px; height:6px; border-radius:50%; }
+  .tag.nova1 { color:var(--success); border-color:rgba(52,211,153,.3); background:rgba(52,211,153,.08); }
+  .tag.nova2 { color:#A3E635; border-color:rgba(163,230,53,.3); background:rgba(163,230,53,.07); }
+  .tag.nova3 { color:var(--warning); border-color:rgba(245,158,11,.3); background:rgba(245,158,11,.08); }
+  .tag.nova4 { color:var(--error); border-color:rgba(244,63,94,.3); background:rgba(244,63,94,.08); }
+  .tag.warn { color:var(--warning); border-color:rgba(245,158,11,.35); background:rgba(245,158,11,.1); }
+  .tag.stock { color:var(--text-secondary); }
+  .tag.exp { color:var(--text-secondary); }
+  .tag.exp.low { color:var(--error); border-color:rgba(244,63,94,.35); background:rgba(244,63,94,.08); }
+  .tag.kind { color:var(--brand-glow); border-color:rgba(94,234,212,.3); background:rgba(20,184,166,.1); font-weight:600; }
+  .tag.recipes { color:var(--text-tertiary); }
+  .price { font-family:'JetBrains Mono'; font-size:9.5px; color:var(--text-tertiary); margin-top:2px; }
+
+  /* supplement card accent */
+  .kcard.supp { border-left:2px solid rgba(94,234,212,.4); }
+  .kcard.stim { border-left:2px solid rgba(244,114,182,.5); }
+  .kcard .protocol { font-size:10.5px; color:var(--text-tertiary); line-height:1.5; margin-top:8px; font-style:italic; }
+
+  /* ghost catalog card (variant C) */
+  .kcard.ghost { opacity:.55; border-style:dashed; }
+  .kcard.ghost .restock { font-family:'JetBrains Mono'; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--brand-glow); margin-top:9px; display:inline-flex; gap:5px; align-items:center; }
+
+  /* suggestions */
+  .suggest { margin-top:18px; }
+  .suggest .lbl { font-family:'JetBrains Mono'; font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-tertiary); margin-bottom:9px; }
+  .srow { display:flex; align-items:center; gap:10px; padding:11px 13px; border:1px dashed var(--border-strong); border-radius:13px; margin-bottom:8px; }
+  .srow .si { font-size:12px; color:var(--text-secondary); }
+  .srow .si b { color:var(--text-primary); font-weight:600; }
+  .srow .reason { font-size:10px; color:var(--text-tertiary); margin-top:2px; }
+  .srow .add { margin-left:auto; font-family:'JetBrains Mono'; font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:var(--brand-glow); padding:6px 10px; border:1px solid rgba(94,234,212,.3); background:rgba(20,184,166,.1);
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+
+  /* tab bar */
+  .tabbar { flex:none; height:64px; display:flex; align-items:center; justify-content:space-around; border-top:1px solid var(--border-subtle); background:var(--canvas); padding-bottom:6px; }
+  .tab { display:flex; flex-direction:column; align-items:center; gap:4px; font-family:'JetBrains Mono'; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); }
+  .tab.active { color:var(--brand-glow); }
+  .tab .ic { width:20px; height:20px; border-radius:6px; border:1.6px solid currentColor; }
+  .tab.active .ic { background:rgba(94,234,212,.15); box-shadow:0 0 12px rgba(94,234,212,.4); }
+
+  /* annotation banner under each phone */
+  .annot { margin-top:16px; background:var(--surface-1); border:1px solid var(--border-subtle); border-left:2px solid var(--brand-primary); border-radius:12px; padding:13px 15px; font-size:12px; line-height:1.55; color:var(--text-secondary); }
+  .annot h3 { font-family:'JetBrains Mono'; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--brand-glow); margin:0 0 8px; }
+  .annot ul { margin:8px 0 0; padding-left:16px; }
+  .annot li { margin-bottom:5px; }
+  .annot .pro { color:var(--success); }
+  .annot .con { color:var(--warning); }
+  .annot code { font-family:'JetBrains Mono'; font-size:11px; color:var(--brand-glow); background:rgba(20,184,166,.08); padding:1px 5px; border-radius:4px; }
+
+  .legend { max-width:780px; margin:48px auto 0; padding:18px 22px; background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:16px; font-size:13px; line-height:1.6; color:var(--text-secondary); }
+  .legend h3 { font-family:'Antonio'; text-transform:uppercase; letter-spacing:.02em; font-size:16px; color:var(--text-primary); margin:0 0 10px; }
+  .legend code { font-family:'JetBrains Mono'; font-size:12px; color:var(--brand-glow); }
+</style>
+</head>
+<body>
+
+<div class="page-h">
+  <h1>Kamra — entitás-modell mockupok</h1>
+  <p>Ugyanaz a Kamra képernyő (Fuel ▸ Kamra), három backend entitás-modell szerint megrajzolva. A felhasználói felület A és B esetén szinte azonos — a különbség a backenden van; C valódi új UI-felületet ad. Valódi seedelt mock-adatok (kifli.hu + myprotein.hu).</p>
+  <div class="meta">mezo · Fuel slice C · scope: leltár + valódi CRUD · v2 „Deep Current" design</div>
+</div>
+
+<div class="rail">
+
+  <!-- ============ VARIANT A — TWO FLAT TABLES ============ -->
+  <div class="col">
+    <div class="col-head">
+      <div class="tagline">Modell A · ajánlott</div>
+      <h2>Két lapos tábla</h2>
+      <div class="ddl"><b>pantry_ingredient</b> + <b>supplement_stash_item</b> · 1:1 a FE szerződéssel</div>
+    </div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>Fuel ▸ Kamra</span></div>
+      <div class="screen">
+        <div class="subnav">
+          <div class="sub-tab">Mai</div>
+          <div class="sub-tab">Terv</div>
+          <div class="sub-tab">Stack</div>
+          <div class="sub-tab">Receptek</div>
+          <div class="sub-tab active">Kamra</div>
+        </div>
+        <div class="content">
+          <div class="page-head">
+            <div>
+              <div class="title">Kamra</div>
+              <div class="sub">Polc · 21 tétel</div>
+            </div>
+            <div class="head-actions">
+              <button class="icon-btn">⌕</button>
+              <button class="chip-btn">⤓ Import</button>
+            </div>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><div class="v">21</div><div class="l">Tétel</div></div>
+            <div class="stat"><div class="v">16</div><div class="l">Hozzávaló</div></div>
+            <div class="stat"><div class="v warn">3</div><div class="l">Lejár</div></div>
+            <div class="stat"><div class="v warn">2</div><div class="l">Fogy</div></div>
+          </div>
+
+          <div class="search"><span style="color:var(--text-tertiary)">⌕</span><input placeholder="Keresés a kamrában…" /></div>
+
+          <div class="filters">
+            <div class="fchip on">Mind<span class="ct">21</span></div>
+            <div class="fchip">Étel<span class="ct">16</span></div>
+            <div class="fchip">Supplement<span class="ct">3</span></div>
+            <div class="fchip">Stim<span class="ct">2</span></div>
+          </div>
+          <div class="filters">
+            <div class="fchip on">∙ forrás</div>
+            <div class="fchip"><span style="color:var(--src-kifli)">●</span> kifli.hu</div>
+            <div class="fchip"><span style="color:var(--src-mp)">●</span> myprotein</div>
+            <div class="fchip"><span style="color:var(--src-tesco)">●</span> tesco</div>
+          </div>
+
+          <!-- protein -->
+          <div class="cat-div"><span class="nub" style="background:var(--cat-protein)"></span><span class="name">Fehérje</span><span class="ct">· 3</span><span class="rule"></span></div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Csirkemell · friss</div><div class="brand">Bonafarm</div></div>
+              <div class="right"><div class="kcal">110<span> kcal</span></div><div class="price">3 290 Ft/kg</div></div>
+            </div>
+            <div class="macros"><b>P 23</b> / C 0 / F 1.5 <span style="color:var(--text-tertiary)">· /100g</span></div>
+            <div class="badge-row">
+              <span class="tag"><span class="sd" style="background:var(--src-kifli)"></span>kifli.hu</span>
+              <span class="tag nova1">NOVA 1</span>
+              <span class="tag stock">400 g</span>
+              <span class="tag exp">Máj 25</span>
+              <span class="tag recipes">7 recept</span>
+            </div>
+          </div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Lazacfilé · norvég</div><div class="brand">Kifli Premium</div></div>
+              <div class="right"><div class="kcal">208<span> kcal</span></div><div class="price">14 990 Ft/kg</div></div>
+            </div>
+            <div class="macros"><b>P 20</b> / C 0 / F 13 <span style="color:var(--text-tertiary)">· /100g</span></div>
+            <div class="badge-row">
+              <span class="tag"><span class="sd" style="background:var(--src-kifli)"></span>kifli.hu</span>
+              <span class="tag nova1">NOVA 1</span>
+              <span class="tag stock">300 g</span>
+              <span class="tag exp low">⚠ Máj 24</span>
+            </div>
+          </div>
+
+          <!-- dairy -->
+          <div class="cat-div"><span class="nub" style="background:var(--cat-dairy)"></span><span class="name">Tejtermék</span><span class="ct">· 1</span><span class="rule"></span></div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Túró · félzsíros</div><div class="brand">Mizo</div></div>
+              <div class="right"><div class="kcal">130<span> kcal</span></div><div class="price">2 190 Ft/kg</div></div>
+            </div>
+            <div class="macros"><b>P 18</b> / C 3.5 / F 5 <span style="color:var(--text-tertiary)">· /100g</span></div>
+            <div class="badge-row">
+              <span class="tag"><span class="sd" style="background:var(--src-kifli)"></span>kifli.hu</span>
+              <span class="tag nova3">NOVA 3</span>
+              <span class="tag stock">250 g</span>
+              <span class="tag exp">Máj 26</span>
+              <span class="tag recipes">5 recept</span>
+            </div>
+          </div>
+
+          <!-- supplements -->
+          <div class="cat-div"><span class="nub" style="background:var(--cat-protein)"></span><span class="name">Supplement</span><span class="ct">· 3</span><span class="rule"></span></div>
+
+          <div class="kcard supp">
+            <div class="top">
+              <div><div class="name">Kreatin monohidrát</div><div class="brand">MyProtein · por</div></div>
+              <div class="right"><div class="kcal" style="color:var(--brand-glow)">5g</div><div class="price">86 adag</div></div>
+            </div>
+            <div class="protocol">Naponta egy adag · időponttól független</div>
+            <div class="badge-row">
+              <span class="tag"><span class="sd" style="background:var(--src-mp)"></span>myprotein</span>
+              <span class="tag kind">SUPP</span>
+              <span class="tag stock">86 adag</span>
+            </div>
+          </div>
+
+          <div class="kcard supp">
+            <div class="top">
+              <div><div class="name">Impact Whey · csoki</div><div class="brand">MyProtein · 1 scoop</div></div>
+              <div class="right"><div class="kcal" style="color:var(--brand-glow)">30g</div><div class="price warn">24 adag</div></div>
+            </div>
+            <div class="protocol">Pre/post workout · pre-volleyball T-2h</div>
+            <div class="badge-row">
+              <span class="tag"><span class="sd" style="background:var(--src-mp)"></span>myprotein</span>
+              <span class="tag kind">SUPP</span>
+              <span class="tag warn">⚠ fogy · 24</span>
+            </div>
+          </div>
+
+          <!-- stim -->
+          <div class="cat-div"><span class="nub" style="background:var(--cat-stim)"></span><span class="name">Stimuláns</span><span class="ct">· 1</span><span class="rule"></span></div>
+
+          <div class="kcard stim">
+            <div class="top">
+              <div><div class="name">AAKG · L-Arginine</div><div class="brand">MyProtein · pump</div></div>
+              <div class="right"><div class="kcal" style="color:var(--cat-stim)">6g</div><div class="price warn">18 adag</div></div>
+            </div>
+            <div class="protocol">Pre-workout T-30min · nem-koffeines pump</div>
+            <div class="badge-row">
+              <span class="tag"><span class="sd" style="background:var(--src-mp)"></span>myprotein</span>
+              <span class="tag warn">STIM</span>
+              <span class="tag warn">⚠ fogy · 18</span>
+            </div>
+          </div>
+
+          <div class="suggest">
+            <div class="lbl">Mezo · javaslatok</div>
+            <div class="srow">
+              <div><div class="si"><b>Görög joghurt</b> · Mizo</div><div class="reason">Gyakran fogy · 4 receptben szerepel</div></div>
+              <button class="add">+ Polcra</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><div class="ic"></div>Ma</div>
+        <div class="tab"><div class="ic"></div>Edzés</div>
+        <div class="tab active"><div class="ic"></div>Fuel</div>
+        <div class="tab"><div class="ic"></div>Insights</div>
+        <div class="tab"><div class="ic"></div>Én</div>
+      </div>
+    </div>
+    <div class="annot">
+      <h3>Modell A · két lapos tábla</h3>
+      Két tábla, pontosan a FE két tömbjére: <code>pantry_ingredient</code> (étel: makró, micros&nbsp;jsonb, nova, ár, készlet/lejárat, source) és <code>supplement_stash_item</code> (dózis, protokoll, timing, készlet). A <code>stashRefId</code> FK köti az ételt a supplementhez.
+      <ul>
+        <li><span class="pro">+ Legkevesebb nullable mező</span>, mindkét tábla feszes, olvasható.</li>
+        <li><span class="pro">+ Read = két SELECT, nulla join</span> → 1:1 a <code>usePantry()</code> alakkal.</li>
+        <li><span class="con">− Két CRUD-útvonal</span> (két controller/service), de mindkettő triviális.</li>
+        <li><span class="con">− A FoodItem-katalógus egyesítés később jön</span> (receptek/étkezések szeletnél).</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ VARIANT B — UNIFIED KIND TABLE ============ -->
+  <div class="col">
+    <div class="col-head">
+      <div class="tagline">Modell B</div>
+      <h2>Egy egységes tábla</h2>
+      <div class="ddl"><b>pantry_item</b> · <b>kind</b> diszkriminátor (food/supplement/stim/med)</div>
+    </div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>Fuel ▸ Kamra</span></div>
+      <div class="screen">
+        <div class="subnav">
+          <div class="sub-tab">Mai</div>
+          <div class="sub-tab">Terv</div>
+          <div class="sub-tab">Stack</div>
+          <div class="sub-tab">Receptek</div>
+          <div class="sub-tab active">Kamra</div>
+        </div>
+        <div class="content">
+          <div class="page-head">
+            <div>
+              <div class="title">Kamra</div>
+              <div class="sub">Polc · 21 tétel · egy lista</div>
+            </div>
+            <div class="head-actions">
+              <button class="icon-btn">⌕</button>
+              <button class="chip-btn">⤓ Import</button>
+            </div>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><div class="v">21</div><div class="l">Tétel</div></div>
+            <div class="stat"><div class="v">16</div><div class="l">Hozzávaló</div></div>
+            <div class="stat"><div class="v warn">3</div><div class="l">Lejár</div></div>
+            <div class="stat"><div class="v warn">2</div><div class="l">Fogy</div></div>
+          </div>
+
+          <div class="search"><span style="color:var(--text-tertiary)">⌕</span><input placeholder="Keresés a kamrában…" /></div>
+
+          <div class="filters">
+            <div class="fchip on">Mind<span class="ct">21</span></div>
+            <div class="fchip">Étel<span class="ct">16</span></div>
+            <div class="fchip">Supplement<span class="ct">3</span></div>
+            <div class="fchip">Stim<span class="ct">2</span></div>
+          </div>
+
+          <div style="font-family:'JetBrains Mono';font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-tertiary);margin:6px 2px 10px;">Egységes lista · kind-badge minden kártyán</div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Csirkemell · friss</div><div class="brand">Bonafarm</div></div>
+              <div class="right"><div class="kcal">110<span> kcal</span></div><div class="price">3 290 Ft/kg</div></div>
+            </div>
+            <div class="macros"><b>P 23</b> / C 0 / F 1.5 <span style="color:var(--text-tertiary)">· /100g</span></div>
+            <div class="badge-row">
+              <span class="tag kind">ÉTEL</span>
+              <span class="tag"><span class="sd" style="background:var(--src-kifli)"></span>kifli.hu</span>
+              <span class="tag nova1">NOVA 1</span>
+              <span class="tag stock">400 g</span>
+              <span class="tag exp">Máj 25</span>
+            </div>
+          </div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Túró · félzsíros</div><div class="brand">Mizo</div></div>
+              <div class="right"><div class="kcal">130<span> kcal</span></div><div class="price">2 190 Ft/kg</div></div>
+            </div>
+            <div class="macros"><b>P 18</b> / C 3.5 / F 5 <span style="color:var(--text-tertiary)">· /100g</span></div>
+            <div class="badge-row">
+              <span class="tag kind">ÉTEL</span>
+              <span class="tag"><span class="sd" style="background:var(--src-kifli)"></span>kifli.hu</span>
+              <span class="tag nova3">NOVA 3</span>
+              <span class="tag stock">250 g</span>
+              <span class="tag exp">Máj 26</span>
+            </div>
+          </div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Zabpehely · gm.</div><div class="brand">Naturmind</div></div>
+              <div class="right"><div class="kcal">372<span> kcal</span></div><div class="price">1 490 Ft/500g</div></div>
+            </div>
+            <div class="macros"><b>P 14</b> / C 60 / F 7 <span style="color:var(--text-tertiary)">· /100g</span></div>
+            <div class="badge-row">
+              <span class="tag kind">ÉTEL</span>
+              <span class="tag"><span class="sd" style="background:var(--src-kifli)"></span>kifli.hu</span>
+              <span class="tag nova1">NOVA 1</span>
+              <span class="tag stock">320 g</span>
+            </div>
+          </div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Kreatin monohidrát</div><div class="brand">MyProtein · por</div></div>
+              <div class="right"><div class="kcal" style="color:var(--brand-glow)">5g</div><div class="price">86 adag</div></div>
+            </div>
+            <div class="macros" style="color:var(--text-tertiary)">— makró nélkül · protokoll-alapú</div>
+            <div class="badge-row">
+              <span class="tag kind">SUPP</span>
+              <span class="tag"><span class="sd" style="background:var(--src-mp)"></span>myprotein</span>
+              <span class="tag stock">86 adag</span>
+            </div>
+          </div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Impact Whey · csoki</div><div class="brand">MyProtein</div></div>
+              <div class="right"><div class="kcal" style="color:var(--brand-glow)">30g</div><div class="price warn">24 adag</div></div>
+            </div>
+            <div class="macros"><b>P 82</b> / C 4 / F 7.5 <span style="color:var(--text-tertiary)">· /100g</span></div>
+            <div class="badge-row">
+              <span class="tag kind">SUPP</span>
+              <span class="tag"><span class="sd" style="background:var(--src-mp)"></span>myprotein</span>
+              <span class="tag nova4">NOVA 4</span>
+              <span class="tag warn">⚠ fogy · 24</span>
+            </div>
+          </div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">AAKG · L-Arginine</div><div class="brand">MyProtein · pump</div></div>
+              <div class="right"><div class="kcal" style="color:var(--cat-stim)">6g</div><div class="price warn">18 adag</div></div>
+            </div>
+            <div class="macros" style="color:var(--text-tertiary)">— pre-workout T-30min</div>
+            <div class="badge-row">
+              <span class="tag kind" style="color:var(--cat-stim);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.08)">STIM</span>
+              <span class="tag"><span class="sd" style="background:var(--src-mp)"></span>myprotein</span>
+              <span class="tag warn">⚠ fogy · 18</span>
+            </div>
+          </div>
+
+          <div class="suggest">
+            <div class="lbl">Mezo · javaslatok</div>
+            <div class="srow">
+              <div><div class="si"><b>Görög joghurt</b> · Mizo</div><div class="reason">Gyakran fogy · 4 receptben</div></div>
+              <button class="add">+ Polcra</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><div class="ic"></div>Ma</div>
+        <div class="tab"><div class="ic"></div>Edzés</div>
+        <div class="tab active"><div class="ic"></div>Fuel</div>
+        <div class="tab"><div class="ic"></div>Insights</div>
+        <div class="tab"><div class="ic"></div>Én</div>
+      </div>
+    </div>
+    <div class="annot">
+      <h3>Modell B · egy egységes tábla</h3>
+      Egy <code>pantry_item</code> tábla <code>kind</code> diszkriminátorral; az étel- és supplement-mezők uniója nullable oszlopokban. A kártya egységes chrome + kind-badge.
+      <ul>
+        <li><span class="pro">+ Egy CRUD-útvonal</span>, egy controller/service/tábla.</li>
+        <li><span class="pro">+ Közelebb a hosszú távú</span> egységes <code>FoodItem</code> katalógushoz.</li>
+        <li><span class="con">− Sok nullable oszlop</span> (a supplementnek nincs makró/nova, az ételnek nincs dózis/protokoll/timing) → gyengébb DB-integritás.</li>
+        <li><span class="con">− A FE úgyis <code>kind</code> szerint bontja</span> → a felhasználó ugyanazt látja, mint A-nál.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ============ VARIANT C — CATALOG + INVENTORY SPLIT ============ -->
+  <div class="col">
+    <div class="col-head">
+      <div class="tagline">Modell C</div>
+      <h2>Katalógus + leltár</h2>
+      <div class="ddl"><b>food_item</b> (mi van a világon) + <b>inventory</b> (mennyim van) szétválasztva</div>
+    </div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="statusbar"><span>9:41</span><span>Fuel ▸ Kamra</span></div>
+      <div class="screen">
+        <div class="subnav">
+          <div class="sub-tab">Mai</div>
+          <div class="sub-tab">Terv</div>
+          <div class="sub-tab">Stack</div>
+          <div class="sub-tab">Receptek</div>
+          <div class="sub-tab active">Kamra</div>
+        </div>
+        <div class="content">
+          <div class="page-head">
+            <div>
+              <div class="title">Kamra</div>
+              <div class="sub">Identitás + készlet külön</div>
+            </div>
+            <div class="head-actions">
+              <button class="icon-btn">⌕</button>
+              <button class="chip-btn">⤓ Import</button>
+            </div>
+          </div>
+
+          <div class="segmented">
+            <div class="seg active">Amim van · 16</div>
+            <div class="seg">Katalógus · 142</div>
+          </div>
+
+          <div class="stats">
+            <div class="stat"><div class="v">16</div><div class="l">Készleten</div></div>
+            <div class="stat"><div class="v warn">3</div><div class="l">Lejár</div></div>
+            <div class="stat"><div class="v warn">2</div><div class="l">Fogy</div></div>
+            <div class="stat"><div class="v">142</div><div class="l">Katalóg.</div></div>
+          </div>
+
+          <div class="search"><span style="color:var(--text-tertiary)">⌕</span><input placeholder="Keresés készlet + katalógus…" /></div>
+
+          <div class="cat-div"><span class="nub" style="background:var(--cat-protein)"></span><span class="name">Fehérje · készleten</span><span class="rule"></span></div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Csirkemell · friss</div><div class="brand">Bonafarm · <span style="color:var(--brand-glow)">katalógus #14</span></div></div>
+              <div class="right"><div class="kcal">110<span> kcal</span></div></div>
+            </div>
+            <div class="macros"><b>P 23</b> / C 0 / F 1.5 <span style="color:var(--text-tertiary)">· identitás</span></div>
+            <div class="badge-row">
+              <span class="tag"><span class="sd" style="background:var(--src-kifli)"></span>kifli.hu</span>
+              <span class="tag nova1">NOVA 1</span>
+              <span class="tag stock" style="color:var(--brand-glow);border-color:rgba(94,234,212,.3)">▣ 400 g</span>
+              <span class="tag exp">Máj 25</span>
+            </div>
+          </div>
+
+          <div class="kcard">
+            <div class="top">
+              <div><div class="name">Lazacfilé · norvég</div><div class="brand">Kifli Premium · <span style="color:var(--brand-glow)">katalógus #31</span></div></div>
+              <div class="right"><div class="kcal">208<span> kcal</span></div></div>
+            </div>
+            <div class="macros"><b>P 20</b> / C 0 / F 13 <span style="color:var(--text-tertiary)">· identitás</span></div>
+            <div class="badge-row">
+              <span class="tag"><span class="sd" style="background:var(--src-kifli)"></span>kifli.hu</span>
+              <span class="tag nova1">NOVA 1</span>
+              <span class="tag stock" style="color:var(--brand-glow);border-color:rgba(94,234,212,.3)">▣ 300 g</span>
+              <span class="tag exp low">⚠ Máj 24</span>
+            </div>
+          </div>
+
+          <div class="cat-div"><span class="nub" style="background:var(--cat-protein)"></span><span class="name">Katalógusban · nincs készleten</span><span class="rule"></span></div>
+
+          <div class="kcard ghost">
+            <div class="top">
+              <div><div class="name">Marhasteak · ribeye</div><div class="brand">Kifli Premium · katalógus #58</div></div>
+              <div class="right"><div class="kcal">271<span> kcal</span></div></div>
+            </div>
+            <div class="macros"><b>P 25</b> / C 0 / F 19 <span style="color:var(--text-tertiary)">· identitás él, készlet 0</span></div>
+            <button class="restock">＋ Polcra · készlet hozzáadása</button>
+          </div>
+
+          <div class="kcard ghost">
+            <div class="top">
+              <div><div class="name">Tofu · natúr</div><div class="brand">Bio piac · katalógus #77</div></div>
+              <div class="right"><div class="kcal">144<span> kcal</span></div></div>
+            </div>
+            <div class="macros"><b>P 15</b> / C 2 / F 9 <span style="color:var(--text-tertiary)">· identitás él, készlet 0</span></div>
+            <button class="restock">＋ Polcra · készlet hozzáadása</button>
+          </div>
+
+          <div class="annot" style="margin-top:14px;border-left-color:var(--brand-glow)">
+            <h3 style="margin-bottom:6px">Detail = 2 forrásból join-olva</h3>
+            <div style="font-size:11.5px;line-height:1.5">A kártya „identitása" (név, makró, NOVA, source) a <code>food_item</code> katalógusból jön, a „mennyiség" (készlet, lejárat) a külön <code>inventory</code> sorból. Egy étel egyszer él a katalógusban, akárhányszor veszed meg.</div>
+          </div>
+
+        </div>
+      </div>
+      <div class="tabbar">
+        <div class="tab"><div class="ic"></div>Ma</div>
+        <div class="tab"><div class="ic"></div>Edzés</div>
+        <div class="tab active"><div class="ic"></div>Fuel</div>
+        <div class="tab"><div class="ic"></div>Insights</div>
+        <div class="tab"><div class="ic"></div>Én</div>
+      </div>
+    </div>
+    <div class="annot">
+      <h3>Modell C · katalógus + leltár</h3>
+      Szétválik a „<b>mi</b>" (<code>food_item</code>: név, márka, makró, nova, source — újrahasználható, lehet publikus) és a „<b>mennyim van</b>" (<code>inventory</code>: készlet, lejárat, ár-snapshot). A receptek és étkezések is a katalógusra hivatkoznának.
+      <ul>
+        <li><span class="pro">+ Architektúra-hű</span> — ez a hosszú távú cél (FoodItem-katalógus + pgvector embedding később).</li>
+        <li><span class="pro">+ Valódi új UI</span>: „Amim van / Katalógus" váltó, készlet nélküli tételek újrahasználata.</li>
+        <li><span class="con">− Minden read JOIN-t igényel</span> a lapos FE-alakra (<code>usePantry</code> nem változhat).</li>
+        <li><span class="con">− 2× annyi tábla + a „katalógus 142" felület</span> jelentősen kinöveli az első szeletet (a scope: <i>leltár + CRUD</i> volt).</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<div class="legend">
+  <h3>Hogyan döntsünk?</h3>
+  A felhasználói felület <b>A és B között gyakorlatilag azonos</b> — a különbség pusztán backend (külön táblák vs. egy tábla nullable mezőkkel). Mivel a FE úgyis <code>kind</code> szerint szétbontja, ez tisztán adatmodell-döntés: <b>A</b> feszesebb sémát és erősebb DB-integritást ad (kevesebb nullable oszlop, mindkét aggregátum saját CHECK-jeivel). <b>C</b> az egyetlen, ami valódi új UI-felületet hoz (katalógus/leltár váltó), és architektúra-hű — viszont jóval nagyobb első szelet, és minden read join-t kíván a változatlan lapos <code>usePantry()</code> alakra. A megbeszélt scope (<i>„leltár + valódi CRUD"</i>) leginkább <b>A</b>-val áll összhangban, a katalógus-egyesítést a receptek/étkezések szeletére halasztva.
+</div>
+
+</body>
+</html>
