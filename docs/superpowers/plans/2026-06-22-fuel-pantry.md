@@ -603,6 +603,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -615,14 +616,16 @@ class PantryItemRepositoryIT extends AbstractIntegrationTest {
 
     @Autowired private PantryItemRepository repository;
     @Autowired private PantryItemPopulator populator;
+    @Autowired private DatabasePopulator databasePopulator;
 
-    private static final UUID OWNER = UUID.randomUUID();
-
+    // created_by has an FK to app_user(id) — owners MUST be real users (populateUser),
+    // never UUID.randomUUID() (that would violate the FK on saveAndFlush).
     @Test
     void testFindByOwner_shouldReturnFoodWithJsonbMicros_whenPersisted() {
-        populator.createFood(OWNER, "Csirkemell", LocalDate.of(2026, 5, 25));
+        UUID owner = databasePopulator.populateUser("owner@test.local");
+        populator.createFood(owner, "Csirkemell", LocalDate.of(2026, 5, 25));
 
-        var items = repository.findByCreatedByAndDeletedFalseOrderByNameAsc(OWNER);
+        var items = repository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner);
 
         assertThat(items).hasSize(1);
         PantryItemEntity e = items.get(0);
@@ -634,10 +637,11 @@ class PantryItemRepositoryIT extends AbstractIntegrationTest {
 
     @Test
     void testFindByOwner_shouldHideRow_whenSoftDeleted() {
-        PantryItemEntity e = populator.createSupplement(OWNER, "Kreatin");
+        UUID owner = databasePopulator.populateUser("owner@test.local");
+        PantryItemEntity e = populator.createSupplement(owner, "Kreatin");
         repository.delete(e); // @SQLDelete soft-deletes
 
-        assertThat(repository.findByCreatedByAndDeletedFalseOrderByNameAsc(OWNER)).isEmpty();
+        assertThat(repository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner)).isEmpty();
     }
 }
 ```
@@ -904,10 +908,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.feature.pantry.service.PantryService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -917,9 +923,18 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
     @Autowired private PantryService service;
     @Autowired private PantryItemPopulator populator;
+    @Autowired private DatabasePopulator databasePopulator;
 
-    private static final UUID OWNER = UUID.randomUUID();
-    private static final UUID OTHER = UUID.randomUUID();
+    // created_by has an FK to app_user(id) — owners MUST be real users (populateUser),
+    // never UUID.randomUUID(). Spring starts the test tx before @BeforeEach, so these roll back.
+    private UUID owner;
+    private UUID other;
+
+    @BeforeEach
+    void setUpOwners() {
+        owner = databasePopulator.populateUser("a@test.local");
+        other = databasePopulator.populateUser("b@test.local");
+    }
 
     private PantryItemRequest foodReq() {
         PantryItemRequest r = new PantryItemRequest();
@@ -932,10 +947,10 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
     @Test
     void testGetPantry_shouldSplitByKind_whenMixedItems() {
-        populator.createFood(OWNER, "Csirkemell", LocalDate.of(2026, 5, 25));
-        populator.createSupplement(OWNER, "Kreatin");
+        populator.createFood(owner, "Csirkemell", LocalDate.of(2026, 5, 25));
+        populator.createSupplement(owner, "Kreatin");
 
-        var resp = service.getPantry(OWNER);
+        var resp = service.getPantry(owner);
 
         assertThat(resp.getIngredients()).extracting("name").containsExactly("Csirkemell");
         assertThat(resp.getStash()).extracting("name").containsExactly("Kreatin");
@@ -944,10 +959,10 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
     @Test
     void testCreateItem_shouldPersistOwnedFood_whenValid() {
-        var created = service.createItem(OWNER, foodReq());
+        var created = service.createItem(owner, foodReq());
 
         assertThat(created.getId()).isNotNull();
-        assertThat(service.getPantry(OWNER).getIngredients()).hasSize(1);
+        assertThat(service.getPantry(owner).getIngredients()).hasSize(1);
     }
 
     @Test
@@ -955,32 +970,32 @@ class PantryServiceIT extends AbstractIntegrationTest {
         PantryItemRequest r = foodReq();
         r.setKcal(null);
 
-        assertThatThrownBy(() -> service.createItem(OWNER, r))
+        assertThatThrownBy(() -> service.createItem(owner, r))
             .isInstanceOf(SystemRuntimeErrorException.class);
     }
 
     @Test
     void testUpdateItem_shouldReturn404_whenForeignRow() {
-        var mine = service.createItem(OWNER, foodReq());
+        var mine = service.createItem(owner, foodReq());
 
-        assertThatThrownBy(() -> service.updateItem(OTHER, mine.getId(), foodReq()))
+        assertThatThrownBy(() -> service.updateItem(other, mine.getId(), foodReq()))
             .isInstanceOf(SystemRuntimeErrorException.class);
     }
 
     @Test
     void testDeleteItem_shouldSoftHide_whenOwned() {
-        var mine = service.createItem(OWNER, foodReq());
+        var mine = service.createItem(owner, foodReq());
 
-        service.deleteItem(OWNER, mine.getId());
+        service.deleteItem(owner, mine.getId());
 
-        assertThat(service.getPantry(OWNER).getIngredients()).isEmpty();
+        assertThat(service.getPantry(owner).getIngredients()).isEmpty();
     }
 
     @Test
     void testGetPantry_shouldIsolateOwners_whenTwoUsers() {
-        populator.createFood(OWNER, "Csirkemell", LocalDate.of(2026, 5, 25));
+        populator.createFood(owner, "Csirkemell", LocalDate.of(2026, 5, 25));
 
-        assertThat(service.getPantry(OTHER).getIngredients()).isEmpty();
+        assertThat(service.getPantry(other).getIngredients()).isEmpty();
     }
 }
 ```
