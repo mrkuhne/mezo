@@ -11,7 +11,7 @@ beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
 function setup() {
-  const { result } = renderHook(() => useRecipes())
+  const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
   const recipe = result.current.recipes.find(r => r.templateBreakdown)!
   render(<RecipeDetailSheet recipe={recipe} onClose={() => {}} />, { wrapper: QueryWrapper })
   return recipe

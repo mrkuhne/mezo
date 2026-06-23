@@ -10,7 +10,7 @@ beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
 test('renders the recipe name, macros and Mezo fit; click opens', async () => {
-  const { result } = renderHook(() => useRecipes())
+  const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
   const recipe = result.current.recipes[0]
   const onOpen = vi.fn()
   render(<RecipeCard recipe={recipe} onOpen={onOpen} />, { wrapper: QueryWrapper })
