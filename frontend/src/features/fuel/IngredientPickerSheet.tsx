@@ -1,20 +1,10 @@
 // ============================================================
-// Mezo · IngredientPickerSheet (nested modal)
-// Opens ON TOP of NewRecipeSheet to pick a pantry ingredient. A search box
-// filters the Kamra by name + brand; each PickerRow is a selectable card
-// whose accent colour comes from its category, and tapping it fires
-// onPick(ing). Close via the sheet's animated dismiss.
-// Port: prototype/src/fuel-recipes.jsx IngredientPickerSheet + PickerRow
-// (778–846).
-//
-// Adaptations vs prototype:
-//  - Uses the shared <Sheet> (portal + drag-to-close + Escape) instead of
-//    the bespoke .sheet-backdrop/.sheet markup. The prototype raised the
-//    nested z-index inline (sheet 61, backdrop 60); here we pass
-//    className="sheet-nested" and add CSS that lifts BOTH the nested sheet
-//    and its sibling backdrop above the parent sheet (201/200) — see
-//    src/styles/prototype.css.
-//  - Ingredients come from usePantry().ingredients, not window.MezoData.
+// Mezo · IngredientPickerSheet (nested modal — Kamra pick)
+// Opens ON TOP of the RecipeEditorView page to pick a pantry ingredient. Search
+// filters the Kamra by name + brand; each PickerRow shows a category-accented
+// card with name + source badge + brand/NOVA subline and a MacroCells strip
+// (/100g, the design-mockup cell look). Tapping ＋ fires onPick(ing).
+// docs/design/recipes-editor.html (right phone · `.prow` + `.macstrip`).
 // ============================================================
 import { useState } from 'react'
 import type { Ingredient } from '@/data/types'
@@ -24,33 +14,36 @@ import { Icon } from '@/components/ui/Icon'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Display } from '@/components/ui/Display'
 import { SourceBadge } from '@/components/ui/SourceBadge'
-import { MacroRow } from '@/components/ui/MacroRow'
+import { MacroCells } from './components/MacroCells'
 
 function PickerRow({ ing, onPick }: { ing: Ingredient; onPick: () => void }) {
   const { categoryMeta } = usePantry()
   const catColor = categoryMeta[ing.category]?.color ?? 'var(--text-secondary)'
   return (
-    <button
-      onClick={onPick}
-      className="card notch-4 row"
-      style={{
-        padding: '10px 12px',
-        width: '100%',
-        textAlign: 'left',
-        alignItems: 'center',
-        gap: 10,
-        borderLeft: '2px solid ' + catColor,
-      }}
-    >
-      <div className="col flex-1" style={{ minWidth: 0 }}>
-        <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{ing.name}</span>
-          <SourceBadge source={ing.source} />
+    <div className="card notch-4" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor }}>
+      <div className="row" style={{ alignItems: 'center', gap: 8 }}>
+        <div className="col flex-1" style={{ minWidth: 0 }}>
+          <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-primary)' }}>{ing.name}</span>
+            <SourceBadge source={ing.source} />
+          </div>
+          <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', marginTop: 3 }}>
+            {ing.brand}{ing.nova ? ` · NOVA ${ing.nova}` : ''}
+          </span>
         </div>
-        <MacroRow macros={ing.macros} per={ing.per} />
+        <button
+          onClick={onPick}
+          aria-label={ing.name + ' hozzáadása'}
+          className="notch-4"
+          style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'rgba(20,184,166,0.14)', color: 'var(--brand-glow)' }}
+        >
+          <Icon name="plus" size={14} />
+        </button>
       </div>
-      <Icon name="plus" size={12} color="var(--brand-glow)" />
-    </button>
+      <div style={{ marginTop: 9 }}>
+        <MacroCells macros={ing.macros} perLabel="/100g" />
+      </div>
+    </div>
   )
 }
 
@@ -75,11 +68,7 @@ export function IngredientPickerSheet({
     <Sheet onClose={onClose} className="sheet-nested" labelledBy="ingredient-pick-title">
       {(close) => (
         <>
-          {/* Header */}
-          <div
-            className="row"
-            style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}
-          >
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div className="col">
               <Eyebrow brand>Kamra · pick</Eyebrow>
               <div id="ingredient-pick-title" style={{ marginTop: 4 }}>
@@ -91,16 +80,9 @@ export function IngredientPickerSheet({
             </button>
           </div>
 
-          {/* Search */}
           <div
             className="row gap-sm"
-            style={{
-              padding: '8px 12px',
-              marginBottom: 12,
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border-subtle)',
-              alignItems: 'center',
-            }}
+            style={{ padding: '8px 12px', marginBottom: 12, background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}
           >
             <Icon name="search" size={12} color="var(--text-tertiary)" />
             <input
@@ -112,7 +94,6 @@ export function IngredientPickerSheet({
             />
           </div>
 
-          {/* Ingredient list */}
           <div className="col gap-sm" style={{ maxHeight: 420, overflowY: 'auto' }}>
             {filtered.map(ing => (
               <PickerRow key={ing.id} ing={ing} onPick={() => onPick(ing)} />
