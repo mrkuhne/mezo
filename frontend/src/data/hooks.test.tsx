@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
-import { useTodayScenario, useCheckins } from './hooks'
+import { useTodayScenario, useCheckins, useRecipes, useRecipeActions } from './hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 const wrap = (path: string) => ({ children }: { children: ReactNode }) => (
@@ -21,4 +21,9 @@ test('useCheckins.saveCheckIn marks a slot done with values', () => {
   act(() => result.current.saveCheckIn(2, { state: 'done', values: { energy: 8, stress: 3, body: 7, mental: 8 }, note: null }))
   expect(result.current.checkins[2].state).toBe('done')
   expect(result.current.checkins[2].values?.energy).toBe(8)
+})
+
+test('useRecipes + useRecipeActions are re-exported from @/data/hooks', () => {
+  expect(typeof useRecipes).toBe('function')
+  expect(typeof useRecipeActions).toBe('function')
 })
