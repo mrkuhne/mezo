@@ -813,3 +813,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: var(--brand-glow);
   box-shadow: 0 0 8px var(--brand-glow);
 }
+
+/* RecipeFitBadge / fit-zone pending sparkle pulse (recipes-*.html @keyframes tw) */
+@keyframes mezo-twinkle {
+  0%, 100% { opacity: 0.45; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
