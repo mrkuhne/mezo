@@ -18,6 +18,7 @@ import { FuelPlanView } from '@/features/fuel/views/FuelPlanView'
 import { FuelStackView } from '@/features/fuel/views/FuelStackView'
 import { FuelRecipesView } from '@/features/fuel/views/FuelRecipesView'
 import { FuelKamraView } from '@/features/fuel/views/FuelKamraView'
+import { KamraItemDetailView } from '@/features/fuel/views/KamraItemDetailView'
 import { InsightsScreen } from '@/features/insights/InsightsScreen'
 import { PatternsView } from '@/features/insights/views/PatternsView'
 import { WeeklyView } from '@/features/insights/views/WeeklyView'
@@ -72,6 +73,7 @@ export const routes: RouteObject[] = [
           { path: 'stack', element: <FuelStackView /> },
           { path: 'recipes', element: <FuelRecipesView /> },
           { path: 'kamra', element: <FuelKamraView /> },
+          { path: 'kamra/:id', element: <KamraItemDetailView /> },
         ],
       },
       {

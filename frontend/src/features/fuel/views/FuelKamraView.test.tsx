@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { FuelKamraView } from './FuelKamraView'
 import { QueryWrapper } from '@/test/queryWrapper'
 
@@ -9,8 +9,24 @@ import { QueryWrapper } from '@/test/queryWrapper'
 // mode for the static seed + wrap in a QueryClientProvider.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
+
+// Surfaces the current path so the navigate-on-card-click assertion can read it.
+function LocationProbe() {
+  const loc = useLocation()
+  return <div data-testid="location">{loc.pathname}</div>
+}
+
 const renderView = () =>
-  render(<QueryWrapper><MemoryRouter><FuelKamraView /></MemoryRouter></QueryWrapper>)
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/fuel/kamra']}>
+        <Routes>
+          <Route path="/fuel/kamra" element={<FuelKamraView />} />
+          <Route path="/fuel/kamra/:id" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
 
 test('renders stats and the type switcher', () => {
   renderView()
@@ -36,4 +52,28 @@ test('query filters to empty-state', async () => {
   renderView()
   await userEvent.type(screen.getByPlaceholderText(/Keress tétel/), 'zzzznope')
   expect(screen.getByText('Nincs egyező tétel.')).toBeInTheDocument()
+})
+test('clicking a card navigates to the item detail route', async () => {
+  renderView()
+  await userEvent.click(screen.getByText(/Csirkemell/))
+  // The detail route owns the path /fuel/kamra/:id — the food ingredient id is its raw id.
+  expect(screen.getByTestId('location').textContent).toBe('/fuel/kamra/ing-csirkemell')
+})
+test('Szűrők sheet selects a category and AND-filters the list', async () => {
+  renderView()
+  // A protein (Csirkemell) and a fruit (Banán) are both visible initially.
+  expect(screen.getByText(/Csirkemell/)).toBeInTheDocument()
+  expect(screen.getByText(/Banán/)).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('button', { name: /Szűrők/ }))
+  // The sheet lists present categories with counts — pick "Gyümölcs" (fruit).
+  await userEvent.click(await screen.findByRole('button', { name: /Gyümölcs/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Szűrés \(/ }))
+
+  // Once the sheet has closed, only fruits remain — Banán stays, Csirkemell (protein)
+  // is filtered out, and the "Szűrők" button carries the active-count badge.
+  await waitFor(() => expect(screen.queryByRole('button', { name: /Szűrés \(/ })).not.toBeInTheDocument())
+  expect(screen.getByText(/Banán/)).toBeInTheDocument()
+  expect(screen.queryByText(/Csirkemell/)).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Szűrők\s*1/ })).toBeInTheDocument()
 })

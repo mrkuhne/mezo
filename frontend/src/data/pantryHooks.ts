@@ -123,6 +123,15 @@ function applyIngredientUpdate(i: Ingredient, input: PantryItemInput): Ingredien
       c: input.carbsG ?? i.macros.c,
       f: input.fatG ?? i.macros.f,
     },
+    // Extended nutrition + price are editable from the full editor — apply when
+    // carried so the detail page reflects the edit (preserve untouched values).
+    fiberG: input.fiberG ?? i.fiberG,
+    sugarG: input.sugarG ?? i.sugarG,
+    saltG: input.saltG ?? i.saltG,
+    saturatedFatG: input.saturatedFatG ?? i.saturatedFatG,
+    price: input.price ?? i.price,
+    priceUnit: input.priceUnit ?? i.priceUnit,
+    pkg: input.pkg ?? i.pkg,
     stock: input.stockQty != null
       ? { qty: input.stockQty, unit: input.stockUnit ?? i.stock?.unit ?? i.unit, expires: input.stockExpires ?? i.stock?.expires ?? '' }
       : i.stock,

@@ -78,4 +78,38 @@ describe('AddPantryItemSheet', () => {
     })
     expect(onClose).toHaveBeenCalled()
   })
+
+  it('edit mode saves changed extended-nutrition + price fields via updateItem', async () => {
+    // The expanded editor edits EVERY value — assert a non-macro field (Rost) and
+    // price actually land in the cache through updateItem.
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const onClose = vi.fn()
+    const { result } = renderHook(() => usePantry(), { wrapper })
+    const target = result.current.ingredients[0]
+
+    render(
+      <QueryClientProvider client={qc}>
+        <AddPantryItemSheet
+          open
+          onClose={onClose}
+          editId={target.id}
+          initial={{ kind: 'food', name: target.name, kcal: target.macros.kcal }}
+        />
+      </QueryClientProvider>,
+    )
+
+    fireEvent.change(screen.getByLabelText(/^rost$/i), { target: { value: '4.5' } })
+    fireEvent.change(screen.getByLabelText(/ár \(ft\)/i), { target: { value: '999' } })
+    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
+
+    await waitFor(() => {
+      const edited = result.current.ingredients.find(i => i.id === target.id)
+      expect(edited?.fiberG).toBe(4.5)
+      expect(edited?.price).toBe(999)
+    })
+    expect(onClose).toHaveBeenCalled()
+  })
 })
