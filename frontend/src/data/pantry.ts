@@ -571,7 +571,7 @@ export const recipes: Recipe[] = recipesBase.map(r => {
       mealId: lm.meal.id,
       slot: lm.meal.slot,
       score,
-      delta: +(score - r.mezoFit.score).toFixed(2),
+      delta: +(score - (r.mezoFit.score ?? 0)).toFixed(2),
       loggedAt: lm.loggedAt,
       kcal: lm.meal.kcal,
       p: lm.meal.p,

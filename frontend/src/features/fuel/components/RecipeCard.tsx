@@ -9,10 +9,11 @@ import { Icon } from '@/components/ui/Icon'
 
 export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Recipe) => void }) {
   const { ingredients } = usePantry()
+  const fitScore = recipe.mezoFit.score ?? 0
   const fitColor =
-    recipe.mezoFit.score >= 0.9
+    fitScore >= 0.9
       ? 'var(--brand-glow)'
-      : recipe.mezoFit.score >= 0.85
+      : fitScore >= 0.85
         ? 'var(--cat-goal-state)'
         : 'var(--cat-preference)'
   const sources = [
@@ -97,7 +98,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
             Mezo fit
           </span>
           <span style={{ fontFamily: 'var(--ff-display)', fontSize: 14, color: fitColor, lineHeight: 1 }}>
-            {(recipe.mezoFit.score * 100).toFixed(0)}
+            {(fitScore * 100).toFixed(0)}
           </span>
         </div>
       </div>

@@ -24,6 +24,7 @@ type TabId = 'score' | 'ingredients' | 'logs'
 function RecipeScoreHero({ recipe, logs }: { recipe: Recipe; logs: RecipeLog[] }) {
   const lastLog = logs[0]
   const m = recipe.macros
+  const fitScore = recipe.mezoFit.score ?? 0
 
   return (
     <div className="card notch-12" style={{ padding: 16 }}>
@@ -31,10 +32,10 @@ function RecipeScoreHero({ recipe, logs }: { recipe: Recipe; logs: RecipeLog[] }
         {/* Ring */}
         <div style={{ flexShrink: 0 }}>
           <ScoreRing
-            pct={recipe.mezoFit.score}
+            pct={fitScore}
             size={96}
             stroke={5}
-            label={(recipe.mezoFit.score * 100).toFixed(0)}
+            label={(fitScore * 100).toFixed(0)}
             labelColor="var(--brand-glow)"
             sublabel="baseline"
           />
@@ -237,7 +238,7 @@ export function RecipeDetailSheet({ recipe, onClose }: { recipe: Recipe; onClose
 
           {tab === 'score' && <RecipeScoreBreakdown breakdown={b} />}
           {tab === 'ingredients' && <RecipeIngredientList items={items} />}
-          {tab === 'logs' && <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score} />}
+          {tab === 'logs' && <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />}
 
           {/* Actions (inert) */}
           <div className="col gap-sm" style={{ marginTop: 16 }}>
