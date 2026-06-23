@@ -11,7 +11,7 @@ const recipeFixture = {
   name: 'Túrós zabkása · áfonyával', slot: 'Reggeli', category: 'breakfast',
   servings: 1, prepMins: 5, cookMins: 3, tags: ['high-protein', 'pre-workout'], starred: true,
   createdDate: 'Máj 14', novaDominant: 3, macros: { kcal: 580, p: 42, c: 78, f: 12 },
-  mezoFit: { score: 0.92, fitsFor: ['Reggel · Reta D3'] },
+  mezoFit: { score: null, fitsFor: ['Reggel · Reta D3'] },
   timesLogged: 0, avgScore: 0, lastLogged: '—',
   ingredients: [
     { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null, lineOrder: 0, name: 'Zabpehely', contribution: { kcal: 260, p: 9, c: 42, f: 5 } },

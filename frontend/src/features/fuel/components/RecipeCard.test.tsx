@@ -11,8 +11,8 @@ afterEach(() => vi.unstubAllEnvs())
 test('renders the editorial name, macro cells and pending fit; click opens', async () => {
   const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
   // v1 fit_score is deferred (Phase-3) → the badge shows the pending sparkle. The
-  // mock seed still carries legacy scores (used by other tests), so pin the slot to
-  // null here to exercise the v1 "pending" state the card actually ships with.
+  // mock seed already ships a null score; pin it explicitly here to keep the test's
+  // intent obvious — this exercises the v1 "pending" state the card actually ships with.
   const seed = result.current.recipes[0]
   const recipe = { ...seed, mezoFit: { ...seed.mezoFit, score: null } }
   const onOpen = vi.fn()

@@ -220,7 +220,7 @@ const recipesBase: Recipe[] = [
     ],
     macros: { kcal: 580, p: 42, c: 78, f: 12 },
     novaDominant: 1,
-    mezoFit: { score: 0.92, fitsFor: ['Pre Pull Day · T-10h', 'Reggel · Reta D3'] },
+    mezoFit: { score: null, fitsFor: ['Pre Pull Day · T-10h', 'Reggel · Reta D3'] },
     starred: true,
   },
   {
@@ -238,7 +238,7 @@ const recipesBase: Recipe[] = [
     ],
     macros: { kcal: 720, p: 58, c: 74, f: 18 },
     novaDominant: 1,
-    mezoFit: { score: 0.88, fitsFor: ['Pre-workout · T-3.5h', 'Magas mikro-density'] },
+    mezoFit: { score: null, fitsFor: ['Pre-workout · T-3.5h', 'Magas mikro-density'] },
     starred: true,
   },
   {
@@ -256,7 +256,7 @@ const recipesBase: Recipe[] = [
     ],
     macros: { kcal: 760, p: 48, c: 72, f: 28 },
     novaDominant: 1,
-    mezoFit: { score: 0.94, fitsFor: ['Post-workout · este', 'Omega-3 hét'] },
+    mezoFit: { score: null, fitsFor: ['Post-workout · este', 'Omega-3 hét'] },
     starred: true,
   },
   {
@@ -273,7 +273,7 @@ const recipesBase: Recipe[] = [
     ],
     macros: { kcal: 340, p: 42, c: 36, f: 4 },
     novaDominant: 4,
-    mezoFit: { score: 0.84, fitsFor: ['Pre-workout · T-1h', 'Reta-aware snack'] },
+    mezoFit: { score: null, fitsFor: ['Pre-workout · T-1h', 'Reta-aware snack'] },
     starred: false,
   },
   {
@@ -290,7 +290,7 @@ const recipesBase: Recipe[] = [
     ],
     macros: { kcal: 320, p: 24, c: 2, f: 24 },
     novaDominant: 1,
-    mezoFit: { score: 0.86, fitsFor: ['Alacsony-C reggel', 'Rest day'] },
+    mezoFit: { score: null, fitsFor: ['Alacsony-C reggel', 'Rest day'] },
     starred: false,
   },
   {
@@ -307,7 +307,7 @@ const recipesBase: Recipe[] = [
     ],
     macros: { kcal: 310, p: 37, c: 30, f: 10 },
     novaDominant: 3,
-    mezoFit: { score: 0.89, fitsFor: ['Casein · esti', 'Magas protein density'] },
+    mezoFit: { score: null, fitsFor: ['Casein · esti', 'Magas protein density'] },
     starred: false,
   },
 ]

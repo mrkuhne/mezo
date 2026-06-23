@@ -82,7 +82,7 @@ describe('useRecipes (real mode)', () => {
     expect(r.name).toBe('Túrós zabkása · áfonyával')
     expect(r.ingredients[0].refId).toBe('p-zab')
     expect(r.ingredients[0].contribution).toEqual({ kcal: 260, p: 9, c: 42, f: 5 })
-    expect(r.mezoFit.score).toBe(0.92)
+    expect(r.mezoFit.score).toBeNull()
     // static presentation config is still present in real mode
     expect(result.current.sources).toBeDefined()
     expect(result.current.categoryMeta).toBeDefined()
