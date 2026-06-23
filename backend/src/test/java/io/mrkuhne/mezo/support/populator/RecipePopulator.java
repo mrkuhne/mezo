@@ -31,14 +31,19 @@ public class RecipePopulator {
         recipe.setTags(List.of("magas-fehérje", "gyors"));
         recipe.setNovaDominant((short) 1);
 
-        recipe.getLines().add(line(owner, pantryItemId, 1, "Méz", new BigDecimal("20")));
-        recipe.getLines().add(line(owner, pantryItemId, 0, "Túró", new BigDecimal("250")));
+        recipe.getLines().add(line(recipe, owner, pantryItemId, 1, "Méz", new BigDecimal("20")));
+        recipe.getLines().add(line(recipe, owner, pantryItemId, 0, "Túró", new BigDecimal("250")));
 
         return repository.saveAndFlush(recipe);
     }
 
-    private RecipeIngredientEntity line(UUID owner, UUID pantryItemId, int order, String name, BigDecimal amount) {
+    private RecipeIngredientEntity line(
+        RecipeEntity recipe, UUID owner, UUID pantryItemId, int order, String name, BigDecimal amount) {
         RecipeIngredientEntity ing = new RecipeIngredientEntity();
+        // Bidirectional @OneToMany(mappedBy="recipe"): the child owns the FK, so the back-reference
+        // must be set explicitly — adding to recipe.getLines() does not populate it (and @NotNull
+        // bean-validation on `recipe` fires at flush before Hibernate would link the cascade).
+        ing.setRecipe(recipe);
         ing.setCreatedBy(owner);
         ing.setPantryItemId(pantryItemId);
         ing.setAmount(amount);
