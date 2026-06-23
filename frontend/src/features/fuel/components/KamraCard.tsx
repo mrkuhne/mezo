@@ -28,10 +28,10 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
       onClick={() => onOpen(item)}
       className="notch-12 row"
       style={{
-        padding: '12px 14px',
+        padding: 16,
         textAlign: 'left',
         width: '100%',
-        gap: 12,
+        gap: 14,
         alignItems: 'center',
         background: 'var(--surface-1)',
         boxShadow: isSupp ? `inset 2px 0 0 0 color-mix(in srgb, ${tint} 60%, transparent)` : undefined,
@@ -52,14 +52,14 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
       {/* Info */}
       <div className="col flex-1" style={{ minWidth: 0 }}>
         <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.05, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-        <div className="row gap-xs mt-xs" style={{ alignItems: 'center' }}>
+        <div className="row gap-xs" style={{ alignItems: 'center', marginTop: 7 }}>
           <SourceBadge source={item.source} />
           {item.brand && <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>{item.brand}</span>}
           {item.caffeine && <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)' }}>koffein</span>}
         </div>
 
         {item.macros ? (
-          <div className="row gap-sm mt-xs" style={{ alignItems: 'center', flexWrap: 'wrap', fontFamily: 'var(--ff-mono)', fontSize: 9 }}>
+          <div className="row" style={{ alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 9, fontFamily: 'var(--ff-mono)', fontSize: 9 }}>
             <span style={{ color: 'var(--success)', fontWeight: 600 }}>P {item.macros.p}</span>
             <span className="text-tertiary">C {item.macros.c}</span>
             <span className="text-tertiary">F {item.macros.f}</span>
@@ -67,7 +67,7 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
             {stockExpires && <span style={{ color: stockLowExpiry ? 'var(--error)' : 'var(--text-quaternary)' }}>· {stockLowExpiry ? '⚠ ' : ''}lejár {stockExpires}</span>}
           </div>
         ) : (
-          item.protocol && <p className="text-tertiary mt-xs" style={{ fontSize: 10, lineHeight: 1.4, fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.protocol}</p>
+          item.protocol && <p className="text-tertiary" style={{ marginTop: 9, fontSize: 10, lineHeight: 1.4, fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.protocol}</p>
         )}
       </div>
 

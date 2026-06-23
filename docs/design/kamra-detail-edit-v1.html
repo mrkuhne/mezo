@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kamra · detail / edit / filter — variációk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  button,input,select,textarea{font:inherit;color:inherit;background:none;border:none;appearance:none;-webkit-appearance:none}
+  button{cursor:pointer}
+  :root{
+    --brand-deep:#064E5B;--brand-core:#0E7C7B;--brand-primary:#14B8A6;--brand-glow:#5EEAD4;--brand-tint:#CCFBF1;
+    --canvas:#0A0F14;--surface-1:#121A22;--surface-2:#1A242E;
+    --border-subtle:rgba(255,255,255,.06);--border-strong:rgba(255,255,255,.12);
+    --text-primary:#ECECF1;--text-secondary:#9CA3AF;--text-tertiary:#6B7280;--text-quaternary:#4B5563;--text-inverse:#0A0F14;
+    --success:#34D399;--warning:#F59E0B;--error:#F43F5E;--info:#60A5FA;--cat-tendency:#F472B6;--cat-preference:#A78BFA;
+    --ff-display:"Antonio",sans-serif;--ff-body:"Inter",system-ui,sans-serif;--ff-mono:"JetBrains Mono",monospace;
+  }
+  body{background:#050709;color:var(--text-primary);font-family:var(--ff-body);padding:40px 24px 80px;
+    background-image:radial-gradient(1200px 600px at 50% -200px,#0c1620,#050709 70%);min-height:100vh}
+  .notch-4{clip-path:polygon(4px 0,100% 0,100% calc(100% - 4px),calc(100% - 4px) 100%,0 100%,0 4px)}
+  .notch-8{clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+  .notch-12{clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+  .page-h{text-align:center;max-width:1100px;margin:0 auto 28px}
+  .page-h h1{font-family:var(--ff-display);text-transform:uppercase;letter-spacing:.04em;font-size:30px;font-weight:600}
+  .page-h p{color:var(--text-secondary);font-size:14px;line-height:1.6;max-width:760px;margin:10px auto 0}
+  .rail{display:flex;gap:34px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:34px}
+  .col{width:392px;max-width:100%}
+  .col h2{font-family:var(--ff-display);text-transform:uppercase;letter-spacing:.02em;font-size:18px;font-weight:600;margin-bottom:4px}
+  .col .tag{font-family:var(--ff-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand-glow)}
+  .col .ddl{font-family:var(--ff-mono);font-size:10.5px;color:var(--text-tertiary);margin:6px 0 14px;line-height:1.5}
+  .phone{width:392px;max-width:100%;background:var(--canvas);border-radius:38px;border:1px solid var(--border-strong);
+    box-shadow:0 30px 70px rgba(0,0,0,.55),inset 0 0 0 7px #03060a;overflow:hidden;position:relative;padding:16px 0 0}
+  .status{height:30px;display:flex;justify-content:space-between;padding:0 26px;font-family:var(--ff-mono);font-size:11px;color:var(--text-secondary)}
+  .screen{padding:10px 18px 22px}
+  .label{font-family:var(--ff-mono);font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-tertiary)}
+  .eyebrow{font-family:var(--ff-mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand-glow)}
+  .src{display:inline-flex;align-items:center;gap:5px;font-family:var(--ff-mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;
+    padding:3px 8px;border:1px solid var(--border-subtle);color:var(--text-secondary);
+    clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px)}
+  .src .d{width:6px;height:6px;border-radius:50%}
+  .annot{margin-top:14px;background:var(--surface-1);border:1px solid var(--border-subtle);border-left:2px solid var(--brand-primary);
+    border-radius:12px;padding:13px 15px;font-size:12px;line-height:1.55;color:var(--text-secondary)}
+  .annot h3{font-family:var(--ff-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--brand-glow);margin-bottom:8px}
+  .annot ul{margin:8px 0 0;padding-left:16px}.annot li{margin-bottom:5px}
+  .annot .pro{color:var(--success)}.annot .con{color:var(--warning)}
+
+  /* ===== shared card ===== */
+  .kcard{background:var(--surface-1);padding:14px 16px;margin-bottom:9px;display:flex;align-items:center;gap:14px}
+  .kcard .slot{width:42px;flex-shrink:0;text-align:center;font-family:var(--ff-mono);font-size:13px;font-weight:600;color:var(--text-quaternary)}
+  .kcard .nm{font-family:var(--ff-display);font-size:16px;font-weight:600;text-transform:uppercase;letter-spacing:.01em}
+  .kcard .macro{font-family:var(--ff-mono);font-size:9px;color:var(--text-tertiary)}
+  .kcard .macro b{color:var(--success)}
+  .kcard .kcal{margin-left:auto;text-align:right;font-family:var(--ff-mono);font-size:16px;font-weight:600}
+  .kcard .kcal span{display:block;font-size:8px;color:var(--text-tertiary)}
+
+  /* form bits */
+  .field{background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:10px;padding:9px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+  .field .fl{font-family:var(--ff-mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-tertiary);width:54px;flex-shrink:0}
+  .field .fv{flex:1;font-size:14px;color:var(--text-primary)}
+  .field.half{margin-bottom:0}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .sec-h{font-family:var(--ff-mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-tertiary);margin:14px 2px 8px;display:flex;gap:8px;align-items:center}
+  .sec-h .ln{flex:1;height:1px;background:var(--border-subtle)}
+  .btn-primary{width:100%;padding:14px;background:var(--brand-primary);color:var(--text-inverse);font-family:var(--ff-display);
+    font-size:15px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:8px;
+    clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px)}
+  .btn-ghost{padding:12px;border:1px solid var(--border-strong);color:var(--text-secondary);font-family:var(--ff-display);font-size:13px;
+    font-weight:600;letter-spacing:.04em;text-transform:uppercase;text-align:center;
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}
+</style>
+</head>
+<body>
+<div class="page-h">
+  <h1>Kamra · detail / edit / filter</h1>
+  <p>Variációk a 4 visszajelzésre: (1) kártya-térköz fix, (2) szebb detail, (3) detail-OLDAL + külön szerkesztő, minden mezővel, (4) profi kategória-szűrő. Mind a v2 „Deep Current" rendszerből.</p>
+</div>
+
+<div class="rail">
+
+  <!-- 1 — CARD SPACING FIX -->
+  <div class="col">
+    <div class="tag">1 · kártya-térköz</div>
+    <h2>Fix: levegő a kártyán</h2>
+    <div class="ddl">előbb-utóbb · a forrás-chip alá+fölé margó, név fölött tér</div>
+    <div class="phone"><div class="status"><span>9:41</span><span></span></div><div class="screen">
+      <div class="label" style="margin:2px 2px 8px">⛌ Most (zsúfolt)</div>
+      <div class="kcard notch-12" style="margin-bottom:18px">
+        <div class="slot">—</div>
+        <div style="min-width:0">
+          <div class="nm" style="margin-bottom:2px">Almond Milk</div>
+          <span class="src" style="margin:0"><span class="d" style="background:#2C5AA0"></span>lidl</span>
+          <div class="macro" style="margin-top:2px"><b>P 0.5</b> C 0 F 1.2 · NOVA 1</div>
+        </div>
+        <div class="kcal">14<span>kcal</span></div>
+      </div>
+      <div class="label" style="margin:2px 2px 8px;color:var(--brand-glow)">✓ Javítva (levegős)</div>
+      <div class="kcard notch-12">
+        <div class="slot">—</div>
+        <div style="min-width:0">
+          <div class="nm" style="margin-bottom:7px">Almond Milk</div>
+          <span class="src" style="margin:0"><span class="d" style="background:#2C5AA0"></span>lidl</span>
+          <div class="macro" style="margin-top:9px"><b>P 0.5</b> &nbsp;C 0&nbsp; F 1.2&nbsp; · &nbsp;NOVA 1</div>
+        </div>
+        <div class="kcal">14<span>kcal</span></div>
+      </div>
+    </div></div>
+    <div class="annot"><h3>Mit változtatunk</h3>
+      <ul><li>Név → forrás-chip közé <b>7px</b>, chip → makrósor közé <b>9px</b> margó.</li>
+      <li>Kártya-padding 14→<b>16px</b>, makrók közé nagyobb gap.</li>
+      <li>Egy CSS-fix a <code style="font-family:var(--ff-mono);color:var(--brand-glow)">KamraCard</code>-on.</li></ul>
+    </div>
+  </div>
+
+  <!-- 2 — DETAIL AS PAGE -->
+  <div class="col">
+    <div class="tag">2+3 · detail = OLDAL</div>
+    <h2>Részletek külön oldalon</h2>
+    <div class="ddl">/fuel/kamra/:id · görgethető, minden adat · „Szerkesztés" → drawer</div>
+    <div class="phone"><div class="status"><span>9:41</span><span></span></div><div class="screen">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <button class="notch-8" style="width:32px;height:32px;background:var(--surface-1);border:1px solid var(--border-subtle);color:var(--text-secondary)">‹</button>
+        <span class="eyebrow">Kamra · tétel</span>
+      </div>
+      <span class="src" style="margin-bottom:8px"><span class="d" style="background:#7CB342"></span>kifli.hu · saját</span>
+      <div style="font-family:var(--ff-display);font-size:26px;font-weight:600;text-transform:uppercase;line-height:1;margin:6px 0 4px">Apple Idared</div>
+      <div class="label" style="margin-bottom:14px">GYÜMÖLCS · NOVA 1</div>
+
+      <div class="sec-h"><span>Makrók · /100g</span><span class="ln"></span></div>
+      <div class="grid2" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+        <div class="field half notch-4" style="flex-direction:column;align-items:flex-start;gap:2px;padding:8px"><span class="fl">kcal</span><b style="font-family:var(--ff-mono);font-size:15px;color:var(--cat-tendency)">70</b></div>
+        <div class="field half notch-4" style="flex-direction:column;align-items:flex-start;gap:2px;padding:8px"><span class="fl">P</span><b style="font-family:var(--ff-mono);font-size:15px;color:var(--info)">0.3</b></div>
+        <div class="field half notch-4" style="flex-direction:column;align-items:flex-start;gap:2px;padding:8px"><span class="fl">C</span><b style="font-family:var(--ff-mono);font-size:15px;color:var(--warning)">17</b></div>
+        <div class="field half notch-4" style="flex-direction:column;align-items:flex-start;gap:2px;padding:8px"><span class="fl">F</span><b style="font-family:var(--ff-mono);font-size:15px;color:var(--cat-preference)">0.2</b></div>
+      </div>
+      <div class="grid2" style="grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:6px">
+        <div class="field half notch-4" style="flex-direction:column;align-items:flex-start;gap:2px;padding:8px"><span class="fl">Rost</span><b style="font-family:var(--ff-mono);font-size:14px;color:var(--success)">4g</b></div>
+        <div class="field half notch-4" style="flex-direction:column;align-items:flex-start;gap:2px;padding:8px"><span class="fl">Cukor</span><b style="font-family:var(--ff-mono);font-size:14px;color:var(--warning)">10g</b></div>
+        <div class="field half notch-4" style="flex-direction:column;align-items:flex-start;gap:2px;padding:8px"><span class="fl">Tel.zsír</span><b style="font-family:var(--ff-mono);font-size:14px;color:var(--text-quaternary)">—</b></div>
+        <div class="field half notch-4" style="flex-direction:column;align-items:flex-start;gap:2px;padding:8px"><span class="fl">Só</span><b style="font-family:var(--ff-mono);font-size:14px;color:var(--text-secondary)">0g</b></div>
+      </div>
+
+      <div class="sec-h"><span>Készlet · ár</span><span class="ln"></span></div>
+      <div class="grid2">
+        <div class="field half notch-4"><span class="fl">Készlet</span><span class="fv">—</span></div>
+        <div class="field half notch-4"><span class="fl">Ár</span><span class="fv">750 Ft</span></div>
+      </div>
+
+      <div style="margin-top:16px"><button class="btn-primary">＋ Logolás · mai étkezésbe</button></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn-ghost" style="flex:1">✎ Szerkesztés</button>
+        <button class="btn-ghost" style="flex:1;color:var(--warning);border-color:rgba(245,158,11,.3)">Törlés</button>
+      </div>
+    </div></div>
+    <div class="annot"><h3>Miért oldal</h3>
+      <ul><li><span class="pro">+ Nincs drawer-a-drawerben</span> — a detail teljes oldal (route), a szerkesztő drawer fölé nyílik.</li>
+      <li><span class="pro">+ Több hely</span> minden adatnak, olvasható tipó.</li>
+      <li><span class="con">− Új route</span> + vissza-navigáció kell.</li></ul>
+    </div>
+  </div>
+
+  <!-- 3 — EDIT FORM ALL FIELDS -->
+  <div class="col">
+    <div class="tag">3 · szerkesztés = minden mező</div>
+    <h2>Teljes szerkesztő drawer</h2>
+    <div class="ddl">szekciókba rendezve · minden érték módosítható</div>
+    <div class="phone"><div class="status"><span>9:41</span><span></span></div><div class="screen" style="max-height:760px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div><span class="eyebrow">Tétel · szerkesztés</span>
+          <div style="font-family:var(--ff-display);font-size:22px;font-weight:600;text-transform:uppercase;margin-top:4px">Tétel szerkesztése</div></div>
+        <button class="notch-8" style="width:30px;height:30px;background:var(--surface-1);border:1px solid var(--border-subtle);color:var(--text-secondary)">✕</button>
+      </div>
+      <div class="sec-h"><span>Alap</span><span class="ln"></span></div>
+      <div class="grid2"><div class="field half notch-4"><span class="fl">Típus</span><span class="fv">Étel ▾</span></div>
+        <div class="field half notch-4"><span class="fl">Kateg.</span><span class="fv" style="color:var(--success)">Gyümölcs ▾</span></div></div>
+      <div class="field notch-4"><span class="fl">Név</span><span class="fv">Apple Idared</span></div>
+      <div class="grid2"><div class="field half notch-4"><span class="fl">Forrás</span><span class="fv">saját ▾</span></div>
+        <div class="field half notch-4"><span class="fl">Adag</span><span class="fv">100 g</span></div></div>
+      <div class="sec-h"><span>Makrók</span><span class="ln"></span></div>
+      <div class="grid2"><div class="field half notch-4"><span class="fl">kcal</span><span class="fv">70</span></div>
+        <div class="field half notch-4"><span class="fl">Fehérje</span><span class="fv">0.3</span></div></div>
+      <div class="grid2"><div class="field half notch-4"><span class="fl">Szénh.</span><span class="fv">17</span></div>
+        <div class="field half notch-4"><span class="fl">Zsír</span><span class="fv">0.2</span></div></div>
+      <div class="sec-h"><span>Tápanyag</span><span class="ln"></span></div>
+      <div class="grid2"><div class="field half notch-4"><span class="fl">Rost</span><span class="fv">4</span></div>
+        <div class="field half notch-4"><span class="fl">Cukor</span><span class="fv">10</span></div></div>
+      <div class="grid2"><div class="field half notch-4"><span class="fl">Tel.zsír</span><span class="fv" style="color:var(--text-tertiary)">—</span></div>
+        <div class="field half notch-4"><span class="fl">Só</span><span class="fv">0</span></div></div>
+      <div class="sec-h"><span>Készlet · ár</span><span class="ln"></span></div>
+      <div class="grid2"><div class="field half notch-4"><span class="fl">Készlet</span><span class="fv" style="color:var(--text-tertiary)">—</span></div>
+        <div class="field half notch-4"><span class="fl">Ár (Ft)</span><span class="fv">750</span></div></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn-ghost" style="flex:1">Mégse</button>
+        <button class="btn-primary" style="flex:1.4">✓ Mentés</button>
+      </div>
+    </div></div>
+    <div class="annot"><h3>Minden mező</h3>
+      <ul><li>Típus · kategória · forrás <b>dropdown</b>; minden makró + tápanyag + ár/készlet input.</li>
+      <li>Szekciókba rendezve (Alap / Makrók / Tápanyag / Készlet).</li>
+      <li>A drawer a detail-OLDAL fölé nyílik (nem drawer-a-drawerben).</li></ul>
+    </div>
+  </div>
+
+  <!-- 4 — CATEGORY FILTER -->
+  <div class="col">
+    <div class="tag">4 · kategória-szűrő</div>
+    <h2>Profi szűrő (nem 18 chip)</h2>
+    <div class="ddl">„Szűrők" sor → kategória bottom-sheet, számokkal</div>
+    <div class="phone"><div class="status"><span>9:41</span><span></span></div><div class="screen">
+      <!-- compact filter bar -->
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <div class="notch-8" style="flex:1;display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);border:1px solid var(--border-subtle)">
+          <span style="color:var(--text-tertiary)">⌕</span><span style="font-size:13px;color:var(--text-tertiary)">Keresés…</span></div>
+        <button class="notch-8" style="display:flex;align-items:center;gap:7px;padding:9px 13px;background:rgba(20,184,166,.12);border:1px solid rgba(94,234,212,.3);color:var(--brand-glow);font-family:var(--ff-mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase">
+          ⚙ Szűrők <span style="background:var(--brand-primary);color:var(--text-inverse);border-radius:8px;padding:0 5px;font-size:9px">2</span></button>
+      </div>
+      <!-- active filter pills -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap">
+        <span class="src" style="color:var(--brand-glow);border-color:rgba(94,234,212,.3)"><span class="d" style="background:var(--success)"></span>Zöldség ✕</span>
+        <span class="src" style="color:var(--brand-glow);border-color:rgba(94,234,212,.3)"><span class="d" style="background:#FB923C"></span>Tészta ✕</span>
+      </div>
+      <!-- the sheet (overlay) -->
+      <div class="notch-12" style="background:var(--surface-1);border:1px solid var(--border-strong);padding:16px 16px 18px;box-shadow:0 -10px 40px rgba(0,0,0,.5)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="eyebrow">Kategória szűrő</span>
+          <span class="label" style="color:var(--brand-glow)">2 kiválasztva · törlés</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px">
+          <span class="cf on">Zöldség <i>28</i></span><span class="cf on">Tészta <i>6</i></span>
+          <span class="cf">Gyümölcs <i>10</i></span><span class="cf">Hús <i>17</i></span><span class="cf">Tejtermék <i>18</i></span>
+          <span class="cf">Sajt <i>6</i></span><span class="cf">Gabona <i>9</i></span><span class="cf">Hüvelyes <i>8</i></span>
+          <span class="cf">Snack <i>11</i></span><span class="cf">Mag <i>8</i></span><span class="cf">Hal <i>2</i></span><span class="cf">Egyéb <i>2</i></span>
+        </div>
+        <button class="btn-primary" style="margin-top:16px">Szűrés (34 tétel)</button>
+      </div>
+    </div></div>
+    <div class="annot"><h3>Profi szűrő</h3>
+      <ul><li>Alapból csak <b>kereső + „Szűrők" gomb</b> (badge = aktív szűrők száma).</li>
+      <li>Tap → <b>bottom-sheet</b> a kategóriákkal, <b>darabszámmal</b>, multi-select.</li>
+      <li>Aktív szűrők <b>pill-ekként</b> a lista fölött, egyenként törölhetők. A 18 kategória nincs kirakva a fő nézetre.</li></ul>
+    </div>
+  </div>
+
+</div>
+<style>
+  .cf{font-family:var(--ff-mono);font-size:10px;letter-spacing:.04em;text-transform:uppercase;padding:7px 11px;color:var(--text-secondary);
+    background:var(--surface-2);border:1px solid var(--border-subtle);display:inline-flex;align-items:center;gap:6px;
+    clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px)}
+  .cf i{font-style:normal;color:var(--text-tertiary);font-size:9px}
+  .cf.on{color:var(--brand-glow);background:rgba(20,184,166,.12);border-color:rgba(94,234,212,.3)}
+  .cf.on i{color:var(--brand-glow)}
+</style>
+</body>
+</html>

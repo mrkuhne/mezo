@@ -2,18 +2,23 @@
 // Mezo · FuelKamraView (Kamra — pantry sub-view)
 // Direction A (kamra-mockup-v3-A): the pantry inventory restyled to the agreed
 // design — a type segmented switcher (Mind/Étel/Supp/Stim) as the primary axis,
-// the 4-cell stats strip, a "needs attention" strip, search, a trimmed source
-// filter, and the type-grouped list of design-system KamraCards (colored nub
-// dividers per type), plus an empty-state for a fresh pantry.
+// the 4-cell stats strip, a "needs attention" strip, a compact filter bar (search
+// + a "Szűrők" button that opens the CategoryFilterSheet bottom-sheet; active
+// categories show as removable pills), and the type-grouped list of design-system
+// KamraCards (colored nub dividers per type), plus an empty-state for a fresh pantry.
+//
+// Tapping a card NAVIGATES to /fuel/kamra/:id (the detail is a full page now, not a
+// drawer — kills the old drawer-in-drawer edit problem).
 //
 // Renders directly into the app-shell .screen-content (no nested wrapper — the
 // old wrapper double-offset the scrollport and left a large top gap).
 //
 // Placeholder/mock UI removed (returns with the real features in later slices):
-// the scrape-feed card + ImportItemSheet, the Mezo suggestions feed, and the
-// scrape-vendor source filters. Data is backend-backed via usePantry().
+// the scrape-feed card + ImportItemSheet, the Mezo suggestions feed. Data is
+// backend-backed via usePantry().
 // ============================================================
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { PantryItem } from '@/data/types'
 import { usePantry } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/kamraItems'
@@ -22,8 +27,8 @@ import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { StatCell } from '@/components/ui/StatCell'
 import { KamraCard } from '@/features/fuel/components/KamraCard'
-import { IngredientDetailSheet } from '@/features/fuel/IngredientDetailSheet'
 import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
+import { CategoryFilterSheet, categoryOption } from '@/features/fuel/CategoryFilterSheet'
 
 const TYPE_SWITCHER = [
   { id: 'all', label: 'Mind' },
@@ -41,18 +46,13 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
 }
 const TYPE_ORDER = ['food', 'supplement', 'stim', 'med'] as const
 
-// Manual entry only until scrape/import lands — the scrape-vendor sources return then.
-const SOURCE_FILTERS = [
-  { id: 'all', label: 'Minden forrás' },
-  { id: 'manual', label: 'Saját' },
-] as const
-
 export function FuelKamraView() {
-  const { ingredients, stash } = usePantry()
+  const navigate = useNavigate()
+  const { ingredients, stash, categoryMeta } = usePantry()
   const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [sourceFilter, setSourceFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [query, setQuery] = useState('')
-  const [openIng, setOpenIng] = useState<PantryItem | null>(null)
+  const [filterOpen, setFilterOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
 
   const allItems = buildKamraItems(ingredients, stash)
@@ -61,12 +61,28 @@ export function FuelKamraView() {
   const counts: Record<string, number> = { all: allItems.length }
   allItems.forEach(it => { counts[it.kind] = (counts[it.kind] ?? 0) + 1 })
 
-  const filtered = allItems.filter(it => {
+  // The list filter ANDs three axes: type switcher AND selected categories AND search.
+  // Passing an explicit `cats` lets callers probe a draft selection (the filter sheet's
+  // live tally) or skip the category axis entirely (cats=[] → category-count options).
+  const matches = (it: PantryItem, cats: string[]) => {
     if (typeFilter !== 'all' && it.kind !== typeFilter) return false
-    if (sourceFilter !== 'all' && it.source !== sourceFilter) return false
+    if (cats.length > 0 && !cats.includes(it.category)) return false
     if (query && !(it.name + ' ' + it.brand).toLowerCase().includes(query.toLowerCase())) return false
     return true
+  }
+
+  const filtered = allItems.filter(it => matches(it, categoryFilter))
+
+  // Category options for the filter sheet — only categories PRESENT among the items
+  // that pass the OTHER axes (type + search; matches(it, []) skips the category axis),
+  // each with a count, sorted by size.
+  const catCounts = new Map<string, number>()
+  allItems.filter(it => matches(it, [])).forEach(it => {
+    catCounts.set(it.category, (catCounts.get(it.category) ?? 0) + 1)
   })
+  const categoryOptions = [...catCounts.entries()]
+    .map(([key, count]) => categoryOption(key, count))
+    .sort((a, b) => b.count - a.count)
 
   const byType: Record<string, PantryItem[]> = {}
   filtered.forEach(it => { (byType[it.kind] = byType[it.kind] ?? []).push(it) })
@@ -142,9 +158,9 @@ export function FuelKamraView() {
             </div>
           )}
 
-          {/* Search */}
-          <div style={{ padding: '0 24px 10px' }}>
-            <div className="row gap-sm" style={{ padding: '8px 12px', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
+          {/* Compact filter bar — search + a "Szűrők" button (badge = active filter count) */}
+          <div className="row gap-sm" style={{ padding: '0 24px 8px', alignItems: 'stretch' }}>
+            <div className="notch-8 row gap-sm flex-1" style={{ padding: '9px 12px', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
               <Icon name="search" size={12} color="var(--text-tertiary)" />
               <input
                 value={query}
@@ -153,32 +169,54 @@ export function FuelKamraView() {
                 style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}
               />
               {query && (
-                <button onClick={() => setQuery('')} style={{ color: 'var(--text-tertiary)' }}>
+                <button onClick={() => setQuery('')} style={{ color: 'var(--text-tertiary)' }} aria-label="Keresés törlése">
                   <Icon name="x" size={12} />
                 </button>
               )}
             </div>
+            <button
+              onClick={() => setFilterOpen(true)}
+              className="notch-8 row gap-xs"
+              style={{
+                alignItems: 'center', padding: '9px 13px',
+                fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: 'var(--brand-glow)', background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(94,234,212,0.3)',
+              }}
+            >
+              <Icon name="settings" size={12} /> Szűrők
+              {categoryFilter.length > 0 && (
+                <span style={{ background: 'var(--brand-primary)', color: 'var(--text-inverse)', fontSize: 9, padding: '0 5px', borderRadius: 8 }}>
+                  {categoryFilter.length}
+                </span>
+              )}
+            </button>
           </div>
 
-          {/* Source filter (trimmed to Minden + Saját) */}
-          <div className="row gap-xs flex-wrap" style={{ padding: '0 24px 16px' }}>
-            {SOURCE_FILTERS.map(f => (
-              <button
-                key={f.id}
-                onClick={() => setSourceFilter(f.id)}
-                className="chip"
-                style={{
-                  fontSize: 9,
-                  padding: '5px 8px',
-                  color: sourceFilter === f.id ? 'var(--text-primary)' : 'var(--text-tertiary)',
-                  borderColor: sourceFilter === f.id ? 'var(--border-strong)' : 'var(--border-subtle)',
-                  background: sourceFilter === f.id ? 'var(--surface-2)' : 'transparent',
-                }}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          {/* Active category pills — removable */}
+          {categoryFilter.length > 0 && (
+            <div className="row gap-xs flex-wrap" style={{ padding: '0 24px 14px' }}>
+              {categoryFilter.map(key => {
+                const meta = categoryMeta[key]
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setCategoryFilter(cs => cs.filter(c => c !== key))}
+                    className="notch-8 row gap-xs"
+                    style={{
+                      alignItems: 'center', padding: '4px 9px',
+                      fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
+                      color: 'var(--brand-glow)', background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(94,234,212,0.3)',
+                    }}
+                  >
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: meta?.color ?? 'var(--success)', flexShrink: 0 }} />
+                    {meta?.label ?? key}
+                    <Icon name="x" size={9} />
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          {categoryFilter.length === 0 && <div style={{ height: 8 }} />}
 
           {/* Type-grouped list */}
           <div style={{ padding: '0 24px 32px' }}>
@@ -197,7 +235,7 @@ export function FuelKamraView() {
                 </div>
                 <div className="col gap-sm">
                   {byType[kind].map(it => (
-                    <KamraCard key={it.id} item={it} onOpen={() => setOpenIng(it)} />
+                    <KamraCard key={it.id} item={it} onOpen={() => navigate(`/fuel/kamra/${it.id}`)} />
                   ))}
                 </div>
               </div>
@@ -206,7 +244,15 @@ export function FuelKamraView() {
         </>
       )}
 
-      {openIng && <IngredientDetailSheet item={openIng} onClose={() => setOpenIng(null)} />}
+      {filterOpen && (
+        <CategoryFilterSheet
+          options={categoryOptions}
+          selected={categoryFilter}
+          totalIfApplied={draft => allItems.filter(it => matches(it, draft)).length}
+          onApply={setCategoryFilter}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
       <AddPantryItemSheet open={addOpen} onClose={() => setAddOpen(false)} />
     </>
   )
