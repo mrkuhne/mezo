@@ -6,7 +6,7 @@ import { SuggestionCard } from './SuggestionCard'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { PantryItem } from '@/data/types'
 
-// KamraCard reads usePantry (categoryMeta) — a dual-mode TanStack query since Task 7.
+// Direction A KamraCard is a pure presentational meal-card (no usePantry dependency).
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
@@ -21,7 +21,8 @@ test('food card shows macros + stock; click opens', async () => {
   const onOpen = vi.fn()
   render(<KamraCard item={foodItem} onOpen={onOpen} />, { wrapper: QueryWrapper })
   expect(screen.getByText('Görög joghurt')).toBeInTheDocument()
-  expect(screen.getByText(/400g polcon/)).toBeInTheDocument()
+  expect(screen.getByText('400')).toBeInTheDocument() // stock qty in the 44px slot
+  expect(screen.getByText('119')).toBeInTheDocument() // kcal on the right
   await userEvent.click(screen.getByText('Görög joghurt'))
   expect(onOpen).toHaveBeenCalled()
 })

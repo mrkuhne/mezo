@@ -12,23 +12,25 @@ afterEach(() => vi.unstubAllEnvs())
 const renderView = () =>
   render(<QueryWrapper><MemoryRouter><FuelKamraView /></MemoryRouter></QueryWrapper>)
 
-test('renders stats, type filters and grouped items', () => {
+test('renders stats and the type switcher', () => {
   renderView()
   expect(screen.getByRole('heading', { name: 'Polc' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Supplement' })).toBeInTheDocument()
+  // Direction A: the type axis is a segmented switcher (Mind/Étel/Supp/Stim).
+  expect(screen.getByRole('button', { name: /Supp/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /^Mind\d+$/ })).toBeInTheDocument()
 })
 test('header "Új tétel" opens the manual add-item sheet', async () => {
-  // Task 8: the header add affordance now opens the real manual CRUD form
-  // (AddPantryItemSheet), not the scrape wizard.
+  // Task 8: the header add affordance opens the real manual CRUD form (AddPantryItemSheet).
   renderView()
   await userEvent.click(screen.getByRole('button', { name: /Új tétel/ }))
   expect(await screen.findByText('Új kamra-tétel')).toBeInTheDocument()
 })
-test('scrape-feed card still opens the scrape import sheet', async () => {
-  // The scrape wizard moved off the header chip onto the recent-imports feed card.
+test('type switcher filters the list to one type', async () => {
   renderView()
-  await userEvent.click(screen.getByText(/Scrape feed/))
-  expect(await screen.findByText('Új tétel a Kamrába')).toBeInTheDocument()
+  // A food item is visible in "Mind"; switching to Stim hides it.
+  expect(screen.getByText(/Csirkemell/)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Stim/ }))
+  expect(screen.queryByText(/Csirkemell/)).not.toBeInTheDocument()
 })
 test('query filters to empty-state', async () => {
   renderView()
