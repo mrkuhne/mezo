@@ -1,130 +1,90 @@
 import type { PantryItem } from '@/data/types'
-import { usePantry } from '@/data/hooks'
 import { SourceBadge } from '@/components/ui/SourceBadge'
 import { NovaDot } from '@/components/ui/NovaDot'
 
-export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: PantryItem) => void }) {
-  const { categoryMeta } = usePantry()
-  const catColor = categoryMeta[item.category]?.color ?? 'var(--text-secondary)'
+// Direction A (kamra-mockup-v3-A): the design-system .meal-card anatomy applied to a pantry item —
+// a 44px stock slot, Antonio name + source/brand meta, a macro line (food) or protocol (supp), and a
+// right-aligned kcal/dose. Notched-chamfer (notch-12) card; supplement/stim get a left inset tint.
+const KIND_TINT: Record<string, string> = {
+  food: 'var(--brand-glow)',
+  supplement: 'var(--info)',
+  stim: 'var(--cat-tendency)',
+  med: 'var(--error)',
+}
 
-  const isStim = item.kind === 'stim'
-  const isMed = item.kind === 'med'
-  const isCaff = item.caffeine
+export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: PantryItem) => void }) {
+  const tint = KIND_TINT[item.kind] ?? 'var(--brand-glow)'
+  const isSupp = item.kind !== 'food'
 
   const stock = item.stock
   const stockQty = stock && typeof stock.qty === 'number' ? stock.qty : null
+  const stockUnit = stock?.unit
   const stockExpires = stock && 'expires' in stock ? stock.expires : undefined
   const stockLowExpiry = stock && 'lowExpiry' in stock ? stock.lowExpiry : undefined
-
   const lowStock = !!stock && ((stockQty !== null && stockQty < 15) || !!stockLowExpiry)
 
   return (
     <button
       onClick={() => onOpen(item)}
-      className="card notch-8"
+      className="notch-12 row"
       style={{
-        padding: 14,
+        padding: '12px 14px',
         textAlign: 'left',
         width: '100%',
-        borderColor: lowStock ? 'color-mix(in srgb, var(--warning) 25%, transparent)' : 'var(--border-subtle)',
-        background: lowStock ? 'color-mix(in srgb, var(--warning) 3%, transparent)' : 'var(--surface-1)',
-        position: 'relative',
-        overflow: 'hidden',
+        gap: 12,
+        alignItems: 'center',
+        background: 'var(--surface-1)',
+        boxShadow: isSupp ? `inset 2px 0 0 0 color-mix(in srgb, ${tint} 60%, transparent)` : undefined,
       }}
     >
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: catColor }} />
-
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, paddingLeft: 6 }}>
-        <div className="col flex-1" style={{ minWidth: 0 }}>
-          <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>{item.name}</span>
-            {isCaff && <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)' }}>koffein</span>}
-            {isStim && !isCaff && <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--cat-tendency)', borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' }}>pörgető</span>}
-            {isMed && <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--error)', borderColor: 'color-mix(in srgb, var(--error) 40%, transparent)' }}>gyógyszer</span>}
-          </div>
-          <div className="row gap-sm mt-xs" style={{ alignItems: 'center' }}>
-            <SourceBadge source={item.source} />
-            <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>{item.brand}</span>
-          </div>
-        </div>
-
-        {/* Right-side: macros (food) OR dose (supp) */}
-        <div className="col" style={{ alignItems: 'flex-end', flexShrink: 0 }}>
-          {item.macros ? (
-            <>
-              <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>kcal / {item.per}{item.unit}</span>
-              <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 600, color: catColor, lineHeight: 1, marginTop: 2 }}>
-                {item.macros.kcal}
-              </span>
-            </>
-          ) : (
-            <>
-              <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>Adag</span>
-              <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, color: catColor, lineHeight: 1, marginTop: 2 }}>{item.dose}</span>
-            </>
-          )}
-        </div>
+      {/* 44px stock slot */}
+      <div style={{ width: 44, flexShrink: 0, textAlign: 'center' }}>
+        {stockQty !== null ? (
+          <>
+            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 14, fontWeight: 600, lineHeight: 1.1, color: lowStock ? 'var(--warning)' : tint }}>{stockQty}</span>
+            <span style={{ display: 'block', fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{stockUnit}</span>
+          </>
+        ) : (
+          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--text-quaternary)' }}>—</span>
+        )}
       </div>
 
-      {/* Macro line (food) */}
-      {item.macros && (
-        <div className="mt-md" style={{ paddingLeft: 6 }}>
-          <div className="row gap-md" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10 }}>
-            <span style={{ color: 'var(--text-tertiary)' }}>P <span style={{ color: 'var(--text-primary)' }}>{item.macros.p}g</span></span>
-            <span style={{ color: 'var(--text-tertiary)' }}>C <span style={{ color: 'var(--text-primary)' }}>{item.macros.c}g</span></span>
-            <span style={{ color: 'var(--text-tertiary)' }}>F <span style={{ color: 'var(--text-primary)' }}>{item.macros.f}g</span></span>
-            <span style={{ color: 'var(--text-quaternary)', marginLeft: 4 }}>/ {item.per}{item.unit}</span>
+      {/* Info */}
+      <div className="col flex-1" style={{ minWidth: 0 }}>
+        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.05, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+        <div className="row gap-xs mt-xs" style={{ alignItems: 'center' }}>
+          <SourceBadge source={item.source} />
+          {item.brand && <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>{item.brand}</span>}
+          {item.caffeine && <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)' }}>koffein</span>}
+        </div>
+
+        {item.macros ? (
+          <div className="row gap-sm mt-xs" style={{ alignItems: 'center', flexWrap: 'wrap', fontFamily: 'var(--ff-mono)', fontSize: 9 }}>
+            <span style={{ color: 'var(--success)', fontWeight: 600 }}>P {item.macros.p}</span>
+            <span className="text-tertiary">C {item.macros.c}</span>
+            <span className="text-tertiary">F {item.macros.f}</span>
+            {item.nova && <NovaDot nova={item.nova} />}
+            {stockExpires && <span style={{ color: stockLowExpiry ? 'var(--error)' : 'var(--text-quaternary)' }}>· {stockLowExpiry ? '⚠ ' : ''}lejár {stockExpires}</span>}
           </div>
-        </div>
-      )}
-
-      {/* Supplement protocol line */}
-      {item.protocol && !item.macros && (
-        <p className="text-secondary mt-sm" style={{ fontSize: 11, lineHeight: 1.4, paddingLeft: 6 }}>{item.protocol}</p>
-      )}
-
-      {/* Bottom strip: price / stock / expiry */}
-      <div className="row mt-md" style={{ justifyContent: 'space-between', alignItems: 'center', paddingLeft: 6, gap: 8 }}>
-        <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
-          {item.price && (
-            <span style={{
-              fontFamily: 'var(--ff-mono)', fontSize: 10,
-              color: 'var(--text-secondary)',
-              padding: '1px 5px',
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border-subtle)',
-            }}>{item.price} {item.priceUnit?.replace(/^Ft\//, '/')}</span>
-          )}
-          {item.pkg && !item.dose && (
-            <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>{item.pkg}</span>
-          )}
-          {item.nova && <NovaDot nova={item.nova} />}
-        </div>
-        <div className="row gap-xs" style={{ alignItems: 'center' }}>
-          {stockQty !== null && (
-            <span className="label-mono" style={{
-              fontSize: 9,
-              color: lowStock ? 'var(--warning)' : 'var(--text-tertiary)',
-            }}>
-              {stockQty}{stock?.unit} polcon
-            </span>
-          )}
-          {stockExpires && (
-            <span className="label-mono" style={{
-              fontSize: 9,
-              color: stockLowExpiry ? 'var(--warning)' : 'var(--text-quaternary)',
-            }}>· {stockExpires}</span>
-          )}
-        </div>
+        ) : (
+          item.protocol && <p className="text-tertiary mt-xs" style={{ fontSize: 10, lineHeight: 1.4, fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.protocol}</p>
+        )}
       </div>
 
-      {item.usedInRecipes != null && item.usedInRecipes > 0 && (
-        <div className="row" style={{ paddingLeft: 6, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)', justifyContent: 'space-between' }}>
-          <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)' }}>
-            {item.usedInRecipes} receptben · utoljára {item.lastUsed}
-          </span>
-        </div>
-      )}
+      {/* Right metric: kcal (food) / dose (supp) */}
+      <div className="col" style={{ alignItems: 'flex-end', flexShrink: 0 }}>
+        {item.macros ? (
+          <>
+            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{item.macros.kcal}</span>
+            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)' }}>kcal</span>
+          </>
+        ) : (
+          <>
+            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 15, fontWeight: 600, color: tint }}>{item.dose}</span>
+            {lowStock && <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--warning)' }}>⚠ fogy</span>}
+          </>
+        )}
+      </div>
     </button>
   )
 }
