@@ -1,3 +1,5 @@
+import type { Ingredient, RecipeIngredientLine } from './types'
+
 export type NovaGroup = 1 | 2 | 3 | 4
 export const NOVA_META: Record<NovaGroup, { label: string; desc: string; color: string }> = {
   1: { label: 'NOVA 1', desc: 'Feldolgozatlan / minimálisan feldolgozott', color: '#34D399' },
@@ -11,4 +13,14 @@ export const STATUS_COLOR: Record<'good' | 'ok' | 'low', string> = {
   good: 'var(--brand-glow)',
   ok: 'var(--text-secondary)',
   low: 'var(--warning)',
+}
+
+/** Dominant NOVA = the max NOVA group across the recipe's ingredient lines (1 when none). */
+export function deriveNovaDominant(lines: RecipeIngredientLine[], pool: Ingredient[]): NovaGroup {
+  let max = 1 as NovaGroup
+  for (const l of lines) {
+    const ing = pool.find(i => i.id === l.refId)
+    if (ing && ing.nova > max) max = ing.nova
+  }
+  return max
 }
