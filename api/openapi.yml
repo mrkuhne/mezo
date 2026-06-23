@@ -30,6 +30,10 @@ tags:
     description: >-
       Pantry (Kamra) — food + supplement inventory (single pantry_item table,
       kind-projected)
+  - name: Recipe
+    description: >-
+      Recipes (Receptek) — owned recipe + recipe_ingredient aggregate; lines
+      reference pantry_item by id with a per-basis macro snapshot
 paths:
   /api/auth/login:
     post:
@@ -1646,6 +1650,155 @@ paths:
       tags:
         - Pantry
       operationId: deletePantryItem
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/recipe:
+    get:
+      tags:
+        - Recipe
+      operationId: listRecipes
+      summary: The owner's recipes (whole-recipe macros computed from line snapshots)
+      responses:
+        '200':
+          description: Recipes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeListResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Recipe
+      operationId: createRecipe
+      summary: >-
+        Create a recipe with its ingredient lines (snapshots captured
+        server-side)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/recipe/{id}':
+    get:
+      tags:
+        - Recipe
+      operationId: getRecipe
+      summary: A single owned recipe by id (detail deep-link / hard-reload refetch)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Recipe
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - Recipe
+      operationId: updateRecipe
+      summary: Full-replace an owned recipe aggregate (all fields + all lines)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+      responses:
+        '204':
+          description: Updated
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Recipe
+      operationId: deleteRecipe
+      summary: Soft-delete an owned recipe (and its lines)
       parameters:
         - name: id
           in: path
@@ -3895,3 +4048,202 @@ components:
         category:
           type: string
           nullable: true
+    RecipeMacros:
+      type: object
+      required:
+        - kcal
+        - p
+        - c
+        - f
+      properties:
+        kcal:
+          type: number
+        p:
+          type: number
+        c:
+          type: number
+        f:
+          type: number
+    RecipeContribution:
+      type: object
+      required:
+        - kcal
+        - p
+        - c
+        - f
+      properties:
+        kcal:
+          type: number
+        p:
+          type: number
+        c:
+          type: number
+        f:
+          type: number
+    RecipeMezoFit:
+      type: object
+      required:
+        - fitsFor
+      properties:
+        score:
+          type: number
+          nullable: true
+        fitsFor:
+          type: array
+          items:
+            type: string
+    RecipeIngredientRequest:
+      type: object
+      required:
+        - pantryItemId
+        - amount
+        - unit
+      properties:
+        pantryItemId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          minLength: 1
+        note:
+          type: string
+          nullable: true
+    RecipeIngredientResponse:
+      type: object
+      required:
+        - pantryItemId
+        - amount
+        - unit
+        - lineOrder
+        - name
+        - contribution
+      properties:
+        pantryItemId:
+          type: string
+          format: uuid
+        amount:
+          type: number
+        unit:
+          type: string
+        note:
+          type: string
+          nullable: true
+        lineOrder:
+          type: integer
+        name:
+          type: string
+        contribution:
+          $ref: '#/components/schemas/RecipeContribution'
+    RecipeRequest:
+      type: object
+      required:
+        - name
+        - category
+        - ingredients
+      properties:
+        name:
+          type: string
+          minLength: 1
+        slot:
+          type: string
+          nullable: true
+        category:
+          type: string
+          pattern: ^(breakfast|lunch|dinner|snack)$
+        servings:
+          type: integer
+          minimum: 1
+          default: 1
+        prepMins:
+          type: integer
+          minimum: 0
+          nullable: true
+        cookMins:
+          type: integer
+          minimum: 0
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+          default: []
+        starred:
+          type: boolean
+          default: false
+        ingredients:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/RecipeIngredientRequest'
+    RecipeResponse:
+      type: object
+      required:
+        - id
+        - name
+        - category
+        - servings
+        - tags
+        - starred
+        - createdDate
+        - novaDominant
+        - macros
+        - mezoFit
+        - timesLogged
+        - avgScore
+        - lastLogged
+        - ingredients
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slot:
+          type: string
+          nullable: true
+        category:
+          type: string
+        servings:
+          type: integer
+        prepMins:
+          type: integer
+          nullable: true
+        cookMins:
+          type: integer
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        starred:
+          type: boolean
+        createdDate:
+          type: string
+        novaDominant:
+          type: number
+        macros:
+          $ref: '#/components/schemas/RecipeMacros'
+        mezoFit:
+          $ref: '#/components/schemas/RecipeMezoFit'
+        timesLogged:
+          type: integer
+        avgScore:
+          type: number
+        lastLogged:
+          type: string
+        ingredients:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeIngredientResponse'
+    RecipeListResponse:
+      type: object
+      required:
+        - recipes
+      properties:
+        recipes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeResponse'
