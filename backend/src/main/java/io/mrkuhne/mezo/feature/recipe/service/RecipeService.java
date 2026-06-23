@@ -14,7 +14,6 @@ import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -84,11 +83,9 @@ public class RecipeService {
      */
     private void rebuildLines(UUID userId, RecipeEntity recipe, List<RecipeIngredientRequest> lineReqs) {
         recipe.getLines().clear(); // orphanRemoval deletes any previously attached lines
-        List<RecipeIngredientEntity> built = new ArrayList<>();
         for (int i = 0; i < lineReqs.size(); i++) {
             RecipeIngredientEntity line = buildLine(userId, recipe, lineReqs.get(i), i);
             recipe.getLines().add(line);
-            built.add(line);
         }
         recipe.setNovaDominant(deriveNovaDominant(userId, lineReqs));
     }

@@ -15,7 +15,6 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput } from '@/data/types'
 import { useRecipes, useRecipeActions } from '@/data/hooks'
-import { recipeToInput } from './RecipeDetailView'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
@@ -135,7 +134,7 @@ export function RecipeEditorView() {
       ingredients: lines.map(l => ({ pantryItemId: l.refId, amount: l.amount, unit: l.unit, note: l.note ?? null })),
     }
     if (isEditMode && editing) {
-      update(editing.id, { ...recipeToInput(editing), ...input })
+      update(editing.id, input)
       navigate(`/fuel/recipes/${editing.id}`)
     } else {
       create(input)
