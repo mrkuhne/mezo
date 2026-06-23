@@ -4,6 +4,21 @@ import { API_BASE } from '@/lib/api'
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
 
+// Recipe fixture (mezo-lns) mirroring the RecipeResponse contract — one breakfast recipe with
+// two pantry-item lines (computed name + contribution, lineOrder, nullable mezoFit.score).
+const recipeFixture = {
+  id: 'rc1f3a0e2-0000-4000-8000-000000000001',
+  name: 'Túrós zabkása · áfonyával', slot: 'Reggeli', category: 'breakfast',
+  servings: 1, prepMins: 5, cookMins: 3, tags: ['high-protein', 'pre-workout'], starred: true,
+  createdDate: 'Máj 14', novaDominant: 3, macros: { kcal: 580, p: 42, c: 78, f: 12 },
+  mezoFit: { score: 0.92, fitsFor: ['Reggel · Reta D3'] },
+  timesLogged: 0, avgScore: 0, lastLogged: '—',
+  ingredients: [
+    { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null, lineOrder: 0, name: 'Zabpehely', contribution: { kcal: 260, p: 9.5, c: 42, f: 4.9 } },
+    { pantryItemId: 'p-turo', amount: 200, unit: 'g', note: null, lineOrder: 1, name: 'Túró', contribution: { kcal: 260, p: 36, c: 7, f: 10 } },
+  ],
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
 
@@ -271,4 +286,17 @@ export const handlers = [
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json({ id: 'rs-f1f3a0e2-0000-4000-8000-00000000beef', ...body }, { status: 201 })
   }),
+
+  // Recipe (mezo-lns) — defaults; tests override with server.use() for payload capture +
+  // list-after-write. GET list/detail return the fixture; writes echo 201/204.
+  http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [recipeFixture] })),
+  http.get(`${API_BASE}/api/recipe/:id`, ({ params }) =>
+    HttpResponse.json({ ...recipeFixture, id: String(params.id) }),
+  ),
+  http.post(`${API_BASE}/api/recipe`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ ...recipeFixture, ...body, id: 'rc1f3a0e2-0000-4000-8000-0000000000be' }, { status: 201 })
+  }),
+  http.put(`${API_BASE}/api/recipe/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.delete(`${API_BASE}/api/recipe/:id`, () => new HttpResponse(null, { status: 204 })),
 ]
