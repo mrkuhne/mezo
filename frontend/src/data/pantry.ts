@@ -9,6 +9,7 @@ import type {
   FuelMeal,
 } from './types'
 import { fuelDay } from './fuel'
+import { enrichLine, computeRecipeMacros } from './recipeMacros'
 
 // pantrySources already ported in Task 4 — re-export, do not redefine.
 export { pantrySources } from './pantrySources'
@@ -586,5 +587,13 @@ export const recipes: Recipe[] = recipesBase.map(r => {
   const templateBreakdown: MealBreakdown | undefined =
     sourceMeal?.meal.breakdown ?? recipeTemplateBreakdowns[r.id]
 
-  return { ...r, recentLogs, templateBreakdown }
+  // Enrich each line with snapshot name + contribution, then roll the whole-recipe macros up
+  // from those contributions — IDENTICAL to what the backend RecipeMapper produces, so the
+  // mock seed and the API agree byte-for-byte (the shared recipeMacros formula).
+  const enrichedIngredients = r.ingredients.map(line =>
+    enrichLine(line, ingredients.find(i => i.id === line.refId)),
+  )
+  const macros = computeRecipeMacros(enrichedIngredients)
+
+  return { ...r, ingredients: enrichedIngredients, macros, recentLogs, templateBreakdown }
 })
