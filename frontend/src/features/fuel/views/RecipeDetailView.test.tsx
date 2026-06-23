@@ -47,8 +47,8 @@ test('renders the hero, macro hero and ingredient contributions', async () => {
   expect(screen.getByText(String(r.macros.kcal))).toBeInTheDocument()
   // the deferred fit zone
   expect(screen.getByText(/Mezo-fit · hamarosan/)).toBeInTheDocument()
-  // first ingredient name from the snapshot
-  expect(screen.getByText(r.ingredients[0].name)).toBeInTheDocument()
+  // first ingredient name from the snapshot (enriched lines always carry a name)
+  expect(screen.getByText(r.ingredients[0].name!)).toBeInTheDocument()
 })
 
 test('a missing id shows the not-found fallback', async () => {
