@@ -14,7 +14,7 @@ const recipeFixture = {
   mezoFit: { score: 0.92, fitsFor: ['Reggel · Reta D3'] },
   timesLogged: 0, avgScore: 0, lastLogged: '—',
   ingredients: [
-    { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null, lineOrder: 0, name: 'Zabpehely', contribution: { kcal: 260, p: 9.5, c: 42, f: 4.9 } },
+    { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null, lineOrder: 0, name: 'Zabpehely', contribution: { kcal: 260, p: 9, c: 42, f: 5 } },
     { pantryItemId: 'p-turo', amount: 200, unit: 'g', note: null, lineOrder: 1, name: 'Túró', contribution: { kcal: 260, p: 36, c: 7, f: 10 } },
   ],
 }

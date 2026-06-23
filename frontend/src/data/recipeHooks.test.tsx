@@ -53,9 +53,9 @@ describe('useRecipes (mock mode)', () => {
     const added = result.current.read.recipes.find(r => r.name === 'Új recept')!
     expect(added.ingredients[0].refId).toBe('ing-zab')
     expect(added.ingredients[0].name).toBe('Zabpehely · gluténmentes')
-    // 70g zab (per 100, kcal 372) → contribution kcal = round(372*0.7) = 260.4; macros = Σ
-    expect(added.ingredients[0].contribution!.kcal).toBe(260.4)
-    expect(added.macros.kcal).toBe(260.4)
+    // 70g zab (per 100, kcal 372) → contribution kcal = round(372*0.7) = 260; macros = Σ
+    expect(added.ingredients[0].contribution!.kcal).toBe(260)
+    expect(added.macros.kcal).toBe(260)
   })
 
   it('remove deletes a recipe from the shared cache', async () => {
@@ -81,7 +81,7 @@ describe('useRecipes (real mode)', () => {
     const r = result.current.recipes[0]
     expect(r.name).toBe('Túrós zabkása · áfonyával')
     expect(r.ingredients[0].refId).toBe('p-zab')
-    expect(r.ingredients[0].contribution).toEqual({ kcal: 260, p: 9.5, c: 42, f: 4.9 })
+    expect(r.ingredients[0].contribution).toEqual({ kcal: 260, p: 9, c: 42, f: 5 })
     expect(r.mezoFit.score).toBe(0.92)
     // static presentation config is still present in real mode
     expect(result.current.sources).toBeDefined()

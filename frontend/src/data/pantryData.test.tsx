@@ -67,7 +67,7 @@ test('every mock recipe line carries a computed name + contribution; macros = Σ
       const c = line.contribution!
       sum = { kcal: sum.kcal + c.kcal, p: sum.p + c.p, c: sum.c + c.c, f: sum.f + c.f }
     }
-    const r = (n: number) => Math.round(n * 10) / 10
+    const r = (n: number) => Math.round(n) // whole number, matching computeRecipeMacros / backend setScale(0, HALF_UP)
     expect(recipe.macros).toEqual({ kcal: r(sum.kcal), p: r(sum.p), c: r(sum.c), f: r(sum.f) })
   }
 })

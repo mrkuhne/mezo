@@ -7,11 +7,11 @@ describe('Recipe type extensions (per-line name + contribution, RecipeInput)', (
       refId: '11111111-1111-4111-8111-111111111111',
       amount: 70, unit: 'g', note: 'főtt',
       name: 'Zabpehely',
-      contribution: { kcal: 260, p: 9.5, c: 42, f: 4.9 },
+      contribution: { kcal: 260, p: 9, c: 42, f: 5 },
     }
     expect(line.refId).toMatch(/^[0-9a-f-]+$/)
     expect(line.name).toBe('Zabpehely')
-    expect(line.contribution).toEqual({ kcal: 260, p: 9.5, c: 42, f: 4.9 })
+    expect(line.contribution).toEqual({ kcal: 260, p: 9, c: 42, f: 5 })
   })
 
   it('a Recipe exposes line-level name/contribution and a nullable mezoFit.score', () => {

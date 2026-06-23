@@ -2,9 +2,12 @@ import type { Ingredient, RecipeIngredientLine } from './types'
 
 type Macros = { kcal: number; p: number; c: number; f: number }
 
-/** 1-decimal rounding — must match the backend numeric-macro rounding (round to 1 frac digit). */
+/**
+ * Whole-number rounding, matching the backend `RecipeMapper.setScale(0, HALF_UP)`.
+ * For these non-negative macros JS `Math.round` matches Java `RoundingMode.HALF_UP`.
+ */
 export function roundMacro(n: number): number {
-  return Math.round(n * 10) / 10
+  return Math.round(n)
 }
 
 /**
