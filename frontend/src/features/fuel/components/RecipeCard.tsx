@@ -1,117 +1,62 @@
+// ============================================================
+// Mezo · RecipeCard (editorial library card)
+// docs/design/recipes-library.html `.rc-b`: an image band (diagonal-stripe
+// gradient + bottom fade) with the Antonio name overlaid, a slot tag + star
+// top-left and the Mezo-fit badge top-right; below the band a MacroCells strip
+// (whole-recipe macros) and a meta line. v1 fit_score is null → the badge shows
+// the P2 pending sparkle.
+// ============================================================
 import type { Recipe } from '@/data/types'
-import type { PantrySourceKey } from '@/data/pantrySources'
-import { usePantry } from '@/data/hooks'
-import { MacroRow } from '@/components/ui/MacroRow'
-import { SourceBadge } from '@/components/ui/SourceBadge'
-import { NovaDot } from '@/components/ui/NovaDot'
-import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
+import { MacroCells } from './MacroCells'
+import { RecipeFitBadge } from './RecipeFitBadge'
+
+const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--warning)', 4: 'var(--error)' }
 
 export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Recipe) => void }) {
-  const { ingredients } = usePantry()
-  const fitScore = recipe.mezoFit.score ?? 0
-  const fitColor =
-    fitScore >= 0.9
-      ? 'var(--brand-glow)'
-      : fitScore >= 0.85
-        ? 'var(--cat-goal-state)'
-        : 'var(--cat-preference)'
-  const sources = [
-    ...new Set(
-      recipe.ingredients
-        .map(i => ingredients.find(ii => ii.id === i.refId)?.source)
-        .filter((s): s is PantrySourceKey => Boolean(s)),
-    ),
-  ]
-
+  const totalMins = recipe.prepMins + recipe.cookMins
   return (
     <button
       onClick={() => onOpen(recipe)}
-      className="card notch-12"
-      style={{
-        padding: 14,
-        textAlign: 'left',
-        width: '100%',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
+      aria-label={recipe.name}
+      className="notch-16"
+      style={{ position: 'relative', width: '100%', textAlign: 'left', background: 'var(--surface-1)', overflow: 'hidden', marginBottom: 0 }}
     >
-      {recipe.starred && (
-        <div style={{ position: 'absolute', top: 10, right: 10 }}>
-          <Icon name="bookmark" size={12} color="var(--warning)" />
+      {/* Image band */}
+      <div style={{ position: 'relative', height: 118, background: 'linear-gradient(135deg,#16323a,#0f2027)' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg,rgba(255,255,255,0.025) 0 14px,rgba(255,255,255,0) 14px 28px)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(5,7,9,0) 28%,rgba(5,7,9,0.88) 100%)' }} />
+        {/* top-left: slot tag + star */}
+        <div className="row gap-xs" style={{ position: 'absolute', top: 10, left: 11, zIndex: 3, alignItems: 'center' }}>
+          {recipe.slot && (
+            <span className="chip brand" style={{ fontSize: 8, padding: '3px 7px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              {recipe.slot}
+            </span>
+          )}
+          {recipe.starred && <Icon name="bookmark" size={12} color="var(--warning)" />}
         </div>
-      )}
-
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        {/* Image placeholder · diagonal stripes */}
+        <RecipeFitBadge score={recipe.mezoFit.score} />
+        {/* name overlay */}
         <div
           style={{
-            width: 60,
-            height: 60,
-            flexShrink: 0,
-            background: 'repeating-linear-gradient(45deg, var(--surface-2) 0 6px, var(--surface-3) 6px 12px)',
-            border: '1px solid var(--border-subtle)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: 'var(--ff-mono)',
-            fontSize: 8,
-            color: 'var(--text-quaternary)',
-            letterSpacing: '0.1em',
+            position: 'absolute', left: 12, right: 12, bottom: 10, zIndex: 3,
+            fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1, color: 'var(--text-primary)',
           }}
         >
-          FOOD
-        </div>
-
-        <div className="col flex-1" style={{ minWidth: 0 }}>
-          <Eyebrow className="text-tertiary">{recipe.slot}</Eyebrow>
-          <div
-            style={{
-              fontFamily: 'var(--ff-display)',
-              fontSize: 16,
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              marginTop: 4,
-              lineHeight: 1.2,
-              paddingRight: recipe.starred ? 16 : 0,
-            }}
-          >
-            {recipe.name}
-          </div>
-          <div className="mt-sm">
-            <MacroRow macros={recipe.macros} />
-          </div>
+          {recipe.name}
         </div>
       </div>
 
-      <div className="row" style={{ justifyContent: 'space-between', marginTop: 12, alignItems: 'center' }}>
-        <div className="row gap-xs flex-wrap" style={{ alignItems: 'center' }}>
-          <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>
-            {recipe.ingredients.length} hozzávaló · {recipe.prepMins + recipe.cookMins}p
-          </span>
-          {sources.slice(0, 2).map(s => (
-            <SourceBadge key={s} source={s} />
-          ))}
-        </div>
-        <div className="row gap-xs" style={{ alignItems: 'center' }}>
-          <span className="label-mono" style={{ fontSize: 8, color: fitColor }}>
-            Mezo fit
-          </span>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 14, color: fitColor, lineHeight: 1 }}>
-            {(fitScore * 100).toFixed(0)}
-          </span>
-        </div>
-      </div>
-
-      <div
-        className="row"
-        style={{ justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}
-      >
-        <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>
-          {recipe.timesLogged}× logolva · {recipe.lastLogged}
-        </span>
-        <div className="row gap-xs">
-          <NovaDot nova={recipe.novaDominant} />
+      {/* Body */}
+      <div style={{ padding: '11px 13px 13px' }}>
+        <MacroCells macros={recipe.macros} />
+        <div className="row gap-xs flex-wrap" style={{ alignItems: 'center', marginTop: 10, fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)' }}>
+          <span>{recipe.ingredients.length} hozzávaló</span>
+          <span>·</span>
+          <span>{totalMins} perc</span>
+          <span>·</span>
+          <span style={{ color: NOVA_COLOR[recipe.novaDominant] ?? 'var(--text-tertiary)' }}>NOVA {recipe.novaDominant}</span>
         </div>
       </div>
     </button>
