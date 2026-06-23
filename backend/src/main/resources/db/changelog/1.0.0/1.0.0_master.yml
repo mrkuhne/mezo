@@ -125,3 +125,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606231200_mezo-zza_extend_pantry_item.sql
+  - changeSet:
+      id: "1.0.0:202606231400_mezo-lns_create_recipe"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606231400_mezo-lns_create_recipe.sql
