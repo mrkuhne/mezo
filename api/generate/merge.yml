@@ -11,4 +11,5 @@ inputs:
   - inputFile: ../feature/goal/goal.yml
   - inputFile: ../feature/biometrics-profile/biometrics-profile.yml
   - inputFile: ../feature/pantry/pantry.yml
+  - inputFile: ../feature/recipe/recipe.yml
 output: ../openapi.yml

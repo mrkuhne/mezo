@@ -1,141 +1,97 @@
 // ============================================================
-// Mezo · FuelRecipesView (Receptek — recipe library sub-view)
-// Port: prototype/src/fuel-recipes.jsx FuelRecipesView (58–161).
-// Page header (Fuel · Receptek / Saját szakácskönyv + Új button), a 4-cell
-// stats strip, a controlled search input, the RECIPE_FILTERS chip row, the
-// filtered recipe list (RecipeCard) with empty-state, and the
-// RecipeDetailSheet + NewRecipeSheet overlays.
-//
-// Adaptations vs prototype:
-//  - Data comes from useRecipes() instead of window.MezoData.
-//  - The local RecipeStat is the shared <StatCell> (identical label/val/sub/
-//    color contract); StatCell expects a string val, so counts are stringified.
-//  - Eyebrow / PageTitle / RecipeCard / RecipeDetailSheet / NewRecipeSheet are
-//    the already-built primitives. Filter chips + Új stay native <button
-//    className="chip"> (interactive, role=button) — the Chip primitive is a
-//    non-interactive <span>.
+// Mezo · FuelRecipesView (Receptek — editorial library)
+// Approved redesign (docs/design/recipes-library.html): editorial RecipeCards +
+// a segmented typebar filter (Mind / Reggeli / Ebéd / Vacsi / ★ with live counts,
+// the Kamra typebar pattern) replacing the old chip row. The fake "Avg fit 0.89"
+// stat is removed; the header sub shows real counts. Detail + create are now
+// routed PAGES — the card navigates to /fuel/recipes/:id, +Új to /fuel/recipes/new
+// (the old RecipeDetailSheet / NewRecipeSheet overlays are retired).
 // ============================================================
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Recipe } from '@/data/types'
 import { useRecipes } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
-import { StatCell } from '@/components/ui/StatCell'
 import { RecipeCard } from '@/features/fuel/components/RecipeCard'
-import { RecipeDetailSheet } from '@/features/fuel/RecipeDetailSheet'
-import { NewRecipeSheet } from '@/features/fuel/NewRecipeSheet'
 
-const RECIPE_FILTERS = [
-  { id: 'all', label: 'Összes' },
+type FilterId = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'starred'
+
+const FILTERS: { id: FilterId; label: string }[] = [
+  { id: 'all', label: 'Mind' },
   { id: 'breakfast', label: 'Reggeli' },
   { id: 'lunch', label: 'Ebéd' },
-  { id: 'dinner', label: 'Vacsora' },
-  { id: 'snack', label: 'Snack' },
+  { id: 'dinner', label: 'Vacsi' },
   { id: 'starred', label: '★' },
-] as const
+]
+
+function countFor(recipes: Recipe[], id: FilterId): number {
+  if (id === 'all') return recipes.length
+  if (id === 'starred') return recipes.filter(r => r.starred).length
+  return recipes.filter(r => r.category === id).length
+}
 
 export function FuelRecipesView() {
+  const navigate = useNavigate()
   const { recipes } = useRecipes()
-  const [filter, setFilter] = useState<string>('all')
-  const [openRecipe, setOpenRecipe] = useState<Recipe | null>(null)
-  const [newOpen, setNewOpen] = useState(false)
-  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<FilterId>('all')
 
+  const starredCount = recipes.filter(r => r.starred).length
   const filtered = recipes.filter(r => {
+    if (filter === 'all') return true
     if (filter === 'starred') return r.starred
-    if (filter !== 'all' && r.category !== filter) return false
-    if (query && !r.name.toLowerCase().includes(query.toLowerCase())) return false
-    return true
+    return r.category === filter
   })
-
-  const starred = recipes.filter(r => r.starred)
-  const totalLogs = recipes.reduce((a, r) => a + r.timesLogged, 0)
 
   return (
     <>
-      <div className="screen-content" style={{ paddingTop: 96 }}>
-        <div className="page-header">
-          <div>
-            <Eyebrow brand>Fuel · Receptek</Eyebrow>
-            <PageTitle className="mt-sm">Saját szakácskönyv</PageTitle>
-          </div>
-          <button onClick={() => setNewOpen(true)} className="chip brand" style={{ padding: '8px 10px' }}>
-            <Icon name="plus" size={12} /> Új
-          </button>
+      <div className="page-header">
+        <div>
+          <Eyebrow brand>Fuel · Receptek</Eyebrow>
+          <PageTitle className="mt-sm">Receptek</PageTitle>
+          <span className="label-mono" style={{ display: 'block', fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-tertiary)', marginTop: 5 }}>
+            {recipes.length} recept · {starredCount} csillagos
+          </span>
         </div>
+        <button onClick={() => navigate('/fuel/recipes/new')} className="chip brand" style={{ padding: '8px 10px' }}>
+          <Icon name="plus" size={12} /> Új
+        </button>
+      </div>
 
-        {/* Stats strip */}
-        <div style={{ padding: '0 24px 12px' }}>
-          <div className="card notch-4" style={{ padding: 12 }}>
-            <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
-              <StatCell label="Receptek" val={String(recipes.length)} sub="összesen" color="var(--brand-glow)" />
-              <StatCell label="Csillagos" val={String(starred.length)} sub="alaprecept" color="var(--warning)" />
-              <StatCell label="Logolva" val={String(totalLogs)} sub="összesen" color="var(--cat-physiology)" />
-              <StatCell label="Avg fit" val="0.89" sub="Mezo score" color="var(--cat-tendency)" />
-            </div>
-          </div>
-        </div>
-
-        {/* Search */}
-        <div style={{ padding: '0 24px 12px' }}>
-          <div
-            className="row gap-sm"
-            style={{
-              padding: '8px 12px',
-              background: 'var(--surface-2)',
-              border: '1px solid var(--border-subtle)',
-              alignItems: 'center',
-            }}
-          >
-            <Icon name="search" size={12} color="var(--text-tertiary)" />
-            <input
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Keress receptek között…"
-              style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)' }}
-            />
-            {query && (
-              <button onClick={() => setQuery('')} style={{ color: 'var(--text-tertiary)' }}>
-                <Icon name="x" size={12} />
+      {/* Segmented typebar */}
+      <div style={{ padding: '0 24px 16px' }}>
+        <div className="row" style={{ gap: 5, padding: 5, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', borderRadius: 13 }}>
+          {FILTERS.map(f => {
+            const active = filter === f.id
+            return (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                className="notch-8 col flex-1"
+                style={{ alignItems: 'center', padding: '8px 0 7px', background: active ? 'var(--brand-primary)' : 'transparent', boxShadow: active ? '0 8px 18px -8px rgba(20,184,166,0.6)' : undefined }}
+              >
+                <span style={{ fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', lineHeight: 1, color: active ? 'var(--text-inverse)' : 'var(--text-secondary)' }}>{f.label}</span>
+                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, marginTop: 3, color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)' }}>{countFor(recipes, f.id)}</span>
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Filter chips */}
-        <div className="row gap-xs flex-wrap" style={{ padding: '0 24px 16px' }}>
-          {RECIPE_FILTERS.map(f => (
-            <button
-              key={f.id}
-              onClick={() => setFilter(f.id)}
-              className={'chip' + (filter === f.id ? ' brand' : '')}
-              style={{ fontSize: 9, padding: '6px 10px' }}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-
-        {/* List */}
-        <div style={{ padding: '0 24px 24px' }}>
-          <div className="col gap-md">
-            {filtered.map(r => (
-              <RecipeCard key={r.id} recipe={r} onOpen={setOpenRecipe} />
-            ))}
-            {filtered.length === 0 && (
-              <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
-                <span className="text-tertiary" style={{ fontSize: 12 }}>
-                  Nincs egyező recept.
-                </span>
-              </div>
-            )}
-          </div>
+            )
+          })}
         </div>
       </div>
 
-      {openRecipe && <RecipeDetailSheet recipe={openRecipe} onClose={() => setOpenRecipe(null)} />}
-      {newOpen && <NewRecipeSheet onClose={() => setNewOpen(false)} />}
+      {/* List */}
+      <div style={{ padding: '0 24px 32px' }}>
+        <div className="col" style={{ gap: 13 }}>
+          {filtered.map(r => (
+            <RecipeCard key={r.id} recipe={r} onOpen={() => navigate(`/fuel/recipes/${r.id}`)} />
+          ))}
+          {filtered.length === 0 && (
+            <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
+              <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs egyező recept.</span>
+            </div>
+          )}
+        </div>
+      </div>
     </>
   )
 }

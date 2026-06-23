@@ -12,7 +12,6 @@ import { facts, edges } from './knowledge'
 import { patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments } from './insights'
 import { initialChat } from './chat'
 import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './fuel'
-import { ingredients, recipes, pantrySources, pantryCategoryMeta } from './pantry'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
 import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, SleepEntry, SleepLogInput, Mention, MentionLogInput } from './types'
 
@@ -151,10 +150,6 @@ export function useProtocol() {
   return { protocol }
 }
 
-export function useRecipes() {
-  return { recipes, ingredients, sources: pantrySources, categoryMeta: pantryCategoryMeta }
-}
-
 export function useFuelWeek() {
   return { retaWeek, gymSchedule, weeklySupplements, patterns: recurringPatterns, weeklyStats, volleyball: volleyballSessions }
 }
@@ -173,5 +168,6 @@ export { useTrain } from './trainHooks'
 export { useRunning } from './runningHooks'
 export { useWeight } from './weightHooks'
 export { usePantry, usePantryActions } from './pantryHooks'
+export { useRecipes, useRecipeActions } from './recipeHooks'
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from './goalHooks'
 export { useBiometricProfile, useBiometricActions } from './biometricHooks'

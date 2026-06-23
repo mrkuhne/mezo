@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Receptek · B editorial + szűrő + fit-jelzés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+  button, input { font:inherit; color:inherit; background:none; border:none; appearance:none; }
+  button { cursor:pointer; }
+  :root {
+    --brand-primary:#14B8A6; --brand-glow:#5EEAD4;
+    --canvas:#0A0F14; --surface-1:#121A22; --surface-2:#1A242E;
+    --border-subtle:rgba(255,255,255,0.06); --border-strong:rgba(255,255,255,0.12); --border-brand:rgba(20,184,166,.35);
+    --text-primary:#ECECF1; --text-secondary:#9CA3AF; --text-tertiary:#6B7280; --text-quaternary:#4B5563; --text-inverse:#0A0F14;
+    --success:#34D399; --warning:#F59E0B; --error:#F43F5E; --cat-tendency:#F472B6; --cat-physiology:#60A5FA;
+    --ff-display:"Antonio",sans-serif; --ff-body:"Inter",system-ui,sans-serif; --ff-mono:"JetBrains Mono",monospace;
+  }
+  html, body { background:#050709; color:var(--text-primary); font-family:var(--ff-body); line-height:1.5; min-height:100vh; padding:40px 28px 80px;
+    background-image:radial-gradient(1200px 600px at 50% -200px,#0c1620 0%,#050709 70%); }
+  .pagehead { max-width:1000px; margin:0 auto 28px; text-align:center; }
+  .pagehead .eyebrow { font-family:var(--ff-mono); font-size:11px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--brand-glow); margin-bottom:12px; }
+  .pagehead h1 { font-family:var(--ff-display); font-size:36px; font-weight:600; text-transform:uppercase; line-height:1; margin-bottom:12px; }
+  .pagehead p { font-size:14px; color:var(--text-secondary); line-height:1.6; max-width:720px; margin:0 auto; }
+  .pagehead p strong { color:var(--text-primary); font-weight:500; }
+  .stepdots { display:flex; gap:8px; justify-content:center; margin-top:16px; }
+  .stepdots span { font-family:var(--ff-mono); font-size:10px; letter-spacing:.1em; color:var(--text-tertiary); border:1px solid var(--border-subtle); padding:4px 10px; clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .stepdots span.on { color:var(--brand-glow); border-color:var(--border-brand); background:rgba(20,184,166,.08); }
+
+  .stage { display:flex; gap:42px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+
+  .phone-box { width:362px; height:792px; position:relative; }
+  .iphone { width:440px; height:956px; border-radius:60px; background:linear-gradient(180deg,#1A1A1F 0%,#0E0E12 100%); padding:12px; position:absolute; top:0; left:0; transform:scale(0.822); transform-origin:top left; box-shadow:0 0 0 1.5px #3A3A42 inset,0 40px 110px -30px rgba(0,0,0,.8); }
+  .iphone::after { content:""; position:absolute; top:24px; left:50%; transform:translateX(-50%); width:120px; height:34px; background:#000; border-radius:20px; z-index:30; }
+  .iphone-screen { width:100%; height:100%; border-radius:50px; overflow:hidden; position:relative; background:radial-gradient(60% 50% at 50% 0%,rgba(20,184,166,.06),transparent 70%),var(--canvas); }
+  .home-indicator { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:130px; height:5px; background:rgba(232,234,240,.4); border-radius:3px; z-index:40; }
+  .status { height:50px; padding:17px 30px 0; display:flex; justify-content:space-between; font-family:var(--ff-mono); font-size:14px; font-weight:600; position:relative; z-index:20; }
+  .content { height:calc(100% - 50px - 30px); overflow-y:auto; padding:6px 18px 30px; }
+  .content::-webkit-scrollbar { display:none; }
+
+  .top-row { display:flex; justify-content:space-between; align-items:flex-start; padding:8px 4px 12px; }
+  .page-title { font-family:var(--ff-display); font-size:26px; font-weight:600; text-transform:uppercase; line-height:1; }
+  .page-title .sub { display:block; font-family:var(--ff-mono); font-size:9px; font-weight:600; letter-spacing:.16em; color:var(--text-tertiary); margin-top:5px; text-transform:uppercase; }
+  .top-actions { display:flex; gap:8px; }
+  .icon-btn { width:34px; height:34px; display:grid; place-items:center; background:var(--surface-1); border:1px solid var(--border-subtle); color:var(--text-secondary); clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .icon-btn.brand { background:rgba(20,184,166,.16); color:var(--brand-glow); border:none; }
+  .icon-btn svg { width:17px; height:17px; }
+  .sub-nav { display:flex; gap:5px; padding:0 4px; margin-bottom:14px; overflow-x:auto; }
+  .sub-nav::-webkit-scrollbar { display:none; }
+  .sub-tab { padding:7px 11px; background:rgba(255,255,255,.025); color:var(--text-tertiary); font-family:var(--ff-body); font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; white-space:nowrap; clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .sub-tab.active { background:rgba(20,184,166,.16); color:var(--brand-glow); }
+
+  /* segmented filter (from A) */
+  .typebar { display:flex; gap:5px; padding:5px; background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:13px; margin-bottom:16px; }
+  .typeseg { flex:1; text-align:center; padding:8px 0 7px; clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .typeseg .n { font-family:var(--ff-display); font-size:13px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; line-height:1; color:var(--text-secondary); }
+  .typeseg .c { font-family:var(--ff-mono); font-size:8px; color:var(--text-tertiary); margin-top:3px; }
+  .typeseg.active { background:var(--brand-primary); box-shadow:0 8px 18px -8px rgba(20,184,166,.6); }
+  .typeseg.active .n, .typeseg.active .c { color:var(--text-inverse); }
+
+  .tag { display:inline-flex; align-items:center; gap:4px; padding:3px 7px; font-family:var(--ff-body); font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .tag.brand { background:rgba(20,184,166,.14); color:var(--brand-glow); }
+  .tag.ghost { background:rgba(255,255,255,.06); color:var(--text-secondary); }
+
+  /* editorial card */
+  .rc-b { position:relative; margin-bottom:13px; background:var(--surface-1); clip-path:polygon(16px 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%,0 16px); overflow:hidden; }
+  .rc-b .band { height:118px; position:relative; }
+  .rc-b .band::before { content:""; position:absolute; inset:0; background:repeating-linear-gradient(125deg,rgba(255,255,255,.025) 0 14px,rgba(255,255,255,0) 14px 28px); }
+  .rc-b .band::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(5,7,9,0) 28%,rgba(5,7,9,.88) 100%); }
+  .rc-b .tl { position:absolute; top:10px; left:11px; z-index:3; display:flex; gap:6px; align-items:center; }
+  .rc-b .tl .star { color:var(--warning); display:flex; }
+  .rc-b .bnm { position:absolute; left:12px; right:12px; bottom:10px; z-index:3; font-family:var(--ff-display); font-size:22px; font-weight:600; text-transform:uppercase; letter-spacing:.01em; line-height:1; }
+  .rc-b .body { padding:11px 13px 13px; }
+  .rc-b .chiprow { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .mc { text-align:center; padding:6px 2px; background:rgba(255,255,255,.025); clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .mc .mv { font-family:var(--ff-mono); font-size:13px; font-weight:600; color:var(--text-primary); }
+  .mc .mv.p { color:var(--success); }
+  .mc .ml { font-family:var(--ff-body); font-size:7px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); margin-top:2px; }
+  .rc-b .bmeta { display:flex; gap:7px; align-items:center; flex-wrap:wrap; margin-top:10px; font-family:var(--ff-mono); font-size:8px; color:var(--text-tertiary); }
+  .vnote { margin-top:9px; padding-top:8px; border-top:1px dashed rgba(255,255,255,.08); font-family:var(--ff-mono); font-size:8px; letter-spacing:.06em; color:var(--text-quaternary); }
+  .vnote b { color:var(--brand-glow); }
+
+  /* ===== Mezo-fit badge (top-right of band) — states ===== */
+  .fitb { position:absolute; top:9px; right:10px; z-index:4; min-width:40px; padding:5px 5px 4px; text-align:center;
+    background:rgba(8,12,16,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .fitb .fn { font-family:var(--ff-display); font-size:18px; font-weight:600; line-height:1; color:var(--brand-glow); }
+  .fitb .fl { font-family:var(--ff-mono); font-size:6.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--text-tertiary); margin-top:3px; }
+  /* scored */
+  .fitb.scored { box-shadow:0 0 0 1px rgba(94,234,212,.25), 0 6px 16px -6px rgba(20,184,166,.5); }
+  /* P1 — dashed slot */
+  .fitb.p1 { border:1px dashed rgba(94,234,212,.45); background:rgba(8,12,16,.5); }
+  .fitb.p1 .fn { color:var(--text-tertiary); letter-spacing:.06em; }
+  /* P2 — sparkle (AI score coming) */
+  .fitb.p2 .spark { color:var(--brand-glow); display:flex; justify-content:center; }
+  .fitb.p2 .spark svg { width:16px; height:16px; animation:tw 2.2s ease-in-out infinite; }
+  @keyframes tw { 0%,100%{opacity:.45;transform:scale(.9)} 50%{opacity:1;transform:scale(1.08)} }
+  .fitb.p2 .fl { color:var(--brand-glow); opacity:.8; }
+  /* P3 — locked / soon */
+  .fitb.p3 .lock { color:var(--text-tertiary); display:flex; justify-content:center; }
+  .fitb.p3 .lock svg { width:13px; height:13px; }
+
+  /* ===== decision panel ===== */
+  .panel { width:380px; }
+  .panel h2 { font-family:var(--ff-display); font-size:24px; font-weight:600; text-transform:uppercase; margin-bottom:6px; }
+  .panel .lead { font-size:13px; color:var(--text-secondary); line-height:1.6; margin-bottom:18px; }
+  .panel .lead b { color:var(--text-primary); font-weight:500; }
+  .ref { display:flex; align-items:center; gap:14px; background:var(--surface-1); border:1px solid var(--border-subtle); padding:14px; margin-bottom:16px; clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
+  .ref .sw { width:74px; height:60px; position:relative; background:linear-gradient(135deg,#16323a,#0f2027); flex:none; clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .ref .txt { font-size:12px; color:var(--text-secondary); line-height:1.5; } .ref .txt b { color:var(--brand-glow); }
+  .opts { display:flex; flex-direction:column; gap:11px; }
+  .opt { display:flex; align-items:center; gap:14px; background:var(--surface-1); border:1px solid var(--border-subtle); padding:13px 14px; clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); transition:all .15s; }
+  .opt:hover { border-color:var(--border-strong); }
+  .opt.selected { border-color:var(--border-brand); background:rgba(20,184,166,.08); }
+  .opt .sw { width:74px; height:60px; position:relative; background:linear-gradient(135deg,#16323a,#0f2027); flex:none; clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .opt .d { flex:1; }
+  .opt .d .t { font-family:var(--ff-mono); font-size:11px; letter-spacing:.06em; color:var(--text-primary); font-weight:600; }
+  .opt .d .s { font-size:11.5px; color:var(--text-secondary); line-height:1.45; margin-top:3px; }
+  .opt .pk { font-family:var(--ff-mono); font-size:9px; letter-spacing:.1em; color:var(--text-tertiary); border:1px solid var(--border-subtle); padding:4px 8px; clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px); }
+  .opt.selected .pk { color:var(--brand-glow); border-color:var(--border-brand); }
+  /* badge sizing inside swatches */
+  .sw .fitb { transform:scale(.92); top:7px; right:8px; }
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <div class="eyebrow">Fuel ▸ Receptek · B + szűrő + fit-jelzés</div>
+  <h1>Editorial könyvtár · Mezo-fit jelzés</h1>
+  <p>A <strong>B (editorial)</strong> kártya marad, ráraktam az <strong>A szegmentált szűrőjét</strong> (Mind / Reggeli / Ebéd / Vacsi / ★). A három kártya ugyanazt mutatja, de <strong>3 különböző „még nincs score" jelzéssel</strong> a jobb-felső sarokban — válaszd ki, melyik tetszik. (A score helye stabil: amikor jön a valós szám, ide kerül, nem ugrik a layout.)</p>
+  <div class="stepdots"><span class="on">1 · Könyvtár</span><span>2 · Recept-detail</span><span>3 · Új recept</span></div>
+</div>
+
+<div class="stage">
+
+  <div class="phone-box"><div class="iphone"><div class="iphone-screen">
+    <div class="status"><span>9:41</span><span>5G ▴ 84%</span></div>
+    <div class="content">
+      <div class="top-row"><div class="page-title">Receptek<span class="sub">6 recept · 2 csillagos</span></div>
+        <div class="top-actions"><button class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></button><button class="icon-btn brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button></div></div>
+      <div class="sub-nav"><div class="sub-tab">Mai</div><div class="sub-tab">Stack</div><div class="sub-tab active">Receptek</div><div class="sub-tab">Kamra</div></div>
+
+      <div class="typebar">
+        <div class="typeseg active"><div class="n">Mind</div><div class="c">6</div></div>
+        <div class="typeseg"><div class="n">Reggeli</div><div class="c">2</div></div>
+        <div class="typeseg"><div class="n">Ebéd</div><div class="c">2</div></div>
+        <div class="typeseg"><div class="n">Vacsi</div><div class="c">1</div></div>
+        <div class="typeseg"><div class="n">★</div><div class="c">2</div></div>
+      </div>
+
+      <!-- Card 1 · P1 dashed -->
+      <div class="rc-b">
+        <div class="band" style="background:linear-gradient(135deg,#16323a,#0f2027)">
+          <div class="tl"><span class="tag brand">Ebéd · post-WO</span><span class="star"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span></div>
+          <div class="fitb p1"><div class="fn">–</div><div class="fl">fit</div></div>
+          <div class="bnm">Tonhalsaláta</div>
+        </div>
+        <div class="body">
+          <div class="chiprow"><div class="mc"><div class="mv">420</div><div class="ml">kcal</div></div><div class="mc"><div class="mv p">38</div><div class="ml">Prot</div></div><div class="mc"><div class="mv">12</div><div class="ml">Carb</div></div><div class="mc"><div class="mv">22</div><div class="ml">Fat</div></div></div>
+          <div class="bmeta"><span>5 hozzávaló</span><span>·</span><span>12 perc</span><span>·</span><span style="color:var(--success)">NOVA 1</span></div>
+          <div class="vnote">jobb-felső jelzés: <b>P1 · dashed slot</b></div>
+        </div>
+      </div>
+
+      <!-- Card 2 · P2 sparkle -->
+      <div class="rc-b">
+        <div class="band" style="background:linear-gradient(135deg,#2a2438,#1a1622)">
+          <div class="tl"><span class="tag ghost">Reggeli</span></div>
+          <div class="fitb p2"><div class="spark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></div><div class="fl">Mezo</div></div>
+          <div class="bnm">Zabkása · áfonyás</div>
+        </div>
+        <div class="body">
+          <div class="chiprow"><div class="mc"><div class="mv">380</div><div class="ml">kcal</div></div><div class="mc"><div class="mv p">14</div><div class="ml">Prot</div></div><div class="mc"><div class="mv">60</div><div class="ml">Carb</div></div><div class="mc"><div class="mv">7</div><div class="ml">Fat</div></div></div>
+          <div class="bmeta"><span>4 hozzávaló</span><span>·</span><span>8 perc</span><span>·</span><span style="color:var(--success)">NOVA 1</span></div>
+          <div class="vnote">jobb-felső jelzés: <b>P2 · sparkle (AI jön)</b></div>
+        </div>
+      </div>
+
+      <!-- Card 3 · P3 locked -->
+      <div class="rc-b">
+        <div class="band" style="background:linear-gradient(135deg,#22303a,#101c22)">
+          <div class="tl"><span class="tag ghost">Vacsora</span><span class="star"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span></div>
+          <div class="fitb p3"><div class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div><div class="fl">soon</div></div>
+          <div class="bnm">Lazac · spenótágy</div>
+        </div>
+        <div class="body">
+          <div class="chiprow"><div class="mc"><div class="mv">510</div><div class="ml">kcal</div></div><div class="mc"><div class="mv p">41</div><div class="ml">Prot</div></div><div class="mc"><div class="mv">9</div><div class="ml">Carb</div></div><div class="mc"><div class="mv">33</div><div class="ml">Fat</div></div></div>
+          <div class="bmeta"><span>6 hozzávaló</span><span>·</span><span>22 perc</span><span>·</span><span style="color:var(--success)">NOVA 1</span></div>
+          <div class="vnote">jobb-felső jelzés: <b>P3 · locked / soon</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="home-indicator"></div>
+  </div></div></div>
+
+  <div class="panel">
+    <h2>Fit-jelzés</h2>
+    <p class="lead">A Mezo-fit <b>kell</b> — a jobb-felső sarok az ő helye. Amíg nincs valós score (Phase-3-ig), egy <b>placeholder jelzi</b>, hogy ide jön majd egy szám. Így néz ki, ha <b>van</b> score:</p>
+
+    <div class="ref">
+      <div class="sw"><div class="fitb scored"><div class="fn">92</div><div class="fl">fit</div></div></div>
+      <div class="txt"><b>Scored állapot</b> — Antonio szám brand-glow-ban, „fit" címke. Ide vált a placeholder, ha megjön a valós érték (Phase-3).</div>
+    </div>
+
+    <p class="lead" style="margin-bottom:12px">Melyik <b>placeholder</b> legyen addig?</p>
+    <div class="opts" data-multiselect>
+      <div class="opt" data-choice="p1" onclick="window.toggleSelect&&window.toggleSelect(this)">
+        <div class="sw"><div class="fitb p1"><div class="fn">–</div><div class="fl">fit</div></div></div>
+        <div class="d"><div class="t">P1 · Dashed slot</div><div class="s">Szaggatott keret, halvány „–". Diszkrét, „fenntartott hely" — nem vonja el a figyelmet.</div></div>
+        <span class="pk">P1</span>
+      </div>
+      <div class="opt" data-choice="p2" onclick="window.toggleSelect&&window.toggleSelect(this)">
+        <div class="sw"><div class="fitb p2"><div class="spark"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></div><div class="fl">Mezo</div></div></div>
+        <div class="d"><div class="t">P2 · Sparkle</div><div class="s">Pislákoló ✦ + „Mezo" — azt sugallja: AI-score készül, hamarosan itt lesz. Legbeszédesebb.</div></div>
+        <span class="pk">P2</span>
+      </div>
+      <div class="opt" data-choice="p3" onclick="window.toggleSelect&&window.toggleSelect(this)">
+        <div class="sw"><div class="fitb p3"><div class="lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="1"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div><div class="fl">soon</div></div></div>
+        <div class="d"><div class="t">P3 · Locked / soon</div><div class="s">Lakat + „soon" — „még zárolva, Phase-3-ban nyílik". Konkrét, de kicsit negatív (lakat).</div></div>
+        <span class="pk">P3</span>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:16px; font-size:12px; color:var(--text-tertiary)">Tipp: a <b>P2 sparkle</b> illik legjobban a „Mezo = AI-társ" nyelvhez. De döntsd el — vagy mondj sajátot.</p>
+  </div>
+
+</div>
+
+</body>
+</html>

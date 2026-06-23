@@ -658,6 +658,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The owner's recipes (whole-recipe macros computed from line snapshots) */
+        get: operations["listRecipes"];
+        put?: never;
+        /** Create a recipe with its ingredient lines (snapshots captured server-side) */
+        post: operations["createRecipe"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A single owned recipe by id (detail deep-link / hard-reload refetch) */
+        get: operations["getRecipe"];
+        /** Full-replace an owned recipe aggregate (all fields + all lines) */
+        put: operations["updateRecipe"];
+        post?: never;
+        /** Soft-delete an owned recipe (and its lines) */
+        delete: operations["deleteRecipe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1521,6 +1558,76 @@ export interface components {
             brand?: string | null;
             source?: string | null;
             category?: string | null;
+        };
+        RecipeMacros: {
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+        };
+        RecipeContribution: {
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+        };
+        RecipeMezoFit: {
+            score?: number | null;
+            fitsFor: string[];
+        };
+        RecipeIngredientRequest: {
+            /** Format: uuid */
+            pantryItemId: string;
+            amount: number;
+            unit: string;
+            note?: string | null;
+        };
+        RecipeIngredientResponse: {
+            /** Format: uuid */
+            pantryItemId: string;
+            amount: number;
+            unit: string;
+            note?: string | null;
+            lineOrder: number;
+            name: string;
+            contribution: components["schemas"]["RecipeContribution"];
+        };
+        RecipeRequest: {
+            name: string;
+            slot?: string | null;
+            category: string;
+            /** @default 1 */
+            servings: number;
+            prepMins?: number | null;
+            cookMins?: number | null;
+            /** @default [] */
+            tags: string[];
+            /** @default false */
+            starred: boolean;
+            ingredients: components["schemas"]["RecipeIngredientRequest"][];
+        };
+        RecipeResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            slot?: string | null;
+            category: string;
+            servings: number;
+            prepMins?: number | null;
+            cookMins?: number | null;
+            tags: string[];
+            starred: boolean;
+            createdDate: string;
+            novaDominant: number;
+            macros: components["schemas"]["RecipeMacros"];
+            mezoFit: components["schemas"]["RecipeMezoFit"];
+            timesLogged: number;
+            avgScore: number;
+            lastLogged: string;
+            ingredients: components["schemas"]["RecipeIngredientResponse"][];
+        };
+        RecipeListResponse: {
+            recipes: components["schemas"]["RecipeResponse"][];
         };
     };
     responses: never;
@@ -3606,6 +3713,206 @@ export interface operations {
         };
     };
     deletePantryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listRecipes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recipes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createRecipe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getRecipe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recipe */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateRecipe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteRecipe: {
         parameters: {
             query?: never;
             header?: never;

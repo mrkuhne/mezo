@@ -19,6 +19,8 @@ import { FuelStackView } from '@/features/fuel/views/FuelStackView'
 import { FuelRecipesView } from '@/features/fuel/views/FuelRecipesView'
 import { FuelKamraView } from '@/features/fuel/views/FuelKamraView'
 import { KamraItemDetailView } from '@/features/fuel/views/KamraItemDetailView'
+import { RecipeDetailView } from '@/features/fuel/views/RecipeDetailView'
+import { RecipeEditorView } from '@/features/fuel/views/RecipeEditorView'
 import { InsightsScreen } from '@/features/insights/InsightsScreen'
 import { PatternsView } from '@/features/insights/views/PatternsView'
 import { WeeklyView } from '@/features/insights/views/WeeklyView'
@@ -76,6 +78,12 @@ export const routes: RouteObject[] = [
           { path: 'kamra/:id', element: <KamraItemDetailView /> },
         ],
       },
+      // Recipe detail + editor are full pages (no Fuel sub-nav chrome), mirroring
+      // train/session — siblings of the `fuel` group, not nested children. `new`
+      // is listed before `:id` for clarity (React Router ranks static over dynamic).
+      { path: 'fuel/recipes/new', element: <RecipeEditorView /> },
+      { path: 'fuel/recipes/:id', element: <RecipeDetailView /> },
+      { path: 'fuel/recipes/:id/edit', element: <RecipeEditorView /> },
       {
         path: 'insights',
         element: <InsightsScreen />,

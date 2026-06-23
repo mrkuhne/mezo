@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · DimensionCard (one weighted score dimension, expanded)
 // Header (score + weight contribution + mini bar) + detail prose
-// + per-dimension visual panel. Reused by RecipeDetailSheet later.
+// + per-dimension visual panel (used by the meal-score panels).
 // ============================================================
 import type { MealDimension } from '@/data/types'
 import { ProgressBar } from '@/components/ui/ProgressBar'

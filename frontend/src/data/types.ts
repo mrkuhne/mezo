@@ -107,17 +107,37 @@ export interface Ingredient {
 }
 export type RecipeCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 export interface RecipeLog { mealId: string; slot: string; score: number; delta: number; loggedAt: string; kcal: number; p: number; c: number; f: number }
+export interface RecipeIngredientLine {
+  refId: string // === pantryItemId (the pantry source row); kept as refId for the mock seed
+  amount: number
+  unit: string
+  note?: string
+  name?: string // server-computed snapshot name (present on persisted/loaded recipes)
+  contribution?: { kcal: number; p: number; c: number; f: number } // this line's macro share
+}
 export interface Recipe {
   id: string; name: string; slot: string; category: RecipeCategory
   createdDate: string; timesLogged: number; avgScore: number; lastLogged: string
   servings: number; prepMins: number; cookMins: number; tags: string[]
-  ingredients: { refId: string; amount: number; unit: string; note?: string }[]
+  ingredients: RecipeIngredientLine[]
   macros: { kcal: number; p: number; c: number; f: number }
   novaDominant: NovaGroup
-  mezoFit: { score: number; fitsFor: string[] }
+  mezoFit: { score: number | null; fitsFor: string[] }
   starred: boolean
   recentLogs?: RecipeLog[]
   templateBreakdown?: MealBreakdown
+}
+/** Editor save payload — maps to the RecipeRequest contract (refId → pantryItemId). */
+export interface RecipeInput {
+  name: string
+  slot?: string | null
+  category: RecipeCategory
+  servings: number
+  prepMins?: number | null
+  cookMins?: number | null
+  tags: string[]
+  starred: boolean
+  ingredients: { pantryItemId: string; amount: number; unit: string; note?: string | null }[]
 }
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
 export interface PantrySuggestion { name: string; source: PantrySourceKey; price: string; reason: string }

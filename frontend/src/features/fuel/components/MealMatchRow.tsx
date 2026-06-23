@@ -31,7 +31,7 @@ export function MealMatchRow({ match }: { match: MealMatch }) {
       </div>
       <div className="col" style={{ alignItems: 'flex-end' }}>
         <span className="label-mono brand" style={{ fontSize: 9 }}>
-          fit {(r.mezoFit.score * 100).toFixed(0)}
+          fit {((r.mezoFit.score ?? 0) * 100).toFixed(0)}
         </span>
         <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
           {match.slot}
