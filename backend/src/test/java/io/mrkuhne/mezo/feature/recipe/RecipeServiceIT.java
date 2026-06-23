@@ -27,6 +27,7 @@ class RecipeServiceIT extends AbstractIntegrationTest {
     @Autowired private RecipeService service;
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private io.mrkuhne.mezo.feature.recipe.repository.RecipeIngredientRepository recipeIngredientRepository;
 
     private UUID owner;
     private UUID other;
@@ -124,5 +125,80 @@ class RecipeServiceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> service.get(other, created.getId()))
             .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testList_shouldReturnOwnedNewestFirst_whenMultipleRecipes() {
+        PantryItemEntity food = food("Csirkemell");
+        service.create(owner, req("Régi", line(food.getId(), "100", "g")));
+        service.create(owner, req("Új", line(food.getId(), "100", "g")));
+
+        var recipes = service.list(owner).getRecipes();
+
+        assertThat(recipes).extracting("name").containsExactly("Új", "Régi");
+    }
+
+    @Test
+    void testList_shouldIsolateOwners_whenTwoUsers() {
+        PantryItemEntity food = food("Csirkemell");
+        service.create(owner, req("Enyém", line(food.getId(), "100", "g")));
+
+        assertThat(service.list(other).getRecipes()).isEmpty();
+    }
+
+    @Test
+    void testUpdate_shouldReturn404_whenForeignRecipe() {
+        PantryItemEntity food = food("Csirkemell");
+        RecipeResponse mine = service.create(owner, req("Ebéd", line(food.getId(), "100", "g")));
+
+        assertThatThrownBy(() -> service.update(other, mine.getId(),
+            req("Hack", line(food.getId(), "100", "g"))))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testUpdate_shouldFullReplaceLines_whenLinesAddedRemovedReordered() {
+        PantryItemEntity a = food("Alpha");
+        PantryItemEntity b = food("Bravo");
+        PantryItemEntity c = food("Charlie");
+        RecipeResponse created = service.create(owner,
+            req("V1", line(a.getId(), "100", "g"), line(b.getId(), "100", "g")));
+
+        // Replace with: b first (reorder), c added, a removed.
+        RecipeRequest v2 = req("V2",
+            line(b.getId(), "150", "g"), line(c.getId(), "100", "g"));
+        service.update(owner, created.getId(), v2);
+
+        RecipeResponse after = service.get(owner, created.getId());
+        assertThat(after.getName()).isEqualTo("V2");
+        assertThat(after.getIngredients()).extracting("name").containsExactly("Bravo", "Charlie");
+        assertThat(after.getIngredients()).extracting("lineOrder").containsExactly(0, 1);
+        // Bravo at 150 g -> factor 1.5 -> 110 * 1.5 = 165 kcal; Charlie 100 g -> 110 kcal -> rollup 275.
+        assertThat(after.getMacros().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(275));
+    }
+
+    @Test
+    void testDelete_shouldReturn404_whenForeignRecipe() {
+        PantryItemEntity food = food("Csirkemell");
+        RecipeResponse mine = service.create(owner, req("Ebéd", line(food.getId(), "100", "g")));
+
+        assertThatThrownBy(() -> service.delete(other, mine.getId()))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testDelete_shouldHideRecipeAndSoftDeleteChildren_whenOwned() {
+        PantryItemEntity food = food("Csirkemell");
+        RecipeResponse mine = service.create(owner,
+            req("Ebéd", line(food.getId(), "100", "g"), line(food.getId(), "50", "g")));
+
+        service.delete(owner, mine.getId());
+
+        // Recipe is hidden by the owner-scoped finder...
+        assertThatThrownBy(() -> service.get(owner, mine.getId()))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+        assertThat(service.list(owner).getRecipes()).isEmpty();
+        // ...and the children are soft-deleted too (no live recipe_ingredient rows remain for this recipe).
+        assertThat(recipeIngredientRepository.softDeleteByRecipeId(mine.getId())).isZero();
     }
 }

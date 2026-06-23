@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.recipe.service;
 
 import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
+import io.mrkuhne.mezo.api.dto.RecipeListResponse;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
@@ -8,6 +9,7 @@ import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
 import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
+import io.mrkuhne.mezo.feature.recipe.repository.RecipeIngredientRepository;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -28,6 +30,7 @@ public class RecipeService {
     private final RecipeRepository repository;
     private final PantryItemRepository pantryItemRepository;
     private final RecipeMapper mapper;
+    private final RecipeIngredientRepository recipeIngredientRepository;
 
     @Transactional
     public RecipeResponse create(UUID userId, RecipeRequest req) {
@@ -41,6 +44,37 @@ public class RecipeService {
     @Transactional(readOnly = true)
     public RecipeResponse get(UUID userId, UUID id) {
         return mapper.toResponse(requireOwned(userId, id));
+    }
+
+    @Transactional(readOnly = true)
+    public RecipeListResponse list(UUID userId) {
+        List<RecipeResponse> recipes = repository
+            .findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId).stream()
+            .map(mapper::toResponse)
+            .toList();
+        return RecipeListResponse.builder().recipes(recipes).build();
+    }
+
+    /**
+     * Full-replace of the aggregate: the editor always sends the COMPLETE recipe (all header fields +
+     * all lines), so we overwrite the header and rebuild the line collection (orphanRemoval deletes the
+     * lines no longer present). This is INTENTIONAL full-replace, NOT the lossy partial-input bug
+     * mezo-dh6 flags for Pantry. Snapshots are re-resolved against the live pantry on every save.
+     */
+    @Transactional
+    public void update(UUID userId, UUID id, RecipeRequest req) {
+        RecipeEntity recipe = requireOwned(userId, id);
+        mapper.applyScalars(recipe, req);
+        rebuildLines(userId, recipe, req.getIngredients()); // dirty-checked; flush on tx commit
+    }
+
+    @Transactional
+    public void delete(UUID userId, UUID id) {
+        RecipeEntity recipe = requireOwned(userId, id);
+        // @SQLDelete soft-deletes the recipe, but does NOT cascade to @OneToMany children on a
+        // soft-delete (UPDATE, not DELETE) — so bulk-soft-delete the lines explicitly.
+        recipeIngredientRepository.softDeleteByRecipeId(recipe.getId());
+        repository.delete(recipe); // @SQLDelete -> is_deleted = true
     }
 
     /**
