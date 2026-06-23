@@ -1442,7 +1442,7 @@ export interface components {
             name: string;
             brand: string;
             /** @enum {string} */
-            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual";
+            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon";
             category: string;
             per: number;
             unit: string;
@@ -1453,6 +1453,10 @@ export interface components {
             micros: components["schemas"]["PantryMicro"][];
             nova: number;
             stock?: components["schemas"]["PantryStock"] | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
             lastUsed: string;
             usedInRecipes: number;
         };
@@ -1479,8 +1483,9 @@ export interface components {
             name: string;
             brand?: string | null;
             /** @enum {string|null} */
-            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | null;
-            category?: string | null;
+            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | null;
+            /** @enum {string|null} */
+            category?: "vegetables" | "fruits" | "meat" | "fish" | "eggs" | "dairy" | "cheese" | "legumes" | "grains" | "pasta" | "bakery" | "nuts_seeds" | "oils_fats" | "condiments" | "snacks" | "beverages" | "supplement" | "other" | null;
             notes?: string | null;
             per?: number | null;
             unit?: string | null;
@@ -1488,6 +1493,10 @@ export interface components {
             proteinG?: number | null;
             carbsG?: number | null;
             fatG?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
             price?: number | null;
             priceUnit?: string | null;
             pkg?: string | null;

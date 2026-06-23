@@ -26,7 +26,7 @@ public interface PantryMapper {
         e.setName(r.getName());
         e.setBrand(r.getBrand());
         if (r.getSource() != null) e.setSource(r.getSource().getValue());
-        e.setCategory(r.getCategory());
+        e.setCategory(r.getCategory() == null ? null : r.getCategory().getValue());
         e.setNotes(r.getNotes());
         e.setServingAmount(r.getPer());
         e.setServingUnit(r.getUnit());
@@ -34,6 +34,10 @@ public interface PantryMapper {
         e.setProteinG(r.getProteinG());
         e.setCarbsG(r.getCarbsG());
         e.setFatG(r.getFatG());
+        e.setFiberG(r.getFiberG());
+        e.setSugarG(r.getSugarG());
+        e.setSaltG(r.getSaltG());
+        e.setSaturatedFatG(r.getSaturatedFatG());
         e.setPriceHuf(r.getPrice());
         e.setPriceUnit(r.getPriceUnit());
         e.setPackageLabel(r.getPkg());
@@ -68,6 +72,10 @@ public interface PantryMapper {
                 : e.getMicros().stream().map(m -> PantryMicro.builder().name(m.name()).pct(m.pct()).build()).toList())
             .nova(e.getNova() == null ? 1 : e.getNova().intValue())
             .stock(toStock(e))
+            .fiberG(e.getFiberG())
+            .sugarG(e.getSugarG())
+            .saltG(e.getSaltG())
+            .saturatedFatG(e.getSaturatedFatG())
             .lastUsed("—")          // derived from logging — out of scope this slice
             .usedInRecipes(0)        // derived from recipes — out of scope this slice
             .build();

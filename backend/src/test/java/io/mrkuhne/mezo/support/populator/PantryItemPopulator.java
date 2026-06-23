@@ -25,7 +25,7 @@ public class PantryItemPopulator {
         e.setName(name);
         e.setBrand("Bonafarm");
         e.setSource("kifli.hu");
-        e.setCategory("protein");
+        e.setCategory("meat"); // valid ck_pantry_item_category enum value
         e.setServingAmount(new BigDecimal("100"));
         e.setServingUnit("g");
         e.setKcal(new BigDecimal("110"));
@@ -48,7 +48,7 @@ public class PantryItemPopulator {
         e.setName(name);
         e.setBrand("MyProtein");
         e.setSource("myprotein.hu");
-        e.setCategory("muscle");
+        e.setCategory("supplement"); // valid ck_pantry_item_category enum value
         e.setDose("5g");
         e.setForm("por");
         e.setProtocol("Naponta egy adag");

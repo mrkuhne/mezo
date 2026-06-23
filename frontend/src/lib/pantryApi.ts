@@ -8,8 +8,10 @@ type PantryItemRequest = components['schemas']['PantryItemRequest']
 function toRequest(input: PantryItemInput): PantryItemRequest {
   return {
     kind: input.kind, name: input.name, brand: input.brand, source: input.source,
-    category: input.category, notes: input.notes, per: input.per, unit: input.unit,
+    // category is a contract enum; the input carries a trusted string (form/inputFromItem).
+    category: input.category as PantryItemRequest['category'], notes: input.notes, per: input.per, unit: input.unit,
     kcal: input.kcal, proteinG: input.proteinG, carbsG: input.carbsG, fatG: input.fatG,
+    fiberG: input.fiberG, sugarG: input.sugarG, saltG: input.saltG, saturatedFatG: input.saturatedFatG,
     price: input.price, priceUnit: input.priceUnit, pkg: input.pkg, micros: input.micros,
     nova: input.nova, stockQty: input.stockQty, stockUnit: input.stockUnit,
     stockExpires: input.stockExpires, dose: input.dose, form: input.form,

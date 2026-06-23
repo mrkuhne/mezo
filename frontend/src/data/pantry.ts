@@ -24,6 +24,23 @@ export const pantryCategoryMeta: Record<string, PantryCategoryMeta> = {
   supplement: { label: 'Supplement', color: '#5EEAD4' },
   'supplement-protein': { label: 'Whey/Protein', color: '#5EEAD4' },
   'supplement-stim': { label: 'Stimuláns', color: '#F472B6' },
+  // === Catalog category enum (imported catalog, mezo-zza) ===
+  vegetables: { label: 'Zöldség', color: '#34D399' },
+  fruits: { label: 'Gyümölcs', color: '#F472B6' },
+  meat: { label: 'Hús', color: '#F87171' },
+  fish: { label: 'Hal', color: '#38BDF8' },
+  eggs: { label: 'Tojás', color: '#FBBF24' },
+  cheese: { label: 'Sajt', color: '#FCD34D' },
+  legumes: { label: 'Hüvelyes', color: '#A3E635' },
+  grains: { label: 'Gabona', color: '#F59E0B' },
+  pasta: { label: 'Tészta', color: '#FB923C' },
+  bakery: { label: 'Pékáru', color: '#D9A066' },
+  nuts_seeds: { label: 'Mag / Olajos', color: '#C084FC' },
+  oils_fats: { label: 'Olaj / Zsír', color: '#A78BFA' },
+  condiments: { label: 'Fűszer / Szósz', color: '#FB7185' },
+  snacks: { label: 'Snack', color: '#F472B6' },
+  beverages: { label: 'Ital', color: '#60A5FA' },
+  other: { label: 'Egyéb', color: '#9CA3AF' },
 }
 
 // === Ingredients · scraped from grocery / supplement sites (pantry-data.js:20–157) ===

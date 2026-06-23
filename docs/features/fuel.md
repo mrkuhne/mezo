@@ -15,7 +15,7 @@ related: [_platform-data-layer, _platform-design-system, train, today]
 
 # Fuel (Nutrition) — Feature Documentation
 
-> The `/fuel` tab — meal pacing, supplement stack/protocol, pantry (Kamra), recipes, and a weekly fuel rhythm. **Status: 🔶 mostly mock** (Phase 1 FE done; Phase 2 backend **Slice C · Fuel — Pantry (Kamra) sub-slice now backend-backed**, the rest of Fuel still mock-only; AI scoring/replan/import is 🟣 Phase-3-planned, simulated client-side today). The Pantry inventory (`usePantry`/`usePantryActions`, mezo-9xu) is real dual-mode CRUD against `/api/pantry`; the scrape-feed (`imports`) and `suggestions` stay mock/deferred.
+> The `/fuel` tab — meal pacing, supplement stack/protocol, pantry (Kamra), recipes, and a weekly fuel rhythm. **Status: 🔶 mostly mock** (Phase 1 FE done; Phase 2 backend **Slice C · Fuel — Pantry (Kamra) sub-slice now backend-backed**, the rest of Fuel still mock-only; AI scoring/replan/import is 🟣 Phase-3-planned, simulated client-side today). The Pantry inventory (`usePantry`/`usePantryActions`, mezo-9xu) is real dual-mode CRUD against `/api/pantry`; the scrape-feed (`imports`) and `suggestions` stay mock/deferred. The owner's prod pantry is seeded with a **146-item imported catalog** (`seed/pantry-catalog.json` → idempotent `@Profile("demodata")` `PantryCatalogLoader`, mezo-zza); that slice also extended `pantry_item` with preserved nutrition facts (`fiber_g/sugar_g/salt_g/saturated_fat_g`), a **`category` enum** (18 values: vegetables…supplement/other) and additional **`source`** vendors (lidl/nutriversum/herbahaz/nutrifit/decathlon).
 
 ## 1. Summary
 
