@@ -44,6 +44,10 @@ function inputFromItem(item: PantryItem): PantryItemInput {
     base.carbsG = item.macros.c
     base.fatG = item.macros.f
   }
+  if (item.fiberG != null) base.fiberG = item.fiberG
+  if (item.sugarG != null) base.sugarG = item.sugarG
+  if (item.saltG != null) base.saltG = item.saltG
+  if (item.saturatedFatG != null) base.saturatedFatG = item.saturatedFatG
   if (item.dose) base.dose = item.dose
   if (item.form) base.form = item.form
   if (item.protocol) base.protocol = item.protocol
@@ -113,6 +117,16 @@ export function IngredientDetailSheet({ item, onClose }: { item: PantryItem; onC
               <StatCell label="Protein" val={item.macros.p + 'g'} sub="" color="var(--cat-physiology)" />
               <StatCell label="Carb" val={item.macros.c + 'g'} sub="" color="var(--warning)" />
               <StatCell label="Fat" val={item.macros.f + 'g'} sub="" color="var(--cat-preference)" />
+            </div>
+          )}
+
+          {/* Extended nutrition facts (preserved from the imported catalog) */}
+          {item.macros && (item.fiberG != null || item.sugarG != null || item.saltG != null || item.saturatedFatG != null) && (
+            <div className="card notch-4 row" style={{ padding: 12, justifyContent: 'space-between', marginBottom: 14 }}>
+              <StatCell label="Rost" val={item.fiberG != null ? item.fiberG + 'g' : '—'} sub="" color="var(--cat-response)" />
+              <StatCell label="Cukor" val={item.sugarG != null ? item.sugarG + 'g' : '—'} sub="" color="var(--warning)" />
+              <StatCell label="Telített zsír" val={item.saturatedFatG != null ? item.saturatedFatG + 'g' : '—'} sub="" color="var(--cat-preference)" />
+              <StatCell label="Só" val={item.saltG != null ? item.saltG + 'g' : '—'} sub="" color="var(--text-secondary)" />
             </div>
           )}
 

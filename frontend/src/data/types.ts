@@ -97,6 +97,7 @@ export interface Ingredient {
   id: string; name: string; brand: string; source: PantrySourceKey; category: string
   per: number; unit: string
   macros: { kcal: number; p: number; c: number; f: number }
+  fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
   price: number; priceUnit: string; pkg: string
   micros: { name: string; pct: number }[]
   nova: NovaGroup
@@ -129,6 +130,7 @@ export interface PantryItem {
   kind: PantryItemKind
   per?: number; unit?: string
   macros?: { kcal: number; p: number; c: number; f: number }
+  fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
   price?: number; priceUnit?: string; pkg?: string
   micros?: { name: string; pct: number }[]
   nova?: NovaGroup
@@ -148,6 +150,7 @@ export interface PantryItemInput {
   notes?: string
   per?: number; unit?: string
   kcal?: number; proteinG?: number; carbsG?: number; fatG?: number
+  fiberG?: number; sugarG?: number; saltG?: number; saturatedFatG?: number
   price?: number; priceUnit?: string; pkg?: string
   micros?: { name: string; pct: number }[]
   nova?: NovaGroup

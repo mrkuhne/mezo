@@ -3641,6 +3641,11 @@ components:
             - tesco.hu
             - auchan.hu
             - manual
+            - lidl
+            - nutriversum
+            - herbahaz
+            - nutrifit
+            - decathlon
         category:
           type: string
         per:
@@ -3666,6 +3671,18 @@ components:
         stock:
           allOf:
             - $ref: '#/components/schemas/PantryStock'
+          nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
           nullable: true
         lastUsed:
           type: string
@@ -3745,10 +3762,34 @@ components:
             - tesco.hu
             - auchan.hu
             - manual
+            - lidl
+            - nutriversum
+            - herbahaz
+            - nutrifit
+            - decathlon
           nullable: true
         category:
           type: string
           nullable: true
+          enum:
+            - vegetables
+            - fruits
+            - meat
+            - fish
+            - eggs
+            - dairy
+            - cheese
+            - legumes
+            - grains
+            - pasta
+            - bakery
+            - nuts_seeds
+            - oils_fats
+            - condiments
+            - snacks
+            - beverages
+            - supplement
+            - other
         notes:
           type: string
           nullable: true
@@ -3768,6 +3809,18 @@ components:
           type: number
           nullable: true
         fatG:
+          type: number
+          nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
           type: number
           nullable: true
         price:

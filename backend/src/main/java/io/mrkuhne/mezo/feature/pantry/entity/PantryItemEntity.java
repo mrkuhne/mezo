@@ -72,6 +72,18 @@ public class PantryItemEntity extends OwnedEntity {
     @Column(name = "fat_g")
     private BigDecimal fatG;
 
+    @Column(name = "fiber_g")
+    private BigDecimal fiberG;
+
+    @Column(name = "sugar_g")
+    private BigDecimal sugarG;
+
+    @Column(name = "salt_g")
+    private BigDecimal saltG;
+
+    @Column(name = "saturated_fat_g")
+    private BigDecimal saturatedFatG;
+
     @Column(name = "price_huf")
     private Integer priceHuf;
 

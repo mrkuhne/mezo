@@ -81,7 +81,7 @@ components:
         id: { type: string, format: uuid }
         name: { type: string }
         brand: { type: string }
-        source: { type: string, enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, manual] }
+        source: { type: string, enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, manual, lidl, nutriversum, herbahaz, nutrifit, decathlon] }
         category: { type: string }
         per: { type: number }
         unit: { type: string }
@@ -92,6 +92,11 @@ components:
         micros: { type: array, items: { $ref: '#/components/schemas/PantryMicro' } }
         nova: { type: integer, minimum: 1, maximum: 4 }
         stock: { allOf: [ { $ref: '#/components/schemas/PantryStock' } ], nullable: true }
+        # extended nutrition facts (per serving) — preserved from the imported catalog
+        fiberG: { type: number, nullable: true }
+        sugarG: { type: number, nullable: true }
+        saltG: { type: number, nullable: true }
+        saturatedFatG: { type: number, nullable: true }
         lastUsed: { type: string }
         usedInRecipes: { type: integer }
     SupplementStashResponse:
@@ -118,8 +123,8 @@ components:
         kind: { type: string, enum: [food, supplement, stim, med] }
         name: { type: string }
         brand: { type: string, nullable: true }
-        source: { type: string, enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, manual], nullable: true }
-        category: { type: string, nullable: true }
+        source: { type: string, enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, manual, lidl, nutriversum, herbahaz, nutrifit, decathlon], nullable: true }
+        category: { type: string, nullable: true, enum: [vegetables, fruits, meat, fish, eggs, dairy, cheese, legumes, grains, pasta, bakery, nuts_seeds, oils_fats, condiments, snacks, beverages, supplement, other] }
         notes: { type: string, nullable: true }
         per: { type: number, nullable: true }
         unit: { type: string, nullable: true }
@@ -127,6 +132,10 @@ components:
         proteinG: { type: number, nullable: true }
         carbsG: { type: number, nullable: true }
         fatG: { type: number, nullable: true }
+        fiberG: { type: number, nullable: true }
+        sugarG: { type: number, nullable: true }
+        saltG: { type: number, nullable: true }
+        saturatedFatG: { type: number, nullable: true }
         price: { type: integer, nullable: true }
         priceUnit: { type: string, nullable: true }
         pkg: { type: string, nullable: true }
