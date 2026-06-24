@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { render, renderHook, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -57,6 +57,13 @@ test('Szerkesztés opens the edit drawer prefilled', async () => {
   // The editor opens with the item name prefilled.
   expect(await screen.findByText('Tétel szerkesztése')).toBeInTheDocument()
   expect((screen.getByLabelText(/név/i) as HTMLInputElement).value).toMatch(/Csirkemell/)
+})
+
+test('opens LogMealSheet pre-filled when "+ Logolás" is tapped', async () => {
+  renderDetail('ing-csirkemell', newQc())
+  await screen.findByText(/Csirkemell/)
+  fireEvent.click(screen.getByRole('button', { name: /logolás/i }))
+  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
 
 test('Törlés deletes the food item (raw id) and navigates back to the list', async () => {

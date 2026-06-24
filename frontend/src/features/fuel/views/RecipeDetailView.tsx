@@ -19,6 +19,7 @@ import { SourceBadge } from '@/components/ui/SourceBadge'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
+import { LogMealSheet } from '@/features/fuel/LogMealSheet'
 
 const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--warning)', 4: 'var(--error)' }
 
@@ -60,6 +61,7 @@ export function RecipeDetailView() {
   const { recipes, categoryMeta, ingredients } = useRecipes()
   const { update, remove } = useRecipeActions()
   const [basis, setBasis] = useState<ServingBasis>('serving')
+  const [logOpen, setLogOpen] = useState(false)
 
   const recipe = recipes.find(r => r.id === id)
 
@@ -92,6 +94,7 @@ export function RecipeDetailView() {
   const del = () => { remove(recipe.id); navigate('/fuel/recipes') }
 
   return (
+    <>
     <div style={{ padding: '0 16px 24px' }}>
       {/* Top bar */}
       <div className="row" style={{ alignItems: 'center', justifyContent: 'space-between', padding: '6px 0 12px' }}>
@@ -196,8 +199,8 @@ export function RecipeDetailView() {
       </div>
 
       {/* Actions */}
-      <button className="cta-primary notch-4" disabled style={{ marginBottom: 9 }}>
-        <Icon name="plus" size={14} /> Mai étkezéshez · hamarosan
+      <button className="cta-primary notch-4" onClick={() => setLogOpen(true)} style={{ marginBottom: 9 }}>
+        <Icon name="plus" size={14} /> Mai étkezéshez
       </button>
       <div className="row gap-sm">
         <button className="cta-ghost notch-4" onClick={toggleStar} style={{ flex: 1 }}>
@@ -211,5 +214,7 @@ export function RecipeDetailView() {
         </button>
       </div>
     </div>
+    {logOpen && <LogMealSheet prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={() => setLogOpen(false)} />}
+    </>
   )
 }

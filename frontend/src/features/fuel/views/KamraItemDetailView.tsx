@@ -19,6 +19,7 @@ import { Icon } from '@/components/ui/Icon'
 import { SourceBadge } from '@/components/ui/SourceBadge'
 import { NovaDot } from '@/components/ui/NovaDot'
 import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
+import { LogMealSheet } from '@/features/fuel/LogMealSheet'
 
 // The full IngredientStock carries expires/lowExpiry; the bare { qty, unit }
 // stock shape does not. Narrow once instead of fighting `in`-narrowing in JSX.
@@ -88,6 +89,7 @@ export function KamraItemDetailView() {
   const { ingredients, stash, categoryMeta } = usePantry()
   const { deleteItem } = usePantryActions()
   const [editOpen, setEditOpen] = useState(false)
+  const [logOpen, setLogOpen] = useState(false)
 
   const item = buildKamraItems(ingredients, stash).find(it => it.id === id)
 
@@ -201,8 +203,7 @@ export function KamraItemDetailView() {
 
         {/* Actions */}
         <div style={{ marginTop: 16 }}>
-          {/* Logolás stays deferred — no logging slice yet. */}
-          <button className="cta-primary notch-4" disabled>
+          <button className="cta-primary notch-4" onClick={() => setLogOpen(true)}>
             <Icon name="plus" size={14} /> Logolás · mai étkezésbe
           </button>
         </div>
@@ -226,6 +227,7 @@ export function KamraItemDetailView() {
         editId={backendId}
         initial={inputFromItem(item)}
       />
+      {logOpen && <LogMealSheet prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
     </>
   )
 }
