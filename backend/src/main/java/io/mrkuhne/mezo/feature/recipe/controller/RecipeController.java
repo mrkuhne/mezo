@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.recipe.controller;
 
 import io.mrkuhne.mezo.api.controller.RecipeApi;
 import io.mrkuhne.mezo.api.dto.RecipeListResponse;
+import io.mrkuhne.mezo.api.dto.RecipeLogListResponse;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
@@ -41,5 +42,14 @@ public class RecipeController implements RecipeApi {
     @Override
     public void deleteRecipe(UUID id) {
         service.delete(currentUserId.get(), id);
+    }
+
+    // TODO(mezo-arb, recipe-logs service/controller task): the contract op GET /api/recipe/{id}/logs
+    // (operationId recipeLogs) was added to RecipeApi by the contract phase but has no implementation
+    // yet. This temporary stub only exists so the tree compiles for the meal-persistence (db) phase;
+    // the downstream recipe-logs task replaces it with real `service.recipeLogs(currentUserId.get(), id)`.
+    @Override
+    public RecipeLogListResponse recipeLogs(UUID id) {
+        throw new UnsupportedOperationException("recipeLogs not implemented yet (mezo-arb)");
     }
 }
