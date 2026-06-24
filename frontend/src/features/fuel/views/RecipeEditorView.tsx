@@ -14,7 +14,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput } from '@/data/types'
-import { useRecipes, useRecipeActions } from '@/data/hooks'
+import { useRecipes, useRecipeActions, usePantry } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
@@ -58,7 +58,11 @@ function Stepper({ value, unit, onChange, min = 0 }: { value: number; unit: stri
 export function RecipeEditorView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { recipes, ingredients, categoryMeta } = useRecipes()
+  const { recipes, categoryMeta } = useRecipes()
+  // Resolve picked-line display name + live macro contribution from the SAME
+  // dual-mode source the picker draws from (usePantry) — NOT useRecipes().ingredients,
+  // which is the static mock seed and would miss real-mode backend UUIDs (mezo-yew).
+  const { ingredients } = usePantry()
   const { create, update } = useRecipeActions()
 
   const editing = recipes.find(r => r.id === id)

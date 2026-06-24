@@ -27,12 +27,12 @@ afterEach(() => vi.unstubAllEnvs())
 describe('useRecipes (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('returns the preserved shape: recipes + ingredients + sources + categoryMeta', () => {
+  it('returns the preserved shape: recipes + sources + categoryMeta (no ingredients — see mezo-yew)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useRecipes(), { wrapper: Wrapper })
-    expect(Object.keys(result.current).sort()).toEqual(['categoryMeta', 'ingredients', 'recipes', 'sources'])
+    // `ingredients` intentionally dropped: live ingredient metadata comes from usePantry().
+    expect(Object.keys(result.current).sort()).toEqual(['categoryMeta', 'recipes', 'sources'])
     expect(result.current.recipes).toHaveLength(6) // the seed
-    expect(result.current.ingredients.length).toBeGreaterThan(0)
     expect(result.current.sources['kifli.hu'].label).toBeTruthy()
     expect(result.current.categoryMeta.protein.label).toBe('Fehérje')
     // seed recipes carry computed macros (rolled up from line contributions)
@@ -86,7 +86,6 @@ describe('useRecipes (real mode)', () => {
     // static presentation config is still present in real mode
     expect(result.current.sources).toBeDefined()
     expect(result.current.categoryMeta).toBeDefined()
-    expect(result.current.ingredients.length).toBeGreaterThan(0)
   })
 
   it('create POSTs and invalidates BOTH ["recipes"] and ["pantry"]', async () => {
