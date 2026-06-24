@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { recipeApi } from '@/lib/recipeApi'
 import { isMockMode } from '@/lib/mode'
+import { useDualQuery } from './useDualQuery'
 import { recipes as mockRecipes, ingredients, pantryCategoryMeta } from './pantry'
 import { pantrySources } from './pantrySources'
 import { enrichLine, computeRecipeMacros } from './recipeMacros'
@@ -10,17 +11,20 @@ import type { Recipe, RecipeInput, RecipeIngredientLine } from './types'
 
 const RECIPES_KEY = ['recipes'] as const
 const PANTRY_KEY = ['pantry'] as const
+// Real-mode unresolved fallback — empty, NEVER the 6 mock recipes (the "no static
+// fallback in real mode" invariant). Mock-cache mutators still seed from `mockRecipes`.
+const RECIPES_EMPTY: Recipe[] = []
 
 /** Public shape preserved verbatim: only `recipes` is dual-mode; the rest is static/pantry config. */
 export function useRecipes() {
-  const mock = isMockMode()
-  const { data: recipes = mockRecipes } = useQuery({
+  // mock: synchronous seed via initialData + staleTime Infinity (client-owned cache,
+  // useRecipeActions edits via setQueryData); real: backend list, empty until it resolves.
+  const { data: recipes } = useDualQuery({
     queryKey: RECIPES_KEY,
-    queryFn: mock ? async () => mockRecipes : recipeApi.list,
-    initialData: mock ? mockRecipes : undefined, // synchronous first render in mock (parity/tests)
-    // Mock mode is client-owned: useRecipeActions mutates the ['recipes'] cache via setQueryData,
-    // so the query must never background-refetch and clobber those edits back to the seed.
-    staleTime: mock ? Infinity : 0,
+    mockData: mockRecipes,
+    realFetch: recipeApi.list,
+    realEmpty: RECIPES_EMPTY,
+    realStaleTime: 0,
   })
   return {
     // NOTE: no `ingredients` here on purpose — the picker and both recipe views

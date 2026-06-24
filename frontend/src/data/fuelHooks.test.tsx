@@ -70,6 +70,19 @@ describe('useFuelDay (mock mode)', () => {
 describe('useFuelDay (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
+  it('returns a zero day (NOT the mock seed) before the query resolves', () => {
+    // "no static fallback in real mode": a cold real-mode load must never flash the
+    // seed's fabricated macros + 4 fake meals before the backend day lands.
+    server.use(http.get(`${API_BASE}/api/fuel/day/:date`, () => new Promise(() => {}))) // never resolves
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useFuelDay(), { wrapper: Wrapper })
+    expect(result.current.fuel.targets.kcal).toBe(0)
+    expect(result.current.fuel.consumed.kcal).toBe(0)
+    expect(result.current.fuel.meals).toEqual([])
+    // the static legs still compose in (they are not query-driven)
+    expect(result.current.fuel.pacing).toBeDefined()
+  })
+
   it('loads targets/consumed/meals from the API, keeps static pacing/micronutrients/supplements', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelDay(), { wrapper: Wrapper })

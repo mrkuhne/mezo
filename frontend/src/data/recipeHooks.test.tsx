@@ -74,6 +74,15 @@ describe('useRecipes (mock mode)', () => {
 describe('useRecipes (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
+  it('returns no recipes (NOT the mock seed) before the query resolves', () => {
+    // "no static fallback in real mode": a cold real-mode load must never flash the
+    // 6 Phase-1 mock recipes before the backend list lands.
+    server.use(http.get(`${API_BASE}/api/recipe`, () => new Promise(() => {}))) // never resolves
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useRecipes(), { wrapper: Wrapper })
+    expect(result.current.recipes).toEqual([])
+  })
+
   it('loads recipes from the API (MSW fixture)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useRecipes(), { wrapper: Wrapper })

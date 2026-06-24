@@ -2,8 +2,13 @@ import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { weightApi, type WeightTrendResponse } from '@/lib/biometricsApi'
 import { isMockMode } from '@/lib/mode'
+import { useDualQuery } from './useDualQuery'
 import { weightLog as initialWeightLog, weightTrends as mockWeightTrends } from './goals'
 import type { WeightEntry, WeightLogInput, WeightTrends } from './types'
+
+// Real-mode unresolved fallback — a ZERO trend, NEVER the mock seed (the "no static
+// fallback in real mode" invariant). Fields stay real numbers (consumers call .toFixed()).
+const ZERO_TRENDS: WeightTrends = { last7d: { avg: 0, weeklyRate: 0 }, last4w: { weeklyRate: 0 } }
 
 // G5 (mezo-g1u): fold the backend EWMA trend into the WeightTrends shape the views
 // read so the Súly cells + the goal hero "Tempó" become REAL in real mode. The
@@ -33,13 +38,15 @@ export function useWeight() {
   // weightTrends: mock mode -> the static literal (synchronous initialData so the
   // first render has it); real mode -> fetch the backend EWMA trend and fold its
   // weekly rates into the WeightTrends shape, falling back to the mock literal
-  // until the trend query resolves.
-  const { data: weightTrends = mockWeightTrends } = useQuery({
+  // until the trend query resolves — but in real mode the unresolved fallback is a ZERO
+  // trend, never the mock seed (the "no static fallback in real mode" invariant). Consumers
+  // only stringify these numbers (TrendCell.toFixed / GoalsView String), so zeros render as
+  // a benign "0.00 kg/hét" for the brief load window, never a fake pace.
+  const { data: weightTrends } = useDualQuery({
     queryKey: ['weightTrend'],
-    queryFn: mock
-      ? async () => mockWeightTrends
-      : async () => foldTrend(await weightApi.trend()),
-    initialData: mock ? mockWeightTrends : undefined,
+    mockData: mockWeightTrends,
+    realFetch: async () => foldTrend(await weightApi.trend()),
+    realEmpty: ZERO_TRENDS,
   })
   const mutation = useMutation({
     mutationFn: mock

@@ -12,6 +12,14 @@ test('renders the three macro cells and hydration', () => {
   render(<MacroHero targets={targets} consumed={consumed} />)
   for (const m of ['Protein', 'Carbs', 'Fat', 'Víz']) expect(screen.getByText(m)).toBeInTheDocument()
 })
+test('zero targets (real-mode cold load) render 0%, never NaN%', () => {
+  // useFuelDay returns a ZERO day before the backend resolves (no static fallback in
+  // real mode); a 0/0 percent must read as a benign 0%, not "NaN%".
+  const zero = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
+  const { container } = render(<MacroHero targets={zero} consumed={zero} />)
+  expect(container.textContent).not.toMatch(/NaN/)
+  expect(screen.getByText(/0% target/)).toBeInTheDocument()
+})
 test('renders the optional pacing eyebrow when provided, omits it otherwise', () => {
   const { unmount } = render(<MacroHero targets={targets} consumed={consumed} eyebrow="Pacing · 13:42" />)
   expect(screen.getByText('Pacing · 13:42')).toBeInTheDocument()

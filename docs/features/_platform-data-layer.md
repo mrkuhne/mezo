@@ -103,12 +103,13 @@ const { data: weightLog = [] } = useQuery({
   initialData: mock ? initialWeightLog : undefined,
 })
 // G5 (mezo-g1u): the trend is now REAL in real mode — a SECOND query on its own key.
-const { data: weightTrends = mockWeightTrends } = useQuery({
+// NOTE: uses the useDualQuery helper, NOT a `= mockWeightTrends` destructuring default —
+// see "The 'no static fallback in real mode' rule" + useDualQuery below (mezo-0xl).
+const { data: weightTrends } = useDualQuery({
   queryKey: ['weightTrend'],
-  queryFn: mock
-    ? async () => mockWeightTrends
-    : async () => foldTrend(await weightApi.trend()),   // GET /api/biometrics/weight/trend
-  initialData: mock ? mockWeightTrends : undefined,
+  mockData: mockWeightTrends,
+  realFetch: async () => foldTrend(await weightApi.trend()),   // GET /api/biometrics/weight/trend
+  realEmpty: { last7d: { avg: 0, weeklyRate: 0 }, last4w: { weeklyRate: 0 } },  // real load: zeros, never the seed
 })
 const mutation = useMutation({
   mutationFn: mock
@@ -127,6 +128,8 @@ const mutation = useMutation({
 
 `initialData` in mock mode means the query is never "pending" — the first render already has data, matching the old Phase-1 synchronous `useState`. This is what keeps parity screenshots and component tests green. In real mode `initialData` is `undefined`, so the query loads and the view must ghost-guard.
 
+**`useDualQuery` (`frontend/src/data/useDualQuery.ts`) — the sanctioned dual-mode read recipe (mezo-0xl).** It bakes the whole pattern AND the "no static fallback in real mode" rule into one helper: `useDualQuery({ queryKey, mockData, realFetch, realEmpty, realStaleTime? })` does `initialData: mock ? mockData : undefined`, `queryFn: mock ? () => mockData : realFetch`, `staleTime: mock ? Infinity : realStaleTime`, and returns `data: q.data ?? (mock ? mockData : realEmpty)`. The load-bearing detail is the `realEmpty` fallback: in real mode, while the query is unresolved, the hook returns `realEmpty` — **never the mock seed.** This closes the `const { data = mockSeed } = useQuery(...)` footgun (the destructuring default fires for the entire real-mode loading window, flashing the Phase-1 demo seed onto a live user's screen — the mezo-yew / mezo-0xl bug class). All four formerly-leaking dual-mode reads (`usePantry` → `realEmpty {ingredients:[],stash:[]}`, `useRecipes` → `[]`, `useFuelDay` → a zero `FuelDay`, `useWeight`'s `weightTrends` arm → a zero trend) now go through it; the already-safe hooks (`= []`, `?? null`, `isPending`) were left as-is. A guard test (`frontend/src/data/dualMode.guard.test.ts`) fails the build if the leaky `{ data = seed } = useQuery` default reappears in any `src/data` hook — so new dual-mode hooks must use `useDualQuery` (or an empty-literal default), not the seed-default. (Consumer corollary: `MacroHero` guards its `0/0` percent → `0%`, since the zero `FuelDay` realEmpty can momentarily divide by a zero target.)
+
 **The trend fold (G5, `mezo-g1u`)** is the one place a hook reconciles a *real partial backend* with a *static remainder*: `foldTrend` (`weightHooks.ts:15`) overwrites only the fields the backend `WeightTrendResponse` actually computes — `last7d.avg ← latestTrendKg`, `last7d.weeklyRate ← weeklyRateKgPerWeek`, `last4w.weeklyRate ← last4wRateKgPerWeek` — and spreads the static `mockWeightTrends` for the legs the engine doesn't yet produce (factors/insights/`sinceStart.projected*`). So the goal hero's "Tempó" + the Súly rate cells are real in real mode, while the qualitative copy stays mock until Fuel intake + the Insights pipeline land. The hook's return signature is unchanged — consumers read the same `WeightTrends` field names.
 
 **Three mutation flavors across the codebase:**
@@ -141,7 +144,7 @@ const mutation = useMutation({
 
 ### The "no static fallback in real mode → ghost-guard" rule
 
-Real mode must surface an empty backend as `null`/`[]`, never as Phase-1 demo data. Hooks branch the *return value*, not just the query (`data/trainHooks.ts:355`):
+Real mode must surface an empty backend as `null`/`[]`, never as Phase-1 demo data. **For a query whose mock seed is a static literal, use `useDualQuery` (above) — its `realEmpty` enforces this rule and the `dualMode.guard.test.ts` guard fails the build if a hook regresses to a `{ data = seed } = useQuery` default.** For hooks that derive/join their result, branch the *return value*, not just the query (`data/trainHooks.ts:355`):
 
 ```ts
 activeMeso: realActiveMeso ?? (mock ? activeMeso : null),   // mock falls back to static, real stays null
