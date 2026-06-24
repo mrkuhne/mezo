@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.RecipeListResponse;
 import io.mrkuhne.mezo.api.dto.RecipeLogListResponse;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.UUID;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecipeController implements RecipeApi {
 
     private final RecipeService service;
+    private final MealService mealService; // recipe-logs data lives in meal_item (cross-feature read)
     private final CurrentUserId currentUserId;
 
     @Override
@@ -44,12 +46,11 @@ public class RecipeController implements RecipeApi {
         service.delete(currentUserId.get(), id);
     }
 
-    // TODO(mezo-arb, recipe-logs service/controller task): the contract op GET /api/recipe/{id}/logs
-    // (operationId recipeLogs) was added to RecipeApi by the contract phase but has no implementation
-    // yet. This temporary stub only exists so the tree compiles for the meal-persistence (db) phase;
-    // the downstream recipe-logs task replaces it with real `service.recipeLogs(currentUserId.get(), id)`.
+    /** Cross-feature: the recipe's recent meal logs live in {@code meal_item}, served by MealService. */
     @Override
     public RecipeLogListResponse recipeLogs(UUID id) {
-        throw new UnsupportedOperationException("recipeLogs not implemented yet (mezo-arb)");
+        return RecipeLogListResponse.builder()
+            .recentLogs(mealService.recipeLogs(currentUserId.get(), id))
+            .build();
     }
 }
