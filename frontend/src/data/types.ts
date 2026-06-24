@@ -50,12 +50,38 @@ export interface MealBreakdown {
   improve: { text: string; impact: string }[]
   tools: { type: ToolType; name: string }[]
 }
+export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+export type MealItemSource = 'recipe' | 'pantry'
+/** A logged meal line — polymorphic ref (recipe|pantry) + frozen snapshot name + this line's
+ *  macro share. Mirrors RecipeIngredientLine: `refId` === recipeId (source 'recipe') or
+ *  pantryItemId (source 'pantry'). `contribution` is round(snapshot × amount/per), HALF_UP. */
+export interface MealItemLine {
+  source: MealItemSource
+  refId: string
+  amount: number
+  unit: string
+  name: string // server snapshot name (frozen at log time)
+  contribution: { kcal: number; p: number; c: number; f: number }
+  nova?: number // 1..4, carried for the future NOVA score dimension
+}
 export interface FuelMeal {
   id: string; slot: string; title: string; score: number | null
   kcal: number; p: number; c: number; f: number
-  items: string[]; tags: string[]
-  recipeId?: string; loggedAt?: string
+  mealItems: MealItemLine[] // structured lines (real once logged)
+  items: string[] // legacy free-text labels — kept for the mock score-sheet seeds
+  tags: string[]
+  loggedAt: string; mealDate: string // real instant + denormalized day key
+  recipeId?: string
   breakdown?: MealBreakdown
+}
+/** Editor line — maps to MealItemRequest (refId → recipeId|pantryItemId by source). */
+export interface MealInputItem { source: MealItemSource; refId: string; amount: number; unit: string }
+/** Capture-sheet save payload — maps to the MealRequest contract. */
+export interface MealInput {
+  slot: MealSlot
+  loggedAt?: string | null
+  title?: string | null
+  items: MealInputItem[]
 }
 export interface Micronutrient { name: string; pct: number; target: string }
 export interface FuelSummary { name: string; when: string; state: 'done' | 'pending'; dose: string }
