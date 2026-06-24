@@ -2,10 +2,13 @@ import type { ReactNode } from 'react'
 import { render, renderHook, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { RecipeEditorView } from './RecipeEditorView'
 import { useRecipes } from '@/data/hooks'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -92,6 +95,41 @@ test('edit mode: prefills the name and saves an update', async () => {
   await userEvent.type(nameInput, r.name + ' v2')
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   await waitFor(() => expect(result.current.recipes.find(x => x.id === r.id)?.name).toBe(r.name + ' v2'))
+})
+
+test('real mode: a picked pantry ingredient resolves to its name + macros, not the raw UUID', async () => {
+  // In real mode usePantry() (the picker source) hits the backend and returns real
+  // UUIDs, while useRecipes().ingredients is the static mock seed. The editor must
+  // resolve the picked line against the SAME source the picker drew from, else the
+  // row falls back to rendering the raw refId (UUID) and a zero contribution.
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const PANTRY_ID = '308af5e9-bfda-46ae-a516-a30c89b04f57'
+  server.use(
+    http.get(`${API_BASE}/api/pantry`, () =>
+      HttpResponse.json({
+        ingredients: [
+          {
+            id: PANTRY_ID, name: 'Csirkemell', brand: 'kifli', source: 'kifli.hu', category: 'protein',
+            per: 100, unit: 'g', macros: { kcal: 110, p: 23, c: 0, f: 1.5 },
+            price: 0, priceUnit: '', pkg: '', micros: [], nova: 1, stock: null,
+            lastUsed: '—', usedInRecipes: 0,
+          },
+        ],
+        stash: [],
+      }),
+    ),
+  )
+  const qc = newQc()
+  renderNew(qc)
+  await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Csirkemell hozzáadása/ }))
+  // picker closed once an ingredient is picked → only the editor row remains
+  expect(await screen.findByRole('button', { name: /Kamrából/ })).toBeInTheDocument()
+  // the row shows the RESOLVED name, never the backend UUID
+  expect(screen.getByText('Csirkemell')).toBeInTheDocument()
+  expect(screen.queryByText(PANTRY_ID)).not.toBeInTheDocument()
+  // …and a non-zero macro contribution (110 kcal at the default 100 g amount)
+  expect(screen.getAllByText('110').length).toBeGreaterThan(0)
 })
 
 test('a picked row contribution recomputes when the amount changes', async () => {

@@ -23,8 +23,11 @@ export function useRecipes() {
     staleTime: mock ? Infinity : 0,
   })
   return {
+    // NOTE: no `ingredients` here on purpose — the picker and both recipe views
+    // resolve live ingredient metadata from usePantry() (dual-mode). Exposing the
+    // static mock-seed `ingredients` from this hook was a real-mode footgun that
+    // rendered UUIDs + zero macros against backend pantry IDs (mezo-yew).
     recipes,
-    ingredients,                       // pantry source rows (for the picker)
     sources: pantrySources,            // static presentation config
     categoryMeta: pantryCategoryMeta,  // static presentation config
   }

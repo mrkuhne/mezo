@@ -12,7 +12,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Recipe, RecipeInput, PantryCategoryMeta } from '@/data/types'
-import { useRecipes, useRecipeActions } from '@/data/hooks'
+import { useRecipes, useRecipeActions, usePantry } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
 import { SourceBadge } from '@/components/ui/SourceBadge'
@@ -58,7 +58,12 @@ function MacroHeroCell({ value, label, accent }: { value: number; label: string;
 export function RecipeDetailView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { recipes, categoryMeta, ingredients } = useRecipes()
+  const { recipes, categoryMeta } = useRecipes()
+  // Source badge + left-border category color resolve against the dual-mode pantry
+  // (the picker's source) — NOT useRecipes().ingredients (static mock seed), which
+  // misses real-mode backend UUIDs and would drop the badge/border color (mezo-yew).
+  // Line name + macros come from the persisted snapshot (line.name/line.contribution).
+  const { ingredients } = usePantry()
   const { update, remove } = useRecipeActions()
   const [basis, setBasis] = useState<ServingBasis>('serving')
   const [logOpen, setLogOpen] = useState(false)
