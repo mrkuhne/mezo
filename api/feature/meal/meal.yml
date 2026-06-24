@@ -1,0 +1,127 @@
+openapi: 3.0.3
+info: { title: '', version: '' }
+tags:
+  - name: Meal
+    description: Meal logging (Étkezés-logolás) — owned meal + meal_item aggregate; polymorphic items reference a recipe or a pantry_item by id with a per-basis macro snapshot. GET /api/fuel/day/{date} aggregates the day for the Fuel screen.
+paths:
+  /api/fuel/day/{date}:
+    get:
+      tags: [Meal]
+      operationId: getFuelDay
+      summary: The owner's nutrition day — targets, consumed rollup, and the day's meals
+      parameters: [ { name: date, in: path, required: true, schema: { type: string, format: date } } ]
+      responses:
+        '200': { description: Fuel day, content: { application/json: { schema: { $ref: '#/components/schemas/FuelDayResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/meal:
+    post:
+      tags: [Meal]
+      operationId: createMeal
+      summary: Log a meal with its items (recipe/pantry snapshots captured server-side)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/MealRequest' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/MealResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/meal/{id}:
+    put:
+      tags: [Meal]
+      operationId: updateMeal
+      summary: Full-replace an owned meal aggregate (all fields + all items, snapshots re-captured)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/MealRequest' } } }
+      responses:
+        '204': { description: Updated }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    delete:
+      tags: [Meal]
+      operationId: deleteMeal
+      summary: Soft-delete an owned meal (and its items)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    Macros:
+      type: object
+      required: [kcal, p, c, f]
+      properties:
+        kcal: { type: number }
+        p: { type: number }
+        c: { type: number }
+        f: { type: number }
+    MacroSet:
+      type: object
+      required: [kcal, p, c, f, water]
+      properties:
+        kcal: { type: number }
+        p: { type: number }
+        c: { type: number }
+        f: { type: number }
+        water: { type: number }
+    MealScore:
+      type: object
+      properties:
+        value: { type: number, nullable: true }
+        breakdown: { type: object, nullable: true, additionalProperties: true }
+    MealItemRequest:
+      type: object
+      required: [source, amount, unit]
+      properties:
+        source: { type: string, pattern: '^(recipe|pantry)$' }
+        recipeId: { type: string, format: uuid, nullable: true }
+        pantryItemId: { type: string, format: uuid, nullable: true }
+        amount: { type: number, exclusiveMinimum: 0 }
+        unit: { type: string, minLength: 1 }
+    MealItemResponse:
+      type: object
+      required: [source, amount, unit, lineOrder, name, contribution]
+      properties:
+        source: { type: string }
+        recipeId: { type: string, format: uuid, nullable: true }
+        pantryItemId: { type: string, format: uuid, nullable: true }
+        amount: { type: number }
+        unit: { type: string }
+        lineOrder: { type: integer }
+        name: { type: string }
+        nova: { type: integer, nullable: true }
+        contribution: { $ref: '#/components/schemas/Macros' }
+    MealRequest:
+      type: object
+      required: [slot, items]
+      properties:
+        slot: { type: string, pattern: '^(breakfast|lunch|dinner|snack)$' }
+        loggedAt: { type: string, format: date-time, nullable: true }
+        title: { type: string, nullable: true }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/MealItemRequest' }
+    MealResponse:
+      type: object
+      required: [id, slot, loggedAt, mealDate, macros, score, items]
+      properties:
+        id: { type: string, format: uuid }
+        slot: { type: string }
+        loggedAt: { type: string, format: date-time }
+        mealDate: { type: string, format: date }
+        title: { type: string, nullable: true }
+        macros: { $ref: '#/components/schemas/Macros' }
+        score: { $ref: '#/components/schemas/MealScore' }
+        items: { type: array, items: { $ref: '#/components/schemas/MealItemResponse' } }
+    FuelDayResponse:
+      type: object
+      required: [date, targets, consumed, meals]
+      properties:
+        date: { type: string, format: date }
+        targets: { $ref: '#/components/schemas/MacroSet' }
+        consumed: { $ref: '#/components/schemas/MacroSet' }
+        meals: { type: array, items: { $ref: '#/components/schemas/MealResponse' } }
