@@ -23,3 +23,16 @@ test('useStack returns 10 stash items, useProtocol returns v3', () => {
   expect(renderHook(() => useStack()).result.current.stash).toHaveLength(10)
   expect(renderHook(() => useProtocol()).result.current.protocol.version).toBe(3)
 })
+
+test('every seed meal carries structured mealItems + mealDate and a null pending score', async () => {
+  const { fuelDay } = await import('./fuel')
+  for (const m of fuelDay.meals) {
+    expect(Array.isArray(m.mealItems)).toBe(true)
+    expect(m.mealItems.length).toBeGreaterThan(0)
+    expect(m.mealItems[0]).toHaveProperty('source')
+    expect(m.mealItems[0]).toHaveProperty('contribution')
+    expect(typeof m.mealDate).toBe('string')
+    expect(typeof m.loggedAt).toBe('string')
+    expect(m.score).toBeNull()
+  }
+})

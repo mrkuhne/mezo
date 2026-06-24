@@ -548,6 +548,12 @@ const recipeLinks: { mealId: string; recipeId: string }[] = [
   { mealId: 'm3', recipeId: 'rec-4' }, // Whey + banán snack
 ]
 
+// Historical per-log scores. The live fuelDay.meals[].score now ships NULL behind the
+// pending-sparkle placeholder (meal scoring is Phase-3), but a recipe's PAST recentLogs
+// retain the score they earned when logged — these feed RecipeLogsList. Decoupled from the
+// (nulled) display score so nulling the day view does not erase the recipe log history.
+const recentLogScore: Record<string, number> = { m1: 0.92, m2: 0.88, m3: 0.84 }
+
 // pantry-data.js:310 — loggedAt = "ma · " + (meal.slot.split("· ")[1] || meal.slot)
 function deriveLoggedAt(slot: string): string {
   return 'ma · ' + (slot.split('· ')[1] || slot)
@@ -566,7 +572,7 @@ const linkedMeals: LinkedMeal[] = recipeLinks
 export const recipes: Recipe[] = recipesBase.map(r => {
   // pantry-data.js:316–324 — mirror logged meals (with breakdowns) onto the recipe.
   const recentLogs: RecipeLog[] = linkedMeals.flatMap(lm => {
-    const { score } = lm.meal
+    const score = recentLogScore[lm.meal.id]
     if (lm.recipeId !== r.id || score == null) return []
     return [{
       mealId: lm.meal.id,
