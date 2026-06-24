@@ -1,8 +1,15 @@
 import { renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { useFuelDay, useFuelTimeline, useStack, useProtocol } from './hooks'
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// useFuelDay became a composed dual-mode TanStack query (mezo-arb). Pin mock mode so it returns
+// the static Phase-1 seed synchronously (initialData) and wrap in QueryWrapper for the client.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 test('useFuelDay returns macros, 4 meals, micronutrients', () => {
-  const { result } = renderHook(() => useFuelDay())
+  const { result } = renderHook(() => useFuelDay(), { wrapper: QueryWrapper })
   expect(result.current.fuel.targets.kcal).toBe(3100)
   expect(result.current.fuel.meals).toHaveLength(4)
   expect(result.current.fuel.meals[0].breakdown?.dimensions).toHaveLength(4)
