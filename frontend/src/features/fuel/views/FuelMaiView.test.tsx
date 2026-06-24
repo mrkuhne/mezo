@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -34,4 +34,9 @@ test('Replan button opens the replan sheet', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Replan' }))
   expect(await screen.findByText(/Replan · Mezo/)).toBeInTheDocument()
+})
+test('opens the LogMealSheet from the ＋ Log entry', async () => {
+  renderView()
+  fireEvent.click(screen.getByRole('button', { name: /log/i }))
+  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })

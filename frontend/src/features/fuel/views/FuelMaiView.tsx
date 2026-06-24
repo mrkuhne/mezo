@@ -3,7 +3,6 @@ import type { FuelMeal } from '@/data/types'
 import { useFuelDay, useFuelTimeline, useProtocol, useTodayScenario, useToday } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
-import { Chip } from '@/components/ui/Chip'
 import { Icon } from '@/components/ui/Icon'
 import { StatCell } from '@/components/ui/StatCell'
 import { RetaPhaseBar } from '@/components/ui/RetaPhaseBar'
@@ -13,6 +12,7 @@ import { FuelTimeline } from '@/features/fuel/components/FuelTimeline'
 import { PacingCard } from '@/features/fuel/components/PacingCard'
 import { MealScoreSheet } from '@/features/fuel/MealScoreSheet'
 import { ReplanSheet } from '@/features/fuel/ReplanSheet'
+import { LogMealSheet } from '@/features/fuel/LogMealSheet'
 
 export function FuelMaiView() {
   const { fuel } = useFuelDay()
@@ -23,6 +23,7 @@ export function FuelMaiView() {
 
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
   const [replanOpen, setReplanOpen] = useState(false)
+  const [logOpen, setLogOpen] = useState(false)
 
   const doneCount = plan.slots.filter(s => s.state === 'done').length
 
@@ -34,9 +35,15 @@ export function FuelMaiView() {
           <Eyebrow brand>Fuel · Mai</Eyebrow>
           <PageTitle>Pacing</PageTitle>
         </div>
-        <Chip>
-          <Icon name="search" size={12} />
-        </Chip>
+        <button
+          type="button"
+          onClick={() => setLogOpen(true)}
+          className="chip brand"
+          aria-label="Logolás"
+          style={{ fontSize: 10, padding: '6px 10px' }}
+        >
+          <Icon name="plus" size={12} /> Log
+        </button>
       </div>
 
       {/* Reta phase context */}
@@ -143,6 +150,7 @@ export function FuelMaiView() {
 
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}
+      {logOpen && <LogMealSheet onClose={() => setLogOpen(false)} />}
     </>
   )
 }
