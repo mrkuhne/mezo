@@ -77,12 +77,19 @@ export function LogMealSheet({ prefill, onClose }: { prefill?: LogMealPrefill; o
     if (l.source === 'recipe') {
       const r = resolveRecipe(l.refId)
       const s = Math.max(1, r?.servings ?? 1)
-      const per = 1
-      const perBasis = { kcal: round((r?.macros.kcal ?? 0) / s), p: round((r?.macros.p ?? 0) / s), c: round((r?.macros.c ?? 0) / s), f: round((r?.macros.f ?? 0) / s) }
-      const factor = l.amount / per
+      const factor = l.amount
+      // Single-round (round only once, at the end) — IDENTICAL to the data layer's
+      // buildLine recipe arm: round((macro / servings) * amount). Rounding the
+      // per-serving value first would make the live total drift 1-3 kcal off the meal
+      // that actually gets persisted.
       return {
         name: r?.name ?? 'Recept', tag: 'recept' as const, step: 1, min: 1,
-        contribution: { kcal: round(perBasis.kcal * factor), p: round(perBasis.p * factor), c: round(perBasis.c * factor), f: round(perBasis.f * factor) },
+        contribution: {
+          kcal: round((r?.macros.kcal ?? 0) / s * factor),
+          p: round((r?.macros.p ?? 0) / s * factor),
+          c: round((r?.macros.c ?? 0) / s * factor),
+          f: round((r?.macros.f ?? 0) / s * factor),
+        },
       }
     }
     const ing = resolveIng(l.refId)
