@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.RecipeLogResponse;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
@@ -83,6 +84,38 @@ public class MealService {
     @Transactional(readOnly = true)
     public FuelDayResponse getDay(UUID userId, LocalDate date) {
         return fuelDayService.getDay(userId, date);
+    }
+
+    /**
+     * Cross-feature read for {@code GET /api/recipe/{id}/logs}: the recipe's logged meal-items,
+     * newest meal first, each projected to its per-line contribution (snapshot × amount/snapshotPer,
+     * whole-number HALF_UP — the same formula as the meal/recipe mapper).
+     */
+    @Transactional(readOnly = true)
+    public List<RecipeLogResponse> recipeLogs(UUID userId, UUID recipeId) {
+        return mealItemRepository
+            .findByRecipeIdAndCreatedByAndDeletedFalseOrderByMeal_LoggedAtDesc(recipeId, userId).stream()
+            .map(item -> {
+                BigDecimal per = item.getSnapshotPer() == null || item.getSnapshotPer().signum() == 0
+                    ? BigDecimal.ONE : item.getSnapshotPer();
+                BigDecimal factor = item.getAmount().divide(per, 6, RoundingMode.HALF_UP);
+                return RecipeLogResponse.builder()
+                    .mealId(item.getMeal().getId())
+                    .slot(item.getMeal().getSlot())
+                    .loggedAt(item.getMeal().getLoggedAt().atOffset(ZoneOffset.UTC))
+                    .kcal(scaled(item.getSnapshotKcal(), factor))
+                    .p(scaled(item.getSnapshotProteinG(), factor))
+                    .c(scaled(item.getSnapshotCarbsG(), factor))
+                    .f(scaled(item.getSnapshotFatG(), factor))
+                    .build();
+            })
+            .toList();
+    }
+
+    /** Per-line contribution scalar: snapshot × factor, whole-number HALF_UP (cf. RecipeMapper). */
+    private static BigDecimal scaled(BigDecimal base, BigDecimal factor) {
+        BigDecimal v = base == null ? BigDecimal.ZERO : base;
+        return v.multiply(factor).setScale(0, RoundingMode.HALF_UP);
     }
 
     /**
