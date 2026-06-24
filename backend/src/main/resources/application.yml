@@ -62,6 +62,14 @@ mezo:
       volleyball-comp-kcal: 1150
     thermogenesis-haircut-kcal-per-day: 0   # default off; optional band 100–200
     bootstrap-uncertainty-kcal: 300
+  nutrition:
+    # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
+    # Binds onto NutritionTargetsProperties; replaces the hardcoded mock 2500/3100 floor.
+    kcal: 3100
+    p: 220
+    c: 380
+    f: 95
+    water: 4000
 management:
   endpoints:
     web:
