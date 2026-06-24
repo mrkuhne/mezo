@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.TestcontainersConfiguration;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
@@ -35,7 +36,7 @@ import org.springframework.context.annotation.Import;
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, PantryItemPopulator.class,
-    RecipePopulator.class, ResetDatabase.class})
+    RecipePopulator.class, MealPopulator.class, ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
 
     @Autowired

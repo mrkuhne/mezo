@@ -1,11 +1,18 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { MealScoreSheet } from './MealScoreSheet'
 import { useFuelDay } from '@/data/hooks'
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// useFuelDay is now composed dual-mode (mezo-arb); pin mock mode so the seed (with its
+// breakdown) is returned synchronously, and wrap renderHook in a QueryClientProvider.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 function renderSheet(onClose = () => {}) {
-  const { result } = renderHook(() => useFuelDay())
+  const { result } = renderHook(() => useFuelDay(), { wrapper: QueryWrapper })
   const meal = result.current.fuel.meals.find(m => m.breakdown)!
   render(<MealScoreSheet meal={meal} onClose={onClose} />)
   return meal

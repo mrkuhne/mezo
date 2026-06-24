@@ -2,10 +2,15 @@ package io.mrkuhne.mezo.feature.recipe;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.MealItemRequest;
+import io.mrkuhne.mezo.api.dto.MealRequest;
+import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
 import io.mrkuhne.mezo.api.dto.RecipeListResponse;
+import io.mrkuhne.mezo.api.dto.RecipeLogListResponse;
+import io.mrkuhne.mezo.api.dto.RecipeLogResponse;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -205,5 +210,40 @@ class RecipeApiIT extends ApiIntegrationTest {
         HttpHeaders auth = ownerAuthHeaders();
 
         deleteAndExpect("/api/recipe/" + UUID.randomUUID(), auth, HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void testRecipeLogs_shouldReturnLoggedMeal_whenMealReferencesRecipe() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // 2-serving recipe (200 g of a per-100g food -> whole rollup kcal 220, per-serving 110)
+        UUID food = createFood(auth, "Csirkemell", "110", "23", "0", "1.5");
+        RecipeResponse recipe =
+            postForBody("/api/recipe", recipeReq(food), auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        // Log a breakfast meal of 1 serving of the recipe (recipe-arm)
+        MealItemRequest item = new MealItemRequest();
+        item.setSource("recipe");
+        item.setRecipeId(recipe.getId());
+        item.setAmount(new BigDecimal("1"));
+        item.setUnit("adag");
+        MealRequest meal = new MealRequest();
+        meal.setSlot("breakfast");
+        meal.setTitle("Reggeli");
+        meal.setItems(List.of(item));
+        MealResponse logged =
+            postForBody("/api/meal", meal, auth, HttpStatus.CREATED, MealResponse.class);
+
+        RecipeLogListResponse logs = getForBody(
+            "/api/recipe/" + recipe.getId() + "/logs", auth, HttpStatus.OK, RecipeLogListResponse.class);
+
+        assertThat(logs.getRecentLogs())
+            .extracting(RecipeLogResponse::getMealId)
+            .contains(logged.getId());
+        RecipeLogResponse log = logs.getRecentLogs().stream()
+            .filter(l -> l.getMealId().equals(logged.getId()))
+            .findFirst().orElseThrow();
+        assertThat(log.getSlot()).isEqualTo("breakfast");
+        // per-serving of the recipe x factor 1 -> kcal 110
+        assertThat(log.getKcal()).isEqualByComparingTo("110");
     }
 }

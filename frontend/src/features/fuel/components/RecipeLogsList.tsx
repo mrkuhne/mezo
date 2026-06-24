@@ -4,6 +4,7 @@
 // delta vs baseline, macros. Empty-state copy when none.
 // ============================================================
 import type { RecipeLog } from '@/data/types'
+import { Icon } from '@/components/ui/Icon'
 
 export function RecipeLogsList({ logs, baselineScore: _baselineScore }: { logs?: RecipeLog[]; baselineScore: number }) {
   if (!logs || logs.length === 0) {
@@ -26,16 +27,24 @@ export function RecipeLogsList({ logs, baselineScore: _baselineScore }: { logs?:
               <span className="label-mono text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>{l.loggedAt}</span>
             </div>
             <div className="col" style={{ alignItems: 'flex-end' }}>
-              <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, color: 'var(--brand-glow)', lineHeight: 1, fontWeight: 600 }}>
-                {(l.score * 100).toFixed(0)}
-              </span>
-              <span className="label-mono" style={{
-                fontSize: 9,
-                color: l.delta > 0 ? 'var(--brand-glow)' : l.delta < 0 ? 'var(--warning)' : 'var(--text-tertiary)',
-                marginTop: 2,
-              }}>
-                {l.delta > 0 ? '+' : ''}{(l.delta * 100).toFixed(0)} vs baseline
-              </span>
+              {l.score ? (
+                <>
+                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, color: 'var(--brand-glow)', lineHeight: 1, fontWeight: 600 }}>
+                    {(l.score * 100).toFixed(0)}
+                  </span>
+                  <span className="label-mono" style={{
+                    fontSize: 9,
+                    color: l.delta > 0 ? 'var(--brand-glow)' : l.delta < 0 ? 'var(--warning)' : 'var(--text-tertiary)',
+                    marginTop: 2,
+                  }}>
+                    {l.delta > 0 ? '+' : ''}{(l.delta * 100).toFixed(0)} vs baseline
+                  </span>
+                </>
+              ) : (
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <Icon name="sparkle" size={12} /> pending
+                </span>
+              )}
             </div>
           </div>
           <div className="row gap-md mt-sm" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>

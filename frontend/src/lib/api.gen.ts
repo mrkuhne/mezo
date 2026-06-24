@@ -695,6 +695,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipe/{id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent meal logs that included this owned recipe (for the recipe detail RecipeLogsList) */
+        get: operations["recipeLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/day/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The owner's nutrition day — targets, consumed rollup, and the day's meals */
+        get: operations["getFuelDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log a meal with its items (recipe/pantry snapshots captured server-side) */
+        post: operations["createMeal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Full-replace an owned meal aggregate (all fields + all items, snapshots re-captured) */
+        put: operations["updateMeal"];
+        post?: never;
+        /** Soft-delete an owned meal (and its items) */
+        delete: operations["deleteMeal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1628,6 +1697,88 @@ export interface components {
         };
         RecipeListResponse: {
             recipes: components["schemas"]["RecipeResponse"][];
+        };
+        RecipeLogResponse: {
+            /** Format: uuid */
+            mealId: string;
+            slot: string;
+            /** Format: date-time */
+            loggedAt: string;
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+        };
+        RecipeLogListResponse: {
+            recentLogs: components["schemas"]["RecipeLogResponse"][];
+        };
+        Macros: {
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+        };
+        MacroSet: {
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+            water: number;
+        };
+        MealScore: {
+            value?: number | null;
+            breakdown?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        MealItemRequest: {
+            source: string;
+            /** Format: uuid */
+            recipeId?: string | null;
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            amount: number;
+            unit: string;
+        };
+        MealItemResponse: {
+            source: string;
+            /** Format: uuid */
+            recipeId?: string | null;
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            amount: number;
+            unit: string;
+            lineOrder: number;
+            name: string;
+            nova?: number | null;
+            contribution: components["schemas"]["Macros"];
+        };
+        MealRequest: {
+            slot: string;
+            /** Format: date-time */
+            loggedAt?: string | null;
+            title?: string | null;
+            items: components["schemas"]["MealItemRequest"][];
+        };
+        MealResponse: {
+            /** Format: uuid */
+            id: string;
+            slot: string;
+            /** Format: date-time */
+            loggedAt: string;
+            /** Format: date */
+            mealDate: string;
+            title?: string | null;
+            macros: components["schemas"]["Macros"];
+            score: components["schemas"]["MealScore"];
+            items: components["schemas"]["MealItemResponse"][];
+        };
+        FuelDayResponse: {
+            /** Format: date */
+            date: string;
+            targets: components["schemas"]["MacroSet"];
+            consumed: components["schemas"]["MacroSet"];
+            meals: components["schemas"]["MealResponse"][];
         };
     };
     responses: never;
@@ -3913,6 +4064,208 @@ export interface operations {
         };
     };
     deleteRecipe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    recipeLogs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent logs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeLogListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFuelDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fuel day */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelDayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MealRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MealRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteMeal: {
         parameters: {
             query?: never;
             header?: never;

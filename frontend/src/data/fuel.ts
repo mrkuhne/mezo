@@ -1,4 +1,7 @@
-import type { FuelDay, FuelPlanToday, SupplementStashItem, Protocol, FuelMeal, FuelSlot } from './types'
+import type { FuelDay, FuelPlanToday, SupplementStashItem, Protocol, FuelMeal, FuelSlot, MealItemLine } from './types'
+import { localDateString } from '@/lib/dates'
+
+const TODAY = localDateString()
 
 export const fuelDay: FuelDay = {
   targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
@@ -8,11 +11,17 @@ export const fuelDay: FuelDay = {
       id: 'm1',
       slot: 'Reggeli · 09:15 · post-workout',
       title: 'Túrós zabkása · áfonyával',
-      score: 0.92,
+      score: null,
       kcal: 580,
       p: 42,
       c: 78,
       f: 12,
+      loggedAt: `${TODAY}T09:15:00`,
+      mealDate: TODAY,
+      mealItems: [
+        { source: 'recipe', refId: 'rec-1', amount: 1, unit: 'adag', name: 'Túrós zabkása · áfonyával',
+          contribution: { kcal: 580, p: 42, c: 78, f: 12 }, nova: 3 } satisfies MealItemLine,
+      ],
       items: ['Zabpehely 70g', 'Túró 200g', 'Áfonya 80g', 'Méz 12g', 'Mandula 15g'],
       tags: ['pre-volleyball', 'kifli.hu'],
       breakdown: {
@@ -106,11 +115,17 @@ export const fuelDay: FuelDay = {
       id: 'm2',
       slot: 'Ebéd · 13:00',
       title: 'Csirke + édesburgonya + spenót',
-      score: 0.88,
+      score: null,
       kcal: 720,
       p: 58,
       c: 74,
       f: 18,
+      loggedAt: `${TODAY}T13:00:00`,
+      mealDate: TODAY,
+      mealItems: [
+        { source: 'recipe', refId: 'rec-2', amount: 1, unit: 'adag', name: 'Csirke + édesburgonya + spenót',
+          contribution: { kcal: 720, p: 58, c: 74, f: 18 }, nova: 1 } satisfies MealItemLine,
+      ],
       items: ['Csirkemell 200g', 'Édesburgonya 250g', 'Spenót 100g', 'Olívaolaj 8g'],
       tags: ['pre-workout'],
       breakdown: {
@@ -204,11 +219,17 @@ export const fuelDay: FuelDay = {
       id: 'm3',
       slot: 'Snack · 16:00',
       title: 'Whey + banán',
-      score: 0.84,
+      score: null,
       kcal: 340,
       p: 42,
       c: 36,
       f: 4,
+      loggedAt: `${TODAY}T16:00:00`,
+      mealDate: TODAY,
+      mealItems: [
+        { source: 'recipe', refId: 'rec-4', amount: 1, unit: 'adag', name: 'Whey + banán',
+          contribution: { kcal: 340, p: 42, c: 36, f: 4 }, nova: 4 } satisfies MealItemLine,
+      ],
       items: ['MyProtein Impact Whey 40g', 'Banán 1db', 'Mandulavaj 15g'],
       tags: ['myprotein.hu'],
       breakdown: {
@@ -307,6 +328,12 @@ export const fuelDay: FuelDay = {
       p: 48,
       c: 72,
       f: 28,
+      loggedAt: `${TODAY}T19:30:00`,
+      mealDate: TODAY,
+      mealItems: [
+        { source: 'recipe', refId: 'rec-5', amount: 1, unit: 'adag', name: 'Lazac + barna rizs + brokkoli',
+          contribution: { kcal: 760, p: 48, c: 72, f: 28 }, nova: 1 } satisfies MealItemLine,
+      ],
       items: ['Lazac filé 180g', 'Barna rizs 80g', 'Brokkoli 200g'],
       tags: ['post-volleyball', 'tervezett'],
     },

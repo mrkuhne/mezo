@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { render, renderHook, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -88,6 +88,15 @@ test('Törlés removes the recipe and navigates back to the library', async () =
   await userEvent.click(screen.getByRole('button', { name: /Törlés/ }))
   await waitFor(() => expect(result.current.recipes.some(x => x.id === r.id)).toBe(false))
   expect(screen.getByTestId('location').textContent).toBe('/fuel/recipes')
+})
+
+test('opens LogMealSheet pre-filled when "+ Mai étkezéshez" is tapped', async () => {
+  const qc = newQc()
+  const r = firstId(qc)
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  fireEvent.click(screen.getByRole('button', { name: /mai étkezéshez/i }))
+  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
 
 test('Csillag toggles the starred flag', async () => {

@@ -1,18 +1,23 @@
+import { useState } from 'react'
 import { Icon } from '@/components/ui/Icon'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Chip } from '@/components/ui/Chip'
 import { KIND_META } from '@/data/kindMeta'
 import { useFuelPreview } from '@/data/hooks'
+import { LogMealSheet } from '@/features/fuel/LogMealSheet'
 
 export function FuelTimelinePreview() {
   const { visible, nextStack } = useFuelPreview()
+  const [logOpen, setLogOpen] = useState(false)
 
   return (
     <div style={{ padding: '8px 24px 16px' }}>
       <div className="col gap-sm">
-        <div className="row" style={{ justifyContent: 'space-between' }}>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <Eyebrow>Mai fuel · timeline</Eyebrow>
-          <Eyebrow brand>Fuel → Terv</Eyebrow>
+          <button type="button" onClick={() => setLogOpen(true)} className="chip brand" aria-label="Logolás" style={{ fontSize: 9, padding: '4px 8px' }}>
+            <Icon name="plus" size={11} /> Log
+          </button>
         </div>
         <div className="card notch-12" style={{ padding: 14, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-glow)' }} />
@@ -56,6 +61,7 @@ export function FuelTimelinePreview() {
           )}
         </div>
       </div>
+      {logOpen && <LogMealSheet onClose={() => setLogOpen(false)} />}
     </div>
   )
 }

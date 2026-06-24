@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Logolás · meal-log sheet + picker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+  button, input { font:inherit; color:inherit; background:none; border:none; appearance:none; }
+  button { cursor:pointer; }
+  :root {
+    --brand-primary:#14B8A6; --brand-glow:#5EEAD4;
+    --canvas:#0A0F14; --surface-1:#121A22; --surface-2:#1A242E;
+    --border-subtle:rgba(255,255,255,0.06); --border-strong:rgba(255,255,255,0.12); --border-brand:rgba(20,184,166,.35);
+    --text-primary:#ECECF1; --text-secondary:#9CA3AF; --text-tertiary:#6B7280; --text-quaternary:#4B5563; --text-inverse:#0A0F14;
+    --success:#34D399; --warning:#F59E0B; --error:#F43F5E;
+    --cat-dairy:#FBBF24; --cat-veg:#34D399; --cat-oil:#A3E635; --cat-fish:#60A5FA;
+    --ff-display:"Antonio",sans-serif; --ff-body:"Inter",system-ui,sans-serif; --ff-mono:"JetBrains Mono",monospace;
+  }
+  html, body { background:#050709; color:var(--text-primary); font-family:var(--ff-body); line-height:1.5; min-height:100vh; padding:40px 28px 80px; background-image:radial-gradient(1200px 600px at 50% -200px,#0c1620 0%,#050709 70%); }
+  .pagehead { max-width:1000px; margin:0 auto 26px; text-align:center; }
+  .pagehead .eyebrow { font-family:var(--ff-mono); font-size:11px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--brand-glow); margin-bottom:12px; }
+  .pagehead h1 { font-family:var(--ff-display); font-size:36px; font-weight:600; text-transform:uppercase; line-height:1; margin-bottom:12px; }
+  .pagehead p { font-size:14px; color:var(--text-secondary); line-height:1.6; max-width:740px; margin:0 auto; }
+  .pagehead p strong { color:var(--text-primary); font-weight:500; }
+
+  .stage { display:flex; gap:40px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+  .frame-col { width:362px; display:flex; flex-direction:column; align-items:center; }
+  .frame-col .head { font-family:var(--ff-display); font-size:19px; font-weight:600; text-transform:uppercase; letter-spacing:.02em; margin-bottom:3px; }
+  .frame-col .head.a { color:var(--brand-glow); } .frame-col .head.b { color:var(--text-secondary); }
+  .frame-col .head .k { font-family:var(--ff-mono); font-size:9px; letter-spacing:.14em; color:var(--text-tertiary); display:block; margin-top:3px; text-transform:none; }
+  .phone-box { width:362px; height:792px; position:relative; margin:12px 0 4px; }
+  .iphone { width:440px; height:956px; border-radius:60px; background:linear-gradient(180deg,#1A1A1F 0%,#0E0E12 100%); padding:12px; position:absolute; top:0; left:0; transform:scale(0.822); transform-origin:top left; box-shadow:0 0 0 1.5px #3A3A42 inset,0 40px 110px -30px rgba(0,0,0,.8); }
+  .iphone::after { content:""; position:absolute; top:24px; left:50%; transform:translateX(-50%); width:120px; height:34px; background:#000; border-radius:20px; z-index:30; }
+  .iphone-screen { width:100%; height:100%; border-radius:50px; overflow:hidden; position:relative; background:radial-gradient(60% 50% at 50% 0%,rgba(20,184,166,.06),transparent 70%),var(--canvas); }
+  .home-indicator { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:130px; height:5px; background:rgba(232,234,240,.4); border-radius:3px; z-index:40; }
+  .status { height:50px; padding:17px 30px 0; display:flex; justify-content:space-between; font-family:var(--ff-mono); font-size:14px; font-weight:600; position:relative; z-index:20; }
+
+  .behind { padding:8px 16px; opacity:.30 } .behind .pt { font-family:var(--ff-display); font-size:22px; text-transform:uppercase } .behind .sub { font-family:var(--ff-mono); font-size:9px; letter-spacing:.16em; color:var(--text-tertiary); margin-top:4px; text-transform:uppercase; }
+  .dim { position:absolute; inset:0; background:rgba(3,5,8,.64); z-index:5; }
+  .sheet { position:absolute; left:0; right:0; bottom:0; z-index:6; background:var(--canvas); border-top:1px solid var(--border-strong); padding:10px 16px 14px; overflow-y:auto; clip-path:polygon(20px 0,100% 0,100% 100%,0 100%,0 20px); } .sheet::-webkit-scrollbar { display:none; }
+  .handle { width:38px; height:4px; background:var(--border-strong); border-radius:3px; margin:2px auto 12px; }
+  .shead { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px; }
+  .shead .eyb { font-family:var(--ff-mono); font-size:10px; font-weight:600; letter-spacing:.18em; text-transform:uppercase; color:var(--brand-glow); } .shead .ttl { font-family:var(--ff-display); font-size:24px; font-weight:600; text-transform:uppercase; line-height:1; margin-top:4px; }
+  .shead .x { width:30px; height:30px; display:grid; place-items:center; background:var(--surface-1); border:1px solid var(--border-subtle); color:var(--text-secondary); clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px); } .shead .x svg { width:14px; height:14px; }
+
+  .lbl { font-family:var(--ff-mono); font-size:8.5px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--text-tertiary); }
+  .sech { display:flex; align-items:center; gap:9px; padding:0 2px 9px; font-family:var(--ff-mono); font-size:9.5px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--text-tertiary); margin-top:13px; }
+  .sech .count { color:var(--brand-glow); } .sech::after { content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--border-subtle),transparent); }
+
+  /* slot segmented + time row */
+  .typebar { display:flex; gap:5px; padding:5px; background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:13px; margin-bottom:10px; }
+  .typeseg { flex:1; text-align:center; padding:8px 0 7px; clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .typeseg .n { font-family:var(--ff-display); font-size:13px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; line-height:1; color:var(--text-secondary); }
+  .typeseg.active { background:var(--brand-primary); box-shadow:0 8px 18px -8px rgba(20,184,166,.6); } .typeseg.active .n { color:var(--text-inverse); }
+  .timefield { display:flex; align-items:center; justify-content:space-between; background:var(--surface-1); border:1px solid var(--border-subtle); padding:9px 12px; margin-bottom:6px; clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px); }
+  .timefield .v { font-family:var(--ff-mono); font-size:13px; color:var(--text-primary); }
+  .timefield svg { width:14px; height:14px; color:var(--text-tertiary); }
+
+  /* item rows w/ macro cells (mirror recipe editor) */
+  .macstrip { display:flex; gap:6px; align-items:stretch; margin-top:9px; }
+  .macstrip .per { display:flex; align-items:center; justify-content:center; font-family:var(--ff-mono); font-size:7.5px; letter-spacing:.06em; color:var(--text-quaternary); writing-mode:vertical-rl; transform:rotate(180deg); padding:0 1px; }
+  .mcell { flex:1; text-align:center; padding:6px 2px; background:rgba(255,255,255,.03); clip-path:polygon(6px 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%,0 6px); }
+  .mcell .v { font-family:var(--ff-mono); font-size:13px; font-weight:600; color:var(--text-primary); } .mcell .v.k { color:var(--brand-glow); } .mcell .v.p { color:var(--success); }
+  .mcell .l { font-family:var(--ff-body); font-size:7px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-tertiary); margin-top:3px; }
+
+  .item { padding:11px 12px; margin-bottom:8px; background:var(--surface-1); border-left:2px solid var(--cat-veg); clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
+  .item.recipe { border-left-color:var(--brand-glow); }
+  .item .top { display:flex; align-items:center; gap:9px; }
+  .item .nm { flex:1; min-width:0; display:flex; align-items:center; gap:7px; flex-wrap:wrap; } .item .nm .t { font-size:13px; color:var(--text-primary); }
+  .srctag { font-family:var(--ff-body); font-size:7.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:2px 6px; clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px); }
+  .srctag.recipe { background:rgba(20,184,166,.16); color:var(--brand-glow); } .srctag.kamra { background:rgba(251,191,36,.16); color:var(--cat-dairy); }
+  .mini { display:flex; align-items:center; background:var(--surface-2); flex:none; clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px); }
+  .mini button { width:25px; height:28px; display:grid; place-items:center; color:var(--brand-glow); font-size:14px; }
+  .mini .val { min-width:30px; text-align:center; font-family:var(--ff-mono); font-size:12px; font-weight:600; color:var(--text-primary); }
+  .mini .u { font-family:var(--ff-mono); font-size:8px; color:var(--text-tertiary); padding:0 6px 0 1px; }
+  .item .del { color:var(--text-tertiary); padding:3px; flex:none; } .item .del svg { width:12px; height:12px; }
+
+  .addbtn { width:100%; padding:11px; margin-top:3px; display:flex; align-items:center; justify-content:center; gap:7px; font-size:12px; font-weight:600; color:var(--brand-glow); background:rgba(20,184,166,.08); border:1px dashed var(--border-brand); clip-path:polygon(9px 0,100% 0,100% calc(100% - 9px),calc(100% - 9px) 100%,0 100%,0 9px); } .addbtn svg { width:14px; height:14px; }
+
+  /* live total + daily context */
+  .total { background:rgba(20,184,166,.05); border:1px solid var(--border-brand); padding:11px 12px; margin-top:12px; clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
+  .total .th { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; }
+  .total .th .l { font-family:var(--ff-mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--brand-glow); }
+  .total .th .per { font-family:var(--ff-mono); font-size:8.5px; color:var(--text-tertiary); }
+  .total .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+  .total .c { text-align:center; } .total .c .v { font-family:var(--ff-display); font-size:20px; font-weight:600; line-height:1; color:var(--text-primary); } .total .c .v.p { color:var(--success); } .total .c .l { font-family:var(--ff-body); font-size:7px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); margin-top:4px; }
+  .dayctx { margin-top:9px; padding-top:8px; border-top:1px solid var(--border-subtle); }
+  .dayctx .row { display:flex; justify-content:space-between; font-family:var(--ff-mono); font-size:8.5px; color:var(--text-tertiary); margin-bottom:5px; } .dayctx .row b { color:var(--text-secondary); } .dayctx .row .add { color:var(--brand-glow); }
+  .bar { height:5px; background:var(--surface-2); position:relative; overflow:hidden; clip-path:polygon(3px 0,100% 0,100% calc(100% - 3px),calc(100% - 3px) 100%,0 100%,0 3px); }
+  .bar .now { position:absolute; left:0; top:0; bottom:0; width:59%; background:var(--text-tertiary); }
+  .bar .add { position:absolute; left:59%; top:0; bottom:0; width:13%; background:var(--brand-glow); }
+
+  .save-row { display:flex; gap:9px; margin-top:14px; }
+  .btn { padding:13px; display:flex; align-items:center; justify-content:center; gap:7px; font-size:13px; font-weight:600; clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .btn svg { width:15px; height:15px; } .btn.primary { flex:1.8; background:var(--brand-primary); color:var(--text-inverse); } .btn.ghost { flex:1; background:rgba(255,255,255,.04); color:var(--text-secondary); border:1px solid var(--border-subtle); }
+
+  /* picker two-tab */
+  .ptabs { display:flex; gap:5px; margin-bottom:12px; }
+  .ptab { flex:1; text-align:center; padding:9px 0; font-family:var(--ff-body); font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); background:rgba(255,255,255,.025); clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .ptab.active { background:rgba(20,184,166,.16); color:var(--brand-glow); }
+  .psearch { display:flex; gap:8px; align-items:center; padding:9px 12px; background:var(--surface-2); border:1px solid var(--border-subtle); margin-bottom:11px; } .psearch svg { width:13px; height:13px; color:var(--text-tertiary); } .psearch .ph { font-size:13px; color:var(--text-tertiary); }
+  .prow { padding:11px 12px; margin-bottom:8px; background:var(--surface-1); border-left:2px solid var(--brand-glow); clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px); }
+  .prow.kamra { border-left-color:var(--cat-dairy); }
+  .prow .head { display:flex; align-items:center; gap:8px; } .prow .nm { font-size:13.5px; color:var(--text-primary); font-weight:500; flex:1; min-width:0; }
+  .prow .sub { font-family:var(--ff-mono); font-size:8px; color:var(--text-tertiary); margin-top:3px; }
+  .prow .add { width:28px; height:28px; display:grid; place-items:center; background:rgba(20,184,166,.14); color:var(--brand-glow); flex:none; clip-path:polygon(7px 0,100% 0,100% calc(100% - 7px),calc(100% - 7px) 100%,0 100%,0 7px); } .prow .add svg { width:14px; height:14px; }
+
+  .askbar { max-width:1000px; margin:30px auto 0; background:var(--surface-1); border:1px solid var(--border-subtle); border-left:2px solid var(--brand-primary); padding:18px 22px; clip-path:polygon(12px 0,100% 0,100% calc(100% - 12px),calc(100% - 12px) 100%,0 100%,0 12px); }
+  .askbar h3 { font-family:var(--ff-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--brand-glow); margin-bottom:10px; }
+  .askbar p { font-size:13px; color:var(--text-secondary); line-height:1.6; } .askbar p b { color:var(--text-primary); font-weight:500; }
+  .picks { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .pick { padding:10px 16px; font-size:12px; font-weight:600; color:var(--text-secondary); background:rgba(255,255,255,.03); border:1px solid var(--border-subtle); clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px); }
+  .pick.selected { background:rgba(20,184,166,.16); color:var(--brand-glow); border-color:var(--border-brand); }
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <div class="eyebrow">Fuel ▸ Logolás · meal-log</div>
+  <h1>Log-meal sheet + két-fülű picker</h1>
+  <p>Az egyetlen genuinely új felület: a <strong>mai étkezés rögzítő sheet</strong>. Slot + idő, majd tételek <strong>Receptből VAGY Kamrából</strong> (a polimorf <code>meal_item</code>), mennyiség-stepperrel és per-tétel makró-cellákkal, <strong>élő összeggel</strong> + a mai naphoz viszonyított kontextussal. A score itt is <strong>pending</strong> (NULL, sparkle) — Phase-3 tölti. Nyitható a Recept-detail „+ Mai étkezéshez", a Kamra „+ Logolás", vagy a Mai „＋ Log" gombról (előtöltve a forrással).</p>
+</div>
+
+<div class="stage">
+
+  <!-- ===== log-meal sheet ===== -->
+  <div class="frame-col">
+    <div class="head a">Log-meal sheet<span class="k">modal · slot + tételek + élő összeg</span></div>
+    <div class="phone-box"><div class="iphone"><div class="iphone-screen">
+      <div class="status"><span>13:20</span><span>5G ▴ 84%</span></div>
+      <div class="behind"><div class="pt">Mai</div><div class="sub">Fuel · pacing</div></div>
+      <div class="dim"></div>
+      <div class="sheet" style="height:90%">
+        <div class="handle"></div>
+        <div class="shead">
+          <div><div class="eyb">Logolás · mai nap</div><div class="ttl">Mit ettél?</div></div>
+          <button class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+        </div>
+
+        <div class="lbl" style="margin-bottom:7px">Mikor</div>
+        <div class="typebar">
+          <div class="typeseg"><div class="n">Reggeli</div></div>
+          <div class="typeseg active"><div class="n">Ebéd</div></div>
+          <div class="typeseg"><div class="n">Vacsora</div></div>
+          <div class="typeseg"><div class="n">Snack</div></div>
+        </div>
+        <div class="timefield"><span class="v">ma · 13:20</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+
+        <div class="sech"><span>Tételek</span><span class="count">2</span></div>
+
+        <!-- recipe item (from + Mai étkezéshez) -->
+        <div class="item recipe">
+          <div class="top">
+            <div class="nm"><span class="t">Tonhalsaláta</span><span class="srctag recipe">recept</span></div>
+            <div class="mini"><button>−</button><span class="val">1</span><button>+</button><span class="u">adag</span></div>
+            <button class="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <div class="macstrip"><span class="per">1 adag</span>
+            <div class="mcell"><div class="v k">271</div><div class="l">kcal</div></div>
+            <div class="mcell"><div class="v p">25</div><div class="l">Feh.</div></div>
+            <div class="mcell"><div class="v">6</div><div class="l">Szénh.</div></div>
+            <div class="mcell"><div class="v">17</div><div class="l">Zsír</div></div>
+          </div>
+        </div>
+
+        <!-- pantry item (from + Logolás) -->
+        <div class="item" style="border-left-color:var(--cat-dairy)">
+          <div class="top">
+            <div class="nm"><span class="t">Görög joghurt</span><span class="srctag kamra">kamra</span></div>
+            <div class="mini"><button>−</button><span class="val">150</span><button>+</button><span class="u">g</span></div>
+            <button class="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+          </div>
+          <div class="macstrip"><span class="per">150 g</span>
+            <div class="mcell"><div class="v k">129</div><div class="l">kcal</div></div>
+            <div class="mcell"><div class="v p">15</div><div class="l">Feh.</div></div>
+            <div class="mcell"><div class="v">8</div><div class="l">Szénh.</div></div>
+            <div class="mcell"><div class="v">5</div><div class="l">Zsír</div></div>
+          </div>
+        </div>
+
+        <button class="addbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Receptből / Kamrából hozzáad</button>
+
+        <!-- live total + daily context -->
+        <div class="total">
+          <div class="th"><span class="l">Ez az étkezés</span><span class="per">2 tétel</span></div>
+          <div class="grid">
+            <div class="c"><div class="v">400</div><div class="l">kcal</div></div>
+            <div class="c"><div class="v p">40</div><div class="l">Feh.</div></div>
+            <div class="c"><div class="v">14</div><div class="l">Szénh.</div></div>
+            <div class="c"><div class="v">22</div><div class="l">Zsír</div></div>
+          </div>
+          <div class="dayctx">
+            <div class="row"><span>Mai nap eddig <b>1840</b> <span class="add">+400</span> = <b>2240</b></span><span>cél <b>3100</b> kcal</span></div>
+            <div class="bar"><div class="now"></div><div class="add"></div></div>
+          </div>
+        </div>
+
+        <div class="save-row">
+          <button class="btn ghost">Mégse</button>
+          <button class="btn primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Logolás a mai naphoz</button>
+        </div>
+        <div style="height:12px"></div>
+      </div>
+      <div class="home-indicator"></div>
+    </div></div></div>
+  </div>
+
+  <!-- ===== picker two-tab ===== -->
+  <div class="frame-col">
+    <div class="head b">Hozzáadás-picker<span class="k">2 fül · Receptek / Kamra · a sheet fölött</span></div>
+    <div class="phone-box"><div class="iphone"><div class="iphone-screen">
+      <div class="status"><span>13:20</span><span>5G ▴ 84%</span></div>
+      <div class="behind"><div class="pt">◂ Mit ettél?</div></div>
+      <div class="dim"></div>
+      <div class="sheet" style="height:88%">
+        <div class="handle"></div>
+        <div class="shead"><div><div class="eyb">Hozzáadás az étkezéshez</div><div class="ttl">Receptből / Kamrából</div></div><button class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+        <div class="ptabs"><div class="ptab active">Receptek</div><div class="ptab">Kamra</div></div>
+        <div class="psearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg><span class="ph">Keress recept vagy alapanyag…</span></div>
+
+        <div class="prow">
+          <div class="head"><span class="nm">Tonhalsaláta</span><span class="srctag recipe">ebéd</span><button class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button></div>
+          <div class="sub">5 hozzávaló · 271 kcal / adag · P 25 · C 6 · F 17</div>
+        </div>
+        <div class="prow">
+          <div class="head"><span class="nm">Zabkása · áfonyás</span><span class="srctag recipe">reggeli</span><button class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button></div>
+          <div class="sub">4 hozzávaló · 380 kcal / adag · P 14 · C 60 · F 7</div>
+        </div>
+        <div class="prow">
+          <div class="head"><span class="nm">Lazac · spenótágy</span><span class="srctag recipe">vacsora</span><button class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button></div>
+          <div class="sub">6 hozzávaló · 510 kcal / adag · P 41 · C 9 · F 33</div>
+        </div>
+
+        <div class="sech" style="margin-top:6px"><span>vagy Kamra-fül</span></div>
+        <div class="prow kamra">
+          <div class="head"><span class="nm">Görög joghurt</span><span class="srctag kamra">Milli</span><button class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button></div>
+          <div class="sub">86 kcal · P 9 · C 4 · F 3 · /100g</div>
+        </div>
+        <div class="prow kamra">
+          <div class="head"><span class="nm">Csirkemell · friss</span><span class="srctag kamra">kifli</span><button class="add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button></div>
+          <div class="sub">110 kcal · P 23 · C 0 · F 1.5 · /100g</div>
+        </div>
+        <div style="height:14px"></div>
+      </div>
+      <div class="home-indicator"></div>
+    </div></div></div>
+  </div>
+
+</div>
+
+<div class="askbar">
+  <h3>Kérdés — log-meal sheet</h3>
+  <p>Jó így a <b>rögzítő sheet</b>? Slot-választó + idő, tételek <b>Receptből (adag) vagy Kamrából (g)</b> mennyiség-stepperrel + per-tétel makrók, <b>élő összeg</b> a mai naphoz viszonyítva (1840 → 2240 / 3100 kcal, a sávval), score nélkül (pending). A picker két fül: <b>Receptek / Kamra</b>. Két döntés, ha van véleményed: (1) kell-e a <b>napi-kontextus sáv</b> (mai eddig + ez vs cél), vagy elég csak „ez az étkezés" összeg? (2) a forrásból nyitva (pl. Recept „+ Mai étkezéshez") <b>előtöltve</b> jöjjön a tétel — jó? Írd meg a terminálban.</p>
+  <div class="picks" data-multiselect>
+    <button class="pick" data-choice="sheet-ok" onclick="window.toggleSelect&&window.toggleSelect(this)">Sheet OK</button>
+    <button class="pick" data-choice="picker-ok" onclick="window.toggleSelect&&window.toggleSelect(this)">2-fülű picker OK</button>
+    <button class="pick" data-choice="dayctx-yes" onclick="window.toggleSelect&&window.toggleSelect(this)">Napi-kontextus sáv kell</button>
+    <button class="pick" data-choice="dayctx-no" onclick="window.toggleSelect&&window.toggleSelect(this)">Elég csak az étkezés-összeg</button>
+    <button class="pick" data-choice="tweak" onclick="window.toggleSelect&&window.toggleSelect(this)">Van észrevételem</button>
+  </div>
+</div>
+
+</body>
+</html>

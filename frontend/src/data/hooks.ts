@@ -134,10 +134,6 @@ export function useChat() {
   return { initialChat }
 }
 
-export function useFuelDay() {
-  return { fuel: fuelDay }
-}
-
 export function useFuelTimeline() {
   return { plan: fuelPlan.today, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuelDay.meals) }
 }
@@ -169,5 +165,6 @@ export { useRunning } from './runningHooks'
 export { useWeight } from './weightHooks'
 export { usePantry, usePantryActions } from './pantryHooks'
 export { useRecipes, useRecipeActions } from './recipeHooks'
+export { useFuelDay, useMealActions, useRecipeLogs } from './fuelHooks'
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from './goalHooks'
 export { useBiometricProfile, useBiometricActions } from './biometricHooks'

@@ -19,6 +19,31 @@ const recipeFixture = {
   ],
 }
 
+// Meal fixture (mezo-arb) mirroring MealResponse — one breakfast meal with two pantry-arm items
+// (server snapshot name + contribution, lineOrder, pending null score).
+const mealFixture = {
+  id: 'me1f3a0e2-0000-4000-8000-000000000001',
+  slot: 'breakfast', loggedAt: '2026-06-24T09:15:00', mealDate: '2026-06-24',
+  title: 'Túrós zabkása · áfonyával',
+  macros: { kcal: 580, p: 42, c: 78, f: 12 },
+  score: { value: null, breakdown: null },
+  items: [
+    { source: 'pantry', recipeId: null, pantryItemId: 'p-zab', amount: 70, unit: 'g', lineOrder: 0, name: 'Zabpehely', nova: 1, contribution: { kcal: 260, p: 9, c: 42, f: 5 } },
+    { source: 'pantry', recipeId: null, pantryItemId: 'p-turo', amount: 200, unit: 'g', lineOrder: 1, name: 'Túró', nova: 3, contribution: { kcal: 320, p: 33, c: 36, f: 7 } },
+  ],
+}
+const fuelDayFixture = {
+  date: '2026-06-24',
+  targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
+  consumed: { kcal: 580, p: 42, c: 78, f: 12, water: 4000 },
+  meals: [mealFixture],
+}
+const recipeLogFixture = {
+  recentLogs: [
+    { mealId: 'me1f3a0e2-0000-4000-8000-000000000001', slot: 'breakfast', loggedAt: '2026-06-24T09:15:00', kcal: 580, p: 42, c: 78, f: 12 },
+  ],
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
 
@@ -290,6 +315,8 @@ export const handlers = [
   // Recipe (mezo-lns) — defaults; tests override with server.use() for payload capture +
   // list-after-write. GET list/detail return the fixture; writes echo 201/204.
   http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [recipeFixture] })),
+  // /logs registered before /:id so the segmented path matches deterministically.
+  http.get(`${API_BASE}/api/recipe/:id/logs`, () => HttpResponse.json(recipeLogFixture)),
   http.get(`${API_BASE}/api/recipe/:id`, ({ params }) =>
     HttpResponse.json({ ...recipeFixture, id: String(params.id) }),
   ),
@@ -299,4 +326,15 @@ export const handlers = [
   }),
   http.put(`${API_BASE}/api/recipe/:id`, () => new HttpResponse(null, { status: 204 })),
   http.delete(`${API_BASE}/api/recipe/:id`, () => new HttpResponse(null, { status: 204 })),
+
+  // Meal + fuel-day (mezo-arb) — defaults; tests override with server.use() for payload capture.
+  http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
+    HttpResponse.json({ ...fuelDayFixture, date: String(params.date) }),
+  ),
+  http.post(`${API_BASE}/api/meal`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ ...mealFixture, ...body, id: 'me1f3a0e2-0000-4000-8000-0000000000be' }, { status: 201 })
+  }),
+  http.put(`${API_BASE}/api/meal/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.delete(`${API_BASE}/api/meal/:id`, () => new HttpResponse(null, { status: 204 })),
 ]
