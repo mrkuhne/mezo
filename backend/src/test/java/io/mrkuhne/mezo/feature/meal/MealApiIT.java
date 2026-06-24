@@ -227,4 +227,49 @@ class MealApiIT extends ApiIntegrationTest {
 
         deleteAndExpect("/api/meal/" + UUID.randomUUID(), auth, HttpStatus.NOT_FOUND);
     }
+
+    @Test
+    void testUpdate_shouldFullReplaceItems_whenOwned() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID chicken = createFood(auth, "Csirkemell", "110", "23", "0", "1.5");
+        UUID oats = createFood(auth, "Zabpehely", "100", "10", "20", "5");
+
+        MealResponse created = postForBody(
+            "/api/meal", mealReq(pantryItem(chicken, "200")), auth, HttpStatus.CREATED, MealResponse.class);
+        assertThat(created.getItems()).hasSize(1);
+        // 200 g of per-100g chicken: factor 2 -> kcal 220
+        assertThat(created.getMacros().getKcal()).isEqualByComparingTo("220");
+
+        // Full-replace: re-send the COMPLETE meal, now a single 100 g oats line (chicken removed)
+        MealRequest replace = mealReq(pantryItem(oats, "100"));
+        replace.setTitle("Zabkása");
+        putForBody("/api/meal/" + created.getId(), replace, auth, HttpStatus.NO_CONTENT, Void.class);
+
+        FuelDayResponse day = getForBody(
+            "/api/fuel/day/" + MEAL_DATE, auth, HttpStatus.OK, FuelDayResponse.class);
+        MealResponse after = day.getMeals().stream()
+            .filter(m -> m.getId().equals(created.getId()))
+            .findFirst().orElseThrow();
+        assertThat(after.getTitle()).isEqualTo("Zabkása");
+        assertThat(after.getItems()).extracting(MealItemResponse::getName).containsExactly("Zabpehely");
+        // 100 g of per-100g oats: factor 1 -> kcal 100
+        assertThat(after.getMacros().getKcal()).isEqualByComparingTo("100");
+    }
+
+    @Test
+    void testDelete_shouldReturn204ThenAbsentFromDay_whenOwned() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Csirkemell", "110", "23", "0", "1.5");
+        MealResponse created = postForBody(
+            "/api/meal", mealReq(pantryItem(food, "200")), auth, HttpStatus.CREATED, MealResponse.class);
+
+        deleteAndExpect("/api/meal/" + created.getId(), auth, HttpStatus.NO_CONTENT);
+
+        FuelDayResponse day = getForBody(
+            "/api/fuel/day/" + MEAL_DATE, auth, HttpStatus.OK, FuelDayResponse.class);
+        assertThat(day.getMeals()).extracting(MealResponse::getId).doesNotContain(created.getId());
+        assertThat(day.getConsumed().getKcal()).isEqualByComparingTo("0");
+        // re-delete the now soft-deleted meal -> 404
+        deleteAndExpect("/api/meal/" + created.getId(), auth, HttpStatus.NOT_FOUND);
+    }
 }
