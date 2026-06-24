@@ -2,10 +2,10 @@ import type { MacroSet } from '@/data/types'
 import { ScoreRing } from '@/components/ui/ScoreRing'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Icon } from '@/components/ui/Icon'
+import { pct } from '@/lib/pct'
 
-// Guard 0/0 → 0: real mode renders a ZERO day during the cold-load window (no static
-// fallback in real mode), and a 0/0 percent must read as a benign 0%, never NaN.
-const pct = (a: number, b: number) => (b > 0 ? Math.min(100, (a / b) * 100) : 0)
+// `pct` guards 0/0 → 0: real mode renders a ZERO day during the cold-load window (no
+// static fallback in real mode), so a 0/0 percent must read as a benign 0%, never NaN.
 
 export function MacroHero({ targets, consumed, eyebrow }: { targets: MacroSet; consumed: MacroSet; eyebrow?: string }) {
   const kcalPct = pct(consumed.kcal, targets.kcal)
