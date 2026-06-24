@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
+import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
@@ -18,6 +19,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -50,6 +52,7 @@ public class MealService {
     private final PantryItemRepository pantryItemRepository;
     private final RecipeMapper recipeMapper; // reused for the recipe whole-macro rollup
     private final MealMapper mapper;
+    private final FuelDayService fuelDayService;
 
     @Transactional
     public MealResponse create(UUID userId, MealRequest req) {
@@ -74,6 +77,12 @@ public class MealService {
         // soft-delete (UPDATE, not DELETE) — so bulk-soft-delete the items explicitly first.
         mealItemRepository.softDeleteByMealId(meal.getId());
         repository.delete(meal); // @SQLDelete -> is_deleted = true
+    }
+
+    /** Thin delegation so the controller depends on {@code MealService} only (cf. recipe slice). */
+    @Transactional(readOnly = true)
+    public FuelDayResponse getDay(UUID userId, LocalDate date) {
+        return fuelDayService.getDay(userId, date);
     }
 
     /**
