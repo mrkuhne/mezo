@@ -158,5 +158,73 @@ class MealApiIT extends ApiIntegrationTest {
         assertThat(day.getConsumed().getKcal()).isEqualByComparingTo("0");
     }
 
-    // ---- guard placeholders implemented in ctrl4 (kept compiling together) ----
+    @Test
+    void testCreate_shouldReturn400FieldError_whenItemsEmpty() {
+        HttpHeaders auth = ownerAuthHeaders();
+        MealRequest bad = mealReq(); // zero items -> violates minItems:1
+        bad.setItems(List.of());
+
+        String body = exchangeForBody(
+            HttpMethod.POST, "/api/meal", bad, auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "items", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testCreate_shouldReturn400FieldError_whenSlotInvalid() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Csirkemell", "110", "23", "0", "1.5");
+        MealRequest bad = mealReq(pantryItem(food, "100"));
+        bad.setSlot("brunch"); // fails pattern ^(breakfast|lunch|dinner|snack)$
+
+        String body = exchangeForBody(
+            HttpMethod.POST, "/api/meal", bad, auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "slot", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testCreate_shouldReturn400FieldError_whenSourceArmMismatch() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Csirkemell", "110", "23", "0", "1.5");
+        // source=recipe but the recipe arm is empty and a pantry id is supplied -> exactly-one-of violated
+        MealItemRequest mismatched = new MealItemRequest();
+        mismatched.setSource("recipe");
+        mismatched.setPantryItemId(food); // wrong arm for source=recipe
+        mismatched.setAmount(new BigDecimal("1"));
+        mismatched.setUnit("adag");
+
+        String body = exchangeForBody(
+            HttpMethod.POST, "/api/meal", mealReq(mismatched), auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "items", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testCreate_shouldReturn400FieldError_whenSourceRowMissing() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // references a non-existent recipe id -> resolve fails owner-scoped
+        MealRequest bad = mealReq(recipeItem(UUID.randomUUID(), "1"));
+
+        String body = exchangeForBody(
+            HttpMethod.POST, "/api/meal", bad, auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "items", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testUpdate_shouldReturn404_whenUnknownId() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Csirkemell", "110", "23", "0", "1.5");
+
+        exchangeForBody(HttpMethod.PUT, "/api/meal/" + UUID.randomUUID(),
+            mealReq(pantryItem(food, "100")), auth, HttpStatus.NOT_FOUND, String.class);
+    }
+
+    @Test
+    void testDelete_shouldReturn404_whenUnknownId() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        deleteAndExpect("/api/meal/" + UUID.randomUUID(), auth, HttpStatus.NOT_FOUND);
+    }
 }
