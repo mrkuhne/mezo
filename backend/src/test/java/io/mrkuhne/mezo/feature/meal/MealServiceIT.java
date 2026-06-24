@@ -171,4 +171,61 @@ class MealServiceIT extends AbstractIntegrationTest {
         assertThat(meal.getLoggedAt()).isNotNull();
         assertThat(meal.getMealDate()).isEqualTo(LocalDate.now(ZoneOffset.UTC));
     }
+
+    @Test
+    void testUpdate_shouldFullReplaceItems_whenItemsAddedRemovedReordered() {
+        PantryItemEntity a = food(owner, "Alpha");   // 110/23/0/1.5 per 100 g
+        PantryItemEntity b = food(owner, "Bravo");
+        MealResponse created = service.create(owner,
+            req("lunch", pantryItem(a.getId(), "100"), pantryItem(b.getId(), "100")));
+
+        // Replace with: b reordered first at 150 g, a removed, recipe added.
+        RecipeEntity r = recipe(owner);
+        MealRequest v2 = req("dinner", pantryItem(b.getId(), "150"), recipeItem(r.getId(), "1"));
+        v2.setTitle("V2");
+        service.update(owner, created.getId(), v2);
+
+        MealResponse after = service.getDay(owner, LocalDate.of(2026, 6, 24)).getMeals().stream()
+            .filter(m -> m.getId().equals(created.getId())).findFirst().orElseThrow();
+        assertThat(after.getSlot()).isEqualTo("dinner");
+        assertThat(after.getTitle()).isEqualTo("V2");
+        assertThat(after.getItems()).extracting("source").containsExactly("pantry", "recipe");
+        assertThat(after.getItems()).extracting("lineOrder").containsExactly(0, 1);
+        // Bravo 150 g -> factor 1.5 -> 165 kcal ; recipe 1 adag -> 149 kcal -> rollup 314.
+        assertThat(after.getMacros().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(314));
+    }
+
+    @Test
+    void testUpdate_shouldReturn404_whenForeignMeal() {
+        PantryItemEntity p = food(owner, "Csirkemell");
+        MealResponse mine = service.create(owner, req("lunch", pantryItem(p.getId(), "100")));
+
+        assertThatThrownBy(() -> service.update(other, mine.getId(),
+            req("lunch", pantryItem(p.getId(), "100"))))
+            .isInstanceOf(io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testDelete_shouldReturn404_whenForeignMeal() {
+        PantryItemEntity p = food(owner, "Csirkemell");
+        MealResponse mine = service.create(owner, req("lunch", pantryItem(p.getId(), "100")));
+
+        assertThatThrownBy(() -> service.delete(other, mine.getId()))
+            .isInstanceOf(io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testDelete_shouldHideMealAndSoftDeleteItems_whenOwned() {
+        PantryItemEntity p = food(owner, "Csirkemell");
+        MealResponse mine = service.create(owner,
+            req("lunch", pantryItem(p.getId(), "100"), pantryItem(p.getId(), "50")));
+
+        service.delete(owner, mine.getId());
+
+        // Meal is hidden by the owner-scoped day finder...
+        assertThat(service.getDay(owner, LocalDate.of(2026, 6, 24)).getMeals())
+            .noneMatch(m -> m.getId().equals(mine.getId()));
+        // ...and its items are soft-deleted too (no live meal_item rows remain).
+        assertThat(mealItemRepository.softDeleteByMealId(mine.getId())).isZero();
+    }
 }
