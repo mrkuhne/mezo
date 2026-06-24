@@ -7,7 +7,7 @@
 // Layout (docs/design/kamra-detail-edit-v1.html · phone 2), chamfer chrome:
 //   back (‹) + eyebrow → source pill → big Antonio name → category · NOVA →
 //   Makrók (4 notch-4 cells) → Tápanyag (4 notch-4 cells) → Készlet · ár →
-//   actions (Logolás · disabled, Szerkesztés, Törlés).
+//   actions (Logolás → opens LogMealSheet pre-filled, Szerkesztés, Törlés).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
