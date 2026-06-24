@@ -11,6 +11,7 @@
 import { useState } from 'react'
 import type { Ingredient, MealInput, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
+import { pct } from '@/lib/pct'
 import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
 import { Eyebrow } from '@/components/ui/Eyebrow'
@@ -105,8 +106,10 @@ export function LogMealSheet({ prefill, onClose }: { prefill?: LogMealPrefill; o
   const total = resolved.reduce((a, { meta }) => ({ kcal: a.kcal + meta.contribution.kcal, p: a.p + meta.contribution.p, c: a.c + meta.contribution.c, f: a.f + meta.contribution.f }), { ...zero })
 
   const after = fuel.consumed.kcal + total.kcal
-  const nowPct = Math.min(100, (fuel.consumed.kcal / fuel.targets.kcal) * 100)
-  const addPct = Math.min(100 - nowPct, (total.kcal / fuel.targets.kcal) * 100)
+  // `pct` guards a zero target → 0 (real mode returns a zero FuelDay during cold load —
+  // no static fallback in real mode); a raw 0/0 would render a "NaN%" bar width.
+  const nowPct = pct(fuel.consumed.kcal, fuel.targets.kcal)
+  const addPct = Math.min(100 - nowPct, pct(total.kcal, fuel.targets.kcal))
 
   const addPicked = (p: MealPickedItem) => { setLines(prev => [...prev, lineFromPicked(p)]); setPickerOpen(false) }
   const bump = (key: string, delta: number) => setLines(prev => prev.map(p => p.key === key ? { ...p, amount: Math.max(1, p.amount + delta) } : p))

@@ -89,6 +89,16 @@ describe('usePantry (mock mode)', () => {
 describe('usePantry (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
+  it('returns empty (NOT the mock seed) before the query resolves', () => {
+    // The "no static fallback in real mode" invariant: a cold real-mode load must
+    // never flash the 18-item Phase-1 seed before the backend pantry lands.
+    server.use(http.get(`${API_BASE}/api/pantry`, () => new Promise(() => {}))) // never resolves
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantry(), { wrapper: Wrapper })
+    expect(result.current.ingredients).toEqual([])
+    expect(result.current.stash).toEqual([])
+  })
+
   it('loads ingredients + stash from the API and defers imports/suggestions', async () => {
     server.use(
       http.get(`${API_BASE}/api/pantry`, () =>

@@ -2,11 +2,13 @@ import type { MacroSet } from '@/data/types'
 import { ScoreRing } from '@/components/ui/ScoreRing'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Icon } from '@/components/ui/Icon'
+import { pct } from '@/lib/pct'
 
-const pct = (a: number, b: number) => Math.min(100, (a / b) * 100)
+// `pct` guards 0/0 → 0: real mode renders a ZERO day during the cold-load window (no
+// static fallback in real mode), so a 0/0 percent must read as a benign 0%, never NaN.
 
 export function MacroHero({ targets, consumed, eyebrow }: { targets: MacroSet; consumed: MacroSet; eyebrow?: string }) {
-  const kcalPct = (consumed.kcal / targets.kcal) * 100
+  const kcalPct = pct(consumed.kcal, targets.kcal)
   return (
     <div className="card notch-12" style={{ padding: 18 }}>
       {eyebrow && <span className="eyebrow brand">{eyebrow}</span>}
@@ -23,7 +25,7 @@ export function MacroHero({ targets, consumed, eyebrow }: { targets: MacroSet; c
           </span>
         </div>
         <div className="col" style={{ alignItems: 'flex-end' }}>
-          <ScoreRing pct={consumed.kcal / targets.kcal} size={56} />
+          <ScoreRing pct={pct(consumed.kcal, targets.kcal) / 100} size={56} />
         </div>
       </div>
 
@@ -53,7 +55,7 @@ export function MacroHero({ targets, consumed, eyebrow }: { targets: MacroSet; c
         <div className="col" style={{ flex: 1, alignItems: 'stretch' }}>
           <div className="row" style={{ justifyContent: 'space-between' }}>
             <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>{consumed.water}/{targets.water}ml</span>
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--info)' }}>{((consumed.water / targets.water) * 100).toFixed(0)}%</span>
+            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--info)' }}>{pct(consumed.water, targets.water).toFixed(0)}%</span>
           </div>
           <ProgressBar className="mt-xs" value={pct(consumed.water, targets.water)} color="var(--info)" />
         </div>

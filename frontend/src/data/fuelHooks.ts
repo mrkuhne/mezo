@@ -4,6 +4,7 @@ import { mealApi, type FuelDayData } from '@/lib/mealApi'
 import { apiFetch } from '@/lib/api'
 import { isMockMode } from '@/lib/mode'
 import { localDateString } from '@/lib/dates'
+import { useDualQuery } from './useDualQuery'
 import { fuelDay } from './fuel'
 import { ingredients, recipes as mockRecipes } from './pantry'
 import type { MealInput, MealItemLine, FuelMeal, FuelDay, MacroSet, RecipeLog } from './types'
@@ -21,6 +22,11 @@ const seedDayData: FuelDayData = {
   consumed: fuelDay.consumed,
   meals: fuelDay.meals,
 }
+// Real-mode unresolved fallback — a ZERO day, NEVER the seed's fabricated macros + meals
+// (the "no static fallback in real mode" invariant). `date` is never read by consumers
+// (FuelDay drops it); targets/consumed zeroed, meals empty.
+const ZERO_MACROS: MacroSet = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
+const FUELDAY_EMPTY: FuelDayData = { date: '', targets: ZERO_MACROS, consumed: ZERO_MACROS, meals: [] }
 
 /**
  * Composed dual-mode. Only targets/consumed/meals are query-driven (real: mealApi.getDay,
@@ -29,12 +35,12 @@ const seedDayData: FuelDayData = {
  * mutates via setQueryData) → never background-refetch in mock.
  */
 export function useFuelDay(date: string = localDateString()): { fuel: FuelDay } {
-  const mock = isMockMode()
-  const { data = seedDayData } = useQuery({
+  const { data } = useDualQuery({
     queryKey: fuelDayKey(date),
-    queryFn: mock ? async () => seedDayData : () => mealApi.getDay(date),
-    initialData: mock ? seedDayData : undefined,
-    staleTime: mock ? Infinity : 0,
+    mockData: seedDayData,
+    realFetch: () => mealApi.getDay(date),
+    realEmpty: FUELDAY_EMPTY,
+    realStaleTime: 0,
   })
   const fuel: FuelDay = {
     targets: data.targets,

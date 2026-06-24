@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { pantryApi } from '@/lib/pantryApi'
 import { isMockMode } from '@/lib/mode'
+import { useDualQuery } from './useDualQuery'
 import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
 import { pantrySources } from './pantrySources'
 import { supplementsStash } from './fuel'
@@ -9,19 +10,22 @@ import type { Ingredient, SupplementStashItem, PantryItemInput } from './types'
 
 const PANTRY_KEY = ['pantry'] as const
 const mockData = { ingredients: mockIngredients, stash: supplementsStash }
+// Real-mode unresolved fallback — empty, NEVER the seed (the "no static fallback in
+// real mode" invariant, enforced by useDualQuery). usePantryActions still seeds its
+// mock cache from `mockData`; only the real-mode loading window changes.
+const PANTRY_EMPTY: typeof mockData = { ingredients: [], stash: [] }
 
 /** Keeps the exact pre-existing return shape — views/buildKamraItems are untouched. */
 export function usePantry() {
   const mock = isMockMode()
-  const { data = mockData } = useQuery({
+  // staleTime Infinity in mock (client-owned cache: usePantryActions edits via setQueryData
+  // must not be clobbered by a refetch); 0 in real mode (mutations invalidate → refetch truth).
+  const { data } = useDualQuery({
     queryKey: PANTRY_KEY,
-    queryFn: mock ? async () => mockData : pantryApi.list,
-    initialData: mock ? mockData : undefined, // synchronous first render in mock (parity/tests)
-    // Mock mode is client-owned: usePantryActions mutates the ['pantry'] cache via
-    // setQueryData, so the query must never background-refetch and clobber those
-    // local edits back to the static seed. Real mode keeps the default freshness
-    // (mutations invalidate → refetch from the backend, the server's truth).
-    staleTime: mock ? Infinity : 0,
+    mockData,
+    realFetch: pantryApi.list,
+    realEmpty: PANTRY_EMPTY,
+    realStaleTime: 0,
   })
   return {
     ingredients: data.ingredients,

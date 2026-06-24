@@ -19,6 +19,16 @@ test('useWeight (real mode) loads the weight log from the API', async () => {
   expect(result.current.weightLog[0]).toMatchObject({ date: '2026-06-01', value: 82.5 })
 })
 
+test('useWeight (real mode) returns a zero trend (NOT the mock seed) before the trend query resolves', () => {
+  // "no static fallback in real mode": the goal hero "Tempó" must not flash the fake
+  // mock pace (−0.5 kg/hét, 78.96 kg avg) before the backend EWMA trend lands.
+  server.use(http.get(`${API_BASE}/api/biometrics/weight/trend`, () => new Promise(() => {}))) // never resolves
+  const { result } = renderHook(() => useWeight(), { wrapper: makeHookWrapper() })
+  expect(result.current.weightTrends.last7d.avg).toBe(0)
+  expect(result.current.weightTrends.last7d.weeklyRate).toBe(0)
+  expect(result.current.weightTrends.last4w.weeklyRate).toBe(0)
+})
+
 test('useWeight (real mode) folds the backend EWMA trend into weightTrends', async () => {
   server.use(
     http.get(`${API_BASE}/api/biometrics/weight/trend`, () =>
