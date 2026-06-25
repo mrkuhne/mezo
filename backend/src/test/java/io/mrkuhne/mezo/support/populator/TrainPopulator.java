@@ -179,6 +179,20 @@ public class TrainPopulator {
         return exerciseSetRepository.saveAndFlush(set);
     }
 
+    /** Fully-specified set (explicit weight/reps/skip) — GymSignal aggregation tests. */
+    public ExerciseSetEntity createExerciseSetFull(UUID createdBy, UUID exerciseId,
+        UUID workoutSessionId, int setIndex, BigDecimal weightKg, Integer reps, boolean skipped) {
+        ExerciseSetEntity s = new ExerciseSetEntity();
+        s.setCreatedBy(createdBy);
+        s.setExerciseId(exerciseId);
+        s.setWorkoutSessionId(workoutSessionId);
+        s.setSetIndex(setIndex);
+        s.setWeightKg(weightKg);
+        s.setReps(reps);
+        s.setSkipped(skipped);
+        return exerciseSetRepository.saveAndFlush(s);
+    }
+
     public ExerciseSetEntity createExerciseSet(UUID createdBy, UUID exerciseId, int setIndex) {
         ExerciseSetEntity set = new ExerciseSetEntity();
         set.setCreatedBy(createdBy);
