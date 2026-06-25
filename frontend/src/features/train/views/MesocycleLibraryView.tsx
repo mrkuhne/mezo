@@ -14,10 +14,16 @@ import { Icon } from '@/components/ui/Icon'
 import { ActiveMesoCard } from '../components/ActiveMesoCard'
 import { PlannedMesoCard } from '../components/PlannedMesoCard'
 import { ArchivedMesoCard } from '../components/ArchivedMesoCard'
+import MesocycleSkeleton from './MesocycleSkeleton'
 
 export function MesocycleLibraryView() {
-  const { mesocycles } = useTrain()
+  const { mesocycles, workoutPending } = useTrain()
   const navigate = useNavigate()
+
+  // Real-mode loading: show the layout-aware skeleton until the meso list resolves.
+  // `mesocycles` comes from the meso query that drives workoutPending, so branch on it
+  // before the T0 empty-state. After all hooks. Mock seeds synchronously → no skeleton.
+  if (workoutPending) return <MesocycleSkeleton />
 
   const active = mesocycles.filter((m) => m.status === 'active')
   const planned = mesocycles.filter((m) => m.status === 'planned')

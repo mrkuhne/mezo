@@ -19,6 +19,7 @@ import { GhostState } from '@/components/ui/GhostState'
 import { Icon } from '@/components/ui/Icon'
 import { cn } from '@/lib/cn'
 import { ExerciseRecordSheet } from '../components/ExerciseRecordSheet'
+import ExercisesSkeleton from './ExercisesSkeleton'
 
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
 
@@ -83,10 +84,15 @@ function GhostRow({ item }: { item: ExerciseLibraryItem }) {
 }
 
 export function ExercisesView() {
-  const { exerciseRecords, exerciseLibrary } = useTrain()
+  const { exerciseRecords, exerciseLibrary, exercisesPending } = useTrain()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [openRecord, setOpenRecord] = useState<ExerciseRecordResponse | null>(null)
+
+  // Real-mode loading: show the layout-aware skeleton until the catalog + records
+  // queries resolve (exercisesPending), before the records ghost-state branch. After
+  // all hooks. Mock mode seeds synchronously → never pending → no skeleton.
+  if (exercisesPending) return <ExercisesSkeleton />
 
   const searching = search !== '' || filter !== 'all'
   const q = search.toLowerCase()

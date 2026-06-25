@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { ExercisesView } from './ExercisesView'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -62,4 +62,29 @@ test('empty records show the ghost state while the catalog search stays usable',
   expect(await screen.findByText(/Az első logolt edzés után itt nőnek a rekordjaid/)).toBeInTheDocument()
   await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'calf')
   expect(screen.getByText('Standing Calf Raise')).toBeInTheDocument()
+})
+
+// Loading skeleton (mezo-f2z) — real mode shows the ExercisesSkeleton (role="status")
+// while the catalog/records queries are unresolved (exercisesPending); mock seeds → none.
+describe('ExercisesView (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the catalog + records queries are unresolved', async () => {
+    // exercisesPending = catalogPending || recordsPending — never-resolve both.
+    server.use(
+      http.get(`${API_BASE}/api/train/exercises`, () => new Promise(() => {})),
+      http.get(`${API_BASE}/api/train/exercise-records`, () => new Promise(() => {})),
+    )
+    renderView()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+})
+
+describe('ExercisesView (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders content with no skeleton (synchronous seed)', () => {
+    renderView()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })
