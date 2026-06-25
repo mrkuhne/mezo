@@ -110,6 +110,21 @@ class MealServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testCreate_shouldSingleRoundRecipeContribution_whenPerServingIsFractional() {
+        RecipeEntity r = recipe(owner); // whole rollup 297 kcal / 2 servings -> 148.5 per serving (fractional)
+
+        MealResponse meal = service.create(owner, req("lunch", recipeItem(r.getId(), "2")));
+
+        // ONE rounding, at the contribution boundary: round(148.5 × 2) = 297 — NOT the old double-round
+        // round(round(148.5) × 2) = 298. Converges the recipe arm with the FE single-round
+        // (fuelHooks.buildLine / LogMealSheet) and the already-exact pantry arm. amount 1 never diverged;
+        // amount != 1 over a fractional per-serving did.
+        assertThat(meal.getItems()).singleElement().satisfies(i ->
+            assertThat(i.getContribution().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(297)));
+        assertThat(meal.getMacros().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(297));
+    }
+
+    @Test
     void testCreate_shouldSnapshotPantryArm_whenSourcePantry() {
         PantryItemEntity p = food(owner, "Csirkemell"); // 110/23/0/1.5 per 100 g
 

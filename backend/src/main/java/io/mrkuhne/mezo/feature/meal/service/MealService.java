@@ -216,10 +216,17 @@ public class MealService {
             SystemMessage.field("VALIDATION_INVALID_VALUE", "items").build(), HttpStatus.BAD_REQUEST);
     }
 
-    /** per-serving snapshot = whole-recipe macro ÷ servings, whole-number HALF_UP. */
+    /**
+     * per-serving snapshot = whole-recipe macro ÷ servings, kept at FULL PRECISION (scale 6, mirroring
+     * the contribution {@code factor} scale). Rounding happens exactly once downstream at the
+     * contribution boundary ({@link #scaled}) — rounding here too would double-round the recipe arm
+     * (e.g. 297÷2=148.5→149, ×2→298 instead of the correct 297), diverging from the FE single-round
+     * and the already-exact pantry arm (mezo-8xy). The {@code snapshot_kcal} column is bare numeric, so
+     * the fractional value persists losslessly.
+     */
     private static BigDecimal perServing(BigDecimal whole, BigDecimal servings) {
         BigDecimal v = whole == null ? BigDecimal.ZERO : whole;
-        return v.divide(servings, 0, RoundingMode.HALF_UP);
+        return v.divide(servings, 6, RoundingMode.HALF_UP);
     }
 
     private static BigDecimal orDefault(BigDecimal value, BigDecimal fallback) {
