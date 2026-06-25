@@ -674,6 +674,25 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   50% { box-shadow: 0 0 0 6px rgba(94, 234, 212, 0.1); }
 }
 
+/* Loading skeleton — light teal sweep over a surface-2 block. */
+.sk {
+  position: relative;
+  overflow: hidden;
+  border-radius: 7px;
+  background: var(--surface-2);
+}
+.sk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.10), transparent);
+  animation: mezo-shimmer 1.5s infinite;
+}
+@keyframes mezo-shimmer { 100% { transform: translateX(100%); } }
+.sk--circle { border-radius: 50%; }
+@media (prefers-reduced-motion: reduce) { .sk::after { display: none; } }
+
 /* Stepper */
 .stepper {
   display: grid;
