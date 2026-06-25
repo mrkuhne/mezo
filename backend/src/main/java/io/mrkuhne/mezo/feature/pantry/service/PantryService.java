@@ -47,7 +47,7 @@ public class PantryService {
     public PantryItemResponse updateItem(UUID userId, UUID id, PantryItemRequest req) {
         validatePerKind(req);
         PantryItemEntity e = requireOwned(userId, id);
-        mapper.applyRequest(e, req); // dirty-checked; flush on tx commit
+        mapper.applyRequestPartial(e, req); // partial merge: null = leave unchanged (no data-loss); dirty-checked, flush on tx commit
         return mapper.toItemResponse(e);
     }
 

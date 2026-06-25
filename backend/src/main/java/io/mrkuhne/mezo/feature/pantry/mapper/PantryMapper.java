@@ -54,6 +54,52 @@ public interface PantryMapper {
         e.setCaffeine(r.getCaffeine());
     }
 
+    /**
+     * Partial (PATCH-style) merge for updates: applies only the fields the request carries,
+     * leaving every omitted field untouched — null means "leave unchanged", not "clear".
+     * <p>The generated request DTO cannot distinguish an omitted field from an explicit null,
+     * and there is no clear-a-field UX, so this mirrors the FE mock merge ({@code input.x ?? existing.x}
+     * in {@code pantryHooks.ts}) and keeps real-mode behaviour identical to mock. A future
+     * clear-field feature would need a real PATCH contract (JsonNullable / explicit-null support).
+     * {@code kind} and {@code name} are required and always sent, so a rename/retype still applies.
+     */
+    default void applyRequestPartial(PantryItemEntity e, PantryItemRequest r) {
+        if (r.getKind() != null) e.setKind(r.getKind().getValue());
+        if (r.getName() != null) e.setName(r.getName());
+        setIfPresent(r.getBrand(), e::setBrand);
+        if (r.getSource() != null) e.setSource(r.getSource().getValue());
+        if (r.getCategory() != null) e.setCategory(r.getCategory().getValue());
+        setIfPresent(r.getNotes(), e::setNotes);
+        setIfPresent(r.getPer(), e::setServingAmount);
+        setIfPresent(r.getUnit(), e::setServingUnit);
+        setIfPresent(r.getKcal(), e::setKcal);
+        setIfPresent(r.getProteinG(), e::setProteinG);
+        setIfPresent(r.getCarbsG(), e::setCarbsG);
+        setIfPresent(r.getFatG(), e::setFatG);
+        setIfPresent(r.getFiberG(), e::setFiberG);
+        setIfPresent(r.getSugarG(), e::setSugarG);
+        setIfPresent(r.getSaltG(), e::setSaltG);
+        setIfPresent(r.getSaturatedFatG(), e::setSaturatedFatG);
+        setIfPresent(r.getPrice(), e::setPriceHuf);
+        setIfPresent(r.getPriceUnit(), e::setPriceUnit);
+        setIfPresent(r.getPkg(), e::setPackageLabel);
+        if (r.getMicros() != null) e.setMicros(
+            r.getMicros().stream().map(m -> new MicroFact(m.getName(), m.getPct())).toList());
+        if (r.getNova() != null) e.setNova(r.getNova().shortValue());
+        setIfPresent(r.getStockQty(), e::setStockQty);
+        setIfPresent(r.getStockUnit(), e::setStockUnit);
+        setIfPresent(r.getStockExpires(), e::setStockExpires);
+        setIfPresent(r.getDose(), e::setDose);
+        setIfPresent(r.getForm(), e::setForm);
+        setIfPresent(r.getProtocol(), e::setProtocol);
+        setIfPresent(r.getTiming(), e::setTiming);
+        setIfPresent(r.getCaffeine(), e::setCaffeine);
+    }
+
+    private static <T> void setIfPresent(T value, java.util.function.Consumer<T> setter) {
+        if (value != null) setter.accept(value);
+    }
+
     default IngredientResponse toIngredientResponse(PantryItemEntity e) {
         return IngredientResponse.builder()
             .id(e.getId())

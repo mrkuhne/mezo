@@ -133,4 +133,31 @@ class PantryServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> service.createItem(owner, req))
             .isInstanceOf(SystemRuntimeErrorException.class);
     }
+
+    @Test
+    void testUpdateItem_shouldPreserveRichFields_whenRequestOmitsThem() {
+        // a rich food row (brand, micros, NOVA, stock + expiry) as a scrape/import would land
+        LocalDate expiry = LocalDate.of(2026, 8, 1);
+        UUID id = populator.createFood(owner, "Csirkemell", expiry).getId();
+
+        // the real FE edit payload is sparse — it carries only the editable basics and omits
+        // micros/nova/brand/category/stock; null must mean "leave unchanged", not "clear"
+        PantryItemRequest sparse = new PantryItemRequest();
+        sparse.setKind(PantryItemRequest.KindEnum.FOOD);
+        sparse.setName("Csirke filé");
+        sparse.setUnit("g");
+        sparse.setKcal(java.math.BigDecimal.valueOf(165));
+
+        service.updateItem(owner, id, sparse);
+
+        var ing = service.getPantry(owner).getIngredients().get(0);
+        // preserved — a full-replace PUT would null these:
+        assertThat(ing.getBrand()).isEqualTo("Bonafarm");
+        assertThat(ing.getMicros()).extracting("name").containsExactly("B6");
+        assertThat(ing.getStock()).isNotNull();
+        assertThat(ing.getStock().getExpires()).isEqualTo(expiry.toString());
+        // explicitly-sent fields still applied — the merge is not a no-op:
+        assertThat(ing.getName()).isEqualTo("Csirke filé");
+        assertThat(ing.getMacros().getKcal()).isEqualByComparingTo(java.math.BigDecimal.valueOf(165));
+    }
 }
