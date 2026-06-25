@@ -39,6 +39,7 @@ public class ResetDatabase {
             "TRUNCATE TABLE meal_item, meal, recipe_ingredient, recipe, pantry_item, weight_log, sleep_log, check_in, "
                 + "exercise_feedback, exercise_set, exercise, workout_session, muscle_group_volume_log, mesocycle, "
                 + "gym_schedule_slot, sport_schedule_slot, sport_session, run_session_log, running_block, "
+                + "skill_progress, level_up_event, perk_unlock, "
                 + "goal_plan_link, goal, biometric_profile CASCADE").executeUpdate();
         // Master data (demodata owner + their profile) survives; everything else goes.
         entityManager.createNativeQuery(
