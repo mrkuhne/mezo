@@ -2881,6 +2881,111 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ExerciseSetResponse'
+        levelUp:
+          $ref: '#/components/schemas/LevelUpResult'
+    LevelUpResult:
+      type: object
+      required:
+        - source
+        - totalXp
+        - gains
+        - levelUps
+        - perks
+        - robustness
+      properties:
+        source:
+          type: string
+          enum:
+            - GYM
+            - SPORT
+            - RUN
+        workoutLabel:
+          type: string
+        durationMin:
+          type: integer
+        rpe:
+          type: integer
+        totalXp:
+          type: integer
+          format: int64
+        gains:
+          type: array
+          items:
+            $ref: '#/components/schemas/LevelUpGain'
+        levelUps:
+          type: array
+          items:
+            type: string
+        perks:
+          type: array
+          items:
+            $ref: '#/components/schemas/LevelUpPerk'
+        robustness:
+          $ref: '#/components/schemas/LevelUpRobustness'
+    LevelUpGain:
+      type: object
+      required:
+        - skillKey
+        - kind
+        - name
+        - xpGained
+        - levelBefore
+        - levelAfter
+        - progressFromPct
+        - progressToPct
+      properties:
+        skillKey:
+          type: string
+        kind:
+          type: string
+          enum:
+            - ATHLETIC
+            - MUSCLE
+        name:
+          type: string
+        icon:
+          type: string
+        xpGained:
+          type: integer
+          format: int64
+        levelBefore:
+          type: integer
+        levelAfter:
+          type: integer
+        progressFromPct:
+          type: number
+        progressToPct:
+          type: number
+    LevelUpPerk:
+      type: object
+      required:
+        - skillKey
+        - perkKey
+        - name
+        - effectCopy
+        - milestoneLevel
+      properties:
+        skillKey:
+          type: string
+        perkKey:
+          type: string
+        name:
+          type: string
+        effectCopy:
+          type: string
+        milestoneLevel:
+          type: integer
+    LevelUpRobustness:
+      type: object
+      required:
+        - xpGained
+        - streakWeeks
+      properties:
+        xpGained:
+          type: integer
+          format: int64
+        streakWeeks:
+          type: integer
     ExerciseSetResponse:
       type: object
       required:

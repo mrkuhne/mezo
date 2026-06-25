@@ -39,4 +39,17 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
         """)
     List<LocalDate> findDoneInstanceDates(
         @Param("createdBy") UUID createdBy, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
+     * Dates of the owner's gym workout INSTANCES (templateSessionId not null) that carry a date,
+     * unbounded. Feeds the progression robustness streak (any logged gym instance counts as a
+     * training day in its ISO week). Status-agnostic, like {@link #findDoneInstanceDates}.
+     */
+    @Query("""
+        SELECT s.date FROM WorkoutSessionEntity s
+        WHERE s.createdBy = :createdBy
+          AND s.templateSessionId IS NOT NULL
+          AND s.date IS NOT NULL
+        """)
+    List<LocalDate> findInstanceDates(@Param("createdBy") UUID createdBy);
 }

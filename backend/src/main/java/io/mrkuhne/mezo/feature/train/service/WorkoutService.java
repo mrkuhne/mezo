@@ -11,6 +11,11 @@ import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
+import io.mrkuhne.mezo.feature.progression.ProgressionGate;
+import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
+import io.mrkuhne.mezo.feature.progression.gym.GymSignalCalculator;
+import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
+import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
@@ -28,6 +33,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,6 +60,12 @@ public class WorkoutService {
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
     private final TrainMapper mapper;
+    // Progression collaborators (T6): the gym finish awards XP behind the feature switch. The gate
+    // bean exists ONLY when mezo.feature.progression.enabled=true, so an absent provider ⇔ switch off.
+    private final GymSignalCalculator gymSignalCalculator;
+    private final ProgressionService progressionService;
+    private final LevelUpResultMapper levelUpResultMapper;
+    private final ObjectProvider<ProgressionGate> progressionGate;
 
     public WorkoutTodayResponse getToday(UUID createdBy) {
         WorkoutTodayResponse empty = new WorkoutTodayResponse();
@@ -272,7 +284,16 @@ public class WorkoutService {
         if ("active".equals(instance.getStatus())) {
             instance.setStatus("completed"); // dirty-checked, flushed at commit
         }
-        return toInstanceResponse(createdBy, instance);
+        WorkoutInstanceResponse base = toInstanceResponse(createdBy, instance);
+        // Progression runs ONLY when the feature switch is on (gate bean present) and only here in
+        // finishWorkout — never via the shared toInstanceResponse, so start/resume stay levelUp-free.
+        // Atomic with the completion (same @Transactional); applyGym is idempotent on the instance id,
+        // so a re-finish returns the stored payload without double-awarding.
+        if (progressionGate.getIfAvailable() != null) {
+            GymSignal signal = gymSignalCalculator.compute(createdBy, instance.getId());
+            base.setLevelUp(levelUpResultMapper.toDto(progressionService.applyGym(createdBy, signal)));
+        }
+        return base;
     }
 
     /** Instance gate: owned AND an instance row (template rows are not loggable targets). */
