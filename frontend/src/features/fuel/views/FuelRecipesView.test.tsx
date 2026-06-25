@@ -1,9 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { http } from 'msw'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { FuelRecipesView } from './FuelRecipesView'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -62,4 +65,34 @@ test('tapping a card navigates to the detail route', async () => {
   await userEvent.click(cards[0])
   expect(screen.getByTestId('location').textContent).toMatch(/^\/fuel\/recipes\/.+/)
   void firstName
+})
+
+// Loading skeleton (mezo-f2z) — real mode shows the RecipesSkeleton (role="status")
+// while the recipe query is unresolved; mock mode seeds synchronously → no skeleton.
+// NOTE: the real recipe endpoint is /api/recipe (singular) — see recipeApi.list.
+function renderPlain() {
+  return render(
+    <QueryWrapper>
+      <MemoryRouter><FuelRecipesView /></MemoryRouter>
+    </QueryWrapper>,
+  )
+}
+
+describe('FuelRecipesView (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the recipe query is unresolved', async () => {
+    server.use(http.get(`${API_BASE}/api/recipe`, () => new Promise(() => {})))
+    renderPlain()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+})
+
+describe('FuelRecipesView (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders content with no skeleton (synchronous seed)', () => {
+    renderPlain()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })

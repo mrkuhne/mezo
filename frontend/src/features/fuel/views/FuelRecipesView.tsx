@@ -15,6 +15,7 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { RecipeCard } from '@/features/fuel/components/RecipeCard'
+import RecipesSkeleton from './RecipesSkeleton'
 
 type FilterId = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'starred'
 
@@ -34,7 +35,7 @@ function countFor(recipes: Recipe[], id: FilterId): number {
 
 export function FuelRecipesView() {
   const navigate = useNavigate()
-  const { recipes } = useRecipes()
+  const { recipes, pending } = useRecipes()
   const [filter, setFilter] = useState<FilterId>('all')
 
   const starredCount = recipes.filter(r => r.starred).length
@@ -43,6 +44,10 @@ export function FuelRecipesView() {
     if (filter === 'starred') return r.starred
     return r.category === filter
   })
+
+  // Real-mode loading window — skeleton before the empty-state list (hooks are all
+  // above, so hook order stays stable). Mock mode never sets pending (mezo-f2z).
+  if (pending) return <RecipesSkeleton />
 
   return (
     <>

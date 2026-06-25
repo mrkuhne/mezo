@@ -17,9 +17,10 @@ const RECIPES_EMPTY: Recipe[] = []
 
 /** Public shape preserved verbatim: only `recipes` is dual-mode; the rest is static/pantry config. */
 export function useRecipes() {
+  const mock = isMockMode()
   // mock: synchronous seed via initialData + staleTime Infinity (client-owned cache,
   // useRecipeActions edits via setQueryData); real: backend list, empty until it resolves.
-  const { data: recipes } = useDualQuery({
+  const { data: recipes, isPending } = useDualQuery({
     queryKey: RECIPES_KEY,
     mockData: mockRecipes,
     realFetch: recipeApi.list,
@@ -34,6 +35,9 @@ export function useRecipes() {
     recipes,
     sources: pantrySources,            // static presentation config
     categoryMeta: pantryCategoryMeta,  // static presentation config
+    // Real-mode loading window only (mock seeds synchronously → always false);
+    // FuelRecipesView branches on it to show the skeleton (mezo-f2z).
+    pending: !mock && isPending,
   }
 }
 

@@ -20,7 +20,7 @@ export function usePantry() {
   const mock = isMockMode()
   // staleTime Infinity in mock (client-owned cache: usePantryActions edits via setQueryData
   // must not be clobbered by a refetch); 0 in real mode (mutations invalidate → refetch truth).
-  const { data } = useDualQuery({
+  const { data, isPending } = useDualQuery({
     queryKey: PANTRY_KEY,
     mockData,
     realFetch: pantryApi.list,
@@ -34,6 +34,9 @@ export function usePantry() {
     categoryMeta: pantryCategoryMeta, // static presentation config
     imports: mock ? pantryImports : [],       // scrape feed deferred in real mode
     suggestions: mock ? pantrySuggestions : [], // suggestions deferred in real mode
+    // Real-mode loading window only (mock seeds synchronously → always false);
+    // views branch on it to show the skeleton (mirrors runningPending, mezo-f2z).
+    pending: !mock && isPending,
   }
 }
 

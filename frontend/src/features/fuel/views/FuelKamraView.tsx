@@ -29,6 +29,7 @@ import { StatCell } from '@/components/ui/StatCell'
 import { KamraCard } from '@/features/fuel/components/KamraCard'
 import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
 import { CategoryFilterSheet, categoryOption } from '@/features/fuel/CategoryFilterSheet'
+import KamraSkeleton from './KamraSkeleton'
 
 const TYPE_SWITCHER = [
   { id: 'all', label: 'Mind' },
@@ -48,7 +49,7 @@ const TYPE_ORDER = ['food', 'supplement', 'stim', 'med'] as const
 
 export function FuelKamraView() {
   const navigate = useNavigate()
-  const { ingredients, stash, categoryMeta } = usePantry()
+  const { ingredients, stash, categoryMeta, pending } = usePantry()
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [query, setQuery] = useState('')
@@ -90,6 +91,10 @@ export function FuelKamraView() {
   const lowExpiry = ingItems.filter(i => i.stock && 'lowExpiry' in i.stock && i.stock.lowExpiry).length
   const lowStock = stash.filter(s => s.stock !== null && s.stock < 15).length
   const isEmpty = allItems.length === 0
+
+  // Real-mode loading window — skeleton before the empty-state branch (hooks are
+  // all above, so hook order stays stable). Mock mode never sets pending (mezo-f2z).
+  if (pending) return <KamraSkeleton />
 
   return (
     <>

@@ -1,9 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
+import { http } from 'msw'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { FuelKamraView } from './FuelKamraView'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 // FuelKamraView reads usePantry (a dual-mode TanStack query since Task 7). Pin mock
 // mode for the static seed + wrap in a QueryClientProvider.
@@ -76,4 +79,33 @@ test('Szűrők sheet selects a category and AND-filters the list', async () => {
   expect(screen.getByText(/Banán/)).toBeInTheDocument()
   expect(screen.queryByText(/Csirkemell/)).not.toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Szűrők\s*1/ })).toBeInTheDocument()
+})
+
+// Loading skeleton (mezo-f2z) — real mode shows the KamraSkeleton (role="status")
+// while the pantry query is unresolved; mock mode seeds synchronously → no skeleton.
+function renderPlain() {
+  return render(
+    <QueryWrapper>
+      <MemoryRouter><FuelKamraView /></MemoryRouter>
+    </QueryWrapper>,
+  )
+}
+
+describe('FuelKamraView (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the pantry query is unresolved', async () => {
+    server.use(http.get(`${API_BASE}/api/pantry`, () => new Promise(() => {})))
+    renderPlain()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+})
+
+describe('FuelKamraView (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders content with no skeleton (synchronous seed)', () => {
+    renderPlain()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })
