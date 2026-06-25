@@ -71,7 +71,7 @@ export function useGoal() {
     queryKey: ['weightLog'], // shares the cache with useWeight (same key); no queryFn — read-only
     enabled: !mock,
   })
-  const { data: goals } = useQuery({
+  const { data: goals, isPending: goalPending } = useQuery({
     queryKey: ['goals'],
     queryFn: mock ? async () => null : goalApi.list,
     initialData: mock ? null : undefined,
@@ -97,6 +97,9 @@ export function useGoal() {
       linkedMesocycles: mockLinkedMesocycles,
       timeline: mockTimeline as GoalTimelineResponse | null,
       goalId: mockGoal.id as string | null,
+      // Real-mode loading window only — mock seeds synchronously so this is always
+      // false here; GoalsView branches on it to show the skeleton (mezo-f2z).
+      pending: !mock && goalPending,
     }
   }
 
@@ -104,7 +107,7 @@ export function useGoal() {
   // back to mockGoal here, which surfaced the demo placeholder to real users —
   // see mezo-72d.) GoalsView guards on `goal === null` and renders the setup CTA.
   if (!activeGoal) {
-    return { goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null }
+    return { goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: !mock && goalPending }
   }
 
   const goal: Goal = toGoal(activeGoal, (weightLog as WeightEntry[]) ?? [])
@@ -114,7 +117,7 @@ export function useGoal() {
   // straight off the contract — Decision C) + the raw timeline (the lane component
   // consumes timeline.links[] for lane positions — LinkedMeso can't drive lanes) +
   // goalId (attach/detach target).
-  return { goal, goalResponse: activeGoal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id }
+  return { goal, goalResponse: activeGoal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id, pending: !mock && goalPending }
 }
 
 // Goal-management mutations (slice G4b). Real mode runs the write, then in
