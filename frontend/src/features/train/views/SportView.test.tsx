@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { SportView } from './SportView'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -119,4 +119,25 @@ test('real mode Napló hides the jump average when sessions carry no jumpCount',
   expect(await screen.findByText(/Utolsó 1 session/)).toBeInTheDocument()
   expect(screen.queryByText(/ugrás/)).not.toBeInTheDocument()
   expect(screen.queryByText('Intenzitás')).not.toBeInTheDocument() // null intensity -> MiniBar hidden
+})
+
+// Loading skeleton (mezo-f2z) — real mode shows the SportSkeleton (role="status")
+// while the sport-sessions query is unresolved (sportPending); mock seeds → no skeleton.
+describe('SportView (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the sport-sessions query is unresolved', async () => {
+    server.use(http.get(`${API_BASE}/api/train/sport-sessions`, () => new Promise(() => {})))
+    renderView()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+})
+
+describe('SportView (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders content with no skeleton (synchronous seed)', () => {
+    renderView()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })

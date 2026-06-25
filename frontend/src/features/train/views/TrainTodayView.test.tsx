@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { TrainTodayView } from './TrainTodayView'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -306,4 +306,29 @@ test('real mode: prescribed run logged today ⇒ run hero flips to the done summ
   expect(await screen.findByText('Futás · ma')).toBeInTheDocument()
   expect(screen.getByText(/Logolva · RPE 9/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
+})
+
+// Loading skeleton (mezo-f2z) — real mode shows the TrainTodaySkeleton (role="status")
+// while the meso/today queries are unresolved (workoutPending); mock seeds → no skeleton.
+describe('TrainTodayView (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the meso + today queries are unresolved', async () => {
+    // workoutPending = mesoPending || todayPending — both must never resolve.
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => new Promise(() => {})),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => new Promise(() => {})),
+    )
+    renderView()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+})
+
+describe('TrainTodayView (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders content with no skeleton (synchronous seed)', () => {
+    renderView()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })

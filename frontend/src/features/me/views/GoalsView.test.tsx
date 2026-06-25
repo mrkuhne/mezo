@@ -216,6 +216,36 @@ describe('real mode (active goal + timeline)', () => {
   })
 })
 
+// Loading skeleton (mezo-f2z) — real mode shows the GoalsSkeleton (role="status")
+// while the active-goal query is unresolved (useGoal pending); mock seeds → no
+// skeleton. The other GoalsView queries (weight/trend/profile) resolve so ONLY the
+// goal query stalls and forces the skeleton.
+describe('GoalsView (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('shows the skeleton while the active-goal query is unresolved', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => new Promise(() => {})), // never resolves
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/weight/trend`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/profile`, () => new HttpResponse(null, { status: 404 })),
+    )
+    render(<GoalsView />, { wrapper: Wrapper })
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+})
+
+describe('GoalsView (mock mode, no skeleton)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('renders content with no skeleton (synchronous seed)', () => {
+    render(<GoalsView />, { wrapper: Wrapper })
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+})
+
 // Real mode with no active goal: the empty "set up a goal" state + CTA, never
 // the mock placeholder hero.
 describe('real mode (no goal)', () => {

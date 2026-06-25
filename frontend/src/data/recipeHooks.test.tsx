@@ -31,7 +31,7 @@ describe('useRecipes (mock mode)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useRecipes(), { wrapper: Wrapper })
     // `ingredients` intentionally dropped: live ingredient metadata comes from usePantry().
-    expect(Object.keys(result.current).sort()).toEqual(['categoryMeta', 'recipes', 'sources'])
+    expect(Object.keys(result.current).sort()).toEqual(['categoryMeta', 'pending', 'recipes', 'sources'])
     expect(result.current.recipes).toHaveLength(6) // the seed
     expect(result.current.sources['kifli.hu'].label).toBeTruthy()
     expect(result.current.categoryMeta.protein.label).toBe('Fehérje')
@@ -39,6 +39,12 @@ describe('useRecipes (mock mode)', () => {
     const rec1 = result.current.recipes.find(r => r.id === 'rec-1')!
     expect(rec1.macros.kcal).toBeGreaterThan(0)
     expect(rec1.ingredients[0].contribution).toBeDefined()
+  })
+
+  it('exposes pending=false in mock mode (synchronous seed)', () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useRecipes(), { wrapper: Wrapper })
+    expect(result.current.pending).toBe(false)
   })
 
   it('create appends a recipe with computed name/contribution/macros into the SAME cache', async () => {
@@ -81,6 +87,13 @@ describe('useRecipes (real mode)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useRecipes(), { wrapper: Wrapper })
     expect(result.current.recipes).toEqual([])
+  })
+
+  it('exposes pending=true while the query is unresolved', () => {
+    server.use(http.get(`${API_BASE}/api/recipe`, () => new Promise(() => {}))) // never resolves
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useRecipes(), { wrapper: Wrapper })
+    expect(result.current.pending).toBe(true)
   })
 
   it('loads recipes from the API (MSW fixture)', async () => {

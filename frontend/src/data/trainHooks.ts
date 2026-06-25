@@ -201,6 +201,10 @@ type TrainData = {
   gymDoneDates: string[]
   /** True while the meso//today queries are still loading (real mode) — guards must not redirect yet. */
   workoutPending: boolean
+  /** True while the sport-sessions query is still loading (real mode) — drives the Sport skeleton. */
+  sportPending: boolean
+  /** True while the exercise catalog/records queries are still loading (real mode) — drives the Exercises skeleton. */
+  exercisesPending: boolean
   createMesocycle: (req: MesocycleCreateRequest, opts?: MutateOpts) => void
   activateMesocycle: (id: string, opts?: MutateOpts) => void
   closeMesocycle: (id: string, opts?: MutateOpts) => void
@@ -229,7 +233,7 @@ export function useTrain(): TrainData {
   })
   // Week stats derive from the RAW ISO-dated responses (the mapped sessions carry
   // HU display dates), so the derivation happens inside the queryFn.
-  const { data: sportData } = useQuery({
+  const { data: sportData, isPending: sportQueryPending } = useQuery({
     queryKey: ['train', 'sportSessions'],
     queryFn: mock
       ? async () => ({ sessions: sport.sessions, week: sport.week })
@@ -249,7 +253,7 @@ export function useTrain(): TrainData {
     initialData: mock ? gymScheduleMock : undefined,
   })
   // Exercise catalog — master data; one fetch per app session is plenty.
-  const { data: catalogData } = useQuery({
+  const { data: catalogData, isPending: catalogPending } = useQuery({
     queryKey: ['train', 'exerciseCatalog'],
     queryFn: mock ? async () => exerciseLibrary : () => trainApi.exerciseCatalog().then((rs) => rs.map(toLibraryItem)),
     initialData: mock ? exerciseLibrary : undefined,
@@ -257,7 +261,7 @@ export function useTrain(): TrainData {
   })
   // Per-exercise records — computed server-side from logged sets; mock mode has no
   // set history (Phase 1), so it serves an empty list and the view ghost-guards.
-  const { data: recordsData } = useQuery({
+  const { data: recordsData, isPending: recordsPending } = useQuery({
     queryKey: ['train', 'exerciseRecords'],
     queryFn: mock ? async () => [] as ExerciseRecordResponse[] : () => trainApi.exerciseRecords(),
     initialData: mock ? [] : undefined,
@@ -447,6 +451,8 @@ export function useTrain(): TrainData {
     // mock mode has no persisted instances, so the gym never flips to done offline.
     gymDoneDates: mock ? [] : (todayData?.weekDoneDates ?? []),
     workoutPending: !mock && (mesoPending || todayPending),
+    sportPending: !mock && sportQueryPending,
+    exercisesPending: !mock && (catalogPending || recordsPending),
     sport: mock
       ? { ...sport, sessions: sportData?.sessions ?? [] }
       : { schedule: scheduleData ?? null, week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },

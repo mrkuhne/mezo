@@ -1,8 +1,11 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, vi } from 'vitest'
+import { http } from 'msw'
 import { GymView } from './GymView'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -31,4 +34,29 @@ test('tapping the current training day (Csü Pull) opens the detail sheet', () =
   fireEvent.click(pullDay)
   // Sheet now shows the first exercise of that day.
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+})
+
+// Loading skeleton (mezo-f2z) — real mode shows the GymSkeleton (role="status")
+// while the meso/today queries are unresolved (workoutPending); mock seeds → no skeleton.
+describe('GymView (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the meso + today queries are unresolved', async () => {
+    // workoutPending = mesoPending || todayPending — both must never resolve.
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => new Promise(() => {})),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => new Promise(() => {})),
+    )
+    renderView()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+})
+
+describe('GymView (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders content with no skeleton (synchronous seed)', () => {
+    renderView()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })

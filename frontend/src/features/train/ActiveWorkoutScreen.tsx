@@ -25,6 +25,7 @@ import {
   skipExercise as skipExerciseModel,
 } from './workoutState'
 import { PageTitle } from '@/components/ui/PageTitle'
+import { ScreenSkeleton } from '@/components/ui/ScreenSkeleton'
 import { Chip } from '@/components/ui/Chip'
 import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
@@ -69,8 +70,11 @@ const PR_TOAST_MS = 4500
 export function ActiveWorkoutScreen() {
   const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
   // A hard reload lands here with the queries still loading — redirecting now
-  // would kill the resume flow (live-smoke catch). Hold rendering until loaded.
-  if (workoutPending) return null
+  // would kill the resume flow (live-smoke catch). Show the generic skeleton
+  // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
+  // `!mock`-gated (false in mock, synchronous seed), so no skeleton flashes in
+  // mock mode (Playwright parity).
+  if (workoutPending) return <ScreenSkeleton />
   // T0 clean slate: never render the session without a workout (and at least one exercise).
   if (!workout || workout.exercises.length === 0 || !activeMeso) return <Navigate to="/train" replace />
   return (

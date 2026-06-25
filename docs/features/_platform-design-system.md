@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Deep Current v2")
 type: feature-platform
 status: done
-updated: 2026-06-18
+updated: 2026-06-25
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -41,8 +41,9 @@ The design system has no "flows" of its own; it provides the chrome and the idio
 1. **App shell / navigation.** On desktop, the app renders inside a `440×956` iPhone 17 Pro Max mockup — `.phone` → `.phone-screen`, a fake `.dynamic-island`, `.status-bar`, and `.home-indicator` (`PhoneFrame.tsx`, `StatusBar.tsx`). On a real narrow viewport or an installed PWA (`@media (max-width: 519px), (display-mode: standalone|fullscreen|minimal-ui)` — `prototype.css:303–335`) the mockup chrome is hidden and the app goes full-bleed, deferring to real `env(safe-area-inset-*)` insets. The bottom `.tab-bar` holds 5 tabs — `"Today" · "Train" · "Fuel" · "Insights" · "Me"` — plus a floating `.fab` mic button (`aria-label="Gyors rögzítés"`).
 2. **Theme toggle.** `Me → Profil → gear → SettingsSheet` (`frontend/src/features/me/SettingsSheet.tsx`) flips dark/light via `useTheme().toggle()`. The choice persists to `localStorage` and is applied as `data-theme="light"` on `<html>`. **Dark is the default via _absence_ of the attribute** (`applyTheme` _removes_ it for dark — `theme.ts:16–20`).
 3. **Bottom sheets.** Every modal interaction (quick input, check-in, settings, pickers, score detail) slides a `Sheet` up from the bottom, dismissible by backdrop tap, `Escape`, the in-sheet X, or a drag-down on the grab handle.
-4. **Ghost / empty states.** In real mode, when a section has no data yet, views render `GhostState` — a faint skeleton + a one-line Hungarian message + an optional CTA (e.g. `"A statisztikáid az első logolt session után jelennek meg."`).
+4. **Ghost / empty states.** In real mode, when a section has no data yet, views render `GhostState` — a faint skeleton + a one-line Hungarian message + an optional CTA (e.g. `"A statisztikáid az első logolt session után jelennek meg."`). This is the **empty** state (query resolved, no data); the **loading** state (query still pending) is the animated skeletons in item 6.
 5. **Reorderable lists.** `SortableList` (`@dnd-kit`-backed) gives any list touch/pointer **drag-to-reorder** via a dedicated grip handle plus an always-visible ▲▼ button fallback (a11y/keyboard), labelled `${name} feljebb`/`lejjebb`. Generic over `{ id; label? }[]`, it calls `onReorder(ids)` with the new id order; consumers remap their items to that order. Backs the meso builder/planner exercise reorder (real, was fake in Phase 1) and the active-workout in-session reorder.
+6. **Loading skeletons (real mode).** While a view's backing query is still **pending** in real mode, it shows an **animated skeleton** (a light-teal shimmer sweep) shaped like the content it's about to replace, instead of a blank screen or a demo flash. This is the real-mode loading state for the 10 main flash views — Fuel (`Kamra`, `Receptek`), Train (`Mai`, `Gym`, `Sport`, `Gyakorlatok`, `Mesociklusok`), Goals, and the two formerly-blank routes (`GoalPlanner`, `ActiveWorkoutScreen`). **Mock mode shows no skeleton** — the seed resolves synchronously so the pending window never opens, keeping Playwright parity (see item 6 mechanics in §3). The skeleton primitives (`Skeleton`/`SkeletonText`/`SkeletonCard`/`ScreenSkeleton`) and the `mezo-shimmer` keyframe are documented in §3.
 
 ---
 
@@ -67,6 +68,16 @@ main.tsx
 - **Token cascade.** `:root` defines all vars (dark); `:root[data-theme="light"]` overrides the contrast-sensitive subset (`prototype.css:82–135`). Components reference `var(--…)` only; nothing hardcodes hex except a couple of intentionally-branded data palettes (`data/nova.ts`, `data/pantrySources.ts`).
 - **Tailwind bridge (build-time, runtime-live).** `frontend/src/index.css` does `@import "tailwindcss"` + `@theme inline { … }`, mapping `--brand-*`, `--surface-*`, `--cat-*`, `--font-*` onto Tailwind tokens. Utilities emit `var(--…)` refs, so `data-theme` flips utilities live with no rebuild.
 - **Anchor-mode wiring.** `AppLayout.tsx:12–16` reads `useTodayScenario().anchorMode` and passes `anchor = scenario.anchorMode && location.pathname.startsWith('/today')` into `<PhoneFrame anchor={anchor}>`, which swaps `.phone-screen.anchor` to the `--anchor-*` token skin (a muted warm alternate for Today's low-energy mode). This is the one place the shell reaches _up_ into the data layer.
+
+### Loading skeletons (mezo-f2z)
+
+The animated loading state (§2.6) is a small primitive family in `frontend/src/components/ui/Skeleton.tsx` plus one generic page skeleton, all painted by the `.sk` CSS class and its `mezo-shimmer` keyframe:
+
+- **CSS.** `.sk` is a `var(--surface-2)` block; `.sk::after` is a `translateX(-100%) → translateX(100%)` light-teal gradient running `mezo-shimmer 1.5s infinite` (`prototype.css:678–694`). `@media (prefers-reduced-motion: reduce)` disables the sweep (`.sk::after { display: none }`) — the skeleton stays as a static placeholder.
+- **Primitives** (`Skeleton.tsx`): `Skeleton` (one shimmer block, `variant: 'line' | 'block' | 'card' | 'circle' | 'stat'` + `width/height/radius`), `SkeletonText` (a tapering stack of line skeletons), `SkeletonCard` (a `.card.notch-12` wrapper). All carry `aria-hidden` so AT only sees the parent `role="status"` landmark. `ScreenSkeleton` (`ScreenSkeleton.tsx`) composes them into a generic `<div role="status" aria-label="Betöltés…">` page (header line + two cards) for views with no distinctive loadable layout to mirror.
+- **The `pending` hook idiom.** Each dual-mode feature hook surfaces a `pending` boolean derived as **`!mock && isPending`** (from the underlying `useQuery`/`useDualQuery`). In **mock** mode `pending` is always `false` — the seed resolves synchronously — so the skeleton never mounts (parity). Examples: `usePantry().pending`, `useRecipes().pending`, `useGoal().pending`, `useTrain().{workoutPending, sportPending, exercisesPending}`.
+- **The per-view branch.** A flash view renders its skeleton **before** the empty-state guard: `if (pending) return <XSkeleton/>` (a layout-aware skeleton for the rich views; `<ScreenSkeleton/>` for the two blank-flash routes), each rooted at `role="status"`. Tests assert this dual-mode: real-pending (a never-resolving MSW handler for the backing endpoint) → `findByRole('status')`; mock → real content/redirect, `queryByRole('status')` is null.
+- **Mock-safety note (GoalPlanner).** `GoalPlanner` keys its skeleton off `useBiometricProfile().isLoading` rather than a `!mock`-gated flag. That is still mock-safe **without** an explicit gate, because the hook passes `initialData` in mock mode, so TanStack Query reports `isLoading: false` synchronously (no flash). `ActiveWorkoutScreen` uses the already-`!mock`-gated `workoutPending`.
 
 ---
 
@@ -226,7 +237,9 @@ pnpm parity          # playwright pixel-parity vs prototype
 **Primitives** (`frontend/src/components/ui/`)
 - `Icon.tsx` — custom SVG icon set (`IconName`, `BrandGlyph`, `StatusIcons`).
 - `Sheet.tsx` — bottom-sheet modal (portal + drag/Escape/backdrop dismiss).
-- `GhostState.tsx` — real-mode empty state.
+- `GhostState.tsx` — real-mode empty state (query resolved, no data).
+- `Skeleton.tsx` — real-mode loading skeletons (`Skeleton`/`SkeletonText`/`SkeletonCard`; `.sk` + `mezo-shimmer`).
+- `ScreenSkeleton.tsx` — generic `role="status"` page skeleton for blank-flash views (`GoalPlanner`, `ActiveWorkoutScreen`).
 - `NotchCard.tsx` — chamfered card + optional accent strip.
 - `Eyebrow.tsx` / `LabelMono.tsx` / `PageTitle.tsx` / `Display.tsx` — typography.
 - `Cta.tsx` / `Chip.tsx` / `ToolChip.tsx` / `ToolChipRow.tsx` — buttons & chips.

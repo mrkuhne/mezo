@@ -26,7 +26,7 @@ describe('usePantry (mock mode)', () => {
     const { result } = renderHook(() => usePantry(), { wrapper: Wrapper })
     // Exact pre-existing shape: ingredients, stash, sources, categoryMeta, imports, suggestions.
     expect(Object.keys(result.current).sort()).toEqual(
-      ['categoryMeta', 'imports', 'ingredients', 'sources', 'stash', 'suggestions'],
+      ['categoryMeta', 'imports', 'ingredients', 'pending', 'sources', 'stash', 'suggestions'],
     )
     expect(result.current.ingredients.length).toBeGreaterThan(0)
     expect(result.current.stash.length).toBeGreaterThan(0)
@@ -36,6 +36,12 @@ describe('usePantry (mock mode)', () => {
     expect(result.current.imports.length).toBeGreaterThan(0) // mock keeps the scrape feed
     expect(Array.isArray(result.current.suggestions)).toBe(true)
     expect(result.current.suggestions.length).toBeGreaterThan(0)
+  })
+
+  it('exposes pending=false in mock mode (synchronous seed)', () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantry(), { wrapper: Wrapper })
+    expect(result.current.pending).toBe(false)
   })
 
   it('addItem appends a food ingredient that usePantry then exposes from the SAME cache', async () => {
@@ -97,6 +103,13 @@ describe('usePantry (real mode)', () => {
     const { result } = renderHook(() => usePantry(), { wrapper: Wrapper })
     expect(result.current.ingredients).toEqual([])
     expect(result.current.stash).toEqual([])
+  })
+
+  it('exposes pending=true while the query is unresolved', () => {
+    server.use(http.get(`${API_BASE}/api/pantry`, () => new Promise(() => {}))) // never resolves
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantry(), { wrapper: Wrapper })
+    expect(result.current.pending).toBe(true)
   })
 
   it('loads ingredients + stash from the API and defers imports/suggestions', async () => {

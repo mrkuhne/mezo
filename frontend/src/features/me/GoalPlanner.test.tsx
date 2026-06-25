@@ -1,5 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, it, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -257,4 +257,44 @@ test('GoalPlanner renders the wizard for a complete-profile user (real mode, def
   await waitFor(() => expect(screen.getByText('Mit építünk?')).toBeInTheDocument())
   expect(screen.queryByText('cél-nézet')).not.toBeInTheDocument()
   vi.unstubAllEnvs()
+})
+
+// --- loading skeleton (mezo-f2z) ---------------------------------------------
+// Real mode renders the generic ScreenSkeleton (role="status") while the
+// biometric-profile query is unresolved; mock mode seeds the profile
+// synchronously (initialData) → isLoading is false → no skeleton flashes (parity).
+describe('GoalPlanner (real mode, pending)', () => {
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the biometric-profile query is unresolved', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(
+      http.get(`${API_BASE}/api/biometrics/profile`, () => new Promise(() => {})),
+    )
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={['/me/goals/new']}>
+          <GoalPlanner />
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    // The redirect target / wizard heading must NOT have rendered yet.
+    expect(screen.queryByText('Mit építünk?')).not.toBeInTheDocument()
+  })
+})
+
+describe('GoalPlanner (mock mode)', () => {
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders the wizard with no skeleton (synchronous seed → isLoading false)', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={['/me/goals/new']}>
+          <GoalPlanner />
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    await waitFor(() => expect(screen.getByText('Mit építünk?')).toBeInTheDocument())
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })

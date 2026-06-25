@@ -14,6 +14,7 @@ import { GoalRecept } from '../components/GoalRecept'
 import { GoalPlanSlots } from '../components/GoalPlanSlots'
 import { EditGoalSheet } from '../EditGoalSheet'
 import { GoalGate } from '../GoalGate'
+import GoalsSkeleton from './GoalsSkeleton'
 // LinkedMesoCard was the per-row card the GoalTimeline lane view replaced in G4b.
 
 // Contract-native trajectory + guard labels — the hero reads these straight off
@@ -31,7 +32,7 @@ const GUARD_LABEL: Record<string, string> = {
 
 export function GoalsView() {
   const navigate = useNavigate()
-  const { goal, goalResponse, timeline, goalId } = useGoal()
+  const { goal, goalResponse, timeline, goalId, pending } = useGoal()
   const { detachPlan, evaluate, evaluating } = useGoalActions()
   const { weightTrends } = useWeight()
   const { isComplete: biometricComplete } = useBiometricProfile()
@@ -47,6 +48,13 @@ export function GoalsView() {
     if (biometricComplete) navigate('/me/goals/new')
     else setGateOpen(true)
   }
+
+  // Loading skeleton (real mode): while the active-goal query is unresolved
+  // (useGoal pending), show the layout-aware GoalsSkeleton so the swap to real
+  // content does not flash the empty-state CTA. Must come BEFORE the no-goal guard
+  // (pending and "no active goal" both look like a null goal). Mock mode never sets
+  // pending (synchronous seed) → no skeleton (mezo-f2z). After all hooks.
+  if (pending) return <GoalsSkeleton />
 
   // Real mode with no active goal: empty "set up a goal" state (mezo-72d). Must
   // come BEFORE any goal.X / goalResponse.X read below, and stays null-safe for

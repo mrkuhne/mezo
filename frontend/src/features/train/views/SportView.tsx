@@ -26,6 +26,7 @@ import { SportSessionCard } from '../components/SportSessionCard'
 import { CrossLoadRow } from '../components/CrossLoadRow'
 import { SportLogSheet } from '../components/SportLogSheet'
 import { SportScheduleSheet } from '../components/SportScheduleSheet'
+import SportSkeleton from './SportSkeleton'
 
 type SportSubView = 'week' | 'log' | 'crossload'
 
@@ -41,11 +42,16 @@ const RPE_EXPLAINER =
   'regenerálódás + másnapi load számolásához.'
 
 export function SportView() {
-  const { sport, logSportSession, saveSportSchedule } = useTrain()
+  const { sport, logSportSession, saveSportSchedule, sportPending } = useTrain()
   // Sticky so returning here restores the segment the user left from — see useStickyTab.
   const [view, setView] = useStickyTab<SportSubView>('train.sport.view', 'week')
   const [logOpen, setLogOpen] = useState(false)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+
+  // Loading skeleton (real mode): while the sport-sessions query (sportPending) is
+  // unresolved, render the layout-matched skeleton before the first render. Placed
+  // after all hook calls so the hook order is render-stable.
+  if (sportPending) return <SportSkeleton />
 
   // T3: schedule comes from the DB slots and week derives from the logged
   // sessions; only crossLoad stays null (Phase 3) — ghost-guard each facet.

@@ -21,15 +21,21 @@ import { SportLogSheet } from '../components/SportLogSheet'
 import { RunLogSheet } from '../components/RunLogSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '../components/WeeklyDayRow'
 import { daySessions } from '../agenda'
+import TrainTodaySkeleton from './TrainTodaySkeleton'
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
 export function TrainTodayView() {
-  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates } = useTrain()
-  const { activeRunningBlock, runSessions, logRunSession } = useRunning()
+  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending } = useTrain()
+  const { activeRunningBlock, runSessions, logRunSession, runningPending } = useRunning()
   const navigate = useNavigate()
   const [vbLogOpen, setVbLogOpen] = useState(false)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
+
+  // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
+  // the running block query are unresolved, render the layout-matched skeleton
+  // before the empty-state — placed after all hooks so the hook order is stable.
+  if (workoutPending || runningPending) return <TrainTodaySkeleton />
 
   // T0/T2: without an active meso the whole view ghosts. With one, the agenda
   // derives from the meso (gymSchedule) and /today drives the hero card;

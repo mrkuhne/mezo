@@ -1,8 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, it, vi } from 'vitest'
+import { http } from 'msw'
 import { MesocycleLibraryView } from './MesocycleLibraryView'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -39,4 +42,30 @@ test('renders the new-mesocycle chip trigger in the header', () => {
   // The header `+ Új` chip (exact name) — distinct from the dashed
   // "+ Új mesociklus tervezése" CTA further down the page.
   expect(screen.getByRole('button', { name: 'Új' })).toBeInTheDocument()
+})
+
+// Loading skeleton (mezo-f2z) — real mode shows the MesocycleSkeleton (role="status")
+// while the meso/today queries are unresolved (workoutPending, which drives `mesocycles`);
+// mock seeds → no skeleton.
+describe('MesocycleLibraryView (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the meso + today queries are unresolved', async () => {
+    // workoutPending = mesoPending || todayPending — both must never resolve.
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => new Promise(() => {})),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => new Promise(() => {})),
+    )
+    setup()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+  })
+})
+
+describe('MesocycleLibraryView (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders content with no skeleton (synchronous seed)', () => {
+    setup()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })

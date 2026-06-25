@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { ActiveWorkoutScreen } from './ActiveWorkoutScreen'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -471,4 +471,32 @@ test('real mode: add-set "Csak ma" fires no template PUT', async () => {
   await user.click(await screen.findByText('Csak ma'))
   await new Promise((r) => setTimeout(r, 0))
   expect(puts).toHaveLength(0)
+})
+
+// --- loading skeleton (mezo-f2z) ---------------------------------------------
+// Real mode renders the generic ScreenSkeleton (role="status") while the
+// meso + today queries are unresolved (workoutPending = !mock && (mesoPending ||
+// todayPending)); mock seeds → workoutPending is false → no skeleton (parity).
+describe('ActiveWorkoutScreen (real mode, pending)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('shows the skeleton while the meso + today queries are unresolved', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => new Promise(() => {})),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => new Promise(() => {})),
+    )
+    setup()
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+    // Neither the prep screen nor a redirect content rendered yet.
+    expect(screen.queryByText(/Kezdjük el/)).toBeNull()
+  })
+})
+
+describe('ActiveWorkoutScreen (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+  it('renders content with no skeleton (synchronous seed)', () => {
+    setup()
+    expect(screen.queryByRole('status')).toBeNull()
+  })
 })
