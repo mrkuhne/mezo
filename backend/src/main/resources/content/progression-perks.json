@@ -1,0 +1,8 @@
+[
+  { "skillKey": "max_strength", "milestoneLevel": 5, "perkKey": "iron_core_2", "name": "Vas-törzs II", "effectCopy": "push-volumen tűrés +6%" },
+  { "skillKey": "anaerobic_capacity", "milestoneLevel": 5, "perkKey": "lactate_buffer_2", "name": "Tejsav-puffer II", "effectCopy": "becsült munkakapacitás +8%" },
+  { "skillKey": "vertical_jump", "milestoneLevel": 5, "perkKey": "spring_loaded_1", "name": "Rugós láb", "effectCopy": "becsült vertikál +3 cm" },
+  { "skillKey": "aerobic_capacity", "milestoneLevel": 5, "perkKey": "big_lungs_1", "name": "Nagy tüdő", "effectCopy": "regeneráció két kör közt +5%" },
+  { "skillKey": "sprint_speed", "milestoneLevel": 10, "perkKey": "afterburner_1", "name": "Utánégő", "effectCopy": "becsült csúcssebesség +4%" },
+  { "skillKey": "robustness", "milestoneLevel": 10, "perkKey": "armor_plating_1", "name": "Páncélzat", "effectCopy": "10 hét töretlen — sérülésállóság nő" }
+]
