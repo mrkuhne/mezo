@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useGoalCreation, useWeight, useFeasibilityPreview, useBiometricProfile } from '@/data/hooks'
 import { Icon, type IconName } from '@/components/ui/Icon'
+import { ScreenSkeleton } from '@/components/ui/ScreenSkeleton'
 import { huMonthDay } from '@/lib/dates'
 import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/lib/goalApi'
 
@@ -31,12 +32,15 @@ const GUARDS: { id: Guard; label: string }[] = [
 // direct route (back/forward, bookmark, manual URL) must not drop the user into
 // it without one. The two "Új cél" buttons in GoalsView already gate, but the
 // route itself didn't — this closes that bypass (spec D4). While the profile is
-// still loading we render nothing (do NOT bounce a complete-profile user mid
-// fetch); once loaded, an incomplete profile redirects to /me/goals (where the
-// GoalGate + "Biometria beállítása" flow lives); complete → the wizard.
+// still loading we show the generic ScreenSkeleton (do NOT bounce a
+// complete-profile user mid fetch); once loaded, an incomplete profile redirects
+// to /me/goals (where the GoalGate + "Biometria beállítása" flow lives);
+// complete → the wizard. In mock mode `useBiometricProfile` seeds the profile
+// synchronously (initialData) so `isLoading` is false → no skeleton flash
+// (Playwright parity), hence no explicit `!mock` gate is needed here (mezo-f2z).
 export function GoalPlanner() {
   const { isComplete, isLoading } = useBiometricProfile()
-  if (isLoading) return null
+  if (isLoading) return <ScreenSkeleton />
   if (!isComplete) return <Navigate to="/me/goals" replace />
   return <GoalWizard />
 }
