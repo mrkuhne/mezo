@@ -13,6 +13,8 @@ public record RunSignal(
     Integer completedRounds,
     Integer durationMin,
     Integer rpeActual,
+    // reserved: plumbed through but not yet consumed by applyRun (sprint scores off rounds + RPE);
+    // kept for a future sprint-scoring refinement that weights the landmark distance.
     String sprintLandmark,
     Integer hrRecoverySec
 ) {}
