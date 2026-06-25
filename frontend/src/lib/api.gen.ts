@@ -1372,6 +1372,7 @@ export interface components {
             sprintLandmark?: string | null;
             durationMin?: number | null;
             notes?: string | null;
+            levelUp?: components["schemas"]["LevelUpResult"];
         };
         RunSessionLogRequest: {
             /** Format: uuid */
