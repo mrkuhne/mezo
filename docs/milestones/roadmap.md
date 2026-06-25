@@ -9,7 +9,8 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
 - **Phase 2 — Core data backend:** 🔄 in progress. Java / Spring Boot 4 + PostgreSQL behind the same `src/data/hooks.ts` boundary.
   - Slice A (foundation + auth + biometrics + TanStack Query): ✅ done
   - Slice B (Train): ✅ done
-  - Slice C (Fuel) → D (Insights seed) → E (People): ⏳ remaining
+  - Slice C (Fuel): 🟢 functionally shipped — Pantry (mezo-9xu), Recipes (mezo-lns) and Meal-logging (mezo-arb) all closed/backend-backed; remaining: P2/P3 follow-ups + Phase-3-deferred Stack/Protocol, weekly-plan and meal-scoring
+  - Slice D (Insights seed) → E (People): ⏳ remaining
 - **Phase 3 — AI brain:** 🔜 later. Spring AI, pgvector, RAG, pattern/companion pipeline.
 
 ## Cross-cutting tracks
@@ -25,4 +26,5 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
 |---|---|
 | 2026-06-13 | Deploy direction decided: self-managed k3s + ArgoCD + pgAdmin (learning track). ADR 0001 + infra doc written. `docs/` decision/infra/milestone structure established. |
 | 2026-06-14 | Deploy steps 0-2 done: Hetzner VPS hardened + Tailscale, k3s installed, full mezo (Postgres + backend + frontend) live on k8s at `https://46.225.112.172.sslip.io/` with Let's Encrypt HTTPS. `k8s/` manifests + Dockerfiles committed. Pending: pgAdmin (step 3), ArgoCD/GitOps (step 4). |
+| 2026-06-24 | Slice C (Fuel) core shipped: Pantry (`pantry_item`, mezo-9xu) + 146-item catalog (mezo-zza), Recipes (`recipe`/`recipe_ingredient`, mezo-lns), Meal-logging (`meal`/`meal_item` + `/api/fuel/day/{date}`, mezo-arb) — backends + dual-mode FE, green both modes. Remaining Fuel (Stack/Protocol, weekly-plan, meal-scoring) Phase-3-deferred. |
 | 2026-06-25 | Progression P1 (domain foundation) — curve, 3 tables (`skill_progress`/`level_up_event`/`perk_unlock`), entities/repos, perk catalog; triggers/HTTP deferred to P2 (`mezo-8e4`). |
