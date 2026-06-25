@@ -3,20 +3,21 @@
 // Approved full-page detail (docs/design/recipes-detail.html · "A" phone),
 // consistent with the Kamra item detail being a route. Single scroll, v1-honest:
 // editorial hero → /adag↔egész macro hero → meta strip → Hozzávalók (per-line
-// contribution in MacroCells) → "Mezo-fit · hamarosan" sparkle zone → actions.
-// Star / Szerkesztés / Törlés are LIVE (useRecipeActions); + Mai étkezéshez is
-// inert (meal-log deferred). Route guard relies on useRecipes().recipes: mock is
+// contribution in MacroCells) → Logok (RecipeLogsList ← useRecipeLogs) → "Mezo-fit
+// · hamarosan" sparkle zone → actions. Star / Szerkesztés / Törlés / + Mai
+// étkezéshez are all LIVE (useRecipeActions / LogMealSheet). Route guard relies on useRecipes().recipes: mock is
 // synchronous via initialData; real mode briefly shows the not-found fallback on
 // a cold deep-link until the list resolves.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Recipe, RecipeInput, PantryCategoryMeta } from '@/data/types'
-import { useRecipes, useRecipeActions, usePantry } from '@/data/hooks'
+import { useRecipes, useRecipeActions, usePantry, useRecipeLogs } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
 import { SourceBadge } from '@/components/ui/SourceBadge'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
+import { RecipeLogsList } from '@/features/fuel/components/RecipeLogsList'
 import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import { LogMealSheet } from '@/features/fuel/LogMealSheet'
@@ -67,6 +68,9 @@ export function RecipeDetailView() {
   const { update, remove } = useRecipeActions()
   const [basis, setBasis] = useState<ServingBasis>('serving')
   const [logOpen, setLogOpen] = useState(false)
+  // Today's logs of this recipe (mezo-cki). Called with `id ?? ''` alongside the other top-level
+  // hooks — BEFORE the not-found early return — so hook order stays stable on a cold/not-found render.
+  const { logs } = useRecipeLogs(id ?? '')
 
   const recipe = recipes.find(r => r.id === id)
 
@@ -185,6 +189,16 @@ export function RecipeDetailView() {
             </div>
           )
         })}
+      </div>
+
+      {/* Logok — today's logs of this recipe (mezo-cki) */}
+      <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 10px' }}>
+        <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>LOGOK</span>
+        {logs.length > 0 && <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>{logs.length}</span>}
+        <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
+      </div>
+      <div style={{ marginBottom: 16 }}>
+        <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
       </div>
 
       {/* Mezo-fit · hamarosan */}

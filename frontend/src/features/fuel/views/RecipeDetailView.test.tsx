@@ -113,3 +113,29 @@ test('Csillag toggles the starred flag', async () => {
   await userEvent.click(screen.getByRole('button', { name: /Csillag/ }))
   await waitFor(() => expect(result.current.recipes.find(x => x.id === r.id)?.starred).toBe(!before))
 })
+
+test('mounts the Logok section with a scored recipe log', async () => {
+  const qc = newQc()
+  const r = firstId(qc) // recipes[0] = rec-1, which has a scored recentLog (0.92)
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  // the section header is present
+  expect(screen.getByText('LOGOK')).toBeInTheDocument()
+  // the scored log renders its delta-vs-baseline line (RecipeLogsList scored branch)
+  expect(screen.getByText(/vs baseline/)).toBeInTheDocument()
+})
+
+test('shows the Logok empty-state when the recipe was never logged', async () => {
+  const qc = newQc()
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  const { result } = renderHook(() => useRecipes(), { wrapper })
+  await waitFor(() => expect(result.current.recipes.length).toBeGreaterThan(0))
+  // rec-3 (Lazac) is not in recipeLinks -> no recentLogs
+  const unlogged = result.current.recipes.find(x => x.id === 'rec-3') ?? result.current.recipes[2]
+  renderDetail(unlogged.id, qc)
+  await screen.findByText(unlogged.name)
+  expect(screen.getByText('LOGOK')).toBeInTheDocument()
+  expect(screen.getByText(/Még nem logoltad ezt a receptet/)).toBeInTheDocument()
+})
