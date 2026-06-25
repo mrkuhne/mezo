@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-06-23
+updated: 2026-06-25
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -46,6 +46,7 @@ Drift between the two sides becomes a **compile error**, not a runtime surprise.
 | **Train** (meso · workout-exec · sport · catalog · records · running) | `api/feature/train/train.yml` | ✅ `feature/train` | `lib/trainApi.ts` + `lib/runningApi.ts` → `trainHooks.ts` / `runningHooks.ts` | ✅ Real, dual-mode. |
 | **Fuel — Pantry (Kamra)** | `api/feature/pantry/pantry.yml` | ✅ `feature/pantry` | `lib/pantryApi.ts` → `usePantry()` + `usePantryActions()` | ✅ Real, dual-mode (slice C, `mezo-9xu`). Single `pantry_item` table (Model B), `kind` discriminator, kind-split projection — see §4c. |
 | **Fuel** (rest — day/timeline/week, recipes, stack, protocol) | — | ❌ | `data/fuel.ts`, `data/pantry.ts`, `data/fuelWeek.ts` | 🔶 mock-only. |
+| **Progression** (skill XP · level-up ledger · perk unlocks) | — (P1 has **no** fragment) | 🟡 `feature/progression` — **P1 domain foundation only** | — (FE still mock; wires in P2) | 🟡 P1 done (`mezo-8e4`): curve math, 3 owned tables, entities/repos, in-memory perk catalog, 2 test populators. **No REST contract / endpoint surface yet** — engine triggers + HTTP are P2. See §4e. |
 | **Insights** | — | ❌ | `data/insights.ts` | 🔶 mock-only. |
 | **People** | — | ❌ | `data/people.ts` | 🔶 mock-only. |
 | **AI brain** (Spring AI, pgvector, RAG) | — | ❌ | — | 🟣 Phase-3 deferred. |
@@ -157,6 +158,21 @@ Three endpoints fan off the existing `GoalController` (`feature/goal/controller/
 
 `GoalPlanLinkMapper` (`feature/goal/mapper/GoalPlanLinkMapper.java:22`) maps `(entity, resolved GoalPlanRef) → GoalPlanLinkResponse`, converting the `String planType` to the generated inner enum via `fromValue`. **Cascade on goal delete** is handled in Java, not the DB FK: `GoalService.deleteGoal` (`feature/goal/service/GoalService.java:63-67`) soft-deletes the goal's links first (the FK `ON DELETE CASCADE` only fires on a *physical* delete, which the soft-delete path never triggers), so a re-used goal id never inherits ghost links. Demodata links the demo meso + running block to the demo goal (`feature/goal/GoalSeedData.java`, `demodata` profile). Contract fragment: the same `api/feature/goal/goal.yml` (POST `/plans` → **201**, DELETE `/plans/{linkId}` → **204**, GET `/timeline` → **200**; schemas `GoalPlanAttachRequest`/`GoalPlanLinkResponse`/`GoalPlanRef`/`GoalTimelineResponse`/`GoalGap`). ITs: `feature/goal/{GoalPlanLinkServiceIT,GoalTimelineServiceIT,GoalTimelineContractIT}.java`. FE read-side: `lib/goalLinkApi.ts` → `useGoal()` builds real `linkedMesocycles` + `goal.mesocycles` from the timeline (see Me feature doc + `_platform-data-layer.md`).
 
+### 4e. The progression domain foundation (P1 — domain only, NO HTTP surface yet, `mezo-8e4`)
+
+> **P1 foundation only — no REST contract / endpoint surface.** This slice lands the persistence + pure-logic spine for the skill-progression / "level-up" system; the engine that *grants* XP (the gym/sport/run completion triggers) and the HTTP read surface are **deferred to P2**. There is **no `api/feature/progression/` fragment, no controller/service/mapper, and no FE wiring** yet — so unlike every other §4 aggregate, progression contributes nothing to `api/openapi.yml` or `frontend/src/lib/api.gen.ts`. The frontend's progression views stay mock-only until P2 wires them.
+
+`feature/progression` ships:
+
+- **Pure level math** — `ProgressionCurve` (`feature/progression/ProgressionCurve.java`): `xpThreshold(level)` (cumulative XP to BE at a level; `level ≤ 1 → 0`), `levelFor(cumulativeXp)` (highest reached level, capped at `MAX_LEVEL = 200` via the scan guard), `progressPct(cumulativeXp, level)` (within-level fill 0..100, with a `ceil ≤ floor` divide-by-zero guard returning 100). Tuned by `ProgressionProperties` (`mezo.progression.curve.{base,exp}`, defaults 100 / 1.6 — `@Validated` record, never `@Value`). No state, no DB. Spec'd by `ProgressionCurveTest` (plain JUnit, no Spring context).
+- **In-memory perk catalog** — `PerkCatalog` (`feature/progression/PerkCatalog.java`): master content (skillKey + milestoneLevel → perk title/effect copy) loaded at startup from the classpath `content/progression-perks.json`, **no table / no `created_by`** (the per-user unlocks live in `perk_unlock`). Invalid content **fails startup fast** (`@PostConstruct validate`). IT: `PerkCatalogIT`.
+- **Three new owned tables** (migration `db/changelog/1.0.0/script/202606251200_mezo-8e4_create_progression.sql`), all the usual UUID-PK + `created_by` FK→`app_user ON DELETE CASCADE` + soft-delete columns:
+  - **`skill_progress`** — per-skill XP accumulator: `skill_key`, `skill_kind` (`ATHLETIC|MUSCLE`, DB CHECK), `cumulative_xp` (bigint), `current_level` (int, CHECK ≥ 1); idempotency key `uq_skill_progress_created_by_skill_key` (one row per skill per owner). Entity `entity/SkillProgressEntity.java` (`@UpdateTimestamp updated_at`).
+  - **`level_up_event`** — the XP-grant ledger: one row per XP-granting workout regardless of whether a level was crossed. `source_type` (`GYM|SPORT|RUN`, DB CHECK), **`source_ref_id` UUID** — a *polymorphic* ref to the gym instance / sport / run session, **intentionally NOT an FK** (no single parent table to point at); `total_xp` (bigint); `payload` typed jsonb (`LevelUpResult` record via `@JdbcTypeCode(SqlTypes.JSON)`). **Idempotency key `uq_level_up_event_created_by_source` (`created_by, source_type, source_ref_id`)** — re-processing the same workout cannot double-grant. Entity `entity/LevelUpEventEntity.java`.
+  - **`perk_unlock`** — per-user perk unlocks: `skill_key`, `perk_key`, `milestone_level` (CHECK ≥ 1); idempotency key `uq_perk_unlock_created_by_perk`. Entity `entity/PerkUnlockEntity.java`.
+- **Repositories** — `repository/{SkillProgressRepository,LevelUpEventRepository,PerkUnlockRepository}.java`, date-less owned aggregates extending `JpaRepository` with bespoke `…CreatedByAndDeletedFalse` finders (same pattern as `GoalRepository`, §4b).
+- **Test populators** — `support/populator/{SkillProgressPopulator,LevelUpEventPopulator}.java` (one per persisted aggregate; `perk_unlock` is exercised through the persistence IT directly). The three tables are in the `ResetDatabase` TRUNCATE list (§8). ITs: `feature/progression/{ProgressionPersistenceIT,ProgressionPopulatorIT}.java`.
+
 ---
 
 ## 5. Integrations
@@ -240,8 +256,8 @@ References: `docs/references/testing_standards.md` + `integration_test_framework
 
 - `support/AbstractIntegrationTest.java` — `@SpringBootTest`, imports `TestcontainersConfiguration`, `DatabasePopulator`, `UserPopulator`, `TrainPopulator`, `ResetDatabase`; `@BeforeEach` runs `ResetDatabase.resetExceptMasterData()`. Service-level subclasses add their own `@Transactional` for rollback.
 - `support/ApiIntegrationTest.java extends AbstractIntegrationTest` — `@ActiveProfiles("demodata")`, `RANDOM_PORT`, `TestRestTemplate`. **Not `@Transactional`** (server commits in its own tx; cleanup via `ResetDatabase`). Provides `ownerAuthHeaders()` (logs in via `/api/auth/login` with credentials from `OwnerProperties`, never hardcoded); verb helpers `getForBody/getForList/postForBody/putForBody/deleteAndExpect/exchangeForBody` where the **expected status is always a param and always asserted**; `exchangeForResponse` for header inspection (CORS); and `assertHasFieldError(body, field, code)` / `assertHasRequestError(body, code)` that parse the `List<SystemMessage>` JSON and match on **code/type/field, never resolved text** (codes are the contract). (SB4 → Jackson 3, `tools.jackson.databind.ObjectMapper`.)
-- `support/ResetDatabase.java` — one `TRUNCATE ... CASCADE` over all owned domain tables (now incl. `goal_plan_link`) + `DELETE` of non-owner users/profiles. **Growth rule (mandatory): every new owned table is added here in the same change; `exercise_catalog` is master data and must NOT be truncated.**
-- `support/populator/{UserPopulator,TrainPopulator,RunningPopulator}.java` — one `<Aggregate>Populator` per aggregate; `DatabasePopulator` is the facade. **Growth rule: each new aggregate gets its own populator in the same change.**
+- `support/ResetDatabase.java` — one `TRUNCATE ... CASCADE` over all owned domain tables (now incl. `goal_plan_link` + the three progression tables `skill_progress`, `level_up_event`, `perk_unlock`) + `DELETE` of non-owner users/profiles. **Growth rule (mandatory): every new owned table is added here in the same change; `exercise_catalog` is master data and must NOT be truncated.**
+- `support/populator/{UserPopulator,TrainPopulator,RunningPopulator,…,SkillProgressPopulator,LevelUpEventPopulator}.java` — one `<Aggregate>Populator` per aggregate; `DatabasePopulator` is the facade. **Growth rule: each new aggregate gets its own populator in the same change.** (`mezo-8e4` adds `SkillProgressPopulator` + `LevelUpEventPopulator`.)
 - DB target: fixed `mezo_test` compose DB by default; throwaway Testcontainers via `-Dmezo.test.use-testcontainers=true`. Surefire also runs `*IT.java` (Failsafe deliberately unconfigured to avoid double execution).
 - Canonical examples: `feature/biometrics/BiometricsContractIT.java` (round-trips weight POST/GET, asserts a 400 FIELD error, asserts check-in upsert); `feature/train/ProvenanceRoundTripIT.java` (proves the typed-jsonb envelope survives a DB round-trip).
 
@@ -315,6 +331,11 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - `feature/pantry/{controller/PantryController,service/PantryService,mapper/PantryMapper,repository/PantryItemRepository,entity/PantryItemEntity}.java` + typed-jsonb micros `entity/MicroFact.java`. `PantryService.getPantry` projects by `kind` into `{ ingredients, stash }`; `validatePerKind` holds the per-kind required-field rules (no DB CHECKs). No demodata seed (clean slate).
 - contract fragment `api/feature/pantry/pantry.yml` (tag `Pantry` → `PantryApi`; schemas `PantryResponse`/`PantryItemRequest`/`PantryItemResponse`/`IngredientResponse`/`SupplementStashResponse`/`PantryMacros`/`PantryMicro`/`PantryStock`)
 
+**Progression (P1 domain foundation, `mezo-8e4` — no HTTP surface yet; see §4e)**
+- `feature/progression/{ProgressionCurve,PerkCatalog}.java` + `config/ProgressionProperties.java` (`mezo.progression.curve`); content `src/main/resources/content/progression-perks.json`
+- entities `feature/progression/entity/{SkillProgressEntity,LevelUpEventEntity,PerkUnlockEntity}.java` + typed-jsonb payload `entity/LevelUpResult.java`; repos `repository/{SkillProgressRepository,LevelUpEventRepository,PerkUnlockRepository}.java`
+- **no** `api/feature/progression/` fragment, controller, service, mapper, or FE wiring — engine triggers + HTTP are P2
+
 **Auth**
 - `feature/auth/...` (`AuthController`, `AuthService`, `OwnerProperties`, `OwnerSeedData`, `entity/AppUserEntity`, `UserProfileEntity`)
 
@@ -324,11 +345,11 @@ cd frontend && pnpm generate:api           # regenerate src/lib/api.gen.ts
 - content/seed: `ExerciseCatalogLoader.java` (master content, all profiles), `TrainSeedData.java`, `RunningSeedData.java` (demodata)
 
 **Liquibase**
-- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk + `202606181200_mezo-2hp_create_goal.sql` for `goal` + `biometric_profile` + `202606181600_mezo-3sc_create_goal_plan_link.sql` for `goal_plan_link` + `202606221200_mezo-9xu_create_pantry_item.sql` for `pantry_item`)
+- `db/changelog/db.changelog-master.yaml`, `1.0.0/1.0.0_master.yml`, `1.0.0/script/*.sql` (bd-ids: v67/n5q/tod/0ae/7ot/b4n/auk + `202606181200_mezo-2hp_create_goal.sql` for `goal` + `biometric_profile` + `202606181600_mezo-3sc_create_goal_plan_link.sql` for `goal_plan_link` + `202606221200_mezo-9xu_create_pantry_item.sql` for `pantry_item` + `202606251200_mezo-8e4_create_progression.sql` for `skill_progress` + `level_up_event` + `perk_unlock`)
 
 **Test framework**
-- `support/AbstractIntegrationTest.java` (imports the populators, incl. `PantryItemPopulator`), `ApiIntegrationTest.java`, `ResetDatabase.java` (TRUNCATE list now incl. `goal, biometric_profile, pantry_item`), `DatabasePopulator.java`, `populator/{UserPopulator,TrainPopulator,RunningPopulator,GoalPopulator,BiometricProfilePopulator,PantryItemPopulator}.java`
-- canonical ITs: `feature/biometrics/BiometricsContractIT.java`, `feature/train/ProvenanceRoundTripIT.java`; G1: `feature/goal/{GoalServiceIT,GoalContractIT}.java`, `feature/biometrics/profile/{BiometricProfileServiceIT,BiometricProfileContractIT}.java`; G3: `feature/goal/{GoalPlanLinkServiceIT,GoalTimelineServiceIT,GoalTimelineContractIT}.java`; Pantry (`mezo-9xu`): `feature/pantry/{PantryItemRepositoryIT,PantryServiceIT,PantryApiIT}.java`
+- `support/AbstractIntegrationTest.java` (imports the populators, incl. `PantryItemPopulator`, `SkillProgressPopulator`, `LevelUpEventPopulator`), `ApiIntegrationTest.java`, `ResetDatabase.java` (TRUNCATE list now incl. `goal, biometric_profile, pantry_item, skill_progress, level_up_event, perk_unlock`), `DatabasePopulator.java`, `populator/{UserPopulator,TrainPopulator,RunningPopulator,GoalPopulator,BiometricProfilePopulator,PantryItemPopulator,SkillProgressPopulator,LevelUpEventPopulator}.java`
+- canonical ITs: `feature/biometrics/BiometricsContractIT.java`, `feature/train/ProvenanceRoundTripIT.java`; G1: `feature/goal/{GoalServiceIT,GoalContractIT}.java`, `feature/biometrics/profile/{BiometricProfileServiceIT,BiometricProfileContractIT}.java`; G3: `feature/goal/{GoalPlanLinkServiceIT,GoalTimelineServiceIT,GoalTimelineContractIT}.java`; Pantry (`mezo-9xu`): `feature/pantry/{PantryItemRepositoryIT,PantryServiceIT,PantryApiIT}.java`; Progression P1 (`mezo-8e4`): `feature/progression/{ProgressionCurveTest,PerkCatalogIT,ProgressionPersistenceIT,ProgressionPopulatorIT}.java`
 
 **Frontend seam**
 - `frontend/src/lib/api.ts` (`apiFetch`, `ApiError`, `setToken`, `API_BASE`), `lib/mode.ts` (`isMockMode`), `lib/auth.ts` (`bootstrapOwnerToken`), `lib/api.gen.ts` (generated), `lib/biometricsApi.ts`, `lib/trainApi.ts`, `lib/runningApi.ts`, `lib/goalApi.ts`, `lib/goalLinkApi.ts` (G3 timeline/attach/detach), `lib/biometricProfileApi.ts`, `lib/pantryApi.ts` (slice C — `/api/pantry` CRUD)

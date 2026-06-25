@@ -70,6 +70,11 @@ mezo:
     c: 380
     f: 95
     water: 4000
+  progression:
+    # Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp); Lv2=100, Lv3≈303, Lv5≈919.
+    curve:
+      base: 100
+      exp: 1.6
 management:
   endpoints:
     web:
