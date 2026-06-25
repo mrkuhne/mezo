@@ -59,7 +59,8 @@ public class PerkCatalog {
             && p.effectCopy() != null && !p.effectCopy().isBlank()
             && p.milestoneLevel() >= 1;
         if (!valid) {
-            throw new IllegalStateException("Invalid progression-perks item: " + p.perkKey());
+            throw new IllegalStateException("Invalid progression-perks item: skillKey=" + p.skillKey()
+                + " milestoneLevel=" + p.milestoneLevel() + " perkKey=" + p.perkKey());
         }
     }
 }

@@ -42,4 +42,24 @@ class ProgressionCurveTest {
     void testProgressPct_shouldClampToHundred_whenAtOrBeyondNextThreshold() {
         assertThat(curve.progressPct(303L, 2)).isEqualTo(100.0);
     }
+
+    @Test
+    void testProgressPct_shouldStayBounded_whenAtTheMaxLevelCeiling() {
+        // At the safety cap (200) the band stays non-degenerate for this strictly-increasing
+        // curve, so the divide-by-zero guard returns the normal in-band fill — exercise that the
+        // ceiling level evaluates safely and the result is bounded 0..100.
+        double pct = curve.progressPct(curve.xpThreshold(200), 200);
+        assertThat(pct).isBetween(0.0, 100.0);
+    }
+
+    @Test
+    void testLevelFor_shouldCapAtMaxLevel_whenCumulativeXpIsEffectivelyUnbounded() {
+        assertThat(curve.levelFor(Long.MAX_VALUE)).isEqualTo(200);
+    }
+
+    @Test
+    void testXpThreshold_shouldReturnZero_whenLevelIsOneOrBelow() {
+        assertThat(curve.xpThreshold(1)).isZero();
+        assertThat(curve.xpThreshold(0)).isZero();
+    }
 }
