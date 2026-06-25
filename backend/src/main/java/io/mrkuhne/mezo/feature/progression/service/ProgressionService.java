@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProgressionService {
 
     private static final String SOURCE_GYM = "GYM";
+    private static final String SOURCE_RUN = "RUN";
     private static final int[] MILESTONES = {5, 10, 15, 20, 25, 30};
 
     private final SkillProgressRepository skillProgressRepository;
@@ -42,13 +43,7 @@ public class ProgressionService {
 
     @Transactional
     public LevelUpResult applyGym(UUID createdBy, GymSignal signal) {
-        // Idempotency: a workout grants XP once — return the stored payload on re-apply.
-        var existing = levelUpEventRepository
-            .findByCreatedByAndSourceTypeAndSourceRefId(createdBy, SOURCE_GYM, signal.instanceId());
-        if (existing.isPresent()) {
-            return existing.get().getPayload();
-        }
-
+        // Build the GYM-specific deltas; award() performs the idempotency guard + shared tail.
         ProgressionProperties.Gym g = properties.gym();
         // skillKey → xp delta for this workout (LinkedHashMap to keep a stable order in the payload)
         Map<String, Long> deltas = new LinkedHashMap<>();
@@ -77,6 +72,26 @@ public class ProgressionService {
         if (enduranceXp > 0) {
             deltas.merge("strength_endurance", enduranceXp, Long::sum);
             kinds.put("strength_endurance", "ATHLETIC");
+        }
+
+        return award(createdBy, SOURCE_GYM, signal.instanceId(), deltas, kinds,
+            "Klasszik kondi", null, null);
+    }
+
+    /**
+     * Shared progression tail for every family: idempotent on (sourceType, sourceRefId), applies
+     * the per-skill XP deltas, builds gains/level-ups/perks, recomputes streak robustness, writes
+     * one level_up_event, and returns the payload. Called inside the caller's @Transactional.
+     */
+    private LevelUpResult award(UUID createdBy, String sourceType, UUID sourceRefId,
+        Map<String, Long> deltas, Map<String, String> kinds, String label,
+        Integer durationMin, Integer rpe) {
+
+        // Idempotency: a workout grants XP once — return the stored payload on re-apply.
+        var existing = levelUpEventRepository
+            .findByCreatedByAndSourceTypeAndSourceRefId(createdBy, sourceType, sourceRefId);
+        if (existing.isPresent()) {
+            return existing.get().getPayload();
         }
 
         // apply deltas → skill_progress, build gains + level-ups + perks
@@ -117,13 +132,13 @@ public class ProgressionService {
         skillProgressRepository.save(rob);
         totalXp += robustnessDelta;
 
-        LevelUpResult payload = new LevelUpResult(SOURCE_GYM, "Klasszik kondi", null, null, totalXp,
+        LevelUpResult payload = new LevelUpResult(sourceType, label, durationMin, rpe, totalXp,
             gains, levelUps, perks, new LevelUpResult.Robustness(robustnessDelta, streak));
 
         LevelUpEventEntity event = new LevelUpEventEntity();
         event.setCreatedBy(createdBy);
-        event.setSourceType(SOURCE_GYM);
-        event.setSourceRefId(signal.instanceId());
+        event.setSourceType(sourceType);
+        event.setSourceRefId(sourceRefId);
         event.setTotalXp(totalXp);
         event.setPayload(payload);
         levelUpEventRepository.save(event);
