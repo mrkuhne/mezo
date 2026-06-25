@@ -70,6 +70,10 @@ mezo:
     c: 380
     f: 95
     water: 4000
+  feature:
+    # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
+    progression:
+      enabled: true
   progression:
     # Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp); Lv2=100, Lv3≈303, Lv5≈919.
     curve:
