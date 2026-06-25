@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.feature.progression.repository.PerkUnlockRepository;
 import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
+import io.mrkuhne.mezo.feature.progression.run.RunSignal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -76,6 +77,42 @@ public class ProgressionService {
 
         return award(createdBy, SOURCE_GYM, signal.instanceId(), deltas, kinds,
             "Klasszik kondi", null, null);
+    }
+
+    @Transactional
+    public LevelUpResult applyRun(UUID createdBy, RunSignal signal) {
+        ProgressionProperties.Run r = properties.run();
+        Map<String, Long> deltas = new LinkedHashMap<>();
+        Map<String, String> kinds = new LinkedHashMap<>();
+
+        boolean sprint = "sprint".equals(signal.kind()) || "pyramid".equals(signal.kind());
+        if (sprint) {
+            int rounds = signal.completedRounds() != null ? signal.completedRounds() : 0;
+            addAthletic(deltas, kinds, "sprint_speed", (long) rounds * r.sprintXpPerRound());
+            addAthletic(deltas, kinds, "anaerobic_capacity", (long) rounds * r.anaerobicXpPerRound());
+            if (signal.rpeActual() != null) {
+                addAthletic(deltas, kinds, "explosiveness",
+                    (long) signal.rpeActual() * r.rpeXpPerPoint());
+            }
+        } else { // steady (default)
+            int min = signal.durationMin() != null ? signal.durationMin() : 0;
+            addAthletic(deltas, kinds, "strength_endurance", (long) min * r.steadyXpPerMin());
+            long aerobic = (long) min * r.aerobicXpPerMin()
+                + (signal.hrRecoverySec() != null ? r.hrRecoveryBonusXp() : 0L);
+            addAthletic(deltas, kinds, "aerobic_capacity", aerobic);
+        }
+
+        String label = sprint ? "Sprint futás" : "Futás";
+        return award(createdBy, SOURCE_RUN, signal.logId(), deltas, kinds,
+            label, signal.durationMin(), signal.rpeActual());
+    }
+
+    /** Add an ATHLETIC delta only when positive (keeps the payload free of 0-XP gains). */
+    private void addAthletic(Map<String, Long> deltas, Map<String, String> kinds, String key, long xp) {
+        if (xp > 0) {
+            deltas.merge(key, xp, Long::sum);
+            kinds.put(key, "ATHLETIC");
+        }
     }
 
     /**
