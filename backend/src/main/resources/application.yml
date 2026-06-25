@@ -89,6 +89,14 @@ mezo:
       bodyweight-xp-per-rep: 1  # flat XP per rep for weightless sets (no e1RM/volume)
       robustness:
         per-week-xp: 25         # robustness XP per consecutive training week (streak-only v1)
+    # Run-path XP weights.
+    run:
+      sprint-xp-per-round: 25     # sprint_speed per completed sprint round
+      anaerobic-xp-per-round: 15  # anaerobic_capacity per completed sprint round
+      steady-xp-per-min: 4        # strength_endurance per steady minute
+      aerobic-xp-per-min: 5       # aerobic_capacity per steady minute
+      rpe-xp-per-point: 6         # explosiveness / effort proxy per RPE point
+      hr-recovery-bonus-xp: 30    # one-off aerobic bonus when HR-recovery is logged
 management:
   endpoints:
     web:

@@ -79,6 +79,48 @@ public class RunningPopulator {
         return new RunningBlockStructure(weekList);
     }
 
+    /**
+     * Block whose structure holds one week with a single {@code w1-sprint} prescribed session of
+     * kind {@code sprint} — the deterministic fixture for {@code RunSignalCalculator} kind
+     * resolution. {@code startDate}/{@code endDate} are required (NOT NULL) on the entity.
+     */
+    public RunningBlockEntity createSprintBlock(UUID createdBy) {
+        RunningBlockEntity b = new RunningBlockEntity();
+        b.setCreatedBy(createdBy);
+        b.setTitle("Sprint blokk");
+        b.setGoal("sprint");
+        b.setKind("interval");
+        b.setStatus("active");
+        b.setStartDate(LocalDate.parse("2026-06-16"));
+        b.setEndDate(LocalDate.parse("2026-07-13"));
+        b.setWeeks(4);
+        b.setCurrentWeek(1);
+        b.setStructure(new RunningBlockStructure(List.of(
+            new RunWeek(1, "MEV", List.of(
+                new RunPrescribedSession(
+                    "w1-sprint", 1, null, "Sprint", "sprint",
+                    new RpeTarget(8, 9), 6,
+                    List.of(new RunSegment("work", 30, "Sprint"))))))));
+        return blockRepository.saveAndFlush(b);
+    }
+
+    public RunSessionLogEntity createRunLog(UUID createdBy, UUID blockId, int weekNumber,
+        String sessionKey, LocalDate date, Integer completedRounds, Integer rpeActual,
+        Integer hrRecoverySec, String sprintLandmark, Integer durationMin) {
+        RunSessionLogEntity e = new RunSessionLogEntity();
+        e.setCreatedBy(createdBy);
+        e.setBlockId(blockId);
+        e.setWeekNumber(weekNumber);
+        e.setSessionKey(sessionKey);
+        e.setDate(date);
+        e.setCompletedRounds(completedRounds);
+        e.setRpeActual(rpeActual);
+        e.setHrRecoverySec(hrRecoverySec);
+        e.setSprintLandmark(sprintLandmark);
+        e.setDurationMin(durationMin);
+        return logRepository.saveAndFlush(e);
+    }
+
     public RunSessionLogEntity createLog(UUID createdBy, UUID blockId, int week, String key) {
         RunSessionLogEntity e = new RunSessionLogEntity();
         e.setCreatedBy(createdBy);
