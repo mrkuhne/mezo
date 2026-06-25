@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.feature.progression.repository.PerkUnlockRepository;
 import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
+import io.mrkuhne.mezo.feature.progression.run.RunSignal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProgressionService {
 
     private static final String SOURCE_GYM = "GYM";
+    private static final String SOURCE_RUN = "RUN";
     private static final int[] MILESTONES = {5, 10, 15, 20, 25, 30};
 
     private final SkillProgressRepository skillProgressRepository;
@@ -42,13 +44,7 @@ public class ProgressionService {
 
     @Transactional
     public LevelUpResult applyGym(UUID createdBy, GymSignal signal) {
-        // Idempotency: a workout grants XP once — return the stored payload on re-apply.
-        var existing = levelUpEventRepository
-            .findByCreatedByAndSourceTypeAndSourceRefId(createdBy, SOURCE_GYM, signal.instanceId());
-        if (existing.isPresent()) {
-            return existing.get().getPayload();
-        }
-
+        // Build the GYM-specific deltas; award() performs the idempotency guard + shared tail.
         ProgressionProperties.Gym g = properties.gym();
         // skillKey → xp delta for this workout (LinkedHashMap to keep a stable order in the payload)
         Map<String, Long> deltas = new LinkedHashMap<>();
@@ -77,6 +73,62 @@ public class ProgressionService {
         if (enduranceXp > 0) {
             deltas.merge("strength_endurance", enduranceXp, Long::sum);
             kinds.put("strength_endurance", "ATHLETIC");
+        }
+
+        return award(createdBy, SOURCE_GYM, signal.instanceId(), deltas, kinds,
+            "Klasszik kondi", null, null);
+    }
+
+    @Transactional
+    public LevelUpResult applyRun(UUID createdBy, RunSignal signal) {
+        ProgressionProperties.Run r = properties.run();
+        Map<String, Long> deltas = new LinkedHashMap<>();
+        Map<String, String> kinds = new LinkedHashMap<>();
+
+        boolean sprint = "sprint".equals(signal.kind()) || "pyramid".equals(signal.kind());
+        if (sprint) {
+            int rounds = signal.completedRounds() != null ? signal.completedRounds() : 0;
+            addAthletic(deltas, kinds, "sprint_speed", (long) rounds * r.sprintXpPerRound());
+            addAthletic(deltas, kinds, "anaerobic_capacity", (long) rounds * r.anaerobicXpPerRound());
+            if (signal.rpeActual() != null) {
+                addAthletic(deltas, kinds, "explosiveness",
+                    (long) signal.rpeActual() * r.rpeXpPerPoint());
+            }
+        } else { // steady (default)
+            int min = signal.durationMin() != null ? signal.durationMin() : 0;
+            addAthletic(deltas, kinds, "strength_endurance", (long) min * r.steadyXpPerMin());
+            long aerobic = (long) min * r.aerobicXpPerMin()
+                + (signal.hrRecoverySec() != null ? r.hrRecoveryBonusXp() : 0L);
+            addAthletic(deltas, kinds, "aerobic_capacity", aerobic);
+        }
+
+        String label = sprint ? "Sprint futás" : "Futás";
+        return award(createdBy, SOURCE_RUN, signal.logId(), deltas, kinds,
+            label, signal.durationMin(), signal.rpeActual());
+    }
+
+    /** Add an ATHLETIC delta only when positive (keeps the payload free of 0-XP gains). */
+    private void addAthletic(Map<String, Long> deltas, Map<String, String> kinds, String key, long xp) {
+        if (xp > 0) {
+            deltas.merge(key, xp, Long::sum);
+            kinds.put(key, "ATHLETIC");
+        }
+    }
+
+    /**
+     * Shared progression tail for every family: idempotent on (sourceType, sourceRefId), applies
+     * the per-skill XP deltas, builds gains/level-ups/perks, recomputes streak robustness, writes
+     * one level_up_event, and returns the payload. Called inside the caller's @Transactional.
+     */
+    private LevelUpResult award(UUID createdBy, String sourceType, UUID sourceRefId,
+        Map<String, Long> deltas, Map<String, String> kinds, String label,
+        Integer durationMin, Integer rpe) {
+
+        // Idempotency: a workout grants XP once — return the stored payload on re-apply.
+        var existing = levelUpEventRepository
+            .findByCreatedByAndSourceTypeAndSourceRefId(createdBy, sourceType, sourceRefId);
+        if (existing.isPresent()) {
+            return existing.get().getPayload();
         }
 
         // apply deltas → skill_progress, build gains + level-ups + perks
@@ -117,13 +169,13 @@ public class ProgressionService {
         skillProgressRepository.save(rob);
         totalXp += robustnessDelta;
 
-        LevelUpResult payload = new LevelUpResult(SOURCE_GYM, "Klasszik kondi", null, null, totalXp,
+        LevelUpResult payload = new LevelUpResult(sourceType, label, durationMin, rpe, totalXp,
             gains, levelUps, perks, new LevelUpResult.Robustness(robustnessDelta, streak));
 
         LevelUpEventEntity event = new LevelUpEventEntity();
         event.setCreatedBy(createdBy);
-        event.setSourceType(SOURCE_GYM);
-        event.setSourceRefId(signal.instanceId());
+        event.setSourceType(sourceType);
+        event.setSourceRefId(sourceRefId);
         event.setTotalXp(totalXp);
         event.setPayload(payload);
         levelUpEventRepository.save(event);

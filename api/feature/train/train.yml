@@ -1767,6 +1767,8 @@ components:
         sprintLandmark: { type: string, nullable: true }
         durationMin: { type: integer, nullable: true }
         notes: { type: string, nullable: true }
+        levelUp:
+          $ref: '#/components/schemas/LevelUpResult'
     RunSessionLogRequest:
       type: object
       required: [blockId, weekNumber, sessionKey, date]

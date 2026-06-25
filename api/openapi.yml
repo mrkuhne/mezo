@@ -3464,6 +3464,8 @@ components:
         notes:
           type: string
           nullable: true
+        levelUp:
+          $ref: '#/components/schemas/LevelUpResult'
     RunSessionLogRequest:
       type: object
       required:
