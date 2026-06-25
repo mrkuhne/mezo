@@ -1139,6 +1139,45 @@ export interface components {
             /** @enum {string} */
             status: "active" | "completed";
             sets: components["schemas"]["ExerciseSetResponse"][];
+            levelUp?: components["schemas"]["LevelUpResult"];
+        };
+        LevelUpResult: {
+            /** @enum {string} */
+            source: "GYM" | "SPORT" | "RUN";
+            workoutLabel?: string;
+            durationMin?: number;
+            rpe?: number;
+            /** Format: int64 */
+            totalXp: number;
+            gains: components["schemas"]["LevelUpGain"][];
+            levelUps: string[];
+            perks: components["schemas"]["LevelUpPerk"][];
+            robustness: components["schemas"]["LevelUpRobustness"];
+        };
+        LevelUpGain: {
+            skillKey: string;
+            /** @enum {string} */
+            kind: "ATHLETIC" | "MUSCLE";
+            name: string;
+            icon?: string;
+            /** Format: int64 */
+            xpGained: number;
+            levelBefore: number;
+            levelAfter: number;
+            progressFromPct: number;
+            progressToPct: number;
+        };
+        LevelUpPerk: {
+            skillKey: string;
+            perkKey: string;
+            name: string;
+            effectCopy: string;
+            milestoneLevel: number;
+        };
+        LevelUpRobustness: {
+            /** Format: int64 */
+            xpGained: number;
+            streakWeeks: number;
         };
         ExerciseSetResponse: {
             /** Format: uuid */
