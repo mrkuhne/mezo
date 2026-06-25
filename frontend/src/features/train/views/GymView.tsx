@@ -18,12 +18,18 @@ import { PhaseDots } from '../components/PhaseDots'
 import { GymDayCard } from '../components/GymDayCard'
 import { GymDaySheet } from '../components/GymDaySheet'
 import { GymScheduleSheet } from '../components/GymScheduleSheet'
+import GymSkeleton from './GymSkeleton'
 
 export function GymView() {
-  const { activeMeso, gymSlots, saveGymSchedule } = useTrain()
+  const { activeMeso, gymSlots, saveGymSchedule, workoutPending } = useTrain()
   const navigate = useNavigate()
   const [openDay, setOpenDay] = useState<MesoDay | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+
+  // Loading skeleton (real mode): while the meso/today queries (workoutPending) are
+  // unresolved, render the layout-matched skeleton before the empty-state. Placed
+  // after the hook calls so the hook order is render-stable.
+  if (workoutPending) return <GymSkeleton />
 
   // T0 clean slate: no active meso in real mode -> ghost (meso writes land in T1).
   // Placed after the hook calls so the hook order is render-stable.
