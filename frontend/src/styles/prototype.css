@@ -152,6 +152,9 @@ html, body {
   line-height: 1.5;
   min-height: 100vh;
   overflow: hidden;
+  /* Belt-and-suspenders: the document layer must never rubber-band (the .app-root is
+     position:fixed so the page can't scroll, but this guards against any future scroller). */
+  overscroll-behavior: none;
 }
 
 /* Native-app feel: scrollbars are never shown anywhere (scrolling is untouched).
@@ -224,6 +227,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+  /* The single app scroller. overscroll-behavior-y:none suppresses the iOS rubber-band
+     bounce + scroll-chain at the top/bottom edge (the reported "drag the page down at the
+     very top" bug) while leaving all in-range scrolling untouched. */
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
   padding-top: 54px;
   padding-bottom: 96px;
   scroll-behavior: smooth;
