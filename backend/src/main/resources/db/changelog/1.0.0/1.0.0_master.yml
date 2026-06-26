@@ -146,3 +146,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202606251200_mezo-8e4_create_progression.sql
+  - changeSet:
+      id: "1.0.0:202606261200_mezo-d94_create_medication"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202606261200_mezo-d94_create_medication.sql
