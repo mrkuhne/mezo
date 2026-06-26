@@ -11,7 +11,7 @@
 // ============================================================
 import { useState } from 'react'
 import type { GymScheduleDay } from '@/data/types'
-import { useFuelWeek } from '@/data/hooks'
+import { useFuelWeek, useTodayScenario } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
@@ -25,6 +25,7 @@ import { GymScheduleSheet } from '@/features/fuel/GymScheduleSheet'
 
 export function FuelPlanView() {
   const { gymSchedule, weeklySupplements, patterns, weeklyStats, volleyball } = useFuelWeek()
+  const { retaDay } = useTodayScenario()
   const [gymScheduleState, setGymScheduleState] = useState<GymScheduleDay[]>(gymSchedule)
   const [editOpen, setEditOpen] = useState(false)
 
@@ -98,10 +99,10 @@ export function FuelPlanView() {
           <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
             <Eyebrow>Reta cycle · 7 nap</Eyebrow>
             <span className="label-mono brand" style={{ fontSize: 9 }}>
-              D3 · ma
+              D{retaDay} · ma
             </span>
           </div>
-          <RetaWeekStrip currentDay={3} />
+          <RetaWeekStrip currentDay={retaDay} />
           <p
             className="text-secondary mt-md"
             style={{

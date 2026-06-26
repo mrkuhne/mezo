@@ -13,14 +13,21 @@ import { patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, annivers
 import { initialChat } from './chat'
 import { fuelDay, fuelPlan, supplementsStash, protocol, getScoredMeal } from './fuel'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from './fuelWeek'
+import { useMedication } from './medicationHooks'
 import type { Briefing, CheckinSlot, DayState, FuelSlot, TodayScenario, SleepEntry, SleepLogInput, Mention, MentionLogInput } from './types'
 
 export function useTodayScenario(): TodayScenario {
   const [params] = useSearchParams()
   const day = params.get('day')
   const dayState: DayState = day === 'good' || day === 'rough' ? day : 'medium'
+  // The retaDay base is the real medication cycle in real mode (the single FE source every
+  // Reta surface reads), the mock default in mock mode. cycle.retaDay is 0 when there is no
+  // medication / no dose (the ghost, or the cold-load window) → fall back to today.retaDay so
+  // nothing ever shows a 0 day. The ?retaDay= URL override stays TOP priority in BOTH modes.
+  const { cycle } = useMedication()
+  const base = isMockMode() ? today.retaDay : cycle.retaDay || today.retaDay
   const retaRaw = parseInt(params.get('retaDay') ?? '', 10)
-  const retaDay = Number.isFinite(retaRaw) ? Math.min(7, Math.max(1, retaRaw)) : today.retaDay
+  const retaDay = Number.isFinite(retaRaw) ? Math.min(7, Math.max(1, retaRaw)) : base
   const niggle = params.get('niggle') !== 'off'
   const vulnerable = params.get('vulnerable') === 'on'
   return { dayState, retaDay, niggle, vulnerable, anchorMode: dayState === 'rough' }
@@ -166,6 +173,7 @@ export { useWeight } from './weightHooks'
 export { usePantry, usePantryActions } from './pantryHooks'
 export { useRecipes, useRecipeActions } from './recipeHooks'
 export { useFuelDay, useMealActions, useRecipeLogs } from './fuelHooks'
-export { useMedication, useMedicationActions } from './medicationHooks'
+export { useMedicationActions } from './medicationHooks'
+export { useMedication }
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from './goalHooks'
 export { useBiometricProfile, useBiometricActions } from './biometricHooks'

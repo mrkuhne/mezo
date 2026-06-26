@@ -2,7 +2,15 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { FuelPlanView } from './FuelPlanView'
-const renderView = () => render(<MemoryRouter><FuelPlanView /></MemoryRouter>)
+import { QueryWrapper } from '@/test/queryWrapper'
+// FuelPlanView reads useTodayScenario() (now a ['medication'] query) for the Reta strip's
+// current day, so the view needs a QueryClient as well as a router.
+const renderView = () =>
+  render(
+    <QueryWrapper>
+      <MemoryRouter><FuelPlanView /></MemoryRouter>
+    </QueryWrapper>,
+  )
 
 test('renders weekly stats, reta strip and rhythm grid', () => {
   renderView()
