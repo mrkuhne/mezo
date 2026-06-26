@@ -14,7 +14,9 @@ import java.time.ZoneOffset;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
 /**
@@ -50,5 +52,36 @@ class MedicationApiIT extends ApiIntegrationTest {
             HttpMethod.GET, "/api/medication", null, ownerAuthHeaders());
         assertThat(day.getStatusCode().value()).isEqualTo(200);
         assertThat(day.getBody()).contains("\"retaDay\":1");
+    }
+
+    /**
+     * Guard for mezo-d94: a ZONE-LESS administeredAt is REJECTED (never persisted). Jackson's
+     * OffsetDateTime deserializer requires a zone offset, so {@code "2026-06-26T00:00:00"} blows up
+     * during body binding and never reaches {@code MedicationService} — proving the FE must send an
+     * offset-bearing string (the LogDoseSheet fix). NOTE: the status is currently 500, not 400 — the
+     * unparseable-body path (HttpMessageNotReadableException) isn't mapped in GlobalExceptionHandler
+     * yet, so it falls through to the catch-all INTERNAL_ERROR. That 4xx-vs-5xx mapping is a separate,
+     * pre-existing API-hygiene gap (out of scope here); this test only asserts the request is rejected
+     * and the cycle is untouched, which is what matters for the dose-date-corruption bug.
+     */
+    @Test
+    void testLogDose_shouldRejectAndNotPersist_whenAdministeredAtHasNoZoneOffset() {
+        MedicationEntity med = medPop.createReta(ownerId());
+        // Raw JSON with a zone-LESS administeredAt (no trailing offset / Z).
+        String zonelessJson = "{\"dose\":6,\"administeredAt\":\"2026-06-26T00:00:00\"}";
+        HttpHeaders headers = ownerAuthHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        ResponseEntity<String> res = exchangeForResponse(
+            HttpMethod.POST, "/api/medication/" + med.getId() + "/dose", zonelessJson, headers);
+        // rejected (4xx/5xx) — never silently accepted
+        assertThat(res.getStatusCode().is2xxSuccessful()).isFalse();
+        assertThat(res.getStatusCode().value()).isGreaterThanOrEqualTo(400);
+
+        // and nothing was persisted: no doses, so the cycle has no anchor (retaDay 0).
+        ResponseEntity<String> day = exchangeForResponse(
+            HttpMethod.GET, "/api/medication", null, ownerAuthHeaders());
+        assertThat(day.getStatusCode().value()).isEqualTo(200);
+        assertThat(day.getBody()).contains("\"retaDay\":0");
     }
 }

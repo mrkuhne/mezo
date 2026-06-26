@@ -118,7 +118,6 @@ export function FuelMedicationView() {
             {doses.map(dose => (
               <li
                 key={dose.id}
-                role="listitem"
                 className="card notch-8 row"
                 style={{ padding: '14px 16px', justifyContent: 'space-between', alignItems: 'center' }}
               >

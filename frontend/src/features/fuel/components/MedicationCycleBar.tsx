@@ -23,7 +23,6 @@ function Cell({ cell }: { cell: MedicationCycleCell }) {
   const tint = PHASE_TINT[cell.phaseKey] ?? { glyph: '·', token: 'var(--text-tertiary)' }
   return (
     <li
-      role="listitem"
       aria-current={cell.current ? 'true' : undefined}
       aria-label={`${cell.day}. nap · ${cell.label}`}
       className="notch-4 col flex-1"

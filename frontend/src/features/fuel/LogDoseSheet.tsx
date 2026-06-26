@@ -17,6 +17,20 @@ import { Icon } from '@/components/ui/Icon'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Display } from '@/components/ui/Display'
 
+// Build an offset-bearing ISO-8601 datetime (`YYYY-MM-DDThh:mm:ss±hh:mm`) for the chosen
+// local date+time. The offset is THIS browser's local UTC offset for that wall-clock moment,
+// so the result's .toLocalDate() (server-side) equals `date` — see submit() for why this
+// matters (Jackson needs an offset; .toISOString() would shift the day).
+function toOffsetIso(date: string, time: string): string {
+  const local = new Date(`${date}T${time}:00`)
+  const offMin = -local.getTimezoneOffset() // e.g. +120 for UTC+02:00
+  const sign = offMin >= 0 ? '+' : '-'
+  const abs = Math.abs(offMin)
+  const oh = String(Math.floor(abs / 60)).padStart(2, '0')
+  const om = String(abs % 60).padStart(2, '0')
+  return `${date}T${time}:00${sign}${oh}:${om}`
+}
+
 const fieldLabelStyle = { fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-tertiary)' } as const
 const fieldInputStyle = { fontSize: 14, color: 'var(--text-primary)', marginTop: 3, width: '100%' } as const
 const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 } as const
@@ -60,9 +74,13 @@ export function LogDoseSheet({ onClose }: { onClose: () => void }) {
 
   function submit(close: () => void) {
     if (!canSave) return
-    // administeredAt: ISO datetime when a time is given, else the date at midnight.
-    // The cycle derives retaDay from the date part only, so a today-dated dose → day 1.
-    const administeredAt = time ? `${date}T${time}:00` : `${date}T00:00:00`
+    // administeredAt: an OFFSET-BEARING ISO-8601 datetime (Jackson's OffsetDateTime
+    // deserializer rejects a zone-less string with a 400). We append the LOCAL UTC
+    // offset rather than calling .toISOString() so the instant's .toLocalDate() (which
+    // the backend uses as the day key, MedicationService.logDose) stays the CHOSEN date —
+    // a naive new Date(`${date}T00:00`).toISOString() shifts local-midnight to UTC and can
+    // roll the date back a day in a +offset timezone, corrupting the cycle's day math.
+    const administeredAt = toOffsetIso(date, time || '00:00')
     const input: MedicationDoseInput = {
       administeredAt,
       dose: doseNum,

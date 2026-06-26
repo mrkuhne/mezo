@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { FuelMedicationView } from './FuelMedicationView'
@@ -61,9 +61,15 @@ describe('FuelMedicationView (mock mode)', () => {
     expect(rows[2].textContent).toMatch(/Jún 8/)
   })
 
-  it('has a "＋ Beadás" button that opens nothing yet (LogDoseSheet is Task 13)', () => {
+  it('has a "＋ Beadás" button that opens the LogDoseSheet on click', () => {
     renderView()
-    expect(screen.getByRole('button', { name: /Beadás/ })).toBeInTheDocument()
+    const btn = screen.getByRole('button', { name: /Beadás/ })
+    expect(btn).toBeInTheDocument()
+    // the sheet is closed until tapped
+    expect(screen.queryByLabelText(/dózis/i)).not.toBeInTheDocument()
+    fireEvent.click(btn)
+    // tapping flips logOpen → the LogDoseSheet mounts (its dose field is now present)
+    expect(screen.getByLabelText(/dózis/i)).toBeInTheDocument()
   })
 })
 

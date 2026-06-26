@@ -112,4 +112,31 @@ describe('LogDoseSheet (real mode)', () => {
     expect((input.administeredAt ?? '').slice(0, 10)).toBe(localDateString())
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   })
+
+  // Regression guard (mezo-d94): the FE must send an OFFSET-BEARING administeredAt —
+  // Jackson 3's OffsetDateTime deserializer rejects a zone-less string with a 400. And the
+  // date part must equal the CHOSEN date (the offset is appended, NOT .toISOString()'d, so
+  // the backend's administeredAt.toLocalDate() stays the chosen day even in a +offset TZ).
+  it('sends an offset-bearing administeredAt whose date part is the chosen date', async () => {
+    const { qc } = setup()
+    const spy = vi.spyOn(medicationApi, 'logDose')
+
+    render(
+      <QueryClientProvider client={qc}>
+        <LogDoseSheet onClose={vi.fn()} />
+      </QueryClientProvider>,
+    )
+
+    // pick an explicit date so the assertion doesn't depend on "today"
+    fireEvent.change(screen.getByLabelText(/dátum/i), { target: { value: '2026-06-26' } })
+    fireEvent.change(screen.getByLabelText(/dózis/i), { target: { value: '8' } })
+    fireEvent.click(screen.getByRole('button', { name: /beadás|mentés/i }))
+
+    await waitFor(() => expect(spy).toHaveBeenCalled())
+    const administeredAt = spy.mock.calls[0][1].administeredAt ?? ''
+    // (a) offset-bearing: ends in ±hh:mm or Z (never a zone-less datetime)
+    expect(administeredAt).toMatch(/[+-]\d\d:\d\d$|Z$/)
+    // (b) its date part is the chosen date (no day-shift from the offset)
+    expect(administeredAt.slice(0, 10)).toBe('2026-06-26')
+  })
 })
