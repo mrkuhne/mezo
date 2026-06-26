@@ -14,6 +14,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { IngredientStock, PantryItem, PantryItemInput } from '@/data/types'
 import { usePantry, usePantryActions } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/kamraItems'
+import { SHOW_PANTRY_STOCK } from '@/lib/flags'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
 import { SourceBadge } from '@/components/ui/SourceBadge'
@@ -191,13 +192,17 @@ export function KamraItemDetailView() {
           </>
         )}
 
-        {/* Készlet · ár */}
-        <SectionHead>Készlet · ár</SectionHead>
+        {/* Készlet · ár — stock hidden (deferred, mezo-6nu); dose kept, price kept */}
+        <SectionHead>{SHOW_PANTRY_STOCK ? 'Készlet · ár' : item.dose ? 'Dózis · ár' : 'Ár'}</SectionHead>
         <div style={grid2}>
-          <Cell
-            label="Készlet"
-            value={hasStock ? `${stockQty} ${stockUnit}${stockExpires ? ` · ${stockExpires}` : ''}` : item.dose ? item.dose : '—'}
-          />
+          {SHOW_PANTRY_STOCK ? (
+            <Cell
+              label="Készlet"
+              value={hasStock ? `${stockQty} ${stockUnit}${stockExpires ? ` · ${stockExpires}` : ''}` : item.dose ? item.dose : '—'}
+            />
+          ) : (
+            item.dose && <Cell label="Dózis" value={item.dose} />
+          )}
           <Cell label="Ár" value={item.price ? `${item.price} Ft` : '—'} />
         </div>
 
