@@ -40,6 +40,11 @@ tags:
       polymorphic items reference a recipe or a pantry_item by id with a
       per-basis macro snapshot. GET /api/fuel/day/{date} aggregates the day for
       the Fuel screen.
+  - name: Medication
+    description: >-
+      Medication (Gyógyszer) — owned medication definition + a dose event-log;
+      the 7-day cycle (retaDay + phase) is derived from the logged doses. GET
+      /api/medication feeds the whole Fuel "Gyógyszer" tab in one round-trip.
 paths:
   /api/auth/login:
     post:
@@ -1969,6 +1974,149 @@ paths:
       summary: Soft-delete an owned meal (and its items)
       parameters:
         - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/medication:
+    get:
+      tags:
+        - Medication
+      operationId: getMedicationDay
+      summary: >-
+        The owner's active medication — definition + cycle config, the derived
+        cycle, and the recent doses
+      responses:
+        '200':
+          description: Medication day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationDayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/medication/{id}':
+    put:
+      tags:
+        - Medication
+      operationId: updateMedication
+      summary: Edit an owned medication's definition and cycle config
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationRequest'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/medication/{id}/dose':
+    post:
+      tags:
+        - Medication
+      operationId: logDose
+      summary: Log an actual injection against an owned medication
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationDoseRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationDoseResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/medication/{id}/dose/{doseId}':
+    delete:
+      tags:
+        - Medication
+      operationId: deleteDose
+      summary: Soft-delete a mis-entered dose
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: doseId
           in: path
           required: true
           schema:
@@ -4733,3 +4881,187 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MealResponse'
+    MedicationPhase:
+      type: object
+      required:
+        - key
+        - fromDay
+        - toDay
+        - label
+      properties:
+        key:
+          type: string
+          enum:
+            - peak
+            - stable
+            - trough
+        fromDay:
+          type: integer
+        toDay:
+          type: integer
+        label:
+          type: string
+    MedicationCycleConfig:
+      type: object
+      required:
+        - cycleLengthDays
+        - phases
+      properties:
+        cycleLengthDays:
+          type: integer
+        phases:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicationPhase'
+    MedicationCycleCell:
+      type: object
+      required:
+        - day
+        - phaseKey
+        - label
+        - current
+      properties:
+        day:
+          type: integer
+        phaseKey:
+          type: string
+        label:
+          type: string
+        current:
+          type: boolean
+    MedicationCycleResponse:
+      type: object
+      required:
+        - retaDay
+        - phaseKey
+        - phaseLabel
+        - week
+      properties:
+        retaDay:
+          type: integer
+        phaseKey:
+          type: string
+        phaseLabel:
+          type: string
+        lastDoseAt:
+          type: string
+          format: date-time
+          nullable: true
+        week:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicationCycleCell'
+    MedicationDoseResponse:
+      type: object
+      required:
+        - id
+        - administeredAt
+        - dose
+      properties:
+        id:
+          type: string
+          format: uuid
+        administeredAt:
+          type: string
+          format: date-time
+        dose:
+          type: number
+        note:
+          type: string
+          nullable: true
+    MedicationResponse:
+      type: object
+      required:
+        - id
+        - name
+        - activeIngredient
+        - route
+        - cadence
+        - defaultDose
+        - doseUnit
+        - cycle
+        - active
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        activeIngredient:
+          type: string
+        route:
+          type: string
+        cadence:
+          type: string
+        defaultDose:
+          type: number
+        doseUnit:
+          type: string
+        cycle:
+          $ref: '#/components/schemas/MedicationCycleConfig'
+        active:
+          type: boolean
+    MedicationDayResponse:
+      type: object
+      required:
+        - medication
+        - cycle
+        - recentDoses
+      properties:
+        medication:
+          $ref: '#/components/schemas/MedicationResponse'
+        cycle:
+          $ref: '#/components/schemas/MedicationCycleResponse'
+        recentDoses:
+          type: array
+          items:
+            $ref: '#/components/schemas/MedicationDoseResponse'
+    MedicationRequest:
+      type: object
+      required:
+        - name
+        - activeIngredient
+        - route
+        - cadence
+        - defaultDose
+        - doseUnit
+        - cycle
+        - active
+      properties:
+        name:
+          type: string
+          minLength: 1
+        activeIngredient:
+          type: string
+          minLength: 1
+        route:
+          type: string
+          minLength: 1
+        cadence:
+          type: string
+          minLength: 1
+        defaultDose:
+          type: number
+          exclusiveMinimum: 0
+        doseUnit:
+          type: string
+          minLength: 1
+        cycle:
+          $ref: '#/components/schemas/MedicationCycleConfig'
+        active:
+          type: boolean
+    MedicationDoseRequest:
+      type: object
+      required:
+        - dose
+      properties:
+        administeredAt:
+          type: string
+          format: date-time
+          nullable: true
+        dose:
+          type: number
+          exclusiveMinimum: 0
+        note:
+          type: string
+          nullable: true
