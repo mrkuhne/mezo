@@ -764,6 +764,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/medication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The owner's active medication — definition + cycle config, the derived cycle, and the recent doses */
+        get: operations["getMedicationDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/medication/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Edit an owned medication's definition and cycle config */
+        put: operations["updateMedication"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/medication/{id}/dose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log an actual injection against an owned medication */
+        post: operations["logDose"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/medication/{id}/dose/{doseId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Soft-delete a mis-entered dose */
+        delete: operations["deleteDose"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1819,6 +1887,72 @@ export interface components {
             targets: components["schemas"]["MacroSet"];
             consumed: components["schemas"]["MacroSet"];
             meals: components["schemas"]["MealResponse"][];
+        };
+        MedicationPhase: {
+            /** @enum {string} */
+            key: "peak" | "stable" | "trough";
+            fromDay: number;
+            toDay: number;
+            label: string;
+        };
+        MedicationCycleConfig: {
+            cycleLengthDays: number;
+            phases: components["schemas"]["MedicationPhase"][];
+        };
+        MedicationCycleCell: {
+            day: number;
+            phaseKey: string;
+            label: string;
+            current: boolean;
+        };
+        MedicationCycleResponse: {
+            retaDay: number;
+            phaseKey: string;
+            phaseLabel: string;
+            /** Format: date-time */
+            lastDoseAt?: string | null;
+            week: components["schemas"]["MedicationCycleCell"][];
+        };
+        MedicationDoseResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            administeredAt: string;
+            dose: number;
+            note?: string | null;
+        };
+        MedicationResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            activeIngredient: string;
+            route: string;
+            cadence: string;
+            defaultDose: number;
+            doseUnit: string;
+            cycle: components["schemas"]["MedicationCycleConfig"];
+            active: boolean;
+        };
+        MedicationDayResponse: {
+            medication: components["schemas"]["MedicationResponse"];
+            cycle: components["schemas"]["MedicationCycleResponse"];
+            recentDoses: components["schemas"]["MedicationDoseResponse"][];
+        };
+        MedicationRequest: {
+            name: string;
+            activeIngredient: string;
+            route: string;
+            cadence: string;
+            defaultDose: number;
+            doseUnit: string;
+            cycle: components["schemas"]["MedicationCycleConfig"];
+            active: boolean;
+        };
+        MedicationDoseRequest: {
+            /** Format: date-time */
+            administeredAt?: string | null;
+            dose: number;
+            note?: string | null;
         };
     };
     responses: never;
@@ -4311,6 +4445,180 @@ export interface operations {
             header?: never;
             path: {
                 id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMedicationDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Medication day */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicationDayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateMedication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MedicationRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicationResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    logDose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MedicationDoseRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicationDoseResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteDose: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                doseId: string;
             };
             cookie?: never;
         };

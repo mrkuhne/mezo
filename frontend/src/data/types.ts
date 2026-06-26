@@ -103,6 +103,41 @@ export interface Protocol {
   itemCount: number; confidence: number; lastReplanReason: string | null
   history: { v: number; when: string; reason: string }[]
 }
+// --- Medication (Gyógyszer) — mirrors the generated Medication* DTOs (api.gen.ts) ---
+export type MedicationPhaseKey = 'peak' | 'stable' | 'trough'
+export interface MedicationPhase { key: MedicationPhaseKey; fromDay: number; toDay: number; label: string }
+export interface MedicationCycleConfig { cycleLengthDays: number; phases: MedicationPhase[] }
+/** One injection logged against the medication. */
+export interface MedicationDose { id: string; administeredAt: string; dose: number; note?: string | null }
+/** The derived weekly cycle (which day of the cycle we're on + the phase grid). */
+export interface MedicationCycleCell { day: number; phaseKey: string; label: string; current: boolean }
+export interface MedicationCycle {
+  retaDay: number; phaseKey: string; phaseLabel: string
+  lastDoseAt?: string | null
+  week: MedicationCycleCell[]
+}
+/** The medication definition + its cycle config. */
+export interface Medication {
+  id: string; name: string; activeIngredient: string; route: string; cadence: string
+  defaultDose: number; doseUnit: string
+  cycle: MedicationCycleConfig
+  active: boolean
+}
+export interface MedicationDay {
+  medication: Medication
+  cycle: MedicationCycle
+  recentDoses: MedicationDose[]
+}
+/** Editor input for updating the medication definition. */
+export interface MedicationInput {
+  name: string; activeIngredient: string; route: string; cadence: string
+  defaultDose: number; doseUnit: string
+  cycle: MedicationCycleConfig
+  active: boolean
+}
+/** Editor input for logging an injection. */
+export interface MedicationDoseInput { administeredAt?: string | null; dose: number; note?: string | null }
+
 export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: string; workoutTime: string; retaDay: number; mesoPhase: string }
 export interface UserMeta {
   weekInMeso: number

@@ -6,9 +6,9 @@ function renderAt(path: string) {
   return render(<MemoryRouter initialEntries={[path]}><FuelSubNav /></MemoryRouter>)
 }
 
-test('renders all five sub-nav items with verbatim labels', () => {
+test('renders all six sub-nav items with verbatim labels', () => {
   renderAt('/fuel')
-  for (const label of ['Mai', 'Terv', 'Stack', 'Receptek', 'Kamra']) {
+  for (const label of ['Mai', 'Terv', 'Stack', 'Receptek', 'Kamra', 'Gyógyszer']) {
     expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
   }
 })

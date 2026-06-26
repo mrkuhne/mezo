@@ -19,6 +19,7 @@ import { FuelStackView } from '@/features/fuel/views/FuelStackView'
 import { FuelRecipesView } from '@/features/fuel/views/FuelRecipesView'
 import { FuelKamraView } from '@/features/fuel/views/FuelKamraView'
 import { KamraItemDetailView } from '@/features/fuel/views/KamraItemDetailView'
+import { FuelMedicationView } from '@/features/fuel/views/FuelMedicationView'
 import { RecipeDetailView } from '@/features/fuel/views/RecipeDetailView'
 import { RecipeEditorView } from '@/features/fuel/views/RecipeEditorView'
 import { InsightsScreen } from '@/features/insights/InsightsScreen'
@@ -76,6 +77,7 @@ export const routes: RouteObject[] = [
           { path: 'recipes', element: <FuelRecipesView /> },
           { path: 'kamra', element: <FuelKamraView /> },
           { path: 'kamra/:id', element: <KamraItemDetailView /> },
+          { path: 'gyogyszer', element: <FuelMedicationView /> },
         ],
       },
       // Recipe detail + editor are full pages (no Fuel sub-nav chrome), mirroring

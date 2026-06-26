@@ -36,7 +36,7 @@ Driving design: [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](../su
   - `?day=good|medium|rough` (default `medium`). `rough` → AnchorMode full-screen replaces the normal stack.
   - `?niggle=on|off` (default `on`) → toggles the amber niggle banner inside the workout teaser.
   - `?vulnerable=on|off` (default `off`) → shows the "sebezhetőbb hangnem" `VulnerabilityCard`.
-  - `?retaDay=N` (1–7, clamped; default from `today.retaDay = 3`) → moves the reta phase bar's active segment and its phase descriptor.
+  - `?retaDay=N` (1–7, clamped; top priority in both modes) → moves the reta phase bar's active segment and its phase descriptor. With no override, the **base** is the derived medication cycle in real mode (`useMedication().cycle.retaDay`, falling back to `today.retaDay = 3` when 0/no-dose) and `today.retaDay = 3` in mock mode (mezo-d94).
 - **Check-in ("Heartbeat" strip):** tap a slot (4 slots: `06:30 · 10:00 · 14:00 · 20:00`) → opens `CheckInSheet`, a 5-step wizard. Four dimensions — Energia / Stressz / Testi / Mentális tisztaság — on a 1–10 scale with auto-advance; each shows a reactive "Mezo · azonnali olvasat" observation (`CheckInObservation`). The final step is a summary + optional one-line note. **Mentés** → the strip updates its local state (a slot flips to `done`, an average-score badge appears, the N/4 counter increments) and, in **real mode only**, fires a fire-and-forget `POST` to the backend.
 - **Cross-slice navigation:** the `WorkoutTeaser` card and its **"Indítsuk"** CTA both `navigate('/train')`. The fuel preview "Fuel → Terv" eyebrow and the insights "Insights → Patterns" chip are **visual only** (not links in current code). The `VolleyballCard` chevron is visual.
 - **AnchorMode:** the `Kilépés` chip calls `navigate('/today')`, dropping the `?day=rough` param and returning to the normal screen.
@@ -47,7 +47,7 @@ The single FE↔data boundary is `frontend/src/data/hooks.ts`. For Today, `isMoc
 
 ```
 TodayScreen.tsx (composition root)
-  ├─ useTodayScenario()   hooks.ts:20  — URL params → TodayScenario { dayState, retaDay, niggle, vulnerable, anchorMode }
+  ├─ useTodayScenario()   hooks.ts:19  — URL params (+ real-mode retaDay from useMedication().cycle) → TodayScenario { dayState, retaDay, niggle, vulnerable, anchorMode }
   ├─ useToday()           hooks.ts:36  — { today, user, briefing, workout, volleyballSessions, fuelToday }  (mock, no real swap)
   ├─ useCheckins()        hooks.ts:40  — useState(initialCheckins) + useMutation(checkinApi.save)
   ├─ resolveBriefing(ds)  hooks.ts:31  — briefing ⊕ briefingVariants[ds]
@@ -65,7 +65,7 @@ Real path — CHECK-IN SAVE ONLY (write-only):
 ```
 
 Key behavioral facts (all in `hooks.ts`):
-- `useTodayScenario` (20–29): `dayState` falls back to `'medium'` for anything other than `good`/`rough`; `anchorMode = dayState === 'rough'`. **Called in two places** — `TodayScreen` (branch to AnchorMode) and `AppLayout` (passes `anchor` to `PhoneFrame` for the warm canvas) — so both must derive `anchorMode` identically.
+- `useTodayScenario` (19–33): `dayState` falls back to `'medium'` for anything other than `good`/`rough`; `anchorMode = dayState === 'rough'`. The `retaDay` base derives from `useMedication().cycle.retaDay` in real mode (falling back to `today.retaDay` when 0), `today.retaDay` in mock mode, with the `?retaDay=` URL override on top (mezo-d94). **Called in three places now** — `TodayScreen` (branch to AnchorMode), `AppLayout` (passes `anchor` to `PhoneFrame` for the warm canvas), and `FuelPlanView`/`FuelMaiView` (Reta surfaces) — so both `anchorMode` consumers must derive it identically, and every consumer now issues a `['medication']` query (tests need a `QueryClientProvider`).
 - `resolveBriefing` (32–35): `briefingVariants.medium` is `null`, so `medium` returns the base `briefing`; `good`/`rough` spread their `Partial<Briefing>` over the base.
 - `useCheckins` (41–65): local `useState`; `saveCheckIn` updates the slot in place, and in real mode builds a `SaveCheckInBody` (`date = localDateString()` local-tz, `slotTime = slot.time`, `state` defaulting to `'done'`, the four dims, the note) and fires `mutation.mutate`. On error it only `console.error`s — no UI rollback, no toast. The `CheckInResponse` (with the server `id`) is **discarded**; the strip is never reconciled with the server.
 - `useFuelPreview` (67–74): finds the `now` slot, returns 3 visible slots from there plus the next incomplete `nextStack` for the AI note line. Pure mock.

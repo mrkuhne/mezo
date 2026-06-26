@@ -3,13 +3,16 @@ import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
+import { QueryWrapper } from '@/test/queryWrapper'
 
 function renderApp(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
   return render(
-    <ThemeProvider>
-      <RouterProvider router={router} />
-    </ThemeProvider>,
+    <QueryWrapper>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </QueryWrapper>,
   )
 }
 
