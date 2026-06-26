@@ -8,8 +8,8 @@
 //
 // You log only the actual injections; the cycle day + phase are DERIVED from the
 // newest dose by the backend / the mock hook (useMedication, Task 11). Tapping
-// "＋ Beadás" opens the LogDoseSheet — that sheet is Task 13, so here the button only
-// flips `logOpen`; the mount point is wired but renders nothing yet.
+// "＋ Beadás" flips `logOpen` and opens the LogDoseSheet (Task 13), which captures a
+// dose via useMedicationActions().logDose (a today-dated dose re-anchors retaDay to 1).
 // ============================================================
 import { useState } from 'react'
 import { useMedication } from '@/data/hooks'
@@ -18,6 +18,7 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { MedicationCycleBar } from '@/features/fuel/components/MedicationCycleBar'
+import { LogDoseSheet } from '@/features/fuel/LogDoseSheet'
 
 // route code → HU label (mockup: "subQ injekció"). Falls back to the raw code.
 const ROUTE_LABEL: Record<string, string> = {
@@ -133,8 +134,8 @@ export function FuelMedicationView() {
         )}
       </div>
 
-      {/* LogDoseSheet mount point — Task 13. For now the button only flips logOpen. */}
-      {logOpen && null /* TODO(mezo-d94 · Task 13): <LogDoseSheet onClose={() => setLogOpen(false)} /> */}
+      {/* LogDoseSheet — the dose-capture sheet (Task 13). "＋ Beadás" flips logOpen. */}
+      {logOpen && <LogDoseSheet onClose={() => setLogOpen(false)} />}
     </>
   )
 }
