@@ -1,6 +1,7 @@
 import type { PantryItem } from '@/data/types'
 import { SourceBadge } from '@/components/ui/SourceBadge'
 import { NovaDot } from '@/components/ui/NovaDot'
+import { SHOW_PANTRY_STOCK } from '@/lib/flags'
 
 // Direction A (kamra-mockup-v3-A): the design-system .meal-card anatomy applied to a pantry item —
 // a 44px stock slot, Antonio name + source/brand meta, a macro line (food) or protocol (supp), and a
@@ -37,17 +38,19 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
         boxShadow: isSupp ? `inset 2px 0 0 0 color-mix(in srgb, ${tint} 60%, transparent)` : undefined,
       }}
     >
-      {/* 44px stock slot */}
-      <div style={{ width: 44, flexShrink: 0, textAlign: 'center' }}>
-        {stockQty !== null ? (
-          <>
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 14, fontWeight: 600, lineHeight: 1.1, color: lowStock ? 'var(--warning)' : tint }}>{stockQty}</span>
-            <span style={{ display: 'block', fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{stockUnit}</span>
-          </>
-        ) : (
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--text-quaternary)' }}>—</span>
-        )}
-      </div>
+      {/* 44px stock slot (hidden — stock tracking deferred, mezo-6nu) */}
+      {SHOW_PANTRY_STOCK && (
+        <div style={{ width: 44, flexShrink: 0, textAlign: 'center' }}>
+          {stockQty !== null ? (
+            <>
+              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 14, fontWeight: 600, lineHeight: 1.1, color: lowStock ? 'var(--warning)' : tint }}>{stockQty}</span>
+              <span style={{ display: 'block', fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{stockUnit}</span>
+            </>
+          ) : (
+            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--text-quaternary)' }}>—</span>
+          )}
+        </div>
+      )}
 
       {/* Info */}
       <div className="col flex-1" style={{ minWidth: 0 }}>
@@ -64,7 +67,7 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
             <span className="text-tertiary">C {item.macros.c}</span>
             <span className="text-tertiary">F {item.macros.f}</span>
             {item.nova && <NovaDot nova={item.nova} />}
-            {stockExpires && <span style={{ color: stockLowExpiry ? 'var(--error)' : 'var(--text-quaternary)' }}>· {stockLowExpiry ? '⚠ ' : ''}lejár {stockExpires}</span>}
+            {SHOW_PANTRY_STOCK && stockExpires && <span style={{ color: stockLowExpiry ? 'var(--error)' : 'var(--text-quaternary)' }}>· {stockLowExpiry ? '⚠ ' : ''}lejár {stockExpires}</span>}
           </div>
         ) : (
           item.protocol && <p className="text-tertiary" style={{ marginTop: 9, fontSize: 10, lineHeight: 1.4, fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.protocol}</p>
@@ -81,7 +84,7 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
         ) : (
           <>
             <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 15, fontWeight: 600, color: tint }}>{item.dose}</span>
-            {lowStock && <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--warning)' }}>⚠ fogy</span>}
+            {SHOW_PANTRY_STOCK && lowStock && <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--warning)' }}>⚠ fogy</span>}
           </>
         )}
       </div>

@@ -11,6 +11,7 @@
 // ============================================================
 import { useState } from 'react'
 import { usePantryActions } from '@/data/hooks'
+import { SHOW_PANTRY_STOCK } from '@/lib/flags'
 import { pantryCategoryMeta } from '@/data/pantry'
 import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
 import type { PantryItemInput, PantryItemKind } from '@/data/types'
@@ -216,15 +217,17 @@ export function AddPantryItemSheet({
             </>
           )}
 
-          {/* Készlet · ár */}
-          <SectionHead>Készlet · ár</SectionHead>
+          {/* Készlet · ár — stock input hidden (deferred, mezo-6nu); price kept */}
+          <SectionHead>{SHOW_PANTRY_STOCK ? 'Készlet · ár' : 'Ár'}</SectionHead>
           <div style={grid2}>
-            <Field label="Készlet">
-              <div className="row gap-xs" style={{ marginTop: 3, alignItems: 'center' }}>
-                <input {...numProps} value={stockQty} onChange={e => setStockQty(e.target.value)} placeholder="—" style={{ fontSize: 14, color: 'var(--text-primary)', width: '50%' }} />
-                <input value={stockUnit} onChange={e => setStockUnit(e.target.value)} placeholder="g" style={{ fontSize: 14, color: 'var(--text-primary)', width: '50%' }} />
-              </div>
-            </Field>
+            {SHOW_PANTRY_STOCK && (
+              <Field label="Készlet">
+                <div className="row gap-xs" style={{ marginTop: 3, alignItems: 'center' }}>
+                  <input {...numProps} value={stockQty} onChange={e => setStockQty(e.target.value)} placeholder="—" style={{ fontSize: 14, color: 'var(--text-primary)', width: '50%' }} />
+                  <input value={stockUnit} onChange={e => setStockUnit(e.target.value)} placeholder="g" style={{ fontSize: 14, color: 'var(--text-primary)', width: '50%' }} />
+                </div>
+              </Field>
+            )}
             <Field label="Ár (Ft)">
               <input {...numProps} value={price} onChange={e => setPrice(e.target.value)} placeholder="750" style={fieldInputStyle} />
             </Field>

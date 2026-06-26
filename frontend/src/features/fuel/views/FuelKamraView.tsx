@@ -29,6 +29,7 @@ import { StatCell } from '@/components/ui/StatCell'
 import { KamraCard } from '@/features/fuel/components/KamraCard'
 import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
 import { CategoryFilterSheet, categoryOption } from '@/features/fuel/CategoryFilterSheet'
+import { SHOW_PANTRY_STOCK } from '@/lib/flags'
 import KamraSkeleton from './KamraSkeleton'
 
 const TYPE_SWITCHER = [
@@ -147,13 +148,18 @@ export function FuelKamraView() {
             <div className="card notch-4 row" style={{ padding: 12, justifyContent: 'space-between' }}>
               <StatCell label="Tételek" val={String(allItems.length)} sub="a kamrában" color="var(--brand-glow)" />
               <StatCell label="Hozzávaló" val={String(counts.food ?? 0)} sub="étel" color="var(--info)" />
-              <StatCell label="Lejár" val={String(lowExpiry)} sub="< 3 nap" color={lowExpiry ? 'var(--warning)' : 'var(--text-tertiary)'} />
-              <StatCell label="Fogy" val={String(lowStock)} sub="< 15 adag" color={lowStock ? 'var(--warning)' : 'var(--text-tertiary)'} />
+              {/* Stock stats hidden — stock tracking deferred (mezo-6nu) */}
+              {SHOW_PANTRY_STOCK && (
+                <>
+                  <StatCell label="Lejár" val={String(lowExpiry)} sub="< 3 nap" color={lowExpiry ? 'var(--warning)' : 'var(--text-tertiary)'} />
+                  <StatCell label="Fogy" val={String(lowStock)} sub="< 15 adag" color={lowStock ? 'var(--warning)' : 'var(--text-tertiary)'} />
+                </>
+              )}
             </div>
           </div>
 
-          {/* Needs-attention strip */}
-          {lowExpiry > 0 && (
+          {/* Needs-attention strip (stock expiry — deferred, mezo-6nu) */}
+          {SHOW_PANTRY_STOCK && lowExpiry > 0 && (
             <div style={{ padding: '0 24px 12px' }}>
               <div className="notch-4" style={{ padding: '10px 14px', background: 'color-mix(in srgb, var(--warning) 7%, transparent)', borderLeft: '2px solid var(--warning)' }}>
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
