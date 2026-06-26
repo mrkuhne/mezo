@@ -7,6 +7,7 @@ const SUBNAV: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/fuel/stack', label: 'Stack' },
   { to: '/fuel/recipes', label: 'Receptek' },
   { to: '/fuel/kamra', label: 'Kamra' },
+  { to: '/fuel/gyogyszer', label: 'Gyógyszer' },
 ]
 
 export function FuelSubNav() {
