@@ -20,14 +20,15 @@ public class RunSignalCalculator {
     private final RunningBlockRepository runningBlockRepository;
 
     public RunSignal compute(UUID createdBy, UUID runLogId) {
-        RunSessionLogEntity log = runSessionLogRepository.findById(runLogId).orElseThrow();
-        String kind = resolveKind(createdBy, log.getBlockId(), log.getSessionKey());
+        RunSessionLogEntity log = runSessionLogRepository.findByIdAndCreatedBy(runLogId, createdBy)
+            .orElseThrow();
+        String kind = resolveKind(log.getBlockId(), log.getSessionKey());
         return new RunSignal(log.getId(), kind, log.getCompletedRounds(), log.getDurationMin(),
             log.getRpeActual(), log.getSprintLandmark(), log.getHrRecoverySec());
     }
 
     /** The prescribed session's kind from the block's jsonb structure; "steady" if not found. */
-    private String resolveKind(UUID createdBy, UUID blockId, String sessionKey) {
+    private String resolveKind(UUID blockId, String sessionKey) {
         RunningBlockEntity block = runningBlockRepository.findById(blockId).orElse(null);
         if (block == null || block.getStructure() == null) {
             return DEFAULT_KIND;
