@@ -167,12 +167,17 @@ function deriveSportWeek(rs: SportSessionResponse[]): SportWeek | null {
   const range = monday.getMonth() === sunday.getMonth()
     ? `${huMonthDay(isoDate(monday))}-${sunday.getDate()}`
     : `${huMonthDay(isoDate(monday))} - ${huMonthDay(isoDate(sunday))}`
+  // Shoulder load is a volleyball-specific signal — average only over rows that carry it
+  // (cross/TRX sessions log a null shoulderStrain), so a mixed week doesn't deflate the stat.
+  const withStrain = inWeek.filter((r) => r.shoulderStrain != null)
   return {
     label: `Hét ${isoWeekNumber(now)} · ${range}`,
     sessions: inWeek.length,
     hoursPlayed: round1(inWeek.reduce((a, r) => a + r.duration, 0) / 60),
     avgRPE: round1(inWeek.reduce((a, r) => a + r.rpe, 0) / inWeek.length),
-    avgShoulderStrain: round1(inWeek.reduce((a, r) => a + (r.shoulderStrain ?? 0), 0) / inWeek.length),
+    avgShoulderStrain: withStrain.length
+      ? round1(withStrain.reduce((a, r) => a + (r.shoulderStrain ?? 0), 0) / withStrain.length)
+      : 0,
     shoulderLoadTrend: 'stabil',
   }
 }

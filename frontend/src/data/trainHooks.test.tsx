@@ -251,6 +251,23 @@ test('useTrain (real mode) derives week stats from sessions logged this week', a
   expect(result.current.sport.sessions[0].jumpCount).toBeNull()
 })
 
+test('useTrain (real mode) week avgShoulderStrain ignores null-strain cross/TRX rows', async () => {
+  const today = new Date()
+  const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'd1f3a0e2-0000-4000-8000-0000000000a1', sport: 'volleyball', date: iso, time: '18:00', duration: 90, setsPlayed: 5, rpe: 6, shoulderStrain: 6 },
+        { id: 'd1f3a0e2-0000-4000-8000-0000000000a2', sport: 'cross', date: iso, time: '07:00', duration: 30, rounds: 8, rpe: 8 },
+      ]),
+    ),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.sport.week).not.toBeNull())
+  // The null-strain cross row must NOT deflate the volleyball-only shoulder average (6, not 3).
+  expect(result.current.sport.week).toMatchObject({ sessions: 2, avgShoulderStrain: 6 })
+})
+
 test('useTrain (real mode) week stays null when no session falls in the current week', async () => {
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() }) // default handlers: May 2026 sessions only
   await waitFor(() => expect(result.current.sport.sessions.length).toBeGreaterThan(0))
