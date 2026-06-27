@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.LevelUpResult;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
@@ -80,6 +81,28 @@ class SportContractIT extends ApiIntegrationTest {
             sessionReq().rpe(new BigDecimal("11")).build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "rpe", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testLogSportSession_shouldReturn201WithLevelUp_whenCrossWithoutVolleyballFields() {
+        SportSessionResponse created = postForBody("/api/train/sport-sessions",
+            SportSessionCreateRequest.builder().sport("cross").duration(45).rounds(8)
+                .rpe(new BigDecimal("8")).build(),
+            ownerAuthHeaders(), HttpStatus.CREATED, SportSessionResponse.class);
+
+        assertThat(created.getSport()).isEqualTo("cross");
+        assertThat(created.getRounds()).isEqualTo(8);
+        assertThat(created.getSetsPlayed()).isNull();
+        assertThat(created.getLevelUp()).isNotNull();
+        assertThat(created.getLevelUp().getSource()).isEqualTo(LevelUpResult.SourceEnum.SPORT);
+    }
+
+    @Test
+    void testLogSportSession_shouldReturn400InvalidValue_whenSportNotAllowed() {
+        String body = postForBody("/api/train/sport-sessions",
+            sessionReq().sport("tennis").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "sport", "VALIDATION_INVALID_VALUE");
     }
 
     // ---- GET/PUT /sport-schedule --------------------------------------------------
