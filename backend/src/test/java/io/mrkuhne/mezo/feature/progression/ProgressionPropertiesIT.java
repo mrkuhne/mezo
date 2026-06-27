@@ -20,7 +20,20 @@ class ProgressionPropertiesIT extends AbstractIntegrationTest {
         assertThat(gym.prBonusXp()).isEqualTo(40);
         assertThat(gym.strengthEnduranceXpPerSet()).isEqualTo(8);
         assertThat(gym.bodyweightXpPerRep()).isEqualTo(1);
-        assertThat(gym.robustness().perWeekXp()).isEqualTo(25);
+    }
+
+    @Test
+    void testRobustnessConfig_shouldBindFromTopLevel_whenContextStarts() {
+        assertThat(properties.robustness().perWeekXp()).isEqualTo(25);
+    }
+
+    @Test
+    void testSportConfig_shouldBindFromYaml_whenContextStarts() {
+        ProgressionProperties.Sport sport = properties.sport();
+        assertThat(sport.xpPerSet()).isEqualTo(12);
+        assertThat(sport.xpPerRound()).isEqualTo(14);
+        assertThat(sport.xpPerMin()).isEqualTo(4);
+        assertThat(sport.rpeXpPerPoint()).isEqualTo(6);
     }
 
     @Test

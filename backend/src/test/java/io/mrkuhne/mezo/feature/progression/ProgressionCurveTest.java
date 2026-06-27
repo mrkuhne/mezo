@@ -9,13 +9,15 @@ import org.junit.jupiter.api.Test;
 class ProgressionCurveTest {
 
     // Pure logic: no Spring context. Defaults base=100, exp=1.6. ProgressionCurve only reads
-    // curve(); the gym() weights are required by the record but irrelevant to this curve test.
+    // curve(); the gym()/run()/sport() weights + robustness are required by the record but
+    // irrelevant to this curve test.
     private final ProgressionCurve curve =
         new ProgressionCurve(new ProgressionProperties(
             new ProgressionProperties.Curve(100, 1.6),
-            new ProgressionProperties.Gym(
-                100, 10, 2, 40, 8, 1, new ProgressionProperties.Robustness(25)),
-            new ProgressionProperties.Run(25, 15, 4, 5, 6, 30)));
+            new ProgressionProperties.Gym(100, 10, 2, 40, 8, 1),
+            new ProgressionProperties.Run(25, 15, 4, 5, 6, 30),
+            new ProgressionProperties.Sport(12, 14, 4, 6),
+            new ProgressionProperties.Robustness(25)));
 
     @Test
     void testXpThreshold_shouldFollowGrowingCurve_whenComputedPerLevel() {

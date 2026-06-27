@@ -7,13 +7,16 @@ import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-/** Progression tuning (mezo.progression). P1: level curve. P2: gym + run XP weights. */
+/** Progression tuning (mezo.progression). Curve + per-family XP weights (gym/run/sport) +
+ * the family-agnostic streak robustness rate. */
 @Validated
 @ConfigurationProperties(prefix = "mezo.progression")
 public record ProgressionProperties(
     @NotNull @Valid Curve curve,
     @NotNull @Valid Gym gym,
-    @NotNull @Valid Run run
+    @NotNull @Valid Run run,
+    @NotNull @Valid Sport sport,
+    @NotNull @Valid Robustness robustness
 ) {
     /** Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp), xpThreshold(1)=0. */
     public record Curve(
@@ -28,11 +31,10 @@ public record ProgressionProperties(
         @NotNull @PositiveOrZero Integer e1rmXpPerKg,         // 2 (max_strength XP per best-e1RM kg)
         @NotNull @PositiveOrZero Integer prBonusXp,           // 40 (bonus when e1RM beats prior best)
         @NotNull @PositiveOrZero Integer strengthEnduranceXpPerSet, // 8 (per logged work set)
-        @NotNull @PositiveOrZero Integer bodyweightXpPerRep,  // 1 (flat XP per bodyweight rep)
-        @NotNull @Valid Robustness robustness
+        @NotNull @PositiveOrZero Integer bodyweightXpPerRep   // 1 (flat XP per bodyweight rep)
     ) {}
 
-    /** Streak-only robustness (v1): perWeekXp × consecutive training weeks. */
+    /** Streak-only robustness (v1), family-agnostic: perWeekXp × consecutive training weeks. */
     public record Robustness(
         @NotNull @Positive Integer perWeekXp  // 25
     ) {}
@@ -45,5 +47,13 @@ public record ProgressionProperties(
         @NotNull @PositiveOrZero Integer aerobicXpPerMin,     // 5 (aerobic_capacity per minute)
         @NotNull @PositiveOrZero Integer rpeXpPerPoint,       // 6 (explosiveness/effort per RPE point)
         @NotNull @PositiveOrZero Integer hrRecoveryBonusXp    // 30 (aerobic bonus when HR-recovery logged)
+    ) {}
+
+    /** Sport-path XP weights (athletic only; per-kind skill mapping in ProgressionService.applySport). */
+    public record Sport(
+        @NotNull @PositiveOrZero Integer xpPerSet,       // 12 (volleyball volume → vertical_jump/agility/coordination)
+        @NotNull @PositiveOrZero Integer xpPerRound,     // 14 (cross/TRX volume → anaerobic/strength_endurance/core_stability)
+        @NotNull @PositiveOrZero Integer xpPerMin,       // 4 (duration → aerobic_capacity / mobility)
+        @NotNull @PositiveOrZero Integer rpeXpPerPoint   // 6 (RPE → explosiveness / effort skills)
     ) {}
 }

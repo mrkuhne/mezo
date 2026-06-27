@@ -79,6 +79,9 @@ mezo:
     curve:
       base: 100
       exp: 1.6
+    # Streak robustness — family-agnostic (gym/run/sport all feed the training-week streak).
+    robustness:
+      per-week-xp: 25         # robustness XP per consecutive training week (streak-only v1)
     # Gym-path XP weights (display-only economy in v1; tune freely without touching code).
     gym:
       volume-unit: 100          # kg·reps that equal one volume XP unit
@@ -87,8 +90,6 @@ mezo:
       pr-bonus-xp: 40           # one-off bonus when the session's best e1RM beats the prior best
       strength-endurance-xp-per-set: 8  # per logged work set (non-skipped, reps present)
       bodyweight-xp-per-rep: 1  # flat XP per rep for weightless sets (no e1RM/volume)
-      robustness:
-        per-week-xp: 25         # robustness XP per consecutive training week (streak-only v1)
     # Run-path XP weights.
     run:
       sprint-xp-per-round: 25     # sprint_speed per completed sprint round
@@ -97,6 +98,12 @@ mezo:
       aerobic-xp-per-min: 5       # aerobic_capacity per steady minute
       rpe-xp-per-point: 6         # explosiveness / effort proxy per RPE point
       hr-recovery-bonus-xp: 30    # one-off aerobic bonus when HR-recovery is logged
+    # Sport-path XP weights (athletic only; per-kind skill mapping in applySport).
+    sport:
+      xp-per-set: 12              # volleyball volume → vertical_jump/agility/coordination
+      xp-per-round: 14            # cross/TRX volume → anaerobic_capacity/strength_endurance/core_stability
+      xp-per-min: 4               # duration → aerobic_capacity (volleyball) / mobility (TRX)
+      rpe-xp-per-point: 6         # RPE → explosiveness / effort skills
 management:
   endpoints:
     web:

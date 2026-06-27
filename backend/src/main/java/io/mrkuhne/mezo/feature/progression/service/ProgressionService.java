@@ -154,7 +154,7 @@ public class ProgressionService {
 
         // robustness (streak-only, absolute target → idempotent within a week)
         int streak = robustnessCalculator.streakWeeks(createdBy);
-        long robustnessTarget = (long) streak * properties.gym().robustness().perWeekXp();
+        long robustnessTarget = (long) streak * properties.robustness().perWeekXp();
         SkillProgressEntity rob = skillProgressRepository
             .findByCreatedByAndSkillKey(createdBy, "robustness").orElseGet(() -> {
                 SkillProgressEntity r = new SkillProgressEntity();
