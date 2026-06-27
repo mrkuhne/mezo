@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-06-25
+updated: 2026-06-27
 tags: [train, running, sport, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/train
@@ -120,11 +120,12 @@ All tables: UUID PKs (`gen_random_uuid()`), `created_by` ownership via `OwnedEnt
 - `ExerciseRecordService.list` resolves an exercise identity by `exercise.catalog_id` else name over **ALL rows incl. soft-deleted** (`ExerciseRepository.findIdentityRowsIncludingDeleted` native SQL — day-edits soft-delete template rows but must not erase history), computing `bestSet`, `bestE1rm` (Epley `w×(30+reps)/30`), `bestSessionVolume`, totals, `sessionCount`, `repRecords`, `recentTopSets`.
 - **DTOs:** `ExerciseCatalogItem` (adds `slug` vs the FE `ExerciseLibraryItem`), `ExerciseRecordResponse`, `RecordSetRef`, `E1rmRecord`, `SessionVolumeRecord`.
 
-### Sport / volleyball
-- **Tables:** `sport_session` (in `202606111400_mezo-n5q_create_train.sql`; intensity/shoulder_strain CHECK 1-10, `jump_count`); `sport_schedule_slot` (added in `202606121000_mezo-0ae_t3_sport_schedule.sql`; `day_of_week` SMALLINT 0=Hét..6=Vas CHECK, `kind` training|match CHECK).
+### Sport / volleyball · cross · TRX
+- **Tables:** `sport_session` — a **3-kind modality** since `mezo-lmox` (`202606271000_mezo-lmox_generalize_sport_session.sql`): the existing `sport` column is the typed discriminator (`ck_sport_session_sport` CHECK `volleyball|cross|trx`) and a `rounds` INT effort column was added for cross/TRX; the original table (`202606111400_mezo-n5q_create_train.sql`) carries intensity/shoulder_strain CHECK 1-10 + `jump_count`. `sport_schedule_slot` (added in `202606121000_mezo-0ae_t3_sport_schedule.sql`; `day_of_week` SMALLINT 0=Hét..6=Vas CHECK, `kind` training|match CHECK).
 - **Endpoints:** `GET/POST /api/train/sport-sessions`, `GET/PUT /api/train/sport-schedule` (`replaceSchedule` = full soft-delete + re-insert).
-- **DTOs:** `SportSessionResponse`, `SportSessionCreateRequest {duration,setsPlayed,rpe,shoulderStrain,notes?}`, schedule slot DTOs. Server defaults session date/time to **now** (the sheet has no date picker); `sport` is always `"volleyball"`.
-- 🟣 `jumpCount` exists in the DB/DTO but the log sheet never captures it (only demofixtures set it); `intensity` is never written by the log path; `team`/`season`/`weeklyHours` have no DB home.
+- **DTOs:** `SportSessionResponse` (now `+ rounds?`, `+ levelUp?`; `setsPlayed`/`shoulderStrain` are volleyball-only → optional), `SportSessionCreateRequest {sport? (pattern volleyball|cross|trx), duration, rpe, setsPlayed?, shoulderStrain?, rounds?, notes?}` — only `duration`+`rpe` are required; `sport` defaults to `"volleyball"` server-side. Schedule slot DTOs unchanged. Server defaults session date/time to **now** (the sheet has no date picker).
+- **Progression (`mezo-lmox`):** **`POST /api/train/sport-sessions` now returns an optional `levelUp`** (mirrors the gym finish + run log): `SportService.logSportSession` runs `SportSignalCalculator.compute` → `ProgressionService.applySport` → `LevelUpResultMapper.toDto` inside its `@Transactional`, **only when `mezo.feature.progression.enabled` is on** (the shared `ProgressionGate` bean, injected via `ObjectProvider`); idempotent on the saved session id; the GET list never carries it. Per-kind athletic XP (volleyball→vertical_jump/agility/coordination/explosiveness/aerobic_capacity from `setsPlayed`+rpe+min; cross→anaerobic_capacity/strength_endurance/explosiveness/core_stability from `rounds`+rpe; trx→core_stability/strength_endurance/anaerobic_capacity/mobility from `rounds`+rpe+min) is config-driven (`mezo.progression.sport`). See the progression backend doc (`_platform-api-backend.md` §4e); the FE LevelUpScreen is P5.
+- 🟣 `jumpCount` exists in the DB/DTO but the log sheet never captures it (volleyball scores off `setsPlayed`, not jumpCount); `intensity` is never written by the log path; `team`/`season`/`weeklyHours` have no DB home. **The cross/TRX log-sheet UI is deferred to P5** — P3b generalized the backend/contract, but `SportLogSheet` still captures the volleyball shape, so cross/TRX rows arrive only via the API / demofixtures.
 
 ### Gym schedule (`GymScheduleSlot` — weekday → time)
 A **standalone** owner-scoped weekly schedule answering only *when* the user trains on each weekday; it **persists across mesocycles** (the active meso supplies *what*, this supplies *when*). Mirrors `sport_schedule_slot`, minus the volleyball-specific columns. This is the Option-Y choice (standalone schedule, not time-on-the-meso-day) — see the X-vs-Y decision in `docs/superpowers/specs/2026-06-15-gym-schedule-times-design.md`.

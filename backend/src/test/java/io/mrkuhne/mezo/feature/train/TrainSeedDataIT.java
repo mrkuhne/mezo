@@ -38,7 +38,9 @@ class TrainSeedDataIT extends AbstractIntegrationTest {
         assertThat(mesocycleRepository.count()).isEqualTo(4);   // hyp-04, str-02, maint-01, rec-03
         assertThat(volumeLogRepository.count()).isEqualTo(8);   // 8 muscles on the active meso
         assertThat(workoutSessionRepository.count()).isEqualTo(7); // Hét..Vas template days
-        assertThat(sportSessionRepository.count()).isEqualTo(5);
+        assertThat(sportSessionRepository.count()).isEqualTo(7); // 5 volleyball + 1 cross + 1 trx (mezo-lmox)
+        assertThat(sportSessionRepository.findAll()).extracting("sport")
+            .contains("volleyball", "cross", "trx");
         assertThat(sportScheduleSlotRepository.count()).isEqualTo(5); // BVSC week (Hét/Kedd/Sze/Pén + Szo match)
     }
 

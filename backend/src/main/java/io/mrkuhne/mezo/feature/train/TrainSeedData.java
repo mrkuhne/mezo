@@ -285,6 +285,9 @@ public class TrainSeedData implements CommandLineRunner {
         sport(by, "2026-05-13", "18:00", 90, 5, 7, "6.9", 6, 35, null);
         sport(by, "2026-05-11", "10:00", 120, 6, 8, "7.5", 8, 48,
             "Sok smash · vasárnap pihentem");
+        // Cross/TRX rows exercise the generalized kind + rounds effort (mezo-lmox).
+        sportKind(by, "2026-05-22", "07:00", 45, "cross", 8, "7.6", "Cross · 8 kör");
+        sportKind(by, "2026-05-19", "07:00", 40, "trx", 6, "7.0", "TRX · core nap");
     }
 
     // --- BVSC weekly schedule (train.ts:364-377) — day index = DAY_ORDER position ---------------
@@ -382,6 +385,21 @@ public class TrainSeedData implements CommandLineRunner {
         s.setRpe(new BigDecimal(rpe));
         s.setShoulderStrain(shoulderStrain);
         s.setJumpCount(jumpCount);
+        s.setNotes(notes);
+        sportSessionRepository.save(s);
+    }
+
+    /** A cross/TRX session (kind + rounds effort; no volleyball-specific sets/shoulder/jumps). */
+    private void sportKind(UUID by, String date, String time, int durationMin, String sport,
+        int rounds, String rpe, String notes) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(by);
+        s.setSport(sport);
+        s.setDate(LocalDate.parse(date));
+        s.setTime(time);
+        s.setDurationMin(durationMin);
+        s.setRounds(rounds);
+        s.setRpe(new BigDecimal(rpe));
         s.setNotes(notes);
         sportSessionRepository.save(s);
     }
