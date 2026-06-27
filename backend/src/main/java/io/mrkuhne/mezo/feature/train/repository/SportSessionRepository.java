@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -14,4 +15,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SportSessionRepository extends JpaRepository<SportSessionEntity, UUID> {
 
     List<SportSessionEntity> findByCreatedByAndDeletedFalseOrderByDateDesc(UUID createdBy);
+
+    /** Ownership-scoped lookup (used by SportSignalCalculator to resolve a just-saved session). */
+    Optional<SportSessionEntity> findByIdAndCreatedBy(UUID id, UUID createdBy);
 }

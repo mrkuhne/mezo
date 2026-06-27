@@ -16,10 +16,12 @@ import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
 /**
- * A logged sport session (volleyball by default) — the cross-training counterpart to the
- * mesocycle-driven strength work. Standalone (no mesocycle FK): owned only via {@code createdBy}.
- * The {@code intensity} and {@code shoulderStrain} 1–10 scores are nullable (DB CHECK enforces the
- * 1–10 range when present); the remaining metrics stay null until captured.
+ * A logged sport session — volleyball, cross, or TRX. The {@code sport} column is the modality
+ * discriminator (DB CHECK {@code volleyball|cross|trx}); it defaults to volleyball when the log
+ * omits it. Standalone (no mesocycle FK): owned only via {@code createdBy}. Volleyball-only metrics
+ * ({@code setsPlayed}, {@code shoulderStrain}, {@code jumpCount}) and the cross/TRX {@code rounds}
+ * effort are nullable per kind; the {@code intensity} and {@code shoulderStrain} 1–10 scores carry a
+ * DB CHECK on their range when present.
  *
  * <p>{@code createdBy}, {@code is_deleted} and {@code created_at} come from {@link OwnedEntity}.
  */
@@ -64,6 +66,9 @@ public class SportSessionEntity extends OwnedEntity {
 
     @Column(name = "jump_count")
     private Integer jumpCount;
+
+    @Column
+    private Integer rounds; // cross/TRX effort; null for volleyball
 
     @Column
     private String notes;
