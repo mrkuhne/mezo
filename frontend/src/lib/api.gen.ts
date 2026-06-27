@@ -1296,14 +1296,20 @@ export interface components {
         };
         /** @description SportLogSheet payload — date/time default to "now" server-side when absent */
         SportSessionCreateRequest: {
+            /** @description Modality discriminator; defaults to volleyball server-side when omitted. */
+            sport?: string;
             /** Format: date */
             date?: string;
             time?: string;
             /** @description minutes */
             duration: number;
-            setsPlayed: number;
+            /** @description Sets played (volleyball; null for cross/TRX). */
+            setsPlayed?: number;
+            /** @description Completed rounds (cross/TRX effort; null for volleyball). */
+            rounds?: number;
             rpe: number;
-            shoulderStrain: number;
+            /** @description Shoulder load 1–10 (volleyball; null for cross/TRX). */
+            shoulderStrain?: number;
             notes?: string;
         };
         SportScheduleSlotInput: {
@@ -1344,6 +1350,7 @@ export interface components {
         SportSessionResponse: {
             /** Format: uuid */
             id: string;
+            /** @description Modality discriminator (volleyball|cross|trx). */
             sport: string;
             /** Format: date */
             date: string;
@@ -1354,12 +1361,17 @@ export interface components {
             time: string;
             /** @description minutes */
             duration: number;
-            setsPlayed: number;
+            /** @description Sets played (volleyball; null for cross/TRX). */
+            setsPlayed?: number;
+            /** @description Completed rounds (cross/TRX; null for volleyball). */
+            rounds?: number;
             intensity?: number;
             rpe: number;
-            shoulderStrain: number;
+            /** @description Shoulder load 1–10 (volleyball; null for cross/TRX). */
+            shoulderStrain?: number;
             jumpCount?: number;
             notes?: string;
+            levelUp?: components["schemas"]["LevelUpResult"];
         };
         RunSegment: {
             /** @description warmup|work|rest|cooldown */

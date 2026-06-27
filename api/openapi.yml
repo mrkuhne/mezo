@@ -3252,10 +3252,14 @@ components:
         absent
       required:
         - duration
-        - setsPlayed
         - rpe
-        - shoulderStrain
       properties:
+        sport:
+          type: string
+          pattern: ^(volleyball|cross|trx)$
+          description: >-
+            Modality discriminator; defaults to volleyball server-side when
+            omitted.
         date:
           type: string
           format: date
@@ -3271,6 +3275,12 @@ components:
           type: integer
           minimum: 0
           maximum: 50
+          description: Sets played (volleyball; null for cross/TRX).
+        rounds:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: Completed rounds (cross/TRX effort; null for volleyball).
         rpe:
           type: number
           minimum: 1
@@ -3279,6 +3289,7 @@ components:
           type: integer
           minimum: 1
           maximum: 10
+          description: Shoulder load 1–10 (volleyball; null for cross/TRX).
         notes:
           type: string
           maxLength: 500
@@ -3381,15 +3392,14 @@ components:
         - date
         - time
         - duration
-        - setsPlayed
         - rpe
-        - shoulderStrain
       properties:
         id:
           type: string
           format: uuid
         sport:
           type: string
+          description: Modality discriminator (volleyball|cross|trx).
         date:
           type: string
           format: date
@@ -3402,16 +3412,23 @@ components:
           description: minutes
         setsPlayed:
           type: integer
+          description: Sets played (volleyball; null for cross/TRX).
+        rounds:
+          type: integer
+          description: Completed rounds (cross/TRX; null for volleyball).
         intensity:
           type: integer
         rpe:
           type: number
         shoulderStrain:
           type: integer
+          description: Shoulder load 1–10 (volleyball; null for cross/TRX).
         jumpCount:
           type: integer
         notes:
           type: string
+        levelUp:
+          $ref: '#/components/schemas/LevelUpResult'
     RunSegment:
       type: object
       required:

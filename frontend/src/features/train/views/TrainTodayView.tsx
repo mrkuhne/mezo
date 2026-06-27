@@ -256,7 +256,7 @@ export function TrainTodayView() {
                     }}
                   >
                     <Icon name="check" size={12} />
-                    <span>Logolva · RPE {loggedVb.rpe} · {loggedVb.duration}p · váll {loggedVb.shoulderStrain}</span>
+                    <span>Logolva · RPE {loggedVb.rpe} · {loggedVb.duration}p · váll {loggedVb.shoulderStrain ?? '–'}</span>
                   </button>
                 ) : (
                   <CtaGhost

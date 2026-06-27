@@ -36,7 +36,7 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
             </span>
             <span>
               <span style={{ color: 'var(--text-tertiary)' }}>setek</span>{' '}
-              <span style={{ color: 'var(--text-primary)' }}>{session.setsPlayed}</span>
+              <span style={{ color: 'var(--text-primary)' }}>{session.setsPlayed ?? '–'}</span>
             </span>
           </div>
         </div>
@@ -64,12 +64,14 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
         {session.intensity != null && (
           <MiniBar label="Intenzitás" val={session.intensity} max={10} color="var(--cat-tendency)" />
         )}
-        <MiniBar
-          label="Váll terhelés"
-          val={session.shoulderStrain}
-          max={10}
-          color={session.shoulderStrain >= 7 ? 'var(--warning)' : 'var(--text-secondary)'}
-        />
+        {session.shoulderStrain != null && (
+          <MiniBar
+            label="Váll terhelés"
+            val={session.shoulderStrain}
+            max={10}
+            color={session.shoulderStrain >= 7 ? 'var(--warning)' : 'var(--text-secondary)'}
+          />
+        )}
       </div>
 
       {session.notes && (

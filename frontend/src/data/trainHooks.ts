@@ -99,8 +99,8 @@ function toMesocycle(r: MesocycleResponse): Mesocycle {
 function toSportSession(r: SportSessionResponse): SportSession {
   return {
     id: r.id, sport: r.sport, date: huMonthDayDow(r.date), time: r.time,
-    duration: r.duration, setsPlayed: r.setsPlayed, intensity: r.intensity ?? null,
-    rpe: r.rpe, shoulderStrain: r.shoulderStrain, jumpCount: r.jumpCount ?? null,
+    duration: r.duration, setsPlayed: r.setsPlayed ?? null, intensity: r.intensity ?? null,
+    rpe: r.rpe, shoulderStrain: r.shoulderStrain ?? null, jumpCount: r.jumpCount ?? null,
     notes: r.notes ?? null,
   }
 }
@@ -172,7 +172,7 @@ function deriveSportWeek(rs: SportSessionResponse[]): SportWeek | null {
     sessions: inWeek.length,
     hoursPlayed: round1(inWeek.reduce((a, r) => a + r.duration, 0) / 60),
     avgRPE: round1(inWeek.reduce((a, r) => a + r.rpe, 0) / inWeek.length),
-    avgShoulderStrain: round1(inWeek.reduce((a, r) => a + r.shoulderStrain, 0) / inWeek.length),
+    avgShoulderStrain: round1(inWeek.reduce((a, r) => a + (r.shoulderStrain ?? 0), 0) / inWeek.length),
     shoulderLoadTrend: 'stabil',
   }
 }
@@ -352,8 +352,8 @@ export function useTrain(): TrainData {
               const logged: SportSession = {
                 id: `ss-${performance.now()}`, sport: 'volleyball',
                 date: huMonthDayDow(localDateString()), time: hhmm,
-                duration: req.duration, setsPlayed: req.setsPlayed, intensity: null,
-                rpe: req.rpe, shoulderStrain: req.shoulderStrain, jumpCount: null, notes: null,
+                duration: req.duration, setsPlayed: req.setsPlayed ?? null, intensity: null,
+                rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: null,
               }
               return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
             },
