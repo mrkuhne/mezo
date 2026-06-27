@@ -261,6 +261,21 @@ public class TrainPopulator {
         return sportSessionRepository.saveAndFlush(s);
     }
 
+    /** A sport session of any modality — volleyball|cross|trx — with kind-appropriate effort. */
+    public SportSessionEntity createSportSession(UUID createdBy, LocalDate date, String sport,
+        Integer setsPlayed, Integer rounds, String rpe) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setSport(sport);
+        s.setDate(date);
+        s.setTime("18:00");
+        s.setDurationMin(60);
+        s.setSetsPlayed(setsPlayed);
+        s.setRounds(rounds);
+        s.setRpe(new BigDecimal(rpe));
+        return sportSessionRepository.saveAndFlush(s);
+    }
+
     public SportScheduleSlotEntity createScheduleSlot(UUID createdBy, int dayOfWeek, String time,
         int durationMin, String kind) {
         SportScheduleSlotEntity s = new SportScheduleSlotEntity();
