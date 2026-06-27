@@ -4,6 +4,11 @@ import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
+import io.mrkuhne.mezo.feature.progression.ProgressionGate;
+import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
+import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
+import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
+import io.mrkuhne.mezo.feature.progression.sport.SportSignalCalculator;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
@@ -17,6 +22,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,20 +42,33 @@ public class SportService {
     private final SportSessionRepository sportSessionRepository;
     private final SportScheduleSlotRepository slotRepository;
     private final TrainMapper mapper;
+    private final SportSignalCalculator sportSignalCalculator;
+    private final ProgressionService progressionService;
+    private final LevelUpResultMapper levelUpResultMapper;
+    private final ObjectProvider<ProgressionGate> progressionGate;
 
     @Transactional
     public SportSessionResponse logSportSession(UUID createdBy, SportSessionCreateRequest req) {
         SportSessionEntity s = new SportSessionEntity();
         s.setCreatedBy(createdBy); // server-side ownership — never from the client
-        // sport stays the entity default "volleyball" (single-sport scope in Phase 2).
+        s.setSport(req.getSport() != null ? req.getSport() : "volleyball"); // volleyball|cross|trx
         s.setDate(req.getDate() != null ? req.getDate() : LocalDate.now());
         s.setTime(req.getTime() != null ? req.getTime() : LocalTime.now().format(HH_MM));
         s.setDurationMin(req.getDuration());
         s.setSetsPlayed(req.getSetsPlayed());
+        s.setRounds(req.getRounds());
         s.setRpe(req.getRpe());
         s.setShoulderStrain(req.getShoulderStrain());
         s.setNotes(req.getNotes());
-        return mapper.toResponse(sportSessionRepository.save(s));
+
+        // Award progression XP + attach the level-up when the engine is switched on (mirrors
+        // RunningService.logSession): same @Transactional, idempotent on the saved session id.
+        SportSessionResponse base = mapper.toResponse(sportSessionRepository.save(s));
+        if (progressionGate.getIfAvailable() != null) {
+            SportSignal signal = sportSignalCalculator.compute(createdBy, s.getId());
+            base.setLevelUp(levelUpResultMapper.toDto(progressionService.applySport(createdBy, signal)));
+        }
+        return base;
     }
 
     public List<SportScheduleSlotResponse> getSchedule(UUID createdBy) {

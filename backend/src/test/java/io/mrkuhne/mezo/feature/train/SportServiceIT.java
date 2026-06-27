@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.api.dto.LevelUpResult;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
@@ -130,6 +131,31 @@ class SportServiceIT extends AbstractIntegrationTest {
         assertThat(r.getNotes()).isEqualTo("jó meccs");
         assertThat(r.getDuration()).isEqualTo(120);
         assertThat(r.getIntensity()).isNull();
+    }
+
+    @Test
+    void testLogSportSession_shouldReturnVolleyballLevelUp_whenProgressionEnabled() {
+        UUID owner = databasePopulator.populateUser("sportlvl@test.local");
+
+        SportSessionResponse res = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .duration(90).setsPlayed(5).rpe(new BigDecimal("7")).shoulderStrain(6).build());
+
+        assertThat(res.getSport()).isEqualTo("volleyball");
+        assertThat(res.getLevelUp()).isNotNull();
+        assertThat(res.getLevelUp().getSource()).isEqualTo(LevelUpResult.SourceEnum.SPORT);
+    }
+
+    @Test
+    void testLogSportSession_shouldPersistCrossKindAndRounds_whenCrossSession() {
+        UUID owner = databasePopulator.populateUser("sportcross@test.local");
+
+        SportSessionResponse res = sportService.logSportSession(owner, SportSessionCreateRequest.builder()
+            .sport("cross").duration(45).rounds(8).rpe(new BigDecimal("8")).build());
+
+        assertThat(res.getSport()).isEqualTo("cross");
+        assertThat(res.getRounds()).isEqualTo(8);
+        assertThat(res.getSetsPlayed()).isNull();
+        assertThat(res.getLevelUp()).isNotNull();
     }
 
     // ---- SportService schedule get/replace (Task 4) -------------------------------------------
