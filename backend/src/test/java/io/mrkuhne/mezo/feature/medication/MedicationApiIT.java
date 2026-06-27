@@ -37,12 +37,13 @@ class MedicationApiIT extends ApiIntegrationTest {
     @Test
     void testLogDose_shouldReturn201AndStartCycle_whenPostedToday() {
         MedicationEntity med = medPop.createReta(ownerId());
-        // Dose administered TODAY (07:00 UTC): not in the future, and the cycle is derived for
-        // today, so days-since-last-dose is 0 -> retaDay 1 (the first cycle day).
+        // Dose administered TODAY at start-of-day UTC: never in the future regardless of when the
+        // suite runs (mezo-yc9z), and the cycle is derived for today, so days-since-last-dose is 0
+        // -> retaDay 1 (the first cycle day).
         MedicationDoseRequest req = new MedicationDoseRequest();
         req.setDose(new BigDecimal("6"));
         req.setAdministeredAt(OffsetDateTime.of(
-            LocalDate.now(ZoneOffset.UTC).atTime(7, 0), ZoneOffset.UTC));
+            LocalDate.now(ZoneOffset.UTC).atStartOfDay(), ZoneOffset.UTC));
 
         ResponseEntity<String> res = exchangeForResponse(
             HttpMethod.POST, "/api/medication/" + med.getId() + "/dose", req, ownerAuthHeaders());
