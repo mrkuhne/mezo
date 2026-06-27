@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.feature.progression.repository.PerkUnlockRepository;
 import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
 import io.mrkuhne.mezo.feature.progression.run.RunSignal;
+import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +33,7 @@ public class ProgressionService {
 
     private static final String SOURCE_GYM = "GYM";
     private static final String SOURCE_RUN = "RUN";
+    private static final String SOURCE_SPORT = "SPORT";
     private static final int[] MILESTONES = {5, 10, 15, 20, 25, 30};
 
     private final SkillProgressRepository skillProgressRepository;
@@ -105,6 +107,47 @@ public class ProgressionService {
         String label = sprint ? "Sprint futás" : "Futás";
         return award(createdBy, SOURCE_RUN, signal.logId(), deltas, kinds,
             label, signal.durationMin(), signal.rpeActual());
+    }
+
+    @Transactional
+    public LevelUpResult applySport(UUID createdBy, SportSignal signal) {
+        ProgressionProperties.Sport sp = properties.sport();
+        Map<String, Long> deltas = new LinkedHashMap<>();
+        Map<String, String> kinds = new LinkedHashMap<>();
+
+        int min = signal.durationMin() != null ? signal.durationMin() : 0;
+        int rpe = signal.rpe() != null ? signal.rpe() : 0;
+        int sets = signal.setsPlayed() != null ? signal.setsPlayed() : 0;
+        int rounds = signal.rounds() != null ? signal.rounds() : 0;
+
+        String label;
+        switch (signal.kind() != null ? signal.kind() : "volleyball") {
+            case "cross" -> {
+                label = "Cross training";
+                addAthletic(deltas, kinds, "anaerobic_capacity", (long) rounds * sp.xpPerRound());
+                addAthletic(deltas, kinds, "strength_endurance", (long) rounds * sp.xpPerRound());
+                addAthletic(deltas, kinds, "explosiveness", (long) rpe * sp.rpeXpPerPoint());
+                addAthletic(deltas, kinds, "core_stability", (long) rpe * sp.rpeXpPerPoint());
+            }
+            case "trx" -> {
+                label = "TRX köredzés";
+                addAthletic(deltas, kinds, "core_stability", (long) rounds * sp.xpPerRound());
+                addAthletic(deltas, kinds, "strength_endurance", (long) rounds * sp.xpPerRound());
+                addAthletic(deltas, kinds, "anaerobic_capacity", (long) rpe * sp.rpeXpPerPoint());
+                addAthletic(deltas, kinds, "mobility", (long) min * sp.xpPerMin());
+            }
+            default -> { // volleyball
+                label = "Röplabda";
+                addAthletic(deltas, kinds, "vertical_jump", (long) sets * sp.xpPerSet());
+                addAthletic(deltas, kinds, "agility", (long) sets * sp.xpPerSet());
+                addAthletic(deltas, kinds, "coordination", (long) sets * sp.xpPerSet());
+                addAthletic(deltas, kinds, "explosiveness", (long) rpe * sp.rpeXpPerPoint());
+                addAthletic(deltas, kinds, "aerobic_capacity", (long) min * sp.xpPerMin());
+            }
+        }
+
+        return award(createdBy, SOURCE_SPORT, signal.sessionId(), deltas, kinds,
+            label, signal.durationMin(), signal.rpe());
     }
 
     /** Add an ATHLETIC delta only when positive (keeps the payload free of 0-XP gains). */
