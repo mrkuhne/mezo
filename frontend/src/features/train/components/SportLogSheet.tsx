@@ -131,17 +131,24 @@ export function ScaleRow({
 }
 
 // --- SportLogSheet ---
+type SportKind = 'volleyball' | 'cross' | 'trx'
+const KIND_LABELS: Record<SportKind, string> = { volleyball: 'Röpi', cross: 'Cross', trx: 'TRX' }
+const SPORT_KINDS: SportKind[] = ['volleyball', 'cross', 'trx']
+
 export function SportLogSheet({ onClose, onSave }: {
   onClose: () => void
   // `done` closes the sheet — the parent calls it from the log mutation's onSuccess
   // so the close is deferred until the save lands (and the level-up overlay can show).
   onSave?: (input: SportSessionCreateRequest, done: () => void) => void
 }) {
+  const [kind, setKind] = useState<SportKind>('volleyball')
   const [duration, setDuration] = useState(90)
   const [sets, setSets] = useState(5)
+  const [rounds, setRounds] = useState(6)
   const [rpe, setRpe] = useState(7)
   const [shoulder, setShoulder] = useState(6)
   const [saving, setSaving] = useState(false)
+  const isVolleyball = kind === 'volleyball'
 
   return (
     <Sheet onClose={onClose} labelledBy="sport-log-title">
@@ -151,7 +158,7 @@ export function SportLogSheet({ onClose, onSave }: {
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
               <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>
-                Sport log · Volleyball
+                Sport log · {KIND_LABELS[kind]}
               </span>
               <div id="sport-log-title" style={{ marginTop: 4 }}>
                 <Display size="md">Hogy ment?</Display>
@@ -162,31 +169,66 @@ export function SportLogSheet({ onClose, onSave }: {
             </button>
           </div>
 
+          {/* Kind selector — volleyball | cross | trx */}
+          <div className="row gap-xs" role="group" aria-label="Sport típus" style={{ marginBottom: 14 }}>
+            {SPORT_KINDS.map((k) => {
+              const active = kind === k
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => setKind(k)}
+                  className="flex-1 notch-4"
+                  style={{
+                    padding: '10px',
+                    background: active ? 'color-mix(in srgb, var(--cat-tendency) 8%, transparent)' : 'var(--surface-1)',
+                    border: `1px solid ${active ? 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' : 'var(--border-subtle)'}`,
+                    color: active ? 'var(--cat-tendency)' : 'var(--text-secondary)',
+                    fontFamily: 'var(--ff-mono)',
+                    fontSize: 10,
+                    fontWeight: 600,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {KIND_LABELS[k]}
+                </button>
+              )
+            })}
+          </div>
+
           {/* Fields */}
           <div className="col gap-md">
             <NumberStep label="Idő · perc" val={duration} step={15} min={15} max={600} onChange={setDuration} />
-            <NumberStep label="Setek · összesen" val={sets} step={1} max={50} onChange={setSets} />
+            {isVolleyball
+              ? <NumberStep label="Setek · összesen" val={sets} step={1} max={50} onChange={setSets} />
+              : <NumberStep label="Körök · összesen" val={rounds} step={1} min={1} max={50} onChange={setRounds} />}
             <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--brand-glow)" />
-            <ScaleRow
-              label="Váll terhelés"
-              val={shoulder}
-              onChange={setShoulder}
-              color={shoulder >= 7 ? 'var(--warning)' : 'var(--text-secondary)'}
-            />
+            {isVolleyball && (
+              <ScaleRow
+                label="Váll terhelés"
+                val={shoulder}
+                onChange={setShoulder}
+                color={shoulder >= 7 ? 'var(--warning)' : 'var(--text-secondary)'}
+              />
+            )}
           </div>
 
-          {/* Mezo observation */}
-          <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'rgba(94, 234, 212, 0.03)' }}>
-            <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-              <Icon name="sparkle" size={11} color="var(--brand-glow)" />
-              <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-primary)', flex: 1 }}>
-                {shoulder >= 7 && 'Váll terhelés magas — Overhead Press helyett Cable variánssal a következő Push Day-en. '}
-                {rpe >= 7.5 && 'Magas RPE · ma 21:30 előtt vacsorát zárjuk az alvás-impact miatt. '}
-                {rpe >= 8 && 'Kemény session — holnap a Pull Day intenzitását RIR 2-re lazítsuk. '}
-                {shoulder < 7 && rpe < 7.5 && 'Beírtam · ez egy átlagos session a heti ritmusodhoz képest. Jó volt.'}
-              </p>
+          {/* Mezo observation (volleyball-specific copy) */}
+          {isVolleyball && (
+            <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'rgba(94, 234, 212, 0.03)' }}>
+              <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
+                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+                <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-primary)', flex: 1 }}>
+                  {shoulder >= 7 && 'Váll terhelés magas — Overhead Press helyett Cable variánssal a következő Push Day-en. '}
+                  {rpe >= 7.5 && 'Magas RPE · ma 21:30 előtt vacsorát zárjuk az alvás-impact miatt. '}
+                  {rpe >= 8 && 'Kemény session — holnap a Pull Day intenzitását RIR 2-re lazítsuk. '}
+                  {shoulder < 7 && rpe < 7.5 && 'Beírtam · ez egy átlagos session a heti ritmusodhoz képest. Jó volt.'}
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
@@ -198,7 +240,10 @@ export function SportLogSheet({ onClose, onSave }: {
               disabled={saving}
               onClick={() => {
                 // date/time default to "now" server-side — the sheet captures effort only.
-                const body: SportSessionCreateRequest = { sport: 'volleyball', duration, setsPlayed: sets, rpe, shoulderStrain: shoulder }
+                // Volleyball logs sets + shoulder strain; cross/TRX log rounds (per the contract).
+                const body: SportSessionCreateRequest = isVolleyball
+                  ? { sport: 'volleyball', duration, setsPlayed: sets, rpe, shoulderStrain: shoulder }
+                  : { sport: kind, duration, rpe, rounds }
                 // Defer close to the parent (runs after the log succeeds); close
                 // immediately when no handler is wired.
                 if (onSave) { setSaving(true); onSave(body, close) } else { close() }

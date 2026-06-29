@@ -8,9 +8,9 @@ function setup() {
   return { onClose }
 }
 
-test('renders the sport-log fields and Mezo observation', () => {
+test('renders the sport-log fields and Mezo observation (volleyball default)', () => {
   setup()
-  expect(screen.getByText('Sport log · Volleyball')).toBeInTheDocument()
+  expect(screen.getByText('Sport log · Röpi')).toBeInTheDocument()
   expect(screen.getByText('Hogy ment?')).toBeInTheDocument()
   expect(screen.getByText('Idő · perc')).toBeInTheDocument()
   expect(screen.getByText('RPE · összesített nehézség')).toBeInTheDocument()
@@ -87,4 +87,31 @@ test('Mégse does not call onSave', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Mégse' }))
   expect(onSave).not.toHaveBeenCalled()
   await waitFor(() => expect(onClose).toHaveBeenCalled())
+})
+
+test('defaults to a volleyball payload', async () => {
+  const onSave = vi.fn()
+  render(<SportLogSheet onClose={vi.fn()} onSave={onSave} />)
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave.mock.calls[0][0]).toEqual({ sport: 'volleyball', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 })
+})
+
+test('cross kind sends sport:cross + rounds, no volleyball fields', async () => {
+  const onSave = vi.fn()
+  render(<SportLogSheet onClose={vi.fn()} onSave={onSave} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Cross' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  const body = onSave.mock.calls[0][0]
+  expect(body.sport).toBe('cross')
+  expect(body.rounds).toBeGreaterThan(0)
+  expect(body.setsPlayed).toBeUndefined()
+  expect(body.shoulderStrain).toBeUndefined()
+})
+
+test('trx kind sends sport:trx + rounds', async () => {
+  const onSave = vi.fn()
+  render(<SportLogSheet onClose={vi.fn()} onSave={onSave} />)
+  await userEvent.click(screen.getByRole('button', { name: 'TRX' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave.mock.calls[0][0].sport).toBe('trx')
 })
