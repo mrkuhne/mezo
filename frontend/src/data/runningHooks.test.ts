@@ -57,6 +57,21 @@ test('real-mode logRunSession forwards the levelUp on the log response', async (
   expect((seen[0] as { source?: string })?.source).toBe('RUN')
 })
 
+test('real-mode logRunSession invalidates the progression profile cache', async () => {
+  vi.spyOn(runningApi, 'blocks').mockResolvedValue([])
+  vi.spyOn(runningApi, 'runSessions').mockResolvedValue([])
+  vi.spyOn(runningApi, 'logRunSession').mockResolvedValue({
+    id: 'rs-1', blockId: 'b1', weekNumber: 1, sessionKey: 'k', date: '2026-06-29',
+    completedRounds: 6, rpeActual: 9, hrRecoverySec: 45, sprintLandmark: null, durationMin: null, notes: null,
+  } as never)
+  const { qc, wrapper } = wrap()
+  const spy = vi.spyOn(qc, 'invalidateQueries')
+  const { result } = renderHook(() => useRunning(), { wrapper })
+  await waitFor(() => expect(result.current.runningPending).toBe(false))
+  result.current.logRunSession({ blockId: 'b1', weekNumber: 1, sessionKey: 'k', date: '2026-06-29', completedRounds: 6, rpeActual: 9, hrRecoverySec: 45, sprintLandmark: null, durationMin: null, notes: null })
+  await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['progressionProfile'] }))
+})
+
 test('real-mode logRunSession calls onSettled even when the log POST fails (no stuck CTA)', async () => {
   vi.spyOn(runningApi, 'blocks').mockResolvedValue([])
   vi.spyOn(runningApi, 'runSessions').mockResolvedValue([])

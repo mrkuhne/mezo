@@ -21,7 +21,16 @@ describe('AthleticRadarCard', () => {
     expect(screen.getByText('SEBESSÉG')).toBeInTheDocument()
     expect(screen.getByText('KOORD.')).toBeInTheDocument()
     expect(screen.getByText('4.3')).toBeInTheDocument() // athlete level
-    expect(screen.getByText(/5/)).toBeInTheDocument() // streak weeks
+    // streak: assert the value within its own cell (precise, not a loose /5/ across the card)
+    expect(screen.getByText('Streak').closest('.progress-rstat')).toHaveTextContent(/5\s*hét/)
+  })
+
+  it('exposes the radar axis values to assistive tech via an sr-only summary', () => {
+    stubReduced()
+    render(<AthleticRadarCard profile={progressionProfileMock} />)
+    // role=img collapses the SVG, so a visually-hidden sentence carries the per-axis data.
+    expect(screen.getByText(/Erő 6\.8/)).toBeInTheDocument()
+    expect(screen.getByText(/Koordináció 4\.0/)).toBeInTheDocument()
   })
 
   it('renders the best-athletic highlight icon (max_strength → 🏋️)', () => {

@@ -45,11 +45,10 @@ export function MuscleLevelsCard({ profile }: { profile: ProgressionProfileRespo
   return (
     <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(var(--brand-core), var(--brand-primary))' }} />
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
+      {/* No "Mind a 13 ›" link in v1 — the full-profile route is deferred; a
+          non-navigating chip would be a finger-trap. */}
+      <div className="row" style={{ marginBottom: 13 }}>
         <span className="eyebrow brand">Izom-szintek</span>
-        <span className="chip" style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--text-tertiary)' }}>
-          Mind a 13 ›
-        </span>
       </div>
 
       <div className="col gap-sm">

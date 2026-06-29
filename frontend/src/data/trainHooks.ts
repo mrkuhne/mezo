@@ -309,6 +309,11 @@ export function useTrain(): TrainData {
   const invalidateToday = () => {
     if (!mock) qc.invalidateQueries({ queryKey: ['train', 'workoutToday'] })
   }
+  // XP-producing writes (gym finish, sport log) refresh the progression profile
+  // so the Me/Profile radar + muscle levels reflect the just-earned XP (P6).
+  const invalidateProgression = () => {
+    if (!mock) qc.invalidateQueries({ queryKey: ['progressionProfile'] })
+  }
   const startMutation = useMutation<WorkoutInstanceResponse | undefined, Error, string>({
     mutationFn: mock ? async () => undefined : (templateSessionId) => trainApi.startWorkout(templateSessionId),
     onSuccess: invalidateToday,
@@ -345,7 +350,7 @@ export function useTrain(): TrainData {
     mutationFn: mock
       ? async (_id: string) => ({ levelUp: gymLevelUpMock } as WorkoutInstanceResponse)
       : (id: string) => trainApi.finishWorkout(id),
-    onSuccess: invalidateToday,
+    onSuccess: () => { invalidateToday(); invalidateProgression() },
   })
 
   // T3 sport mutations: real persists then refetches the affected query. Mock
@@ -380,7 +385,7 @@ export function useTrain(): TrainData {
           } as SportSessionResponse
         }
       : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
-    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }) },
+    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }); invalidateProgression() },
   })
   const sportScheduleMutation = useMutation({
     mutationFn: mock

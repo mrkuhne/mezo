@@ -62,15 +62,19 @@ export function AthleticRadarCard({ profile }: { profile: ProgressionProfileResp
   return (
     <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(var(--brand-core), var(--brand-glow))' }} />
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+      {/* No "Teljes profil ›" link in v1 — the full-profile route is deferred (spec
+          §"Deferred to v1.1"); a non-navigating chip would be a finger-trap. */}
+      <div className="row" style={{ marginBottom: 6 }}>
         <span className="eyebrow brand">Atlétikai profil</span>
-        <span className="chip" style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--text-tertiary)' }}>
-          Teljes profil ›
-        </span>
       </div>
 
       <div className="col" style={{ alignItems: 'center' }}>
-        <svg width="248" height="248" viewBox="0 0 248 248" style={{ overflow: 'visible' }} role="img" aria-label="Atlétikai radar">
+        {/* role=img collapses the SVG for AT, so the per-axis data lives in this sentence. */}
+        <p className="sr-only">
+          Atlétikai radar. Atléta-szint {profile.athleteLevel.toFixed(1)}.{' '}
+          {axes.map((a) => `${a.axis} ${a.value.toFixed(1)}`).join(', ')}. Streak {profile.streakWeeks} hét.
+        </p>
+        <svg width="248" height="248" viewBox="0 0 248 248" style={{ overflow: 'visible' }} aria-hidden="true">
           {RINGS.map((f) => (
             <polygon key={f} className="progress-radar-grid" points={polygonPoints(CX, CY, R * f, axes.length)} />
           ))}

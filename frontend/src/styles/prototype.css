@@ -888,7 +888,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .levelup .lu-anim { opacity: 0; animation: levelup-fade-up 0.55s ease forwards; }
 .levelup .lu-pop { opacity: 0; animation: levelup-pop 0.55s cubic-bezier(0.2, 1.25, 0.4, 1) forwards; }
-.lu-sr-only {
+.sr-only, .lu-sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
