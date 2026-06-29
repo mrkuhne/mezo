@@ -1,30 +1,32 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { useGoal, useWeight } from '@/data/hooks'
-import { WeightChart } from '../components/WeightChart'
-import { TrendCell } from '../components/TrendCell'
+import { WeightHero } from '../components/WeightHero'
+import { WeightTrendChart } from '../components/WeightTrendChart'
+import { WeeklyWeightCard } from '../components/WeeklyWeightCard'
+import { groupByWeek, dayRows, type Period } from '../components/weightStats'
 import { WeightLogSheet } from '../WeightLogSheet'
 
-type Period = '7d' | '30d' | 'all'
-const PERIODS: Period[] = ['7d', '30d', 'all']
+const PERIODS: Period[] = ['7d', '30d', '90d', '1y']
+const WEEK_STEP = 6
 
 export function WeightView() {
   const { weightLog, weightTrends, logWeight } = useWeight()
-  const { goal } = useGoal() // chart reference lines (start/target) + current-weight fallback
+  const { goal, goalResponse } = useGoal()
   const [period, setPeriod] = useState<Period>('30d')
   const [logOpen, setLogOpen] = useState(false)
+  // undefined = "use default (newest week expanded)"; a concrete iso or null after the first toggle.
+  const [expandedIso, setExpandedIso] = useState<string | null | undefined>(undefined)
+  const [visibleWeeks, setVisibleWeeks] = useState(WEEK_STEP)
 
-  // goal may be null in real mode when no goal is set up yet (mezo-72d). Fall back
-  // to the latest logged weight for the hero number and the chart reference lines.
+  const weeks = useMemo(() => groupByWeek(weightLog), [weightLog])
+  const effectiveExpanded = expandedIso === undefined ? (weeks[0]?.startIso ?? null) : expandedIso
   const latest = weightLog.length ? weightLog[weightLog.length - 1].value : (goal?.currentWeight ?? 0)
-  const chartStart = goal?.startWeight ?? latest
-  const chartTarget = goal?.targetWeight ?? latest
 
   return (
     <>
-      {/* Header */}
       <div className="page-header">
         <div>
           <Eyebrow brand>Me · Súly</Eyebrow>
@@ -32,54 +34,43 @@ export function WeightView() {
         </div>
       </div>
 
-      {/* Daily-log hero — latest number + naplózás CTA (opens WeightLogSheet) */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="card notch-12" style={{ padding: 18 }}>
-          <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
-            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 52, fontWeight: 600, color: 'var(--brand-glow)', lineHeight: 1, textShadow: '0 0 24px rgba(94, 234, 212, 0.4)' }}>
-              {latest.toFixed(1)}
-            </span>
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 14, color: 'var(--text-tertiary)' }}>kg</span>
-          </div>
-          <div className="row" style={{ justifyContent: 'center', marginTop: 6 }}>
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
-              {weightTrends.last7d.weeklyRate} kg/hét · 7-napos átlag {weightTrends.last7d.avg}
-            </span>
-          </div>
-          <button className="cta-primary notch-8" onClick={() => setLogOpen(true)} style={{ width: '100%', marginTop: 14, padding: 12, justifyContent: 'center' }}>
-            <Icon name="plus" size={14} /> Súly naplózása
-          </button>
-        </div>
-      </div>
+      <WeightHero log={weightLog} weightTrends={weightTrends} goal={goal} onLog={() => setLogOpen(true)} />
 
-      {/* Trend chart */}
       <div style={{ padding: '0 24px 16px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
           <Eyebrow>Súly · trend</Eyebrow>
           <div className="row gap-xs">
             {PERIODS.map(p => (
-              <button key={p} onClick={() => setPeriod(p)} className={'chip' + (period === p ? ' brand' : '')} style={{ fontSize: 9, padding: '3px 8px' }}>
-                {p}
-              </button>
+              <button key={p} onClick={() => setPeriod(p)} className={'chip' + (period === p ? ' brand' : '')} style={{ fontSize: 9, padding: '3px 8px' }}>{p}</button>
             ))}
           </div>
         </div>
-        <WeightChart entries={weightLog} startWeight={chartStart} targetWeight={chartTarget} period={period} />
+        <WeightTrendChart log={weightLog} goalResponse={goalResponse} period={period} />
       </div>
 
-      {/* Trend cells — only the real EWMA figures: the weekly rate (7d + 4w) and
-          the 7-day trend weight. The 4-week average is not engine-derived, so it
-          is omitted rather than shown as a mock value. */}
       <div style={{ padding: '0 24px 24px' }}>
-        <div className="row gap-sm">
-          <TrendCell label="7 nap" rate={weightTrends.last7d.weeklyRate} avg={weightTrends.last7d.avg} />
-          <TrendCell label="4 hét" rate={weightTrends.last4w.weeklyRate} />
+        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
+          <Eyebrow>Heti előzmény</Eyebrow>
+          {weeks.length > 0 && <span className="label-mono">{Math.min(visibleWeeks, weeks.length)} / {weeks.length} hét</span>}
         </div>
+        {weeks.slice(0, visibleWeeks).map(week => (
+          <WeeklyWeightCard
+            key={week.startIso}
+            week={week}
+            dayRows={effectiveExpanded === week.startIso ? dayRows(weightLog, week) : []}
+            expanded={effectiveExpanded === week.startIso}
+            onToggle={() => setExpandedIso(effectiveExpanded === week.startIso ? null : week.startIso)}
+            goalKind={goal?.kind}
+          />
+        ))}
+        {weeks.length > visibleWeeks && (
+          <button className="chip" onClick={() => setVisibleWeeks(v => v + WEEK_STEP)} style={{ width: '100%', justifyContent: 'center', padding: 11, marginTop: 2 }}>
+            Régebbi hetek <Icon name="chevron-down" size={12} />
+          </button>
+        )}
       </div>
 
-      {logOpen && (
-        <WeightLogSheet onClose={() => setLogOpen(false)} onSave={logWeight} currentWeight={latest} />
-      )}
+      {logOpen && <WeightLogSheet onClose={() => setLogOpen(false)} onSave={logWeight} currentWeight={latest} />}
     </>
   )
 }

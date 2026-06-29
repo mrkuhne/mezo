@@ -6,35 +6,37 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
-// Asserts the Phase-1 mock weight hero/trends, so pin mock mode explicitly.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('WeightView renders the Súly header, trend cells, and a log entry point', () => {
+test('renders the hero, trend chart, weekly history, and opens the log sheet', () => {
   render(<WeightView />, { wrapper: QueryWrapper })
   expect(screen.getByText('Napi súly')).toBeInTheDocument()
-  expect(screen.getByText('7 nap')).toBeInTheDocument()
-  expect(screen.getByText('4 hét')).toBeInTheDocument()
-  // the log CTA opens the WeightLogSheet
+  expect(screen.getByText('Induláshoz képest')).toBeInTheDocument()
+  expect(screen.getByText('Jelenleg')).toBeInTheDocument()
+  expect(screen.getByText('Heti előzmény')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: /naplózás/i }))
-  expect(screen.getByText('Mi a számunk ma?')).toBeInTheDocument() // WeightLogSheet title
+  expect(screen.getByText('Mi a számunk ma?')).toBeInTheDocument()
 })
 
-test('WeightView (real mode) renders the hero rate from the backend EWMA trend', async () => {
+test('newest week is expanded by default and a day row is visible', () => {
+  render(<WeightView />, { wrapper: QueryWrapper })
+  // mock spine ends 2026-05-22 (Fri); huMonthDayDow → "Máj 22 · Pén"
+  expect(screen.getByText('Máj 22 · Pén')).toBeInTheDocument()
+})
+
+test('real mode: the 7-nap/hét stat reads the backend EWMA weekly rate', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(
+    http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])), // empty log → the stat value is unique
     http.get(`${API_BASE}/api/biometrics/weight/trend`, () =>
       HttpResponse.json({
         ewmaSeries: [{ date: '2026-06-01', trendKg: 81.3 }],
-        latestTrendKg: 81.3,
-        weeklyRateKgPerWeek: -0.55,
-        weeklyRatePctPerWeek: -0.68,
-        last4wRateKgPerWeek: -0.7,
-        dataSufficiency: 'full',
+        latestTrendKg: 81.3, weeklyRateKgPerWeek: -0.5, weeklyRatePctPerWeek: -0.62,
+        last4wRateKgPerWeek: -0.7, dataSufficiency: 'full',
       }),
     ),
   )
   render(<WeightView />, { wrapper: QueryWrapper })
-  // The 7-napos hero line reads the real EWMA weekly rate (kg/hét) once it loads.
-  await waitFor(() => expect(screen.getByText(/-0\.55 kg\/hét/)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText('−0.5')).toBeInTheDocument()) // hero 7-nap/hét = fmtSigned(-0.5)
 })
