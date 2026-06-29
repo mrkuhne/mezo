@@ -99,6 +99,20 @@ export const handlers = [
       tdeeBootstrap: { bmr: 1910, tdee: 2960, pal: 1.55, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
     }),
   ),
+  // Progression profile (P6). Tests can override to ghost with a 404 (switch off).
+  http.get(`${API_BASE}/api/progression/profile`, () =>
+    HttpResponse.json({
+      athleteLevel: 4.3,
+      streakWeeks: 5,
+      athletic: [],
+      muscle: [],
+      radarAxes: [
+        { axis: 'Erő', value: 6.8 }, { axis: 'Robbanékonyság', value: 4.5 }, { axis: 'Sebesség', value: 3.0 },
+        { axis: 'Állóképesség', value: 5.5 }, { axis: 'Mozgékonyság', value: 3.2 }, { axis: 'Koordináció', value: 4.0 },
+      ],
+      highlights: { bestAthletic: { skillKey: 'max_strength', level: 7 }, bestMuscle: { skillKey: 'back-mid', level: 6 } },
+    }),
+  ),
   http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json({ ...body, tdeeBootstrap: null })
