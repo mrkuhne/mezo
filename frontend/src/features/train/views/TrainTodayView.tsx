@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useRunning } from '@/data/hooks'
+import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train'
 import { runSessionsForDay, todayIdx } from '@/data/runningAgenda'
 import { huMonthDayDow, localDateString } from '@/lib/dates'
@@ -29,6 +30,7 @@ export function TrainTodayView() {
   const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending } = useTrain()
   const { activeRunningBlock, runSessions, logRunSession, runningPending } = useRunning()
   const navigate = useNavigate()
+  const { showLevelUp } = useLevelUp()
   const [vbLogOpen, setVbLogOpen] = useState(false)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
 
@@ -417,7 +419,13 @@ export function TrainTodayView() {
       </div>
 
       {vbLogOpen && <SportLogSheet onClose={() => setVbLogOpen(false)} onSave={logSportSession} />}
-      {runLogCtx && <RunLogSheet ctx={runLogCtx} onClose={() => setRunLogCtx(null)} onSave={(body) => logRunSession(body)} />}
+      {runLogCtx && (
+        <RunLogSheet
+          ctx={runLogCtx}
+          onClose={() => setRunLogCtx(null)}
+          onSave={(body, done) => logRunSession(body, { onSuccess: (r) => { done(); showLevelUp(r?.levelUp) } })}
+        />
+      )}
     </>
   )
 }
