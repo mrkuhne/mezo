@@ -63,6 +63,8 @@ export function etaWeeks(latest: number, target: number | null, weeklyRate: numb
 export const isImprovement = (delta: number, goalKind?: GoalKind): boolean =>
   goalKind === 'bulk' ? delta > 0 : delta < 0
 
+export const fmtSigned = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(1)}`
+
 export function movingAverage(values: number[], win = MA_WINDOW): number[] {
   return values.map((_, i) => {
     const s = values.slice(Math.max(0, i - win + 1), i + 1)

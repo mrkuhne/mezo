@@ -1,10 +1,9 @@
 import { Icon } from '@/components/ui/Icon'
 import { huMonthDay, huMonthDayDow } from '@/lib/dates'
 import type { GoalKind } from '@/data/types'
-import { isImprovement, type WeekAggregate, type DayRow } from './weightStats'
+import { isImprovement, fmtSigned, type WeekAggregate, type DayRow } from './weightStats'
 
 const DIR_LABEL: Record<WeekAggregate['direction'], string> = { down: '↓ lefelé', up: '↑ felfelé', flat: '→ stabil' }
-const fmtSigned = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(1)}`
 
 function rangeLabel(startIso: string, endIso: string): string {
   const sameMonth = startIso.slice(5, 7) === endIso.slice(5, 7)
@@ -52,8 +51,14 @@ export function WeeklyWeightCard({ week, dayRows, expanded, onToggle, goalKind }
         <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>kg átlag · {week.count} bejegyzés · min {week.low}</span>
       </div>
 
-      <svg viewBox="0 0 300 34" width="100%" height="34" style={{ display: 'block', marginTop: 8 }}>
-        <path d={sp.area} fill="url(#wtc-area)" />
+      <svg viewBox="0 0 300 34" width="100%" height="34" aria-hidden="true" style={{ display: 'block', marginTop: 8 }}>
+        <defs>
+          <linearGradient id={`wwc-${week.startIso}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--brand-glow)" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="var(--brand-glow)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={sp.area} fill={`url(#wwc-${week.startIso})`} />
         <path d={sp.line} fill="none" stroke="var(--brand-glow)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" opacity="0.9" />
       </svg>
       <div className="row" style={{ justifyContent: 'space-between', marginTop: 4 }}>

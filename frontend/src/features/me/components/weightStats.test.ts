@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import {
   changeFromStart, progressPct, etaWeeks, isImprovement, movingAverage,
-  periodWindow, sliceByPeriod, groupByWeek, dayRows, planTrajectory, daysBetween, isoMinusDays,
+  periodWindow, sliceByPeriod, groupByWeek, dayRows, planTrajectory, daysBetween, isoMinusDays, fmtSigned,
 } from './weightStats'
 import type { WeightEntry } from '@/data/types'
 import type { GoalResponse } from '@/lib/goalApi'
@@ -42,6 +42,12 @@ test('etaWeeks valid only toward target', () => {
   expect(etaWeeks(78.6, 73.0, 0.5)).toBeNull()       // moving away
   expect(etaWeeks(78.6, 73.0, 0)).toBeNull()
   expect(etaWeeks(78.6, null, -0.5)).toBeNull()
+})
+
+test('fmtSigned signs and rounds to 1dp', () => {
+  expect(fmtSigned(-2.8)).toBe('−2.8')
+  expect(fmtSigned(0.4)).toBe('+0.4')
+  expect(fmtSigned(0)).toBe('0.0')
 })
 
 test('isImprovement is goal-direction aware', () => {

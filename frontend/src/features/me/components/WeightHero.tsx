@@ -1,8 +1,6 @@
 import { Icon } from '@/components/ui/Icon'
 import type { WeightEntry, WeightTrends, Goal } from '@/data/types'
-import { changeFromStart, latestValue, progressPct, etaWeeks, isImprovement } from './weightStats'
-
-const fmtSigned = (n: number): string => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n).toFixed(1)}`
+import { changeFromStart, latestValue, progressPct, etaWeeks, isImprovement, fmtSigned } from './weightStats'
 
 export function WeightHero({ log, weightTrends, goal, onLog }: {
   log: WeightEntry[]
