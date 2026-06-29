@@ -95,7 +95,13 @@ export function useRunning(): RunningData {
       }
       return runningApi.logRunSession(body)
     },
-    onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['running', 'runSessions'] }) },
+    onSuccess: () => {
+      if (!mock) {
+        qc.invalidateQueries({ queryKey: ['running', 'runSessions'] })
+        // Run XP feeds the progression profile (P6 radar/muscle levels).
+        qc.invalidateQueries({ queryKey: ['progressionProfile'] })
+      }
+    },
   })
 
   const saveRunningBlock = useCallback((id: string | null, body: RunningBlockUpsertRequest, opts?: { onSuccess?: (b: RunningBlockResponse) => void }) =>

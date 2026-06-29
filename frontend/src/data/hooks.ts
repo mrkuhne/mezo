@@ -177,3 +177,4 @@ export { useMedicationActions } from './medicationHooks'
 export { useMedication }
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from './goalHooks'
 export { useBiometricProfile, useBiometricActions } from './biometricHooks'
+export { useProgressionProfile } from './progressionHooks'

@@ -1,6 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import { QueryClient } from '@tanstack/react-query'
 import { useTrain } from './hooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
@@ -322,6 +323,21 @@ test('useTrain (real mode) logSportSession forwards the levelUp on the response'
   result.current.logSportSession({ sport: 'volleyball', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 }, { onSuccess: (r) => seen.push(r?.levelUp) })
   await waitFor(() => expect(seen).toHaveLength(1))
   expect((seen[0] as { source?: string })?.source).toBe('SPORT')
+})
+
+test('useTrain (real mode) finishWorkout + logSportSession invalidate the progression profile cache', async () => {
+  const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/finish`, ({ params }) =>
+      HttpResponse.json({ id: String(params.id), templateSessionId: 't', date: '2026-06-12', status: 'completed', sets: [] })),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  result.current.finishWorkout('w-1')
+  await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['progressionProfile'] }))
+  spy.mockClear()
+  result.current.logSportSession({ sport: 'volleyball', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 })
+  await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['progressionProfile'] }))
+  spy.mockRestore()
 })
 
 test('useTrain (real mode) logSportSession calls onSettled even when the POST fails (no stuck CTA)', async () => {

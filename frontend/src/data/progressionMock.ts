@@ -2,6 +2,7 @@
 // sport / run mutations can't compute a real payload, so they return one of
 // these. Values are fixed (no Date / Math.random) for stable tests + parity.
 import type { LevelUpResult } from '@/lib/trainApi'
+import type { ProgressionProfileResponse } from '@/lib/progressionApi'
 
 /** Rich gym case: 2 level-ups (a muscle + max_strength), a perk, more gains, streak. */
 export const gymLevelUpMock: LevelUpResult = {
@@ -57,4 +58,47 @@ export const sportLevelUpMock: LevelUpResult = {
   levelUps: ['vertical_jump'],
   perks: [],
   robustness: { xpGained: 25, streakWeeks: 5 },
+}
+
+// --- Progression profile (P6) — seeded snapshot for mock mode + the ghost/real-empty value ---
+
+const athleticLevels: Record<string, number> = {
+  max_strength: 7, aerobic_capacity: 6, explosiveness: 5, anaerobic_capacity: 5, strength_endurance: 5,
+  agility: 4, coordination: 4, vertical_jump: 4, core_stability: 4, sprint_speed: 3, mobility: 3,
+}
+const muscleLevels: Record<string, number> = {
+  'back-mid': 6, quad: 6, chest: 6, glute: 5, ham: 5, shoulder: 5, lats: 4, biceps: 4,
+  triceps: 4, core: 4, traps: 3, 'rear-delt': 3, calf: 2,
+}
+const skill = (skillKey: string, kind: 'ATHLETIC' | 'MUSCLE', level: number, progressPct: number) =>
+  ({ skillKey, kind, level, cumulativeXp: level * 150, progressPct })
+
+/** Seeded profile snapshot for mock mode (the FE can't derive levels — no logged history). */
+export const progressionProfileMock: ProgressionProfileResponse = {
+  athleteLevel: 4.3,
+  streakWeeks: 5,
+  athletic: Object.entries(athleticLevels).map(([k, lv], i) => skill(k, 'ATHLETIC', lv, 30 + ((i * 13) % 60))),
+  muscle: Object.entries(muscleLevels).map(([k, lv], i) => skill(k, 'MUSCLE', lv, 25 + ((i * 17) % 65))),
+  radarAxes: [
+    { axis: 'Erő', value: 6.8 },
+    { axis: 'Robbanékonyság', value: 4.5 },
+    { axis: 'Sebesség', value: 3.0 },
+    { axis: 'Állóképesség', value: 5.5 },
+    { axis: 'Mozgékonyság', value: 3.2 },
+    { axis: 'Koordináció', value: 4.0 },
+  ],
+  highlights: {
+    bestAthletic: { skillKey: 'max_strength', level: 7 },
+    bestMuscle: { skillKey: 'back-mid', level: 6 },
+  },
+}
+
+/** Real-mode empty / ghost value (no XP yet, or progression switch off → 404). */
+export const GHOST_PROGRESSION_PROFILE: ProgressionProfileResponse = {
+  athleteLevel: null,
+  streakWeeks: 0,
+  athletic: [],
+  muscle: [],
+  radarAxes: [],
+  highlights: {},
 }
