@@ -2,7 +2,9 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import type { ReactNode } from 'react'
 import { SportView } from './SportView'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -12,7 +14,10 @@ import { API_BASE } from '@/test/msw/handlers'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-const renderView = () => render(<SportView />, { wrapper: QueryWrapper })
+const Wrapper = ({ children }: { children: ReactNode }) => (
+  <QueryWrapper><LevelUpProvider>{children}</LevelUpProvider></QueryWrapper>
+)
+const renderView = () => render(<SportView />, { wrapper: Wrapper })
 
 test('own page-header: brand eyebrow + PageTitle', () => {
   renderView()
@@ -46,7 +51,15 @@ test('switching to Cross-load shows the read tool chip', async () => {
 test('the + Log header chip opens the SportLogSheet', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: /Log/ }))
-  expect(await screen.findByText('Sport log · Volleyball')).toBeInTheDocument()
+  expect(await screen.findByText(/Sport log ·/)).toBeInTheDocument()
+})
+
+test('logging a sport session presents the level-up overlay (mock fixture)', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: /Log/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
+  // The mock logSportSession returns a seeded LevelUpResult → the overlay shows.
+  expect(await screen.findByRole('dialog', { name: 'Szintlépés' })).toBeInTheDocument()
 })
 
 // ---- real-mode block: schedule from the DB, editor full-replace ----

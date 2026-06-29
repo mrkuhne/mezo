@@ -9,12 +9,15 @@ import type { RunSessionLogRequest } from '@/lib/runningApi'
 export function RunLogSheet({ ctx, onClose, onSave }: {
   ctx: { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
   onClose: () => void
-  onSave?: (input: RunSessionLogRequest) => void
+  // `done` closes the sheet — the parent calls it from the log mutation's onSuccess
+  // so the close is deferred until the save lands (and the level-up overlay can show).
+  onSave?: (input: RunSessionLogRequest, done: () => void) => void
 }) {
   const [rounds, setRounds] = useState(ctx.defaultRounds ?? 6)
   const [rpe, setRpe] = useState(9)
   const [hr, setHr] = useState(45)
   const [notes, setNotes] = useState('')
+  const [saving, setSaving] = useState(false)
   const isoToday = new Date().toISOString().slice(0, 10)
 
   return (
@@ -43,13 +46,15 @@ export function RunLogSheet({ ctx, onClose, onSave }: {
           </div>
           <div className="row gap-sm mt-lg">
             <CtaGhost className="notch-4 flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="notch-4 flex-1" onClick={() => {
-              onSave?.({
+            <CtaPrimary className="notch-4 flex-1" disabled={saving} onClick={() => {
+              const body: RunSessionLogRequest = {
                 blockId: ctx.blockId, weekNumber: ctx.weekNumber, sessionKey: ctx.sessionKey, date: isoToday,
                 completedRounds: ctx.isSprint ? rounds : null, rpeActual: rpe, hrRecoverySec: hr,
                 sprintLandmark: null, durationMin: null, notes: notes || null,
-              })
-              close()
+              }
+              // Defer close to the parent (runs after the log succeeds); close
+              // immediately when no handler is wired.
+              if (onSave) { setSaving(true); onSave(body, close) } else { close() }
             }}>
               <Icon name="check" size={14} /> Mentés
             </CtaPrimary>

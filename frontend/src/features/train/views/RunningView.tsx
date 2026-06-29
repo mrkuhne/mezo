@@ -13,6 +13,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStickyTab } from '@/lib/useStickyTab'
 import { useRunning } from '@/data/hooks'
+import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest } from '@/lib/runningApi'
 import { newDraft } from '@/data/runningDraft'
 import { Eyebrow } from '@/components/ui/Eyebrow'
@@ -118,8 +119,9 @@ export function RunningView() {
 }
 
 // === E heti edzés: active block hero + this week's prescribed sessions ===
-function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | null; pending: boolean; onLog: (body: RunSessionLogRequest) => void }) {
+function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | null; pending: boolean; onLog: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) => void }) {
   const [logCtx, setLogCtx] = useState<RunLogCtx | null>(null)
+  const { showLevelUp } = useLevelUp()
 
   // Real-mode initial load: neutral skeleton until the query resolves, so the
   // no-active-block ghost doesn't flash before data lands. Mock mode is
@@ -224,7 +226,13 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
         </span>
       )}
 
-      {logCtx && <RunLogSheet ctx={logCtx} onClose={() => setLogCtx(null)} onSave={(body) => onLog(body)} />}
+      {logCtx && (
+        <RunLogSheet
+          ctx={logCtx}
+          onClose={() => setLogCtx(null)}
+          onSave={(body, done) => onLog(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
+        />
+      )}
     </div>
   )
 }

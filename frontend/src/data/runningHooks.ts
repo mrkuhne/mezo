@@ -4,6 +4,7 @@ import { isMockMode } from '@/lib/mode'
 import { currentWeekOf } from '@/lib/dates'
 import { runningApi, type RunningBlockResponse, type RunningBlockUpsertRequest, type RunSessionLogRequest, type RunSessionLogResponse } from '@/lib/runningApi'
 import { runningBlocksMock, runSessionsMock } from './running'
+import { runLevelUpMock } from './progressionMock'
 
 export type RunningData = {
   runningBlocks: RunningBlockResponse[]
@@ -15,7 +16,7 @@ export type RunningData = {
   activateRunningBlock: (id: string) => void
   closeRunningBlock: (id: string) => void
   deleteRunningBlock: (id: string, opts?: { onSuccess?: () => void }) => void
-  logRunSession: (body: RunSessionLogRequest, opts?: { onSuccess?: () => void }) => void
+  logRunSession: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) => void
   runningMutationPending: boolean
 }
 
@@ -76,15 +77,24 @@ export function useRunning(): RunningData {
       : runningApi.remove(id),
     onSuccess: invalidate })
 
+  // Mock log carries a seeded LevelUpResult (the no-op log can't compute one) so
+  // the prototype shows the level-up overlay after logging a run.
   const logMock = (body: RunSessionLogRequest): RunSessionLogResponse =>
     ({ id: `rs-${Math.round(performance.now())}`, ...body,
        completedRounds: body.completedRounds ?? null, rpeActual: body.rpeActual ?? null,
        hrRecoverySec: body.hrRecoverySec ?? null, sprintLandmark: body.sprintLandmark ?? null,
-       durationMin: body.durationMin ?? null, notes: body.notes ?? null })
+       durationMin: body.durationMin ?? null, notes: body.notes ?? null, levelUp: runLevelUpMock })
   const logMutation = useMutation({
-    mutationFn: (body: RunSessionLogRequest): Promise<void> => mock
-      ? Promise.resolve(qc.setQueryData<RunSessionLogResponse[]>(['running', 'runSessions'], (prev = []) => [logMock(body), ...prev]) as unknown as void)
-      : runningApi.logRunSession(body).then(() => undefined),
+    // Forward the full response (carries levelUp). Mock appends the logged
+    // session to the cache (Mai done-state flip) AND returns it.
+    mutationFn: (body: RunSessionLogRequest): Promise<RunSessionLogResponse> => {
+      if (mock) {
+        const logged = logMock(body)
+        qc.setQueryData<RunSessionLogResponse[]>(['running', 'runSessions'], (prev = []) => [logged, ...prev])
+        return Promise.resolve(logged)
+      }
+      return runningApi.logRunSession(body)
+    },
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['running', 'runSessions'] }) },
   })
 
@@ -93,8 +103,8 @@ export function useRunning(): RunningData {
   const activateRunningBlock = useCallback((id: string) => activateMutation.mutate(id), [activateMutation])
   const closeRunningBlock = useCallback((id: string) => closeMutation.mutate(id), [closeMutation])
   const deleteRunningBlock = useCallback((id: string, opts?: { onSuccess?: () => void }) => deleteMutation.mutate(id, { onSuccess: () => opts?.onSuccess?.() }), [deleteMutation])
-  const logRunSession = useCallback((body: RunSessionLogRequest, opts?: { onSuccess?: () => void }) =>
-    logMutation.mutate(body, { onSuccess: () => opts?.onSuccess?.() }), [logMutation])
+  const logRunSession = useCallback((body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) =>
+    logMutation.mutate(body, { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }), [logMutation])
 
   return {
     runningBlocks: blockList,

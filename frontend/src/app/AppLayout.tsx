@@ -5,6 +5,7 @@ import { ScreenContent } from './ScreenContent'
 import { TabBar } from './TabBar'
 import { Fab } from './Fab'
 import { QuickInputSheet } from '@/features/quickinput/QuickInputSheet'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { useTodayScenario } from '@/data/hooks'
 
 export function AppLayout() {
@@ -14,12 +15,14 @@ export function AppLayout() {
   const anchor = scenario.anchorMode && location.pathname.startsWith('/today')
   return (
     <PhoneFrame anchor={anchor}>
-      <ScreenContent>
-        <Outlet />
-      </ScreenContent>
-      <Fab onClick={() => setQuickOpen(true)} />
-      {quickOpen && <QuickInputSheet onClose={() => setQuickOpen(false)} />}
-      <TabBar />
+      <LevelUpProvider>
+        <ScreenContent>
+          <Outlet />
+        </ScreenContent>
+        <Fab onClick={() => setQuickOpen(true)} />
+        {quickOpen && <QuickInputSheet onClose={() => setQuickOpen(false)} />}
+        <TabBar />
+      </LevelUpProvider>
     </PhoneFrame>
   )
 }

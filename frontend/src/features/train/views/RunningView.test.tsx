@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { RunningView } from './RunningView'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // Real-mode tests mock the api module (mirrors trainHooks.test's mocking style):
@@ -20,7 +21,9 @@ const renderView = () =>
   render(
     <QueryWrapper>
       <MemoryRouter>
-        <RunningView />
+        <LevelUpProvider>
+          <RunningView />
+        </LevelUpProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -78,6 +81,14 @@ describe('RunningView (mock mode)', () => {
     // Sheet title appears; "Mentés" saves without crashing.
     expect(await screen.findByText('Hogy ment?')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  })
+
+  test('logging a run presents the level-up overlay (mock fixture)', async () => {
+    renderView()
+    await userEvent.click(screen.getAllByRole('button', { name: /Naplózás/ })[0])
+    await userEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
+    // The mock logRunSession returns a seeded LevelUpResult → the overlay shows.
+    expect(await screen.findByRole('dialog', { name: 'Szintlépés' })).toBeInTheDocument()
   })
 })
 

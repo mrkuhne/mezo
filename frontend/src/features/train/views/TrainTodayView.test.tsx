@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { TrainTodayView } from './TrainTodayView'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -14,7 +15,7 @@ import { localDateString } from '@/lib/dates'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-const renderView = () => render(<QueryWrapper><MemoryRouter><TrainTodayView /></MemoryRouter></QueryWrapper>)
+const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayView /></LevelUpProvider></MemoryRouter></QueryWrapper>)
 
 test('today gym block + weekly timeline render', () => {
   renderView()
