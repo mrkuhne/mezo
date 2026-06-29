@@ -1,7 +1,13 @@
 package io.mrkuhne.mezo.feature.progression.service;
 
+import io.mrkuhne.mezo.api.dto.ProfileHighlights;
+import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
+import io.mrkuhne.mezo.api.dto.RadarAxis;
+import io.mrkuhne.mezo.api.dto.SkillLevel;
+import io.mrkuhne.mezo.api.dto.SkillRef;
 import io.mrkuhne.mezo.feature.progression.PerkCatalog;
 import io.mrkuhne.mezo.feature.progression.ProgressionCurve;
+import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
 import io.mrkuhne.mezo.feature.progression.config.ProgressionProperties;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpEventEntity;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
@@ -13,7 +19,11 @@ import io.mrkuhne.mezo.feature.progression.repository.PerkUnlockRepository;
 import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
 import io.mrkuhne.mezo.feature.progression.run.RunSignal;
 import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -148,6 +158,85 @@ public class ProgressionService {
 
         return award(createdBy, SOURCE_SPORT, signal.sessionId(), deltas, kinds,
             label, signal.durationMin(), signal.rpe());
+    }
+
+    /**
+     * The athletic+muscle progression profile (read): all skill levels over the fixed taxonomy
+     * (missing skill → level 1), athlete-level (mean of the 11 non-robustness athletic; null when
+     * the user has no XP → ghost), 6 fixed radar axes (Erő blends the muscle-level mean), the
+     * streak, and the best athletic/muscle highlights. No @Transactional — pure read.
+     */
+    public ProgressionProfileResponse getProfile(UUID createdBy) {
+        List<SkillProgressEntity> rows = skillProgressRepository.findByCreatedByOrderBySkillKeyAsc(createdBy);
+        Map<String, SkillProgressEntity> byKey = new HashMap<>();
+        rows.forEach(r -> byKey.put(r.getSkillKey(), r));
+
+        List<SkillLevel> athletic = new ArrayList<>();
+        ProgressionTaxonomy.ATHLETIC.forEach(k -> athletic.add(skillLevel(byKey, k, "ATHLETIC")));
+        athletic.add(skillLevel(byKey, ProgressionTaxonomy.ROBUSTNESS, "ATHLETIC"));
+        List<SkillLevel> muscle = ProgressionTaxonomy.MUSCLE.stream()
+            .map(k -> skillLevel(byKey, k, "MUSCLE")).toList();
+
+        BigDecimal athleteLevel = rows.isEmpty() ? null
+            : round1(ProgressionTaxonomy.ATHLETIC.stream().mapToInt(k -> levelOf(byKey, k)).average().orElse(1));
+
+        double muscleMean = ProgressionTaxonomy.MUSCLE.stream().mapToInt(k -> levelOf(byKey, k)).average().orElse(1);
+        double blend = properties.radar().strengthMuscleBlend();
+        double ero = levelOf(byKey, "max_strength") * (1 - blend) + muscleMean * blend;
+        List<RadarAxis> axes = List.of(
+            axis("Erő", round1(ero)),
+            axis("Robbanékonyság", meanLevel(byKey, "explosiveness", "vertical_jump")),
+            axis("Sebesség", meanLevel(byKey, "sprint_speed")),
+            axis("Állóképesség", meanLevel(byKey, "aerobic_capacity", "strength_endurance", "anaerobic_capacity")),
+            axis("Mozgékonyság", meanLevel(byKey, "mobility", "core_stability")),
+            axis("Koordináció", meanLevel(byKey, "agility", "coordination")));
+
+        ProfileHighlights highlights = ProfileHighlights.builder()
+            .bestAthletic(bestRow(rows, "ATHLETIC", true))
+            .bestMuscle(bestRow(rows, "MUSCLE", false))
+            .build();
+
+        return ProgressionProfileResponse.builder()
+            .athleteLevel(athleteLevel)
+            .streakWeeks(robustnessCalculator.streakWeeks(createdBy))
+            .athletic(athletic).muscle(muscle).radarAxes(axes).highlights(highlights)
+            .build();
+    }
+
+    private SkillLevel skillLevel(Map<String, SkillProgressEntity> byKey, String key, String kind) {
+        SkillProgressEntity r = byKey.get(key);
+        long cum = r != null ? r.getCumulativeXp() : 0L;
+        int level = r != null ? r.getCurrentLevel() : 1;
+        return SkillLevel.builder().skillKey(key).kind(kind).level(level)
+            .cumulativeXp(cum).progressPct(round1(curve.progressPct(cum, level))).build();
+    }
+
+    private int levelOf(Map<String, SkillProgressEntity> byKey, String key) {
+        SkillProgressEntity r = byKey.get(key);
+        return r != null ? r.getCurrentLevel() : 1;
+    }
+
+    private BigDecimal meanLevel(Map<String, SkillProgressEntity> byKey, String... keys) {
+        return round1(Arrays.stream(keys).mapToInt(k -> levelOf(byKey, k)).average().orElse(1));
+    }
+
+    private RadarAxis axis(String name, BigDecimal value) {
+        return RadarAxis.builder().axis(name).value(value).build();
+    }
+
+    /** Best EXISTING row of a kind by (level, cumulativeXp); athletic optionally excludes robustness. */
+    private SkillRef bestRow(List<SkillProgressEntity> rows, String kind, boolean excludeRobustness) {
+        return rows.stream()
+            .filter(r -> kind.equals(r.getSkillKind()))
+            .filter(r -> !excludeRobustness || !ProgressionTaxonomy.ROBUSTNESS.equals(r.getSkillKey()))
+            .max(Comparator.comparingInt(SkillProgressEntity::getCurrentLevel)
+                .thenComparingLong(SkillProgressEntity::getCumulativeXp))
+            .map(r -> SkillRef.builder().skillKey(r.getSkillKey()).level(r.getCurrentLevel()).build())
+            .orElse(null);
+    }
+
+    private static BigDecimal round1(double v) {
+        return BigDecimal.valueOf(Math.round(v * 10) / 10.0);
     }
 
     /** Add an ATHLETIC delta only when positive (keeps the payload free of 0-XP gains). */
