@@ -133,12 +133,15 @@ export function ScaleRow({
 // --- SportLogSheet ---
 export function SportLogSheet({ onClose, onSave }: {
   onClose: () => void
-  onSave?: (input: SportSessionCreateRequest) => void
+  // `done` closes the sheet — the parent calls it from the log mutation's onSuccess
+  // so the close is deferred until the save lands (and the level-up overlay can show).
+  onSave?: (input: SportSessionCreateRequest, done: () => void) => void
 }) {
   const [duration, setDuration] = useState(90)
   const [sets, setSets] = useState(5)
   const [rpe, setRpe] = useState(7)
   const [shoulder, setShoulder] = useState(6)
+  const [saving, setSaving] = useState(false)
 
   return (
     <Sheet onClose={onClose} labelledBy="sport-log-title">
@@ -192,10 +195,13 @@ export function SportLogSheet({ onClose, onSave }: {
             </CtaGhost>
             <CtaPrimary
               className="notch-4 flex-1"
+              disabled={saving}
               onClick={() => {
                 // date/time default to "now" server-side — the sheet captures effort only.
-                onSave?.({ duration, setsPlayed: sets, rpe, shoulderStrain: shoulder })
-                close()
+                const body: SportSessionCreateRequest = { sport: 'volleyball', duration, setsPlayed: sets, rpe, shoulderStrain: shoulder }
+                // Defer close to the parent (runs after the log succeeds); close
+                // immediately when no handler is wired.
+                if (onSave) { setSaving(true); onSave(body, close) } else { close() }
               }}
             >
               <Icon name="check" size={14} /> Mentés

@@ -418,7 +418,12 @@ export function TrainTodayView() {
         </div>
       </div>
 
-      {vbLogOpen && <SportLogSheet onClose={() => setVbLogOpen(false)} onSave={logSportSession} />}
+      {vbLogOpen && (
+        <SportLogSheet
+          onClose={() => setVbLogOpen(false)}
+          onSave={(body, done) => logSportSession(body, { onSuccess: (r) => { done(); showLevelUp(r?.levelUp) } })}
+        />
+      )}
       {runLogCtx && (
         <RunLogSheet
           ctx={runLogCtx}

@@ -308,6 +308,22 @@ test('useTrain (real mode) logSportSession POSTs the sheet payload', async () =>
   expect(posted[0]).toEqual({ duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 })
 })
 
+test('useTrain (real mode) logSportSession forwards the levelUp on the response', async () => {
+  server.use(
+    http.post(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json({
+        id: 'd1f3a0e2-0000-4000-8000-00000000cafe', sport: 'volleyball', date: '2026-06-12', time: '18:00', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6,
+        levelUp: { source: 'SPORT', totalXp: 240, gains: [], levelUps: ['vertical_jump'], perks: [], robustness: { xpGained: 0, streakWeeks: 1 } },
+      }, { status: 201 })),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.sport.sessions.length).toBeGreaterThan(0))
+  const seen: unknown[] = []
+  result.current.logSportSession({ sport: 'volleyball', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 }, { onSuccess: (r) => seen.push(r?.levelUp) })
+  await waitFor(() => expect(seen).toHaveLength(1))
+  expect((seen[0] as { source?: string })?.source).toBe('SPORT')
+})
+
 test('useTrain (real mode) saveSportSchedule PUTs the full slot list', async () => {
   const put: unknown[] = []
   server.use(

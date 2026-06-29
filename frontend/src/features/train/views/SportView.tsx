@@ -10,6 +10,7 @@
 import { useState } from 'react'
 import { useStickyTab } from '@/lib/useStickyTab'
 import { useTrain } from '@/data/hooks'
+import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { isMockMode } from '@/lib/mode'
 import type { SportSchedule, SportSession, CrossLoadRow as CrossLoadRowData } from '@/data/types'
 import { Eyebrow } from '@/components/ui/Eyebrow'
@@ -43,6 +44,7 @@ const RPE_EXPLAINER =
 
 export function SportView() {
   const { sport, logSportSession, saveSportSchedule, sportPending } = useTrain()
+  const { showLevelUp } = useLevelUp()
   // Sticky so returning here restores the segment the user left from — see useStickyTab.
   const [view, setView] = useStickyTab<SportSubView>('train.sport.view', 'week')
   const [logOpen, setLogOpen] = useState(false)
@@ -213,7 +215,12 @@ export function SportView() {
           </div>
         ))}
 
-      {logOpen && <SportLogSheet onClose={() => setLogOpen(false)} onSave={logSportSession} />}
+      {logOpen && (
+        <SportLogSheet
+          onClose={() => setLogOpen(false)}
+          onSave={(body, done) => logSportSession(body, { onSuccess: (r) => { done(); showLevelUp(r?.levelUp) } })}
+        />
+      )}
       {scheduleOpen && (
         <SportScheduleSheet
           initial={volleyball?.sessions ?? []}

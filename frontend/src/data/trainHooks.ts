@@ -30,7 +30,7 @@ import {
   sport,
   exerciseLibrary,
 } from './train'
-import { gymLevelUpMock } from './progressionMock'
+import { gymLevelUpMock, sportLevelUpMock } from './progressionMock'
 import type {
   ExerciseLibraryItem,
   GymSchedule,
@@ -221,7 +221,7 @@ type TrainData = {
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
   finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void }) => void
-  logSportSession: (req: SportSessionCreateRequest, opts?: MutateOpts) => void
+  logSportSession: (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void }) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
   saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
   mesoMutationPending: boolean
@@ -352,15 +352,18 @@ export function useTrain(): TrainData {
   // appends the logged session to the cache (mirrors running's mock log) so the
   // Mai hero flips to its done-state and the Napló reflects it without a backend.
   const logSportMutation = useMutation({
+    // Forward the full response (carries levelUp). Mock appends the logged
+    // session to the cache (Mai done-state flip) AND returns a seeded
+    // LevelUpResult-carrying response so the prototype shows the overlay.
     mutationFn: mock
-      ? async (req: SportSessionCreateRequest) => {
+      ? async (req: SportSessionCreateRequest): Promise<SportSessionResponse> => {
+          const now = new Date()
+          const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
           qc.setQueryData<{ sessions: SportSession[]; week: SportWeek | null }>(
             ['train', 'sportSessions'],
             (prev) => {
-              const now = new Date()
-              const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
               const logged: SportSession = {
-                id: `ss-${performance.now()}`, sport: 'volleyball',
+                id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball',
                 date: huMonthDayDow(localDateString()), time: hhmm,
                 duration: req.duration, setsPlayed: req.setsPlayed ?? null, intensity: null,
                 rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: null,
@@ -368,8 +371,15 @@ export function useTrain(): TrainData {
               return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
             },
           )
+          // Only levelUp is read downstream; provide the required fields + the
+          // captured effort, omitting the optional nullables.
+          return {
+            id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball', date: localDateString(), time: hhmm,
+            duration: req.duration, rpe: req.rpe, setsPlayed: req.setsPlayed, shoulderStrain: req.shoulderStrain,
+            rounds: req.rounds, levelUp: sportLevelUpMock,
+          } as SportSessionResponse
         }
-      : (req: SportSessionCreateRequest) => trainApi.logSportSession(req).then(() => undefined),
+      : (req: SportSessionCreateRequest) => trainApi.logSportSession(req),
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'sportSessions'] }) },
   })
   const sportScheduleMutation = useMutation({
@@ -431,7 +441,8 @@ export function useTrain(): TrainData {
     [finishMutation],
   )
   const logSportSession = useCallback(
-    (req: SportSessionCreateRequest, opts?: MutateOpts) => logSportMutation.mutate(req, opts),
+    (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void }) =>
+      logSportMutation.mutate(req, { onSuccess: (r) => opts?.onSuccess?.(r) }),
     [logSportMutation],
   )
   const saveSportSchedule = useCallback(

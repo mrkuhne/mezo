@@ -41,8 +41,13 @@ test('Mentés passes the sheet values to onSave (house WeightLogSheet idiom)', a
   await userEvent.click(screen.getByRole('button', { name: 'RPE · összesített nehézség 8' }))
   await userEvent.click(screen.getByRole('button', { name: 'Váll terhelés 7' }))
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-  expect(onSave).toHaveBeenCalledWith({ duration: 105, setsPlayed: 6, rpe: 8, shoulderStrain: 7 })
-  await waitFor(() => expect(onClose).toHaveBeenCalled())
+  // Deferred close: onSave receives the payload + a `done` closer; the parent
+  // calls done after the log succeeds (the spy here does not, so the sheet stays open).
+  expect(onSave).toHaveBeenCalledWith(
+    { sport: 'volleyball', duration: 105, setsPlayed: 6, rpe: 8, shoulderStrain: 7 },
+    expect.any(Function),
+  )
+  expect(onClose).not.toHaveBeenCalled()
 })
 
 // Contract bounds (review finding): the steppers must clamp so the sheet can
