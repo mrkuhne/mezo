@@ -33,6 +33,14 @@ test('renders the Biometria card with the derived base-TDEE line', async () => {
   expect(screen.getByText(/≈2960/)).toBeInTheDocument()
 })
 
+test('renders the athletic radar + muscle cards below biometrics', async () => {
+  renderProfile()
+  // Both cards read useProgressionProfile (mock seed / MSW default — both have a profile).
+  expect(await screen.findByText('ERŐ')).toBeInTheDocument() // radar axis label (after the fetch resolves in real mode)
+  expect(screen.getByText('Atlétikai profil')).toBeInTheDocument()
+  expect(screen.getByText('Izom-szintek')).toBeInTheDocument()
+})
+
 test('Szerkesztés opens the BiometricSheet', async () => {
   renderProfile()
   await waitFor(() => expect(screen.getByText('Biometria')).toBeInTheDocument())
