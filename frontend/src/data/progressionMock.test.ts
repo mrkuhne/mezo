@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { gymLevelUpMock, sportLevelUpMock, runLevelUpMock } from './progressionMock'
+import {
+  gymLevelUpMock, sportLevelUpMock, runLevelUpMock,
+  progressionProfileMock, GHOST_PROGRESSION_PROFILE,
+} from './progressionMock'
 
 describe('progression mock fixtures', () => {
   it('gym fixture is the rich multi-level-up case with a perk', () => {
@@ -26,5 +29,24 @@ describe('progression mock fixtures', () => {
   it('sport fixture has a single athletic level-up', () => {
     expect(sportLevelUpMock.source).toBe('SPORT')
     expect(sportLevelUpMock.levelUps.length).toBe(1)
+  })
+})
+
+describe('progression profile fixtures', () => {
+  it('seed has an athlete level, a full 6-axis radar (Erő first), and 11+13 skills', () => {
+    expect(progressionProfileMock.athleteLevel).toBeGreaterThan(0)
+    expect(progressionProfileMock.streakWeeks).toBeGreaterThan(0)
+    expect(progressionProfileMock.radarAxes.map((a) => a.axis)).toEqual([
+      'Erő', 'Robbanékonyság', 'Sebesség', 'Állóképesség', 'Mozgékonyság', 'Koordináció',
+    ])
+    expect(progressionProfileMock.athletic).toHaveLength(11)
+    expect(progressionProfileMock.muscle).toHaveLength(13)
+    expect(progressionProfileMock.highlights.bestAthletic?.skillKey).toBeTruthy()
+  })
+
+  it('ghost profile has null athleteLevel and empty arrays (real-empty)', () => {
+    expect(GHOST_PROGRESSION_PROFILE.athleteLevel).toBeNull()
+    expect(GHOST_PROGRESSION_PROFILE.radarAxes).toEqual([])
+    expect(GHOST_PROGRESSION_PROFILE.muscle).toEqual([])
   })
 })
