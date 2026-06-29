@@ -45,6 +45,7 @@ tags:
       Medication (Gyógyszer) — owned medication definition + a dose event-log;
       the 7-day cycle (retaDay + phase) is derived from the logged doses. GET
       /api/medication feeds the whole Fuel "Gyógyszer" tab in one round-trip.
+  - name: Progression
 paths:
   /api/auth/login:
     post:
@@ -2133,6 +2134,27 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/progression/profile:
+    get:
+      operationId: getProfile
+      tags:
+        - Progression
+      summary: >-
+        Athletic + muscle progression profile (radar, athlete-level, streak,
+        highlights).
+      responses:
+        '200':
+          description: The progression profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgressionProfileResponse'
+        '401':
+          description: Unauthenticated.
           content:
             application/json:
               schema:
@@ -5082,3 +5104,85 @@ components:
         note:
           type: string
           nullable: true
+    ProgressionProfileResponse:
+      type: object
+      required:
+        - streakWeeks
+        - athletic
+        - muscle
+        - radarAxes
+        - highlights
+      properties:
+        athleteLevel:
+          type: number
+          nullable: true
+          description: >-
+            Mean of the 11 non-robustness athletic levels (1-decimal); null =
+            ghost (no XP yet).
+        streakWeeks:
+          type: integer
+        athletic:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillLevel'
+        muscle:
+          type: array
+          items:
+            $ref: '#/components/schemas/SkillLevel'
+        radarAxes:
+          type: array
+          items:
+            $ref: '#/components/schemas/RadarAxis'
+        highlights:
+          $ref: '#/components/schemas/ProfileHighlights'
+    SkillLevel:
+      type: object
+      required:
+        - skillKey
+        - kind
+        - level
+        - cumulativeXp
+        - progressPct
+      properties:
+        skillKey:
+          type: string
+        kind:
+          type: string
+          description: ATHLETIC|MUSCLE
+        level:
+          type: integer
+        cumulativeXp:
+          type: integer
+          format: int64
+        progressPct:
+          type: number
+          description: within-level fill 0..100
+    RadarAxis:
+      type: object
+      required:
+        - axis
+        - value
+      properties:
+        axis:
+          type: string
+          description: 'HU axis label (Erő, Robbanékonyság, …)'
+        value:
+          type: number
+          description: 'aggregated level, 1-decimal'
+    ProfileHighlights:
+      type: object
+      properties:
+        bestAthletic:
+          $ref: '#/components/schemas/SkillRef'
+        bestMuscle:
+          $ref: '#/components/schemas/SkillRef'
+    SkillRef:
+      type: object
+      required:
+        - skillKey
+        - level
+      properties:
+        skillKey:
+          type: string
+        level:
+          type: integer

@@ -14,4 +14,5 @@ inputs:
   - inputFile: ../feature/recipe/recipe.yml
   - inputFile: ../feature/meal/meal.yml
   - inputFile: ../feature/medication/medication.yml
+  - inputFile: ../feature/progression/progression.yml
 output: ../openapi.yml
