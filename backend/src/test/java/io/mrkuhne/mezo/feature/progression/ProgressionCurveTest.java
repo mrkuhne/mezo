@@ -17,7 +17,8 @@ class ProgressionCurveTest {
             new ProgressionProperties.Gym(100, 10, 2, 40, 8, 1),
             new ProgressionProperties.Run(25, 15, 4, 5, 6, 30),
             new ProgressionProperties.Sport(12, 14, 4, 6),
-            new ProgressionProperties.Robustness(25)));
+            new ProgressionProperties.Robustness(25),
+            new ProgressionProperties.Radar(0.5)));
 
     @Test
     void testXpThreshold_shouldFollowGrowingCurve_whenComputedPerLevel() {

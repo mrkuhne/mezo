@@ -104,6 +104,9 @@ mezo:
       xp-per-round: 14            # cross/TRX volume → anaerobic_capacity/strength_endurance/core_stability
       xp-per-min: 4               # duration → aerobic_capacity (volleyball) / mobility (TRX)
       rpe-xp-per-point: 6         # RPE → explosiveness / effort skills
+    # Radar aggregation (fixed axis grouping in v1; only the Erő muscle blend is tunable).
+    radar:
+      strength-muscle-blend: 0.5   # Erő = max_strength*(1-w) + muscle-level-mean*w
 management:
   endpoints:
     web:

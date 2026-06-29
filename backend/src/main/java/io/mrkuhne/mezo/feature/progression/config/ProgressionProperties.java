@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.progression.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
@@ -8,7 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /** Progression tuning (mezo.progression). Curve + per-family XP weights (gym/run/sport) +
- * the family-agnostic streak robustness rate. */
+ * the family-agnostic streak robustness rate + radar aggregation. */
 @Validated
 @ConfigurationProperties(prefix = "mezo.progression")
 public record ProgressionProperties(
@@ -16,7 +18,8 @@ public record ProgressionProperties(
     @NotNull @Valid Gym gym,
     @NotNull @Valid Run run,
     @NotNull @Valid Sport sport,
-    @NotNull @Valid Robustness robustness
+    @NotNull @Valid Robustness robustness,
+    @NotNull @Valid Radar radar
 ) {
     /** Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp), xpThreshold(1)=0. */
     public record Curve(
@@ -55,5 +58,11 @@ public record ProgressionProperties(
         @NotNull @PositiveOrZero Integer xpPerRound,     // 14 (cross/TRX volume → anaerobic/strength_endurance/core_stability)
         @NotNull @PositiveOrZero Integer xpPerMin,       // 4 (duration → aerobic_capacity / mobility)
         @NotNull @PositiveOrZero Integer rpeXpPerPoint   // 6 (RPE → explosiveness / effort skills)
+    ) {}
+
+    /** Radar axis aggregation (v1: fixed grouping; only the Erő muscle-blend weight is config). */
+    public record Radar(
+        /** Erő axis blend: value = max_strength*(1-w) + muscleMean*w, 0..1. */
+        @DecimalMin("0.0") @DecimalMax("1.0") double strengthMuscleBlend  // 0.5
     ) {}
 }
