@@ -12,6 +12,7 @@
 
 - **Frontend-only.** No edits under `backend/`, `api/`, or `src/data/hooks.ts` (and no change to `useWeight`/`useGoal` return shapes). Verbatim boundary: `useWeight()` → `{ weightLog, weightTrends, logWeight }`; `useGoal()` → `{ goal, goalResponse, … }`.
 - **Both modes green:** every change must pass `pnpm test` (real default) **and** `VITE_USE_MOCK=true pnpm test`, plus `pnpm build`.
+- **`tsc` gate ≠ `pnpm test` gate:** the repo's `tsconfig.json` sets `noUnusedLocals: true`, so an unused import/local is a hard `TS6133` build error — but `pnpm test` (vitest/esbuild) ignores it. After writing any test or component file, verify with `npx tsc --noEmit -p tsconfig.json` (or `pnpm build`), not just vitest. Do not leave unused imports in test files.
 - **Design tokens only** — no invented colors. Use `var(--brand-glow)`, `var(--success)` (#34D399), `var(--error)` (#F43F5E), `var(--warning)` (#F59E0B = the plan/"gold"), `var(--surface-2)`, `var(--text-*)`, `var(--border-subtle)`, `var(--ff-display|mono)`. Class idioms: `card`, `notch-4|8|12`, `chip`, `cta-primary`, `eyebrow`, `label-mono`, `row`, `flex-1`, `gap-sm`.
 - **HU UI copy, EN code/comments.** Driving bd id in every commit subject: `(mezo-l82h)`.
 - **Tunables (from spec §9):** `TOLERANCE_KG = 1.0`, MA window `3`, initial `visibleWeeks = 6` step `+6`, weekly delta = avg-to-avg, per-day delta = consecutive-entry, default period `'30d'`.
@@ -48,7 +49,7 @@
 Create `frontend/src/features/me/components/weightStats.test.ts`:
 
 ```ts
-import { describe, expect, test } from 'vitest'
+import { expect, test } from 'vitest'
 import {
   changeFromStart, progressPct, etaWeeks, isImprovement, movingAverage,
   periodWindow, sliceByPeriod, groupByWeek, dayRows, planTrajectory, daysBetween, isoMinusDays,
