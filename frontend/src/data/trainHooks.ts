@@ -30,6 +30,7 @@ import {
   sport,
   exerciseLibrary,
 } from './train'
+import { gymLevelUpMock } from './progressionMock'
 import type {
   ExerciseLibraryItem,
   GymSchedule,
@@ -219,7 +220,7 @@ type TrainData = {
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
-  finishWorkout: (workoutId: string) => void
+  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void }) => void
   logSportSession: (req: SportSessionCreateRequest, opts?: MutateOpts) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
   saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
@@ -339,7 +340,11 @@ export function useTrain(): TrainData {
           trainApi.saveWorkoutFeedback(args.workoutId, args.items),
   })
   const finishMutation = useMutation({
-    mutationFn: mock ? async (_id: string) => undefined : (id: string) => trainApi.finishWorkout(id),
+    // Mock returns a seeded LevelUpResult-carrying response (the no-op finish
+    // can't compute one) so the gym complete flow shows the level-up overlay.
+    mutationFn: mock
+      ? async (_id: string) => ({ levelUp: gymLevelUpMock } as WorkoutInstanceResponse)
+      : (id: string) => trainApi.finishWorkout(id),
     onSuccess: invalidateToday,
   })
 
@@ -421,7 +426,8 @@ export function useTrain(): TrainData {
     [feedbackMutation],
   )
   const finishWorkout = useCallback(
-    (workoutId: string) => finishMutation.mutate(workoutId),
+    (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void }) =>
+      finishMutation.mutate(workoutId, { onSuccess: (r) => opts?.onSuccess?.(r) }),
     [finishMutation],
   )
   const logSportSession = useCallback(

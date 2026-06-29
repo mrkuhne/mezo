@@ -1,9 +1,10 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { ActiveWorkoutScreen } from './ActiveWorkoutScreen'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -17,7 +18,9 @@ function setup() {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session']}>
-        <ActiveWorkoutScreen />
+        <LevelUpProvider>
+          <ActiveWorkoutScreen />
+        </LevelUpProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -137,6 +140,30 @@ test('a skipped exercise is marked "kihagyva" in the recap', async () => {
   }
   // WorkoutComplete recap: the skipped first exercise reads "kihagyva".
   expect(await screen.findByText('kihagyva')).toBeInTheDocument()
+})
+
+test('shows the level-up overlay on finish, then reveals the recap on Tovább (mock)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Skip ex0, then drive the remaining 4 exercises to completion — the last
+  // debrief CTA finishes the workout (the proven mock finish path).
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Kihagyás'))
+  await screen.findByText('Lat Pulldown · Pronated')
+  for (let ex = 0; ex < 4; ex++) {
+    for (let s = 0; s < 3; s++) await user.click(screen.getByText('Set kész'))
+    const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
+    await user.click(cta)
+    if (ex < 3) await screen.findByText(/Set 1\/\d/)
+  }
+  // Mock finish returns the seeded gym fixture → the level-up overlay shows over the recap.
+  const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
+  expect(within(dialog).getByText(/KLASSZIK KONDI/)).toBeInTheDocument()
+  await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
+  expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
+  // The WorkoutComplete recap is revealed underneath.
+  expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument()
 })
 
 // ---- F4 note: durable per-exercise note pill + editor (mock-mode) ----

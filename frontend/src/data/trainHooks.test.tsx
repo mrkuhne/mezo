@@ -217,6 +217,22 @@ test('useTrain (real mode) workout write mutations hit the T2 endpoints', async 
   )
 })
 
+test('useTrain (real mode) finishWorkout forwards the levelUp on the finish response', async () => {
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/finish`, ({ params }) =>
+      HttpResponse.json({
+        id: String(params.id), templateSessionId: 't-1', date: '2026-06-12', status: 'completed', sets: [],
+        levelUp: { source: 'GYM', totalXp: 300, gains: [], levelUps: ['max_strength'], perks: [], robustness: { xpGained: 0, streakWeeks: 1 } },
+      })),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  const seen: unknown[] = []
+  result.current.finishWorkout('w-9', { onSuccess: (r) => seen.push(r?.levelUp) })
+  await waitFor(() => expect(seen).toHaveLength(1))
+  expect((seen[0] as { source?: string })?.source).toBe('GYM')
+  expect((seen[0] as { levelUps?: string[] })?.levelUps).toContain('max_strength')
+})
+
 // ---- T3 sport block: schedule mapping, week derivation, write mutations ----
 
 test('useTrain (real mode) maps the sport schedule slots into SportSchedule', async () => {

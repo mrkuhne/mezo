@@ -11,6 +11,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
+import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/lib/trainApi'
 import {
@@ -102,7 +103,7 @@ interface SessionProps {
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
-  finishWorkout: (workoutId: string) => void
+  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void }) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
 }
 
@@ -143,6 +144,11 @@ function ActiveWorkoutSession({
   const [noteOpen, setNoteOpen] = useState(false)
   const [note, setNote] = useState('')
   const [showPR, setShowPR] = useState<PRState | null>(null)
+  // Progression: a real max_strength level-up from the finish signal drives the
+  // recap's "PR" framing (replaces the old 105 kg demo scan). Captured here so it
+  // survives after the level-up overlay (showLevelUp's host) is dismissed.
+  const [hadPrFromSignal, setHadPrFromSignal] = useState(false)
+  const { showLevelUp } = useLevelUp()
   // The just-finished exercise pinned for the debrief modal (and the active card
   // it overlays): `currentExerciseId` jumps to the NEXT exercise the moment the
   // last set is logged, so we keep an explicit feedback target until it resolves.
@@ -231,6 +237,23 @@ function ActiveWorkoutSession({
     if (workoutId && feedbackEx) saveWorkoutFeedback(workoutId, [{ exerciseId: feedbackEx.id, ...vals }])
   }
 
+  // Finish the workout and present the gamified level-up. Real mode POSTs with the
+  // instance id; mock has no instance (workoutId null) but the mock finish mutation
+  // still returns a seeded LevelUpResult so the prototype shows the overlay. The
+  // overlay (the global LevelUpProvider host) portals OVER the WorkoutComplete recap
+  // and is dismissed on its Tovább CTA, revealing the recap. Switch-off / no-levelUp
+  // (real `levelUp` absent) simply shows the recap with no overlay.
+  const finishAndCelebrate = () => {
+    finishWorkout(workoutId ?? 'mock', {
+      onSuccess: (r) => {
+        if (r?.levelUp) {
+          setHadPrFromSignal(r.levelUp.levelUps.includes('max_strength'))
+          showLevelUp(r.levelUp)
+        }
+      },
+    })
+  }
+
   // Feedback resolution (skip or save both advance). Prefill the next
   // exercise's logging panel from its last-week numbers, or finish.
   const advanceAfterFeedback = () => {
@@ -249,7 +272,7 @@ function ActiveWorkoutSession({
       setReps(p.reps)
       setRir(p.rir)
     } else {
-      if (workoutId) finishWorkout(workoutId)
+      finishAndCelebrate()
       setPhase('complete')
     }
   }
@@ -265,7 +288,7 @@ function ActiveWorkoutSession({
       (e) => afterSkip.skipped.includes(e.id) || (afterSkip.logged[e.id]?.length ?? 0) >= effectiveSetCount(afterSkip, e.id),
     )
     if (allDone) {
-      if (workoutId) finishWorkout(workoutId)
+      finishAndCelebrate()
       setSession(afterSkip)
       setPhase('complete')
     } else {
@@ -442,8 +465,10 @@ function ActiveWorkoutSession({
     const completedByIdx: CompletedSets = Object.fromEntries(
       W.exercises.map((e, i) => ['ex' + i, session.logged[e.id] ?? []]),
     )
-    const hadPR =
-      !!showPR || (session.logged[W.exercises[0].id] ?? []).some((s) => s.weight >= PR_DEMO_THRESHOLD_KG)
+    // Real PR framing now comes from the progression signal (a max_strength
+    // level-up) rather than the old 105 kg session scan; the mid-workout PR
+    // toast (showPR) is unchanged.
+    const hadPR = !!showPR || hadPrFromSignal
     return (
       <WorkoutComplete workout={W} completedSets={completedByIdx} hadPR={hadPR} onExit={onExit} skippedExerciseIds={session.skipped} />
     )
