@@ -37,6 +37,11 @@ class ProgressionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRadarConfig_shouldBindFromYaml_whenContextStarts() {
+        assertThat(properties.radar().strengthMuscleBlend()).isEqualTo(0.5);
+    }
+
+    @Test
     void testCurveConfig_shouldStillBind_whenContextStarts() {
         assertThat(properties.curve().base()).isEqualTo(100);
         assertThat(properties.curve().exp()).isEqualTo(1.6);
