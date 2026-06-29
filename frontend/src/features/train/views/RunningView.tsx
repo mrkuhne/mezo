@@ -119,7 +119,7 @@ export function RunningView() {
 }
 
 // === E heti edzés: active block hero + this week's prescribed sessions ===
-function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | null; pending: boolean; onLog: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void }) => void }) {
+function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | null; pending: boolean; onLog: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) => void }) {
   const [logCtx, setLogCtx] = useState<RunLogCtx | null>(null)
   const { showLevelUp } = useLevelUp()
 
@@ -230,7 +230,7 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
         <RunLogSheet
           ctx={logCtx}
           onClose={() => setLogCtx(null)}
-          onSave={(body, done) => onLog(body, { onSuccess: (r) => { done(); showLevelUp(r?.levelUp) } })}
+          onSave={(body, done) => onLog(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
       )}
     </div>

@@ -218,7 +218,7 @@ export function SportView() {
       {logOpen && (
         <SportLogSheet
           onClose={() => setLogOpen(false)}
-          onSave={(body, done) => logSportSession(body, { onSuccess: (r) => { done(); showLevelUp(r?.levelUp) } })}
+          onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
       )}
       {scheduleOpen && (

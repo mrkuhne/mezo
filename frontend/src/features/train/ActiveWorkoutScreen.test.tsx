@@ -164,6 +164,9 @@ test('shows the level-up overlay on finish, then reveals the recap on Tovább (m
   expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
   // The WorkoutComplete recap is revealed underneath.
   expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument()
+  // The gym fixture has a max_strength level-up → the recap's PR framing derives
+  // from the real signal (hadPrFromSignal), not the old 105 kg demo scan.
+  expect(screen.getByText('Megdöntöttük.')).toBeInTheDocument()
 })
 
 // ---- F4 note: durable per-exercise note pill + editor (mock-mode) ----

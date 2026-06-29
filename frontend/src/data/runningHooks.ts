@@ -16,7 +16,7 @@ export type RunningData = {
   activateRunningBlock: (id: string) => void
   closeRunningBlock: (id: string) => void
   deleteRunningBlock: (id: string, opts?: { onSuccess?: () => void }) => void
-  logRunSession: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void }) => void
+  logRunSession: (body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) => void
   runningMutationPending: boolean
 }
 
@@ -103,8 +103,8 @@ export function useRunning(): RunningData {
   const activateRunningBlock = useCallback((id: string) => activateMutation.mutate(id), [activateMutation])
   const closeRunningBlock = useCallback((id: string) => closeMutation.mutate(id), [closeMutation])
   const deleteRunningBlock = useCallback((id: string, opts?: { onSuccess?: () => void }) => deleteMutation.mutate(id, { onSuccess: () => opts?.onSuccess?.() }), [deleteMutation])
-  const logRunSession = useCallback((body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void }) =>
-    logMutation.mutate(body, { onSuccess: (r) => opts?.onSuccess?.(r) }), [logMutation])
+  const logRunSession = useCallback((body: RunSessionLogRequest, opts?: { onSuccess?: (r?: RunSessionLogResponse) => void; onSettled?: () => void }) =>
+    logMutation.mutate(body, { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }), [logMutation])
 
   return {
     runningBlocks: blockList,

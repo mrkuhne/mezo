@@ -421,14 +421,14 @@ export function TrainTodayView() {
       {vbLogOpen && (
         <SportLogSheet
           onClose={() => setVbLogOpen(false)}
-          onSave={(body, done) => logSportSession(body, { onSuccess: (r) => { done(); showLevelUp(r?.levelUp) } })}
+          onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
       )}
       {runLogCtx && (
         <RunLogSheet
           ctx={runLogCtx}
           onClose={() => setRunLogCtx(null)}
-          onSave={(body, done) => logRunSession(body, { onSuccess: (r) => { done(); showLevelUp(r?.levelUp) } })}
+          onSave={(body, done) => logRunSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
       )}
     </>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { LevelUpGain, LevelUpResult } from '@/lib/trainApi'
 import { useReducedMotion } from '@/lib/useReducedMotion'
@@ -59,13 +59,39 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
   const rest = result.gains.filter((g) => !leveledKeys.has(g.skillKey))
 
   const headline = leveled.length > 0 ? HEADLINE_BY_SOURCE[result.source] : HEADLINE_NO_LEVELUP
-  const chip = [
-    CHIP_ICON_BY_SOURCE[result.source],
+  const chipIcon = CHIP_ICON_BY_SOURCE[result.source]
+  const chipText = [
     (result.workoutLabel ?? '').toUpperCase(),
     result.durationMin != null ? `${result.durationMin}'` : null,
   ]
     .filter(Boolean)
     .join(' · ')
+
+  // Modal focus management (the overlay claims aria-modal): move focus to the CTA
+  // on mount, trap Tab to it (the single action), Escape dismisses, and restore
+  // focus to the trigger on unmount.
+  const overlayRef = useRef<HTMLDivElement>(null)
+  const onContinueRef = useRef(onContinue)
+  onContinueRef.current = onContinue
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const cta = overlayRef.current?.querySelector<HTMLButtonElement>('.lu-cta')
+    cta?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onContinueRef.current()
+      } else if (e.key === 'Tab') {
+        e.preventDefault()
+        cta?.focus()
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      previouslyFocused?.focus?.()
+    }
+  }, [])
 
   // top-to-bottom stagger: each animated element gets an increasing delay (s)
   let delay = 0.1
@@ -103,6 +129,7 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
 
   const overlay = (
     <div
+      ref={overlayRef}
       className={`levelup${reduced ? ' levelup--reduced' : ''}`}
       role="dialog"
       aria-modal="true"
@@ -112,18 +139,20 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
 
       <div className="lu-body">
         <div className="lu-chip lu-anim" style={animStyle(next(0.18))}>
-          {chip}
+          <span aria-hidden="true">{chipIcon}</span> {chipText}
         </div>
         <div className="lu-headline lu-anim" style={animStyle(next(0.18))}>
           {headline}
         </div>
 
         <div className="lu-xpwrap lu-anim" style={animStyle(next(0.9))}>
-          <div className="lu-xpnum">
+          {/* The visible digits animate; an sr-only sentence carries the final total to AT. */}
+          <div className="lu-xpnum" aria-hidden="true">
             <span className="lu-plus">+</span>
             <span>{totalXp}</span>
           </div>
-          <div className="lu-xplabel">XP · ÖSSZESEN</div>
+          <div className="lu-xplabel" aria-hidden="true">XP · ÖSSZESEN</div>
+          <span className="lu-sr-only">Összesen {result.totalXp} XP</span>
         </div>
 
         {leveled.length > 0 && (

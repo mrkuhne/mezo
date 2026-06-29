@@ -48,6 +48,8 @@ test('Mentés passes the sheet values to onSave (house WeightLogSheet idiom)', a
     expect.any(Function),
   )
   expect(onClose).not.toHaveBeenCalled()
+  // saving guard: the CTA disables on submit (prevents double-submit while in flight).
+  expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled()
 })
 
 // Contract bounds (review finding): the steppers must clamp so the sheet can

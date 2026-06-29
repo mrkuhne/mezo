@@ -56,3 +56,22 @@ test('real-mode logRunSession forwards the levelUp on the log response', async (
   await waitFor(() => expect(seen).toHaveLength(1))
   expect((seen[0] as { source?: string })?.source).toBe('RUN')
 })
+
+test('real-mode logRunSession calls onSettled even when the log POST fails (no stuck CTA)', async () => {
+  vi.spyOn(runningApi, 'blocks').mockResolvedValue([])
+  vi.spyOn(runningApi, 'runSessions').mockResolvedValue([])
+  vi.spyOn(runningApi, 'logRunSession').mockRejectedValue(new Error('500'))
+
+  const { wrapper } = wrap()
+  const { result } = renderHook(() => useRunning(), { wrapper })
+  await waitFor(() => expect(result.current.runningPending).toBe(false))
+
+  const onSuccess = vi.fn()
+  const onSettled = vi.fn()
+  result.current.logRunSession(
+    { blockId: 'b1', weekNumber: 1, sessionKey: 'k', date: '2026-06-29', completedRounds: 6, rpeActual: 9, hrRecoverySec: 45, sprintLandmark: null, durationMin: null, notes: null },
+    { onSuccess, onSettled },
+  )
+  await waitFor(() => expect(onSettled).toHaveBeenCalledTimes(1))
+  expect(onSuccess).not.toHaveBeenCalled()
+})

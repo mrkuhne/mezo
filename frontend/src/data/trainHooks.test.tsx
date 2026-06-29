@@ -324,6 +324,17 @@ test('useTrain (real mode) logSportSession forwards the levelUp on the response'
   expect((seen[0] as { source?: string })?.source).toBe('SPORT')
 })
 
+test('useTrain (real mode) logSportSession calls onSettled even when the POST fails (no stuck CTA)', async () => {
+  server.use(http.post(`${API_BASE}/api/train/sport-sessions`, () => new HttpResponse(null, { status: 500 })))
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.sport.sessions.length).toBeGreaterThan(0))
+  const onSuccess = vi.fn()
+  const onSettled = vi.fn()
+  result.current.logSportSession({ sport: 'volleyball', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 }, { onSuccess, onSettled })
+  await waitFor(() => expect(onSettled).toHaveBeenCalledTimes(1))
+  expect(onSuccess).not.toHaveBeenCalled()
+})
+
 test('useTrain (real mode) saveSportSchedule PUTs the full slot list', async () => {
   const put: unknown[] = []
   server.use(

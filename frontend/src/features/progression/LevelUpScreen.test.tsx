@@ -63,4 +63,25 @@ describe('LevelUpScreen', () => {
     expect(screen.getByText(/Robusztusság/)).toBeInTheDocument()
     expect(screen.getByText(/5\./)).toBeInTheDocument()
   })
+
+  it('moves focus to the Tovább CTA on mount (modal focus management)', () => {
+    stubReduced()
+    render(<LevelUpScreen result={gymLevelUpMock} onContinue={() => {}} />)
+    expect(screen.getByRole('button', { name: /Tovább/ })).toHaveFocus()
+  })
+
+  it('dismisses on Escape via onContinue', () => {
+    stubReduced()
+    const onContinue = vi.fn()
+    render(<LevelUpScreen result={gymLevelUpMock} onContinue={onContinue} />)
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(onContinue).toHaveBeenCalledTimes(1)
+  })
+
+  it('exposes the total XP to assistive tech regardless of the count-up animation', () => {
+    stubReduced()
+    render(<LevelUpScreen result={gymLevelUpMock} onContinue={() => {}} />)
+    // A visually-hidden sentence carries the final total even while the visible digits animate.
+    expect(screen.getByText('Összesen 480 XP')).toBeInTheDocument()
+  })
 })
