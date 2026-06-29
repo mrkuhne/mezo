@@ -22,6 +22,10 @@ export type GymScheduleSlotResponse = components['schemas']['GymScheduleSlotResp
 export type ExerciseCatalogItem = components['schemas']['ExerciseCatalogItem']
 export type ExerciseRecordResponse = components['schemas']['ExerciseRecordResponse']
 export type ExerciseNoteRequest = components['schemas']['ExerciseNoteRequest']
+export type LevelUpResult = components['schemas']['LevelUpResult']
+export type LevelUpGain = components['schemas']['LevelUpGain']
+export type LevelUpPerk = components['schemas']['LevelUpPerk']
+export type LevelUpRobustness = components['schemas']['LevelUpRobustness']
 
 export const trainApi = {
   mesocycles: (): Promise<MesocycleResponse[]> => apiFetch<MesocycleResponse[]>('/api/train/mesocycles'),
