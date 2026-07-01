@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { ExperimentsView } from '@/features/insights/views/ExperimentsView'
+import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 
 test('renders the count, an active + a completed experiment, and the propose CTA', () => {
-  render(<ExperimentsView />)
+  render(<ExperimentsPage />)
   expect(screen.getByText('N=1 kísérletek · 2')).toBeInTheDocument()
   expect(screen.getByText('Glikogén-feltöltés volleyball előtt')).toBeInTheDocument()
   expect(screen.getByText('◐ Aktív')).toBeInTheDocument()

@@ -1,9 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoirView } from '@/features/insights/views/MemoirView'
+import { MemoirPage } from '@/features/insights/pages/MemoirPage'
 
 test('renders the memoir card, anchors, anniversary card and archive footer', () => {
-  render(<MemoirView />)
+  render(<MemoirPage />)
   expect(screen.getByText('Heti memoir · Hét 20 · 2026 · Máj 11-17')).toBeInTheDocument()
   expect(screen.getByText('Egy hét amikor a tested megtanult várni')).toBeInTheDocument()
   // RefTag renders "[PR] Chest Row 102.5 × 9"; RTL normalizes &nbsp; to a space, so this matches.
@@ -14,7 +14,7 @@ test('renders the memoir card, anchors, anniversary card and archive footer', ()
 })
 
 test('reaction chips toggle the brand state', async () => {
-  render(<MemoirView />)
+  render(<MemoirPage />)
   const like = screen.getByRole('button', { name: /Like/ })
   expect(like.className).not.toMatch(/brand/)
   await userEvent.click(like)

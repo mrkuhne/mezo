@@ -2,7 +2,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { useInsights } from '@/data/hooks'
 
-export function PredictionsView() {
+export function PredictionsPage() {
   const { predictions } = useInsights()
 
   return (

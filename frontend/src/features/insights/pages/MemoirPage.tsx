@@ -6,7 +6,7 @@ import { useInsights } from '@/data/hooks'
 
 type ReactionKey = 'like' | 'love' | 'save' | 'dismiss'
 
-export function MemoirView() {
+export function MemoirPage() {
   const { memoir, anniversaryNote } = useInsights()
   const [reactions, setReactions] = useState<Record<ReactionKey, boolean>>({
     like: false,

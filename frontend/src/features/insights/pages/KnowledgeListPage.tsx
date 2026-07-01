@@ -3,7 +3,7 @@ import { Toggle } from '@/shared/ui/Toggle'
 import { useKnowledge } from '@/data/hooks'
 import { factCategoryColor } from '@/data/insights/knowledge'
 
-export function KnowledgeListView() {
+export function KnowledgeListPage() {
   const { facts } = useKnowledge()
   const [active, setActive] = useState<Record<string, boolean>>(() =>
     facts.reduce<Record<string, boolean>>((acc, f) => ({ ...acc, [f.id]: f.active }), {}),

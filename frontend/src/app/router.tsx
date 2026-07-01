@@ -22,14 +22,14 @@ import { KamraItemDetailView } from '@/features/fuel/views/KamraItemDetailView'
 import { FuelMedicationView } from '@/features/fuel/views/FuelMedicationView'
 import { RecipeDetailView } from '@/features/fuel/views/RecipeDetailView'
 import { RecipeEditorView } from '@/features/fuel/views/RecipeEditorView'
-import { InsightsScreen } from '@/features/insights/InsightsScreen'
-import { PatternsView } from '@/features/insights/views/PatternsView'
-import { WeeklyView } from '@/features/insights/views/WeeklyView'
-import { MemoirView } from '@/features/insights/views/MemoirView'
-import { KnowledgeListView } from '@/features/insights/views/KnowledgeListView'
-import { ChatView } from '@/features/insights/views/ChatView'
-import { PredictionsView } from '@/features/insights/views/PredictionsView'
-import { ExperimentsView } from '@/features/insights/views/ExperimentsView'
+import { InsightsSection } from '@/features/insights/pages/InsightsSection'
+import { PatternsPage } from '@/features/insights/pages/PatternsPage'
+import { WeeklyPage } from '@/features/insights/pages/WeeklyPage'
+import { MemoirPage } from '@/features/insights/pages/MemoirPage'
+import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
+import { ChatPage } from '@/features/insights/pages/ChatPage'
+import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
+import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 import { MeScreen, type MeOutletContext } from '@/features/me/MeScreen'
 import { GoalPlanner } from '@/features/me/GoalPlanner'
 import { ProfileView } from '@/features/me/views/ProfileView'
@@ -88,15 +88,15 @@ export const routes: RouteObject[] = [
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorView /> },
       {
         path: 'insights',
-        element: <InsightsScreen />,
+        element: <InsightsSection />,
         children: [
-          { index: true, element: <PatternsView /> },
-          { path: 'weekly', element: <WeeklyView /> },
-          { path: 'memoir', element: <MemoirView /> },
-          { path: 'knowledge', element: <KnowledgeListView /> },
-          { path: 'chat', element: <ChatView /> },
-          { path: 'predictions', element: <PredictionsView /> },
-          { path: 'experiments', element: <ExperimentsView /> },
+          { index: true, element: <PatternsPage /> },
+          { path: 'weekly', element: <WeeklyPage /> },
+          { path: 'memoir', element: <MemoirPage /> },
+          { path: 'knowledge', element: <KnowledgeListPage /> },
+          { path: 'chat', element: <ChatPage /> },
+          { path: 'predictions', element: <PredictionsPage /> },
+          { path: 'experiments', element: <ExperimentsPage /> },
         ],
       },
       {

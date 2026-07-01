@@ -13,7 +13,7 @@ function statusLabel(e: Experiment): string {
   return e.outcomeGood ? '✓ Megerősítve' : '◯ Lezárva'
 }
 
-export function ExperimentsView() {
+export function ExperimentsPage() {
   const { experiments } = useInsights()
 
   return (

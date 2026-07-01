@@ -2,10 +2,10 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
-import { InsightsSubNav } from '@/features/insights/InsightsSubNav'
-import { INSIGHTS_TABS } from '@/features/insights/tabs'
+import { InsightsSubNav } from '@/features/insights/pages/InsightsSubNav'
+import { INSIGHTS_TABS } from '@/features/insights/pages/tabs'
 
-export function InsightsScreen() {
+export function InsightsSection() {
   const { pathname } = useLocation()
   const seg = pathname.split('/')[2] ?? 'patterns'
   const active = INSIGHTS_TABS.find((t) => t.id === seg) ?? INSIGHTS_TABS[0]

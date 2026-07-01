@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { WeeklyView } from '@/features/insights/views/WeeklyView'
+import { WeeklyPage } from '@/features/insights/pages/WeeklyPage'
 
 test('renders the score hero, the delta, every item and the plan suggestion', () => {
-  render(<WeeklyView />)
+  render(<WeeklyPage />)
   expect(screen.getByText('Hét 21 áttekintés · Máj 18-24')).toBeInTheDocument()
   expect(screen.getByText('82')).toBeInTheDocument()
   expect(screen.getByText('+4')).toBeInTheDocument()

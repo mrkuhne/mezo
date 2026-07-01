@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { PredictionsView } from '@/features/insights/views/PredictionsView'
+import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 
 test('renders the header, pending + validated states, confidence and outcome', () => {
-  render(<PredictionsView />)
+  render(<PredictionsPage />)
   expect(screen.getByText('Aktív predikciók')).toBeInTheDocument()
   expect(screen.getByText('2 validated · 60-day acc 68%')).toBeInTheDocument()
   expect(screen.getByText('Csütörtök Pull Day · Chest Row PR (107.5 × 8)')).toBeInTheDocument()

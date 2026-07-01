@@ -4,7 +4,7 @@ import { useChat } from '@/data/hooks'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 
-export function ChatView() {
+export function ChatPage() {
   const { initialChat } = useChat()
   const [messages, setMessages] = useState<ChatMessageT[]>(initialChat)
   const [draft, setDraft] = useState('')

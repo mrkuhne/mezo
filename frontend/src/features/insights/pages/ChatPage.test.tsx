@@ -1,8 +1,8 @@
 import { render, screen, act, fireEvent } from '@testing-library/react'
-import { ChatView } from '@/features/insights/views/ChatView'
+import { ChatPage } from '@/features/insights/pages/ChatPage'
 
 test('seeds the conversation and the composer', () => {
-  render(<ChatView />)
+  render(<ChatPage />)
   expect(screen.getByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
   expect(screen.getByPlaceholderText('Mondj valamit...')).toBeInTheDocument()
   // assistant tool-transparency chip
@@ -19,7 +19,7 @@ test('sending a message appends it and then simulates a reply', async () => {
   // + `fireEvent.keyDown` exercise identical component behaviour while keeping
   // the fake-timer advance assertions and verbatim strings intact.
   vi.useFakeTimers()
-  render(<ChatView />)
+  render(<ChatPage />)
   const input = screen.getByPlaceholderText('Mondj valamit...')
   fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
   fireEvent.keyDown(input, { key: 'Enter' })

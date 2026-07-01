@@ -9,7 +9,7 @@ function trendColor(t: WeeklyTrend): string {
   return t === 'up' ? 'var(--success)' : t === 'down' ? 'var(--error)' : 'var(--text-tertiary)'
 }
 
-export function WeeklyView() {
+export function WeeklyPage() {
   const { weekly, weeklySuggestion } = useInsights()
 
   return (
