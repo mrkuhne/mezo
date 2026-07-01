@@ -40,6 +40,26 @@
     "stockUnit": "csomag"
   },
   {
+    "name": "Collagen Protein",
+    "kind": "supplement",
+    "source": "manual",
+    "category": "supplement",
+    "per": null,
+    "unit": "g",
+    "kcal": 360.0,
+    "proteinG": 90.0,
+    "carbsG": 0.0,
+    "fatG": 0.0,
+    "fiberG": 0.0,
+    "sugarG": 0.0,
+    "saltG": 0.0,
+    "saturatedFatG": null,
+    "priceHuf": 20490,
+    "packageLabel": null,
+    "stockQty": 1.0,
+    "stockUnit": null
+  },
+  {
     "name": "Soy Milk",
     "kind": "food",
     "source": "kifli.hu",
