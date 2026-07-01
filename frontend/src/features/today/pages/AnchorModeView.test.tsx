@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { AnchorModeView } from '@/features/today/AnchorModeView'
+import { AnchorModeView } from '@/features/today/pages/AnchorModeView'
 
 test('renders the anchor header, the three anchors, and the paused note', () => {
   render(<MemoryRouter><AnchorModeView /></MemoryRouter>)

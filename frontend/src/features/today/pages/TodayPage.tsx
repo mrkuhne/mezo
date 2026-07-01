@@ -10,11 +10,11 @@ import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard
 import { FuelTimelinePreview } from '@/features/today/components/FuelTimelinePreview'
 import { QuickStatsRow } from '@/features/today/components/QuickStatsRow'
 import { InsightsTeaser } from '@/features/today/components/InsightsTeaser'
-import { CheckInStrip } from '@/features/today/CheckInStrip'
-import { CheckInSheet } from '@/features/today/CheckInSheet'
-import { AnchorModeView } from '@/features/today/AnchorModeView'
+import { CheckInStrip } from '@/features/today/components/CheckInStrip'
+import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
+import { AnchorModeView } from '@/features/today/pages/AnchorModeView'
 
-export function TodayScreen() {
+export function TodayPage() {
   const scenario = useTodayScenario()
   const { today, user, workout, volleyballSessions } = useToday()
   const { checkins, saveCheckIn } = useCheckins()

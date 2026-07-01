@@ -1,6 +1,6 @@
 import { Navigate, useOutletContext, type RouteObject } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
-import { TodayScreen } from '@/features/today/TodayScreen'
+import { TodayPage } from '@/features/today/pages/TodayPage'
 import { TrainScreen } from '@/features/train/TrainScreen'
 import { TrainTodayView } from '@/features/train/views/TrainTodayView'
 import { GymView } from '@/features/train/views/GymView'
@@ -50,7 +50,7 @@ export const routes: RouteObject[] = [
     element: <AppLayout />,
     children: [
       { index: true, element: <Navigate to="/today" replace /> },
-      { path: 'today', element: <TodayScreen /> },
+      { path: 'today', element: <TodayPage /> },
       {
         path: 'train',
         element: <TrainScreen />,

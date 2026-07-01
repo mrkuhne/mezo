@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { TodayScreen } from '@/features/today/TodayScreen'
+import { TodayPage } from '@/features/today/pages/TodayPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 const renderAt = (path: string) => render(
-  <QueryWrapper><MemoryRouter initialEntries={[path]}><TodayScreen /></MemoryRouter></QueryWrapper>,
+  <QueryWrapper><MemoryRouter initialEntries={[path]}><TodayPage /></MemoryRouter></QueryWrapper>,
 )
 
 test('default (medium) renders briefing + quick stats, not AnchorMode', () => {

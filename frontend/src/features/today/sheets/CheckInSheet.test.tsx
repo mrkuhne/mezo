@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { CheckInSheet } from '@/features/today/CheckInSheet'
+import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { initialCheckins } from '@/data/today/checkins'
 
 test('advances through dims and saves values', async () => {
