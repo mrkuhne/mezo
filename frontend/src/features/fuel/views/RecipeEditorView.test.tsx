@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { render, renderHook, screen, waitFor } from '@testing-library/react'
+import { render, renderHook, screen, waitFor, waitForElementToBeRemoved } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -46,6 +46,13 @@ function renderEdit(id: string, qc: QueryClient) {
   )
 }
 
+// The picker no longer auto-closes on pick (multi-add), so tests that need to read
+// the editor rows unambiguously close it first via its Bezárás button.
+async function closePicker() {
+  await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
+  await waitForElementToBeRemoved(() => screen.queryByText('Válassz hozzávalót'), { timeout: 2000 })
+}
+
 test('create mode: Mentés is disabled until a name + an ingredient are present', async () => {
   const qc = newQc()
   renderNew(qc)
@@ -73,6 +80,7 @@ test('create mode: saving adds a recipe to the cache and navigates back', async 
   await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
   const adds = await screen.findAllByRole('button', { name: /hozzáadása/ })
   await userEvent.click(adds[0])
+  await closePicker()
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
 
   await waitFor(() => expect(result.current.recipes.length).toBe(before + 1))
@@ -123,8 +131,7 @@ test('real mode: a picked pantry ingredient resolves to its name + macros, not t
   renderNew(qc)
   await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
   await userEvent.click(await screen.findByRole('button', { name: /Csirkemell hozzáadása/ }))
-  // picker closed once an ingredient is picked → only the editor row remains
-  expect(await screen.findByRole('button', { name: /Kamrából/ })).toBeInTheDocument()
+  await closePicker()
   // the row shows the RESOLVED name, never the backend UUID
   expect(screen.getByText('Csirkemell')).toBeInTheDocument()
   expect(screen.queryByText(PANTRY_ID)).not.toBeInTheDocument()
@@ -132,14 +139,77 @@ test('real mode: a picked pantry ingredient resolves to its name + macros, not t
   expect(screen.getAllByText('110').length).toBeGreaterThan(0)
 })
 
-test('a picked row contribution recomputes when the amount changes', async () => {
+test('a picked row renders its MacroCells contribution in the editor', async () => {
   const qc = newQc()
   renderNew(qc)
   await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
   const adds = await screen.findAllByRole('button', { name: /hozzáadása/ })
   await userEvent.click(adds[0])
-  // a "Kamrából hozzáad" add-button reappears once the picker closes
-  expect(await screen.findByRole('button', { name: /Kamrából/ })).toBeInTheDocument()
-  // the picked row shows MacroCells (kcal/Prot labels)
+  await closePicker()
+  // exactly one ingredient line, showing MacroCells (Prot label)
+  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(1)
   expect(screen.getAllByText('Prot').length).toBeGreaterThan(0)
+})
+
+// --- mezo-3vu4: supplements as ingredients + multi-add picker ---
+
+test('the picker lists supplements from the stash, not only foods', async () => {
+  const qc = newQc()
+  renderNew(qc)
+  await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
+  expect(await screen.findByText('Válassz hozzávalót')).toBeInTheDocument()
+  // Magnézium-glicinát is a stash-only supplement (no food mirror) — it must be pickable now.
+  expect(screen.getByRole('button', { name: /Magnézium-glicinát hozzáadása/ })).toBeInTheDocument()
+})
+
+test('the picker stays open after a pick so several ingredients can be added in one go', async () => {
+  const qc = newQc()
+  renderNew(qc)
+  await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
+  const adds = await screen.findAllByRole('button', { name: /hozzáadása/ })
+  await userEvent.click(adds[0])
+  // still open (no auto-close)
+  expect(screen.getByText('Válassz hozzávalót')).toBeInTheDocument()
+  // add a second, different item, then confirm the editor holds two lines
+  const more = screen.getAllByRole('button', { name: /hozzáadása/ })
+  await userEvent.click(more[0])
+  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(2)
+})
+
+test('an already-added item is shown as added and cannot be added twice', async () => {
+  const qc = newQc()
+  renderNew(qc)
+  await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Magnézium-glicinát hozzáadása/ }))
+  // its add affordance flips to a disabled "hozzáadva" state — no second add possible
+  expect(screen.queryByRole('button', { name: /Magnézium-glicinát hozzáadása/ })).not.toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Magnézium-glicinát hozzáadva/ })).toBeDisabled()
+})
+
+test('real mode: a picked supplement resolves to its name + macro contribution', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const SUPP_ID = 'b7c1f0a2-1111-4222-8333-444455556666'
+  server.use(
+    http.get(`${API_BASE}/api/pantry`, () =>
+      HttpResponse.json({
+        ingredients: [],
+        stash: [
+          {
+            id: SUPP_ID, name: 'Vegán Protein', brand: 'MyProtein', type: 'supplement', category: 'protein',
+            dose: '30g', form: 'por', stock: 10, stockUnit: 'adag', protocol: '', timing: 'flexible', taken: false,
+            source: 'myprotein.hu', per: 30, unit: 'g', macros: { kcal: 114, p: 22, c: 3, f: 2 },
+          },
+        ],
+      }),
+    ),
+  )
+  const qc = newQc()
+  renderNew(qc)
+  await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Vegán Protein hozzáadása/ }))
+  await closePicker()
+  // resolved to the supplement's name + its kcal (per=30 → factor 1), never the UUID
+  expect(screen.getByText('Vegán Protein')).toBeInTheDocument()
+  expect(screen.queryByText(SUPP_ID)).not.toBeInTheDocument()
+  expect(screen.getAllByText('114').length).toBeGreaterThan(0)
 })

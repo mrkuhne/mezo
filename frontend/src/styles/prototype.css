@@ -300,6 +300,22 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .tab-item.active .tab-dot { opacity: 1; }
 
+/* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
+   anchors to the device viewport like .sheet — floating just above the tab bar,
+   NOT scrolling with (or clipping) the recipe content. Opaque var(--canvas) to
+   match .tab-bar (the old translucent blur leaked + broke light theme, mezo-ci5). */
+.recipe-save-bar {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 88px; /* directly above the 88px desktop tab bar */
+  z-index: 45;  /* above tab-bar (40), below sheets (200+) so the picker covers it */
+  display: flex;
+  gap: 9px;
+  padding: 12px 16px;
+  background: var(--canvas);
+  border-top: 1px solid var(--border-subtle);
+}
+
 /* Home indicator */
 .home-indicator {
   position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
@@ -345,6 +361,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
     height: auto;
     padding-top: 8px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+  /* Mobile tab bar is height:auto (~icon+label+pad) + safe area; float above it. */
+  .recipe-save-bar {
+    bottom: calc(56px + env(safe-area-inset-bottom));
   }
 }
 

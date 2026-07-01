@@ -1,13 +1,15 @@
 // ============================================================
 // Mezo · IngredientPickerSheet (nested modal — Kamra pick)
-// Opens ON TOP of the RecipeEditorView page to pick a pantry ingredient. Search
-// filters the Kamra by name + brand; each PickerRow shows a category-accented
-// card with name + source badge + brand/NOVA subline and a MacroCells strip
-// (/100g, the design-mockup cell look). Tapping ＋ fires onPick(ing).
+// Opens ON TOP of the RecipeEditorView page to pick a recipe ingredient. The list
+// is the unified pickable set (foods + supplement/stim/med stash — protein powder
+// etc. belong in recipes too, mezo-3vu4); search filters by name + brand. Each row
+// shows a category-accented card with name + kind badge + source badge + brand/NOVA
+// subline and a MacroCells strip (/100g). Tapping ＋ fires onPick(ing) but does NOT
+// close the sheet, so several items can be added in one open; a row already in the
+// recipe (addedRefIds) shows a disabled "Hozzáadva" state instead.
 // docs/design/recipes-editor.html (right phone · `.prow` + `.macstrip`).
 // ============================================================
 import { useState } from 'react'
-import type { Ingredient } from '@/data/types'
 import { usePantry } from '@/data/hooks'
 import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
@@ -15,8 +17,24 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Display } from '@/components/ui/Display'
 import { SourceBadge } from '@/components/ui/SourceBadge'
 import { MacroCells } from './components/MacroCells'
+import { usePickableIngredients, kindLabel, type PickableIngredient } from '@/data/pantryPickables'
 
-function PickerRow({ ing, onPick }: { ing: Ingredient; onPick: () => void }) {
+function KindBadge({ ing }: { ing: PickableIngredient }) {
+  return (
+    <span
+      className="label-mono"
+      style={{
+        fontSize: 8, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase',
+        padding: '2px 5px', color: 'var(--text-tertiary)',
+        border: '1px solid var(--border-subtle)', background: 'var(--surface-2)',
+      }}
+    >
+      {kindLabel(ing.kind)}
+    </span>
+  )
+}
+
+function PickerRow({ ing, added, onPick }: { ing: PickableIngredient; added: boolean; onPick: () => void }) {
   const { categoryMeta } = usePantry()
   const catColor = categoryMeta[ing.category]?.color ?? 'var(--text-secondary)'
   return (
@@ -25,23 +43,35 @@ function PickerRow({ ing, onPick }: { ing: Ingredient; onPick: () => void }) {
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-primary)' }}>{ing.name}</span>
+            <KindBadge ing={ing} />
             <SourceBadge source={ing.source} />
           </div>
           <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', marginTop: 3 }}>
             {ing.brand}{ing.nova ? ` · NOVA ${ing.nova}` : ''}
           </span>
         </div>
-        <button
-          onClick={onPick}
-          aria-label={ing.name + ' hozzáadása'}
-          className="notch-4"
-          style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'rgba(20,184,166,0.14)', color: 'var(--brand-glow)' }}
-        >
-          <Icon name="plus" size={14} />
-        </button>
+        {added ? (
+          <button
+            disabled
+            aria-label={ing.name + ' hozzáadva'}
+            className="notch-4"
+            style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-2)', color: 'var(--brand-glow)', opacity: 0.55, cursor: 'default' }}
+          >
+            <Icon name="check" size={14} />
+          </button>
+        ) : (
+          <button
+            onClick={onPick}
+            aria-label={ing.name + ' hozzáadása'}
+            className="notch-4"
+            style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'rgba(20,184,166,0.14)', color: 'var(--brand-glow)' }}
+          >
+            <Icon name="plus" size={14} />
+          </button>
+        )}
       </div>
       <div style={{ marginTop: 9 }}>
-        <MacroCells macros={ing.macros} perLabel="/100g" />
+        <MacroCells macros={ing.macros} perLabel={`/${ing.per}${ing.unit}`} />
       </div>
     </div>
   )
@@ -50,14 +80,17 @@ function PickerRow({ ing, onPick }: { ing: Ingredient; onPick: () => void }) {
 export function IngredientPickerSheet({
   onPick,
   onClose,
+  addedRefIds = [],
 }: {
-  onPick: (ing: Ingredient) => void
+  onPick: (ing: PickableIngredient) => void
   onClose: () => void
+  addedRefIds?: string[]
 }) {
-  const { ingredients } = usePantry()
+  const pickables = usePickableIngredients()
+  const added = new Set(addedRefIds)
   const [query, setQuery] = useState('')
 
-  const filtered = ingredients.filter(
+  const filtered = pickables.filter(
     i =>
       !query ||
       i.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -96,7 +129,7 @@ export function IngredientPickerSheet({
 
           <div className="col gap-sm" style={{ maxHeight: 420, overflowY: 'auto' }}>
             {filtered.map(ing => (
-              <PickerRow key={ing.id} ing={ing} onPick={() => onPick(ing)} />
+              <PickerRow key={ing.id} ing={ing} added={added.has(ing.id)} onPick={() => onPick(ing)} />
             ))}
           </div>
 
