@@ -41,7 +41,7 @@ const ringOffset = (pct: number) => RING_C * (1 - clampPct(pct) / 100)
 /**
  * Full-bleed animated post-workout level-up overlay (levelup-v4 mockup ported to
  * app tokens). Self-portals into `.phone-screen` (the Sheet technique) so it
- * covers the TabBar + Fab. Hand-rolled CSS keyframes, rAF count-up; reduced
+ * covers the TabBar. Hand-rolled CSS keyframes, rAF count-up; reduced
  * motion renders everything in its final/filled state with the stagger collapsed.
  * Always shows something (XP + bars) — the no-level-up case omits the Szintlépés
  * section and adapts the headline; never a dead-end. Single `Tovább` CTA.

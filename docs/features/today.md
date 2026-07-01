@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mock-only
-updated: 2026-06-22
+updated: 2026-07-01
 tags: [today, biometrics, frontend, data-layer]
 key_files:
   - frontend/src/features/today
@@ -114,7 +114,7 @@ Today is an **aggregation surface** — its value is in the seams to the other d
 - **→ Fuel (`/fuel`)** — *shared data*. `FuelTimelinePreview` consumes `fuelToday` (= `fuelPlan.today`), the **same object the Fuel area renders**, sliced down by `useFuelPreview` (seam types `FuelSlot` / `FuelPlanToday`). It uses the shared `KIND_META` constant from `data/kindMeta.ts` (also used by Fuel). The "Fuel → Terv" eyebrow is **not** a nav link in current code.
 - **→ Insights (`/insights`)** — *visual teaser only*. `InsightsTeaser` is fully hardcoded copy ("Új minta · 0.85 konfidencia"); no hook, no nav link. Phase-3 territory.
 - **→ Biometrics backend (real)** — *the only live integration*. `useCheckins` → `checkinApi.save` → `feature/biometrics/checkin`. The contract crossing the seam is `SaveCheckInRequest` → `CheckInResponse`. Server-side the check-in is a sibling of weight/sleep inside the biometrics feature, not a Today package.
-- **← AppLayout / shell** — `AppLayout.tsx` calls `useTodayScenario()` **itself** and passes `anchor = scenario.anchorMode && pathname.startsWith('/today')` to `PhoneFrame` (warm canvas). The contract here is the shared `TodayScenario.anchorMode` boolean: the layout's canvas and the screen's content must agree (both derive it from the same hook). The global `QuickInputSheet` ("Gyors rögzítés" Fab, `features/quickinput/`) is referenced by the Today design but **owned by the shell**, not Today.
+- **← AppLayout / shell** — `AppLayout.tsx` calls `useTodayScenario()` **itself** and passes `anchor = scenario.anchorMode && pathname.startsWith('/today')` to `PhoneFrame` (warm canvas). The contract here is the shared `TodayScenario.anchorMode` boolean: the layout's canvas and the screen's content must agree (both derive it from the same hook). The `QuickInputSheet` ("Gyors rögzítés", `features/quickinput/`) is referenced by the Today design but **owned by the shell**, not Today; its global mic Fab trigger was removed, so the sheet is currently unmounted.
 - **Shared UI primitives consumed:** `RetaPhaseBar`, `QuickStat` (`components/ui/`), plus `Eyebrow`, `PageTitle`, `Chip`, `RefTag`, `Sheet`, `Icon`/`BrandGlyph`, `CtaPrimary`, and `SafeMarkdown` (renders briefing `**bold**` without `dangerouslySetInnerHTML`).
 
 ## 6. How to use it (consume)
