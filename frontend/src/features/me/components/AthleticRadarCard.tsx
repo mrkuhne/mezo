@@ -1,6 +1,6 @@
 import { Icon } from '@/shared/ui/Icon'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
-import { skillDisplay } from '@/features/progression/levelUpMeta'
+import { skillDisplay } from '@/features/progression/logic/levelUpMeta'
 import type { ProgressionProfileResponse } from '@/data/progression/progressionApi'
 import { dataPolygonPoints, polarPoint, polygonPoints, radarMax } from '@/features/me/components/radarGeometry'
 
