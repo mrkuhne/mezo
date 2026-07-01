@@ -1,0 +1,450 @@
+src/components/ui/Chip.tsx	src/shared/ui/Chip.tsx	
+src/components/ui/chips.test.tsx	src/shared/ui/chips.test.tsx	
+src/components/ui/cta.test.tsx	src/shared/ui/cta.test.tsx	
+src/components/ui/Cta.tsx	src/shared/ui/Cta.tsx	
+src/components/ui/Display.tsx	src/shared/ui/Display.tsx	
+src/components/ui/Eyebrow.tsx	src/shared/ui/Eyebrow.tsx	
+src/components/ui/fuelPrimitives.test.tsx	src/shared/ui/fuelPrimitives.test.tsx	
+src/components/ui/GhostState.tsx	src/shared/ui/GhostState.tsx	
+src/components/ui/Icon.test.tsx	src/shared/ui/Icon.test.tsx	
+src/components/ui/Icon.tsx	src/shared/ui/Icon.tsx	
+src/components/ui/LabelMono.tsx	src/shared/ui/LabelMono.tsx	
+src/components/ui/MacroRow.tsx	src/shared/ui/MacroRow.tsx	
+src/components/ui/NotchCard.test.tsx	src/shared/ui/NotchCard.test.tsx	
+src/components/ui/NotchCard.tsx	src/shared/ui/NotchCard.tsx	
+src/components/ui/NovaDot.tsx	src/features/fuel/components/NovaDot.tsx	
+src/components/ui/PageTitle.tsx	src/shared/ui/PageTitle.tsx	
+src/components/ui/progressbar.test.tsx	src/shared/ui/progressbar.test.tsx	
+src/components/ui/ProgressBar.tsx	src/shared/ui/ProgressBar.tsx	
+src/components/ui/QuickStat.test.tsx	src/shared/ui/QuickStat.test.tsx	
+src/components/ui/QuickStat.tsx	src/shared/ui/QuickStat.tsx	
+src/components/ui/RefTag.tsx	src/shared/ui/RefTag.tsx	
+src/components/ui/RetaPhaseBar.test.tsx	src/shared/ui/RetaPhaseBar.test.tsx	
+src/components/ui/RetaPhaseBar.tsx	src/shared/ui/RetaPhaseBar.tsx	
+src/components/ui/ScoreRing.test.tsx	src/shared/ui/ScoreRing.test.tsx	
+src/components/ui/ScoreRing.tsx	src/shared/ui/ScoreRing.tsx	
+src/components/ui/ScreenSkeleton.tsx	src/shared/ui/ScreenSkeleton.tsx	
+src/components/ui/Sheet.test.tsx	src/shared/ui/Sheet.test.tsx	
+src/components/ui/Sheet.tsx	src/shared/ui/Sheet.tsx	
+src/components/ui/Skeleton.test.tsx	src/shared/ui/Skeleton.test.tsx	
+src/components/ui/Skeleton.tsx	src/shared/ui/Skeleton.tsx	
+src/components/ui/SortableList.test.tsx	src/shared/ui/SortableList.test.tsx	
+src/components/ui/SortableList.tsx	src/shared/ui/SortableList.tsx	
+src/components/ui/SourceBadge.tsx	src/features/fuel/components/SourceBadge.tsx	
+src/components/ui/StatCell.tsx	src/shared/ui/StatCell.tsx	
+src/components/ui/text.test.tsx	src/shared/ui/text.test.tsx	
+src/components/ui/Toggle.test.tsx	src/shared/ui/Toggle.test.tsx	
+src/components/ui/Toggle.tsx	src/shared/ui/Toggle.tsx	
+src/components/ui/ToolChip.tsx	src/shared/ui/ToolChip.tsx	
+src/components/ui/ToolChipRow.tsx	src/shared/ui/ToolChipRow.tsx	
+src/data/biometricHooks.test.tsx	src/data/me/biometricHooks.test.tsx	
+src/data/biometricHooks.ts	src/data/me/biometricHooks.ts	
+src/data/chat.ts	src/data/insights/chat.ts	
+src/data/chatData.test.tsx	src/data/insights/chatData.test.tsx	
+src/data/checkinHooks.test.tsx	src/data/today/checkinHooks.test.tsx	
+src/data/checkins.ts	src/data/today/checkins.ts	
+src/data/dualMode.guard.test.ts	src/data/dualMode.guard.test.ts	
+src/data/fuel.ts	src/data/fuel/fuel.ts	
+src/data/fuelData.test.tsx	src/data/fuel/fuelData.test.tsx	
+src/data/fuelHooks.test.tsx	src/data/fuel/fuelHooks.test.tsx	
+src/data/fuelHooks.ts	src/data/fuel/fuelHooks.ts	
+src/data/fuelWeek.ts	src/data/fuel/fuelWeek.ts	
+src/data/fuelWeekData.test.tsx	src/data/fuel/fuelWeekData.test.tsx	
+src/data/goalCreation.test.tsx	src/data/me/goalCreation.test.tsx	
+src/data/goalHooks.test.tsx	src/data/me/goalHooks.test.tsx	
+src/data/goalHooks.ts	src/data/me/goalHooks.ts	
+src/data/goals.ts	src/data/me/goals.ts	
+src/data/hooks.reexport.test.ts	src/data/hooks.reexport.test.ts	
+src/data/hooks.test.tsx	src/data/hooks.test.tsx	
+src/data/hooks.ts	src/data/hooks.ts	
+src/data/insights.ts	src/data/insights/insights.ts	
+src/data/insightsData.test.tsx	src/data/insights/insightsData.test.tsx	
+src/data/kindMeta.ts	src/data/kindMeta.ts	
+src/data/knowledge.ts	src/data/insights/knowledge.ts	
+src/data/mealTypes.test.ts	src/data/mealTypes.test.ts	
+src/data/meData.test.tsx	src/data/me/meData.test.tsx	
+src/data/meData2.test.tsx	src/data/me/meData2.test.tsx	
+src/data/medication.ts	src/data/fuel/medication.ts	
+src/data/medicationHooks.test.tsx	src/data/fuel/medicationHooks.test.tsx	
+src/data/medicationHooks.ts	src/data/fuel/medicationHooks.ts	
+src/data/meHooks.test.tsx	src/data/me/meHooks.test.tsx	
+src/data/nova.ts	src/data/nova.ts	
+src/data/pantry.ts	src/data/fuel/pantry.ts	
+src/data/pantryData.test.tsx	src/data/fuel/pantryData.test.tsx	
+src/data/pantryHooks.test.tsx	src/data/fuel/pantryHooks.test.tsx	
+src/data/pantryHooks.ts	src/data/fuel/pantryHooks.ts	
+src/data/pantryPickables.test.ts	src/data/fuel/pantryPickables.test.ts	
+src/data/pantryPickables.ts	src/data/fuel/pantryPickables.ts	
+src/data/pantrySources.ts	src/data/pantrySources.ts	
+src/data/people.ts	src/data/me/people.ts	
+src/data/progressionHooks.test.tsx	src/data/progression/progressionHooks.test.tsx	
+src/data/progressionHooks.ts	src/data/progression/progressionHooks.ts	
+src/data/progressionMock.test.ts	src/data/progression/progressionMock.test.ts	
+src/data/progressionMock.ts	src/data/progression/progressionMock.ts	
+src/data/recipeHooks.test.tsx	src/data/fuel/recipeHooks.test.tsx	
+src/data/recipeHooks.ts	src/data/fuel/recipeHooks.ts	
+src/data/recipeMacros.test.ts	src/data/fuel/recipeMacros.test.ts	
+src/data/recipeMacros.ts	src/data/fuel/recipeMacros.ts	
+src/data/recipeTypes.test.ts	src/data/recipeTypes.test.ts	
+src/data/running.ts	src/data/train/running.ts	
+src/data/runningAgenda.test.ts	src/data/train/runningAgenda.test.ts	
+src/data/runningAgenda.ts	src/data/train/runningAgenda.ts	
+src/data/runningDraft.test.ts	src/data/train/runningDraft.test.ts	
+src/data/runningDraft.ts	src/data/train/runningDraft.ts	
+src/data/runningHooks.test.ts	src/data/train/runningHooks.test.ts	
+src/data/runningHooks.ts	src/data/train/runningHooks.ts	
+src/data/sleep.ts	src/data/me/sleep.ts	
+src/data/sleepHooks.test.tsx	src/data/me/sleepHooks.test.tsx	
+src/data/today.ts	src/data/today/today.ts	
+src/data/train.ts	src/data/train/train.ts	
+src/data/trainData.test.tsx	src/data/train/trainData.test.tsx	
+src/data/trainHooks.deriveGym.test.ts	src/data/train/trainHooks.deriveGym.test.ts	
+src/data/trainHooks.test.tsx	src/data/train/trainHooks.test.tsx	
+src/data/trainHooks.ts	src/data/train/trainHooks.ts	
+src/data/types.ts	src/data/types.ts	
+src/data/useDualQuery.test.tsx	src/data/useDualQuery.test.tsx	
+src/data/useDualQuery.ts	src/data/useDualQuery.ts	
+src/data/weightHooks.test.tsx	src/data/me/weightHooks.test.tsx	
+src/data/weightHooks.ts	src/data/me/weightHooks.ts	
+src/features/fuel/AddPantryItemSheet.test.tsx	src/features/fuel/sheets/AddPantryItemSheet.test.tsx	
+src/features/fuel/AddPantryItemSheet.tsx	src/features/fuel/sheets/AddPantryItemSheet.tsx	
+src/features/fuel/buildProtocol.test.ts	src/features/fuel/logic/buildProtocol.test.ts	
+src/features/fuel/buildProtocol.ts	src/features/fuel/logic/buildProtocol.ts	
+src/features/fuel/CategoryFilterSheet.tsx	src/features/fuel/sheets/CategoryFilterSheet.tsx	
+src/features/fuel/components/ContextPanel.tsx	src/features/fuel/components/ContextPanel.tsx	
+src/features/fuel/components/DimensionCard.tsx	src/features/fuel/components/DimensionCard.tsx	
+src/features/fuel/components/FuelTimeline.test.tsx	src/features/fuel/components/FuelTimeline.test.tsx	
+src/features/fuel/components/FuelTimeline.tsx	src/features/fuel/components/FuelTimeline.tsx	
+src/features/fuel/components/KamraCard.tsx	src/features/fuel/components/KamraCard.tsx	
+src/features/fuel/components/kamraCards.test.tsx	src/features/fuel/components/kamraCards.test.tsx	
+src/features/fuel/components/MacroCells.test.tsx	src/features/fuel/components/MacroCells.test.tsx	
+src/features/fuel/components/MacroCells.tsx	src/features/fuel/components/MacroCells.tsx	
+src/features/fuel/components/MacroHero.test.tsx	src/features/fuel/components/MacroHero.test.tsx	
+src/features/fuel/components/MacroHero.tsx	src/features/fuel/components/MacroHero.tsx	
+src/features/fuel/components/MacroPanel.tsx	src/features/fuel/components/MacroPanel.tsx	
+src/features/fuel/components/MealMatchRow.tsx	src/features/fuel/components/MealMatchRow.tsx	
+src/features/fuel/components/MedicationCycleBar.tsx	src/features/fuel/components/MedicationCycleBar.tsx	
+src/features/fuel/components/MicroPanel.tsx	src/features/fuel/components/MicroPanel.tsx	
+src/features/fuel/components/NovaPanel.tsx	src/features/fuel/components/NovaPanel.tsx	
+src/features/fuel/components/PacingCard.tsx	src/features/fuel/components/PacingCard.tsx	
+src/features/fuel/components/PatternRow.tsx	src/features/fuel/components/PatternRow.tsx	
+src/features/fuel/components/ProtocolSlot.tsx	src/features/fuel/components/ProtocolSlot.tsx	
+src/features/fuel/components/ReasoningRow.tsx	src/features/fuel/components/ReasoningRow.tsx	
+src/features/fuel/components/RecipeCard.test.tsx	src/features/fuel/components/RecipeCard.test.tsx	
+src/features/fuel/components/RecipeCard.tsx	src/features/fuel/components/RecipeCard.tsx	
+src/features/fuel/components/RecipeFitBadge.test.tsx	src/features/fuel/components/RecipeFitBadge.test.tsx	
+src/features/fuel/components/RecipeFitBadge.tsx	src/features/fuel/components/RecipeFitBadge.tsx	
+src/features/fuel/components/RecipeIngredientList.tsx	src/features/fuel/components/RecipeIngredientList.tsx	
+src/features/fuel/components/RecipeIngredientRow.tsx	src/features/fuel/components/RecipeIngredientRow.tsx	
+src/features/fuel/components/RecipeLogsList.tsx	src/features/fuel/components/RecipeLogsList.tsx	
+src/features/fuel/components/RecommendationCard.tsx	src/features/fuel/components/RecommendationCard.tsx	
+src/features/fuel/components/RetaWeekStrip.test.tsx	src/features/fuel/components/RetaWeekStrip.test.tsx	
+src/features/fuel/components/RetaWeekStrip.tsx	src/features/fuel/components/RetaWeekStrip.tsx	
+src/features/fuel/components/ScoreHero.tsx	src/features/fuel/components/ScoreHero.tsx	
+src/features/fuel/components/SelectedChip.tsx	src/features/fuel/components/SelectedChip.tsx	
+src/features/fuel/components/ServingToggle.test.tsx	src/features/fuel/components/ServingToggle.test.tsx	
+src/features/fuel/components/ServingToggle.tsx	src/features/fuel/components/ServingToggle.tsx	
+src/features/fuel/components/SlotCard.tsx	src/features/fuel/components/SlotCard.tsx	
+src/features/fuel/components/SuggestionCard.tsx	src/features/fuel/components/SuggestionCard.tsx	
+src/features/fuel/components/SupplementItemRow.tsx	src/features/fuel/components/SupplementItemRow.tsx	
+src/features/fuel/components/TimelineSlot.tsx	src/features/fuel/components/TimelineSlot.tsx	
+src/features/fuel/components/WeeklySupplementGrid.tsx	src/features/fuel/components/WeeklySupplementGrid.tsx	
+src/features/fuel/components/WeekRhythmGrid.test.tsx	src/features/fuel/components/WeekRhythmGrid.test.tsx	
+src/features/fuel/components/WeekRhythmGrid.tsx	src/features/fuel/components/WeekRhythmGrid.tsx	
+src/features/fuel/components/weekWidgets.test.tsx	src/features/fuel/components/weekWidgets.test.tsx	
+src/features/fuel/FuelScreen.tsx	src/features/fuel/pages/FuelSection.tsx	FuelScreen->FuelSection
+src/features/fuel/FuelSubNav.test.tsx	src/features/fuel/pages/FuelSubNav.test.tsx	
+src/features/fuel/FuelSubNav.tsx	src/features/fuel/pages/FuelSubNav.tsx	
+src/features/fuel/GymScheduleSheet.test.tsx	src/features/fuel/sheets/GymScheduleSheet.test.tsx	
+src/features/fuel/GymScheduleSheet.tsx	src/features/fuel/sheets/GymScheduleSheet.tsx	
+src/features/fuel/ImportItemSheet.test.tsx	src/features/fuel/sheets/ImportItemSheet.test.tsx	
+src/features/fuel/ImportItemSheet.tsx	src/features/fuel/sheets/ImportItemSheet.tsx	
+src/features/fuel/IngredientPickerSheet.tsx	src/features/fuel/sheets/IngredientPickerSheet.tsx	
+src/features/fuel/kamraItems.test.ts	src/features/fuel/logic/kamraItems.test.ts	
+src/features/fuel/kamraItems.ts	src/features/fuel/logic/kamraItems.ts	
+src/features/fuel/LogDoseSheet.test.tsx	src/features/fuel/sheets/LogDoseSheet.test.tsx	
+src/features/fuel/LogDoseSheet.tsx	src/features/fuel/sheets/LogDoseSheet.tsx	
+src/features/fuel/LogMealSheet.test.tsx	src/features/fuel/sheets/LogMealSheet.test.tsx	
+src/features/fuel/LogMealSheet.tsx	src/features/fuel/sheets/LogMealSheet.tsx	
+src/features/fuel/MealPickerSheet.tsx	src/features/fuel/sheets/MealPickerSheet.tsx	
+src/features/fuel/MealScoreSheet.test.tsx	src/features/fuel/sheets/MealScoreSheet.test.tsx	
+src/features/fuel/MealScoreSheet.tsx	src/features/fuel/sheets/MealScoreSheet.tsx	
+src/features/fuel/ReplanSheet.test.tsx	src/features/fuel/sheets/ReplanSheet.test.tsx	
+src/features/fuel/ReplanSheet.tsx	src/features/fuel/sheets/ReplanSheet.tsx	
+src/features/fuel/StackPickerSheet.test.tsx	src/features/fuel/sheets/StackPickerSheet.test.tsx	
+src/features/fuel/StackPickerSheet.tsx	src/features/fuel/sheets/StackPickerSheet.tsx	
+src/features/fuel/views/FuelKamraView.test.tsx	src/features/fuel/pages/FuelKamraPage.test.tsx	FuelKamraView->FuelKamraPage
+src/features/fuel/views/FuelKamraView.tsx	src/features/fuel/pages/FuelKamraPage.tsx	FuelKamraView->FuelKamraPage
+src/features/fuel/views/FuelMaiView.test.tsx	src/features/fuel/pages/FuelMaiPage.test.tsx	FuelMaiView->FuelMaiPage
+src/features/fuel/views/FuelMaiView.tsx	src/features/fuel/pages/FuelMaiPage.tsx	FuelMaiView->FuelMaiPage
+src/features/fuel/views/FuelMedicationView.test.tsx	src/features/fuel/pages/FuelMedicationPage.test.tsx	FuelMedicationView->FuelMedicationPage
+src/features/fuel/views/FuelMedicationView.tsx	src/features/fuel/pages/FuelMedicationPage.tsx	FuelMedicationView->FuelMedicationPage
+src/features/fuel/views/FuelPlanView.test.tsx	src/features/fuel/pages/FuelPlanPage.test.tsx	FuelPlanView->FuelPlanPage
+src/features/fuel/views/FuelPlanView.tsx	src/features/fuel/pages/FuelPlanPage.tsx	FuelPlanView->FuelPlanPage
+src/features/fuel/views/FuelRecipesView.test.tsx	src/features/fuel/pages/FuelRecipesPage.test.tsx	FuelRecipesView->FuelRecipesPage
+src/features/fuel/views/FuelRecipesView.tsx	src/features/fuel/pages/FuelRecipesPage.tsx	FuelRecipesView->FuelRecipesPage
+src/features/fuel/views/FuelStackView.test.tsx	src/features/fuel/pages/FuelStackPage.test.tsx	FuelStackView->FuelStackPage
+src/features/fuel/views/FuelStackView.tsx	src/features/fuel/pages/FuelStackPage.tsx	FuelStackView->FuelStackPage
+src/features/fuel/views/KamraItemDetailView.test.tsx	src/features/fuel/pages/KamraItemDetailPage.test.tsx	KamraItemDetailView->KamraItemDetailPage
+src/features/fuel/views/KamraItemDetailView.tsx	src/features/fuel/pages/KamraItemDetailPage.tsx	KamraItemDetailView->KamraItemDetailPage
+src/features/fuel/views/KamraSkeleton.tsx	src/features/fuel/pages/KamraSkeleton.tsx	
+src/features/fuel/views/RecipeDetailView.test.tsx	src/features/fuel/pages/RecipeDetailPage.test.tsx	RecipeDetailView->RecipeDetailPage
+src/features/fuel/views/RecipeDetailView.tsx	src/features/fuel/pages/RecipeDetailPage.tsx	RecipeDetailView->RecipeDetailPage
+src/features/fuel/views/RecipeEditorView.test.tsx	src/features/fuel/pages/RecipeEditorPage.test.tsx	RecipeEditorView->RecipeEditorPage
+src/features/fuel/views/RecipeEditorView.tsx	src/features/fuel/pages/RecipeEditorPage.tsx	RecipeEditorView->RecipeEditorPage
+src/features/fuel/views/RecipesSkeleton.tsx	src/features/fuel/pages/RecipesSkeleton.tsx	
+src/features/insights/components/ChatMessage.tsx	src/features/insights/components/ChatMessage.tsx	
+src/features/insights/components/PatternCard.test.tsx	src/features/insights/components/PatternCard.test.tsx	
+src/features/insights/components/PatternCard.tsx	src/features/insights/components/PatternCard.tsx	
+src/features/insights/insights.nav.test.tsx	src/features/insights/pages/insights.nav.test.tsx	
+src/features/insights/InsightsScreen.tsx	src/features/insights/pages/InsightsSection.tsx	InsightsScreen->InsightsSection
+src/features/insights/InsightsSubNav.test.tsx	src/features/insights/pages/InsightsSubNav.test.tsx	
+src/features/insights/InsightsSubNav.tsx	src/features/insights/pages/InsightsSubNav.tsx	
+src/features/insights/tabs.ts	src/features/insights/pages/tabs.ts	
+src/features/insights/views/ChatView.test.tsx	src/features/insights/pages/ChatPage.test.tsx	ChatView->ChatPage
+src/features/insights/views/ChatView.tsx	src/features/insights/pages/ChatPage.tsx	ChatView->ChatPage
+src/features/insights/views/ExperimentsView.test.tsx	src/features/insights/pages/ExperimentsPage.test.tsx	ExperimentsView->ExperimentsPage
+src/features/insights/views/ExperimentsView.tsx	src/features/insights/pages/ExperimentsPage.tsx	ExperimentsView->ExperimentsPage
+src/features/insights/views/KnowledgeListView.test.tsx	src/features/insights/pages/KnowledgeListPage.test.tsx	KnowledgeListView->KnowledgeListPage
+src/features/insights/views/KnowledgeListView.tsx	src/features/insights/pages/KnowledgeListPage.tsx	KnowledgeListView->KnowledgeListPage
+src/features/insights/views/MemoirView.test.tsx	src/features/insights/pages/MemoirPage.test.tsx	MemoirView->MemoirPage
+src/features/insights/views/MemoirView.tsx	src/features/insights/pages/MemoirPage.tsx	MemoirView->MemoirPage
+src/features/insights/views/PatternsView.test.tsx	src/features/insights/pages/PatternsPage.test.tsx	PatternsView->PatternsPage
+src/features/insights/views/PatternsView.tsx	src/features/insights/pages/PatternsPage.tsx	PatternsView->PatternsPage
+src/features/insights/views/PredictionsView.test.tsx	src/features/insights/pages/PredictionsPage.test.tsx	PredictionsView->PredictionsPage
+src/features/insights/views/PredictionsView.tsx	src/features/insights/pages/PredictionsPage.tsx	PredictionsView->PredictionsPage
+src/features/insights/views/WeeklyView.test.tsx	src/features/insights/pages/WeeklyPage.test.tsx	WeeklyView->WeeklyPage
+src/features/insights/views/WeeklyView.tsx	src/features/insights/pages/WeeklyPage.tsx	WeeklyView->WeeklyPage
+src/features/me/AttachPlanSheet.test.tsx	src/features/me/sheets/AttachPlanSheet.test.tsx	
+src/features/me/AttachPlanSheet.tsx	src/features/me/sheets/AttachPlanSheet.tsx	
+src/features/me/biometricFields.ts	src/features/me/logic/biometricFields.ts	
+src/features/me/BiometricSheet.test.tsx	src/features/me/sheets/BiometricSheet.test.tsx	
+src/features/me/BiometricSheet.tsx	src/features/me/sheets/BiometricSheet.tsx	
+src/features/me/components/AthleticRadarCard.test.tsx	src/features/me/components/AthleticRadarCard.test.tsx	
+src/features/me/components/AthleticRadarCard.tsx	src/features/me/components/AthleticRadarCard.tsx	
+src/features/me/components/BiometricCard.test.tsx	src/features/me/components/BiometricCard.test.tsx	
+src/features/me/components/BiometricCard.tsx	src/features/me/components/BiometricCard.tsx	
+src/features/me/components/CategoryHeader.tsx	src/features/me/components/CategoryHeader.tsx	
+src/features/me/components/DetailStat.tsx	src/features/me/components/DetailStat.tsx	
+src/features/me/components/FieldRow.tsx	src/features/me/components/FieldRow.tsx	
+src/features/me/components/GoalPlanSlots.test.tsx	src/features/me/components/GoalPlanSlots.test.tsx	
+src/features/me/components/GoalPlanSlots.tsx	src/features/me/components/GoalPlanSlots.tsx	
+src/features/me/components/GoalRecept.test.tsx	src/features/me/components/GoalRecept.test.tsx	
+src/features/me/components/GoalRecept.tsx	src/features/me/components/GoalRecept.tsx	
+src/features/me/components/GoalStat.tsx	src/features/me/components/GoalStat.tsx	
+src/features/me/components/GoalTimeline.test.tsx	src/features/me/components/GoalTimeline.test.tsx	
+src/features/me/components/GoalTimeline.tsx	src/features/me/components/GoalTimeline.tsx	
+src/features/me/components/KnowledgeFactCard.tsx	src/features/me/components/KnowledgeFactCard.tsx	
+src/features/me/components/LinkedMesoCard.tsx	src/features/me/components/LinkedMesoCard.tsx	
+src/features/me/components/MentionRow.tsx	src/features/me/components/MentionRow.tsx	
+src/features/me/components/MuscleLevelsCard.test.tsx	src/features/me/components/MuscleLevelsCard.test.tsx	
+src/features/me/components/MuscleLevelsCard.tsx	src/features/me/components/MuscleLevelsCard.tsx	
+src/features/me/components/PersonCard.tsx	src/features/me/components/PersonCard.tsx	
+src/features/me/components/radarGeometry.test.ts	src/features/me/logic/radarGeometry.test.ts	
+src/features/me/components/radarGeometry.ts	src/features/me/logic/radarGeometry.ts	
+src/features/me/components/SleepChart.tsx	src/features/me/components/SleepChart.tsx	
+src/features/me/components/SleepLogRow.tsx	src/features/me/components/SleepLogRow.tsx	
+src/features/me/components/SleepStat.tsx	src/features/me/components/SleepStat.tsx	
+src/features/me/components/TimePicker.test.tsx	src/features/me/components/TimePicker.test.tsx	
+src/features/me/components/TimePicker.tsx	src/features/me/components/TimePicker.tsx	
+src/features/me/components/WeeklyWeightCard.test.tsx	src/features/me/components/WeeklyWeightCard.test.tsx	
+src/features/me/components/WeeklyWeightCard.tsx	src/features/me/components/WeeklyWeightCard.tsx	
+src/features/me/components/WeightHero.test.tsx	src/features/me/components/WeightHero.test.tsx	
+src/features/me/components/WeightHero.tsx	src/features/me/components/WeightHero.tsx	
+src/features/me/components/weightStats.test.ts	src/features/me/logic/weightStats.test.ts	
+src/features/me/components/weightStats.ts	src/features/me/logic/weightStats.ts	
+src/features/me/components/WeightTrendChart.test.tsx	src/features/me/components/WeightTrendChart.test.tsx	
+src/features/me/components/WeightTrendChart.tsx	src/features/me/components/WeightTrendChart.tsx	
+src/features/me/EditGoalSheet.test.tsx	src/features/me/sheets/EditGoalSheet.test.tsx	
+src/features/me/EditGoalSheet.tsx	src/features/me/sheets/EditGoalSheet.tsx	
+src/features/me/GoalGate.tsx	src/features/me/components/GoalGate.tsx	
+src/features/me/GoalPlanner.test.tsx	src/features/me/pages/GoalPlannerPage.test.tsx	GoalPlanner->GoalPlannerPage
+src/features/me/GoalPlanner.tsx	src/features/me/pages/GoalPlannerPage.tsx	GoalPlanner->GoalPlannerPage
+src/features/me/MeScreen.test.tsx	src/features/me/pages/MeSection.test.tsx	MeScreen->MeSection
+src/features/me/MeScreen.tsx	src/features/me/pages/MeSection.tsx	MeScreen->MeSection
+src/features/me/MeSubNav.test.tsx	src/features/me/pages/MeSubNav.test.tsx	
+src/features/me/MeSubNav.tsx	src/features/me/pages/MeSubNav.tsx	
+src/features/me/PersonDetailSheet.test.tsx	src/features/me/sheets/PersonDetailSheet.test.tsx	
+src/features/me/PersonDetailSheet.tsx	src/features/me/sheets/PersonDetailSheet.tsx	
+src/features/me/PersonLogSheet.test.tsx	src/features/me/sheets/PersonLogSheet.test.tsx	
+src/features/me/PersonLogSheet.tsx	src/features/me/sheets/PersonLogSheet.tsx	
+src/features/me/SettingsSheet.test.tsx	src/features/me/sheets/SettingsSheet.test.tsx	
+src/features/me/SettingsSheet.tsx	src/features/me/sheets/SettingsSheet.tsx	
+src/features/me/SleepLogSheet.test.tsx	src/features/me/sheets/SleepLogSheet.test.tsx	
+src/features/me/SleepLogSheet.tsx	src/features/me/sheets/SleepLogSheet.tsx	
+src/features/me/views/GoalsSkeleton.tsx	src/features/me/pages/GoalsSkeleton.tsx	
+src/features/me/views/GoalsView.test.tsx	src/features/me/pages/GoalsPage.test.tsx	GoalsView->GoalsPage
+src/features/me/views/GoalsView.tsx	src/features/me/pages/GoalsPage.tsx	GoalsView->GoalsPage
+src/features/me/views/KnowledgeView.test.tsx	src/features/me/pages/KnowledgePage.test.tsx	KnowledgeView->KnowledgePage
+src/features/me/views/KnowledgeView.tsx	src/features/me/pages/KnowledgePage.tsx	KnowledgeView->KnowledgePage
+src/features/me/views/PeopleView.test.tsx	src/features/me/pages/PeoplePage.test.tsx	PeopleView->PeoplePage
+src/features/me/views/PeopleView.tsx	src/features/me/pages/PeoplePage.tsx	PeopleView->PeoplePage
+src/features/me/views/ProfileView.test.tsx	src/features/me/pages/ProfilePage.test.tsx	ProfileView->ProfilePage
+src/features/me/views/ProfileView.tsx	src/features/me/pages/ProfilePage.tsx	ProfileView->ProfilePage
+src/features/me/views/SleepView.test.tsx	src/features/me/pages/SleepPage.test.tsx	SleepView->SleepPage
+src/features/me/views/SleepView.tsx	src/features/me/pages/SleepPage.tsx	SleepView->SleepPage
+src/features/me/views/WeightView.test.tsx	src/features/me/pages/WeightPage.test.tsx	WeightView->WeightPage
+src/features/me/views/WeightView.tsx	src/features/me/pages/WeightPage.tsx	WeightView->WeightPage
+src/features/me/WeightLogSheet.test.tsx	src/features/me/sheets/WeightLogSheet.test.tsx	
+src/features/me/WeightLogSheet.tsx	src/features/me/sheets/WeightLogSheet.tsx	
+src/features/progression/levelUpMeta.test.ts	src/features/progression/logic/levelUpMeta.test.ts	
+src/features/progression/levelUpMeta.ts	src/features/progression/logic/levelUpMeta.ts	
+src/features/progression/LevelUpProvider.test.tsx	src/features/progression/LevelUpProvider.test.tsx	
+src/features/progression/LevelUpProvider.tsx	src/features/progression/LevelUpProvider.tsx	
+src/features/progression/LevelUpScreen.test.tsx	src/features/progression/LevelUpScreen.test.tsx	
+src/features/progression/LevelUpScreen.tsx	src/features/progression/LevelUpScreen.tsx	
+src/features/quickinput/QuickInputSheet.test.tsx	src/features/quickinput/sheets/QuickInputSheet.test.tsx	
+src/features/quickinput/QuickInputSheet.tsx	src/features/quickinput/sheets/QuickInputSheet.tsx	
+src/features/today/AnchorModeView.test.tsx	src/features/today/pages/AnchorModeView.test.tsx	
+src/features/today/AnchorModeView.tsx	src/features/today/pages/AnchorModeView.tsx	
+src/features/today/CheckInSheet.test.tsx	src/features/today/sheets/CheckInSheet.test.tsx	
+src/features/today/CheckInSheet.tsx	src/features/today/sheets/CheckInSheet.tsx	
+src/features/today/CheckInStrip.test.tsx	src/features/today/components/CheckInStrip.test.tsx	
+src/features/today/CheckInStrip.tsx	src/features/today/components/CheckInStrip.tsx	
+src/features/today/components/bottomSections.test.tsx	src/features/today/components/bottomSections.test.tsx	
+src/features/today/components/BrandRow.tsx	src/features/today/components/BrandRow.tsx	
+src/features/today/components/BriefingCard.test.tsx	src/features/today/components/BriefingCard.test.tsx	
+src/features/today/components/BriefingCard.tsx	src/features/today/components/BriefingCard.tsx	
+src/features/today/components/conditionalCards.test.tsx	src/features/today/components/conditionalCards.test.tsx	
+src/features/today/components/DateMesoHeader.tsx	src/features/today/components/DateMesoHeader.tsx	
+src/features/today/components/FuelTimelinePreview.test.tsx	src/features/today/components/FuelTimelinePreview.test.tsx	
+src/features/today/components/FuelTimelinePreview.tsx	src/features/today/components/FuelTimelinePreview.tsx	
+src/features/today/components/InsightsTeaser.tsx	src/features/today/components/InsightsTeaser.tsx	
+src/features/today/components/QuickStatsRow.tsx	src/features/today/components/QuickStatsRow.tsx	
+src/features/today/components/RetaPhaseSection.tsx	src/features/today/components/RetaPhaseSection.tsx	
+src/features/today/components/topSections.test.tsx	src/features/today/components/topSections.test.tsx	
+src/features/today/components/VolleyballCard.tsx	src/features/today/components/VolleyballCard.tsx	
+src/features/today/components/VulnerabilityCard.tsx	src/features/today/components/VulnerabilityCard.tsx	
+src/features/today/components/WorkoutTeaser.test.tsx	src/features/today/components/WorkoutTeaser.test.tsx	
+src/features/today/components/WorkoutTeaser.tsx	src/features/today/components/WorkoutTeaser.tsx	
+src/features/today/TodayScreen.test.tsx	src/features/today/pages/TodayPage.test.tsx	TodayScreen->TodayPage
+src/features/today/TodayScreen.tsx	src/features/today/pages/TodayPage.tsx	TodayScreen->TodayPage
+src/features/train/ActiveWorkoutScreen.test.tsx	src/features/train/pages/ActiveWorkoutPage.test.tsx	ActiveWorkoutScreen->ActiveWorkoutPage
+src/features/train/ActiveWorkoutScreen.tsx	src/features/train/pages/ActiveWorkoutPage.tsx	ActiveWorkoutScreen->ActiveWorkoutPage
+src/features/train/agenda.test.ts	src/features/train/logic/agenda.test.ts	
+src/features/train/agenda.ts	src/features/train/logic/agenda.ts	
+src/features/train/components/ActiveMesoCard.tsx	src/features/train/components/ActiveMesoCard.tsx	
+src/features/train/components/ArchivedMesoCard.tsx	src/features/train/components/ArchivedMesoCard.tsx	
+src/features/train/components/ChallengeCard.tsx	src/features/train/components/ChallengeCard.tsx	
+src/features/train/components/ChallengesCarousel.tsx	src/features/train/components/ChallengesCarousel.tsx	
+src/features/train/components/CompactStepper.tsx	src/features/train/components/CompactStepper.tsx	
+src/features/train/components/CrossLoadRow.tsx	src/features/train/components/CrossLoadRow.tsx	
+src/features/train/components/DayDetailSheet.tsx	src/features/train/sheets/DayDetailSheet.tsx	
+src/features/train/components/DayExerciseSection.tsx	src/features/train/components/DayExerciseSection.tsx	
+src/features/train/components/EditorChip.tsx	src/features/train/components/EditorChip.tsx	
+src/features/train/components/ExerciseActionSheet.test.tsx	src/features/train/sheets/ExerciseActionSheet.test.tsx	
+src/features/train/components/ExerciseActionSheet.tsx	src/features/train/sheets/ExerciseActionSheet.tsx	
+src/features/train/components/ExerciseEditRow.tsx	src/features/train/components/ExerciseEditRow.tsx	
+src/features/train/components/ExercisePickerSheet.test.tsx	src/features/train/sheets/ExercisePickerSheet.test.tsx	
+src/features/train/components/ExercisePickerSheet.tsx	src/features/train/sheets/ExercisePickerSheet.tsx	
+src/features/train/components/ExerciseRecordSheet.test.tsx	src/features/train/sheets/ExerciseRecordSheet.test.tsx	
+src/features/train/components/ExerciseRecordSheet.tsx	src/features/train/sheets/ExerciseRecordSheet.tsx	
+src/features/train/components/FeedbackModal.tsx	src/features/train/sheets/FeedbackModal.tsx	
+src/features/train/components/FinalStat.tsx	src/features/train/components/FinalStat.tsx	
+src/features/train/components/GymDayCard.tsx	src/features/train/components/GymDayCard.tsx	
+src/features/train/components/GymDaySheet.tsx	src/features/train/sheets/GymDaySheet.tsx	
+src/features/train/components/GymExRow.tsx	src/features/train/components/GymExRow.tsx	
+src/features/train/components/GymScheduleSheet.test.tsx	src/features/train/sheets/GymScheduleSheet.test.tsx	
+src/features/train/components/GymScheduleSheet.tsx	src/features/train/sheets/GymScheduleSheet.tsx	
+src/features/train/components/GymStat.tsx	src/features/train/components/GymStat.tsx	
+src/features/train/components/LastWeekStat.tsx	src/features/train/components/LastWeekStat.tsx	
+src/features/train/components/MesoExercises.test.tsx	src/features/train/components/MesoExercises.test.tsx	
+src/features/train/components/MesoExercises.tsx	src/features/train/components/MesoExercises.tsx	
+src/features/train/components/MesoOverview.tsx	src/features/train/components/MesoOverview.tsx	
+src/features/train/components/MesoVolume.test.tsx	src/features/train/components/MesoVolume.test.tsx	
+src/features/train/components/MesoVolume.tsx	src/features/train/components/MesoVolume.tsx	
+src/features/train/components/MetaStat.tsx	src/features/train/components/MetaStat.tsx	
+src/features/train/components/MiniBar.tsx	src/features/train/components/MiniBar.tsx	
+src/features/train/components/MiniStat.tsx	src/features/train/components/MiniStat.tsx	
+src/features/train/components/PhaseCurveBars.tsx	src/features/train/components/PhaseCurveBars.tsx	
+src/features/train/components/PhaseDots.tsx	src/features/train/components/PhaseDots.tsx	
+src/features/train/components/PlannedMesoCard.tsx	src/features/train/components/PlannedMesoCard.tsx	
+src/features/train/components/PlannerDaySection.tsx	src/features/train/components/PlannerDaySection.tsx	
+src/features/train/components/PlannerExerciseRow.tsx	src/features/train/components/PlannerExerciseRow.tsx	
+src/features/train/components/PRToast.tsx	src/features/train/components/PRToast.tsx	
+src/features/train/components/RunCrossLoadCard.tsx	src/features/train/components/RunCrossLoadCard.tsx	
+src/features/train/components/RunLogSheet.tsx	src/features/train/sheets/RunLogSheet.tsx	
+src/features/train/components/RunSessionCard.tsx	src/features/train/components/RunSessionCard.tsx	
+src/features/train/components/RunWeekEditor.tsx	src/features/train/components/RunWeekEditor.tsx	
+src/features/train/components/RunWeekStrip.tsx	src/features/train/components/RunWeekStrip.tsx	
+src/features/train/components/SportLogSheet.test.tsx	src/features/train/sheets/SportLogSheet.test.tsx	
+src/features/train/components/SportLogSheet.tsx	src/features/train/sheets/SportLogSheet.tsx	
+src/features/train/components/SportScheduleSheet.test.tsx	src/features/train/sheets/SportScheduleSheet.test.tsx	
+src/features/train/components/SportScheduleSheet.tsx	src/features/train/sheets/SportScheduleSheet.tsx	
+src/features/train/components/SportSessionCard.tsx	src/features/train/components/SportSessionCard.tsx	
+src/features/train/components/SportStat.tsx	src/features/train/components/SportStat.tsx	
+src/features/train/components/useEditableNumber.ts	src/features/train/logic/useEditableNumber.ts	
+src/features/train/components/VolumeBar.test.tsx	src/features/train/components/VolumeBar.test.tsx	
+src/features/train/components/VolumeBar.tsx	src/features/train/components/VolumeBar.tsx	
+src/features/train/components/WeekdayGrid.test.tsx	src/features/train/components/WeekdayGrid.test.tsx	
+src/features/train/components/WeekdayGrid.tsx	src/features/train/components/WeekdayGrid.tsx	
+src/features/train/components/WeeklyDayRow.test.tsx	src/features/train/components/WeeklyDayRow.test.tsx	
+src/features/train/components/WeeklyDayRow.tsx	src/features/train/components/WeeklyDayRow.tsx	
+src/features/train/components/WorkoutComplete.test.tsx	src/features/train/components/WorkoutComplete.test.tsx	
+src/features/train/components/WorkoutComplete.tsx	src/features/train/components/WorkoutComplete.tsx	
+src/features/train/MesocycleBuilder.test.tsx	src/features/train/pages/MesocycleBuilderPage.test.tsx	MesocycleBuilder->MesocycleBuilderPage
+src/features/train/MesocycleBuilder.tsx	src/features/train/pages/MesocycleBuilderPage.tsx	MesocycleBuilder->MesocycleBuilderPage
+src/features/train/MesocyclePlanner.test.tsx	src/features/train/pages/MesocyclePlannerPage.test.tsx	MesocyclePlanner->MesocyclePlannerPage
+src/features/train/MesocyclePlanner.tsx	src/features/train/pages/MesocyclePlannerPage.tsx	MesocyclePlanner->MesocyclePlannerPage
+src/features/train/muscleFilters.ts	src/features/train/logic/muscleFilters.ts	
+src/features/train/planner.test.ts	src/features/train/logic/planner.test.ts	
+src/features/train/planner.ts	src/features/train/logic/planner.ts	
+src/features/train/RunningBlockBuilder.test.tsx	src/features/train/pages/RunningBlockBuilderPage.test.tsx	RunningBlockBuilder->RunningBlockBuilderPage
+src/features/train/RunningBlockBuilder.tsx	src/features/train/pages/RunningBlockBuilderPage.tsx	RunningBlockBuilder->RunningBlockBuilderPage
+src/features/train/tabs.ts	src/features/train/pages/tabs.ts	
+src/features/train/train.emptyStates.test.tsx	src/features/train/pages/train.emptyStates.test.tsx	
+src/features/train/train.nav.test.tsx	src/features/train/pages/train.nav.test.tsx	
+src/features/train/TrainScreen.tsx	src/features/train/pages/TrainSection.tsx	TrainScreen->TrainSection
+src/features/train/TrainSubNav.test.tsx	src/features/train/pages/TrainSubNav.test.tsx	
+src/features/train/TrainSubNav.tsx	src/features/train/pages/TrainSubNav.tsx	
+src/features/train/views/ExercisesSkeleton.tsx	src/features/train/pages/ExercisesSkeleton.tsx	
+src/features/train/views/ExercisesView.test.tsx	src/features/train/pages/ExercisesPage.test.tsx	ExercisesView->ExercisesPage
+src/features/train/views/ExercisesView.tsx	src/features/train/pages/ExercisesPage.tsx	ExercisesView->ExercisesPage
+src/features/train/views/GymSkeleton.tsx	src/features/train/pages/GymSkeleton.tsx	
+src/features/train/views/GymView.test.tsx	src/features/train/pages/GymPage.test.tsx	GymView->GymPage
+src/features/train/views/GymView.tsx	src/features/train/pages/GymPage.tsx	GymView->GymPage
+src/features/train/views/MesocycleLibraryView.test.tsx	src/features/train/pages/MesocycleLibraryPage.test.tsx	MesocycleLibraryView->MesocycleLibraryPage
+src/features/train/views/MesocycleLibraryView.tsx	src/features/train/pages/MesocycleLibraryPage.tsx	MesocycleLibraryView->MesocycleLibraryPage
+src/features/train/views/MesocycleSkeleton.tsx	src/features/train/pages/MesocycleSkeleton.tsx	
+src/features/train/views/RunningView.test.tsx	src/features/train/pages/RunningPage.test.tsx	RunningView->RunningPage
+src/features/train/views/RunningView.tsx	src/features/train/pages/RunningPage.tsx	RunningView->RunningPage
+src/features/train/views/SportSkeleton.tsx	src/features/train/pages/SportSkeleton.tsx	
+src/features/train/views/SportView.test.tsx	src/features/train/pages/SportPage.test.tsx	SportView->SportPage
+src/features/train/views/SportView.tsx	src/features/train/pages/SportPage.tsx	SportView->SportPage
+src/features/train/views/TrainTodaySkeleton.tsx	src/features/train/pages/TrainTodaySkeleton.tsx	
+src/features/train/views/TrainTodayView.test.tsx	src/features/train/pages/TrainTodayPage.test.tsx	TrainTodayView->TrainTodayPage
+src/features/train/views/TrainTodayView.tsx	src/features/train/pages/TrainTodayPage.tsx	TrainTodayView->TrainTodayPage
+src/features/train/workoutState.test.ts	src/features/train/logic/workoutState.test.ts	
+src/features/train/workoutState.ts	src/features/train/logic/workoutState.ts	
+src/lib/api.gen.ts	src/data/_client/api.gen.ts	
+src/lib/api.ts	src/data/_client/api.ts	
+src/lib/auth.ts	src/data/_client/auth.ts	
+src/lib/biometricProfileApi.ts	src/data/me/biometricProfileApi.ts	
+src/lib/biometricsApi.ts	src/data/me/biometricsApi.ts	
+src/lib/cn.test.ts	src/shared/lib/cn.test.ts	
+src/lib/cn.ts	src/shared/lib/cn.ts	
+src/lib/dates.test.ts	src/shared/lib/dates.test.ts	
+src/lib/dates.ts	src/shared/lib/dates.ts	
+src/lib/flags.ts	src/data/_client/flags.ts	
+src/lib/goalApi.ts	src/data/me/goalApi.ts	
+src/lib/goalLinkApi.ts	src/data/me/goalLinkApi.ts	
+src/lib/mealApi.test.ts	src/data/fuel/mealApi.test.ts	
+src/lib/mealApi.ts	src/data/fuel/mealApi.ts	
+src/lib/medicationApi.ts	src/data/fuel/medicationApi.ts	
+src/lib/mode.ts	src/data/_client/mode.ts	
+src/lib/pantryApi.ts	src/data/fuel/pantryApi.ts	
+src/lib/pct.test.ts	src/shared/lib/pct.test.ts	
+src/lib/pct.ts	src/shared/lib/pct.ts	
+src/lib/progressionApi.ts	src/data/progression/progressionApi.ts	
+src/lib/recipeApi.test.ts	src/data/fuel/recipeApi.test.ts	
+src/lib/recipeApi.ts	src/data/fuel/recipeApi.ts	
+src/lib/runningApi.ts	src/data/train/runningApi.ts	
+src/lib/safeMarkdown.test.tsx	src/shared/lib/safeMarkdown.test.tsx	
+src/lib/safeMarkdown.tsx	src/shared/lib/safeMarkdown.tsx	
+src/lib/theme.test.ts	src/shared/lib/theme.test.ts	
+src/lib/theme.ts	src/shared/lib/theme.ts	
+src/lib/trainApi.ts	src/data/train/trainApi.ts	
+src/lib/useReducedMotion.test.ts	src/shared/hooks/useReducedMotion.test.ts	
+src/lib/useReducedMotion.ts	src/shared/hooks/useReducedMotion.ts	
+src/lib/useStickyTab.test.ts	src/shared/hooks/useStickyTab.test.ts	
+src/lib/useStickyTab.ts	src/shared/hooks/useStickyTab.ts	
