@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Deep Current v2")
 type: feature-platform
 status: done
-updated: 2026-06-25
+updated: 2026-07-01
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -24,9 +24,9 @@ related: [_platform-data-layer, today, train, me]
 
 "Deep Current v2" is the visual substrate the whole PWA is painted on. It provides:
 
-1. a **token vocabulary** — brand teal, canvas/surfaces, the `--cat-*` category palette, Antonio/Inter/JetBrains-Mono type, 8pt spacing, and the signature notch-chamfer clip-paths — in `frontend/src/styles/prototype.css` (809 lines);
+1. a **token vocabulary** — brand teal, canvas/surfaces, the `--cat-*` category palette, Antonio/Inter/JetBrains-Mono type, 8pt spacing, and the signature notch-chamfer clip-paths — in `frontend/src/styles/prototype.css` (~1130 lines);
 2. **~25 React primitives** (`frontend/src/components/ui/**`), each a thin wrapper over a CSS class; and
-3. an **app shell** (`frontend/src/app/**`) — a desktop iPhone-mockup frame, a 5-tab bottom bar, a mic FAB, and the bottom-`Sheet` modal idiom.
+3. an **app shell** (`frontend/src/app/**`) — a desktop iPhone-mockup frame, a 5-tab bottom bar, and the bottom-`Sheet` modal idiom.
 
 **Status per layer.** This is a pure **frontend** concern. It has **no backend, no API contract, no DB, no data hook** — it sits _below_ `frontend/src/data/hooks.ts` (the FE↔data boundary) and renders identically whether a view is mock-only (Fuel/Insights/People) or real (Train/biometrics). The only stateful platform piece here is the **theme** (dark/light), persisted in `localStorage`, never in the backend. Nothing here is Phase 2 or Phase 3.
 
@@ -38,7 +38,7 @@ related: [_platform-data-layer, today, train, me]
 
 The design system has no "flows" of its own; it provides the chrome and the idioms every flow uses. The user-visible behaviors it owns:
 
-1. **App shell / navigation.** On desktop, the app renders inside a `440×956` iPhone 17 Pro Max mockup — `.phone` → `.phone-screen`, a fake `.dynamic-island`, `.status-bar`, and `.home-indicator` (`PhoneFrame.tsx`, `StatusBar.tsx`). On a real narrow viewport or an installed PWA (`@media (max-width: 519px), (display-mode: standalone|fullscreen|minimal-ui)` — `prototype.css:303–335`) the mockup chrome is hidden and the app goes full-bleed, deferring to real `env(safe-area-inset-*)` insets. The bottom `.tab-bar` holds 5 tabs — `"Today" · "Train" · "Fuel" · "Insights" · "Me"` — plus a floating `.fab` mic button (`aria-label="Gyors rögzítés"`).
+1. **App shell / navigation.** On desktop, the app renders inside a `440×956` iPhone 17 Pro Max mockup — `.phone` → `.phone-screen`, a fake `.dynamic-island`, `.status-bar`, and `.home-indicator` (`PhoneFrame.tsx`, `StatusBar.tsx`). On a real narrow viewport or an installed PWA (`@media (max-width: 519px), (display-mode: standalone|fullscreen|minimal-ui)` — `prototype.css:303–335`) the mockup chrome is hidden and the app goes full-bleed, deferring to real `env(safe-area-inset-*)` insets. The bottom `.tab-bar` holds 5 tabs — `"Today" · "Train" · "Fuel" · "Insights" · "Me"`. (There is **no** global floating mic FAB anymore — it was removed; the `QuickInputSheet` it used to trigger still exists in `features/quickinput/` but is currently unmounted, awaiting a future entry point.)
 2. **Theme toggle.** `Me → Profil → gear → SettingsSheet` (`frontend/src/features/me/SettingsSheet.tsx`) flips dark/light via `useTheme().toggle()`. The choice persists to `localStorage` and is applied as `data-theme="light"` on `<html>`. **Dark is the default via _absence_ of the attribute** (`applyTheme` _removes_ it for dark — `theme.ts:16–20`).
 3. **Bottom sheets.** Every modal interaction (quick input, check-in, settings, pickers, score detail) slides a `Sheet` up from the bottom, dismissible by backdrop tap, `Escape`, the in-sheet X, or a drag-down on the grab handle.
 4. **Ghost / empty states.** In real mode, when a section has no data yet, views render `GhostState` — a faint skeleton + a one-line Hungarian message + an optional CTA (e.g. `"A statisztikáid az első logolt session után jelennek meg."`). This is the **empty** state (query resolved, no data); the **loading** state (query still pending) is the animated skeletons in item 6.
@@ -60,7 +60,6 @@ main.tsx
                       PhoneFrame  (anchor skin ⇐ useTodayScenario().anchorMode)
                         ScreenContent (.screen-content scroller)
                           <Outlet/>   → *Screen → *SubNav + nested <Outlet/> → *View
-                        Fab (mic) → QuickInputSheet
                         TabBar (5 NavLinks)
 ```
 
@@ -101,7 +100,7 @@ The design system is consumed by **every** feature; the seams are the imports fr
 | Seam | Direction & contract |
 |---|---|
 | **App shell ↔ Today** | `AppLayout.tsx` _consumes_ `useTodayScenario()` (`@/data/hooks`); the crossing type is `TodayScenario.anchorMode: boolean`. When `true` on `/today`, `PhoneFrame` _exposes_ the `--anchor-*` skin (`.phone-screen.anchor`). |
-| **Shell ↔ QuickInput** | `Fab` (mic) → `AppLayout` opens `QuickInputSheet` (`@/features/quickinput`) — a `Sheet` consumer. The contract is just "renders a `Sheet`". |
+| **Shell ↔ QuickInput** | `QuickInputSheet` (`@/features/quickinput`) is a `Sheet` consumer whose only trigger — the global mic `Fab` — was removed. The component is preserved but **currently has no mount point**; re-wiring it needs a new trigger in `AppLayout` (or elsewhere) that renders it as a `Sheet`. |
 | **Theme ↔ Me** | `SettingsSheet.tsx` (Me) _consumes_ `useTheme()` and drives the global `data-theme`. The `Toggle` primitive + `sun`/`moon` `Icon`s are the UI. Crossing type: `Theme = 'dark' \| 'light'`. |
 | **Icon set ↔ TabBar / every view** | The `IconName` union (`Icon.tsx:7`) is the contract. `TabBar.TABS` maps tab ids → `IconName` (`today/train/fuel/insights/me` — `TabBar.tsx:7–11`). Adding a glyph = extend the `IconName` union **and** add a `case` in `Icon.tsx`. |
 | **ToolChip ↔ AI-surfacing views** | `Tool { type: 'read' \| 'compute' \| 'write'; name; args? }` (exported from `ToolChip.tsx`) is the cross-feature type, consumed by Train cross-load, Fuel, and Insights to show the AI's tool calls. Mock today; real in Phase 3. |
@@ -248,7 +247,7 @@ pnpm parity          # playwright pixel-parity vs prototype
 
 **App shell** (`frontend/src/app/`)
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell.
-- `TabBar.tsx` / `Fab.tsx` / `AppLayout.tsx` — 5-tab nav + mic FAB + layout (anchor-mode wiring).
+- `TabBar.tsx` / `AppLayout.tsx` — 5-tab nav + layout (anchor-mode wiring). (The global mic `Fab.tsx` was removed.)
 - `router.tsx` — route tree (screen/subnav/view structure) plus full-screen builder/wizard siblings registered outside the tab tree (e.g. `train/mesocycles/new`, `me/goals/new` → `GoalPlanner`).
 - `ThemeProvider.tsx` — `useTheme()` context.
 

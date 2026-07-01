@@ -469,35 +469,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   letter-spacing: 0.16em; text-transform: uppercase;
 }
 
-/* FAB (QuickInputSheet trigger) */
-.fab {
-  position: absolute;
-  bottom: 104px; right: 20px;
-  width: 60px; height: 60px;
-  background: var(--brand-primary);
-  color: var(--text-inverse);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 30;
-  border-radius: 50%;
-  box-shadow:
-    0 8px 24px rgba(20, 184, 166, 0.4),
-    0 0 0 1px rgba(94, 234, 212, 0.3);
-  transition: transform 0.2s ease;
-}
-.fab:hover { transform: scale(1.05); }
-.fab:active { transform: scale(0.95); }
-.fab.pulsing::before {
-  content: '';
-  position: absolute; inset: -4px;
-  border-radius: 50%;
-  border: 2px solid var(--brand-glow);
-  animation: pulse-ring 2s ease-out infinite;
-}
-@keyframes pulse-ring {
-  0% { transform: scale(0.95); opacity: 1; }
-  100% { transform: scale(1.4); opacity: 0; }
-}
-
 /* Progress bar */
 .bar {
   position: relative;
@@ -851,8 +822,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* ============================================================
    Progression level-up overlay (P5, mezo-te8k) — ported from
    levelup-v4.html; raw mockup vars mapped to app design tokens.
-   Self-portaled into .phone-screen; z-index 250 covers TabBar/Fab
-   (40/30) + sheets (200/211), sits below the toast tier (300).
+   Self-portaled into .phone-screen; z-index 250 covers TabBar
+   (40) + sheets (200/211), sits below the toast tier (300).
    ============================================================ */
 .levelup {
   position: absolute;
