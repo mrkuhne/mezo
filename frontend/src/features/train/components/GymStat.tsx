@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · GymStat — one meta cell in the GymView meso-meta card:
+// Mezo · GymStat — one meta cell in the GymPage meso-meta card:
 // tiny mono label / big Antonio (display-font) value / mono sub.
 // Ported from prototype train-views.jsx GymStat.
 // ============================================================

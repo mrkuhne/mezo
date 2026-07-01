@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · SportStat — one stat cell in the SportView hero card:
+// Mezo · SportStat — one stat cell in the SportPage hero card:
 // tiny mono label / big Antonio value / mono sub. The highlighted
 // variant glows in the tendency (volleyball) accent.
 // Ported from prototype sport.jsx SportStat.

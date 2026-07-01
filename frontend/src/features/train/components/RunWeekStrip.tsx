@@ -2,7 +2,7 @@
 // Mezo · RunWeekStrip — the N-segment week progress strip for a running
 // block (reta-bar idiom). past = dim --info, now = glowing --info, future =
 // faint surface-2. Presentational; mirrors the .wkstrip markup in the Futás
-// mockups. Used by RunningView's hero cards.
+// mockups. Used by RunningPage's hero cards.
 // ============================================================
 export function RunWeekStrip({ weeks, currentWeek }: { weeks: number; currentWeek: number }) {
   return (

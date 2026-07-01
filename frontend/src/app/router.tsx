@@ -1,17 +1,17 @@
 import { Navigate, useOutletContext, type RouteObject } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { TodayPage } from '@/features/today/pages/TodayPage'
-import { TrainScreen } from '@/features/train/TrainScreen'
-import { TrainTodayView } from '@/features/train/views/TrainTodayView'
-import { GymView } from '@/features/train/views/GymView'
-import { SportView } from '@/features/train/views/SportView'
-import { RunningView } from '@/features/train/views/RunningView'
-import { ExercisesView } from '@/features/train/views/ExercisesView'
-import { MesocycleLibraryView } from '@/features/train/views/MesocycleLibraryView'
-import { ActiveWorkoutScreen } from '@/features/train/ActiveWorkoutScreen'
-import { MesocyclePlanner } from '@/features/train/MesocyclePlanner'
-import { MesocycleBuilder } from '@/features/train/MesocycleBuilder'
-import { RunningBlockBuilder } from '@/features/train/RunningBlockBuilder'
+import { TrainSection } from '@/features/train/pages/TrainSection'
+import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
+import { GymPage } from '@/features/train/pages/GymPage'
+import { SportPage } from '@/features/train/pages/SportPage'
+import { RunningPage } from '@/features/train/pages/RunningPage'
+import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
+import { MesocycleLibraryPage } from '@/features/train/pages/MesocycleLibraryPage'
+import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
+import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
+import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
+import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
 import { FuelSection } from '@/features/fuel/pages/FuelSection'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
@@ -53,20 +53,20 @@ export const routes: RouteObject[] = [
       { path: 'today', element: <TodayPage /> },
       {
         path: 'train',
-        element: <TrainScreen />,
+        element: <TrainSection />,
         children: [
-          { index: true, element: <TrainTodayView /> },
-          { path: 'gym', element: <GymView /> },
-          { path: 'sport', element: <SportView /> },
-          { path: 'futas', element: <RunningView /> },
-          { path: 'exercises', element: <ExercisesView /> },
-          { path: 'mesocycles', element: <MesocycleLibraryView /> },
+          { index: true, element: <TrainTodayPage /> },
+          { path: 'gym', element: <GymPage /> },
+          { path: 'sport', element: <SportPage /> },
+          { path: 'futas', element: <RunningPage /> },
+          { path: 'exercises', element: <ExercisesPage /> },
+          { path: 'mesocycles', element: <MesocycleLibraryPage /> },
         ],
       },
-      { path: 'train/session', element: <ActiveWorkoutScreen /> },
-      { path: 'train/mesocycles/new', element: <MesocyclePlanner /> },
-      { path: 'train/mesocycles/:id', element: <MesocycleBuilder /> },
-      { path: 'train/futas/:id', element: <RunningBlockBuilder /> },
+      { path: 'train/session', element: <ActiveWorkoutPage /> },
+      { path: 'train/mesocycles/new', element: <MesocyclePlannerPage /> },
+      { path: 'train/mesocycles/:id', element: <MesocycleBuilderPage /> },
+      { path: 'train/futas/:id', element: <RunningBlockBuilderPage /> },
       {
         path: 'fuel',
         element: <FuelSection />,

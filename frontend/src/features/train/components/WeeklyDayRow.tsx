@@ -5,7 +5,7 @@
 import { Icon } from '@/shared/ui/Icon'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
-import { daySessions } from '@/features/train/agenda'
+import { daySessions } from '@/features/train/logic/agenda'
 
 export interface WeeklyAgendaDay {
   day: string

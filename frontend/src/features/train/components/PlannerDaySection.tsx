@@ -5,7 +5,7 @@
 // affordance; expanded off-days show the rest note + "Edzéssé alakít".
 // Ported from prototype meso-planner.jsx PlannerDaySection.
 // ============================================================
-import type { PlannerDay } from '@/features/train/planner'
+import type { PlannerDay } from '@/features/train/logic/planner'
 import { Icon } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
 import { PlannerExerciseRow } from '@/features/train/components/PlannerExerciseRow'

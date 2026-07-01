@@ -16,7 +16,7 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { DayExerciseSection } from '@/features/train/components/DayExerciseSection'
-import { ExercisePickerSheet } from '@/features/train/components/ExercisePickerSheet'
+import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
 // Deep-ish clone of the meso days so local edits never mutate the data-layer
 // module const (each day + its exercises array gets its own copy).

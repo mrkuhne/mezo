@@ -9,7 +9,7 @@ import { AttachPlanSheet, type AttachPlanType } from '@/features/me/sheets/Attac
 // Mesociklus (gym) + Futóblokk (run) — each offering:
 //   ＋ Tervezd        → launch the EXISTING planner (meso: navigate('/train/mesocycles/new');
 //                       run: the create-then-navigate idiom — saveRunningBlock(null, newDraft(),
-//                       { onSuccess: b => navigate('/train/futas/'+b.id) }) — RunningView.tsx:62-66).
+//                       { onSuccess: b => navigate('/train/futas/'+b.id) }) — RunningPage.tsx:62-66).
 //   ＋ Csatolj meglévőt → open AttachPlanSheet for that plan type.
 // Volleyball is NOT a slot (ambient, read-only — it lives in the timeline band).
 // The timeline's gap chips already signal missing coverage, so both slots render

@@ -6,7 +6,7 @@
 // Ported from prototype train.jsx.
 // ============================================================
 import { Icon } from '@/shared/ui/Icon'
-import { useEditableNumber } from '@/features/train/components/useEditableNumber'
+import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
 
 export function CompactStepper({
   label,

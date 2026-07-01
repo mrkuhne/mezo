@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · CrossLoadRow — one cross-system impact row in the SportView
+// Mezo · CrossLoadRow — one cross-system impact row in the SportPage
 // cross-load list: system icon + uppercase label, the affected target,
 // an impact readout and the reasoning. Warning rows get an amber tint
 // + a 2px left strip. Ported from prototype sport.jsx CrossLoadRow.

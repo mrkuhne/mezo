@@ -1,5 +1,5 @@
 // ============================================================
-// Mezo · GymDayCard — one day row in the GymView weekly split.
+// Mezo · GymDayCard — one day row in the GymPage weekly split.
 // Training days are tappable (open the GymDaySheet); rest days
 // (exerciseCount === 0) render dashed + italic with their note and
 // are not interactive. Today's card ("current") is brand-accented.

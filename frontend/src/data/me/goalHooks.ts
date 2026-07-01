@@ -193,7 +193,7 @@ export function useGoalActions() {
 // creation — they live on the Profile and are a precondition (the hard gate),
 // not a wizard payload (G6, mezo-06n). Mock mode no-ops and resolves with null
 // so the wizard's onSuccess(null) still fires and it navigates back (Phase-1
-// parity with MesocyclePlanner).
+// parity with MesocyclePlannerPage).
 export type GoalCreationInput = {
   goal: GoalUpsertRequest
   activate: boolean
