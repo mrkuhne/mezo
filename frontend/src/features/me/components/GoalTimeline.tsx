@@ -236,7 +236,7 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
         </div>
       </div>
       {/* The per-segment recept lane that used to be a G5 placeholder here now
-          lives in GoalRecept (rendered by GoalsView from the engine's
+          lives in GoalRecept (rendered by GoalsPage from the engine's
           prescription) — the timeline stays purely the time-axis lanes. (mezo-g1u) */}
     </div>
   )

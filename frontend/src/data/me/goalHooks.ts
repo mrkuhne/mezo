@@ -20,11 +20,11 @@ import {
 import type { Goal, GoalKind, LinkedMeso, WeightEntry } from '@/data/types'
 
 // GoalResponse (new contract) -> the thin back-compat Goal shape, kept for the
-// consumers that still read flattened weights/identity (WeightView, FuelStackView,
+// consumers that still read flattened weights/identity (WeightPage, FuelStackView,
 // EditGoalSheet's rateTarget). currentWeight derives from the latest weight entry
 // (falls back to startWeightKg when the cache is empty); trajectory 'maintain' maps
 // to the existing 'maintenance' GoalKind. G4b (Decision C) retired the window
-// (startDate/targetDate) + unit fields: the GoalsView hero now reads those — plus
+// (startDate/targetDate) + unit fields: the GoalsPage hero now reads those — plus
 // trajectory/guards — straight off the raw GoalResponse `useGoal` also exposes.
 function toGoal(res: GoalResponse, weightLog: WeightEntry[]): Goal {
   const latest = weightLog.length ? weightLog[weightLog.length - 1].value : Number(res.startWeightKg)
@@ -98,14 +98,14 @@ export function useGoal() {
       timeline: mockTimeline as GoalTimelineResponse | null,
       goalId: mockGoal.id as string | null,
       // Real-mode loading window only — mock seeds synchronously so this is always
-      // false here; GoalsView branches on it to show the skeleton (mezo-f2z).
+      // false here; GoalsPage branches on it to show the skeleton (mezo-f2z).
       pending: !mock && goalPending,
     }
   }
 
   // Real mode with no active goal: empty "set up a goal" state. (G1 used to fall
   // back to mockGoal here, which surfaced the demo placeholder to real users —
-  // see mezo-72d.) GoalsView guards on `goal === null` and renders the setup CTA.
+  // see mezo-72d.) GoalsPage guards on `goal === null` and renders the setup CTA.
   if (!activeGoal) {
     return { goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: !mock && goalPending }
   }

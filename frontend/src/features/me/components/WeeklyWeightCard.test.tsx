@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { WeeklyWeightCard } from '@/features/me/components/WeeklyWeightCard'
-import type { WeekAggregate, DayRow } from '@/features/me/components/weightStats'
+import type { WeekAggregate, DayRow } from '@/features/me/logic/weightStats'
 
 const week: WeekAggregate = {
   startIso: '2026-05-18', endIso: '2026-05-24', entries: [], avg: 78.9, low: 78.6, count: 4,

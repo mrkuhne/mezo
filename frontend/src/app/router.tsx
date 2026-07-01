@@ -30,18 +30,18 @@ import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
-import { MeScreen, type MeOutletContext } from '@/features/me/MeScreen'
-import { GoalPlanner } from '@/features/me/GoalPlanner'
-import { ProfileView } from '@/features/me/views/ProfileView'
-import { GoalsView } from '@/features/me/views/GoalsView'
-import { WeightView } from '@/features/me/views/WeightView'
-import { SleepView } from '@/features/me/views/SleepView'
-import { PeopleView } from '@/features/me/views/PeopleView'
-import { KnowledgeView } from '@/features/me/views/KnowledgeView'
+import { MeSection, type MeOutletContext } from '@/features/me/pages/MeSection'
+import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
+import { ProfilePage } from '@/features/me/pages/ProfilePage'
+import { GoalsPage } from '@/features/me/pages/GoalsPage'
+import { WeightPage } from '@/features/me/pages/WeightPage'
+import { SleepPage } from '@/features/me/pages/SleepPage'
+import { PeoplePage } from '@/features/me/pages/PeoplePage'
+import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
 
 function ProfileRoute() {
   const { openSettings } = useOutletContext<MeOutletContext>()
-  return <ProfileView onOpenSettings={openSettings} />
+  return <ProfilePage onOpenSettings={openSettings} />
 }
 
 export const routes: RouteObject[] = [
@@ -101,17 +101,17 @@ export const routes: RouteObject[] = [
       },
       {
         path: 'me',
-        element: <MeScreen />,
+        element: <MeSection />,
         children: [
           { index: true, element: <ProfileRoute /> },
-          { path: 'goals', element: <GoalsView /> },
-          { path: 'weight', element: <WeightView /> },
-          { path: 'sleep', element: <SleepView /> },
-          { path: 'people', element: <PeopleView /> },
-          { path: 'knowledge', element: <KnowledgeView /> },
+          { path: 'goals', element: <GoalsPage /> },
+          { path: 'weight', element: <WeightPage /> },
+          { path: 'sleep', element: <SleepPage /> },
+          { path: 'people', element: <PeoplePage /> },
+          { path: 'knowledge', element: <KnowledgePage /> },
         ],
       },
-      { path: 'me/goals/new', element: <GoalPlanner /> },
+      { path: 'me/goals/new', element: <GoalPlannerPage /> },
       { path: '*', element: <Navigate to="/today" replace /> },
     ],
   },

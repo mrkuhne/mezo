@@ -1,6 +1,6 @@
 import { Icon } from '@/shared/ui/Icon'
 import type { WeightEntry, WeightTrends, Goal } from '@/data/types'
-import { changeFromStart, latestValue, progressPct, etaWeeks, isImprovement, fmtSigned } from '@/features/me/components/weightStats'
+import { changeFromStart, latestValue, progressPct, etaWeeks, isImprovement, fmtSigned } from '@/features/me/logic/weightStats'
 
 export function WeightHero({ log, weightTrends, goal, onLog }: {
   log: WeightEntry[]

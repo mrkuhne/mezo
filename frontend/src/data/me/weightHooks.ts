@@ -40,7 +40,7 @@ export function useWeight() {
   // weekly rates into the WeightTrends shape, falling back to the mock literal
   // until the trend query resolves — but in real mode the unresolved fallback is a ZERO
   // trend, never the mock seed (the "no static fallback in real mode" invariant). Consumers
-  // only stringify these numbers (hero .toFixed / GoalsView String), so zeros render as
+  // only stringify these numbers (hero .toFixed / GoalsPage String), so zeros render as
   // a benign "0.00 kg/hét" for the brief load window, never a fake pace.
   const { data: weightTrends } = useDualQuery({
     queryKey: ['weightTrend'],

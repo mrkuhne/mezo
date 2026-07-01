@@ -2,7 +2,7 @@ import { Skeleton, SkeletonCard, SkeletonText } from '@/shared/ui/Skeleton'
 
 // Generic full-screen loading skeleton (mezo-f2z) for views with no
 // distinctive loadable layout to mirror — the two "blank-flash" routes that
-// used to `return null` during the real-mode loading window (GoalPlanner,
+// used to `return null` during the real-mode loading window (GoalPlannerPage,
 // ActiveWorkoutScreen). A header line + a couple of card placeholders, under a
 // single role="status" landmark so tests/AT can detect the loading state.
 // Inert in mock mode: the views only mount it while their query is pending,

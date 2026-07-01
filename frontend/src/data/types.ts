@@ -250,8 +250,8 @@ export interface PantryItemInput {
 export type GoalKind = 'cut' | 'bulk' | 'maintenance'
 export type GoalStatus = 'active' | 'planned' | 'archived'
 // Domain Goal — the thin back-compat shape useGoal still exposes for consumers
-// that read flattened weights/identity (WeightView, FuelStackView's linked plans,
-// EditGoalSheet's rateTarget). The GoalsView command-center hero now reads the raw
+// that read flattened weights/identity (WeightPage, FuelStackView's linked plans,
+// EditGoalSheet's rateTarget). The GoalsPage command-center hero now reads the raw
 // `GoalResponse` (trajectory/guards/window/weights) directly; `startDate`,
 // `targetDate` and `unit` were retired from this shape in G4b (Decision C) since
 // nothing consumes them anymore. `kind`/`rateTarget` stay (hook tests + Task 6).
