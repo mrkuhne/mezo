@@ -13,12 +13,12 @@ import { PageTitle } from '@/components/ui/PageTitle'
 import { GhostState } from '@/components/ui/GhostState'
 import { Icon } from '@/components/ui/Icon'
 import type { MesoDay } from '@/data/types'
-import { GymStat } from '../components/GymStat'
-import { PhaseDots } from '../components/PhaseDots'
-import { GymDayCard } from '../components/GymDayCard'
-import { GymDaySheet } from '../components/GymDaySheet'
-import { GymScheduleSheet } from '../components/GymScheduleSheet'
-import GymSkeleton from './GymSkeleton'
+import { GymStat } from '@/features/train/components/GymStat'
+import { PhaseDots } from '@/features/train/components/PhaseDots'
+import { GymDayCard } from '@/features/train/components/GymDayCard'
+import { GymDaySheet } from '@/features/train/components/GymDaySheet'
+import { GymScheduleSheet } from '@/features/train/components/GymScheduleSheet'
+import GymSkeleton from '@/features/train/views/GymSkeleton'
 
 export function GymView() {
   const { activeMeso, gymSlots, saveGymSchedule, workoutPending } = useTrain()

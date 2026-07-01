@@ -4,9 +4,9 @@ import type {
   UserMeta,
   VolleyballSession,
   Workout,
-} from './types'
+} from '@/data/types'
 
-export { fuelToday } from './fuel'
+export { fuelToday } from '@/data/fuel'
 
 export const today: TodayMeta = {
   dayLabel: 'Csütörtök',

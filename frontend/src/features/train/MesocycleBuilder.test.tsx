@@ -12,7 +12,7 @@ const realMeso = (status: 'active' | 'planned') => ({
   startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6, currentWeek: 1,
   split: 'PPL', style: 'RP', phaseCurve: ['MEV'],
 })
-import { MesocycleBuilder } from './MesocycleBuilder'
+import { MesocycleBuilder } from '@/features/train/MesocycleBuilder'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped

@@ -2,7 +2,7 @@ import { expect, test } from 'vitest'
 import {
   changeFromStart, progressPct, etaWeeks, isImprovement, movingAverage,
   periodWindow, sliceByPeriod, groupByWeek, dayRows, planTrajectory, daysBetween, isoMinusDays, fmtSigned,
-} from './weightStats'
+} from '@/features/me/components/weightStats'
 import type { WeightEntry } from '@/data/types'
 import type { GoalResponse } from '@/lib/goalApi'
 

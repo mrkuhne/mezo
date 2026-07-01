@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { SleepView } from './SleepView'
+import { SleepView } from '@/features/me/views/SleepView'
 import { QueryWrapper, makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'

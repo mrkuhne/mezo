@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { useProgressionProfile } from './hooks'
+import { useProgressionProfile } from '@/data/hooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'

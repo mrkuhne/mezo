@@ -1,6 +1,6 @@
 import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
-import { DetailStat } from './components/DetailStat'
+import { DetailStat } from '@/features/me/components/DetailStat'
 import { affectColor, affectLabel } from '@/data/people'
 import type { Mention, PersonEntry } from '@/data/types'
 

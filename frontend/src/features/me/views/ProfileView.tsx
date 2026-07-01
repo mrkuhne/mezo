@@ -3,10 +3,10 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { useBiometricProfile, useProgressionProfile } from '@/data/hooks'
-import { BiometricCard } from '../components/BiometricCard'
-import { AthleticRadarCard } from '../components/AthleticRadarCard'
-import { MuscleLevelsCard } from '../components/MuscleLevelsCard'
-import { BiometricSheet } from '../BiometricSheet'
+import { BiometricCard } from '@/features/me/components/BiometricCard'
+import { AthleticRadarCard } from '@/features/me/components/AthleticRadarCard'
+import { MuscleLevelsCard } from '@/features/me/components/MuscleLevelsCard'
+import { BiometricSheet } from '@/features/me/BiometricSheet'
 
 export function ProfileView({ onOpenSettings }: { onOpenSettings: () => void }) {
   const { profile: biometric } = useBiometricProfile()

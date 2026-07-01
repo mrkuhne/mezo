@@ -3,8 +3,8 @@ import {
   newDraft, duplicateDraft, setSprintRounds, setSprintRest, setPyramidWork,
   setSessionDay, setSessionTime, addWeek, removeLastWeek,
   sprintOf, pyramidOf, workSecs, restSec,
-} from './runningDraft'
-import { runningBlocksMock } from './running'
+} from '@/data/runningDraft'
+import { runningBlocksMock } from '@/data/running'
 
 // Pure helper unit tests — no React, no mode stub. The draft helpers are the
 // structure-edit core of the Futás builder; they must be immutable and the

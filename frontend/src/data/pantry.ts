@@ -7,12 +7,12 @@ import type {
   PantrySuggestion,
   MealBreakdown,
   FuelMeal,
-} from './types'
-import { fuelDay } from './fuel'
-import { enrichLine, computeRecipeMacros } from './recipeMacros'
+} from '@/data/types'
+import { fuelDay } from '@/data/fuel'
+import { enrichLine, computeRecipeMacros } from '@/data/recipeMacros'
 
 // pantrySources already ported in Task 4 — re-export, do not redefine.
-export { pantrySources } from './pantrySources'
+export { pantrySources } from '@/data/pantrySources'
 
 // === Category meta (pantry-data.js:285–295) ===
 export const pantryCategoryMeta: Record<string, PantryCategoryMeta> = {

@@ -6,7 +6,7 @@
 // Consumed by WeeklyDayRow (weekly rows) and TrainTodayView (heroes)
 // so both surfaces order identically.
 // ============================================================
-import type { WeeklyAgendaDay } from './components/WeeklyDayRow'
+import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
 import type { RunPrescribedSession } from '@/lib/runningApi'
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '@/components/ui/Icon'
 import { useBiometricProfile } from '@/data/hooks'
-import { BiometricSheet } from './BiometricSheet'
+import { BiometricSheet } from '@/features/me/BiometricSheet'
 
 // Goal-creation hard gate (G6, mezo-06n — Task 7). The engine derives the
 // calorie target from the biometric profile (sex · height · birth date), so a

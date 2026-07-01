@@ -16,7 +16,7 @@ import { Icon } from '@/components/ui/Icon'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Display } from '@/components/ui/Display'
 import { SourceBadge } from '@/components/ui/SourceBadge'
-import { MacroCells } from './components/MacroCells'
+import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { usePickableIngredients, kindLabel, type PickableIngredient } from '@/data/pantryPickables'
 
 function KindBadge({ ing }: { ing: PickableIngredient }) {

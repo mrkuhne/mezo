@@ -24,7 +24,7 @@ import {
   makeSession,
   seedFromOpen,
   skipExercise as skipExerciseModel,
-} from './workoutState'
+} from '@/features/train/workoutState'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { ScreenSkeleton } from '@/components/ui/ScreenSkeleton'
 import { Chip } from '@/components/ui/Chip'
@@ -33,13 +33,13 @@ import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary } from '@/components/ui/Cta'
 import { Sheet } from '@/components/ui/Sheet'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
-import { CompactStepper } from './components/CompactStepper'
-import { LastWeekStat } from './components/LastWeekStat'
-import { PRToast, type PRState } from './components/PRToast'
-import { FeedbackModal, type ExerciseFeedbackValues } from './components/FeedbackModal'
-import { WorkoutComplete } from './components/WorkoutComplete'
-import { ChallengesCarousel } from './components/ChallengesCarousel'
-import { ExerciseActionSheet } from './components/ExerciseActionSheet'
+import { CompactStepper } from '@/features/train/components/CompactStepper'
+import { LastWeekStat } from '@/features/train/components/LastWeekStat'
+import { PRToast, type PRState } from '@/features/train/components/PRToast'
+import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/components/FeedbackModal'
+import { WorkoutComplete } from '@/features/train/components/WorkoutComplete'
+import { ChallengesCarousel } from '@/features/train/components/ChallengesCarousel'
+import { ExerciseActionSheet } from '@/features/train/components/ExerciseActionSheet'
 
 type Phase = 'prep' | 'active' | 'complete'
 type CompletedSets = Record<string, LastWeekSet[]>

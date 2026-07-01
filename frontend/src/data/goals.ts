@@ -1,7 +1,7 @@
 import type { GoalTimelineResponse } from '@/lib/goalLinkApi'
 import type { GoalResponse, FeasibilityPreviewResponse } from '@/lib/goalApi'
 import type { BiometricProfileResponse } from '@/lib/biometricProfileApi'
-import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from './types'
+import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from '@/data/types'
 
 export const goal: Goal = {
   id: 'goal-cut-2026',

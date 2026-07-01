@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { LevelUpProvider, useLevelUp } from './LevelUpProvider'
+import { LevelUpProvider, useLevelUp } from '@/features/progression/LevelUpProvider'
 import { gymLevelUpMock } from '@/data/progressionMock'
 
 function stubReduced() {

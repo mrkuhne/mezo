@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
-import { ServingToggle } from './ServingToggle'
+import { ServingToggle } from '@/features/fuel/components/ServingToggle'
 
 test('renders both bases and reports a change', async () => {
   const onChange = vi.fn()

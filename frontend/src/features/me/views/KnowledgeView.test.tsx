@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { KnowledgeView } from './KnowledgeView'
+import { KnowledgeView } from '@/features/me/views/KnowledgeView'
 
 test('renders the summary band with derived counts', () => {
   render(<KnowledgeView />)

@@ -1,5 +1,5 @@
 import { render, screen, act, fireEvent } from '@testing-library/react'
-import { ChatView } from './ChatView'
+import { ChatView } from '@/features/insights/views/ChatView'
 
 test('seeds the conversation and the composer', () => {
   render(<ChatView />)

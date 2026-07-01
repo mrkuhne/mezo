@@ -20,11 +20,11 @@ import { DAY_ORDER, GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/
 import { Icon } from '@/components/ui/Icon'
 import { Display } from '@/components/ui/Display'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
-import { addWeeks, defaultWeekdays, generateProgram, getSeason, GOAL_HINTS, stepLabels } from './planner'
-import type { PlannerDay } from './planner'
-import { ExercisePickerSheet } from './components/ExercisePickerSheet'
-import { PlannerDaySection } from './components/PlannerDaySection'
-import { MiniStat } from './components/MiniStat'
+import { addWeeks, defaultWeekdays, generateProgram, getSeason, GOAL_HINTS, stepLabels } from '@/features/train/planner'
+import type { PlannerDay } from '@/features/train/planner'
+import { ExercisePickerSheet } from '@/features/train/components/ExercisePickerSheet'
+import { PlannerDaySection } from '@/features/train/components/PlannerDaySection'
+import { MiniStat } from '@/features/train/components/MiniStat'
 
 const STEP_COUNT = 4
 const PHASES: MesoPhase[] = ['MEV', 'MAV', 'MRV', 'Deload']

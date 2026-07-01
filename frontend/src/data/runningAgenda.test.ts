@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
-import { currentWeekOf, runSessionsForDay, todayIdx } from './runningAgenda'
-import { runningBlocksMock } from './running'
+import { currentWeekOf, runSessionsForDay, todayIdx } from '@/data/runningAgenda'
+import { runningBlocksMock } from '@/data/running'
 
 const active = runningBlocksMock.find((b) => b.status === 'active')!
 

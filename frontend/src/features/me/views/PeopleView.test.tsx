@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { PeopleView } from './PeopleView'
+import { PeopleView } from '@/features/me/views/PeopleView'
 
 test('renders the Kapcsolatok header', () => {
   render(<PeopleView />)

@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useReducedMotion } from './useReducedMotion'
+import { useReducedMotion } from '@/lib/useReducedMotion'
 
 function stubMatchMedia(matches: boolean) {
   vi.stubGlobal('matchMedia', (query: string) => ({

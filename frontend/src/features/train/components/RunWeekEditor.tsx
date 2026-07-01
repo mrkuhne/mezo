@@ -5,8 +5,8 @@
 // constant across weeks) and Terhelés (week-level load controls). Sprint =
 // rounds + rest steppers; Piramis = tappable work-second pills. Accent --info.
 // ============================================================
-import { CompactStepper } from './CompactStepper'
-import { WeekdayGrid } from './WeekdayGrid'
+import { CompactStepper } from '@/features/train/components/CompactStepper'
+import { WeekdayGrid } from '@/features/train/components/WeekdayGrid'
 import {
   sprintOf, pyramidOf, workSecs, restSec,
   setSprintRounds, setSprintRest, setPyramidWork,

@@ -1,5 +1,5 @@
-import { apiFetch } from './api'
-import type { components } from './api.gen'
+import { apiFetch } from '@/lib/api'
+import type { components } from '@/lib/api.gen'
 import type { WeightEntry, WeightLogInput, SleepEntry, SleepLogInput } from '@/data/types'
 
 // Contract types generated from api/openapi.yml — regenerate with `pnpm generate:api`.

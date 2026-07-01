@@ -1,5 +1,5 @@
-import type { Tool } from './ToolChip'
-import { ToolChip } from './ToolChip'
+import type { Tool } from '@/components/ui/ToolChip'
+import { ToolChip } from '@/components/ui/ToolChip'
 
 export function ToolChipRow({ tools }: { tools: Tool[] }) {
   return (

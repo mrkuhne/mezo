@@ -1,4 +1,4 @@
-import { patterns, predictions, experiments, weekly, memoir, recentlyConfirmed, MIN_PATTERN_CONFIDENCE, patternCategoryColor } from './insights'
+import { patterns, predictions, experiments, weekly, memoir, recentlyConfirmed, MIN_PATTERN_CONFIDENCE, patternCategoryColor } from '@/data/insights'
 
 test('three patterns, all above the confidence floor', () => {
   expect(patterns).toHaveLength(3)

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AddPantryItemSheet } from './AddPantryItemSheet'
+import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
 import { usePantry } from '@/data/hooks'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { StackPickerSheet } from './StackPickerSheet'
+import { StackPickerSheet } from '@/features/fuel/StackPickerSheet'
 
 test('filters the stash by query and toggles an item', async () => {
   const onToggle = vi.fn()

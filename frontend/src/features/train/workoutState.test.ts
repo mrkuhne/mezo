@@ -1,6 +1,6 @@
 // workoutState.test.ts
 import { describe, expect, test } from 'vitest'
-import { makeSession, completeSet, effectiveSetCount, currentExerciseId, advance, addExtraSet, skipExercise, seedFromOpen } from './workoutState'
+import { makeSession, completeSet, effectiveSetCount, currentExerciseId, advance, addExtraSet, skipExercise, seedFromOpen } from '@/features/train/workoutState'
 
 const EX = [
   { id: 'a', sets: 2 }, { id: 'b', sets: 3 }, { id: 'c', sets: 2 },

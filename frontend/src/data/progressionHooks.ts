@@ -1,7 +1,7 @@
-import { useDualQuery } from './useDualQuery'
+import { useDualQuery } from '@/data/useDualQuery'
 import { progressionApi } from '@/lib/progressionApi'
 import { ApiError } from '@/lib/api'
-import { progressionProfileMock, GHOST_PROGRESSION_PROFILE } from './progressionMock'
+import { progressionProfileMock, GHOST_PROGRESSION_PROFILE } from '@/data/progressionMock'
 
 /**
  * Athletic + muscle progression profile (radar, athlete-level, streak, highlights).

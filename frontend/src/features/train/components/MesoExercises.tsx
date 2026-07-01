@@ -15,8 +15,8 @@ import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
-import { DayExerciseSection } from './DayExerciseSection'
-import { ExercisePickerSheet } from './ExercisePickerSheet'
+import { DayExerciseSection } from '@/features/train/components/DayExerciseSection'
+import { ExercisePickerSheet } from '@/features/train/components/ExercisePickerSheet'
 
 // Deep-ish clone of the meso days so local edits never mutate the data-layer
 // module const (each day + its exercises array gets its own copy).

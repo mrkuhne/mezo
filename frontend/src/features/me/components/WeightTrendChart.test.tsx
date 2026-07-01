@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { WeightTrendChart } from './WeightTrendChart'
+import { WeightTrendChart } from '@/features/me/components/WeightTrendChart'
 import type { WeightEntry } from '@/data/types'
 import type { GoalResponse } from '@/lib/goalApi'
 

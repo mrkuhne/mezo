@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoirView } from './MemoirView'
+import { MemoirView } from '@/features/insights/views/MemoirView'
 
 test('renders the memoir card, anchors, anniversary card and archive footer', () => {
   render(<MemoirView />)

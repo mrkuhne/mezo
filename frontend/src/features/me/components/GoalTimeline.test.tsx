@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { GoalTimeline } from './GoalTimeline'
+import { GoalTimeline } from '@/features/me/components/GoalTimeline'
 import type { GoalTimelineResponse } from '@/lib/goalLinkApi'
 
 const timeline: GoalTimelineResponse = {

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
-import { FuelMedicationView } from './FuelMedicationView'
+import { FuelMedicationView } from '@/features/fuel/views/FuelMedicationView'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // FuelMedicationView reads useMedication (a dual-mode TanStack query, Task 11).

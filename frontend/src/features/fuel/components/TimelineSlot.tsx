@@ -1,6 +1,6 @@
 import type { FuelSlot, FuelMeal } from '@/data/types'
 import { KIND_META } from '@/data/kindMeta'
-import { SlotCard } from './SlotCard'
+import { SlotCard } from '@/features/fuel/components/SlotCard'
 
 export function TimelineSlot({
   slot,

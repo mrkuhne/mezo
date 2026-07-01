@@ -15,7 +15,7 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { RecipeCard } from '@/features/fuel/components/RecipeCard'
-import RecipesSkeleton from './RecipesSkeleton'
+import RecipesSkeleton from '@/features/fuel/views/RecipesSkeleton'
 
 type FilterId = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'starred'
 

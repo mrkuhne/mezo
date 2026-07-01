@@ -10,7 +10,7 @@
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train'
-import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '../muscleFilters'
+import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '@/features/train/muscleFilters'
 import type { ExerciseRecordResponse } from '@/lib/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Eyebrow } from '@/components/ui/Eyebrow'
@@ -18,8 +18,8 @@ import { PageTitle } from '@/components/ui/PageTitle'
 import { GhostState } from '@/components/ui/GhostState'
 import { Icon } from '@/components/ui/Icon'
 import { cn } from '@/lib/cn'
-import { ExerciseRecordSheet } from '../components/ExerciseRecordSheet'
-import ExercisesSkeleton from './ExercisesSkeleton'
+import { ExerciseRecordSheet } from '@/features/train/components/ExerciseRecordSheet'
+import ExercisesSkeleton from '@/features/train/views/ExercisesSkeleton'
 
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
 

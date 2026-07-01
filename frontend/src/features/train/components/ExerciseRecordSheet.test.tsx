@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import type { ExerciseRecordResponse } from '@/lib/trainApi'
-import { ExerciseRecordSheet } from './ExerciseRecordSheet'
+import { ExerciseRecordSheet } from '@/features/train/components/ExerciseRecordSheet'
 
 const fullRecord: ExerciseRecordResponse = {
   catalogId: 'f1e3a0e2-0000-4000-8000-000000000070',

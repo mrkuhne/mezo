@@ -3,10 +3,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useFuelDay, useMealActions } from './fuelHooks'
+import { useFuelDay, useMealActions } from '@/data/fuelHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import type { MealInput } from './types'
+import type { MealInput } from '@/data/types'
 
 function sharedWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

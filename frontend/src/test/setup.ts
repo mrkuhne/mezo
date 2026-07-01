@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { afterAll, afterEach, beforeAll } from 'vitest'
-import { server } from './msw/server'
+import { server } from '@/test/msw/server'
 
 // Node 25 ships an experimental native `localStorage` global that lacks the
 // Web Storage methods (getItem/setItem/clear). It shadows jsdom's Storage, so

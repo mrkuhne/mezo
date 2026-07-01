@@ -13,9 +13,9 @@ import { useTrain } from '@/data/hooks'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
-import { MesoOverview } from './components/MesoOverview'
-import { MesoVolume } from './components/MesoVolume'
-import { MesoExercises } from './components/MesoExercises'
+import { MesoOverview } from '@/features/train/components/MesoOverview'
+import { MesoVolume } from '@/features/train/components/MesoVolume'
+import { MesoExercises } from '@/features/train/components/MesoExercises'
 
 type BuilderView = 'overview' | 'volume' | 'exercises'
 

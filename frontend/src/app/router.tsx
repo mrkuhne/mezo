@@ -1,5 +1,5 @@
 import { Navigate, useOutletContext, type RouteObject } from 'react-router-dom'
-import { AppLayout } from './AppLayout'
+import { AppLayout } from '@/app/AppLayout'
 import { TodayScreen } from '@/features/today/TodayScreen'
 import { TrainScreen } from '@/features/train/TrainScreen'
 import { TrainTodayView } from '@/features/train/views/TrainTodayView'

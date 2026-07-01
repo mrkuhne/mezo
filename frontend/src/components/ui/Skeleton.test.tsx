@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { Skeleton, SkeletonText } from './Skeleton'
+import { Skeleton, SkeletonText } from '@/components/ui/Skeleton'
 
 describe('Skeleton', () => {
   it('renders a .sk block with the variant class', () => {

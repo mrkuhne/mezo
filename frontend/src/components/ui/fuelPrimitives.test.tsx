@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { SourceBadge } from './SourceBadge'
-import { NovaDot } from './NovaDot'
-import { MacroRow } from './MacroRow'
-import { StatCell } from './StatCell'
+import { SourceBadge } from '@/components/ui/SourceBadge'
+import { NovaDot } from '@/components/ui/NovaDot'
+import { MacroRow } from '@/components/ui/MacroRow'
+import { StatCell } from '@/components/ui/StatCell'
 
 test('SourceBadge shows the source label', () => {
   render(<SourceBadge source="kifli.hu" />)

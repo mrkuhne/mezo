@@ -1,4 +1,4 @@
-import type { FuelKind } from './types'
+import type { FuelKind } from '@/data/types'
 import type { IconName } from '@/components/ui/Icon'
 export const KIND_META: Record<FuelKind, { color: string; icon: IconName; label: string }> = {
   wake:       { color: 'var(--text-secondary)', icon: 'today', label: 'Wake' },

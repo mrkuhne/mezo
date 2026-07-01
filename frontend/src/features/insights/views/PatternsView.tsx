@@ -1,7 +1,7 @@
 import { Icon } from '@/components/ui/Icon'
 import { useInsights } from '@/data/hooks'
 import { MIN_PATTERN_CONFIDENCE } from '@/data/insights'
-import { PatternCard } from '../components/PatternCard'
+import { PatternCard } from '@/features/insights/components/PatternCard'
 
 export function PatternsView() {
   const { patterns: all, recentlyConfirmed } = useInsights()

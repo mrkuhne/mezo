@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { QuickStat } from './QuickStat'
+import { QuickStat } from '@/components/ui/QuickStat'
 
 test('renders label, value, unit, delta', () => {
   render(<QuickStat label="Alvás" value="7.2" unit="h" delta="+0.4" />)

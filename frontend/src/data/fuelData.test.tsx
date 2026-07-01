@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { useFuelDay, useFuelTimeline, useStack, useProtocol } from './hooks'
+import { useFuelDay, useFuelTimeline, useStack, useProtocol } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // useFuelDay became a composed dual-mode TanStack query (mezo-arb). Pin mock mode so it returns
@@ -32,7 +32,7 @@ test('useStack returns 10 stash items, useProtocol returns v3', () => {
 })
 
 test('every seed meal carries structured mealItems + mealDate and a null pending score', async () => {
-  const { fuelDay } = await import('./fuel')
+  const { fuelDay } = await import('@/data/fuel')
   for (const m of fuelDay.meals) {
     expect(Array.isArray(m.mealItems)).toBe(true)
     expect(m.mealItems.length).toBeGreaterThan(0)

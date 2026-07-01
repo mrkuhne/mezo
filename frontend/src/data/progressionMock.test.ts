@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   gymLevelUpMock, sportLevelUpMock, runLevelUpMock,
   progressionProfileMock, GHOST_PROGRESSION_PROFILE,
-} from './progressionMock'
+} from '@/data/progressionMock'
 
 describe('progression mock fixtures', () => {
   it('gym fixture is the rich multi-level-up case with a perk', () => {

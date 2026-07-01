@@ -12,8 +12,8 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
 import type { Mesocycle } from '@/data/types'
-import { PhaseCurveBars } from './PhaseCurveBars'
-import { MetaStat } from './MetaStat'
+import { PhaseCurveBars } from '@/features/train/components/PhaseCurveBars'
+import { MetaStat } from '@/features/train/components/MetaStat'
 
 interface ActiveMesoCardProps {
   meso: Mesocycle

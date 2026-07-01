@@ -3,7 +3,7 @@ import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
 import { useBiometricActions } from '@/data/hooks'
 import type { BiometricProfileResponse, BiometricProfileUpsertRequest } from '@/lib/biometricProfileApi'
-import { ACTIVITY_LEVELS, type ActivityLevel } from './biometricFields'
+import { ACTIVITY_LEVELS, type ActivityLevel } from '@/features/me/biometricFields'
 
 // Biometric editor sheet (G6, mezo-06n). Opened from the Profile Biometria card
 // (both the populated card and the empty-state prompt). Edits the single

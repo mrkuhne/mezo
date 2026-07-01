@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { MuscleLevelsCard } from './MuscleLevelsCard'
+import { MuscleLevelsCard } from '@/features/me/components/MuscleLevelsCard'
 import { progressionProfileMock, GHOST_PROGRESSION_PROFILE } from '@/data/progressionMock'
 
 function stubReduced() {

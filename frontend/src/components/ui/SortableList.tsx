@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Icon } from './Icon'
+import { Icon } from '@/components/ui/Icon'
 
 export interface SortableItem {
   id: string

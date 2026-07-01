@@ -18,11 +18,11 @@ import { Display } from '@/components/ui/Display'
 import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 import { GhostState } from '@/components/ui/GhostState'
-import { SportLogSheet } from '../components/SportLogSheet'
-import { RunLogSheet } from '../components/RunLogSheet'
-import { WeeklyDayRow, type WeeklyAgendaDay } from '../components/WeeklyDayRow'
-import { daySessions } from '../agenda'
-import TrainTodaySkeleton from './TrainTodaySkeleton'
+import { SportLogSheet } from '@/features/train/components/SportLogSheet'
+import { RunLogSheet } from '@/features/train/components/RunLogSheet'
+import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
+import { daySessions } from '@/features/train/agenda'
+import TrainTodaySkeleton from '@/features/train/views/TrainTodaySkeleton'
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 

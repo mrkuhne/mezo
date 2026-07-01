@@ -1,4 +1,4 @@
-import { buildKamraItems } from './kamraItems'
+import { buildKamraItems } from '@/features/fuel/kamraItems'
 import { ingredients } from '@/data/pantry'
 import { supplementsStash } from '@/data/fuel'
 import type { SupplementStashItem } from '@/data/types'

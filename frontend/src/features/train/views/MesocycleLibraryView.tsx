@@ -11,10 +11,10 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { GhostState } from '@/components/ui/GhostState'
 import { Icon } from '@/components/ui/Icon'
-import { ActiveMesoCard } from '../components/ActiveMesoCard'
-import { PlannedMesoCard } from '../components/PlannedMesoCard'
-import { ArchivedMesoCard } from '../components/ArchivedMesoCard'
-import MesocycleSkeleton from './MesocycleSkeleton'
+import { ActiveMesoCard } from '@/features/train/components/ActiveMesoCard'
+import { PlannedMesoCard } from '@/features/train/components/PlannedMesoCard'
+import { ArchivedMesoCard } from '@/features/train/components/ArchivedMesoCard'
+import MesocycleSkeleton from '@/features/train/views/MesocycleSkeleton'
 
 export function MesocycleLibraryView() {
   const { mesocycles, workoutPending } = useTrain()

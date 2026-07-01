@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { KnowledgeListView } from './KnowledgeListView'
+import { KnowledgeListView } from '@/features/insights/views/KnowledgeListView'
 
 test('shows the fact count and the active-in-prompt count', () => {
   render(<KnowledgeListView />)

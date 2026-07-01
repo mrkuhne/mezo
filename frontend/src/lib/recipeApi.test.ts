@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { recipeApi, toRequest } from './recipeApi'
+import { recipeApi, toRequest } from '@/lib/recipeApi'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { RecipeInput } from '@/data/types'

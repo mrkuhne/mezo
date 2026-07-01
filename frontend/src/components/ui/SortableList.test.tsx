@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { SortableList } from './SortableList'
+import { SortableList } from '@/components/ui/SortableList'
 
 test('▲▼ buttons reorder items and call onReorder with the new id order', async () => {
   const onReorder = vi.fn()

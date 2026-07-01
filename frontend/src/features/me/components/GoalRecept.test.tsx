@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { GoalRecept } from './GoalRecept'
+import { GoalRecept } from '@/features/me/components/GoalRecept'
 import type { GoalResponse } from '@/lib/goalApi'
 
 type Prescription = NonNullable<GoalResponse['prescription']>

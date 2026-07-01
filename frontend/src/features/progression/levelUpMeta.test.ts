@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { skillDisplay, HEADLINE_BY_SOURCE, HEADLINE_NO_LEVELUP, CHIP_ICON_BY_SOURCE } from './levelUpMeta'
+import { skillDisplay, HEADLINE_BY_SOURCE, HEADLINE_NO_LEVELUP, CHIP_ICON_BY_SOURCE } from '@/features/progression/levelUpMeta'
 
 describe('skillDisplay', () => {
   it('maps athletic skill keys to HU name + emoji', () => {

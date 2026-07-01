@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
-import { deriveGymSchedule } from './trainHooks'
-import type { Mesocycle } from './types'
+import { deriveGymSchedule } from '@/data/trainHooks'
+import type { Mesocycle } from '@/data/types'
 
 const meso = (days: { day: string; exerciseCount: number; type: string }[]) =>
   ({ days } as unknown as Mesocycle)

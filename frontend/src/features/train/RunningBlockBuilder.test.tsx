@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { RunningBlockBuilder } from './RunningBlockBuilder'
+import { RunningBlockBuilder } from '@/features/train/RunningBlockBuilder'
 
 // Asserts the Phase-1 mock running block (rb-active-01), so pin mock mode —
 // useRunning seeds the blocks query synchronously via initialData in mock mode.

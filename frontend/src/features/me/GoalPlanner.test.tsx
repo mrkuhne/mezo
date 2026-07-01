@@ -5,7 +5,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import { GoalPlanner } from './GoalPlanner'
+import { GoalPlanner } from '@/features/me/GoalPlanner'
 
 // The route-level biometric gate (G6, mezo-06n — review fix) renders the wizard
 // only once useBiometricProfile() resolves a COMPLETE profile (the default MSW

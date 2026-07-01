@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { SleepLogSheet } from './SleepLogSheet'
+import { SleepLogSheet } from '@/features/me/SleepLogSheet'
 
 test('Save bubbles up a SleepLogInput with computed duration then closes', async () => {
   const onSave = vi.fn()

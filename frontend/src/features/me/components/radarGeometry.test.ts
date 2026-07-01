@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { radarMax, polarPoint, dataPolygonPoints } from './radarGeometry'
+import { radarMax, polarPoint, dataPolygonPoints } from '@/features/me/components/radarGeometry'
 
 describe('radarGeometry', () => {
   it('radarMax floors at 10 and expands past it', () => {

@@ -10,7 +10,7 @@ import { useState } from 'react'
 import { MUSCLE_LABELS } from '@/data/train'
 import type { GymExercise } from '@/data/types'
 import { Icon } from '@/components/ui/Icon'
-import { EditorChip } from './EditorChip'
+import { EditorChip } from '@/features/train/components/EditorChip'
 
 interface ExerciseEditRowProps {
   ex: GymExercise

@@ -14,7 +14,7 @@ import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 import { DAY_ORDER } from '@/data/train'
 import type { SportScheduleSlotInput } from '@/lib/trainApi'
 import type { VolleyballSession } from '@/data/types'
-import { NumberStep } from './SportLogSheet'
+import { NumberStep } from '@/features/train/components/SportLogSheet'
 
 interface DayDraft {
   on: boolean

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { CtaPrimary, CtaGhost } from './Cta'
+import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 
 test('CtaPrimary fires onClick and carries classes', async () => {
   const onClick = vi.fn()

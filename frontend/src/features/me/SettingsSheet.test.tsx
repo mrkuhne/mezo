@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { SettingsSheet } from './SettingsSheet'
+import { SettingsSheet } from '@/features/me/SettingsSheet'
 import { ThemeProvider } from '@/app/ThemeProvider'
 
 function renderSheet(onClose = () => {}) {

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { WeeklyView } from './WeeklyView'
+import { WeeklyView } from '@/features/insights/views/WeeklyView'
 
 test('renders the score hero, the delta, every item and the plan suggestion', () => {
   render(<WeeklyView />)

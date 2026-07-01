@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { NotchCard } from './NotchCard'
+import { NotchCard } from '@/components/ui/NotchCard'
 
 test('default card has card + notch-8 classes', () => {
   render(<NotchCard>body</NotchCard>)

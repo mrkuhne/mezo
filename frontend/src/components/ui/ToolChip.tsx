@@ -1,5 +1,5 @@
 import { cn } from '@/lib/cn'
-import { Icon } from './Icon'
+import { Icon } from '@/components/ui/Icon'
 
 export type ToolType = 'read' | 'compute' | 'write'
 export interface Tool { type: ToolType; name: string; args?: string }

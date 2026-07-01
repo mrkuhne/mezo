@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Toggle } from './Toggle'
+import { Toggle } from '@/components/ui/Toggle'
 
 test('renders a switch with the given aria-label and pressed state', () => {
   render(<Toggle on={true} onToggle={() => {}} ariaLabel="Téma váltás" />)

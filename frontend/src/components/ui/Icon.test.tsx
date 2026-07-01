@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { Icon, BrandGlyph } from './Icon'
+import { Icon, BrandGlyph } from '@/components/ui/Icon'
 
 test('renders an svg for a known icon name', () => {
   const { container } = render(<Icon name="today" />)

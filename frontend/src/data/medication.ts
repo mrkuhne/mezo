@@ -1,4 +1,4 @@
-import type { MedicationDay } from './types'
+import type { MedicationDay } from '@/data/types'
 
 /**
  * Mock-mode medication day (Gyógyszer slice) — used as TanStack Query `initialData` in mock mode.

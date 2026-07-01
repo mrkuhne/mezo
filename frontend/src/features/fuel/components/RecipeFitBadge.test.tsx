@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { RecipeFitBadge } from './RecipeFitBadge'
+import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 
 test('pending state shows the Mezo sparkle label, no number', () => {
   render(<RecipeFitBadge score={null} />)

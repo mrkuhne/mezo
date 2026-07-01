@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { MeSubNav } from './MeSubNav'
+import { MeSubNav } from '@/features/me/MeSubNav'
 
 function renderAt(path: string) {
   return render(

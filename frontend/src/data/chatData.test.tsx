@@ -1,4 +1,4 @@
-import { initialChat } from './chat'
+import { initialChat } from '@/data/chat'
 
 test('seeds the conversation (assistant → user → assistant) with tool transparency', () => {
   expect(initialChat).toHaveLength(3)

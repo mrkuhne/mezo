@@ -1,4 +1,4 @@
-import type { ChatMessage } from './types'
+import type { ChatMessage } from '@/data/types'
 
 export const initialChat: ChatMessage[] = [
   {

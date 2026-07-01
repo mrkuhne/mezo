@@ -1,9 +1,9 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { useWeight } from './weightHooks'
-import { useSleep } from './hooks'
-import { usePeople } from './hooks'
-import { people } from './people'
+import { useWeight } from '@/data/weightHooks'
+import { useSleep } from '@/data/hooks'
+import { usePeople } from '@/data/hooks'
+import { people } from '@/data/people'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // Assert the Phase-1 mock dataset/behavior, so pin mock mode explicitly.

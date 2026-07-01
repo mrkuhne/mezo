@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { FuelMaiView } from './FuelMaiView'
+import { FuelMaiView } from '@/features/fuel/views/FuelMaiView'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // FuelMaiView reads the composed dual-mode useFuelDay (mezo-arb); pin mock mode for the static

@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { MealScoreSheet } from './MealScoreSheet'
+import { MealScoreSheet } from '@/features/fuel/MealScoreSheet'
 import { useFuelDay } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
 

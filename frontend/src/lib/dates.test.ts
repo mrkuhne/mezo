@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { currentWeekOf, localDateString } from './dates'
+import { currentWeekOf, localDateString } from '@/lib/dates'
 
 // ISO date for `n` calendar days ago (negative = in the future), in local time.
 function isoDaysAgo(n: number): string {

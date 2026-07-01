@@ -1,7 +1,7 @@
 import type { IconName } from '@/components/ui/Icon'
 import type { Tool } from '@/components/ui/ToolChip'
-import type { NovaGroup } from './nova'
-import type { PantrySourceKey } from './pantrySources'
+import type { NovaGroup } from '@/data/nova'
+import type { PantrySourceKey } from '@/data/pantrySources'
 
 export type DayState = 'good' | 'medium' | 'rough'
 export interface CheckinValues { energy: number; stress: number; body: number; mental: number }

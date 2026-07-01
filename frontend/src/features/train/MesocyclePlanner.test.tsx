@@ -8,7 +8,7 @@ import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import { MesocyclePlanner } from './MesocyclePlanner'
+import { MesocyclePlanner } from '@/features/train/MesocyclePlanner'
 
 afterEach(() => vi.unstubAllEnvs())
 

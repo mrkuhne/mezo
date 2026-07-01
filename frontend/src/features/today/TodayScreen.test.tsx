@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { TodayScreen } from './TodayScreen'
+import { TodayScreen } from '@/features/today/TodayScreen'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 const renderAt = (path: string) => render(

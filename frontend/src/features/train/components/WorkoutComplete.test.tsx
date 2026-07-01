@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { test, expect } from 'vitest'
-import { WorkoutComplete } from './WorkoutComplete'
+import { WorkoutComplete } from '@/features/train/components/WorkoutComplete'
 import type { WorkoutPlan } from '@/data/types'
 
 const WORKOUT: WorkoutPlan = {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pct } from './pct'
+import { pct } from '@/lib/pct'
 
 describe('pct', () => {
   it('returns the percentage a/b clamped to 100', () => {

@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { useStickyTab } from './useStickyTab'
+import { useStickyTab } from '@/lib/useStickyTab'
 
 // Note: the global test setup (src/test/setup.ts) clears sessionStorage after
 // every test, so each case starts from a clean slate.

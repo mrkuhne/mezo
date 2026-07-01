@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ReplanSheet } from './ReplanSheet'
+import { ReplanSheet } from '@/features/fuel/ReplanSheet'
 
 test('lists scenarios and shows the cascade for the selected one', () => {
   render(<ReplanSheet onClose={() => {}} />)

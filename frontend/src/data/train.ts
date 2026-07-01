@@ -1,7 +1,7 @@
 import type {
   Mesocycle, WorkoutPlan, GymSchedule, GymScheduleSlot, Sport, ExerciseLibraryItem,
   GoalPreset, SplitOption, MesoPhase,
-} from './types'
+} from '@/data/types'
 import type { IconName } from '@/components/ui/Icon'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---

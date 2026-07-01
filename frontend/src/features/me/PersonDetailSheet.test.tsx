@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { PersonDetailSheet } from './PersonDetailSheet'
+import { PersonDetailSheet } from '@/features/me/PersonDetailSheet'
 import { people, mentions } from '@/data/people'
 
 const person = people[0]

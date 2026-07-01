@@ -2,7 +2,7 @@ import type { FuelSlot, FuelMeal } from '@/data/types'
 import type { KIND_META } from '@/data/kindMeta'
 import { Icon } from '@/components/ui/Icon'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
-import { SupplementItemRow } from './SupplementItemRow'
+import { SupplementItemRow } from '@/features/fuel/components/SupplementItemRow'
 
 type KindMeta = (typeof KIND_META)[keyof typeof KIND_META]
 

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { ExperimentsView } from './ExperimentsView'
+import { ExperimentsView } from '@/features/insights/views/ExperimentsView'
 
 test('renders the count, an active + a completed experiment, and the propose CTA', () => {
   render(<ExperimentsView />)

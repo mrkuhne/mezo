@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { GOAL_PRESETS, SPLITS } from '@/data/train'
-import { addWeeks, defaultWeekdays, generateProgram, getSeason, stepLabels } from './planner'
+import { addWeeks, defaultWeekdays, generateProgram, getSeason, stepLabels } from '@/features/train/planner'
 
 describe('addWeeks', () => {
   test('adds whole weeks across HU month boundaries', () => {

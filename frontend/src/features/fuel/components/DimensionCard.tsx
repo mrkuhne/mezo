@@ -6,10 +6,10 @@
 import type { MealDimension } from '@/data/types'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
-import { MacroPanel } from './MacroPanel'
-import { MicroPanel } from './MicroPanel'
-import { NovaPanel } from './NovaPanel'
-import { ContextPanel } from './ContextPanel'
+import { MacroPanel } from '@/features/fuel/components/MacroPanel'
+import { MicroPanel } from '@/features/fuel/components/MicroPanel'
+import { NovaPanel } from '@/features/fuel/components/NovaPanel'
+import { ContextPanel } from '@/features/fuel/components/ContextPanel'
 
 export function DimensionCard({ dim }: { dim: MealDimension }) {
   const subPct = (dim.score * 100).toFixed(0)

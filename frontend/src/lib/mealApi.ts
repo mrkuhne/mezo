@@ -1,5 +1,5 @@
-import { apiFetch } from './api'
-import type { components } from './api.gen'
+import { apiFetch } from '@/lib/api'
+import type { components } from '@/lib/api.gen'
 import type { MealInput, MealInputItem, FuelMeal, MealItemLine, MacroSet } from '@/data/types'
 
 type MealRequest = components['schemas']['MealRequest']

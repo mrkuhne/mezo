@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ExerciseActionSheet } from './ExerciseActionSheet'
+import { ExerciseActionSheet } from '@/features/train/components/ExerciseActionSheet'
 
 const REMAINING = [
   { id: 'ex2', label: 'Lat Pulldown' },

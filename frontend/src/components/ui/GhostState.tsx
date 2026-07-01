@@ -1,4 +1,4 @@
-import { CtaPrimary } from './Cta'
+import { CtaPrimary } from '@/components/ui/Cta'
 
 // Clean-slate empty state (T0, design option C): a faint skeleton of the future
 // layout + a one-line message + optional CTA. Train views render it in real mode

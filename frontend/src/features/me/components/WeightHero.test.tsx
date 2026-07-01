@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
-import { WeightHero } from './WeightHero'
+import { WeightHero } from '@/features/me/components/WeightHero'
 import type { WeightEntry, WeightTrends, Goal } from '@/data/types'
 
 const log: WeightEntry[] = [{ date: '2026-04-22', value: 81.4 }, { date: '2026-05-22', value: 78.6 }]

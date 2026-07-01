@@ -1,5 +1,5 @@
-import { apiFetch } from './api'
-import type { components } from './api.gen'
+import { apiFetch } from '@/lib/api'
+import type { components } from '@/lib/api.gen'
 
 // Contract types generated from api/openapi.yml — regenerate with `pnpm generate:api`.
 export type GoalResponse = components['schemas']['GoalResponse']

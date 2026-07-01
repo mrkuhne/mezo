@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { TrainSubNav } from './TrainSubNav'
+import { TrainSubNav } from '@/features/train/TrainSubNav'
 
 function renderAt(path: string) {
   return render(<MemoryRouter initialEntries={[path]}><TrainSubNav /></MemoryRouter>)

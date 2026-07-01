@@ -1,7 +1,7 @@
 import { render, screen, renderHook } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { RecipeCard } from './RecipeCard'
+import { RecipeCard } from '@/features/fuel/components/RecipeCard'
 import { useRecipes } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
 

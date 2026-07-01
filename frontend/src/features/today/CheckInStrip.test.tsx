@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { CheckInStrip } from './CheckInStrip'
+import { CheckInStrip } from '@/features/today/CheckInStrip'
 import { initialCheckins } from '@/data/checkins'
 
 test('renders 4 slots, the N/4 count, and calls onCheckIn on tap', async () => {

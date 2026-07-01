@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { PersonLogSheet } from './PersonLogSheet'
+import { PersonLogSheet } from '@/features/me/PersonLogSheet'
 import { people } from '@/data/people'
 
 test('preselects initialPersonId and saves a MentionLogInput', async () => {

@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { SafeMarkdown } from './safeMarkdown'
+import { SafeMarkdown } from '@/lib/safeMarkdown'
 
 test('renders **bold** as <strong> without raw HTML injection', () => {
   const { container } = render(<SafeMarkdown text="hello **world**" />)

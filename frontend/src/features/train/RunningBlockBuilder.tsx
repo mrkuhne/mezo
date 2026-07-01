@@ -12,7 +12,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useRunning } from '@/data/hooks'
 import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
-import { RunWeekEditor } from './components/RunWeekEditor'
+import { RunWeekEditor } from '@/features/train/components/RunWeekEditor'
 import { toUpsert, duplicateDraft, addWeek, removeLastWeek } from '@/data/runningDraft'
 import type { RunningBlockUpsertRequest } from '@/lib/runningApi'
 

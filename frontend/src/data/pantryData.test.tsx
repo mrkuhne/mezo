@@ -1,9 +1,9 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { usePantry, useRecipes } from './hooks'
+import { usePantry, useRecipes } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { ingredients } from './pantry'
-import { lineContribution } from './recipeMacros'
+import { ingredients } from '@/data/pantry'
+import { lineContribution } from '@/data/recipeMacros'
 
 // usePantry became a dual-mode TanStack query (Task 7, mezo-9xu). Pin mock mode so
 // it returns the static Phase-1 seed synchronously (initialData) and wrap the hook

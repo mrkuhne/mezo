@@ -2,7 +2,7 @@ import {
   mesocycles, activeMeso, workout, gymSchedule, sport, exerciseLibrary,
   GOAL_PRESETS, SPLITS, MUSCLE_LABELS, DAY_LABELS, DAY_ORDER,
   MESOCYCLE_PHASE_COLORS, phaseBarHeight,
-} from './train'
+} from '@/data/train'
 
 test('mesocycles: one active, two planned, one archived', () => {
   expect(mesocycles).toHaveLength(4)

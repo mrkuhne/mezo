@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { NumberStep, SportLogSheet } from './SportLogSheet'
+import { NumberStep, SportLogSheet } from '@/features/train/components/SportLogSheet'
 
 function setup() {
   const onClose = vi.fn()

@@ -9,7 +9,7 @@
 import type { MesoDay } from '@/data/types'
 import { Icon } from '@/components/ui/Icon'
 import { SortableList } from '@/components/ui/SortableList'
-import { ExerciseEditRow } from './ExerciseEditRow'
+import { ExerciseEditRow } from '@/features/train/components/ExerciseEditRow'
 
 interface DayExerciseSectionProps {
   day: MesoDay

@@ -1,5 +1,5 @@
-import { apiFetch, setToken } from './api'
-import type { components } from './api.gen'
+import { apiFetch, setToken } from '@/lib/api'
+import type { components } from '@/lib/api.gen'
 
 type LoginRequest = components['schemas']['LoginRequest']
 type TokenResponse = components['schemas']['TokenResponse']

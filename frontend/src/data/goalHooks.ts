@@ -16,8 +16,8 @@ import {
   linkedMesocycles as mockLinkedMesocycles,
   goalTimeline as mockTimeline,
   feasibilityPreview as mockFeasibilityPreview,
-} from './goals'
-import type { Goal, GoalKind, LinkedMeso, WeightEntry } from './types'
+} from '@/data/goals'
+import type { Goal, GoalKind, LinkedMeso, WeightEntry } from '@/data/types'
 
 // GoalResponse (new contract) -> the thin back-compat Goal shape, kept for the
 // consumers that still read flattened weights/identity (WeightView, FuelStackView,

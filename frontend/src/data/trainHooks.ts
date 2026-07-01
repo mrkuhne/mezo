@@ -29,8 +29,8 @@ import {
   gymScheduleMock,
   sport,
   exerciseLibrary,
-} from './train'
-import { gymLevelUpMock, sportLevelUpMock } from './progressionMock'
+} from '@/data/train'
+import { gymLevelUpMock, sportLevelUpMock } from '@/data/progressionMock'
 import type {
   ExerciseLibraryItem,
   GymSchedule,
@@ -41,7 +41,7 @@ import type {
   SportSession,
   SportWeek,
   WorkoutPlan,
-} from './types'
+} from '@/data/types'
 
 // /today -> the Phase-1 WorkoutPlan shape. AI extras (challenges, niggleWarning)
 // are Phase 3 — empty/absent in real mode. `tag` is display-derived elsewhere.

@@ -2,8 +2,8 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { useKnowledge } from '@/data/hooks'
 import { FACT_CATEGORIES, factCategoryColor } from '@/data/knowledge'
-import { CategoryHeader } from '../components/CategoryHeader'
-import { KnowledgeFactCard } from '../components/KnowledgeFactCard'
+import { CategoryHeader } from '@/features/me/components/CategoryHeader'
+import { KnowledgeFactCard } from '@/features/me/components/KnowledgeFactCard'
 
 export function KnowledgeView() {
   const { facts, edges, activeCount } = useKnowledge()

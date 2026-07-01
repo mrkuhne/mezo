@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import { FuelStackView } from './FuelStackView'
+import { FuelStackView } from '@/features/fuel/views/FuelStackView'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 const renderView = () => render(

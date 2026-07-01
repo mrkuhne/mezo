@@ -11,7 +11,7 @@ import { Icon } from '@/components/ui/Icon'
 import { CtaPrimary } from '@/components/ui/Cta'
 import { DAY_LABELS, MUSCLE_LABELS } from '@/data/train'
 import type { MesoDay } from '@/data/types'
-import { GymExRow } from './GymExRow'
+import { GymExRow } from '@/features/train/components/GymExRow'
 
 interface GymDaySheetProps {
   day: MesoDay

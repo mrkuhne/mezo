@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { PatternsView } from './PatternsView'
+import { PatternsView } from '@/features/insights/views/PatternsView'
 
 test('shows the pattern count, the confidence floor and the recently-confirmed list', () => {
   render(<PatternsView />)

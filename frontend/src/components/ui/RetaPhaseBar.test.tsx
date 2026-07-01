@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { RetaPhaseBar } from './RetaPhaseBar'
+import { RetaPhaseBar } from '@/components/ui/RetaPhaseBar'
 
 test('renders 7 segments', () => {
   const { container } = render(<RetaPhaseBar day={3} />)

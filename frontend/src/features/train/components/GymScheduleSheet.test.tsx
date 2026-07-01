@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
-import { GymScheduleSheet } from './GymScheduleSheet'
+import { GymScheduleSheet } from '@/features/train/components/GymScheduleSheet'
 
 test('saves a slot per weekday that has a time', async () => {
   const onSave = vi.fn()

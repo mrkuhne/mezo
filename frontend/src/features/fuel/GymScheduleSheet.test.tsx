@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderHook } from '@testing-library/react'
-import { GymScheduleSheet } from './GymScheduleSheet'
+import { GymScheduleSheet } from '@/features/fuel/GymScheduleSheet'
 import { useFuelWeek } from '@/data/hooks'
 
 function setup(onSave = () => {}, onClose = () => {}) {

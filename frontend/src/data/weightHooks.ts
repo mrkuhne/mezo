@@ -2,9 +2,9 @@ import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { weightApi, type WeightTrendResponse } from '@/lib/biometricsApi'
 import { isMockMode } from '@/lib/mode'
-import { useDualQuery } from './useDualQuery'
-import { weightLog as initialWeightLog, weightTrends as mockWeightTrends } from './goals'
-import type { WeightEntry, WeightLogInput, WeightTrends } from './types'
+import { useDualQuery } from '@/data/useDualQuery'
+import { weightLog as initialWeightLog, weightTrends as mockWeightTrends } from '@/data/goals'
+import type { WeightEntry, WeightLogInput, WeightTrends } from '@/data/types'
 
 // Real-mode unresolved fallback — a ZERO trend, NEVER the mock seed (the "no static
 // fallback in real mode" invariant). Fields stay real numbers (consumers call .toFixed()).

@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react'
-import { usePeople, useKnowledge } from './hooks'
-import { affectLabel } from './people'
+import { usePeople, useKnowledge } from '@/data/hooks'
+import { affectLabel } from '@/data/people'
 
 test('usePeople returns the people list + mentions', () => {
   const { result } = renderHook(() => usePeople())

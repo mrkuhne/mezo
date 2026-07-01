@@ -7,7 +7,7 @@ import {
 } from '@/lib/biometricProfileApi'
 import { ApiError } from '@/lib/api'
 import { isMockMode } from '@/lib/mode'
-import { biometricProfile as mockBiometricProfile } from './goals'
+import { biometricProfile as mockBiometricProfile } from '@/data/goals'
 
 // Biometric profile read (G6, mezo-06n). The profile is a first-class Profile
 // card + the precondition for goal creation (the Task-7 hard gate). Real mode

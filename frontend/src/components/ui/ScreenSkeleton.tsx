@@ -1,4 +1,4 @@
-import { Skeleton, SkeletonCard, SkeletonText } from './Skeleton'
+import { Skeleton, SkeletonCard, SkeletonText } from '@/components/ui/Skeleton'
 
 // Generic full-screen loading skeleton (mezo-f2z) for views with no
 // distinctive loadable layout to mirror — the two "blank-flash" routes that

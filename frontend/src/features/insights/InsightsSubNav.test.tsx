@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { InsightsSubNav } from './InsightsSubNav'
+import { InsightsSubNav } from '@/features/insights/InsightsSubNav'
 
 function renderAt(path: string) {
   return render(<MemoryRouter initialEntries={[path]}><InsightsSubNav /></MemoryRouter>)

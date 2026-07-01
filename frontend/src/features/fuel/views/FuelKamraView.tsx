@@ -30,7 +30,7 @@ import { KamraCard } from '@/features/fuel/components/KamraCard'
 import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
 import { CategoryFilterSheet, categoryOption } from '@/features/fuel/CategoryFilterSheet'
 import { SHOW_PANTRY_STOCK } from '@/lib/flags'
-import KamraSkeleton from './KamraSkeleton'
+import KamraSkeleton from '@/features/fuel/views/KamraSkeleton'
 
 const TYPE_SWITCHER = [
   { id: 'all', label: 'Mind' },

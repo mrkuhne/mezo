@@ -8,8 +8,8 @@
 // ============================================================
 import type { Recipe } from '@/data/types'
 import { Icon } from '@/components/ui/Icon'
-import { MacroCells } from './MacroCells'
-import { RecipeFitBadge } from './RecipeFitBadge'
+import { MacroCells } from '@/features/fuel/components/MacroCells'
+import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 
 const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--warning)', 4: 'var(--error)' }
 

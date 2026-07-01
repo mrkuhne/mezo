@@ -1,4 +1,4 @@
-import { readStoredTheme, writeStoredTheme, applyTheme, THEME_KEY } from './theme'
+import { readStoredTheme, writeStoredTheme, applyTheme, THEME_KEY } from '@/lib/theme'
 
 beforeEach(() => localStorage.clear())
 

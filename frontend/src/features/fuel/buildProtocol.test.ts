@@ -1,4 +1,4 @@
-import { buildProtocol } from './buildProtocol'
+import { buildProtocol } from '@/features/fuel/buildProtocol'
 import { supplementsStash } from '@/data/fuel'
 
 test('builds a timed protocol from selected stash items', () => {

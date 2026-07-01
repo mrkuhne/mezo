@@ -16,8 +16,8 @@ import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Display } from '@/components/ui/Display'
-import { MacroCells } from './components/MacroCells'
-import { MealPickerSheet, type MealPickedItem } from './MealPickerSheet'
+import { MacroCells } from '@/features/fuel/components/MacroCells'
+import { MealPickerSheet, type MealPickedItem } from '@/features/fuel/MealPickerSheet'
 
 export type LogMealPrefill =
   | { source: 'recipe'; recipeId: string }

@@ -15,7 +15,7 @@ import { Icon } from '@/components/ui/Icon'
 import { ToolChipRow } from '@/components/ui/ToolChipRow'
 import type { Tool } from '@/components/ui/ToolChip'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
-import { VolumeBar } from './VolumeBar'
+import { VolumeBar } from '@/features/train/components/VolumeBar'
 
 // The four tools behind the weekly volume recompute (prototype tool chips).
 const RECOMPUTE_TOOLS: Tool[] = [

@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { SportScheduleSheet } from './SportScheduleSheet'
+import { SportScheduleSheet } from '@/features/train/components/SportScheduleSheet'
 import type { VolleyballSession } from '@/data/types'
 
 const initial: VolleyballSession[] = [

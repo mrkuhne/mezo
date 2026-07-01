@@ -1,4 +1,4 @@
-import type { PersonEntry, Mention, Affect } from './types'
+import type { PersonEntry, Mention, Affect } from '@/data/types'
 
 export const people: PersonEntry[] = [
   {

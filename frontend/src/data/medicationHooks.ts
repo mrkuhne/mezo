@@ -3,8 +3,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { medicationApi } from '@/lib/medicationApi'
 import { isMockMode } from '@/lib/mode'
 import { localDateString } from '@/lib/dates'
-import { useDualQuery } from './useDualQuery'
-import { medicationSeed } from './medication'
+import { useDualQuery } from '@/data/useDualQuery'
+import { medicationSeed } from '@/data/medication'
 import type {
   Medication,
   MedicationCycle,
@@ -15,7 +15,7 @@ import type {
   MedicationDoseInput,
   MedicationInput,
   MedicationPhase,
-} from './types'
+} from '@/data/types'
 
 const MEDICATION_KEY = ['medication'] as const
 const TODAY_KEY = ['today'] as const

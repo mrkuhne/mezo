@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { KamraItemDetailView } from './KamraItemDetailView'
+import { KamraItemDetailView } from '@/features/fuel/views/KamraItemDetailView'
 import { usePantry } from '@/data/hooks'
 
 // KamraItemDetailView reads usePantry (a dual-mode TanStack query). Pin mock mode.

@@ -1,4 +1,4 @@
-import type { CheckinSlot } from './types'
+import type { CheckinSlot } from '@/data/types'
 
 export const initialCheckins: CheckinSlot[] = [
   { time: '06:30', state: 'done', values: { energy: 7, stress: 3, body: 6, mental: 7 }, note: 'Reta D2 reggel · pihenve' },

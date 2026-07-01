@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
-import { MeSubNav } from './MeSubNav'
-import { SettingsSheet } from './SettingsSheet'
+import { MeSubNav } from '@/features/me/MeSubNav'
+import { SettingsSheet } from '@/features/me/SettingsSheet'
 
 export type MeOutletContext = { openSettings: () => void }
 

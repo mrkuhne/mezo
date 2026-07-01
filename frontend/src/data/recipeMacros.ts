@@ -1,4 +1,4 @@
-import type { Ingredient, RecipeIngredientLine } from './types'
+import type { Ingredient, RecipeIngredientLine } from '@/data/types'
 
 type Macros = { kcal: number; p: number; c: number; f: number }
 

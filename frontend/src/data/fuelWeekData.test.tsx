@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { useFuelWeek, useReplanScenarios, useStackRecommendations } from './hooks'
+import { useFuelWeek, useReplanScenarios, useStackRecommendations } from '@/data/hooks'
 
 test('useFuelWeek returns 7 reta days, gym schedule, supplement matrix, patterns', () => {
   const { result } = renderHook(() => useFuelWeek())

@@ -11,7 +11,7 @@ import { Icon } from '@/components/ui/Icon'
 import { Display } from '@/components/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
 import type { SportSessionCreateRequest } from '@/lib/trainApi'
-import { useEditableNumber } from './useEditableNumber'
+import { useEditableNumber } from '@/features/train/components/useEditableNumber'
 
 // --- NumberStep: label + mono value + 44px ± buttons (reuses .stepper) ---
 // min/max clamp the stepped value to the API contract bounds so the sheets can

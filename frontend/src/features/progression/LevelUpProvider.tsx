@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import type { LevelUpResult } from '@/lib/trainApi'
-import { LevelUpScreen } from './LevelUpScreen'
+import { LevelUpScreen } from '@/features/progression/LevelUpScreen'
 
 type Ctx = { showLevelUp: (result?: LevelUpResult | null) => void }
 const LevelUpContext = createContext<Ctx | null>(null)

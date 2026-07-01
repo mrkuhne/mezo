@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { ScoreRing } from './ScoreRing'
+import { ScoreRing } from '@/components/ui/ScoreRing'
 
 test('renders the centered label when provided', () => {
   render(<ScoreRing pct={0.92} size={96} label="92" />)

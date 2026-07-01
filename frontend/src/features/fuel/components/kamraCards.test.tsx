@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { KamraCard } from './KamraCard'
-import { SuggestionCard } from './SuggestionCard'
+import { KamraCard } from '@/features/fuel/components/KamraCard'
+import { SuggestionCard } from '@/features/fuel/components/SuggestionCard'
 import { QueryWrapper } from '@/test/queryWrapper'
 import type { PantryItem } from '@/data/types'
 

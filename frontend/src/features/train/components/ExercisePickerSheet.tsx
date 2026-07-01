@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train'
 
-import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '../muscleFilters'
+import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '@/features/train/muscleFilters'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'

@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { ProgressBar } from './ProgressBar'
+import { ProgressBar } from '@/components/ui/ProgressBar'
 
 test('clamps value to 0..100 and applies tone fill', () => {
   const { container } = render(<ProgressBar value={150} tone="warning" />)

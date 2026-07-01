@@ -1,5 +1,5 @@
 import { Outlet } from 'react-router-dom'
-import { TrainSubNav } from './TrainSubNav'
+import { TrainSubNav } from '@/features/train/TrainSubNav'
 
 // Thin shell (Fuel pattern): the sub-nav is pinned at the top and each sub-view
 // renders its own `.page-header` (eyebrow + title) below it — Train's views need

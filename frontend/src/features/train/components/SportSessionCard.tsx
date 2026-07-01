@@ -5,7 +5,7 @@
 // Ported from prototype sport.jsx SportSessionCard.
 // ============================================================
 import type { SportSession } from '@/data/types'
-import { MiniBar } from './MiniBar'
+import { MiniBar } from '@/features/train/components/MiniBar'
 
 interface SportSessionCardProps {
   session: SportSession

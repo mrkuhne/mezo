@@ -1,4 +1,4 @@
-import type { KnowledgeFact, KnowledgeEdge, FactCategory } from './types'
+import type { KnowledgeFact, KnowledgeEdge, FactCategory } from '@/data/types'
 
 export const facts: KnowledgeFact[] = [
   { id: 'f1', text: 'Pull Day-en a Chest Supported Row a key compound', category: 'tendency', active: true, reinforced: 12 },

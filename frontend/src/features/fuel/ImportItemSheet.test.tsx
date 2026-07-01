@@ -1,5 +1,5 @@
 import { render, screen, act, fireEvent } from '@testing-library/react'
-import { ImportItemSheet } from './ImportItemSheet'
+import { ImportItemSheet } from '@/features/fuel/ImportItemSheet'
 
 test('input phase has the URL field and quick-import chips', () => {
   render(<ImportItemSheet onClose={() => {}} />)

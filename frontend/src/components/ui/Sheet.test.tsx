@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { Sheet } from './Sheet'
+import { Sheet } from '@/components/ui/Sheet'
 
 test('renders handle + children', () => {
   render(<Sheet onClose={() => {}}><p>tartalom</p></Sheet>)

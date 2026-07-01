@@ -5,7 +5,7 @@ import type {
   RecurringPattern,
   ReplanScenario,
   StackRecommendation,
-} from './types'
+} from '@/data/types'
 
 // fuel-plan.jsx RetaWeekStrip phases (227–235)
 export const retaWeek: RetaDayCell[] = [

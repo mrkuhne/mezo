@@ -7,7 +7,7 @@ import {
   HEADLINE_BY_SOURCE,
   HEADLINE_NO_LEVELUP,
   skillDisplay,
-} from './levelUpMeta'
+} from '@/features/progression/levelUpMeta'
 
 const RING_R = 26
 const RING_C = 2 * Math.PI * RING_R // ≈ 163.36 — matches the mockup's dasharray

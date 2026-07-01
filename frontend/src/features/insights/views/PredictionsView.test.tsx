@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { PredictionsView } from './PredictionsView'
+import { PredictionsView } from '@/features/insights/views/PredictionsView'
 
 test('renders the header, pending + validated states, confidence and outcome', () => {
   render(<PredictionsView />)

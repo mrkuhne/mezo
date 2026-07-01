@@ -1,4 +1,4 @@
-import { cn } from './cn'
+import { cn } from '@/lib/cn'
 
 test('joins truthy class names and skips falsy', () => {
   expect(cn('a', false, 'b', undefined, null, 'c')).toBe('a b c')

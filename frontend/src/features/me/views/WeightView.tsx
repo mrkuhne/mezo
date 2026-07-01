@@ -3,11 +3,11 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
 import { useGoal, useWeight } from '@/data/hooks'
-import { WeightHero } from '../components/WeightHero'
-import { WeightTrendChart } from '../components/WeightTrendChart'
-import { WeeklyWeightCard } from '../components/WeeklyWeightCard'
-import { groupByWeek, dayRows, type Period } from '../components/weightStats'
-import { WeightLogSheet } from '../WeightLogSheet'
+import { WeightHero } from '@/features/me/components/WeightHero'
+import { WeightTrendChart } from '@/features/me/components/WeightTrendChart'
+import { WeeklyWeightCard } from '@/features/me/components/WeeklyWeightCard'
+import { groupByWeek, dayRows, type Period } from '@/features/me/components/weightStats'
+import { WeightLogSheet } from '@/features/me/WeightLogSheet'
 
 const PERIODS: Period[] = ['7d', '30d', '90d', '1y']
 const WEEK_STEP = 6

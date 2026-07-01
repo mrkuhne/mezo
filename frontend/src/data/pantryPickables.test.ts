@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
-import { buildPickables } from './pantryPickables'
-import type { Ingredient, SupplementStashItem } from './types'
+import { buildPickables } from '@/data/pantryPickables'
+import type { Ingredient, SupplementStashItem } from '@/data/types'
 
 const food = (over: Partial<Ingredient> = {}): Ingredient => ({
   id: 'f1', name: 'Csirkemell', brand: 'kifli', source: 'kifli.hu', category: 'protein',

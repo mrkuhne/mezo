@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { Eyebrow } from './Eyebrow'
-import { LabelMono } from './LabelMono'
-import { Display } from './Display'
-import { PageTitle } from './PageTitle'
+import { Eyebrow } from '@/components/ui/Eyebrow'
+import { LabelMono } from '@/components/ui/LabelMono'
+import { Display } from '@/components/ui/Display'
+import { PageTitle } from '@/components/ui/PageTitle'
 
 test('Eyebrow renders text and brand modifier', () => {
   const { rerender } = render(<Eyebrow>MA</Eyebrow>)

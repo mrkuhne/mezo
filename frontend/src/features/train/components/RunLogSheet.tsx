@@ -3,7 +3,7 @@ import { Sheet } from '@/components/ui/Sheet'
 import { Icon } from '@/components/ui/Icon'
 import { Display } from '@/components/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
-import { NumberStep, ScaleRow } from './SportLogSheet'
+import { NumberStep, ScaleRow } from '@/features/train/components/SportLogSheet'
 import type { RunSessionLogRequest } from '@/lib/runningApi'
 
 export function RunLogSheet({ ctx, onClose, onSave }: {

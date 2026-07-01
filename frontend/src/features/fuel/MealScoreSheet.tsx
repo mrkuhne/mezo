@@ -10,8 +10,8 @@ import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Display } from '@/components/ui/Display'
 import { ToolChipRow } from '@/components/ui/ToolChipRow'
 import { SafeMarkdown } from '@/lib/safeMarkdown'
-import { ScoreHero } from './components/ScoreHero'
-import { DimensionCard } from './components/DimensionCard'
+import { ScoreHero } from '@/features/fuel/components/ScoreHero'
+import { DimensionCard } from '@/features/fuel/components/DimensionCard'
 
 export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () => void }) {
   const b = meal.breakdown

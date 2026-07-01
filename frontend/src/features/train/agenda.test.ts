@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
-import { daySessions } from './agenda'
-import type { WeeklyAgendaDay } from './components/WeeklyDayRow'
+import { daySessions } from '@/features/train/agenda'
+import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 
 const day = (over: Partial<WeeklyAgendaDay>): WeeklyAgendaDay =>
   ({ day: 'Kedd', gym: null, volleyball: null, running: [], isToday: false, ...over })

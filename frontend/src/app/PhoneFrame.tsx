@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn'
 import type { ReactNode } from 'react'
-import { StatusBar } from './StatusBar'
+import { StatusBar } from '@/app/StatusBar'
 
 export function PhoneFrame({ children, anchor = false, clock }: { children: ReactNode; anchor?: boolean; clock?: string }) {
   return (

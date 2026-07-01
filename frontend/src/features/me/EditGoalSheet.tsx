@@ -5,7 +5,7 @@ import { Display } from '@/components/ui/Display'
 import { LabelMono } from '@/components/ui/LabelMono'
 import { Icon } from '@/components/ui/Icon'
 import { useGoalActions } from '@/data/hooks'
-import { FieldRow } from './components/FieldRow'
+import { FieldRow } from '@/features/me/components/FieldRow'
 import type { Goal } from '@/data/types'
 
 // Goal manage sheet (G4b). Opened from the GoalsView hero. Shows the read-only

@@ -11,8 +11,8 @@
 // are skipped to avoid a duplicate row.
 // ============================================================
 import { useMemo } from 'react'
-import { usePantry } from './pantryHooks'
-import type { Ingredient, PantryItemKind, SupplementStashItem } from './types'
+import { usePantry } from '@/data/pantryHooks'
+import type { Ingredient, PantryItemKind, SupplementStashItem } from '@/data/types'
 
 /** An Ingredient the recipe picker can offer, tagged with its pantry kind. */
 export interface PickableIngredient extends Ingredient {

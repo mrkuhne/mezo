@@ -3,9 +3,9 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import { createElement } from 'react'
-import { useRunning } from './runningHooks'
+import { useRunning } from '@/data/runningHooks'
 import { runningApi } from '@/lib/runningApi'
-import { newDraft } from './runningDraft'
+import { newDraft } from '@/data/runningDraft'
 
 // REAL mode: the create path must populate the blocks cache SYNCHRONOUSLY so the
 // builder, navigated to immediately on success, finds the new block (mezo-11m).

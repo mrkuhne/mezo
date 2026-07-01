@@ -11,7 +11,7 @@ import { useState } from 'react'
 import { MUSCLE_LABELS } from '@/data/train'
 import type { VolumeProfile } from '@/data/types'
 import { Icon, type IconName } from '@/components/ui/Icon'
-import { FinalStat } from './FinalStat'
+import { FinalStat } from '@/features/train/components/FinalStat'
 
 interface VolumeBarProps {
   muscle: string

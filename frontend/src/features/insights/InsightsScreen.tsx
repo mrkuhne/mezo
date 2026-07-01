@@ -2,8 +2,8 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { PageTitle } from '@/components/ui/PageTitle'
 import { Icon } from '@/components/ui/Icon'
-import { InsightsSubNav } from './InsightsSubNav'
-import { INSIGHTS_TABS } from './tabs'
+import { InsightsSubNav } from '@/features/insights/InsightsSubNav'
+import { INSIGHTS_TABS } from '@/features/insights/tabs'
 
 export function InsightsScreen() {
   const { pathname } = useLocation()

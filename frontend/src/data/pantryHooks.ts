@@ -2,11 +2,11 @@ import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { pantryApi } from '@/lib/pantryApi'
 import { isMockMode } from '@/lib/mode'
-import { useDualQuery } from './useDualQuery'
-import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions } from './pantry'
-import { pantrySources } from './pantrySources'
-import { supplementsStash } from './fuel'
-import type { Ingredient, SupplementStashItem, PantryItemInput } from './types'
+import { useDualQuery } from '@/data/useDualQuery'
+import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions } from '@/data/pantry'
+import { pantrySources } from '@/data/pantrySources'
+import { supplementsStash } from '@/data/fuel'
+import type { Ingredient, SupplementStashItem, PantryItemInput } from '@/data/types'
 
 const PANTRY_KEY = ['pantry'] as const
 const mockData = { ingredients: mockIngredients, stash: supplementsStash }

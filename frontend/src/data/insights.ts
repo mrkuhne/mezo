@@ -5,7 +5,7 @@ import type {
   Experiment,
   WeeklyReview,
   Memoir,
-} from './types'
+} from '@/data/types'
 
 export const MIN_PATTERN_CONFIDENCE = 0.65
 

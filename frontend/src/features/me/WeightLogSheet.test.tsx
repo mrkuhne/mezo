@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { WeightLogSheet } from './WeightLogSheet'
+import { WeightLogSheet } from '@/features/me/WeightLogSheet'
 
 test('prefills the current weight readout', () => {
   render(<WeightLogSheet onClose={() => {}} onSave={() => {}} currentWeight={72.4} />)

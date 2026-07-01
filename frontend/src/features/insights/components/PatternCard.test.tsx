@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { PatternCard } from './PatternCard'
+import { PatternCard } from '@/features/insights/components/PatternCard'
 import { patterns } from '@/data/insights'
 
 const p1 = patterns[0] // has `thinking`

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { roundMacro, lineContribution, enrichLine, computeRecipeMacros } from './recipeMacros'
-import type { Ingredient, RecipeIngredientLine } from './types'
+import { roundMacro, lineContribution, enrichLine, computeRecipeMacros } from '@/data/recipeMacros'
+import type { Ingredient, RecipeIngredientLine } from '@/data/types'
 
 const zab: Ingredient = {
   id: 'ing-zab', name: 'Zabpehely', brand: '', source: 'kifli.hu', category: 'carb',

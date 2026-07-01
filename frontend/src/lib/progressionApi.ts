@@ -1,5 +1,5 @@
-import { apiFetch } from './api'
-import type { components } from './api.gen'
+import { apiFetch } from '@/lib/api'
+import type { components } from '@/lib/api.gen'
 
 // Contract types generated from api/openapi.yml (Progression P4) — no regen needed.
 export type ProgressionProfileResponse = components['schemas']['ProgressionProfileResponse']

@@ -3,11 +3,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useMedication, useMedicationActions } from './medicationHooks'
+import { useMedication, useMedicationActions } from '@/data/medicationHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { localDateString } from '@/lib/dates'
-import type { MedicationDoseInput } from './types'
+import type { MedicationDoseInput } from '@/data/types'
 
 function sharedWrapper() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })

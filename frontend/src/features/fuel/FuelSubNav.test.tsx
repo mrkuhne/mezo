@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { FuelSubNav } from './FuelSubNav'
+import { FuelSubNav } from '@/features/fuel/FuelSubNav'
 
 function renderAt(path: string) {
   return render(<MemoryRouter initialEntries={[path]}><FuelSubNav /></MemoryRouter>)

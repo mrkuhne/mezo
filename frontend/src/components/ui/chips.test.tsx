@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { Chip } from './Chip'
-import { ToolChip } from './ToolChip'
-import { ToolChipRow } from './ToolChipRow'
-import { RefTag } from './RefTag'
+import { Chip } from '@/components/ui/Chip'
+import { ToolChip } from '@/components/ui/ToolChip'
+import { ToolChipRow } from '@/components/ui/ToolChipRow'
+import { RefTag } from '@/components/ui/RefTag'
 
 test('Chip applies variant', () => {
   render(<Chip variant="warning">NIGGLE</Chip>)

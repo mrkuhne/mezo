@@ -1,4 +1,4 @@
-import type { SleepEntry } from './types'
+import type { SleepEntry } from '@/data/types'
 
 export const sleepLog: SleepEntry[] = [
   { date: '2026-05-09', bedtime: '23:15', wakeup: '06:45', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 130, notes: null },
