@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { QuickInputSheet } from '@/features/quickinput/QuickInputSheet'
+import { QuickInputSheet } from '@/features/quickinput/sheets/QuickInputSheet'
 
 test('shows the header and switches to text mode', async () => {
   render(<QuickInputSheet onClose={() => {}} />)
