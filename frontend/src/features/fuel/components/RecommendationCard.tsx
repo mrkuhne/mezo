@@ -1,6 +1,6 @@
 import type { StackRecommendation } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
-import { SourceBadge } from '@/components/ui/SourceBadge'
+import { Icon } from '@/shared/ui/Icon'
+import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 
 // fuel-stack.jsx RecommendationCard (330–362)
 export function RecommendationCard({ rec }: { rec: StackRecommendation }) {

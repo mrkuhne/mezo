@@ -11,11 +11,11 @@
 // ============================================================
 import { useState } from 'react'
 import { usePantry } from '@/data/hooks'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
-import { SourceBadge } from '@/components/ui/SourceBadge'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
+import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { usePickableIngredients, kindLabel, type PickableIngredient } from '@/data/pantryPickables'
 

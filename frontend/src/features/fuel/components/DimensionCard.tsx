@@ -4,8 +4,8 @@
 // + per-dimension visual panel (used by the meal-score panels).
 // ============================================================
 import type { MealDimension } from '@/data/types'
-import { ProgressBar } from '@/components/ui/ProgressBar'
-import { SafeMarkdown } from '@/lib/safeMarkdown'
+import { ProgressBar } from '@/shared/ui/ProgressBar'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { MacroPanel } from '@/features/fuel/components/MacroPanel'
 import { MicroPanel } from '@/features/fuel/components/MicroPanel'
 import { NovaPanel } from '@/features/fuel/components/NovaPanel'

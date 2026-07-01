@@ -1,6 +1,6 @@
 import type { WeightEntry } from '@/data/types'
 import type { GoalResponse } from '@/lib/goalApi'
-import { huMonthDay } from '@/lib/dates'
+import { huMonthDay } from '@/shared/lib/dates'
 import { periodWindow, sliceByPeriod, movingAverage, planTrajectory, daysBetween, isoMinusDays, type Period } from '@/features/me/components/weightStats'
 
 const W = 360, H = 172

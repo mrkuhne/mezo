@@ -1,5 +1,5 @@
-import type { IconName } from '@/components/ui/Icon'
-import type { Tool } from '@/components/ui/ToolChip'
+import type { IconName } from '@/shared/ui/Icon'
+import type { Tool } from '@/shared/ui/ToolChip'
 import type { NovaGroup } from '@/data/nova'
 import type { PantrySourceKey } from '@/data/pantrySources'
 

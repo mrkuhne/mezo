@@ -5,7 +5,7 @@
 // optional amber warning banner, and sets×reps + RIR on the right.
 // Ported from prototype train-views.jsx GymExRow.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import type { GymExercise } from '@/data/types'
 
 interface GymExRowProps {

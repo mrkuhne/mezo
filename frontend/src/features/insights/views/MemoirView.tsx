@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Icon } from '@/components/ui/Icon'
-import { RefTag } from '@/components/ui/RefTag'
-import { cn } from '@/lib/cn'
+import { Icon } from '@/shared/ui/Icon'
+import { RefTag } from '@/shared/ui/RefTag'
+import { cn } from '@/shared/lib/cn'
 import { useInsights } from '@/data/hooks'
 
 type ReactionKey = 'like' | 'love' | 'save' | 'dismiss'

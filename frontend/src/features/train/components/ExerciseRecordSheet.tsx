@@ -6,10 +6,10 @@
 // weight-based cells. Pure read view — data comes in as a prop.
 // ============================================================
 import { MUSCLE_LABELS } from '@/data/train'
-import { huMonthDay } from '@/lib/dates'
+import { huMonthDay } from '@/shared/lib/dates'
 import type { ExerciseRecordResponse } from '@/lib/trainApi'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
 
 // 102.5 -> "102.5", 100.0 -> "100"
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')

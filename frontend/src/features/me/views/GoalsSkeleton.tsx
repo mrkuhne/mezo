@@ -2,7 +2,7 @@
 // shape — page-header → goal hero card (eyebrow + title + window + a wide weight
 // track + 2 stats) → a timeline-row placeholder — so the swap to real content does
 // not reflow. Built from the Skeleton primitives.
-import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function GoalsSkeleton() {
   return (

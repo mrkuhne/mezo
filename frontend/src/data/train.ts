@@ -2,7 +2,7 @@ import type {
   Mesocycle, WorkoutPlan, GymSchedule, GymScheduleSlot, Sport, ExerciseLibraryItem,
   GoalPreset, SplitOption, MesoPhase,
 } from '@/data/types'
-import type { IconName } from '@/components/ui/Icon'
+import type { IconName } from '@/shared/ui/Icon'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
 export const MUSCLE_LABELS: Record<string, string> = {

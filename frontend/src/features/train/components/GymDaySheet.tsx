@@ -6,9 +6,9 @@
 // Ported from prototype train-views.jsx GymDaySheet.
 // ============================================================
 import { useNavigate } from 'react-router-dom'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { CtaPrimary } from '@/components/ui/Cta'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { CtaPrimary } from '@/shared/ui/Cta'
 import { DAY_LABELS, MUSCLE_LABELS } from '@/data/train'
 import type { MesoDay } from '@/data/types'
 import { GymExRow } from '@/features/train/components/GymExRow'

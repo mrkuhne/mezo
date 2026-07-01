@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
-import { currentWeekOf } from '@/lib/dates'
+import { currentWeekOf } from '@/shared/lib/dates'
 import { runningApi, type RunningBlockResponse, type RunningBlockUpsertRequest, type RunSessionLogRequest, type RunSessionLogResponse } from '@/lib/runningApi'
 import { runningBlocksMock, runSessionsMock } from '@/data/running'
 import { runLevelUpMock } from '@/data/progressionMock'

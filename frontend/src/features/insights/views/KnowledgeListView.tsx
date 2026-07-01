@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Toggle } from '@/components/ui/Toggle'
+import { Toggle } from '@/shared/ui/Toggle'
 import { useKnowledge } from '@/data/hooks'
 import { factCategoryColor } from '@/data/knowledge'
 

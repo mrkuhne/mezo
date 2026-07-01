@@ -2,7 +2,7 @@
 // Mai shape — page-header → gym hero card (eyebrow/title/3-chip row/CTA block) →
 // weekly timeline of day rows — so the swap to real content does not reflow.
 // Built from the Skeleton primitives.
-import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function TrainTodaySkeleton() {
   return (

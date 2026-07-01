@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Icon, type IconName } from '@/components/ui/Icon'
+import { Icon, type IconName } from '@/shared/ui/Icon'
 
 const anchors: { label: string; sub: string; icon: IconName }[] = [
   { label: 'Egy pohár víz', sub: 'Most. Egyszerű kezdet.', icon: 'drop' },

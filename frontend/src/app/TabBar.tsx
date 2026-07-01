@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
-import { cn } from '@/lib/cn'
-import { Icon, type IconName } from '@/components/ui/Icon'
+import { cn } from '@/shared/lib/cn'
+import { Icon, type IconName } from '@/shared/ui/Icon'
 
 interface Tab { id: string; label: string; icon: IconName }
 const TABS: Tab[] = [

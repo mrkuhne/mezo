@@ -8,10 +8,10 @@
 // ============================================================
 import { useRef, useState } from 'react'
 import type { LoggedWorkoutExercise } from '@/data/types'
-import { Sheet } from '@/components/ui/Sheet'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
-import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
+import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 
 function FeedbackRow({
   label,

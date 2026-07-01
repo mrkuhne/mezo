@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useMedication, useMedicationActions } from '@/data/medicationHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import { localDateString } from '@/lib/dates'
+import { localDateString } from '@/shared/lib/dates'
 import type { MedicationDoseInput } from '@/data/types'
 
 function sharedWrapper() {

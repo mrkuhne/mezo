@@ -1,5 +1,5 @@
 import type { ProtocolSlotData } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 
 // fuel-stack.jsx ProtocolSlot (227–280)
 export function ProtocolSlot({ slot }: { slot: ProtocolSlotData }) {

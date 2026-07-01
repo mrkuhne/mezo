@@ -5,7 +5,7 @@
 // are not interactive. Today's card ("current") is brand-accented.
 // Ported from prototype train-views.jsx GymDayCard.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import type { MesoDay } from '@/data/types'
 
 interface GymDayCardProps {

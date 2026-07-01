@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
 import { TimePicker } from '@/features/me/components/TimePicker'
 import type { SleepLogInput } from '@/data/types'
 

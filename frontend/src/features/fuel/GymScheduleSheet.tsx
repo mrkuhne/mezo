@@ -14,11 +14,11 @@
 // ============================================================
 import { useState } from 'react'
 import type { GymScheduleDay } from '@/data/types'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
-import { Toggle } from '@/components/ui/Toggle'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
+import { Toggle } from '@/shared/ui/Toggle'
 
 const TIMES = ['06:00', '07:00', '08:00', '16:00', '17:00', '18:00', '19:00']
 

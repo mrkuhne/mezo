@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import { useChat } from '@/data/hooks'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'

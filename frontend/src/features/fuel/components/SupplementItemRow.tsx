@@ -1,5 +1,5 @@
 import type { SlotItem } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import { useStack } from '@/data/hooks'
 
 export function SupplementItemRow({ item }: { item: SlotItem }) {

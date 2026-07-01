@@ -4,12 +4,12 @@
 // Dimenziók: kcal&macro · micro-macro · NOVA processing · context
 // ============================================================
 import type { FuelMeal } from '@/data/types'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import { SafeMarkdown } from '@/lib/safeMarkdown'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
+import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { ScoreHero } from '@/features/fuel/components/ScoreHero'
 import { DimensionCard } from '@/features/fuel/components/DimensionCard'
 

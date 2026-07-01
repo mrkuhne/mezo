@@ -1,5 +1,5 @@
-import { Icon } from '@/components/ui/Icon'
-import { cn } from '@/lib/cn'
+import { Icon } from '@/shared/ui/Icon'
+import { cn } from '@/shared/lib/cn'
 import { useInsights } from '@/data/hooks'
 
 export function PredictionsView() {

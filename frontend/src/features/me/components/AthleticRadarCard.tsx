@@ -1,5 +1,5 @@
-import { Icon } from '@/components/ui/Icon'
-import { useReducedMotion } from '@/lib/useReducedMotion'
+import { Icon } from '@/shared/ui/Icon'
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { skillDisplay } from '@/features/progression/levelUpMeta'
 import type { ProgressionProfileResponse } from '@/lib/progressionApi'
 import { dataPolygonPoints, polarPoint, polygonPoints, radarMax } from '@/features/me/components/radarGeometry'

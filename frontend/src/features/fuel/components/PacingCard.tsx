@@ -1,7 +1,7 @@
-import type { Tool } from '@/components/ui/ToolChip'
-import { Icon } from '@/components/ui/Icon'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import { SafeMarkdown } from '@/lib/safeMarkdown'
+import type { Tool } from '@/shared/ui/ToolChip'
+import { Icon } from '@/shared/ui/Icon'
+import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 
 const PACING_TOOLS: Tool[] = [
   { type: 'read', name: 'get_meal_pacing(d=7)' },

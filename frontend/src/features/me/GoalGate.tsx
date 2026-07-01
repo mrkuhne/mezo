@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import { useBiometricProfile } from '@/data/hooks'
 import { BiometricSheet } from '@/features/me/BiometricSheet'
 

@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Display } from '@/components/ui/Display'
-import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Display } from '@/shared/ui/Display'
+import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { NumberStep, ScaleRow } from '@/features/train/components/SportLogSheet'
 import type { RunSessionLogRequest } from '@/lib/runningApi'
 

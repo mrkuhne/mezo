@@ -2,7 +2,7 @@
 // Mezo · WeeklyDayRow — one day in the combined gym + volleyball
 // weekly timeline (Mai view). Ported from prototype train-views.jsx.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
 import type { RunPrescribedSession } from '@/lib/runningApi'
 import { daySessions } from '@/features/train/agenda'

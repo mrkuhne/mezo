@@ -8,8 +8,8 @@
 // ============================================================
 import { useState } from 'react'
 import { pantryCategoryMeta } from '@/data/pantry'
-import { Sheet } from '@/components/ui/Sheet'
-import { Eyebrow } from '@/components/ui/Eyebrow'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
 
 export interface CategoryOption { key: string; label: string; color: string; count: number }
 

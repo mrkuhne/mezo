@@ -2,7 +2,7 @@
 // page-header → search bar → muscle-filter chip row → a section eyebrow → a column of
 // RecordRow placeholders (rank circle + name line + small e1RM chip) — so the swap to
 // real content does not reflow. Built from the Skeleton primitives.
-import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function ExercisesSkeleton() {
   return (

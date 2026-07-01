@@ -10,11 +10,11 @@
 // Reorder is client-only / ephemeral: it only re-orders session.order.
 // ============================================================
 import { useState } from 'react'
-import { Sheet } from '@/components/ui/Sheet'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
-import { Icon, type IconName } from '@/components/ui/Icon'
-import { SortableList } from '@/components/ui/SortableList'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
+import { Icon, type IconName } from '@/shared/ui/Icon'
+import { SortableList } from '@/shared/ui/SortableList'
 
 interface ExerciseActionSheetProps {
   /** Current exercise — titles the sheet. */

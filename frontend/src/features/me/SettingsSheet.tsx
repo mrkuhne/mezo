@@ -3,12 +3,12 @@
 // Téma váltás (useTheme) — the only real, persisted setting.
 // Opened by the Profil gear chip (parent owns open/close state).
 // ============================================================
-import { Sheet } from '@/components/ui/Sheet'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { LabelMono } from '@/components/ui/LabelMono'
-import { Display } from '@/components/ui/Display'
-import { Icon } from '@/components/ui/Icon'
-import { Toggle } from '@/components/ui/Toggle'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { LabelMono } from '@/shared/ui/LabelMono'
+import { Display } from '@/shared/ui/Display'
+import { Icon } from '@/shared/ui/Icon'
+import { Toggle } from '@/shared/ui/Toggle'
 import { useTheme } from '@/app/ThemeProvider'
 
 export function SettingsSheet({ onClose }: { onClose: () => void }) {

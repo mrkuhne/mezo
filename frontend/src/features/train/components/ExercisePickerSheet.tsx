@@ -13,9 +13,9 @@ import { MUSCLE_LABELS } from '@/data/train'
 
 import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '@/features/train/muscleFilters'
 import type { ExerciseLibraryItem } from '@/data/types'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { cn } from '@/lib/cn'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { cn } from '@/shared/lib/cn'
 
 interface ExercisePickerSheetProps {
   onClose: () => void

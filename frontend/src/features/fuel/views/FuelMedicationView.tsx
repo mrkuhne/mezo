@@ -13,10 +13,10 @@
 // ============================================================
 import { useState } from 'react'
 import { useMedication } from '@/data/hooks'
-import { huMonthDayDow } from '@/lib/dates'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { PageTitle } from '@/components/ui/PageTitle'
-import { Icon } from '@/components/ui/Icon'
+import { huMonthDayDow } from '@/shared/lib/dates'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
+import { Icon } from '@/shared/ui/Icon'
 import { MedicationCycleBar } from '@/features/fuel/components/MedicationCycleBar'
 import { LogDoseSheet } from '@/features/fuel/LogDoseSheet'
 

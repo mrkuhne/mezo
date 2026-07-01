@@ -9,10 +9,10 @@
 import { useState } from 'react'
 import type { Ingredient, Recipe } from '@/data/types'
 import { useRecipes, usePantry } from '@/data/hooks'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 
 export interface MealPickedItem {

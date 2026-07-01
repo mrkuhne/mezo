@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Sheet } from '@/components/ui/Sheet'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
-import { LabelMono } from '@/components/ui/LabelMono'
-import { Icon } from '@/components/ui/Icon'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
+import { LabelMono } from '@/shared/ui/LabelMono'
+import { Icon } from '@/shared/ui/Icon'
 import { useGoal, useGoalActions, useTrain, useRunning } from '@/data/hooks'
 
 // Attach-an-existing-plan picker (G4b hub). Opened from a GoalPlanSlots "＋ Csatolj

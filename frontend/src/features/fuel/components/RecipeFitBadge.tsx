@@ -5,7 +5,7 @@
 // signal. When a real score lands the SAME slot shows the Antonio number + "fit"
 // — no layout shift. `size="hero"` is the bigger detail-hero variant.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 
 export interface RecipeFitBadgeProps {
   score: number | null

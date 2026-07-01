@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { cn } from '@/lib/cn'
+import { cn } from '@/shared/lib/cn'
 
 const SUBNAV: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/fuel', label: 'Mai', end: true },

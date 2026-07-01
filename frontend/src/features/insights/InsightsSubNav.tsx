@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { cn } from '@/lib/cn'
+import { cn } from '@/shared/lib/cn'
 import { INSIGHTS_TABS } from '@/features/insights/tabs'
 
 export function InsightsSubNav() {

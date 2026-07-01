@@ -1,5 +1,5 @@
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Chip } from '@/components/ui/Chip'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Chip } from '@/shared/ui/Chip'
 
 export function InsightsTeaser() {
   return (

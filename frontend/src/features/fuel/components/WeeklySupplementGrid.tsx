@@ -1,4 +1,4 @@
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
+import { ToolChipRow } from '@/shared/ui/ToolChipRow'
 import { DAYS_HU } from '@/data/fuelWeek'
 import type { WeeklySupplementRow } from '@/data/types'
 

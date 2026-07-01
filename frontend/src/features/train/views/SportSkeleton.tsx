@@ -1,7 +1,7 @@
 // Layout-aware loading skeleton for SportView (mezo-f2z). Mirrors the real Sport shape —
 // page-header → hero card (eyebrow/title/4 stats/explainer strip) → 3-button view switcher —
 // so the swap to real content does not reflow. Built from the Skeleton primitives.
-import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function SportSkeleton() {
   return (

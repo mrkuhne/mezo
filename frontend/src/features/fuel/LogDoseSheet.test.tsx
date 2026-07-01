@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { LogDoseSheet } from '@/features/fuel/LogDoseSheet'
 import { useMedication } from '@/data/hooks'
 import { medicationApi } from '@/lib/medicationApi'
-import { localDateString } from '@/lib/dates'
+import { localDateString } from '@/shared/lib/dates'
 
 // ONE shared QueryClient so the sheet's mutation (setQueryData on ['medication'])
 // is visible to a co-rendered useMedication() read — we assert the REAL effect

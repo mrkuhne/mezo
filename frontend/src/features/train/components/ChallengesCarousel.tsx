@@ -6,7 +6,7 @@
 // ============================================================
 import { useRef, useState, type UIEvent } from 'react'
 import type { Challenge } from '@/data/types'
-import { Eyebrow } from '@/components/ui/Eyebrow'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { ChallengeCard } from '@/features/train/components/ChallengeCard'
 
 export function ChallengesCarousel({

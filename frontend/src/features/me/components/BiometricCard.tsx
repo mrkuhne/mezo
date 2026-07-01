@@ -1,4 +1,4 @@
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import type { BiometricProfileResponse } from '@/lib/biometricProfileApi'
 import { ACTIVITY_LEVELS, ACTIVITY_SHORT, ageFromBirthDate, palLabel, type ActivityLevel } from '@/features/me/biometricFields'
 

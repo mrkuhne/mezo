@@ -10,12 +10,12 @@
 // ============================================================
 import { useState } from 'react'
 import { useMedication, useMedicationActions } from '@/data/hooks'
-import { localDateString } from '@/lib/dates'
+import { localDateString } from '@/shared/lib/dates'
 import type { MedicationDoseInput } from '@/data/types'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
 
 // Build an offset-bearing ISO-8601 datetime (`YYYY-MM-DDThh:mm:ss±hh:mm`) for the chosen
 // local date+time. The offset is THIS browser's local UTC offset for that wall-clock moment,

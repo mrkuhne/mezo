@@ -1,6 +1,6 @@
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { PageTitle } from '@/components/ui/PageTitle'
-import { Chip } from '@/components/ui/Chip'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
+import { Chip } from '@/shared/ui/Chip'
 import type { TodayMeta, UserMeta } from '@/data/types'
 
 export function DateMesoHeader({ today, user }: { today: TodayMeta; user: UserMeta }) {

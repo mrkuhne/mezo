@@ -7,13 +7,13 @@
 import { useState } from 'react'
 import type { ReplanCascade } from '@/data/types'
 import { useReplanScenarios, useProtocol } from '@/data/hooks'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import { Chip } from '@/components/ui/Chip'
-import { SafeMarkdown } from '@/lib/safeMarkdown'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
+import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import { Chip } from '@/shared/ui/Chip'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 
 // Per-system accent colors (port: fuel-stack.jsx ~613).
 const SYSTEM_COLOR: Record<ReplanCascade['system'], string> = {

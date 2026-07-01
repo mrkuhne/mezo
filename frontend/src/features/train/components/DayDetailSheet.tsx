@@ -7,10 +7,10 @@
 // Ported from prototype mesocycles.jsx DayDetailSheet. The English fragment
 // "Open the day to edit." is intentional (verbatim parity with the prototype).
 // ============================================================
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Display } from '@/components/ui/Display'
-import { CtaPrimary, CtaGhost } from '@/components/ui/Cta'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Display } from '@/shared/ui/Display'
+import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import type { MesoDay, Mesocycle } from '@/data/types'
 
 interface DayDetailSheetProps {

@@ -8,7 +8,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { DAY_ORDER } from '@/data/train'
-import { localDateString } from '@/lib/dates'
+import { localDateString } from '@/shared/lib/dates'
 
 // Asserts Phase-1 mock meso/gym data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).

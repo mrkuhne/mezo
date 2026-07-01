@@ -1,8 +1,8 @@
 import type { MacroSet } from '@/data/types'
-import { ScoreRing } from '@/components/ui/ScoreRing'
-import { ProgressBar } from '@/components/ui/ProgressBar'
-import { Icon } from '@/components/ui/Icon'
-import { pct } from '@/lib/pct'
+import { ScoreRing } from '@/shared/ui/ScoreRing'
+import { ProgressBar } from '@/shared/ui/ProgressBar'
+import { Icon } from '@/shared/ui/Icon'
+import { pct } from '@/shared/lib/pct'
 
 // `pct` guards 0/0 → 0: real mode renders a ZERO day during the cold-load window (no
 // static fallback in real mode), so a 0/0 percent must read as a benign 0%, never NaN.

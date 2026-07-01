@@ -1,7 +1,7 @@
 // Layout-aware loading skeleton for GymView (mezo-f2z). Mirrors the real Gym shape —
 // page-header → meso meta card (4 stats + a divider strip) → day-by-day list — so the
 // swap to real content does not reflow. Built from the Skeleton primitives.
-import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function GymSkeleton() {
   return (

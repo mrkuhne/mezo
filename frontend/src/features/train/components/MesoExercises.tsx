@@ -12,9 +12,9 @@
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Icon } from '@/components/ui/Icon'
-import { SafeMarkdown } from '@/lib/safeMarkdown'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Icon } from '@/shared/ui/Icon'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { DayExerciseSection } from '@/features/train/components/DayExerciseSection'
 import { ExercisePickerSheet } from '@/features/train/components/ExercisePickerSheet'
 

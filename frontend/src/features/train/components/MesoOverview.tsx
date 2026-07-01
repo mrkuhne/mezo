@@ -8,8 +8,8 @@
 import { useState } from 'react'
 import { MESOCYCLE_PHASE_COLORS } from '@/data/train'
 import type { MesoDay, Mesocycle, MesoPhase } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
-import { Chip } from '@/components/ui/Chip'
+import { Icon } from '@/shared/ui/Icon'
+import { Chip } from '@/shared/ui/Chip'
 import { PhaseCurveBars } from '@/features/train/components/PhaseCurveBars'
 import { DayDetailSheet } from '@/features/train/components/DayDetailSheet'
 

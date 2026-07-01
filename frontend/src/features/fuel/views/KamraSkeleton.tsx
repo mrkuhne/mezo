@@ -1,7 +1,7 @@
 // Layout-aware loading skeleton for FuelKamraView (mezo-f2z). Mirrors the real
 // Kamra shape — page-header → 4-segment stats strip card → a few item cards —
 // so the swap to real content does not reflow. Built from the Skeleton primitives.
-import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function KamraSkeleton() {
   return (

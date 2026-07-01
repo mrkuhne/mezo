@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { cn } from '@/lib/cn'
+import { cn } from '@/shared/lib/cn'
 import { TRAIN_TABS } from '@/features/train/tabs'
 
 export function TrainSubNav() {

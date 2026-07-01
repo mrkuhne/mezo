@@ -1,5 +1,5 @@
-import { RefTag } from '@/components/ui/RefTag'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
+import { RefTag } from '@/shared/ui/RefTag'
+import { ToolChipRow } from '@/shared/ui/ToolChipRow'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
 
 export function ChatMessage({ m }: { m: ChatMessageT }) {

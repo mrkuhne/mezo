@@ -5,7 +5,7 @@
 // the number straight in) so reaching e.g. 100 kg needs no tap-spam.
 // Ported from prototype train.jsx.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import { useEditableNumber } from '@/features/train/components/useEditableNumber'
 
 export function CompactStepper({

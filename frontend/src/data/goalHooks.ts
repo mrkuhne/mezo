@@ -9,7 +9,7 @@ import {
 } from '@/lib/goalApi'
 import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } from '@/lib/goalLinkApi'
 import { isMockMode } from '@/lib/mode'
-import { huMonthDay } from '@/lib/dates'
+import { huMonthDay } from '@/shared/lib/dates'
 import {
   goal as mockGoal,
   goalResponse as mockGoalResponse,

@@ -17,10 +17,10 @@
 import { useState } from 'react'
 import type { SupplementStashItem } from '@/data/types'
 import { useStack } from '@/data/hooks'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
 
 // Accent colour per stash item: caffeine wins, then type, then brand-glow.
 function rowColor(s: SupplementStashItem): string {

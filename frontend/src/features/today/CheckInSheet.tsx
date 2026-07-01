@@ -4,8 +4,8 @@
 // + opcionális voice/free note
 // ============================================================
 import { useMemo, useState } from 'react'
-import { Icon } from '@/components/ui/Icon'
-import { Sheet } from '@/components/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Sheet } from '@/shared/ui/Sheet'
 import type { CheckinSlot, CheckinValues } from '@/data/types'
 
 type DimId = keyof CheckinValues

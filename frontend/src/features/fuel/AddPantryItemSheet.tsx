@@ -15,10 +15,10 @@ import { SHOW_PANTRY_STOCK } from '@/lib/flags'
 import { pantryCategoryMeta } from '@/data/pantry'
 import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
 import type { PantryItemInput, PantryItemKind } from '@/data/types'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
 
 const kinds: { id: PantryItemKind; label: string }[] = [
   { id: 'food', label: 'Étel' },

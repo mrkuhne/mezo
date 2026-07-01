@@ -1,5 +1,5 @@
-import { Icon } from '@/components/ui/Icon'
-import type { IconName } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
+import type { IconName } from '@/shared/ui/Icon'
 import { affectColor } from '@/data/people'
 import type { Mention, MentionSource, PersonEntry } from '@/data/types'
 

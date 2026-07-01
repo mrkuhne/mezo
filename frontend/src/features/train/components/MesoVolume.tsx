@@ -10,11 +10,11 @@
 import { useState } from 'react'
 import { MUSCLE_LABELS } from '@/data/train'
 import type { Mesocycle } from '@/data/types'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Icon } from '@/components/ui/Icon'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import type { Tool } from '@/components/ui/ToolChip'
-import { SafeMarkdown } from '@/lib/safeMarkdown'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Icon } from '@/shared/ui/Icon'
+import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import type { Tool } from '@/shared/ui/ToolChip'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { VolumeBar } from '@/features/train/components/VolumeBar'
 
 // The four tools behind the weekly volume recompute (prototype tool chips).

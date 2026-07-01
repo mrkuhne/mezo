@@ -1,9 +1,9 @@
 import { useState, type ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useGoalCreation, useWeight, useFeasibilityPreview, useBiometricProfile } from '@/data/hooks'
-import { Icon, type IconName } from '@/components/ui/Icon'
-import { ScreenSkeleton } from '@/components/ui/ScreenSkeleton'
-import { huMonthDay } from '@/lib/dates'
+import { Icon, type IconName } from '@/shared/ui/Icon'
+import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
+import { huMonthDay } from '@/shared/lib/dates'
 import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/lib/goalApi'
 
 type Trajectory = 'cut' | 'bulk' | 'maintain'

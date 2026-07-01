@@ -7,14 +7,14 @@
 // Ports prototype fuel-kamra.jsx:508-709 faithfully.
 // ============================================================
 import { useEffect, useState } from 'react'
-import { Sheet } from '@/components/ui/Sheet'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { StatCell } from '@/components/ui/StatCell'
-import { SourceBadge } from '@/components/ui/SourceBadge'
-import { NovaDot } from '@/components/ui/NovaDot'
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import type { Tool } from '@/components/ui/ToolChip'
+import { Sheet } from '@/shared/ui/Sheet'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { StatCell } from '@/shared/ui/StatCell'
+import { SourceBadge } from '@/features/fuel/components/SourceBadge'
+import { NovaDot } from '@/features/fuel/components/NovaDot'
+import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import type { Tool } from '@/shared/ui/ToolChip'
 import { type PantrySourceKey } from '@/data/pantrySources'
 import type { NovaGroup } from '@/data/nova'
 

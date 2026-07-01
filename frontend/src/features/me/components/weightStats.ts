@@ -1,6 +1,6 @@
 import type { WeightEntry, GoalKind } from '@/data/types'
 import type { GoalResponse } from '@/lib/goalApi'
-import { localDateString } from '@/lib/dates'
+import { localDateString } from '@/shared/lib/dates'
 
 export type Period = '7d' | '30d' | '90d' | '1y'
 export type WeekDir = 'down' | 'up' | 'flat'

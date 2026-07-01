@@ -1,7 +1,7 @@
 // Layout-aware loading skeleton for FuelRecipesView (mezo-f2z). Mirrors the real
 // Receptek shape — page-header → 5-segment typebar → a few editorial RecipeCards —
 // so the swap to real content does not reflow. Built from the Skeleton primitives.
-import { Skeleton, SkeletonCard } from '@/components/ui/Skeleton'
+import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function RecipesSkeleton() {
   return (

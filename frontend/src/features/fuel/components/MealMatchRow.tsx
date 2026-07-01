@@ -1,5 +1,5 @@
 import type { MealMatch } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import { useRecipes } from '@/data/hooks'
 
 // fuel-stack.jsx MealMatchRow (365–391)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import { patternCategoryColor } from '@/data/insights'
 import type { Pattern, PatternCritique, PatternStatus } from '@/data/types'
 

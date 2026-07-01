@@ -1,5 +1,5 @@
-import { Icon } from '@/components/ui/Icon'
-import { useReducedMotion } from '@/lib/useReducedMotion'
+import { Icon } from '@/shared/ui/Icon'
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import { MUSCLE_LABELS } from '@/data/train'
 import type { ProgressionProfileResponse, SkillLevel } from '@/lib/progressionApi'
 

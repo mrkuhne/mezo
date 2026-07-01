@@ -3,9 +3,9 @@
 // Multimodal unified intake: voice / photo / number / chip / text
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
-import { Icon, type IconName } from '@/components/ui/Icon'
-import { Sheet } from '@/components/ui/Sheet'
-import { cn } from '@/lib/cn'
+import { Icon, type IconName } from '@/shared/ui/Icon'
+import { Sheet } from '@/shared/ui/Sheet'
+import { cn } from '@/shared/lib/cn'
 
 interface ParsedEntity {
   kind: string

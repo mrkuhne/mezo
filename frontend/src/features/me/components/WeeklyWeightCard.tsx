@@ -1,5 +1,5 @@
-import { Icon } from '@/components/ui/Icon'
-import { huMonthDay, huMonthDayDow } from '@/lib/dates'
+import { Icon } from '@/shared/ui/Icon'
+import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import type { GoalKind } from '@/data/types'
 import { isImprovement, fmtSigned, type WeekAggregate, type DayRow } from '@/features/me/components/weightStats'
 

@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/mode'
-import { huMonthDay, huMonthDayDow, localDateString } from '@/lib/dates'
+import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import {
   trainApi,
   type ExerciseCatalogItem,

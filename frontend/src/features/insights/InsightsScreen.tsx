@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { PageTitle } from '@/components/ui/PageTitle'
-import { Icon } from '@/components/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
+import { Icon } from '@/shared/ui/Icon'
 import { InsightsSubNav } from '@/features/insights/InsightsSubNav'
 import { INSIGHTS_TABS } from '@/features/insights/tabs'
 

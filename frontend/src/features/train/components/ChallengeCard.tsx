@@ -6,9 +6,9 @@
 // Ported from prototype challenges.jsx.
 // ============================================================
 import type { Challenge, ChallengeType } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
-import { RefTag } from '@/components/ui/RefTag'
-import { ToolChip } from '@/components/ui/ToolChip'
+import { Icon } from '@/shared/ui/Icon'
+import { RefTag } from '@/shared/ui/RefTag'
+import { ToolChip } from '@/shared/ui/ToolChip'
 
 const TYPE_COLOR: Record<ChallengeType, string> = {
   PR: 'var(--brand-glow)',

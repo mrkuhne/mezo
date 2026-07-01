@@ -7,7 +7,7 @@
 // the P2 pending sparkle.
 // ============================================================
 import type { Recipe } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 

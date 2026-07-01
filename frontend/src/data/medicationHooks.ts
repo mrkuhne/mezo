@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { medicationApi } from '@/lib/medicationApi'
 import { isMockMode } from '@/lib/mode'
-import { localDateString } from '@/lib/dates'
+import { localDateString } from '@/shared/lib/dates'
 import { useDualQuery } from '@/data/useDualQuery'
 import { medicationSeed } from '@/data/medication'
 import type {

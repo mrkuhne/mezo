@@ -4,7 +4,7 @@
 // an impact readout and the reasoning. Warning rows get an amber tint
 // + a 2px left strip. Ported from prototype sport.jsx CrossLoadRow.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import { SYSTEM_LABELS } from '@/data/train'
 import type { CrossLoadRow as CrossLoadRowData } from '@/data/types'
 

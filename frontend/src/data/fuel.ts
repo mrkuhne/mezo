@@ -1,5 +1,5 @@
 import type { FuelDay, FuelPlanToday, SupplementStashItem, Protocol, FuelMeal, FuelSlot, MealItemLine } from '@/data/types'
-import { localDateString } from '@/lib/dates'
+import { localDateString } from '@/shared/lib/dates'
 
 const TODAY = localDateString()
 

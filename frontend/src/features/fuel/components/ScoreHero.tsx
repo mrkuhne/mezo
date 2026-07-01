@@ -3,8 +3,8 @@
 // Big score ring + macro line + item chips + confidence bar
 // ============================================================
 import type { FuelMeal } from '@/data/types'
-import { ScoreRing } from '@/components/ui/ScoreRing'
-import { ProgressBar } from '@/components/ui/ProgressBar'
+import { ScoreRing } from '@/shared/ui/ScoreRing'
+import { ProgressBar } from '@/shared/ui/ProgressBar'
 
 export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scorePct: number; confidence: number }) {
   return (

@@ -1,5 +1,5 @@
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { PageTitle } from '@/components/ui/PageTitle'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { PageTitle } from '@/shared/ui/PageTitle'
 import { useKnowledge } from '@/data/hooks'
 import { FACT_CATEGORIES, factCategoryColor } from '@/data/knowledge'
 import { CategoryHeader } from '@/features/me/components/CategoryHeader'
