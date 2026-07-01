@@ -15,7 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 /** The demodata catalog seeder fills the owner's pantry once, idempotently, with preserved nutrients. */
 class PantryCatalogLoaderIT extends ApiIntegrationTest {
 
-    private static final int CATALOG_SIZE = 146;
+    private static final int CATALOG_SIZE = 147;
 
     @Autowired private PantryCatalogLoader loader;
     @Autowired private PantryItemRepository repository;
