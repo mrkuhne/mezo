@@ -64,6 +64,28 @@ describe('useRecipes (mock mode)', () => {
     expect(added.macros.kcal).toBe(260)
   })
 
+  it('create resolves a supplement line to its stash name, not the raw refId (mezo-3vu4)', async () => {
+    // Supplements (protein powder etc.) are legit recipe ingredients now. The mock
+    // recipe builder must enrich a stash-referenced line from the merged pantry, not
+    // foods-only, or a saved supplement line renders its raw id + zero macros.
+    const withSupplement: RecipeInput = {
+      ...newRecipe,
+      name: 'Supplement recept',
+      ingredients: [{ pantryItemId: 'magnez', amount: 2, unit: 'db', note: null }],
+    }
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ read: useRecipes(), actions: useRecipeActions() }),
+      { wrapper: Wrapper },
+    )
+    const before = result.current.read.recipes.length
+    act(() => result.current.actions.create(withSupplement))
+    await waitFor(() => expect(result.current.read.recipes.length).toBe(before + 1))
+    const added = result.current.read.recipes.find(r => r.name === 'Supplement recept')!
+    expect(added.ingredients[0].refId).toBe('magnez')
+    expect(added.ingredients[0].name).toBe('Magnézium-glicinát')
+  })
+
   it('remove deletes a recipe from the shared cache', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(

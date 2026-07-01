@@ -12,14 +12,16 @@
 // backend mapper and the mock hook (replaces NewRecipeSheet's unit==='g' hack).
 // ============================================================
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput } from '@/data/types'
-import { useRecipes, useRecipeActions, usePantry } from '@/data/hooks'
+import { useRecipes, useRecipeActions } from '@/data/hooks'
 import { Eyebrow } from '@/components/ui/Eyebrow'
 import { Icon } from '@/components/ui/Icon'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import { IngredientPickerSheet } from '@/features/fuel/IngredientPickerSheet'
+import { usePickableIngredients, kindLabel } from '@/data/pantryPickables'
 
 interface DraftLine { refId: string; amount: number; unit: string; note?: string }
 
@@ -60,9 +62,10 @@ export function RecipeEditorView() {
   const navigate = useNavigate()
   const { recipes, categoryMeta } = useRecipes()
   // Resolve picked-line display name + live macro contribution from the SAME
-  // dual-mode source the picker draws from (usePantry) — NOT useRecipes().ingredients,
-  // which is the static mock seed and would miss real-mode backend UUIDs (mezo-yew).
-  const { ingredients } = usePantry()
+  // unified pickable source the picker draws from (foods + supplement stash) — NOT
+  // useRecipes().ingredients, which is the static mock seed and would miss real-mode
+  // backend UUIDs (mezo-yew) and every supplement line (mezo-3vu4).
+  const pickables = usePickableIngredients()
   const { create, update } = useRecipeActions()
 
   const editing = recipes.find(r => r.id === id)
@@ -95,7 +98,7 @@ export function RecipeEditorView() {
     )
   }
 
-  const resolved = lines.map(l => ({ line: l, ing: ingredients.find(i => i.id === l.refId) }))
+  const resolved = lines.map(l => ({ line: l, ing: pickables.find(i => i.id === l.refId) }))
   const wholeTotal = resolved.reduce(
     (acc, { line, ing }) => {
       const c = contributionOf(line, ing)
@@ -113,9 +116,11 @@ export function RecipeEditorView() {
   const otherTotal = basis === 'whole' ? perServing : wholeTotal
   const otherLabel = basis === 'whole' ? 'egy adag' : 'egész recept'
 
+  // Append the picked pantry item as a new line. The sheet stays open (multi-add) —
+  // it's the parent that used to close it; a duplicate refId is ignored (the picker
+  // also disables an already-added row) so re-taps never stack the same ingredient.
   const addPicked = (ing: Ingredient) => {
-    setLines(prev => [...prev, { refId: ing.id, amount: ing.per || 100, unit: ing.unit || 'g' }])
-    setPickerOpen(false)
+    setLines(prev => (prev.some(l => l.refId === ing.id) ? prev : [...prev, { refId: ing.id, amount: ing.per || 100, unit: ing.unit || 'g' }]))
   }
   const addTag = () => {
     const t = tagDraft.trim()
@@ -237,7 +242,14 @@ export function RecipeEditorView() {
             <div key={i} className="card notch-4" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor(ing?.category) }}>
               <div className="row" style={{ alignItems: 'center', gap: 10 }}>
                 <div className="col flex-1" style={{ minWidth: 0 }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{ing?.name ?? line.refId}</span>
+                  <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{ing?.name ?? line.refId}</span>
+                    {ing && ing.kind !== 'food' && (
+                      <span className="label-mono" style={{ fontSize: 7.5, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', padding: '1px 4px', color: 'var(--text-tertiary)', border: '1px solid var(--border-subtle)', background: 'var(--surface-2)' }}>
+                        {kindLabel(ing.kind)}
+                      </span>
+                    )}
+                  </div>
                   {ing?.brand && <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{ing.brand}</span>}
                 </div>
                 <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', display: 'inline-flex' }}>
@@ -287,17 +299,26 @@ export function RecipeEditorView() {
         </div>
       </div>
 
-      {/* Sticky save bar */}
-      <div
-        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 8, background: 'rgba(10,15,20,0.92)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', borderTop: '1px solid var(--border-subtle)', padding: '12px 16px 26px', display: 'flex', gap: 9 }}
-      >
-        <button className="cta-ghost notch-4" onClick={() => navigate(-1)} style={{ flex: 1 }}>Mégse</button>
-        <button className="cta-primary notch-4" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
-          <Icon name="check" size={15} /> Mentés
-        </button>
-      </div>
+      {/* Save bar — portaled into the phone screen (like Sheet) so it pins to the
+          device viewport just above the tab bar instead of scrolling with / floating
+          over the recipe content, which used to clip the last rows (mezo-3vu4). */}
+      {createPortal(
+        <div className="recipe-save-bar">
+          <button className="cta-ghost notch-4" onClick={() => navigate(-1)} style={{ flex: 1 }}>Mégse</button>
+          <button className="cta-primary notch-4" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
+            <Icon name="check" size={15} /> Mentés
+          </button>
+        </div>,
+        document.querySelector('.phone-screen') ?? document.body,
+      )}
 
-      {pickerOpen && <IngredientPickerSheet onPick={addPicked} onClose={() => setPickerOpen(false)} />}
+      {pickerOpen && (
+        <IngredientPickerSheet
+          onPick={addPicked}
+          onClose={() => setPickerOpen(false)}
+          addedRefIds={lines.map(l => l.refId)}
+        />
+      )}
     </>
   )
 }

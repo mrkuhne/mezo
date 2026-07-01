@@ -4,10 +4,17 @@ import { recipeApi } from '@/lib/recipeApi'
 import { isMockMode } from '@/lib/mode'
 import { useDualQuery } from './useDualQuery'
 import { recipes as mockRecipes, ingredients, pantryCategoryMeta } from './pantry'
+import { supplementsStash } from './fuel'
 import { pantrySources } from './pantrySources'
+import { buildPickables } from './pantryPickables'
 import { enrichLine, computeRecipeMacros } from './recipeMacros'
 import { deriveNovaDominant } from './nova'
 import type { Recipe, RecipeInput, RecipeIngredientLine } from './types'
+
+// Recipe lines resolve against the SAME merged pantry the picker offers (foods +
+// supplement/stim/med stash, mezo-3vu4) — a saved supplement line must enrich its
+// name + contribution, not fall back to the raw id. Static seeds → module-level.
+const mockPantryPool = buildPickables(ingredients, supplementsStash)
 
 const RECIPES_KEY = ['recipes'] as const
 const PANTRY_KEY = ['pantry'] as const
@@ -83,7 +90,7 @@ function buildRecipe(id: string, input: RecipeInput, base?: Recipe): Recipe {
   const lines: RecipeIngredientLine[] = input.ingredients.map(i =>
     enrichLine(
       { refId: i.pantryItemId, amount: i.amount, unit: i.unit, note: i.note ?? undefined },
-      ingredients.find(ing => ing.id === i.pantryItemId),
+      mockPantryPool.find(ing => ing.id === i.pantryItemId),
     ),
   )
   const macros = computeRecipeMacros(lines)
@@ -102,7 +109,7 @@ function buildRecipe(id: string, input: RecipeInput, base?: Recipe): Recipe {
     tags: input.tags,
     ingredients: lines,
     macros,
-    novaDominant: deriveNovaDominant(lines, ingredients),
+    novaDominant: deriveNovaDominant(lines, mockPantryPool),
     mezoFit: base?.mezoFit ?? { score: null, fitsFor: [] },
     starred: input.starred,
     recentLogs: base?.recentLogs ?? [],
