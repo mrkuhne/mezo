@@ -43,7 +43,7 @@ export function useRecipes() {
     sources: pantrySources,            // static presentation config
     categoryMeta: pantryCategoryMeta,  // static presentation config
     // Real-mode loading window only (mock seeds synchronously → always false);
-    // FuelRecipesView branches on it to show the skeleton (mezo-f2z).
+    // FuelRecipesPage branches on it to show the skeleton (mezo-f2z).
     pending: !mock && isPending,
   }
 }

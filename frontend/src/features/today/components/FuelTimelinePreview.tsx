@@ -4,7 +4,7 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Chip } from '@/shared/ui/Chip'
 import { KIND_META } from '@/data/kindMeta'
 import { useFuelPreview } from '@/data/hooks'
-import { LogMealSheet } from '@/features/fuel/LogMealSheet'
+import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 
 export function FuelTimelinePreview() {
   const { visible, nextStack } = useFuelPreview()

@@ -20,7 +20,7 @@ import {
 import type { Goal, GoalKind, LinkedMeso, WeightEntry } from '@/data/types'
 
 // GoalResponse (new contract) -> the thin back-compat Goal shape, kept for the
-// consumers that still read flattened weights/identity (WeightPage, FuelStackView,
+// consumers that still read flattened weights/identity (WeightPage, FuelStackPage,
 // EditGoalSheet's rateTarget). currentWeight derives from the latest weight entry
 // (falls back to startWeightKg when the cache is empty); trajectory 'maintain' maps
 // to the existing 'maintenance' GoalKind. G4b (Decision C) retired the window

@@ -45,7 +45,7 @@ export const weeklySupplements: WeeklySupplementRow[] = [
   { name: 'Reta · hetente', dose: '6mg', days: [1, 0, 0, 0, 0, 0, 0], color: 'var(--error)' },
 ]
 
-// fuel-plan.jsx FuelPlanView PatternRow instances (175–199)
+// fuel-plan.jsx FuelPlanPage PatternRow instances (175–199)
 export const recurringPatterns: RecurringPattern[] = [
   {
     icon: 'train',
@@ -77,7 +77,7 @@ export const recurringPatterns: RecurringPattern[] = [
   },
 ]
 
-// fuel-plan.jsx FuelPlanView weekly stats magic numbers (58–63)
+// fuel-plan.jsx FuelPlanPage weekly stats magic numbers (58–63)
 export const weeklyStats = {
   kcalTarget: 3100,
   kcalAvgFactor: 0.91,

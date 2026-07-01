@@ -12,16 +12,16 @@ import { ActiveWorkoutScreen } from '@/features/train/ActiveWorkoutScreen'
 import { MesocyclePlanner } from '@/features/train/MesocyclePlanner'
 import { MesocycleBuilder } from '@/features/train/MesocycleBuilder'
 import { RunningBlockBuilder } from '@/features/train/RunningBlockBuilder'
-import { FuelScreen } from '@/features/fuel/FuelScreen'
-import { FuelMaiView } from '@/features/fuel/views/FuelMaiView'
-import { FuelPlanView } from '@/features/fuel/views/FuelPlanView'
-import { FuelStackView } from '@/features/fuel/views/FuelStackView'
-import { FuelRecipesView } from '@/features/fuel/views/FuelRecipesView'
-import { FuelKamraView } from '@/features/fuel/views/FuelKamraView'
-import { KamraItemDetailView } from '@/features/fuel/views/KamraItemDetailView'
-import { FuelMedicationView } from '@/features/fuel/views/FuelMedicationView'
-import { RecipeDetailView } from '@/features/fuel/views/RecipeDetailView'
-import { RecipeEditorView } from '@/features/fuel/views/RecipeEditorView'
+import { FuelSection } from '@/features/fuel/pages/FuelSection'
+import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
+import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
+import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
+import { FuelRecipesPage } from '@/features/fuel/pages/FuelRecipesPage'
+import { FuelKamraPage } from '@/features/fuel/pages/FuelKamraPage'
+import { KamraItemDetailPage } from '@/features/fuel/pages/KamraItemDetailPage'
+import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
+import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
+import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { InsightsSection } from '@/features/insights/pages/InsightsSection'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
 import { WeeklyPage } from '@/features/insights/pages/WeeklyPage'
@@ -69,23 +69,23 @@ export const routes: RouteObject[] = [
       { path: 'train/futas/:id', element: <RunningBlockBuilder /> },
       {
         path: 'fuel',
-        element: <FuelScreen />,
+        element: <FuelSection />,
         children: [
-          { index: true, element: <FuelMaiView /> },
-          { path: 'plan', element: <FuelPlanView /> },
-          { path: 'stack', element: <FuelStackView /> },
-          { path: 'recipes', element: <FuelRecipesView /> },
-          { path: 'kamra', element: <FuelKamraView /> },
-          { path: 'kamra/:id', element: <KamraItemDetailView /> },
-          { path: 'gyogyszer', element: <FuelMedicationView /> },
+          { index: true, element: <FuelMaiPage /> },
+          { path: 'plan', element: <FuelPlanPage /> },
+          { path: 'stack', element: <FuelStackPage /> },
+          { path: 'recipes', element: <FuelRecipesPage /> },
+          { path: 'kamra', element: <FuelKamraPage /> },
+          { path: 'kamra/:id', element: <KamraItemDetailPage /> },
+          { path: 'gyogyszer', element: <FuelMedicationPage /> },
         ],
       },
       // Recipe detail + editor are full pages (no Fuel sub-nav chrome), mirroring
       // train/session — siblings of the `fuel` group, not nested children. `new`
       // is listed before `:id` for clarity (React Router ranks static over dynamic).
-      { path: 'fuel/recipes/new', element: <RecipeEditorView /> },
-      { path: 'fuel/recipes/:id', element: <RecipeDetailView /> },
-      { path: 'fuel/recipes/:id/edit', element: <RecipeEditorView /> },
+      { path: 'fuel/recipes/new', element: <RecipeEditorPage /> },
+      { path: 'fuel/recipes/:id', element: <RecipeDetailPage /> },
+      { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },
       {
         path: 'insights',
         element: <InsightsSection />,
