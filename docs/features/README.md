@@ -66,17 +66,17 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Check-in / "Heartbeat" strip / `CheckInSheet` | `/today` | [`today.md`](today.md) §3–§4 (the one real Today seam) |
 | AnchorMode (rough-day recovery view) | `/today?day=rough` | [`today.md`](today.md) §2, §9 |
 | Reta(trutide) phase bar / cycle | `/today`, `/fuel` | [`today.md`](today.md) §2 · [`fuel.md`](fuel.md) §5 |
-| Weekly cross-domain agenda (gym+volley+run) | `/train` (Mai) | [`train.md`](train.md) §2, §5 (`TrainTodayView`) |
-| Active week / gym split | `/train/gym` | [`train.md`](train.md) §2 (`GymView`) |
+| Weekly cross-domain agenda (gym+volley+run) | `/train` (Mai) | [`train.md`](train.md) §2, §5 (`TrainTodayPage`) |
+| Active week / gym split | `/train/gym` | [`train.md`](train.md) §2 (`GymPage`) |
 | Active workout / per-set logging / resume | `/train/session` | [`train.md`](train.md) §2, §4 (workout execution) |
 | Mesocycle library / planner / builder | `/train/mesocycles`, `/new`, `/:id` | [`train.md`](train.md) §2, §4 (mesocycles) |
 | Volleyball ("Röplabda") schedule + log | `/train/sport` | [`train.md`](train.md) §2, §4 (sport) |
 | Interval running ("Futás") + block builder | `/train/futas`, `/train/futas/:id` | [`train.md`](train.md) §2, §4 (running) |
 | Exercise catalog + per-exercise records | `/train/exercises` | [`train.md`](train.md) §2, §4 (catalog/records) |
-| Meal pacing ("Mai") + meal score sheet | `/fuel` | [`fuel.md`](fuel.md) §2 (`FuelMaiView`) |
-| Weekly fuel rhythm / gym-time grid | `/fuel/plan` | [`fuel.md`](fuel.md) §2 (`FuelPlanView`) |
+| Meal pacing ("Mai") + meal score sheet | `/fuel` | [`fuel.md`](fuel.md) §2 (`FuelMaiPage`) |
+| Weekly fuel rhythm / gym-time grid | `/fuel/plan` | [`fuel.md`](fuel.md) §2 (`FuelPlanPage`) |
 | Supplement protocol builder | `/fuel/stack` | [`fuel.md`](fuel.md) §2, §3 (`buildProtocol`) |
-| Recipe library / new recipe | `/fuel/recipes` | [`fuel.md`](fuel.md) §2 (`FuelRecipesView`) |
+| Recipe library / new recipe | `/fuel/recipes` | [`fuel.md`](fuel.md) §2 (`FuelRecipesPage`) |
 | Pantry / "Kamra" / scrape import | `/fuel/kamra` | [`fuel.md`](fuel.md) §2, §3 (`buildKamraItems`) |
 | Detected patterns (critique grid, confirm/reject) | `/insights` | [`insights.md`](insights.md) §2.1 |
 | Weekly review / memoir / predictions / experiments | `/insights/{weekly,memoir,predictions,experiments}` | [`insights.md`](insights.md) §2.2–§2.7 |
@@ -107,7 +107,7 @@ Derived from each doc's **§5 Integrations**. The named **contract** is the type
 | **Today ↔ Fuel** | Today ← Fuel | `FuelSlot[]` / `FuelPlanToday` — `useFuelPreview` slices the **same** `fuelToday` object Fuel renders | [`today.md`](today.md) §5 · [`fuel.md`](fuel.md) §5 |
 | **Today ↔ Insights** | Today → Insights | visual teaser only; `InsightsTeaser` mirrors pattern `p1` verbatim (a copy, not a live read) | [`today.md`](today.md) §5 · [`insights.md`](insights.md) §5.2 |
 | **Today scenario ↔ Fuel** | Fuel ← Today | `TodayScenario` (`retaDay`, `day`) drives Fuel/Mai's Reta bar via `useTodayScenario` | [`fuel.md`](fuel.md) §5 |
-| **Train (Mai) ↔ Running** | internal merge | `WeeklyAgendaDay` / `RunPrescribedSession` / `WorkoutPlan` / `SportSchedule` — `TrainTodayView` composes both `useTrain` + `useRunning` | [`train.md`](train.md) §5 (canonical internal integration) |
+| **Train (Mai) ↔ Running** | internal merge | `WeeklyAgendaDay` / `RunPrescribedSession` / `WorkoutPlan` / `SportSchedule` — `TrainTodayPage` composes both `useTrain` + `useRunning` | [`train.md`](train.md) §5 (canonical internal integration) |
 | **Train Sport → all systems** 🟣 | Sport → Fuel/Sleep/Weight/Insights/Train | `CrossLoadRow {target,impact,why,system,warning}` — mock-only; engine Phase 3 (`crossLoad: null` in real → view ghosts) | [`train.md`](train.md) §5 |
 | **Train Running → GYM** 🟣 | Running → leg volume | static presentational cross-load text — engine Phase 3 | [`train.md`](train.md) §5 |
 | **Train ↔ Me/`Cél`** 🟣 | mock narrative | a mesocycle id/label pair; `Goal.mesocycles` IDs are mock strings, not joined to the Train backend | [`me.md`](me.md) §5.2 |
@@ -127,7 +127,7 @@ Derived from each doc's **§5 Integrations**. The named **contract** is the type
 | **API contract & backend** | every backed feature flows `api/feature/<x>.yml` → generated `*Api` + `*Request`/`*Response` DTOs → controller → service → `OwnedRepository` → Postgres; drift = compile error | [`_platform-api-backend.md`](_platform-api-backend.md) §5 |
 | **Auth & ownership** | `CurrentUserId.get()` (UUID from JWT subject) → `OwnedEntity.createdBy`, stamped server-side, never in a DTO; `apiFetch` Bearer token from `bootstrapOwnerToken` | [`_platform-auth-security.md`](_platform-auth-security.md) §5 |
 | **Error contract** | `SystemMessage[]` / `SystemMessageList` (stable codes, never resolved text) ↔ FE `ApiError` | [`_platform-api-backend.md`](_platform-api-backend.md) §5 · [`_platform-auth-security.md`](_platform-auth-security.md) §5 |
-| **Design system** | `@/components/ui/**` primitives, `Sheet`, `GhostState`, `--cat-*`/accent tokens, the on-brand-screen idiom; theme via `data-theme` | [`_platform-design-system.md`](_platform-design-system.md) §5 |
+| **Design system** | `@/shared/ui/**` primitives, `Sheet`, `GhostState`, `--cat-*`/accent tokens, the on-brand-screen idiom; theme via `data-theme` | [`_platform-design-system.md`](_platform-design-system.md) §5 |
 
 **Reading the matrix:** Train is the hub of live cross-domain data (Mai aggregation, records ← sets). Insights is the conceptual hub the others *point toward* (shared `P2`/`P3` pattern IDs, the knowledge graph shared with Me). Fuel is the most cross-coupled **mock** domain (Today preview, Reta cycle, replan cascade, Me/Goals context). Everything funnels through the platform data-layer + design-system, and every backed write funnels through auth/ownership.
 

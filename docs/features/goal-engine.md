@@ -100,7 +100,7 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 | POST | `/api/goals/feasibility-preview` (G6, `mezo-06n`) | `FeasibilityPreviewResponse` {`derivedRatePctPerWeek`, `withinSafeBand`, `verdict`, `suggestedTargetDate?`} | **stateless** realism preview for the 2-step wizard from a `FeasibilityPreviewRequest` draft {`trajectory`, `startWeightKg`, `targetWeightKg?`, `startDate`, `targetDate`} — derive + grade BEFORE the goal is saved. No persistence/ownership (principal resolved per convention, compute ignores it). `suggestedTargetDate` present only when over the cap (`startDate + ceil(weeksAtCap)`). |
 | GET | `/api/biometrics/weight/trend` | `WeightTrendResponse` {`ewmaSeries[]`, `latestTrendKg`, `weeklyRateKgPerWeek`, `weeklyRatePctPerWeek`, `last4wRateKgPerWeek`, `dataSufficiency`} | the EWMA spine, exposed for the FE. |
 | GET | `/api/biometrics/profile` (G6, `mezo-06n`) | `BiometricProfileResponse` (with a **derived** `tdeeBootstrap`) | the profile screen's base-TDEE. `tdeeBootstrap` is computed on read from the profile + the latest weigh-in via `TdeeBootstrapService.compute` (cross-`$ref` to the goal fragment's `TdeeBootstrap` schema) — **NOT persisted** (no column); **null** when there is no weigh-in. So the Profil "Biometria" card can show base-TDEE even with no goal. |
-| PUT | `/api/biometrics/profile` | `BiometricProfileResponse` (with derived `tdeeBootstrap`) | now carries `activityLevel` (the `GoalPlanner` wizard sends it); the save **recomputes the active goal** (trigger above). |
+| PUT | `/api/biometrics/profile` | `BiometricProfileResponse` (with derived `tdeeBootstrap`) | now carries `activityLevel` (the `GoalPlannerPage` wizard sends it); the save **recomputes the active goal** (trigger above). |
 
 `GoalResponse` additively gained `prescription` + `tdeeBootstrap` (both `nullable` — null until first evaluate). The HTTP surface and these contract shapes are documented in [`_platform-api-backend.md`](_platform-api-backend.md) §3 (the Goal/Biometrics rows) and [`me.md`](me.md) §4.
 
@@ -167,7 +167,7 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 - `feature/biometrics/profile/BiometricProfileServiceIT` / `BiometricProfileContractIT` (G6) — the GET carries a derived `tdeeBootstrap` (profile + weigh-in → non-null, matches `TdeeBootstrapService.compute`; no weigh-in → null) and the profile upsert recomputes the active goal (prescription was null → populated) yet succeeds with no active goal.
 - `feature/goal/GoalContractIT` — the HTTP `POST /api/goals/{id}/evaluate` surface (200 + prescription, 200 graceful no-profile, 404 foreign).
 
-**Frontend** — `frontend/src/features/me/components/GoalRecept.test.tsx` (verdict labels, segment metrics, guard pills incl. a breached strength guard, the null-prescription evaluate CTA) + the recept assertions in `GoalsView.test.tsx`; the trend fold in `data/weightHooks.test.tsx`. Both `pnpm test` (real) and `VITE_USE_MOCK=true pnpm test` (mock) must pass — see [`me.md`](me.md) §8.
+**Frontend** — `frontend/src/features/me/components/GoalRecept.test.tsx` (verdict labels, segment metrics, guard pills incl. a breached strength guard, the null-prescription evaluate CTA) + the recept assertions in `GoalsPage.test.tsx`; the trend fold in `data/me/weightHooks.test.tsx`. Both `pnpm test` (real) and `VITE_USE_MOCK=true pnpm test` (mock) must pass — see [`me.md`](me.md) §8.
 
 ## 9. Decisions, gotchas & deferred
 
@@ -213,7 +213,7 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 
 **Frontend (the recept surface):**
 - `frontend/src/features/me/components/GoalRecept.tsx` (+ `.test.tsx`) — the recept card + evaluate CTA.
-- `frontend/src/data/goalHooks.ts` — `useGoalActions().evaluate`; `frontend/src/data/weightHooks.ts` — the real trend fold.
+- `frontend/src/data/me/goalHooks.ts` — `useGoalActions().evaluate`; `frontend/src/data/me/weightHooks.ts` — the real trend fold.
 
 **Tests:** `backend/.../feature/goal/engine/**` (per-service ITs + properties IT), `feature/goal/{GoalEngineRecomputeIT,GoalContractIT}.java`.
 
