@@ -5,7 +5,7 @@
 // + a 2px left strip. Ported from prototype sport.jsx CrossLoadRow.
 // ============================================================
 import { Icon } from '@/shared/ui/Icon'
-import { SYSTEM_LABELS } from '@/data/train'
+import { SYSTEM_LABELS } from '@/data/train/train'
 import type { CrossLoadRow as CrossLoadRowData } from '@/data/types'
 
 const FALLBACK = { label: 'tool', color: 'var(--text-secondary)', icon: 'tool' as const }

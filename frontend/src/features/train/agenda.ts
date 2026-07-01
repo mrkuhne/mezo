@@ -8,7 +8,7 @@
 // ============================================================
 import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
-import type { RunPrescribedSession } from '@/lib/runningApi'
+import type { RunPrescribedSession } from '@/data/train/runningApi'
 
 export type AgendaItem =
   | { kind: 'gym'; timeOfDay: string | null; gym: GymScheduleDay }

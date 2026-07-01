@@ -11,8 +11,8 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
-import { DAY_ORDER } from '@/data/train'
-import type { GymScheduleSlotInput } from '@/lib/trainApi'
+import { DAY_ORDER } from '@/data/train/train'
+import type { GymScheduleSlotInput } from '@/data/train/trainApi'
 import type { GymScheduleSlot } from '@/data/types'
 
 function timesFrom(slots: GymScheduleSlot[]): string[] {

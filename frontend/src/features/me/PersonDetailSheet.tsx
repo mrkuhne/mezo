@@ -1,7 +1,7 @@
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { DetailStat } from '@/features/me/components/DetailStat'
-import { affectColor, affectLabel } from '@/data/people'
+import { affectColor, affectLabel } from '@/data/me/people'
 import type { Mention, PersonEntry } from '@/data/types'
 
 export function PersonDetailSheet({

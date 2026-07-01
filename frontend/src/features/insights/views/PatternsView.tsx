@@ -1,6 +1,6 @@
 import { Icon } from '@/shared/ui/Icon'
 import { useInsights } from '@/data/hooks'
-import { MIN_PATTERN_CONFIDENCE } from '@/data/insights'
+import { MIN_PATTERN_CONFIDENCE } from '@/data/insights/insights'
 import { PatternCard } from '@/features/insights/components/PatternCard'
 
 export function PatternsView() {

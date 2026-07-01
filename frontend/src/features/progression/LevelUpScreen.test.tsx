@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LevelUpScreen } from '@/features/progression/LevelUpScreen'
-import { gymLevelUpMock, runLevelUpMock } from '@/data/progressionMock'
+import { gymLevelUpMock, runLevelUpMock } from '@/data/progression/progressionMock'
 
 // Force reduced-motion so the count-up jumps to its final value (deterministic).
 function stubReduced(matches = true) {

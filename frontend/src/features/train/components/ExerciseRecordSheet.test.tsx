@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import type { ExerciseRecordResponse } from '@/lib/trainApi'
+import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { ExerciseRecordSheet } from '@/features/train/components/ExerciseRecordSheet'
 
 const fullRecord: ExerciseRecordResponse = {

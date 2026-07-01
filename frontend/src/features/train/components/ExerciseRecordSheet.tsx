@@ -5,9 +5,9 @@
 // records (no weighted sets) hero the total-rep counter and dash the
 // weight-based cells. Pure read view — data comes in as a prop.
 // ============================================================
-import { MUSCLE_LABELS } from '@/data/train'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import { huMonthDay } from '@/shared/lib/dates'
-import type { ExerciseRecordResponse } from '@/lib/trainApi'
+import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 

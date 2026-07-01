@@ -21,7 +21,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import { IngredientPickerSheet } from '@/features/fuel/IngredientPickerSheet'
-import { usePickableIngredients, kindLabel } from '@/data/pantryPickables'
+import { usePickableIngredients, kindLabel } from '@/data/fuel/pantryPickables'
 
 interface DraftLine { refId: string; amount: number; unit: string; note?: string }
 

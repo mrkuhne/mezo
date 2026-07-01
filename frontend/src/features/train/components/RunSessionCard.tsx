@@ -4,8 +4,8 @@
 // .rpe-tag look from the Futás mockup (futas-app-faithful.html). Running
 // accent is --info. No hooks, no data fetching — props in, markup out.
 // ============================================================
-import type { RunPrescribedSession, RunSegment } from '@/lib/runningApi'
-import { DAY_ORDER } from '@/data/train'
+import type { RunPrescribedSession, RunSegment } from '@/data/train/runningApi'
+import { DAY_ORDER } from '@/data/train/train'
 
 const RUN = 'var(--info)'
 

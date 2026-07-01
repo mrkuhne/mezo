@@ -17,7 +17,7 @@ import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
-import { usePickableIngredients, kindLabel, type PickableIngredient } from '@/data/pantryPickables'
+import { usePickableIngredients, kindLabel, type PickableIngredient } from '@/data/fuel/pantryPickables'
 
 function KindBadge({ ing }: { ing: PickableIngredient }) {
   return (

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { useBiometricActions } from '@/data/hooks'
-import type { BiometricProfileResponse, BiometricProfileUpsertRequest } from '@/lib/biometricProfileApi'
+import type { BiometricProfileResponse, BiometricProfileUpsertRequest } from '@/data/me/biometricProfileApi'
 import { ACTIVITY_LEVELS, type ActivityLevel } from '@/features/me/biometricFields'
 
 // Biometric editor sheet (G6, mezo-06n). Opened from the Profile Biometria card

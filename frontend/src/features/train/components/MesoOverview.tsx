@@ -6,7 +6,7 @@
 // Ported from prototype mesocycles.jsx MesoOverview.
 // ============================================================
 import { useState } from 'react'
-import { MESOCYCLE_PHASE_COLORS } from '@/data/train'
+import { MESOCYCLE_PHASE_COLORS } from '@/data/train/train'
 import type { MesoDay, Mesocycle, MesoPhase } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { Chip } from '@/shared/ui/Chip'

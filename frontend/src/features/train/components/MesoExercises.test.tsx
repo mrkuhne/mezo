@@ -8,7 +8,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { activeMeso } from '@/data/train'
+import { activeMeso } from '@/data/train/train'
 
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).

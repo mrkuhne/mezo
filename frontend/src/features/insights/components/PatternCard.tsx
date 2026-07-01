@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
-import { patternCategoryColor } from '@/data/insights'
+import { patternCategoryColor } from '@/data/insights/insights'
 import type { Pattern, PatternCritique, PatternStatus } from '@/data/types'
 
 const CRITIQUE_ROWS: Array<{ lbl: string; key: keyof PatternCritique }> = [

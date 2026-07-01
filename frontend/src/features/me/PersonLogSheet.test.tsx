@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PersonLogSheet } from '@/features/me/PersonLogSheet'
-import { people } from '@/data/people'
+import { people } from '@/data/me/people'
 
 test('preselects initialPersonId and saves a MentionLogInput', async () => {
   const onSave = vi.fn()

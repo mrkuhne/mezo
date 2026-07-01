@@ -1,4 +1,4 @@
-import { affectColor } from '@/data/people'
+import { affectColor } from '@/data/me/people'
 import type { PersonEntry } from '@/data/types'
 
 export function PersonCard({ person, onTap }: { person: PersonEntry; onTap?: () => void }) {

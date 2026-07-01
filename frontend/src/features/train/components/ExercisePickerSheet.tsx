@@ -9,7 +9,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
-import { MUSCLE_LABELS } from '@/data/train'
+import { MUSCLE_LABELS } from '@/data/train/train'
 
 import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '@/features/train/muscleFilters'
 import type { ExerciseLibraryItem } from '@/data/types'

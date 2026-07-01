@@ -1,5 +1,5 @@
 import { Icon } from '@/shared/ui/Icon'
-import type { BiometricProfileResponse } from '@/lib/biometricProfileApi'
+import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
 import { ACTIVITY_LEVELS, ACTIVITY_SHORT, ageFromBirthDate, palLabel, type ActivityLevel } from '@/features/me/biometricFields'
 
 const PAL_BY_ID = Object.fromEntries(ACTIVITY_LEVELS.map(a => [a.id, a.pal])) as Record<ActivityLevel, number>

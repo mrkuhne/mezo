@@ -4,7 +4,7 @@ import {
   periodWindow, sliceByPeriod, groupByWeek, dayRows, planTrajectory, daysBetween, isoMinusDays, fmtSigned,
 } from '@/features/me/components/weightStats'
 import type { WeightEntry } from '@/data/types'
-import type { GoalResponse } from '@/lib/goalApi'
+import type { GoalResponse } from '@/data/me/goalApi'
 
 // 3 ISO weeks: May 11–17 (Mon 11), May 18–24 (Mon 18) ... using the mock spine tail.
 const log: WeightEntry[] = [

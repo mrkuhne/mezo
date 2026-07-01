@@ -1,5 +1,5 @@
-import { MUSCLE_LABELS } from '@/data/train'
-import type { LevelUpResult } from '@/lib/trainApi'
+import { MUSCLE_LABELS } from '@/data/train/train'
+import type { LevelUpResult } from '@/data/train/trainApi'
 
 type Source = LevelUpResult['source'] // 'GYM' | 'SPORT' | 'RUN'
 

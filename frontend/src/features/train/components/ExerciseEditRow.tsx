@@ -7,7 +7,7 @@
 // Ported from prototype mesocycles.jsx ExerciseEditRow.
 // ============================================================
 import { useState } from 'react'
-import { MUSCLE_LABELS } from '@/data/train'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import type { GymExercise } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { EditorChip } from '@/features/train/components/EditorChip'

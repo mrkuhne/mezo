@@ -1,6 +1,6 @@
 import { buildKamraItems } from '@/features/fuel/kamraItems'
-import { ingredients } from '@/data/pantry'
-import { supplementsStash } from '@/data/fuel'
+import { ingredients } from '@/data/fuel/pantry'
+import { supplementsStash } from '@/data/fuel/fuel'
 import type { SupplementStashItem } from '@/data/types'
 
 test('merges ingredients + stash into unified items with a kind', () => {

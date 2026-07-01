@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CheckInSheet } from '@/features/today/CheckInSheet'
-import { initialCheckins } from '@/data/checkins'
+import { initialCheckins } from '@/data/today/checkins'
 
 test('advances through dims and saves values', async () => {
   const onSave = vi.fn(); const onClose = vi.fn()

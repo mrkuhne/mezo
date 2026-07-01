@@ -8,7 +8,7 @@
 // Ported from prototype mesocycles.jsx MesoVolume.
 // ============================================================
 import { useState } from 'react'
-import { MUSCLE_LABELS } from '@/data/train'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import type { Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'

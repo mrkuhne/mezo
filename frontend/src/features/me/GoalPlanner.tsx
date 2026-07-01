@@ -4,7 +4,7 @@ import { useGoalCreation, useWeight, useFeasibilityPreview, useBiometricProfile 
 import { Icon, type IconName } from '@/shared/ui/Icon'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { huMonthDay } from '@/shared/lib/dates'
-import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/lib/goalApi'
+import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/data/me/goalApi'
 
 type Trajectory = 'cut' | 'bulk' | 'maintain'
 type Guard = 'strength' | 'muscle'

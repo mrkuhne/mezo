@@ -10,7 +10,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
-import type { SportSessionCreateRequest } from '@/lib/trainApi'
+import type { SportSessionCreateRequest } from '@/data/train/trainApi'
 import { useEditableNumber } from '@/features/train/components/useEditableNumber'
 
 // --- NumberStep: label + mono value + 44px ± buttons (reuses .stepper) ---

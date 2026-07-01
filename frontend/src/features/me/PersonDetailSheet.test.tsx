@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PersonDetailSheet } from '@/features/me/PersonDetailSheet'
-import { people, mentions } from '@/data/people'
+import { people, mentions } from '@/data/me/people'
 
 const person = people[0]
 const personMentions = mentions.filter(m => m.person_id === person.id)

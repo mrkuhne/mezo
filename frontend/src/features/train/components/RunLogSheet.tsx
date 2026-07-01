@@ -4,7 +4,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { NumberStep, ScaleRow } from '@/features/train/components/SportLogSheet'
-import type { RunSessionLogRequest } from '@/lib/runningApi'
+import type { RunSessionLogRequest } from '@/data/train/runningApi'
 
 export function RunLogSheet({ ctx, onClose, onSave }: {
   ctx: { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }

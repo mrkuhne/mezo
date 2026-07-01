@@ -8,7 +8,7 @@
 // Ported from prototype mesocycles.jsx VolumeBar.
 // ============================================================
 import { useState } from 'react'
-import { MUSCLE_LABELS } from '@/data/train'
+import { MUSCLE_LABELS } from '@/data/train/train'
 import type { VolumeProfile } from '@/data/types'
 import { Icon, type IconName } from '@/shared/ui/Icon'
 import { FinalStat } from '@/features/train/components/FinalStat'

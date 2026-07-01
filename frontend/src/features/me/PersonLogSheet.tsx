@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { affectColor } from '@/data/people'
+import { affectColor } from '@/data/me/people'
 import type { Affect, MentionLogInput, PersonEntry } from '@/data/types'
 
 const TONES: [Affect, string][] = [

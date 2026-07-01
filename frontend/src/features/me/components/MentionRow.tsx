@@ -1,6 +1,6 @@
 import { Icon } from '@/shared/ui/Icon'
 import type { IconName } from '@/shared/ui/Icon'
-import { affectColor } from '@/data/people'
+import { affectColor } from '@/data/me/people'
 import type { Mention, MentionSource, PersonEntry } from '@/data/types'
 
 function sourceIconFor(source: MentionSource): IconName {

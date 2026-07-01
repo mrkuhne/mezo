@@ -1,4 +1,4 @@
-import type { GoalTimelineResponse, GoalPlanLinkResponse } from '@/lib/goalLinkApi'
+import type { GoalTimelineResponse, GoalPlanLinkResponse } from '@/data/me/goalLinkApi'
 
 // The signature view of the goal command-center: the goal is a horizontal time
 // axis (a week ruler 1..timeline.weeks); meso/run plans + the ambient volleyball

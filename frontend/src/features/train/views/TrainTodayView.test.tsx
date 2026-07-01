@@ -7,7 +7,7 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import { DAY_ORDER } from '@/data/train'
+import { DAY_ORDER } from '@/data/train/train'
 import { localDateString } from '@/shared/lib/dates'
 
 // Asserts Phase-1 mock meso/gym data, so pin mock mode explicitly (the swapped

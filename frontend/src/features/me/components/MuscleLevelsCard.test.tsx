@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MuscleLevelsCard } from '@/features/me/components/MuscleLevelsCard'
-import { progressionProfileMock, GHOST_PROGRESSION_PROFILE } from '@/data/progressionMock'
+import { progressionProfileMock, GHOST_PROGRESSION_PROFILE } from '@/data/progression/progressionMock'
 
 function stubReduced() {
   vi.stubGlobal('matchMedia', (q: string) => ({

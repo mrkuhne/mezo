@@ -13,8 +13,8 @@ import { useRunning } from '@/data/hooks'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { RunWeekEditor } from '@/features/train/components/RunWeekEditor'
-import { toUpsert, duplicateDraft, addWeek, removeLastWeek } from '@/data/runningDraft'
-import type { RunningBlockUpsertRequest } from '@/lib/runningApi'
+import { toUpsert, duplicateDraft, addWeek, removeLastWeek } from '@/data/train/runningDraft'
+import type { RunningBlockUpsertRequest } from '@/data/train/runningApi'
 
 const RUN = 'var(--info)'
 

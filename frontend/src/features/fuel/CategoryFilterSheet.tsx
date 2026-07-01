@@ -7,7 +7,7 @@
 // commits it on Apply (or Clear-then-Apply). Wraps the shared <Sheet> shell.
 // ============================================================
 import { useState } from 'react'
-import { pantryCategoryMeta } from '@/data/pantry'
+import { pantryCategoryMeta } from '@/data/fuel/pantry'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 

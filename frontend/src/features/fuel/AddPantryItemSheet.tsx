@@ -11,8 +11,8 @@
 // ============================================================
 import { useState } from 'react'
 import { usePantryActions } from '@/data/hooks'
-import { SHOW_PANTRY_STOCK } from '@/lib/flags'
-import { pantryCategoryMeta } from '@/data/pantry'
+import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
+import { pantryCategoryMeta } from '@/data/fuel/pantry'
 import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
 import type { PantryItemInput, PantryItemKind } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'

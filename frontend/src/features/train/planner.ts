@@ -9,7 +9,7 @@
 //     substitution warnings)
 // GOAL_PRESETS / SPLITS / exerciseLibrary live in @/data/train.
 // ============================================================
-import { DAY_ORDER } from '@/data/train'
+import { DAY_ORDER } from '@/data/train/train'
 import type { ExerciseKind, GymExercise, MesoDay, GoalPreset, SplitOption } from '@/data/types'
 
 // --- step labels (meso-planner.jsx:135) ---

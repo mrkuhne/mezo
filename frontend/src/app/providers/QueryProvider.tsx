@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
-import { bootstrapOwnerToken } from '@/lib/auth'
-import { isMockMode } from '@/lib/mode'
+import { bootstrapOwnerToken } from '@/data/_client/auth'
+import { isMockMode } from '@/data/_client/mode'
 
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },

@@ -11,8 +11,8 @@ import {
   sprintOf, pyramidOf, workSecs, restSec,
   setSprintRounds, setSprintRest, setPyramidWork,
   setSessionDay, setSessionTime,
-} from '@/data/runningDraft'
-import type { RunningBlockStructureDto, RunPrescribedSession } from '@/lib/runningApi'
+} from '@/data/train/runningDraft'
+import type { RunningBlockStructureDto, RunPrescribedSession } from '@/data/train/runningApi'
 
 const RUN = 'var(--info)'
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRunning } from '@/data/hooks'
-import { newDraft } from '@/data/runningDraft'
+import { newDraft } from '@/data/train/runningDraft'
 import { AttachPlanSheet, type AttachPlanType } from '@/features/me/AttachPlanSheet'
 
 // Goal command-center hub-and-spoke slots (G4b, mockup goal-funnel.html Funnel B).

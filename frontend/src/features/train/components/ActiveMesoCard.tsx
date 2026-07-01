@@ -7,7 +7,7 @@
 // --brand-glow (matching the SportView hero idiom); the border uses the
 // --border-brand design token.
 // ============================================================
-import { MESOCYCLE_PHASE_COLORS } from '@/data/train'
+import { MESOCYCLE_PHASE_COLORS } from '@/data/train/train'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'

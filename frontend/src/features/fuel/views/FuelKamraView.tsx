@@ -29,7 +29,7 @@ import { StatCell } from '@/shared/ui/StatCell'
 import { KamraCard } from '@/features/fuel/components/KamraCard'
 import { AddPantryItemSheet } from '@/features/fuel/AddPantryItemSheet'
 import { CategoryFilterSheet, categoryOption } from '@/features/fuel/CategoryFilterSheet'
-import { SHOW_PANTRY_STOCK } from '@/lib/flags'
+import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 import KamraSkeleton from '@/features/fuel/views/KamraSkeleton'
 
 const TYPE_SWITCHER = [

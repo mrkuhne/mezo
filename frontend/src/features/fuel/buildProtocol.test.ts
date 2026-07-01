@@ -1,5 +1,5 @@
 import { buildProtocol } from '@/features/fuel/buildProtocol'
-import { supplementsStash } from '@/data/fuel'
+import { supplementsStash } from '@/data/fuel/fuel'
 
 test('builds a timed protocol from selected stash items', () => {
   const selected = supplementsStash.filter(s => s.type !== 'medication').map(s => s.id)

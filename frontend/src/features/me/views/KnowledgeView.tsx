@@ -1,7 +1,7 @@
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { useKnowledge } from '@/data/hooks'
-import { FACT_CATEGORIES, factCategoryColor } from '@/data/knowledge'
+import { FACT_CATEGORIES, factCategoryColor } from '@/data/insights/knowledge'
 import { CategoryHeader } from '@/features/me/components/CategoryHeader'
 import { KnowledgeFactCard } from '@/features/me/components/KnowledgeFactCard'
 

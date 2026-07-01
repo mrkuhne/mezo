@@ -2,8 +2,8 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { BiometricSheet } from '@/features/me/BiometricSheet'
-import { biometricProfile as mockProfile } from '@/data/goals'
-import { biometricProfileApi } from '@/lib/biometricProfileApi'
+import { biometricProfile as mockProfile } from '@/data/me/goals'
+import { biometricProfileApi } from '@/data/me/biometricProfileApi'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 beforeEach(() => {

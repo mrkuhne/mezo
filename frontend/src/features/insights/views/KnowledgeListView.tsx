@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Toggle } from '@/shared/ui/Toggle'
 import { useKnowledge } from '@/data/hooks'
-import { factCategoryColor } from '@/data/knowledge'
+import { factCategoryColor } from '@/data/insights/knowledge'
 
 export function KnowledgeListView() {
   const { facts } = useKnowledge()

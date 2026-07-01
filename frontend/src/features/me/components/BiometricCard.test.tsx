@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import { BiometricCard } from '@/features/me/components/BiometricCard'
-import { biometricProfile as mockProfile } from '@/data/goals'
+import { biometricProfile as mockProfile } from '@/data/me/goals'
 
 test('renders the profile values + the derived base-TDEE line', () => {
   render(<BiometricCard profile={mockProfile} onEdit={() => {}} />)

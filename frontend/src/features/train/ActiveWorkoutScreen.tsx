@@ -13,7 +13,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
-import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/lib/trainApi'
+import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import {
   type Session,
   addExtraSet,

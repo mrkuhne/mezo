@@ -8,7 +8,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 
 // Real-mode tests mock the api module (mirrors trainHooks.test's mocking style):
 // blocks/runSessions both resolve to [] so the view exercises its ghost states.
-vi.mock('@/lib/runningApi', () => ({
+vi.mock('@/data/train/runningApi', () => ({
   runningApi: {
     blocks: vi.fn().mockResolvedValue([]),
     runSessions: vi.fn().mockResolvedValue([]),

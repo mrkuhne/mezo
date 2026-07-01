@@ -4,7 +4,7 @@ import { render, screen, fireEvent, renderHook, waitFor } from '@testing-library
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { LogDoseSheet } from '@/features/fuel/LogDoseSheet'
 import { useMedication } from '@/data/hooks'
-import { medicationApi } from '@/lib/medicationApi'
+import { medicationApi } from '@/data/fuel/medicationApi'
 import { localDateString } from '@/shared/lib/dates'
 
 // ONE shared QueryClient so the sheet's mutation (setQueryData on ['medication'])
