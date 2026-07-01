@@ -25,7 +25,7 @@ export function buildKamraItems(
         id: 'stash-' + s.id,
         name: s.name,
         brand: s.brand,
-        source: s.brand.toLowerCase().includes('myprotein') ? 'myprotein.hu' : 'manual',
+        source: s.source ?? (s.brand.toLowerCase().includes('myprotein') ? 'myprotein.hu' : 'manual'),
         category,
         kind,
         dose: s.dose,
@@ -35,6 +35,20 @@ export function buildKamraItems(
         stashRefId: s.id,
         isStashOnly: true,
         caffeine: s.caffeine,
+        // Nutrition + commerce (mezo-1za9) — carry through so supplement cards/detail show
+        // macros/nutrients/price like food. Undefined-safe: absent on pure dose/protocol items.
+        per: s.per,
+        unit: s.unit,
+        macros: s.macros,
+        fiberG: s.fiberG,
+        sugarG: s.sugarG,
+        saltG: s.saltG,
+        saturatedFatG: s.saturatedFatG,
+        price: s.price,
+        priceUnit: s.priceUnit,
+        pkg: s.pkg,
+        micros: s.micros,
+        nova: s.nova,
       }
     })
 

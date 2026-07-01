@@ -96,6 +96,14 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
       category: input.category ?? 'muscle', dose: input.dose ?? '', form: input.form ?? '',
       stock: input.stockQty ?? null, stockUnit: input.stockUnit ?? null,
       protocol: input.protocol ?? '', timing: input.timing ?? 'flexible', taken: false, caffeine: input.caffeine,
+      // Nutrition + commerce (mezo-1za9) — preserve so a mock-mode supplement shows macros/price too.
+      source: input.source, per: input.per, unit: input.unit,
+      macros: input.kcal != null
+        ? { kcal: input.kcal, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 }
+        : undefined,
+      price: input.price, priceUnit: input.priceUnit, pkg: input.pkg,
+      micros: input.micros, nova: input.nova,
+      fiberG: input.fiberG, sugarG: input.sugarG, saltG: input.saltG, saturatedFatG: input.saturatedFatG,
     }
     return { ...base, stash: [...base.stash, supp] }
   })
@@ -156,6 +164,25 @@ function applyStashUpdate(s: SupplementStashItem, input: PantryItemInput): Suppl
     protocol: input.protocol ?? s.protocol,
     stock: input.stockQty ?? s.stock,
     stockUnit: input.stockUnit ?? s.stockUnit,
+    // Nutrition + commerce (mezo-1za9) — apply when carried, preserve untouched (mirror food).
+    source: input.source ?? s.source,
+    per: input.per ?? s.per,
+    unit: input.unit ?? s.unit,
+    macros: input.kcal != null || s.macros
+      ? {
+          kcal: input.kcal ?? s.macros?.kcal ?? 0,
+          p: input.proteinG ?? s.macros?.p ?? 0,
+          c: input.carbsG ?? s.macros?.c ?? 0,
+          f: input.fatG ?? s.macros?.f ?? 0,
+        }
+      : undefined,
+    fiberG: input.fiberG ?? s.fiberG,
+    sugarG: input.sugarG ?? s.sugarG,
+    saltG: input.saltG ?? s.saltG,
+    saturatedFatG: input.saturatedFatG ?? s.saturatedFatG,
+    price: input.price ?? s.price,
+    priceUnit: input.priceUnit ?? s.priceUnit,
+    pkg: input.pkg ?? s.pkg,
   }
 }
 function mockRemove(qc: ReturnType<typeof useQueryClient>, id: string) {

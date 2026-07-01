@@ -116,6 +116,22 @@ components:
         timing: { type: string }
         taken: { type: boolean }
         caffeine: { type: boolean, nullable: true }
+        # Nutrition + commerce facts — mirror IngredientResponse so supplement detail/cards
+        # show macros/nutrients/price too (mezo-1za9). Nullable: pure dose/protocol items
+        # (many stim/med) carry no nutrition; macros is null when kcal is unset.
+        source: { type: string, enum: [kifli.hu, myprotein.hu, tesco.hu, auchan.hu, manual, lidl, nutriversum, herbahaz, nutrifit, decathlon], nullable: true }
+        per: { type: number, nullable: true }
+        unit: { type: string, nullable: true }
+        macros: { allOf: [ { $ref: '#/components/schemas/PantryMacros' } ], nullable: true }
+        price: { type: number, nullable: true }
+        priceUnit: { type: string, nullable: true }
+        pkg: { type: string, nullable: true }
+        micros: { type: array, nullable: true, items: { $ref: '#/components/schemas/PantryMicro' } }
+        nova: { type: integer, minimum: 1, maximum: 4, nullable: true }
+        fiberG: { type: number, nullable: true }
+        sugarG: { type: number, nullable: true }
+        saltG: { type: number, nullable: true }
+        saturatedFatG: { type: number, nullable: true }
     PantryItemRequest:
       type: object
       required: [kind, name]

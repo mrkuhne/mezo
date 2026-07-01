@@ -153,6 +153,24 @@ public interface PantryMapper {
             .timing(e.getTiming() == null ? "" : e.getTiming())
             .taken(e.isTaken())
             .caffeine(e.getCaffeine())
+            // Nutrition + commerce (mezo-1za9): supplements carry macros/nutrients/price to the UI
+            // too. macros stays null for pure dose/protocol items (kcal unset) so the detail view
+            // hides the Makrók block; nz() zero-fills a partial macro row when kcal is present.
+            .source(e.getSource() == null ? null : SupplementStashResponse.SourceEnum.fromValue(e.getSource()))
+            .per(e.getServingAmount())
+            .unit(e.getServingUnit())
+            .macros(e.getKcal() == null ? null : PantryMacros.builder()
+                .kcal(nz(e.getKcal())).p(nz(e.getProteinG())).c(nz(e.getCarbsG())).f(nz(e.getFatG())).build())
+            .price(e.getPriceHuf() == null ? null : BigDecimal.valueOf(e.getPriceHuf()))
+            .priceUnit(e.getPriceUnit())
+            .pkg(e.getPackageLabel())
+            .micros(e.getMicros() == null ? null
+                : e.getMicros().stream().map(m -> PantryMicro.builder().name(m.name()).pct(m.pct()).build()).toList())
+            .nova(e.getNova() == null ? null : e.getNova().intValue())
+            .fiberG(e.getFiberG())
+            .sugarG(e.getSugarG())
+            .saltG(e.getSaltG())
+            .saturatedFatG(e.getSaturatedFatG())
             .build();
     }
 

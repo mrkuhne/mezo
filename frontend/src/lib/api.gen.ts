@@ -1719,6 +1719,20 @@ export interface components {
             timing: string;
             taken: boolean;
             caffeine?: boolean | null;
+            /** @enum {string|null} */
+            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | null;
+            per?: number | null;
+            unit?: string | null;
+            macros?: components["schemas"]["PantryMacros"] | null;
+            price?: number | null;
+            priceUnit?: string | null;
+            pkg?: string | null;
+            micros?: components["schemas"]["PantryMicro"][] | null;
+            nova?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
         };
         PantryItemRequest: {
             /** @enum {string} */

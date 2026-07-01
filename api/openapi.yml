@@ -4351,6 +4351,61 @@ components:
         caffeine:
           type: boolean
           nullable: true
+        source:
+          type: string
+          enum:
+            - kifli.hu
+            - myprotein.hu
+            - tesco.hu
+            - auchan.hu
+            - manual
+            - lidl
+            - nutriversum
+            - herbahaz
+            - nutrifit
+            - decathlon
+          nullable: true
+        per:
+          type: number
+          nullable: true
+        unit:
+          type: string
+          nullable: true
+        macros:
+          allOf:
+            - $ref: '#/components/schemas/PantryMacros'
+          nullable: true
+        price:
+          type: number
+          nullable: true
+        priceUnit:
+          type: string
+          nullable: true
+        pkg:
+          type: string
+          nullable: true
+        micros:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/PantryMicro'
+        nova:
+          type: integer
+          minimum: 1
+          maximum: 4
+          nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
+          nullable: true
     PantryItemRequest:
       type: object
       required:

@@ -97,6 +97,13 @@ export interface SupplementStashItem {
   id: string; name: string; brand: string; type: SupplementType; category: string
   dose: string; form: string; stock: number | null; stockUnit: string | null
   protocol: string; timing: string; taken: boolean; caffeine?: boolean
+  // Nutrition + commerce facts (mezo-1za9) — supplements carry macros/nutrients/price too;
+  // optional because pure dose/protocol items (many stim/med) have none. Mirrors Ingredient.
+  source?: PantrySourceKey; per?: number; unit?: string
+  macros?: { kcal: number; p: number; c: number; f: number }
+  price?: number; priceUnit?: string; pkg?: string
+  micros?: { name: string; pct: number }[]; nova?: NovaGroup
+  fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
 }
 export interface Protocol {
   version: number; builtAt: string; source: string; status: string

@@ -23,6 +23,34 @@ class PantryApiIT extends ApiIntegrationTest {
         return r;
     }
 
+    private PantryItemRequest supplementReq() {
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.SUPPLEMENT);
+        r.setName("Collagen Protein");
+        r.setDose("20g"); // supplement's required field
+        r.setPer(BigDecimal.valueOf(100));
+        r.setUnit("g");
+        r.setKcal(BigDecimal.valueOf(360));
+        r.setProteinG(BigDecimal.valueOf(90));
+        r.setPrice(20490);
+        return r;
+    }
+
+    @Test
+    void testCreateThenGet_shouldReturnSupplementInStashWithMacrosAndPrice_whenAuthed() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        postForBody("/api/pantry", supplementReq(), auth, HttpStatus.CREATED, PantryItemResponse.class);
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+
+        var supp = pantry.getStash().stream()
+            .filter(s -> "Collagen Protein".equals(s.getName())).findFirst().orElseThrow();
+        assertThat(supp.getMacros()).isNotNull();
+        assertThat(supp.getMacros().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(360));
+        assertThat(supp.getMacros().getP()).isEqualByComparingTo(BigDecimal.valueOf(90));
+        assertThat(supp.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(20490));
+    }
+
     @Test
     void testCreateThenGet_shouldReturnFoodInIngredients_whenAuthed() {
         HttpHeaders auth = ownerAuthHeaders();
