@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { WeeklyDayRow } from './WeeklyDayRow'
+import { WeeklyDayRow } from '@/features/train/components/WeeklyDayRow'
 
 test('renders the morning run before the evening gym and shows the run time', () => {
   render(<WeeklyDayRow

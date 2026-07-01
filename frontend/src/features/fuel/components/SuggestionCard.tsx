@@ -1,6 +1,6 @@
 import type { PantrySuggestion } from '@/data/types'
-import { SourceBadge } from '@/components/ui/SourceBadge'
-import { Icon } from '@/components/ui/Icon'
+import { SourceBadge } from '@/features/fuel/components/SourceBadge'
+import { Icon } from '@/shared/ui/Icon'
 
 export function SuggestionCard({ sug }: { sug: PantrySuggestion }) {
   return (

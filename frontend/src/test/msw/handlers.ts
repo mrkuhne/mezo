@@ -1,5 +1,5 @@
 import { http, HttpResponse } from 'msw'
-import { API_BASE } from '@/lib/api'
+import { API_BASE } from '@/data/_client/api'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }

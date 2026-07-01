@@ -8,7 +8,7 @@
 // Ported from prototype mesocycles.jsx ActiveMesoCard / MesoOverview phase curves.
 // (DISTINCT from PhaseDots — that widget has its own colour map.)
 // ============================================================
-import { MESOCYCLE_PHASE_COLORS, phaseBarHeight } from '@/data/train'
+import { MESOCYCLE_PHASE_COLORS, phaseBarHeight } from '@/data/train/train'
 import type { MesoPhase, MesoStatus } from '@/data/types'
 
 type PhaseCurveSize = 'sm' | 'lg'

@@ -2,7 +2,7 @@
 // Mezo · PRToast — dark celebration toast shown for ~4.5s when a
 // personal record is logged. Ported from prototype train.jsx.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 
 export interface PRState {
   delta: string

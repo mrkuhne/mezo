@@ -1,5 +1,5 @@
 import type { FuelSlot, FuelMeal } from '@/data/types'
-import { TimelineSlot } from './TimelineSlot'
+import { TimelineSlot } from '@/features/fuel/components/TimelineSlot'
 
 export function FuelTimeline({
   slots,

@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Icon } from '@/components/ui/Icon'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Chip } from '@/components/ui/Chip'
+import { Icon } from '@/shared/ui/Icon'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Chip } from '@/shared/ui/Chip'
 import { KIND_META } from '@/data/kindMeta'
 import { useFuelPreview } from '@/data/hooks'
-import { LogMealSheet } from '@/features/fuel/LogMealSheet'
+import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 
 export function FuelTimelinePreview() {
   const { visible, nextStack } = useFuelPreview()

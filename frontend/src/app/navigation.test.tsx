@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
-import { routes } from './router'
-import { ThemeProvider } from './ThemeProvider'
+import { routes } from '@/app/router'
+import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 function renderApp(path = '/') {

@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { WeightTrendChart } from './WeightTrendChart'
+import { WeightTrendChart } from '@/features/me/components/WeightTrendChart'
 import type { WeightEntry } from '@/data/types'
-import type { GoalResponse } from '@/lib/goalApi'
+import type { GoalResponse } from '@/data/me/goalApi'
 
 const log: WeightEntry[] = [
   { date: '2026-05-11', value: 80.3 }, { date: '2026-05-15', value: 79.2 },

@@ -1,5 +1,5 @@
 import { useQuery, type QueryKey } from '@tanstack/react-query'
-import { isMockMode } from '@/lib/mode'
+import { isMockMode } from '@/data/_client/mode'
 
 /**
  * The dual-mode read recipe with the **"no static fallback in real mode"** invariant

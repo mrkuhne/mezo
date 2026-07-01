@@ -4,8 +4,8 @@
 // and {weeks} hét + first-split chips. Navigates to the builder.
 // Ported from prototype mesocycles.jsx PlannedMesoCard.
 // ============================================================
-import { Chip } from '@/components/ui/Chip'
-import { Icon } from '@/components/ui/Icon'
+import { Chip } from '@/shared/ui/Chip'
+import { Icon } from '@/shared/ui/Icon'
 import type { Mesocycle } from '@/data/types'
 
 interface PlannedMesoCardProps {

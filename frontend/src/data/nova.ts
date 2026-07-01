@@ -1,4 +1,4 @@
-import type { Ingredient, RecipeIngredientLine } from './types'
+import type { Ingredient, RecipeIngredientLine } from '@/data/types'
 
 export type NovaGroup = 1 | 2 | 3 | 4
 export const NOVA_META: Record<NovaGroup, { label: string; desc: string; color: string }> = {

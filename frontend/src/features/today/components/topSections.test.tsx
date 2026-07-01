@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { BrandRow } from './BrandRow'
-import { RetaPhaseSection } from './RetaPhaseSection'
-import { DateMesoHeader } from './DateMesoHeader'
-import { today, user } from '@/data/today'
+import { BrandRow } from '@/features/today/components/BrandRow'
+import { RetaPhaseSection } from '@/features/today/components/RetaPhaseSection'
+import { DateMesoHeader } from '@/features/today/components/DateMesoHeader'
+import { today, user } from '@/data/today/today'
 
 test('BrandRow shows the Mezo wordmark', () => {
   render(<BrandRow />)

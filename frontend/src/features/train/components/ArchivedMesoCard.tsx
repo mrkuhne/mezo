@@ -3,7 +3,7 @@
 // mesocycle: Archív + end date eyebrow, Display title, summary line.
 // Navigates to the builder. Ported from prototype mesocycles.jsx ArchivedMesoCard.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import type { Mesocycle } from '@/data/types'
 
 interface ArchivedMesoCardProps {

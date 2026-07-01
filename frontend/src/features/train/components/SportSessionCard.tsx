@@ -1,11 +1,11 @@
 // ============================================================
 // Mezo · SportSessionCard — one logged volleyball session in the
-// SportView log list: date/time eyebrow, mono duration/sets, a big
+// SportPage log list: date/time eyebrow, mono duration/sets, a big
 // RPE readout coloured by intensity, two MiniBars and optional notes.
 // Ported from prototype sport.jsx SportSessionCard.
 // ============================================================
 import type { SportSession } from '@/data/types'
-import { MiniBar } from './MiniBar'
+import { MiniBar } from '@/features/train/components/MiniBar'
 
 interface SportSessionCardProps {
   session: SportSession

@@ -1,4 +1,4 @@
-import { StatusIcons } from '@/components/ui/Icon'
+import { StatusIcons } from '@/shared/ui/Icon'
 
 export function StatusBar({ clock = '13:42' }: { clock?: string }) {
   return (

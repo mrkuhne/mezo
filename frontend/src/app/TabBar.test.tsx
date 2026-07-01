@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { TabBar } from './TabBar'
+import { TabBar } from '@/app/TabBar'
 
 function renderAt(path: string) {
   return render(<MemoryRouter initialEntries={[path]}><TabBar /></MemoryRouter>)

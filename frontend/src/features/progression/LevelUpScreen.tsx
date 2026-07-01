@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import type { LevelUpGain, LevelUpResult } from '@/lib/trainApi'
-import { useReducedMotion } from '@/lib/useReducedMotion'
+import type { LevelUpGain, LevelUpResult } from '@/data/train/trainApi'
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
 import {
   CHIP_ICON_BY_SOURCE,
   HEADLINE_BY_SOURCE,
   HEADLINE_NO_LEVELUP,
   skillDisplay,
-} from './levelUpMeta'
+} from '@/features/progression/logic/levelUpMeta'
 
 const RING_R = 26
 const RING_C = 2 * Math.PI * RING_R // ≈ 163.36 — matches the mockup's dasharray

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { VolleyballCard } from './VolleyballCard'
-import { VulnerabilityCard } from './VulnerabilityCard'
+import { VolleyballCard } from '@/features/today/components/VolleyballCard'
+import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 
 test('VolleyballCard renders null without a session', () => {
   const { container } = render(<VolleyballCard session={undefined} />)

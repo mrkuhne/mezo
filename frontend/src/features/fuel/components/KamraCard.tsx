@@ -1,7 +1,7 @@
 import type { PantryItem } from '@/data/types'
-import { SourceBadge } from '@/components/ui/SourceBadge'
-import { NovaDot } from '@/components/ui/NovaDot'
-import { SHOW_PANTRY_STOCK } from '@/lib/flags'
+import { SourceBadge } from '@/features/fuel/components/SourceBadge'
+import { NovaDot } from '@/features/fuel/components/NovaDot'
+import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 
 // Direction A (kamra-mockup-v3-A): the design-system .meal-card anatomy applied to a pantry item —
 // a 44px stock slot, Antonio name + source/brand meta, a macro line (food) or protocol (supp), and a

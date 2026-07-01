@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useRunning } from '@/data/hooks'
-import { newDraft } from '@/data/runningDraft'
-import { AttachPlanSheet, type AttachPlanType } from '../AttachPlanSheet'
+import { newDraft } from '@/data/train/runningDraft'
+import { AttachPlanSheet, type AttachPlanType } from '@/features/me/sheets/AttachPlanSheet'
 
 // Goal command-center hub-and-spoke slots (G4b, mockup goal-funnel.html Funnel B).
-// Rendered UNDER the <GoalTimeline> in GoalsView. Two always-present slots —
+// Rendered UNDER the <GoalTimeline> in GoalsPage. Two always-present slots —
 // Mesociklus (gym) + Futóblokk (run) — each offering:
 //   ＋ Tervezd        → launch the EXISTING planner (meso: navigate('/train/mesocycles/new');
 //                       run: the create-then-navigate idiom — saveRunningBlock(null, newDraft(),
-//                       { onSuccess: b => navigate('/train/futas/'+b.id) }) — RunningView.tsx:62-66).
+//                       { onSuccess: b => navigate('/train/futas/'+b.id) }) — RunningPage.tsx:62-66).
 //   ＋ Csatolj meglévőt → open AttachPlanSheet for that plan type.
 // Volleyball is NOT a slot (ambient, read-only — it lives in the timeline band).
 // The timeline's gap chips already signal missing coverage, so both slots render

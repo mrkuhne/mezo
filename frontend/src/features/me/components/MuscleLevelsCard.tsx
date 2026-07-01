@@ -1,7 +1,7 @@
-import { Icon } from '@/components/ui/Icon'
-import { useReducedMotion } from '@/lib/useReducedMotion'
-import { MUSCLE_LABELS } from '@/data/train'
-import type { ProgressionProfileResponse, SkillLevel } from '@/lib/progressionApi'
+import { Icon } from '@/shared/ui/Icon'
+import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
+import { MUSCLE_LABELS } from '@/data/train/train'
+import type { ProgressionProfileResponse, SkillLevel } from '@/data/progression/progressionApi'
 
 const TOP_N = 4
 const BAR_CAP = 10 // fixed level cap for the bar fill (matches the radar baseline)

@@ -9,8 +9,8 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore
   - api/feature/auth/auth.yml
   - backend/src/main/resources/application.yml
-  - frontend/src/lib/auth.ts
-  - frontend/src/lib/api.ts
+  - frontend/src/data/_client/auth.ts
+  - frontend/src/data/_client/api.ts
 related: [_platform-data-layer, _platform-api-backend, me]
 ---
 
@@ -50,14 +50,14 @@ Two paths: token **issuance** (login) and token **use** (every protected request
 **Login (token issuance):**
 ```
 QueryProvider.useEffect (real mode only)        frontend/src/app/providers/QueryProvider.tsx:13
-  → bootstrapOwnerToken()                       frontend/src/lib/auth.ts:7
-  → apiFetch POST /api/auth/login               frontend/src/lib/api.ts:22  (no Bearer yet)
+  → bootstrapOwnerToken()                       frontend/src/data/_client/auth.ts:7
+  → apiFetch POST /api/auth/login               frontend/src/data/_client/api.ts:22  (no Bearer yet)
   → AuthController.login()                       backend …/feature/auth/controller/AuthController.java (implements generated AuthApi)
   → AuthService.login()                          backend …/feature/auth/service/AuthService.java:29
        findByEmail + passwordEncoder.matches  → else 401 AUTH_LOGIN_INVALID_CREDENTIALS
        JwtEncoder.encode(HS256 header + claims{sub=userId, email, iat, exp=+30d})   :36-45
   → TokenResponse{ token }
-  → setToken(token)                              frontend/src/lib/api.ts:20  (module-level `let token`)
+  → setToken(token)                              frontend/src/data/_client/api.ts:20  (module-level `let token`)
 ```
 
 **Any protected request (token validation + ownership):**
@@ -74,7 +74,7 @@ view → useX hook (frontend/src/data/hooks.ts) → *Api.ts client → apiFetch 
 
 **The load-bearing seam:** controllers never read the principal from a method argument. They inject the `CurrentUserId` component (`…/techcore/security/CurrentUserId.java`) and call `.get()`, which returns `UUID.fromString(jwt.getSubject())`. The same pattern is used by `WeightLogController`, `SleepLogController`, `CheckInController`, and `TrainController` — they call e.g. `service.list(currentUserId.get())` / `service.log(currentUserId.get(), req)`. The client *cannot* spoof ownership: the only thing it controls is the bearer token, whose subject is the owner UUID minted at login.
 
-**Dual-mode note:** the data layer (`frontend/src/data/hooks.ts`) switches each hook between mock and real via `isMockMode()` (`@/lib/mode`). Auth only participates in the real branch — mock hooks never hit `apiFetch`, so the in-memory `token` stays `null` and nothing 401s because nothing is requested.
+**Dual-mode note:** the data layer (`frontend/src/data/hooks.ts`) switches each hook between mock and real via `isMockMode()` (`@/data/_client/mode`). Auth only participates in the real branch — mock hooks never hit `apiFetch`, so the in-memory `token` stays `null` and nothing 401s because nothing is requested.
 
 ---
 
@@ -114,7 +114,7 @@ Entity: `…/feature/auth/entity/UserProfileEntity.java`. Repository: `UserProfi
 |---|---|---|---|---|
 | POST | `/api/auth/login` | `security: []` (public) | `LoginRequest{email, password}` → `TokenResponse{token}` | 400 field (`VALIDATION_INVALID_EMAIL`, `VALIDATION_INVALID_VALUE`), 401 `AUTH_LOGIN_INVALID_CREDENTIALS` |
 
-`LoginRequest.email` is `format: email`; `password` `minLength: 1`. DTOs `LoginRequest`/`TokenResponse` are **generated** into `io.mrkuhne.mezo.api.dto` (BE) and `components['schemas']` in `frontend/src/lib/api.gen.ts` (FE) — never hand-written.
+`LoginRequest.email` is `format: email`; `password` `minLength: 1`. DTOs `LoginRequest`/`TokenResponse` are **generated** into `io.mrkuhne.mezo.api.dto` (BE) and `components['schemas']` in `frontend/src/data/_client/api.gen.ts` (FE) — never hand-written.
 
 **Public allowlist** (`SecurityConfig.java:43`): `/api/auth/login`, `/actuator/health`. **Everything else** `authenticated()`.
 
@@ -244,7 +244,7 @@ cd frontend && VITE_USE_MOCK=true pnpm test    # mock mode
 **Deferred bd issues (all OPEN):**
 - **`mezo-5h9` (P2) — fail-fast on default secrets.** Add a startup guard that refuses to boot under a non-dev profile when `dev-only-change-me…` / `owner` are still active; also revisit the 30-day JWT expiry + a revocation story at deploy time. **The single most important security follow-up.**
 - **`mezo-aus` (P3) — degraded/offline banner** when bootstrap fails (today: silent `console.error` + empty screens); plus a custom `authenticationEntryPoint` so filter-level 401s emit the uniform `SystemMessage[]` envelope.
-- **`mezo-8bq` (P4) — double bootstrap on cold load.** Two TanStack queries race the bootstrap → two parallel `POST /api/auth/login` (both 200). Harmless (idempotent) but doubles auth traffic. Fix: memoize the in-flight promise in `lib/api.ts`/`auth.ts`.
+- **`mezo-8bq` (P4) — double bootstrap on cold load.** Two TanStack queries race the bootstrap → two parallel `POST /api/auth/login` (both 200). Harmless (idempotent) but doubles auth traffic. Fix: memoize the in-flight promise in `data/_client/api.ts`/`auth.ts`.
 
 **Operational / secrets:** prod env (`MEZO_JWT_SECRET`, `MEZO_OWNER_EMAIL`, `MEZO_OWNER_PASSWORD`, `MEZO_OWNER_NAME`) comes from the `mezo-app` Kubernetes Secret, consumed in `k8s/backend/deployment.yaml` via `secretKeyRef`. It is committed as an **encrypted SealedSecret** (`k8s/backend/sealedsecret.yaml`, name `mezo-app`), decrypted in-cluster by the sealed-secrets controller; template `k8s/backend/secret.example.yaml`. See [`docs/infrastructure/deployment-k3s-argocd.md`](../infrastructure/deployment-k3s-argocd.md) (Secrets table, `mezo-app` = "JWT + owner"; Sealed Secrets DONE note) and [`docs/infrastructure/runbook.md`](../infrastructure/runbook.md) (logins table, rotate-a-secret recipe, **back up the sealing key** — lose it on rebuild and `mezo-app`/the JWT secret must be re-sealed, which invalidates all existing tokens).
 
@@ -276,9 +276,9 @@ cd frontend && VITE_USE_MOCK=true pnpm test    # mock mode
 - `backend/src/main/resources/application.yml` — `mezo.auth.*` + `mezo.cors.*` defaults/env overrides; `/actuator` health exposure.
 
 **Frontend:**
-- `frontend/src/lib/api.ts` — fetch client, `setToken`, Bearer injection, `ApiError`.
-- `frontend/src/lib/auth.ts` — `bootstrapOwnerToken()`.
-- `frontend/src/lib/mode.ts` — `isMockMode()`.
+- `frontend/src/data/_client/api.ts` — fetch client, `setToken`, Bearer injection, `ApiError`.
+- `frontend/src/data/_client/auth.ts` — `bootstrapOwnerToken()`.
+- `frontend/src/data/_client/mode.ts` — `isMockMode()`.
 - `frontend/src/app/providers/QueryProvider.tsx` — boot gate + bootstrap trigger.
 - `frontend/.env.example` — owner creds + API URL + mock flag.
 - `frontend/src/test/msw/handlers.ts` — mock login handler.

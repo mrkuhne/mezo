@@ -1,4 +1,4 @@
-import { QuickStat } from '@/components/ui/QuickStat'
+import { QuickStat } from '@/shared/ui/QuickStat'
 
 export function QuickStatsRow() {
   return (

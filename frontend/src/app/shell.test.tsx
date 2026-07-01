@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
-import { StatusBar } from './StatusBar'
-import { PhoneFrame } from './PhoneFrame'
+import { StatusBar } from '@/app/StatusBar'
+import { PhoneFrame } from '@/app/PhoneFrame'
 
 test('StatusBar shows default clock and status icons', () => {
   const { container } = render(<StatusBar />)

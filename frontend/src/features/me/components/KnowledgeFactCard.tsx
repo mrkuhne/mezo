@@ -1,5 +1,5 @@
 import type { KnowledgeFact } from '@/data/types'
-import { factCategoryColor } from '@/data/knowledge'
+import { factCategoryColor } from '@/data/insights/knowledge'
 
 export function KnowledgeFactCard({ fact }: { fact: KnowledgeFact }) {
   const color = factCategoryColor(fact.category)

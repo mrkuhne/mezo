@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
-import { applyTheme, readStoredTheme, writeStoredTheme, type Theme } from '@/lib/theme'
+import { applyTheme, readStoredTheme, writeStoredTheme, type Theme } from '@/shared/lib/theme'
 
 interface ThemeContextValue { theme: Theme; setTheme: (t: Theme) => void; toggle: () => void }
 const ThemeContext = createContext<ThemeContextValue | null>(null)

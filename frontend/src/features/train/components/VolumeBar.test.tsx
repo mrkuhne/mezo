@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { activeMeso, MUSCLE_LABELS } from '@/data/train'
-import { VolumeBar } from './VolumeBar'
+import { activeMeso, MUSCLE_LABELS } from '@/data/train/train'
+import { VolumeBar } from '@/features/train/components/VolumeBar'
 
 const chest = activeMeso.volumePerMuscle!.chest
 

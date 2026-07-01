@@ -1,6 +1,6 @@
 import { render, screen, renderHook } from '@testing-library/react'
-import { PatternRow } from './PatternRow'
-import { WeeklySupplementGrid } from './WeeklySupplementGrid'
+import { PatternRow } from '@/features/fuel/components/PatternRow'
+import { WeeklySupplementGrid } from '@/features/fuel/components/WeeklySupplementGrid'
 import { useFuelWeek } from '@/data/hooks'
 
 test('PatternRow shows title + detail with accent strip', () => {

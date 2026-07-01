@@ -5,7 +5,7 @@
 // ============================================================
 import type { Ingredient } from '@/data/types'
 import { usePantry } from '@/data/hooks'
-import { SourceBadge } from '@/components/ui/SourceBadge'
+import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 
 export interface RecipeIngredientItem {
   refId: string

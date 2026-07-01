@@ -6,10 +6,10 @@
 // (WorkoutComplete + CompleteStat).
 // ============================================================
 import type { WorkoutPlan, LastWeekSet } from '@/data/types'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Icon } from '@/components/ui/Icon'
-import { ToolChip } from '@/components/ui/ToolChip'
-import { SafeMarkdown } from '@/lib/safeMarkdown'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Icon } from '@/shared/ui/Icon'
+import { ToolChip } from '@/shared/ui/ToolChip'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 
 type CompletedSets = Record<string, LastWeekSet[]>
 

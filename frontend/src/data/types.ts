@@ -1,7 +1,7 @@
-import type { IconName } from '@/components/ui/Icon'
-import type { Tool } from '@/components/ui/ToolChip'
-import type { NovaGroup } from './nova'
-import type { PantrySourceKey } from './pantrySources'
+import type { IconName } from '@/shared/ui/Icon'
+import type { Tool } from '@/shared/ui/ToolChip'
+import type { NovaGroup } from '@/data/nova'
+import type { PantrySourceKey } from '@/data/pantrySources'
 
 export type DayState = 'good' | 'medium' | 'rough'
 export interface CheckinValues { energy: number; stress: number; body: number; mental: number }
@@ -250,8 +250,8 @@ export interface PantryItemInput {
 export type GoalKind = 'cut' | 'bulk' | 'maintenance'
 export type GoalStatus = 'active' | 'planned' | 'archived'
 // Domain Goal — the thin back-compat shape useGoal still exposes for consumers
-// that read flattened weights/identity (WeightView, FuelStackView's linked plans,
-// EditGoalSheet's rateTarget). The GoalsView command-center hero now reads the raw
+// that read flattened weights/identity (WeightPage, FuelStackPage's linked plans,
+// EditGoalSheet's rateTarget). The GoalsPage command-center hero now reads the raw
 // `GoalResponse` (trajectory/guards/window/weights) directly; `startDate`,
 // `targetDate` and `unit` were retired from this shape in G4b (Decision C) since
 // nothing consumes them anymore. `kind`/`rateTarget` stay (hook tests + Task 6).

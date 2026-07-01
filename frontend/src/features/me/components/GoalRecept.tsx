@@ -1,4 +1,4 @@
-import type { GoalResponse } from '@/lib/goalApi'
+import type { GoalResponse } from '@/data/me/goalApi'
 
 // The G5 recept finale of the goal command-center: replaces G4b's static
 // "G5 · hamarosan" placeholder. Renders the engine's GoalPrescription —

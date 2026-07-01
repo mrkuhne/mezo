@@ -1,0 +1,187 @@
+import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
+import type { GoalResponse, FeasibilityPreviewResponse } from '@/data/me/goalApi'
+import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
+import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from '@/data/types'
+
+export const goal: Goal = {
+  id: 'goal-cut-2026',
+  title: 'Fogyás · Nyári forma',
+  kind: 'cut',
+  status: 'active',
+  startWeight: 81.4,
+  currentWeight: 78.6,
+  targetWeight: 73.0,
+  // Target/cél pace is %BW/week (mirrors goalResponse.rateTargetPctPerWeek below) —
+  // a DIFFERENT quantity from the observed kg/hét trend the hero shows (mezo-5om).
+  rateTarget: { value: 0.6, unit: '%/hét', direction: 'down' },
+  mesocycles: ['meso-hyp-04', 'meso-str-02', 'meso-maint-01'],
+  identityFrame: 'Egészséges erő · nem csak alak — a teljes energiám jobb 73kg-on a Reta cycle után.',
+}
+
+// Mock raw GoalResponse — the G4b command-center hero reads the contract shape
+// (trajectory/guards/window/weights) directly, so mock mode supplies the same
+// envelope the backend returns. ISO dates here; the hero formats them via huMonthDay.
+export const goalResponse: GoalResponse = {
+  id: goal.id,
+  title: goal.title,
+  trajectory: 'cut',
+  guards: ['strength', 'muscle'],
+  status: 'active',
+  startDate: '2026-04-01',
+  targetDate: '2026-08-15',
+  startWeightKg: goal.startWeight,
+  targetWeightKg: goal.targetWeight,
+  rateTargetPctPerWeek: 0.6,
+  identityFrame: goal.identityFrame,
+  // G5 engine output (mock) — a feasible-with-warnings verdict + two recept
+  // segments (deficit during the gym blocks, taper near the target) + the guard
+  // status the recept card renders. Mirrors the GoalPrescription contract so the
+  // card renders offline in mock mode without a backend evaluate. (mezo-g1u)
+  tdeeBootstrap: { bmr: 1720, tdee: 2666, pal: 1.55, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z' },
+  prescription: {
+    generatedAt: '2026-05-22T06:05:00Z',
+    basis: 'formula',
+    segments: [
+      {
+        fromWeek: 1,
+        toWeek: 12,
+        label: 'Mély deficit · Reta cycle',
+        kcal: 2150,
+        proteinG: 163,
+        sleepTargetH: 7.5,
+        restDays: [3, 7],
+        projectedRateKgPerWk: -0.55,
+        rationale: 'A Reta cycle alatt agresszívabb deficit fér bele — a fehérje magasan tartja az izmot, az alvás védi a regenerációt.',
+      },
+      {
+        fromWeek: 13,
+        toWeek: 20,
+        label: 'Lassú befutó · taper',
+        kcal: 2380,
+        proteinG: 155,
+        sleepTargetH: 8,
+        restDays: [4, 7],
+        projectedRateKgPerWk: -0.35,
+        rationale: 'A célsúly közeledtével lassítunk, hogy az erő-gardot ne sértsük és a forma stabil maradjon a deadline-ra.',
+      },
+    ],
+    guardStatus: {
+      strength: {
+        active: true,
+        e1rmTrendPct: 1.2,
+        breached: false,
+        notes: ['Az e1RM trend pozitív — a deficit eddig nem nyomta le az erőt.'],
+      },
+      muscle: {
+        active: true,
+        minWeeklySetsPerMuscle: 8,
+        belowMaintenanceMuscles: [],
+        rateWithinCap: true,
+        proteinMonitored: false,
+        notes: ['Minden izomcsoport eléri a heti 8 fenntartó szettet.'],
+      },
+    },
+    feasibility: {
+      verdict: 'feasible-with-warnings',
+      notes: ['A tempó a cap közelében van — a befutóban lassítunk.', 'A fehérje-cél Fuel-logolás nélkül még nem ellenőrzött.'],
+    },
+  },
+}
+
+// Static biometric profile for mock mode (G6, mezo-06n) — a complete profile so
+// the Profile Biometria card + the goal-creation gate render offline without a
+// backend. The derived base-TDEE line on the card reads `tdeeBootstrap`; the
+// editor sheet prefills from these fields. (Katch → uses bodyFatPct.)
+export const biometricProfile: BiometricProfileResponse = {
+  sex: 'M',
+  heightCm: 180,
+  birthDate: '1991-03-01',
+  bodyFatPct: 15,
+  activityLevel: 'MODERATE',
+  tdeeBootstrap: { bmr: 1910, tdee: 2960, pal: 1.55, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
+}
+
+// Static realism preview for mock mode (G6, mezo-06n) — a feasible draft so the
+// cél step's live feasibility panel renders offline without a backend. The
+// aggressive branch (suggestedTargetDate present) is exercised via MSW in real
+// mode; mock mode always shows the safe-band state.
+export const feasibilityPreview: FeasibilityPreviewResponse = {
+  derivedRatePctPerWeek: 0.6,
+  withinSafeBand: true,
+  verdict: 'feasible',
+}
+
+export const weightLog: WeightEntry[] = [
+  { date: '2026-04-22', value: 81.4, note: 'Goal start · Reta cycle indul' },
+  { date: '2026-04-25', value: 81.0 },
+  { date: '2026-04-28', value: 80.8 },
+  { date: '2026-05-01', value: 80.5 },
+  { date: '2026-05-04', value: 80.2, note: 'Első hét Reta · étvágy lefulladás stabil' },
+  { date: '2026-05-07', value: 79.9 },
+  { date: '2026-05-09', value: 79.7 },
+  { date: '2026-05-11', value: 80.3, note: 'Volleyball szombat · folyadékvesztés kalibrálás' },
+  { date: '2026-05-13', value: 79.5 },
+  { date: '2026-05-15', value: 79.2 },
+  { date: '2026-05-17', value: 79.0 },
+  { date: '2026-05-19', value: 79.4, note: 'Reta D1 reggel · hétfő reggeli súly nem reprezentatív' },
+  { date: '2026-05-20', value: 78.9 },
+  { date: '2026-05-21', value: 78.8 },
+  { date: '2026-05-22', value: 78.6 },
+]
+
+export const weightTrends: WeightTrends = {
+  last7d: { avg: 78.96, weeklyRate: -0.5 },
+  last4w: { weeklyRate: -0.7 },
+}
+
+export const linkedMesocycles: Record<string, LinkedMeso> = {
+  'meso-hyp-04': { id: 'meso-hyp-04', shortTitle: 'Hypertrophy 04', status: 'active', startDate: 'Máj 1', endDate: 'Jún 12', weeks: 6 },
+  'meso-str-02': { id: 'meso-str-02', shortTitle: 'Strength 02', status: 'planned', startDate: 'Jún 16', endDate: 'Aug 4', weeks: 7 },
+  'meso-maint-01': { id: 'meso-maint-01', shortTitle: 'Maintenance', status: 'planned', startDate: 'Aug 7', endDate: 'Aug 28', weeks: 3 },
+}
+
+// Static mock timeline — Decision A (G4b). Mirrors `linkedMesocycles` (the three
+// gym mesocycles as `mesocycle` links) and adds a sample `running_block` link +
+// an uncovered gym-lane gap so the GoalTimeline lane component renders the same
+// lanes/gaps in mock mode as in real mode. `goalId` + `weeks` track the mock goal
+// window (Ápr 1 → Aug 15 ≈ 20 weeks). ISO dates here — `useGoal`/the lane format
+// them, matching how real `GoalTimelineResponse` arrives from the backend.
+export const goalTimeline: GoalTimelineResponse = {
+  goalId: goal.id,
+  weeks: 20,
+  links: [
+    {
+      id: 'link-hyp-04',
+      planType: 'mesocycle',
+      planId: 'meso-hyp-04',
+      startWeek: 5,
+      endWeek: 10,
+      plan: { title: 'Hypertrophy 04', status: 'active', startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6 },
+    },
+    {
+      id: 'link-str-02',
+      planType: 'mesocycle',
+      planId: 'meso-str-02',
+      startWeek: 11,
+      endWeek: 17,
+      plan: { title: 'Strength 02', status: 'planned', startDate: '2026-06-16', endDate: '2026-08-04', weeks: 7 },
+    },
+    {
+      id: 'link-maint-01',
+      planType: 'mesocycle',
+      planId: 'meso-maint-01',
+      startWeek: 18,
+      endWeek: 20,
+      plan: { title: 'Maintenance', status: 'planned', startDate: '2026-08-07', endDate: '2026-08-28', weeks: 3 },
+    },
+    {
+      id: 'link-run-01',
+      planType: 'running_block',
+      planId: 'run-base-01',
+      startWeek: 6,
+      endWeek: 13,
+      plan: { title: 'Base Build · 5K', status: 'active', startDate: '2026-05-08', endDate: '2026-07-03', weeks: 8 },
+    },
+  ],
+  gaps: [{ fromWeek: 1, toWeek: 4 }],
+}

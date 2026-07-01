@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { API_BASE } from './handlers'
+import { API_BASE } from '@/test/msw/handlers'
 
 describe('meal MSW handlers (defaults)', () => {
   it('GET /api/fuel/day/:date returns targets/consumed/meals', async () => {

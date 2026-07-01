@@ -1,5 +1,5 @@
 import { describe, it, expectTypeOf } from 'vitest'
-import type { MealSlot, MealItemSource, MealItemLine, MealInput, MealInputItem, FuelMeal } from './types'
+import type { MealSlot, MealItemSource, MealItemLine, MealInput, MealInputItem, FuelMeal } from '@/data/types'
 
 describe('meal domain types', () => {
   it('MealSlot is the 4-slot union', () => {

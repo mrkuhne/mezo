@@ -1,7 +1,7 @@
-import { Icon } from '@/components/ui/Icon'
-import { huMonthDay, huMonthDayDow } from '@/lib/dates'
+import { Icon } from '@/shared/ui/Icon'
+import { huMonthDay, huMonthDayDow } from '@/shared/lib/dates'
 import type { GoalKind } from '@/data/types'
-import { isImprovement, fmtSigned, type WeekAggregate, type DayRow } from './weightStats'
+import { isImprovement, fmtSigned, type WeekAggregate, type DayRow } from '@/features/me/logic/weightStats'
 
 const DIR_LABEL: Record<WeekAggregate['direction'], string> = { down: '↓ lefelé', up: '↑ felfelé', flat: '→ stabil' }
 

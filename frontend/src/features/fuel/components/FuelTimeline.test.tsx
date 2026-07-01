@@ -1,6 +1,6 @@
 import { render, screen, renderHook } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { FuelTimeline } from './FuelTimeline'
+import { FuelTimeline } from '@/features/fuel/components/FuelTimeline'
 import { useFuelTimeline } from '@/data/hooks'
 
 function setup(onOpenScore = () => {}) {

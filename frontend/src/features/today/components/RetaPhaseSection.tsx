@@ -1,4 +1,4 @@
-import { RetaPhaseBar } from '@/components/ui/RetaPhaseBar'
+import { RetaPhaseBar } from '@/shared/ui/RetaPhaseBar'
 
 export function RetaPhaseSection({ day }: { day: number }) {
   return (

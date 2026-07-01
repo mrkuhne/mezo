@@ -6,7 +6,7 @@
 // Ported from prototype meso-planner.jsx PlannerExerciseRow.
 // ============================================================
 import type { GymExercise } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 
 export function PlannerExerciseRow({ ex, onRemove }: { ex: GymExercise; onRemove: () => void }) {
   return (

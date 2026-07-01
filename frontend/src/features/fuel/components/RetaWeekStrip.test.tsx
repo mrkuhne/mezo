@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { RetaWeekStrip } from './RetaWeekStrip'
+import { RetaWeekStrip } from '@/features/fuel/components/RetaWeekStrip'
 
 test('renders 7 day cells with phase labels', () => {
   render(<RetaWeekStrip currentDay={3} />)

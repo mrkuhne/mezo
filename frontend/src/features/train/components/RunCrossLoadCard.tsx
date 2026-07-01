@@ -1,4 +1,4 @@
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 
 /**
  * Derived, presentational cross-load note — sprint eccentric load carries over to gym leg

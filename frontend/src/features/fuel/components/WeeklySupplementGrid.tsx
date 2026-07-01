@@ -1,5 +1,5 @@
-import { ToolChipRow } from '@/components/ui/ToolChipRow'
-import { DAYS_HU } from '@/data/fuelWeek'
+import { ToolChipRow } from '@/shared/ui/ToolChipRow'
+import { DAYS_HU } from '@/data/fuel/fuelWeek'
 import type { WeeklySupplementRow } from '@/data/types'
 
 // fuel-plan.jsx WeeklySupplementGrid (402–460)

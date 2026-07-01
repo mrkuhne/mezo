@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
-import { WeekdayGrid } from './WeekdayGrid'
+import { WeekdayGrid } from '@/features/train/components/WeekdayGrid'
 
 test('marks the selected weekday pressed and emits the clicked index', async () => {
   const onChange = vi.fn()

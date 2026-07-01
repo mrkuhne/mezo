@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { TimePicker } from './TimePicker'
+import { TimePicker } from '@/features/me/components/TimePicker'
 
 test('changing the hour select emits HH:MM', async () => {
   const onChange = vi.fn()

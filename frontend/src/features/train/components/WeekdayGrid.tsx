@@ -2,7 +2,7 @@
 // Mezo · WeekdayGrid — single-select 7-day picker (Hét..Vas). value/onChange
 // is a dayOfWeek index (0=Hét..6=Vas, = DAY_ORDER index). Run accent --info.
 // ============================================================
-import { DAY_ORDER } from '@/data/train'
+import { DAY_ORDER } from '@/data/train/train'
 
 const RUN = 'var(--info)'
 

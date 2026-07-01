@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { Icon } from '@/components/ui/Icon'
-import { CtaPrimary } from '@/components/ui/Cta'
+import { Icon } from '@/shared/ui/Icon'
+import { CtaPrimary } from '@/shared/ui/Cta'
 import type { Workout } from '@/data/types'
 
 export function WorkoutTeaser({ workout, niggle }: { workout: Workout; niggle: boolean }) {

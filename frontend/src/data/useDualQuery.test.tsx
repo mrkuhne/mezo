@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useDualQuery } from './useDualQuery'
+import { useDualQuery } from '@/data/useDualQuery'
 
 const SEED = ['seed-a', 'seed-b']
 const EMPTY: string[] = []

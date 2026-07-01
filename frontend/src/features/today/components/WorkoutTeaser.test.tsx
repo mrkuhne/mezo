@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { WorkoutTeaser } from './WorkoutTeaser'
-import { workout } from '@/data/today'
+import { WorkoutTeaser } from '@/features/today/components/WorkoutTeaser'
+import { workout } from '@/data/today/today'
 
 function renderTeaser(niggle = true) {
   return render(

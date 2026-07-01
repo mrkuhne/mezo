@@ -1,11 +1,11 @@
 // ============================================================
-// Mezo · CrossLoadRow — one cross-system impact row in the SportView
+// Mezo · CrossLoadRow — one cross-system impact row in the SportPage
 // cross-load list: system icon + uppercase label, the affected target,
 // an impact readout and the reasoning. Warning rows get an amber tint
 // + a 2px left strip. Ported from prototype sport.jsx CrossLoadRow.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
-import { SYSTEM_LABELS } from '@/data/train'
+import { Icon } from '@/shared/ui/Icon'
+import { SYSTEM_LABELS } from '@/data/train/train'
 import type { CrossLoadRow as CrossLoadRowData } from '@/data/types'
 
 const FALLBACK = { label: 'tool', color: 'var(--text-secondary)', icon: 'tool' as const }

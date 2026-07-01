@@ -7,9 +7,9 @@
 // Ported from prototype mesocycles.jsx DayExerciseSection.
 // ============================================================
 import type { MesoDay } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
-import { SortableList } from '@/components/ui/SortableList'
-import { ExerciseEditRow } from './ExerciseEditRow'
+import { Icon } from '@/shared/ui/Icon'
+import { SortableList } from '@/shared/ui/SortableList'
+import { ExerciseEditRow } from '@/features/train/components/ExerciseEditRow'
 
 interface DayExerciseSectionProps {
   day: MesoDay

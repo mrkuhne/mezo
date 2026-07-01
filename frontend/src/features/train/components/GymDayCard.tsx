@@ -1,11 +1,11 @@
 // ============================================================
-// Mezo · GymDayCard — one day row in the GymView weekly split.
+// Mezo · GymDayCard — one day row in the GymPage weekly split.
 // Training days are tappable (open the GymDaySheet); rest days
 // (exerciseCount === 0) render dashed + italic with their note and
 // are not interactive. Today's card ("current") is brand-accented.
 // Ported from prototype train-views.jsx GymDayCard.
 // ============================================================
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import type { MesoDay } from '@/data/types'
 
 interface GymDayCardProps {

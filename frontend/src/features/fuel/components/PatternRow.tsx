@@ -1,4 +1,4 @@
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import type { RecurringPattern } from '@/data/types'
 
 // fuel-plan.jsx PatternRow (390–400)

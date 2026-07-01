@@ -3,6 +3,9 @@ node_modules/
 .pnp/
 .pnp.js
 
+# Claude Code local worktrees (harness-managed, never commit)
+.claude/worktrees/
+
 # Build output
 dist/
 build/

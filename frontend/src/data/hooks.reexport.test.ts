@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import * as hooks from './hooks'
-import { useFuelDay as fromFuelHooks, useMealActions as actionsFromFuelHooks } from './fuelHooks'
+import * as hooks from '@/data/hooks'
+import { useFuelDay as fromFuelHooks, useMealActions as actionsFromFuelHooks } from '@/data/fuel/fuelHooks'
 
 describe('hooks.ts re-exports the dual-mode fuel-day hooks', () => {
   it('useFuelDay is the fuelHooks implementation (not the retired one-liner)', () => {

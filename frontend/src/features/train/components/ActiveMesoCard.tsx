@@ -4,16 +4,16 @@
 // goal / chevron, the phase-curve mini bars, and a Split/Stílus/Vége meta row.
 // The whole card navigates to the builder. Ported from prototype
 // mesocycles.jsx ActiveMesoCard. Brand tints use color-mix against
-// --brand-glow (matching the SportView hero idiom); the border uses the
+// --brand-glow (matching the SportPage hero idiom); the border uses the
 // --border-brand design token.
 // ============================================================
-import { MESOCYCLE_PHASE_COLORS } from '@/data/train'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { Display } from '@/components/ui/Display'
-import { Icon } from '@/components/ui/Icon'
+import { MESOCYCLE_PHASE_COLORS } from '@/data/train/train'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { Display } from '@/shared/ui/Display'
+import { Icon } from '@/shared/ui/Icon'
 import type { Mesocycle } from '@/data/types'
-import { PhaseCurveBars } from './PhaseCurveBars'
-import { MetaStat } from './MetaStat'
+import { PhaseCurveBars } from '@/features/train/components/PhaseCurveBars'
+import { MetaStat } from '@/features/train/components/MetaStat'
 
 interface ActiveMesoCardProps {
   meso: Mesocycle

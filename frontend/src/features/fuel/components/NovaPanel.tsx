@@ -4,7 +4,7 @@
 // ============================================================
 import type { NovaDimension } from '@/data/types'
 import { NOVA_META } from '@/data/nova'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 
 export function NovaPanel({ dim }: { dim: NovaDimension }) {
   const n = dim.nova

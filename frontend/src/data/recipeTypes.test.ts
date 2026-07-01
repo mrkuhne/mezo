@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { Recipe, RecipeIngredientLine, RecipeInput } from './types'
+import type { Recipe, RecipeIngredientLine, RecipeInput } from '@/data/types'
 
 describe('Recipe type extensions (per-line name + contribution, RecipeInput)', () => {
   it('a RecipeIngredientLine carries refId + optional name + contribution', () => {

@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
-import { GoalPlanSlots } from './GoalPlanSlots'
+import { GoalPlanSlots } from '@/features/me/components/GoalPlanSlots'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // Spy on useNavigate so we can assert the exact planner-launch target (meso →

@@ -1,6 +1,6 @@
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { RefTag } from '@/components/ui/RefTag'
-import { SafeMarkdown } from '@/lib/safeMarkdown'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { RefTag } from '@/shared/ui/RefTag'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import type { Briefing } from '@/data/types'
 
 export function BriefingCard({ briefing }: { briefing: Briefing }) {

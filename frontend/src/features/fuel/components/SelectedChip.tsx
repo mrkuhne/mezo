@@ -1,5 +1,5 @@
 import type { SupplementStashItem } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 
 // fuel-stack.jsx SelectedChip (206–224)
 export function SelectedChip({ sup, onRemove }: { sup: SupplementStashItem; onRemove: () => void }) {

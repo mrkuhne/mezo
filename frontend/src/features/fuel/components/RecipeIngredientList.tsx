@@ -4,9 +4,9 @@
 // (distinct SourceBadges across the resolved ingredients).
 // ============================================================
 import type { PantrySourceKey } from '@/data/pantrySources'
-import { SourceBadge } from '@/components/ui/SourceBadge'
-import { Eyebrow } from '@/components/ui/Eyebrow'
-import { RecipeIngredientRow, type RecipeIngredientItem } from './RecipeIngredientRow'
+import { SourceBadge } from '@/features/fuel/components/SourceBadge'
+import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { RecipeIngredientRow, type RecipeIngredientItem } from '@/features/fuel/components/RecipeIngredientRow'
 
 export function RecipeIngredientList({ items }: { items: RecipeIngredientItem[] }) {
   const sources = [...new Set(

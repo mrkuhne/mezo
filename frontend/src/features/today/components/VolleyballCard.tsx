@@ -1,4 +1,4 @@
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 import type { VolleyballSession } from '@/data/types'
 
 export function VolleyballCard({ session }: { session?: VolleyballSession }) {

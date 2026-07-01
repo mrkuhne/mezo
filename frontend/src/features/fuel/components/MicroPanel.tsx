@@ -3,7 +3,7 @@
 // Per-micronutrient bar coloured by status (good/ok/low)
 // ============================================================
 import type { MicroDimension } from '@/data/types'
-import { ProgressBar } from '@/components/ui/ProgressBar'
+import { ProgressBar } from '@/shared/ui/ProgressBar'
 import { STATUS_COLOR } from '@/data/nova'
 
 export function MicroPanel({ dim }: { dim: MicroDimension }) {

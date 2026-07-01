@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { MacroCells } from './MacroCells'
+import { MacroCells } from '@/features/fuel/components/MacroCells'
 
 test('renders the four macro values with their labels', () => {
   render(<MacroCells macros={{ kcal: 420, p: 38, c: 12, f: 22 }} />)

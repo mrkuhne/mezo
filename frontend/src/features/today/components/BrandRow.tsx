@@ -1,4 +1,4 @@
-import { BrandGlyph, Icon } from '@/components/ui/Icon'
+import { BrandGlyph, Icon } from '@/shared/ui/Icon'
 
 export function BrandRow() {
   return (

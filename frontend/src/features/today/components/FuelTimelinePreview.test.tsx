@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
-import { FuelTimelinePreview } from './FuelTimelinePreview'
+import { FuelTimelinePreview } from '@/features/today/components/FuelTimelinePreview'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // The tap mounts LogMealSheet, which reads the dual-mode useFuelDay/useRecipes/usePantry

@@ -1,5 +1,5 @@
 import { render, screen, renderHook } from '@testing-library/react'
-import { WeekRhythmGrid } from './WeekRhythmGrid'
+import { WeekRhythmGrid } from '@/features/fuel/components/WeekRhythmGrid'
 import { useFuelWeek } from '@/data/hooks'
 
 test('renders the legend with coffee cutoff + kitchen close', () => {

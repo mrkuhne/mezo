@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { MacroHero } from './MacroHero'
+import { MacroHero } from '@/features/fuel/components/MacroHero'
 const targets = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
 const consumed = { kcal: 1840, p: 142, c: 198, f: 58, water: 1850 }
 

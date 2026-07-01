@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { BriefingCard } from './BriefingCard'
+import { BriefingCard } from '@/features/today/components/BriefingCard'
 import { resolveBriefing } from '@/data/hooks'
 
 test('renders eyebrow, confidence, bold via <strong> (no innerHTML), and ref tags', () => {

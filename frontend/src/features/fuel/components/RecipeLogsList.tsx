@@ -4,7 +4,7 @@
 // delta vs baseline, macros. Empty-state copy when none.
 // ============================================================
 import type { RecipeLog } from '@/data/types'
-import { Icon } from '@/components/ui/Icon'
+import { Icon } from '@/shared/ui/Icon'
 
 export function RecipeLogsList({ logs, baselineScore: _baselineScore }: { logs?: RecipeLog[]; baselineScore: number }) {
   if (!logs || logs.length === 0) {
