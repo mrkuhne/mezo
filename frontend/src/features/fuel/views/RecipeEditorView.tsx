@@ -57,6 +57,37 @@ function Stepper({ value, unit, onChange, min = 0 }: { value: number; unit: stri
   )
 }
 
+// Typeable per-ingredient gram amount (mezo-2567). Keeps a local string so decimals
+// ("12.5") and mid-typing states hold, coercing to a number on every change. Re-syncs
+// when the amount changes from OUTSIDE (the ± buttons) via the render-time prev-prop
+// pattern — no useEffect, so no keystroke-reset race.
+function AmountField({ value, onChange, label }: { value: number; onChange: (n: number) => void; label: string }) {
+  const [text, setText] = useState(() => String(value))
+  const [prev, setPrev] = useState(value)
+  // What the current text represents numerically ("" and "." both mean 0, matching commit()).
+  const parsed = text === '' || text === '.' ? 0 : parseFloat(text)
+  if (value !== prev) {
+    setPrev(value)
+    if (parsed !== value) setText(String(value)) // external change (± buttons) → resync
+  }
+  const commit = (raw: string) => {
+    const cleaned = raw.replace(',', '.')
+    if (cleaned !== '' && !/^\d*\.?\d*$/.test(cleaned)) return // ignore non-numeric input
+    setText(cleaned)
+    const n = cleaned === '' || cleaned === '.' ? 0 : parseFloat(cleaned)
+    onChange(Number.isFinite(n) ? n : 0)
+  }
+  return (
+    <input
+      inputMode="decimal"
+      value={text}
+      onChange={e => commit(e.target.value)}
+      aria-label={label}
+      style={{ width: 42, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', background: 'transparent' }}
+    />
+  )
+}
+
 export function RecipeEditorView() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -253,8 +284,8 @@ export function RecipeEditorView() {
                   {ing?.brand && <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{ing.brand}</span>}
                 </div>
                 <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', display: 'inline-flex' }}>
-                  <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: Math.max(1, p.amount - 10) } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} csökkentés`}>−</button>
-                  <span style={{ minWidth: 32, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{line.amount}</span>
+                  <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: Math.max(0, p.amount - 10) } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} csökkentés`}>−</button>
+                  <AmountField value={line.amount} onChange={n => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: n } : p))} label={`${ing?.name ?? 'tétel'} mennyiség`} />
                   <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: p.amount + 10 } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} növelés`}>+</button>
                   <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', padding: '0 6px 0 1px' }}>{line.unit}</span>
                 </div>

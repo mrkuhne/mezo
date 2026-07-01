@@ -125,13 +125,52 @@ class PantryServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testCreateItem_shouldReject_whenSupplementMissingDose() {
+    void testCreateItem_shouldReject_whenSupplementMissingBothDoseAndPer() {
+        // A supplement with NO quantity basis at all (no dose, no per) is still invalid.
         PantryItemRequest req = new PantryItemRequest();
         req.setKind(PantryItemRequest.KindEnum.SUPPLEMENT);
         req.setName("Kreatin");
 
         assertThatThrownBy(() -> service.createItem(owner, req))
             .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testCreateItem_shouldAllowGramBasedSupplement_whenPerButNoDose() {
+        // Protein powder etc. are gram-based (per/unit), no discrete dose (mezo-1za9 + mezo-2567).
+        var created = service.createItem(owner, gramSupplementReq());
+
+        assertThat(created.getId()).isNotNull();
+        var stash = service.getPantry(owner).getStash();
+        assertThat(stash).hasSize(1);
+        assertThat(stash.get(0).getPer()).isEqualByComparingTo(java.math.BigDecimal.valueOf(25));
+    }
+
+    @Test
+    void testUpdateItem_shouldPersistPer_whenGramBasedSupplementRebased() {
+        // Repro of the reported "supplement ADAG 25→100 reverts" bug: the dose requirement
+        // rejected the (dose-less) update with 400, so `per` never changed.
+        UUID id = service.createItem(owner, gramSupplementReq()).getId();
+
+        PantryItemRequest rebase = new PantryItemRequest();
+        rebase.setKind(PantryItemRequest.KindEnum.SUPPLEMENT);
+        rebase.setName("Collagen Protein");
+        rebase.setPer(java.math.BigDecimal.valueOf(100));
+        rebase.setUnit("g");
+
+        service.updateItem(owner, id, rebase);
+
+        var supp = service.getPantry(owner).getStash().get(0);
+        assertThat(supp.getPer()).isEqualByComparingTo(java.math.BigDecimal.valueOf(100));
+    }
+
+    private PantryItemRequest gramSupplementReq() {
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.SUPPLEMENT);
+        r.setName("Collagen Protein");
+        r.setPer(java.math.BigDecimal.valueOf(25));
+        r.setUnit("g");
+        return r; // no dose — gram-based supplement
     }
 
     @Test

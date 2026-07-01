@@ -186,6 +186,49 @@ test('an already-added item is shown as added and cannot be added twice', async 
   expect(screen.getByRole('button', { name: /Magnézium-glicinát hozzáadva/ })).toBeDisabled()
 })
 
+test('a picked ingredient amount can be typed exactly and the contribution follows', async () => {
+  // real mode with a known food (per 100 g, 110 kcal) so the math is deterministic
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/pantry`, () =>
+      HttpResponse.json({
+        ingredients: [
+          {
+            id: 'c1', name: 'Csirkemell', brand: 'kifli', source: 'kifli.hu', category: 'protein',
+            per: 100, unit: 'g', macros: { kcal: 110, p: 23, c: 0, f: 1.5 },
+            price: 0, priceUnit: '', pkg: '', micros: [], nova: 1, stock: null, lastUsed: '—', usedInRecipes: 0,
+          },
+        ],
+        stash: [],
+      }),
+    ),
+  )
+  const qc = newQc()
+  renderNew(qc)
+  await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
+  await userEvent.click(await screen.findByRole('button', { name: /Csirkemell hozzáadása/ }))
+  await closePicker()
+  const amount = screen.getByLabelText(/Csirkemell mennyiség/) as HTMLInputElement
+  expect(amount.value).toBe('100') // default = per
+  await userEvent.clear(amount)
+  await userEvent.type(amount, '250')
+  // contribution recomputes: round(110 * 250/100) = 275 (shown on the line + the total)
+  expect(screen.getAllByText('275').length).toBeGreaterThan(0)
+})
+
+test('the ingredient amount input keeps a typed decimal value', async () => {
+  const qc = newQc()
+  renderNew(qc)
+  await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
+  const adds = await screen.findAllByRole('button', { name: /hozzáadása/ })
+  await userEvent.click(adds[0])
+  await closePicker()
+  const amount = screen.getByLabelText(/mennyiség/) as HTMLInputElement
+  await userEvent.clear(amount)
+  await userEvent.type(amount, '12.5')
+  expect(amount.value).toBe('12.5')
+})
+
 test('real mode: a picked supplement resolves to its name + macro contribution', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const SUPP_ID = 'b7c1f0a2-1111-4222-8333-444455556666'
