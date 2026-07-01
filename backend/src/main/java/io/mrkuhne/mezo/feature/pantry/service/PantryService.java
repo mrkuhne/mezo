@@ -63,7 +63,15 @@ public class PantryService {
             requireField(req.getUnit(), "unit");
             requireField(req.getKcal(), "kcal");
         } else { // supplement | stim | med
-            requireField(req.getDose(), "dose");
+            // A supplement is either dose/protocol-based (pill: dose) OR nutrition/gram-based
+            // (protein powder: per/unit, no discrete dose — mezo-1za9). Require at least one
+            // quantity basis, not `dose` specifically, else a gram-based supplement can't be
+            // saved and its ADAG edits silently revert (mezo-2567).
+            boolean hasDose = req.getDose() != null && !req.getDose().isBlank();
+            if (!hasDose && req.getPer() == null) {
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.field("VALIDATION_INVALID_VALUE", "dose").build(), HttpStatus.BAD_REQUEST);
+            }
         }
     }
 

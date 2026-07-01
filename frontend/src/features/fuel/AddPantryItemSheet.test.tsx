@@ -79,6 +79,37 @@ describe('AddPantryItemSheet', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('edit mode: a supplement ADAG (per) change round-trips to the stash', async () => {
+    // Repro of the reported "25g→100g reverts" bug: editing a supplement's ADAG must
+    // persist to the stash item's `per` through updateItem.
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const onClose = vi.fn()
+    const { result } = renderHook(() => usePantry(), { wrapper })
+    const target = result.current.stash[0]
+
+    render(
+      <QueryClientProvider client={qc}>
+        <AddPantryItemSheet
+          open
+          onClose={onClose}
+          editId={target.id}
+          initial={{ kind: 'supplement', name: target.name, per: 25, unit: 'g' }}
+        />
+      </QueryClientProvider>,
+    )
+    const perInput = screen.getByPlaceholderText('100') as HTMLInputElement
+    expect(perInput.value).toBe('25')
+    fireEvent.change(perInput, { target: { value: '100' } })
+    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
+
+    await waitFor(() => {
+      expect(result.current.stash.find(s => s.id === target.id)?.per).toBe(100)
+    })
+  })
+
   it('edit mode saves changed extended-nutrition + price fields via updateItem', async () => {
     // The expanded editor edits EVERY value — assert a non-macro field (Rost) and
     // price actually land in the cache through updateItem.
