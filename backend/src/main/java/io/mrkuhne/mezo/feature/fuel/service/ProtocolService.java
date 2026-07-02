@@ -41,7 +41,6 @@ public class ProtocolService {
     private final PantryItemRepository pantryItemRepository;
     private final FuelProtocolProperties properties;
 
-    @Transactional(readOnly = true)
     public ProtocolViewResponse getView(UUID userId) {
         ProtocolEntity active = protocolRepository
             .findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE).orElse(null);

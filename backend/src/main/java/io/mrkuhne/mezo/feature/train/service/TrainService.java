@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -174,10 +175,10 @@ public class TrainService {
     @Transactional
     public MesoDay replaceDayExercises(UUID createdBy, UUID mesoId, UUID dayId, List<GymExerciseInput> inputs) {
         ownedMesoOrThrow(createdBy, mesoId);
-        WorkoutSessionEntity day = workoutSessionRepository.findById(dayId)
-            .filter(s -> createdBy.equals(s.getCreatedBy()) && mesoId.equals(s.getMesocycleId()))
-            .orElseThrow(() -> new SystemRuntimeErrorException(
-                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        WorkoutSessionEntity day = OwnershipGuard.ownedOrThrow(
+            workoutSessionRepository.findById(dayId)
+                .filter(s -> mesoId.equals(s.getMesocycleId())),
+            createdBy);
 
         // Full-list replace: soft-delete the current rows (@SQLDelete flips is_deleted), then
         // insert the new list with orderIndex pinned by array order.
@@ -185,9 +186,9 @@ public class TrainService {
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(dayId)));
         List<ExerciseEntity> fresh = new ArrayList<>(inputs.size());
         for (int i = 0; i < inputs.size(); i++) {
-            fresh.add(exerciseRepository.save(toExerciseEntity(createdBy, dayId, inputs.get(i), i)));
+            fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
-        return toDay(day, fresh);
+        return toDay(day, exerciseRepository.saveAll(fresh));
     }
 
     /** Single-active invariant: archives every currently active meso of the owner. */
@@ -198,10 +199,7 @@ public class TrainService {
 
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */
     private MesocycleEntity ownedMesoOrThrow(UUID createdBy, UUID id) {
-        return mesocycleRepository.findById(id)
-            .filter(m -> createdBy.equals(m.getCreatedBy()))
-            .orElseThrow(() -> new SystemRuntimeErrorException(
-                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        return OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
     }
 
     /** Week containing today, clamped to [1, weeks] — week 1 before the start date. */

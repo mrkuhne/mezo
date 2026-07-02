@@ -81,7 +81,6 @@ public class MealService {
     }
 
     /** Thin delegation so the controller depends on {@code MealService} only (cf. recipe slice). */
-    @Transactional(readOnly = true)
     public FuelDayResponse getDay(UUID userId, LocalDate date) {
         return fuelDayService.getDay(userId, date);
     }
@@ -91,6 +90,7 @@ public class MealService {
      * newest meal first, each projected to its per-line contribution (snapshot × amount/snapshotPer,
      * whole-number HALF_UP — the same formula as the meal/recipe mapper).
      */
+    // Annotated by exception: walks item.getMeal() (LAZY) with open-in-view false (spring_patterns.md).
     @Transactional(readOnly = true)
     public List<RecipeLogResponse> recipeLogs(UUID userId, UUID recipeId) {
         return mealItemRepository

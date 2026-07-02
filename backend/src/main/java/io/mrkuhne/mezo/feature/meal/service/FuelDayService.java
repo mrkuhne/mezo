@@ -29,6 +29,7 @@ public class FuelDayService {
     private final NutritionTargetsProperties targets;
     private final WaterLogService waterLogService;
 
+    // Annotated by exception: the meal mapper walks LAZY items with open-in-view false (spring_patterns.md).
     @Transactional(readOnly = true)
     public FuelDayResponse getDay(UUID userId, LocalDate date) {
         List<MealResponse> meals = mealRepository

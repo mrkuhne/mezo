@@ -51,7 +51,6 @@ public class MedicationService {
      * cycle derived for TODAY, and the recent (top-10, newest-first) intake ledger. 404 when the
      * owner has no active medication.
      */
-    @Transactional(readOnly = true)
     public MedicationDayResponse getDay(UUID userId) {
         MedicationEntity med = repository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId)
             .orElseThrow(() -> new SystemRuntimeErrorException(

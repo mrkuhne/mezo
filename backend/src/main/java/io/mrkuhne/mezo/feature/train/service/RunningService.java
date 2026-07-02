@@ -14,15 +14,13 @@ import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.mapper.RunningMapper;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
-import io.mrkuhne.mezo.techcore.exception.SystemMessage;
-import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -171,7 +169,6 @@ public class RunningService {
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */
     private RunningBlockEntity requireOwned(UUID userId, UUID id) {
         return blockRepository.findByIdAndCreatedByAndDeletedFalse(id, userId)
-            .orElseThrow(() -> new SystemRuntimeErrorException(
-                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+            .orElseThrow(OwnershipGuard::notFound);
     }
 }

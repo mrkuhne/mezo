@@ -26,10 +26,13 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -220,14 +223,14 @@ public class WorkoutService {
             .orElseThrow(WorkoutService::notFound);
         // Idempotent: a skip marker already present for this (instance, exercise) is a no-op
         // (mirrors saveFeedback's find-or-create intent — no duplicate marker rows).
-        boolean alreadySkipped = exerciseSetRepository
-            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
+        List<ExerciseSetEntity> instanceSets = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId());
+        boolean alreadySkipped = instanceSets.stream()
             .anyMatch(s -> s.getExerciseId().equals(exerciseId) && s.isSkipped());
         if (alreadySkipped) {
             return;
         }
-        int nextIndex = (int) exerciseSetRepository
-            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
+        int nextIndex = (int) instanceSets.stream()
             .filter(s -> s.getExerciseId().equals(exerciseId))
             .count();
         ExerciseSetEntity marker = new ExerciseSetEntity();
@@ -243,26 +246,36 @@ public class WorkoutService {
     @Transactional
     public void saveFeedback(UUID createdBy, UUID workoutId, List<WorkoutFeedbackInput> items) {
         WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
+        // Batch: the template day's exercises + this instance's existing feedback rows are each
+        // loaded ONCE (was findById + findBy... + save per item — 2N+N round-trips).
+        Set<UUID> dayExerciseIds = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                createdBy, List.of(instance.getTemplateSessionId())).stream()
+            .map(ExerciseEntity::getId)
+            .collect(Collectors.toSet());
+        Map<UUID, ExerciseFeedbackEntity> byExercise = exerciseFeedbackRepository
+            .findByCreatedByAndWorkoutSessionId(createdBy, instance.getId()).stream()
+            .collect(Collectors.toMap(ExerciseFeedbackEntity::getExerciseId, f -> f));
+        List<ExerciseFeedbackEntity> rows = new ArrayList<>(items.size());
         for (WorkoutFeedbackInput in : items) {
-            exerciseRepository.findById(in.getExerciseId())
-                .filter(e -> createdBy.equals(e.getCreatedBy())
-                    && instance.getTemplateSessionId().equals(e.getWorkoutSessionId()))
-                .orElseThrow(WorkoutService::notFound);
+            // The exercise must hang off the instance's template day — child writes verify the chain.
+            if (!dayExerciseIds.contains(in.getExerciseId())) {
+                throw notFound();
+            }
             // Upsert per (instance, exercise) — the DB UNIQUE backs this invariant.
-            ExerciseFeedbackEntity row = exerciseFeedbackRepository
-                .findByCreatedByAndWorkoutSessionIdAndExerciseId(createdBy, instance.getId(), in.getExerciseId())
-                .orElseGet(() -> {
-                    ExerciseFeedbackEntity f = new ExerciseFeedbackEntity();
-                    f.setCreatedBy(createdBy);
-                    f.setWorkoutSessionId(instance.getId());
-                    f.setExerciseId(in.getExerciseId());
-                    return f;
-                });
+            ExerciseFeedbackEntity row = byExercise.computeIfAbsent(in.getExerciseId(), exId -> {
+                ExerciseFeedbackEntity f = new ExerciseFeedbackEntity();
+                f.setCreatedBy(createdBy);
+                f.setWorkoutSessionId(instance.getId());
+                f.setExerciseId(exId);
+                return f;
+            });
             row.setPump(in.getPump());
             row.setJointPain(in.getJointPain());
             row.setWorkload(in.getWorkload());
-            exerciseFeedbackRepository.save(row);
+            rows.add(row);
         }
+        exerciseFeedbackRepository.saveAll(rows);
     }
 
     /**
@@ -317,7 +330,6 @@ public class WorkoutService {
 
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */
     private static SystemRuntimeErrorException notFound() {
-        return new SystemRuntimeErrorException(
-            SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
+        return OwnershipGuard.notFound();
     }
 }
