@@ -2,9 +2,9 @@ package io.mrkuhne.mezo.feature.goal.engine;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Verifies that the {@code mezo.goal.*} block in {@code application.yml} binds onto
@@ -13,10 +13,10 @@ import org.springframework.boot.test.context.SpringBootTest;
  *
  * <p>Pure config has no meaningful RED-before-GREEN failure mode; the test fails first because
  * the {@code GoalEngineProperties} bean does not exist / does not bind, then passes once the
- * record and its YAML block are in place.
+ * record and its YAML block are in place. Extends the shared base (never raw
+ * {@code @SpringBootTest}) so it rides the one Testcontainers-wired context.
  */
-@SpringBootTest
-class GoalEnginePropertiesIT {
+class GoalEnginePropertiesIT extends AbstractIntegrationTest {
 
     @Autowired
     private GoalEngineProperties props;
