@@ -40,7 +40,7 @@ Method-level ONLY. Never class-level, not even `readOnly = true`.
 public class UserService {
 
     // Read — no annotation
-    public UserDto getUser(Long id) { ... }
+    public UserDto getUser(UUID id) { ... }
 
     // Write — explicit @Transactional
     @Transactional
@@ -60,7 +60,7 @@ public class UserController {
     private final UserService userService;
 
     @GetMapping("/{id}")
-    public UserDto getUser(@PathVariable Long id) {
+    public UserDto getUser(@PathVariable UUID id) {
         return userService.getUser(id);
     }
 
@@ -80,14 +80,14 @@ public class UserController {
 ## Repository Patterns
 
 ```java
-public interface UserRepository extends JpaRepository<UserEntity, Long> {
+public interface UserRepository extends JpaRepository<UserEntity, UUID> {
 
     // Derived query (preferred)
     Optional<UserEntity> findByEmail(String email);
 
     // JPQL (preferred over native)
     @Query("SELECT u FROM UserEntity u WHERE u.department.id = :deptId")
-    List<UserEntity> findByDepartmentId(@Param("deptId") Long deptId);
+    List<UserEntity> findByDepartmentId(@Param("deptId") UUID deptId);
 
     // Exists check (efficient)
     boolean existsByEmail(String email);
@@ -121,7 +121,7 @@ public interface UserMapper {
 | `@Slf4j` | Logger |
 | `@Data` | DTOs (getter, setter, equals, hashCode) |
 | `@Builder` | Builder pattern |
-| `@Value` | Immutable objects |
+| `@Value` | Immutable objects — this is **Lombok's** `lombok.Value`; Spring's `@Value("${...}")` config injection is a different annotation and is **banned** (see `configuration_conventions.md`) |
 
 ## Entity ↔ DB Sync
 

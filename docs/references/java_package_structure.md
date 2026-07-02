@@ -3,17 +3,17 @@
 ## Base Pattern
 
 ```
-io.mrkuhne.{project}/
+io.mrkuhne.mezo/
 ├── feature/
 │   └── {featureName}/
-│       ├── controller/   → *Controller
+│       ├── controller/   → *Controller (implements the generated <Tag>Api)
 │       ├── service/      → *Service
 │       ├── repository/   → *Repository
 │       ├── entity/       → *Entity
-│       ├── dto/          → *Dto, *Request, *Response
+│       ├── dto/          → internal *Dto only — boundary Request/Response types are GENERATED (api.dto)
 │       └── mapper/       → *Mapper (MapStruct)
 └── techcore/
-    ├── config/
+    ├── configuration/
     ├── security/
     ├── exception/
     └── util/
@@ -44,7 +44,7 @@ io.mrkuhne.{project}/
 | Service | `*Service` | `UserService`, `UserValidationService` |
 | Repository | `*Repository` | `UserRepository` |
 | Entity | `*Entity` | `UserEntity` |
-| DTO | `*Dto`, `*Request`, `*Response` | `UserDto`, `CreateUserRequest`, `UserResponse` |
+| DTO | `*Dto`, `*Request`, `*Response` | `UserDto`, `CreateUserRequest`, `UserResponse` — **boundary Request/Response classes are generated from the OpenAPI contract** (`api.dto`, see `api_contract_conventions.md`); `dto/` holds internal/domain DTOs only |
 | Mapper | `*Mapper` | `UserMapper` |
 
 ## Example
@@ -52,7 +52,7 @@ io.mrkuhne.{project}/
 ```
 feature/user/
 ├── controller/
-│   └── UserController.java
+│   └── UserController.java        # implements the generated UserApi
 ├── service/
 │   ├── UserService.java
 │   └── UserValidationService.java
@@ -61,9 +61,7 @@ feature/user/
 ├── entity/
 │   └── UserEntity.java
 ├── dto/
-│   ├── UserDto.java
-│   ├── CreateUserRequest.java
-│   └── UserResponse.java
+│   └── UserSummaryDto.java        # internal only — CreateUserRequest/UserResponse come generated from api.dto
 └── mapper/
     └── UserMapper.java
 ```

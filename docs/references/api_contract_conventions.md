@@ -98,7 +98,7 @@ body: JSON.stringify({ date, weightKg, note } satisfies LogWeightRequest)
 ```
 
 Rules:
-- The thin `lib/*Api.ts` modules type every request body with `satisfies <Request>` and every
+- The thin `data/<domain>/*Api.ts` REST client modules type every request body with `satisfies <Request>` and every
   response with the generated response type — tsc then checks compatibility with the domain
   types consumed by the hook layer.
 - The hand-written dual-mode hook layer (`data/hooks.ts`) is NOT generated — hook signatures

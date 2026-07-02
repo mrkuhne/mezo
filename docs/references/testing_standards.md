@@ -25,27 +25,29 @@ testDeactivateUser_shouldSetActiveFalse_whenUserActive()
 
 ## Integration Tests
 
+Never put `@SpringBootTest` on a test class directly — extend one of the two shared bases
+(`AbstractIntegrationTest` for service-level, `ApiIntegrationTest` for HTTP-level), which carry
+the Spring context, the Postgres wiring, and the between-test DB reset. Full base-class and
+populator API: `integration_test_framework.md`.
+
 ```java
-@SpringBootTest
 @Transactional
-class UserServiceIntegrationTest {
+class RecipeServiceIT extends AbstractIntegrationTest {
 
     @Autowired
-    private UserService userService;
+    private RecipeService recipeService;
 
     @Autowired
-    private DatabasePopulator databasePopulator;
-
-    @BeforeEach
-    void setUp() {
-        databasePopulator.populate();
-    }
+    private RecipePopulator recipePopulator;
 
     @Test
-    void testGetUser_shouldReturnUser_whenUserExists() {
-        var result = userService.getUser(1L);
+    void testGetRecipe_shouldReturnRecipe_whenOwnedByCurrentUser() {
+        RecipeEntity saved = recipePopulator.recipe();
+
+        var result = recipeService.get(saved.getId());   // ids are UUID in this project
+
         assertThat(result).isNotNull();
-        assertThat(result.getEmail()).isEqualTo("test@example.com");
+        assertThat(result.getName()).isEqualTo(saved.getName());
     }
 }
 ```
@@ -53,12 +55,13 @@ class UserServiceIntegrationTest {
 ## Rules
 
 **REQUIRED:**
-- `@SpringBootTest` for integration tests
-- Real database (not H2 if avoidable)
-- Java-based test data via `DatabasePopulator`
+- Extend `AbstractIntegrationTest` (service-level) or `ApiIntegrationTest` (HTTP-level)
+- Real Postgres — never H2 (fixed `mezo_test` DB locally, Testcontainers opt-in/CI)
+- Java-based test data via the `*Populator` factories
 - AssertJ (`assertThat`) for all assertions
 
 **FORBIDDEN:**
+- Raw `@SpringBootTest` on a test class (creates a second Spring context; use the bases)
 - JUnit assertions (`assertEquals`, `assertTrue`) — always AssertJ
 - Mocking in integration tests
 - SQL scripts for test data
@@ -77,12 +80,12 @@ assertThat(users).hasSize(3);
 assertThat(users).extracting("email").contains("john@test.com");
 
 // Exceptions
-assertThatThrownBy(() -> userService.getUser(999L))
+assertThatThrownBy(() -> recipeService.get(UUID.randomUUID()))
     .isInstanceOf(SystemRuntimeErrorException.class);
 ```
 
 ## When Uncertain
 
-- **Unsure about test type?** Default to integration test (`@SpringBootTest`).
+- **Unsure about test type?** Default to an integration test extending a base class.
 - **Pure utility with no Spring deps?** Unit test is OK.
 - **Legacy code has mocks?** Don't refactor unless asked, but write new tests as integration tests.
