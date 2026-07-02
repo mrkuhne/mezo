@@ -1,4 +1,12 @@
+import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import type { BuiltProtocol, ProtocolSlotData, ProtocolSlotItem, Reasoning, SupplementStashItem } from '@/data/types'
+
+/** The user's real day anchors that drive slot times when provided. */
+export interface ProtocolAnchors {
+  wake: string
+  preWorkout?: string
+  bedtime: string
+}
 
 // ============================================================
 // Protocol builder · the "AI logic"
@@ -6,9 +14,26 @@ import type { BuiltProtocol, ProtocolSlotData, ProtocolSlotItem, Reasoning, Supp
 // Ported from fuel-stack.jsx:397-515. The prototype's `meso`/`Reta`
 // context is hardcoded into the reasoning strings, so the only live
 // input is the set of selected stash ids.
+//
+// Optional `anchors` make the slot TIMES derive from the user's real day
+// (wake / pre-workout / bedtime) instead of the hardcoded mock times. Only
+// the `time` fields shift; window/reasoning prose stays as-is (P8 cleans it).
+// Without anchors every hardcoded time is preserved.
 // ============================================================
-export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[]): BuiltProtocol {
+export function buildProtocol(
+  selectedIds: string[],
+  stash: SupplementStashItem[],
+  anchors?: ProtocolAnchors,
+): BuiltProtocol {
   const items = stash.filter(i => selectedIds.includes(i.id))
+
+  // Anchor-derived slot times (fall back to the mock times when unanchored).
+  const wakeTime = anchors?.wake ?? '05:50'
+  // Rest-day (anchors but no preWorkout) keeps the pre-workout slot relative to wake.
+  const preWorkoutTime = anchors ? (anchors.preWorkout ?? toHHmm(toMin(anchors.wake) + 60)) : '06:50'
+  const preFuelTime = anchors ? toHHmm(toMin(preWorkoutTime) - 30) : '06:20'
+  const middayTime = '12:30'
+  const eveningTime = anchors ? toHHmm(toMin(anchors.bedtime) - 120) : '21:00'
   // Match stash items by name/id substring (lowercased) instead of mock slug ids:
   // in real mode ids are backend UUIDs and names come from the real catalog, so
   // slug lookups (byId('kreatin')) silently miss. Needles are lowercase; pick
@@ -38,7 +63,7 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
       })
     if (kreatin) wakeItems.push({ refId: kreatin.id, name: 'Kreatin', dose: '5g vízben', color: 'var(--brand-glow)' })
     slots.push({
-      time: '05:50',
+      time: wakeTime,
       window: 'wake',
       kind: 'morning',
       kindColor: 'var(--text-secondary)',
@@ -58,7 +83,7 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
   const whey = find('whey', 'protein')
   if (whey) {
     slots.push({
-      time: '06:20',
+      time: preFuelTime,
       window: 'pre-snack',
       kind: 'pre-fuel',
       kindColor: 'var(--info)',
@@ -78,7 +103,7 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
     if (aakg) preItems.push({ refId: aakg.id, name: 'AAKG · L-Arginine', dose: aakg.dose, color: 'var(--warning)' })
     if (beta) preItems.push({ refId: beta.id, name: 'Beta-Alanin', dose: beta.dose, color: 'var(--warning)' })
     slots.push({
-      time: '06:50',
+      time: preWorkoutTime,
       window: 'T-40min',
       kind: 'pre-workout',
       kindColor: 'var(--warning)',
@@ -99,7 +124,7 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
   const d3 = find('d3')
   if (d3) {
     slots.push({
-      time: '12:30',
+      time: middayTime,
       window: 'ebéd',
       kind: 'fat-bound',
       kindColor: 'var(--info)',
@@ -131,7 +156,7 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
     if (mg) eveningItems.push({ refId: mg.id, name: 'Magnézium-glicinát', dose: mg.dose, color: 'var(--cat-preference)' })
     if (omega) eveningItems.push({ refId: omega.id, name: 'Omega-3 (vacsorához)', dose: omega.dose, color: 'var(--cat-physiology)' })
     slots.push({
-      time: '21:00',
+      time: eveningTime,
       window: 'T-2h sleep',
       kind: 'evening',
       kindColor: 'var(--cat-preference)',
