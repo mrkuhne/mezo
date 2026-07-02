@@ -405,6 +405,10 @@ export const handlers = [
     return HttpResponse.json({ ...medicationDayFixture.medication, ...body })
   }),
 
+  // Pantry — honest-empty default (ingredients + supplement stash); tests override with
+  // server.use() when they need a populated stash (e.g. the P5 planner's protocol slots).
+  http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [] })),
+
   // Fuel Stack/Protocol (mezo-09g) — honest-empty defaults; tests override with server.use().
   // GET protocol → no active protocol yet (ghost); GET intake/:date → no intakes; POST protocol
   // echoes the posted selection as a v1 active ProtocolViewResponse; POST intake echoes a row;

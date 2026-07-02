@@ -11,7 +11,9 @@ beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
 function setup(onOpenScore = () => {}) {
-  const { result } = renderHook(() => useFuelTimeline())
+  // useFuelTimeline composes dual-mode TanStack queries (mezo-9ys) → needs a QueryClient
+  // (mock mode seeds them synchronously).
+  const { result } = renderHook(() => useFuelTimeline(), { wrapper: QueryWrapper })
   render(
     <QueryWrapper>
       <FuelTimeline slots={result.current.plan.slots} getScoredMeal={result.current.getScoredMeal} onOpenScore={onOpenScore} />

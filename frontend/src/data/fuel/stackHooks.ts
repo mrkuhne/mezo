@@ -60,8 +60,9 @@ export function useStackContext(): { weekInMeso: number; mesoTitle: string } {
   return { weekInMeso: userSeed.weekInMeso, mesoTitle: activeMesoShortTitle }
 }
 
-/** The day's supplement intakes — mock derives from the stash's taken flags; real fetches the date. */
-function useIntakes(date: string): Intake[] {
+/** The day's supplement intakes — mock derives from the stash's taken flags; real fetches the date.
+ *  Exported so the P5 planner (useFuelTimeline) can feed intakes into buildDayPlan. */
+export function useIntakes(date: string): Intake[] {
   const { data } = useDualQuery<Intake[]>({
     queryKey: intakeKey(date),
     mockData: mockIntakeSeed,
