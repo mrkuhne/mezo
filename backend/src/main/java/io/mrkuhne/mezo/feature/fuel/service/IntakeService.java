@@ -43,12 +43,17 @@ public class IntakeService {
                 SystemMessage.field("VALIDATION_INVALID_VALUE", "pantryItemId").build(),
                 HttpStatus.BAD_REQUEST);
         }
-        OffsetDateTime takenAt = request.getTakenAt() != null ? request.getTakenAt() : OffsetDateTime.now();
+        // The FE always sends an offset-bearing takenAt (browser wall-clock + local UTC offset, via
+        // nowOffsetIso — mirrors medication's LogDoseSheet.toOffsetIso), so takenAt.toLocalDate()
+        // below is the browser's calendar day. The UTC-now default is only a fallback for API-direct
+        // callers that omit takenAt (using the JVM zone would misfile a 00:00–02:00 local tap).
+        OffsetDateTime takenAt =
+            request.getTakenAt() != null ? request.getTakenAt() : OffsetDateTime.now(ZoneOffset.UTC);
         SupplementIntakeEntity e = new SupplementIntakeEntity();
         e.setCreatedBy(userId); // server-side ownership — never from the client
         e.setPantryItemId(item.getId());
         e.setTakenAt(takenAt.toInstant());
-        e.setTakenDate(takenAt.toLocalDate()); // offset-bearing wall-clock date, the medication_dose precedent
+        e.setTakenDate(takenAt.toLocalDate()); // day key from the offset-bearing wall-clock (FE sends the offset)
         e.setSlotKey(request.getSlotKey());
         e.setDose(request.getDose() != null && !request.getDose().isBlank() ? request.getDose() : item.getDose());
         e.setNote(request.getNote());

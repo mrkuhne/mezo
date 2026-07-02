@@ -127,10 +127,10 @@ describe('useStack / useProtocol (real mode)', () => {
     expect(result.current.stash.find(s => s.id === 'd3k2')!.taken).toBe(false)
   })
 
-  it('logIntake POSTs and invalidates ["fuelIntake", date]', async () => {
-    const posted: unknown[] = []
+  it('logIntake POSTs (offset-bearing takenAt) and invalidates ["fuelIntake", date]', async () => {
+    const posted: Array<Record<string, unknown>> = []
     server.use(http.post(`${API_BASE}/api/fuel/intake`, async ({ request }) => {
-      posted.push(await request.json())
+      posted.push((await request.json()) as Record<string, unknown>)
       return HttpResponse.json({ id: 'intake-new', pantryItemId: 'magnez', takenAt: '2026-07-02T07:00:00Z', takenDate: '2026-07-02' }, { status: 201 })
     }))
     const { qc, Wrapper } = sharedWrapper()
@@ -138,7 +138,10 @@ describe('useStack / useProtocol (real mode)', () => {
     const { result } = renderHook(() => useStackActions('2026-07-02'), { wrapper: Wrapper })
     act(() => result.current.logIntake('magnez'))
     await waitFor(() => expect(posted).toHaveLength(1))
-    expect(posted[0]).toEqual({ pantryItemId: 'magnez' })
+    expect(posted[0]).toMatchObject({ pantryItemId: 'magnez' })
+    // FE stamps an offset-bearing takenAt for "now" so the server's day key = the browser's
+    // calendar day (day-key correctness — see fuelApi.logIntake / nowOffsetIso).
+    expect(posted[0].takenAt).toMatch(/[+-]\d{2}:\d{2}$|Z$/)
     await waitFor(() =>
       expect(spy.mock.calls.some(c => JSON.stringify(c[0]).includes('fuelIntake'))).toBe(true),
     )

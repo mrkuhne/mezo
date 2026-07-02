@@ -1,6 +1,7 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import type { Protocol } from '@/data/types'
+import { nowOffsetIso } from '@/shared/lib/dates'
 
 type ProtocolViewResponse = components['schemas']['ProtocolViewResponse']
 type ProtocolActivateRequest = components['schemas']['ProtocolActivateRequest']
@@ -57,10 +58,14 @@ export const fuelApi = {
     }).then(fromProtocolView),
   listIntakes: (date: string): Promise<Intake[]> =>
     apiFetch<IntakeListResponse>(`/api/fuel/intake/${date}`).then(r => r.intakes.map(fromIntake)),
+  // Always stamp an offset-bearing `takenAt` for "now" (browser wall-clock + local UTC offset) so
+  // the server's day key (`takenDate = takenAt.toLocalDate()`) lands on the browser's calendar day —
+  // a missing takenAt would default to the container's UTC now and misfile a 00:00–02:00 local tap
+  // under yesterday (mirrors the medication dose-logging path in LogDoseSheet, shared via offsetIso).
   logIntake: (input: { pantryItemId: string; dose?: string; slotKey?: string }): Promise<Intake> =>
     apiFetch<IntakeResponse>('/api/fuel/intake', {
       method: 'POST',
-      body: JSON.stringify(input satisfies IntakeRequest),
+      body: JSON.stringify({ ...input, takenAt: nowOffsetIso() } satisfies IntakeRequest),
     }).then(fromIntake),
   deleteIntake: (id: string): Promise<void> =>
     apiFetch(`/api/fuel/intake/entry/${id}`, { method: 'DELETE' }).then(() => undefined),
