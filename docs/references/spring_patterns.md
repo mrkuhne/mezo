@@ -30,7 +30,8 @@ Method-level ONLY. Never class-level, not even `readOnly = true`.
 |---|---|
 | Class level | ❌ NEVER (not even `readOnly = true`) |
 | Write methods | `@Transactional` |
-| Read methods | No annotation (non-transactional by default) |
+| Read methods | No annotation (non-transactional by default) — **exception below** |
+| Reads that traverse LAZY associations | `@Transactional(readOnly = true)` **required** — with `open-in-view: false` the mapping needs an open session; annotate the method and say why in a comment |
 | Controllers | ❌ NEVER |
 | Repositories | Not needed (Spring Data handles it) |
 

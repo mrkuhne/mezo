@@ -40,6 +40,8 @@ public class RecipeService {
         return mapper.toResponse(repository.save(recipe)); // cascade=ALL persists the lines
     }
 
+    // Reads stay annotated by exception: the mapper walks the recipe's LAZY lines and
+    // open-in-view is false, so an open session is required (spring_patterns.md).
     @Transactional(readOnly = true)
     public RecipeResponse get(UUID userId, UUID id) {
         return mapper.toResponse(requireOwned(userId, id));

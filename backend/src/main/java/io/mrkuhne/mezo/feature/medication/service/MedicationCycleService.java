@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Derives where the owner sits in their medication cycle on a given day — the retaDay/phase logic at
@@ -27,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class MedicationCycleService {
 
     private final MedicationDoseRepository doseRepo;

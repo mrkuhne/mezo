@@ -60,7 +60,6 @@ public class IntakeService {
         return toResponse(repository.save(e));
     }
 
-    @Transactional(readOnly = true)
     public IntakeListResponse listForDay(UUID userId, LocalDate date) {
         return new IntakeListResponse()
             .intakes(repository.findByCreatedByAndTakenDateAndDeletedFalseOrderByTakenAtAsc(userId, date)

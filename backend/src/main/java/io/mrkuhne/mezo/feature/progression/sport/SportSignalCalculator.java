@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.progression.sport;
 
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
+import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.math.RoundingMode;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,8 +20,7 @@ public class SportSignalCalculator {
 
     public SportSignal compute(UUID createdBy, UUID sessionId) {
         SportSessionEntity s = sportSessionRepository.findByIdAndCreatedBy(sessionId, createdBy)
-            .orElseThrow(() -> new IllegalStateException(
-                "sport_session not found for owner: " + sessionId));
+            .orElseThrow(OwnershipGuard::notFound);
         Integer rpe = s.getRpe() == null ? null
             : s.getRpe().setScale(0, RoundingMode.HALF_UP).intValue();
         return new SportSignal(s.getId(), s.getSport(), s.getDurationMin(),

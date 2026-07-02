@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -44,6 +45,6 @@ class SportSignalCalculatorIT extends AbstractIntegrationTest {
             "volleyball", 5, null, "7");
 
         assertThatThrownBy(() -> calculator.compute(other, s.getId()))
-            .isInstanceOf(IllegalStateException.class);
+            .isInstanceOf(SystemRuntimeErrorException.class);
     }
 }

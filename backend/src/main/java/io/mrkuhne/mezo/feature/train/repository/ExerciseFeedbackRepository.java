@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ public interface ExerciseFeedbackRepository extends JpaRepository<ExerciseFeedba
 
     Optional<ExerciseFeedbackEntity> findByCreatedByAndWorkoutSessionIdAndExerciseId(
         UUID createdBy, UUID workoutSessionId, UUID exerciseId);
+
+    List<ExerciseFeedbackEntity> findByCreatedByAndWorkoutSessionId(UUID createdBy, UUID workoutSessionId);
 }

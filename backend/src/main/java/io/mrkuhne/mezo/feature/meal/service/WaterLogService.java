@@ -42,7 +42,6 @@ public class WaterLogService {
         repository.delete(e); // @SQLDelete → soft delete
     }
 
-    @Transactional(readOnly = true)
     public int sumForDay(UUID userId, LocalDate date) {
         return repository.sumAmountForDay(userId, date);
     }

@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
+import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class RunSignalCalculator {
 
     public RunSignal compute(UUID createdBy, UUID runLogId) {
         RunSessionLogEntity log = runSessionLogRepository.findByIdAndCreatedBy(runLogId, createdBy)
-            .orElseThrow();
+            .orElseThrow(OwnershipGuard::notFound);
         String kind = resolveKind(log.getBlockId(), log.getSessionKey());
         return new RunSignal(log.getId(), kind, log.getCompletedRounds(), log.getDurationMin(),
             log.getRpeActual(), log.getSprintLandmark(), log.getHrRecoverySec());
