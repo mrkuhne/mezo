@@ -1,148 +1,154 @@
-# Fuel P5 — Mai Merged Timeline Implementation Plan
+# Fuel P5 — Day-Planner Timeline Implementation Plan (v2)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> v2 — rewritten for the spec's v2 planner design (Daniel's direction); v1 of this file is in git history.
 
-**Goal:** Replace the static mock Mai pacing timeline + Today preview with a real merged agenda: logged meals + protocol supplement slots (intake-derived done state) + today's Train gym/sport blocks, with honest generic placeholders for un-logged meal slots.
+**Goal:** Replace the static Mai timeline + Today preview with a deterministic day-planner: meal/supplement windows planned around real training blocks (gym/volleyball/running) and the goal's wake/bed/meals-per-day settings, per-slot kcal/macro budgets from the Goal prescription, and a fitting-recipe suggestion per un-logged slot.
 
-**Architecture:** Frontend-only. A pure `buildTimeline()` logic function (the `buildProtocol` precedent) merges four already-real data sources; `useFuelTimeline`/`useFuelPreview` become dual-mode (mock = the untouched hand-authored seed; real = the composed build). Zero backend/contract change — the protocol slots are FE-computed by design (P2 selection-only persistence).
+**Architecture:** One small backend extension (3 nullable goal fields) + pure FE planner logic (`buildDayPlan`) + dual-mode hook composition. Mock keeps the hand-authored seed; real composes.
 
-**Tech Stack:** React 19 + TanStack Query, MSW/vitest; no Java, no Liquibase, no OpenAPI edits.
+**Tech Stack:** React 19 + TanStack Query + MSW; Spring Boot 4 + Liquibase (Task 1–2 only); OpenAPI contract-first.
 
-**Driving bd:** `mezo-9ys`. Spec: `docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md`.
-**Branch:** `feat/fuel-p5-timeline` (from `main`). Claim already done (`bd update mezo-9ys --claim`).
+**Driving bd:** `mezo-9ys`. Spec: `docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md` (v2).
+**Branch:** `feat/fuel-p5-planner` (from `main`; mezo-9ys already claimed).
 
 ## Global Constraints
 
-- FE house standard `docs/references/frontend_conventions.md` — read FIRST. Hooks exported to features only via the `@/data/hooks` barrel; data modules may deep-import each other; logic functions in `features/fuel/logic/` are pure (no Date.now inside `buildTimeline` — the caller injects `nowHHmm`).
-- **Hook signatures stable:** `useFuelTimeline(): { plan: FuelPlanToday; getScoredMeal(s: FuelSlot): FuelMeal | null }` and `useFuelPreview(): { visible: FuelSlot[]; nextStack: FuelSlot | undefined }` keep their shapes. `FuelSlot` gains only the additive `mealId?: string`.
-- **No static-seed fallback in real mode**; real mode never fabricates prose (`mezoNote`/`windowTip` stay absent). Mock mode returns the seed byte-identically (existing mock tests must stay green unless they pinned the title-join).
-- Gate per task and at the end: `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test` — both modes green. Hungarian UI copy, English code/commits, commits carry `(mezo-9ys)` + trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`. The bd hook auto-stages `.beads/issues.jsonl` — expected.
-- Time in tests: `vi.setSystemTime` (never real clock assertions).
+- FE house standard `docs/references/frontend_conventions.md`; backend references per `CLAUDE.md` table (contract-first, `@Validated` config, constructor injection, `./mvnw clean test`, integration-first tests, populators). Commits carry `(mezo-9ys)` + trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`; bd hook auto-stages `.beads/issues.jsonl`.
+- **Hook signatures stable:** `useFuelTimeline(): { plan: FuelPlanToday; getScoredMeal }`, `useFuelPreview(): { visible; nextStack }`. `FuelSlot` gains ONLY additive `mealId?: string` + `suggestedRecipeId?: string`.
+- **Pinned planner constants** (single source `frontend/src/data/fuel/fuelConfig.ts`; unit-test-pinned; Daniel may retune later): defaults `mealsPerDay 4 / wake 06:00 / bed 23:00`; `eatingStart = wake+45min`; `kitchenClose = bed−90min`; pre-workout snap `block−75min`; post-workout snap `blockEnd+45min` (`blockEnd = time + (durationMin ?? 60)`); min slot spacing 90min; slot weights main 2 / snack 1 / post-workout main 2.5; recipe-fit kcal tolerance ±20%; C/F derivation `fat = kcal×0.275/9`, `carbs = (kcal − p×4 − fat×9)/4`; caffeine cutoff `'14:00'`.
+- Real mode: no seed fallback, no fabricated prose; suggestions always labeled (`ajánlott`). Mock: seed byte-parity.
+- Gates: backend `cd backend && ./mvnw clean test` (compose up, :15432); FE `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test` — both modes green. Time in tests via `vi.setSystemTime`.
 
 ---
 
-### Task 1: `fuelConfig.ts` + `mealId` + id-based `getScoredMeal`
+### Task 1: Contract — goal planner settings
 
-**Files:**
-- Create: `frontend/src/data/fuel/fuelConfig.ts`
-- Modify: `frontend/src/data/types.ts` (FuelSlot), `frontend/src/data/fuel/fuel.ts` (seed mealIds + getScoredMeal)
-- Test: `frontend/src/data/fuel/fuelData.test.tsx` (extend/adapt)
+**Files:** Modify `api/feature/goal/goal.yml`; generated `api/openapi.yml`, `frontend/src/data/_client/api.gen.ts`.
 
-**Interfaces (produces):**
-```ts
-// fuelConfig.ts
-export const FUEL_ANCHORS = { caffeineCutoff: '14:00', kitchenClose: '21:30', bedtime: '23:00' } as const
-export interface MealWindow { slot: MealSlot; time: string; label: string; kind: FuelKind }
-export const MEAL_WINDOWS: MealWindow[]  // breakfast 07:00 Reggeli meal · lunch 12:30 Ebéd meal · snack 16:00 Snack snack · dinner 19:00 Vacsora meal
+- [ ] **Step 1:** In `goal.yml`, add to BOTH `GoalRequest` and `GoalResponse` schemas (optional, not in `required`):
+
+```yaml
+        mealsPerDay: { type: integer, minimum: 3, maximum: 6, description: 'Day-planner: eating occasions per day' }
+        wakeTime: { type: string, pattern: '^\d{2}:\d{2}$', description: 'Day-planner wake anchor, HH:mm' }
+        bedTime: { type: string, pattern: '^\d{2}:\d{2}$', description: 'Day-planner bed anchor, HH:mm' }
 ```
-`FuelSlot` gains `mealId?: string`. `getScoredMeal(slot, meals)` becomes `slot.mealId ? meals.find(m => m.id === slot.mealId && m.breakdown) ?? null : null`.
 
-- [ ] **Step 1: Failing test** — in `fuelData.test.tsx` add: `getScoredMeal` returns `m1` for a slot with `mealId: 'm1'`, and `null` for a slot with a `mealName` but no `mealId` (the old title-join must be dead). Run `pnpm vitest run src/data/fuel/fuelData.test.tsx` — FAIL.
-- [ ] **Step 2: Implement** — add `fuelConfig.ts` with the two consts above (import `MealSlot`/`FuelKind` from `@/data/types`); add `mealId?: string` to `FuelSlot`; in `fuel.ts` set `mealId: 'm1'` on the seed slot whose mealName is `'Túrós zabkása · áfonyával'` and `mealId: 'm2'` on `'Csirke + édesburgonya + spenót'`; rewrite `getScoredMeal` id-based. Check `fuel.ts`'s `fuelDay.meals` ids are literally `m1`/`m2` first (`grep -n "id: 'm" frontend/src/data/fuel/fuel.ts`).
-- [ ] **Step 3: Green + both-mode sanity** — the MealScoreSheet flow on Mai must still open in mock (FuelMaiPage.test.tsx's `/AI/` button test). Run `pnpm vitest run src/data/fuel src/features/fuel/pages/FuelMaiPage.test.tsx`.
-- [ ] **Step 4: Commit** — `feat(fe): fuelConfig windows/anchors + id-based getScoredMeal (mezo-9ys)`.
+(Match the file's existing formatting style; read it first.)
+- [ ] **Step 2:** `cd api/generate && npm run generate:api && cd ../../frontend && pnpm generate:api`; verify `grep -n "mealsPerDay" api/openapi.yml frontend/src/data/_client/api.gen.ts`. Backend still compiles (optional DTO fields add no abstract methods; MapStruct unmapped-target warnings are non-fatal) — sanity `cd backend && ./mvnw clean compile -q`.
+- [ ] **Step 3:** Commit `feat(api): goal planner settings — mealsPerDay + wake/bed times (mezo-9ys)`.
 
 ---
 
-### Task 2: `buildTimeline` pure logic + unit tests
+### Task 2: Backend — goal columns + round-trip (TDD)
 
-**Files:**
-- Create: `frontend/src/features/fuel/logic/buildTimeline.ts`
-- Test: `frontend/src/features/fuel/logic/buildTimeline.test.ts`
+**Files:** Create `backend/src/main/resources/db/changelog/1.0.0/script/202607021500_mezo-9ys_goal_planner_settings.sql`; modify `1.0.0_master.yml`, the goal entity (`feature/goal/entity/GoalEntity.java` — verify name), the goal mapper/service write+read paths (locate: `grep -rn "rateTargetPctPerWeek" backend/src/main/java` to find the request-apply site); test: extend the existing goal API IT (locate `feature/goal/*ApiIT.java` or `GoalContractIT`).
+
+**Migration SQL:**
+
+```sql
+-- Fuel P5 day-planner settings on the goal (mezo-9ys): eating-occasion count + wake/bed anchors.
+alter table goal add column meals_per_day smallint;
+alter table goal add column wake_time varchar(5);
+alter table goal add column bed_time varchar(5);
+alter table goal add constraint ck_goal_meals_per_day check (meals_per_day is null or meals_per_day between 3 and 6);
+```
+
+- [ ] **Step 1: Failing IT** — extend the goal IT: `testCreateGoal_shouldRoundTripPlannerSettings_whenProvided` (POST with `mealsPerDay 4, wakeTime "06:00", bedTime "23:00"` → 201 echoes them; GET echoes them), `testUpdateGoal_shouldKeepPlannerSettingsNull_whenOmitted` (round-trip null), `testCreateGoal_shouldReject_whenWakeTimeMalformed` (`"6:00"` → 400 field error `wakeTime`; the OpenAPI `pattern` generates bean validation — if it does NOT, add service-side HH:mm validation with `SystemMessage.field("VALIDATION_INVALID_VALUE","wakeTime")` and adjust the assertion; run first to see).
+- [ ] **Step 2:** Register the migration in `1.0.0_master.yml` (append-only, id `"1.0.0:202607021500_mezo-9ys_goal_planner_settings"`, author daniel.kuhne).
+- [ ] **Step 3:** Entity fields (`Integer mealsPerDay` @Column(name="meals_per_day"), `String wakeTime`, `String bedTime`) + map them in the goal apply/toResponse paths (follow how an existing optional scalar like `identityFrame` flows).
+- [ ] **Step 4:** `./mvnw clean test -Dtest='*Goal*'` green, then full `./mvnw clean test` green. Commit `feat(be): goal planner settings columns + round-trip (mezo-9ys)`.
+
+---
+
+### Task 3: FE — goal settings surface
+
+**Files:** Modify `frontend/src/data/types.ts` (Goal + GoalInput), `frontend/src/data/me/goalApi.ts` (map fields), `frontend/src/data/me/goalHooks.ts` (`toGoal`), `frontend/src/data/me/goals.ts` (seed values `4/'06:00'/'23:00'` on the active goal), `frontend/src/features/me/sheets/EditGoalSheet.tsx` (+ its test); tests: `goalHooks`/`goalApi` test files.
+
+**Interfaces (produces):** `Goal` gains `mealsPerDay: number | null; wakeTime: string | null; bedTime: string | null`; `GoalInput` likewise; `useGoal().goal` carries them.
+
+- [ ] **Step 1: Failing tests** — goalApi mapper round-trips the three fields (toRequest/fromResponse); EditGoalSheet renders a "Napi ritmus" section (stepper `3–6` labeled `Étkezés/nap`, two `<input type="time">` for `Ébredés`/`Lefekvés`) and submits them in the payload.
+- [ ] **Step 2: Implement** — additive; the sheet's fields default from the loaded goal (`?? 4 / '06:00' / '23:00'`). Follow the sheet's existing field-row idiom.
+- [ ] **Step 3:** Both-mode FE tests green; commit `feat(fe): goal planner settings — EditGoalSheet Napi ritmus (mezo-9ys)`.
+
+---
+
+### Task 4: FE — `fuelConfig` + additive `FuelSlot` fields + id-based `getScoredMeal`
+
+**Files:** Create `frontend/src/data/fuel/fuelConfig.ts`; modify `frontend/src/data/types.ts`, `frontend/src/data/fuel/fuel.ts`; test `fuelData.test.tsx`.
+
+- [ ] **Step 1:** `fuelConfig.ts` exports every pinned constant from Global Constraints (`PLANNER_DEFAULTS = { mealsPerDay: 4, wake: '06:00', bed: '23:00' }`, `CAFFEINE_CUTOFF = '14:00'`, `EATING_START_OFFSET_MIN = 45`, `KITCHEN_CLOSE_OFFSET_MIN = 90`, `PRE_WORKOUT_SNAP_MIN = 75`, `POST_WORKOUT_SNAP_MIN = 45`, `DEFAULT_BLOCK_MIN = 60`, `MIN_SLOT_GAP_MIN = 90`, `SLOT_WEIGHT = { main: 2, snack: 1, postWorkoutMain: 2.5 }`, `RECIPE_FIT_TOLERANCE = 0.2`, `FAT_KCAL_SHARE = 0.275`) + time helpers `toMin('HH:mm'): number` / `toHHmm(min): string` (clamped 0..1439).
+- [ ] **Step 2:** `FuelSlot` gains `mealId?: string; suggestedRecipeId?: string`. Seed slots `'Túrós zabkása · áfonyával'` → `mealId: 'm1'`, `'Csirke + édesburgonya + spenót'` → `mealId: 'm2'` (verify ids `grep -n "id: 'm" frontend/src/data/fuel/fuel.ts`). `getScoredMeal` → `slot.mealId ? meals.find(m => m.id === slot.mealId && m.breakdown) ?? null : null`; failing-test-first on both behaviors (id hit; no-mealId → null even with matching title).
+- [ ] **Step 3:** Green (`fuelData` + `FuelMaiPage` score-sheet test) + commit `feat(fe): fuelConfig planner constants + id-based getScoredMeal (mezo-9ys)`.
+
+---
+
+### Task 5: FE — `buildProtocol` anchor-aware times (additive)
+
+**Files:** Modify `frontend/src/features/fuel/logic/buildProtocol.ts`, `frontend/src/data/types.ts` if a type is needed; test `buildProtocol.test.ts`.
+
+- [ ] **Step 1: Failing tests** — new optional 3rd param `anchors?: { wake: string; preWorkout?: string; bedtime: string }`: with anchors `{wake:'06:30', preWorkout:'17:15', bedtime:'22:30'}` the wake slot time is `06:30`, the pre-workout slot `17:15`, the evening slot `20:30` (bed−120); WITHOUT anchors every existing test stays green unchanged (hardcoded times preserved).
+- [ ] **Step 2: Implement** — thread times: wake slot `anchors?.wake ?? '05:50'`; pre-workout `anchors?.preWorkout ?? '06:50'`; pre-fuel snack stays relative to pre-workout (−30min via `toMin`/`toHHmm`) when anchored, else `06:20`; midday unchanged `12:30`; evening `anchors ? toHHmm(toMin(anchors.bedtime) − 120) : '21:00'`.
+- [ ] **Step 3:** Green + commit `feat(fe): buildProtocol anchor-aware slot times (mezo-9ys)`.
+
+---
+
+### Task 6: FE — `buildDayPlan` pure planner (the core)
+
+**Files:** Create `frontend/src/features/fuel/logic/buildDayPlan.ts`; test `buildDayPlan.test.ts`.
 
 **Interfaces (produces):**
+
 ```ts
-export interface TimelineGym { time: string; type: string | null }
-export interface TimelineSport { time: string; durationMin: number; kind: string }
-export interface TimelineInput {
+export interface PlannerBlock { kind: 'gym' | 'sport' | 'run'; time: string; durationMin: number | null; label: string }
+export interface DayPlanInput {
+  wake: string; bed: string; mealsPerDay: number
+  blocks: PlannerBlock[]
+  budget: { kcal: number; p: number; c: number; f: number }
   meals: FuelMeal[]
+  recipes: Recipe[]
   protocolSlots: ProtocolSlotData[]
   intakes: Intake[]
-  gymToday: TimelineGym | null
-  sportToday: TimelineSport | null
   nowHHmm: string
 }
-export function buildTimeline(input: TimelineInput): FuelPlanToday
+export function buildDayPlan(input: DayPlanInput): FuelPlanToday
+export function deriveDailyBudget(segment: { kcal: number; proteinG: number } | null, fallback: MacroSet): { kcal: number; p: number; c: number; f: number }
 ```
 
-- [ ] **Step 1: Verify two literals before coding** — (a) the exact `ProtocolSlotData.kind` strings `buildProtocol` emits (`grep -n "kind:" frontend/src/features/fuel/logic/buildProtocol.ts`); (b) the real-mode `FuelMeal.slot` format produced by `mealApi.ts` `fromResponse` (raw enum `breakfast|lunch|dinner|snack` or a display string — read the mapper). Write a `mealSlotKey(m: FuelMeal): MealSlot | null` helper that handles BOTH the real format and the mock display strings (`'Reggeli · 09:15 · post-workout'` → prefix match on the Hungarian label).
-- [ ] **Step 2: Failing unit tests** (fixtures, no hooks/HTTP):
-  - empty day (no meals/intakes/blocks, 2 protocol slots) → 4 pending placeholders + 2 protocol slots, sorted by time, no `now` before 00:00… use `nowHHmm: '10:00'` and assert the placeholder rule;
-  - mid-day: breakfast logged 09:15 (done, carries `mealId`, macros, `time: '09:15'`), lunch un-logged (pending placeholder 12:30), one intake taken → that pip `done: true`, others false;
-  - multi-meal slot: two snacks logged → both render, no placeholder for snack;
-  - gym day: `gymToday {time:'07:30', type:'Pull Day'}` → workout slot `done` when `nowHHmm > '07:30'`, and `plan.workout = {type:'Pull Day', start:'07:30', ...}`; rest day → `workout.start === '—'`;
-  - sport day: `sportToday` → `kind:'sport'` slot with `duration: durationMin` + `volleyball.noneToday === false`;
-  - now-flag: with `nowHHmm '16:10'` and snack placeholder at 16:00 pending → snack is `'now'`; when that slot is done, no slot carries `'now'`;
-  - anchors: output `caffeineCutoff/kitchenClose/bedtime` equal `FUEL_ANCHORS`.
-- [ ] **Step 3: Implement** —
-  - meals: per `MEAL_WINDOWS` window: logged meals of that slot each → `{ time: hhmm(loggedAt) || w.time, kind: w.kind, label: w.label, state: 'done', mealName: title, kcal/p/c/f, mealId: id }`; none → `{ time: w.time, kind: w.kind, label: w.label, state: 'pending' }` (`hhmm` = `loggedAt.slice(11,16)` with a fallback when unparsable);
-  - protocol: map each `ProtocolSlotData` → `{ time, kind: PROTOCOL_KIND[ps.kind] ?? 'midday', label: ps.window, state, items }` where `items = ps.items.map(it => ({ type:'supplement', refId: it.refId, label: `${it.name} ${it.dose}`, done: intakes.some(i => i.pantryItemId === it.refId), primary: ps.primary || undefined }))` and `state = items.length > 0 && items.every(i => i.done) ? 'done' : 'pending'`; `PROTOCOL_KIND` maps the Step-1a literals onto `FuelKind` (wake→wake, pre-workout→preworkout, midday→midday, evening→evening, the pre-fuel/pre-snack kind→snack);
-  - blocks: gym → `{ time, kind:'workout', label: `${type ?? 'Gym'} · gym`, state: time <= nowHHmm ? 'done' : 'pending' }` (NO `duration` field — unknown); sport → same with `kind:'sport'`, `duration: durationMin`;
-  - sort by `time` (HH:mm strings compare lexicographically); **now-rule:** the LAST slot with `time <= nowHHmm && state !== 'done'` gets `state: 'now'`;
-  - top fields: `workout: gymToday ? { type: type ?? '—', start: time, end: '—', duration: 0 } : { type:'—', start:'—', end:'—', duration: 0 }`; `volleyball: sportToday ? { start: time, end: '—', noneToday: false } : { start:'—', end:'—', noneToday: true }`; anchors spread from `FUEL_ANCHORS`.
-- [ ] **Step 4: Green + commit** — `pnpm vitest run src/features/fuel/logic/buildTimeline.test.ts`; commit `feat(fe): buildTimeline pure merge — meals + protocol + train blocks (mezo-9ys)`.
+- [ ] **Step 1: Verify literals** — real `FuelMeal.slot` format from `mealApi.ts` `fromResponse` (enum vs display string) → write `mealSlotKey(m): 'breakfast'|'lunch'|'dinner'|'snack'|null` handling both real + mock formats; `ProtocolSlotData.kind` literals from `buildProtocol.ts` → `PROTOCOL_KIND` map onto `FuelKind` (wake→wake, pre-workout→preworkout, midday→midday, evening→evening, the pre-fuel/pre-snack literal→snack).
+- [ ] **Step 2: Failing unit tests** (fixtures only, cover): window placement 3/4/5/6 meals across `wake+45 → bed−90` (exact expected times asserted for the default 06:00/23:00 case); evening-volleyball day (18:15+90) → a slot snaps to 17:00 (pre) and dinner to 20:15 (post) clamped to kitchenClose; morning-gym day (07:30, duration null → end 08:30) → breakfast at 09:15; ≥90min spacing enforced by forward-push; budget split sums EXACTLY to the daily budget per macro (rounding remainder lands on dinner); post-workout main weighs 2.5; `deriveDailyBudget` from a segment `{kcal:2150, proteinG:163}` → `f = round(2150×0.275/9)`, `c = round((2150 − 163×4 − f×9)/4)`, and from `null` → the fallback MacroSet passthrough; recipe fit: category match + per-serving kcal within ±20% of the slot budget, rank |Δkcal| → starred → |Δp|, winner sets `suggestedRecipeId` + `mealName` + the RECIPE's per-serving macros on the slot; no candidate → budget macros on the slot, no `suggestedRecipeId`; logged meals render done with `mealId` + real macros and consume their window (multi-snack matching in time order); intake pips done-state; now-flag = LAST slot with `time <= nowHHmm && state !== 'done'`; blocks render as workout/sport slots (`run` → kind `sport`, label carries `Futás`).
+- [ ] **Step 3: Implement** (structure — helpers small and pure):
+  1. `windows = placeWindows(wake, bed, mealsPerDay, blocks)` → `{ slotKey, kind: 'meal'|'snack', label, time, weight }[]`: mains `['Reggeli','Ebéd','Vacsora']` at span fractions 0/0.5/1, snacks at midpoints (4→after Ebéd; 5→both gaps; 6→+pre-Reggeli snack at span 0.1... pin: 6th = an extra evening snack between Vacsora−90 and Vacsora); apply block snaps (nearest earlier slot → `block−75`; first main after `blockEnd` → `+45`); clamp to `[eatingStart, kitchenClose]`; forward-push to keep 90min gaps; post-workout main gets `weight 2.5`.
+  2. `budgets = splitBudget(budget, windows)` (weights; per-macro whole rounding; remainder → dinner).
+  3. `fillWindows(windows, meals, recipes, budgets)` → FuelSlots (logged → done; else suggestion/budget slot).
+  4. protocol slots + block slots + sort + now-flag (reuse the v1 rules).
+  5. Top fields: `workout` from the gym block (type from label), `volleyball` from the sport block, `bedtime`/`kitchenClose` derived, `caffeineCutoff` const.
+- [ ] **Step 4:** Green + commit `feat(fe): buildDayPlan deterministic planner + tests (mezo-9ys)`.
 
 ---
 
-### Task 3: dual-mode `useFuelTimeline` (`timelineHooks.ts`) + barrel
+### Task 7: FE — dual-mode `useFuelTimeline` + `useFuelPreview`
 
-**Files:**
-- Create: `frontend/src/data/fuel/timelineHooks.ts`
-- Test: `frontend/src/data/fuel/timelineHooks.test.tsx`
-- Modify: `frontend/src/data/fuel/stackHooks.ts` (export `useIntakes`), `frontend/src/data/fuel/fuelReadHooks.ts` (remove `useFuelTimeline`), `frontend/src/data/hooks.ts` (barrel line)
+**Files:** Create `frontend/src/data/fuel/timelineHooks.ts` (+ test); modify `frontend/src/data/fuel/stackHooks.ts` (export `useIntakes`), `fuelReadHooks.ts` (drop `useFuelTimeline`), `frontend/src/data/hooks.ts`, `frontend/src/data/today/todayHooks.ts` (`useFuelPreview` composes the hook) + its tests; MSW handlers if a default is missing.
 
-**Interfaces:**
-- Consumes: `buildTimeline` (Task 2), `useFuelDay`, `useProtocol`/`useStack`/`useIntakes`, `useTrain` (`gymSchedule?.weeklyTimes`, `sport.schedule`), `buildProtocol`, seeds `fuelPlan`/`fuelDay`.
-- Produces: `useFuelTimeline(): { plan: FuelPlanToday; getScoredMeal: (s: FuelSlot) => FuelMeal | null }` exported from `@/data/hooks` (signature unchanged).
-
-- [ ] **Step 1: Failing hook tests** (`sharedWrapper` + `vi.stubEnv` + MSW idioms from `stackHooks.test.tsx`; `vi.setSystemTime` for the now-rule):
-  - mock: `plan` === the seed `fuelPlan.today` (same slot count/labels — byte-parity), `getScoredMeal` id-based works;
-  - real: with MSW returning one logged meal for today + an intake + empty protocol → `plan.slots` contains the meal (done, mealId) + 3 placeholders; no seed slot names leak (assert `'Lazac'`-free);
-  - real cold-load: while queries pend → placeholders only (honest-empty), never the seed.
-- [ ] **Step 2: Implement** —
-  - export `useIntakes` from `stackHooks.ts` (rename-safe: keep it internal-named, add `export`);
-  - `timelineHooks.ts`: `const mock = isMockMode()`; mock branch returns `{ plan: fuelPlan.today, getScoredMeal: s => getScoredMeal(s, fuelDay.meals) }` (unchanged seed path); real branch: `const { fuel } = useFuelDay(date)`, `const { selectedIds } = useProtocol()`, `const { stash } = useStack()`, `const intakes = useIntakes(date)`, `const train = useTrain()`; compute `gymToday` from `train.gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)` (`type` from the same row) and `sportToday` from the sport schedule's today session — read `trainHooks.ts` first to see how a real sport session marks today (if the real rows carry no `today` flag, derive by `dayOfWeek === (new Date().getDay()+6)%7` the way `deriveGymSchedule` does); protocol slots = `buildProtocol(selectedIds ?? stash.filter(s => s.type !== 'medication').map(s => s.id), stash).slots`; `plan = buildTimeline({...})` with `nowHHmm` from `new Date`; `getScoredMeal` = id-based against `fuel.meals`. IMPORTANT: hooks must be called unconditionally (both branches call the same hooks; only the returned value branches) — React rules.
-  - `fuelReadHooks.ts` drops `useFuelTimeline` (+ unused imports); barrel line 9 updates to export it from `timelineHooks`.
-- [ ] **Step 3: Green + both-mode full run + commit** — `feat(fe): dual-mode useFuelTimeline — real merged agenda (mezo-9ys)`.
+- [ ] **Step 1: Failing hook tests** — mock: `plan` === seed byte-parity + id-based getScoredMeal; real (MSW: goal with settings+prescription segment, one logged meal, one intake, schedules): plan contains planner windows with budgets, the logged meal done, a recipe suggestion when the recipes handler returns a fitting one; cold-load → planner windows from defaults with config-fallback budget (never the seed); `useFuelPreview` slices the same plan (shape unchanged).
+- [ ] **Step 2: Implement** — real branch composes: `useFuelDay(date)`, `useGoal()` (active goal → settings + current-week prescription segment: `week = clamp(floor(daysBetween(goal start?, today)/7)+1)` — read how `GoalRecept`/timeline derive the current week and reuse; if no derivation exists, pick the segment whose `fromWeek..toWeek` contains the goal's `currentWeek` field if present, else the FIRST segment — pin choice in a comment + test), `useRecipes()`, `useProtocol()`/`useStack()`/`useIntakes(date)`, `useTrain()` (gym today + sport today), running (read `runningHooks`/`runningAgenda.ts` for the existing today-session derivation and reuse) → `blocks[]`; `buildProtocol(selection, stash, anchors)` with anchors from settings + first block; `buildDayPlan({...})`. All hooks called unconditionally; only the return branches on `isMockMode()`.
+- [ ] **Step 3:** Both-mode green + commit `feat(fe): dual-mode planner timeline + Today preview composition (mezo-9ys)`.
 
 ---
 
-### Task 4: `useFuelPreview` composes the timeline
+### Task 8: FE — rendering (ajánlott chip, budget line, tap-to-log, real context strip)
 
-**Files:**
-- Modify: `frontend/src/data/today/todayHooks.ts` (useFuelPreview), its test file (check `todayHooks.test.tsx` / `today` data tests)
-- Test: extend the same test file
+**Files:** Modify `SlotCard.tsx`, `TimelineSlot.tsx`/`FuelTimeline.tsx` (prop threading), `FuelMaiPage.tsx`, `FuelTimelinePreview.tsx`, `LogMealSheet.tsx` (optional `initialSlot?: MealSlot`); colocated tests.
 
-- [ ] **Step 1: Failing tests** — mock: `visible` = the same 3 seed slots as today (behavior unchanged); real (MSW: one pending placeholder timeline): `visible` derives from the composed plan, `nextStack` = first non-done slot with undone items or `undefined` when none.
-- [ ] **Step 2: Implement** — `useFuelPreview()` calls `useFuelTimeline()` and applies the existing slice logic to `plan.slots` (drop the static `fuelToday` import): `nowIdx = findIndex(state==='now')`, `visible = slots.slice(max(0,nowIdx), max(0,nowIdx)+3)`, `nextStack = slots.find(s => s.state !== 'done' && (s.items ?? []).some(it => !it.done))`. Note any test rendering Today now needs the Query wrapper (it already does — verify).
-- [ ] **Step 3: Green + commit** — `feat(fe): Today fuel preview reads the merged timeline (mezo-9ys)`.
+- [ ] **Step 1: Failing tests** — SlotCard: pending slot with `suggestedRecipeId` shows the recipe name + an `ajánlott` chip + tap fires `onLogMeal(slot)` (page prefills `{source:'recipe', recipeId}`); pending slot without suggestion shows label + `~{kcal} kcal · P{p} C{c} F{f}` + `Logolás` affordance (`aria-label={`${label} logolása`}`) → `onLogMeal(slot)` (page opens LogMealSheet with `initialSlot`); workout slot without `duration` renders no `· perc` suffix. FuelMaiPage real mode: context strip shows schedule-derived values; preview renders placeholder labels.
+- [ ] **Step 2: Implement** — additive `onLogMeal?: (slot: FuelSlot) => void` threaded FuelTimeline→TimelineSlot→SlotCard; `LogMealSheet` `initialSlot` seeds its slot segmented state; FuelMaiPage maps slot→`MealSlot` via label match against the planner windows (export `slotKeyOfLabel` from fuelConfig) and passes prefill; context strip switches to `plan.workout.*` (duration cell only when > 0).
+- [ ] **Step 3:** Both-mode green + build + commit `feat(fe): planner slots on Mai + Today — suggestions, budgets, tap-to-log (mezo-9ys)`.
 
 ---
 
-### Task 5: Mai + preview rendering (placeholders, duration guard, real context strip)
+### Task 9: Docs + gates + close + merge
 
-**Files:**
-- Modify: `frontend/src/features/fuel/components/SlotCard.tsx`, `FuelTimeline.tsx` (pass-through prop), `frontend/src/features/fuel/pages/FuelMaiPage.tsx`, `frontend/src/features/today/components/FuelTimelinePreview.tsx`, `frontend/src/features/fuel/sheets/LogMealSheet.tsx` (optional `initialSlot`)
-- Tests: colocated test files of each
-
-- [ ] **Step 1: Failing tests** —
-  - SlotCard: a pending meal-kind slot WITHOUT `mealName` renders the label + a `Logolás` affordance (`aria-label={`${label} logolása`}`) and clicking calls the new optional `onLogMeal?.(slot)` prop; a workout slot without `duration` renders NO `· perc` suffix;
-  - FuelMaiPage (real mode, MSW): context strip shows the schedule-derived gym time (not the `today.workoutType` static); clicking a placeholder opens `LogMealSheet` with the slot preselected (assert the segmented control's active slot);
-  - FuelTimelinePreview: placeholder slot renders its label (no `undefined`).
-- [ ] **Step 2: Implement** —
-  - `SlotCard` gains optional `onLogMeal?: (slot: FuelSlot) => void`; render branch: `!slot.mealName && (slot.kind === 'meal' || slot.kind === 'snack') && slot.state !== 'done'` → label + Logolás chip-button calling it; duration suffix only when `slot.duration` truthy. `FuelTimeline` threads the prop through (`TimelineSlot` too).
-  - `LogMealSheet` gains optional `initialSlot?: MealSlot` (default state seeding — check its current prefill prop shape and extend additively).
-  - `FuelMaiPage`: pass `onLogMeal={slot => { setLogSlot(mealSlotOf(slot)); setLogOpen(true) }}` (map the slot label back to `MealSlot` via `MEAL_WINDOWS`); context strip gym label from `plan.workout.type`, time from `plan.workout.start`, duration cell only when `plan.workout.duration > 0`.
-  - `FuelTimelinePreview`: `{s.mealName || s.label}` already handles placeholders — verify and cover.
-- [ ] **Step 3: Green both modes + build + commit** — `feat(fe): Mai placeholders + real context strip + preview polish (mezo-9ys)`.
-
----
-
-### Task 6: Docs + gates + close + merge
-
-**Files:**
-- Modify: `docs/features/fuel.md` (§2 Mai timeline, §3 timelineHooks, §5 Train seam), `docs/features/today.md` (preview), `docs/superpowers/plans/2026-06-26-fuel-completion-roadmap.md` (P5 ✅ SHIPPED note incl. the client-merge decision), `docs/milestones/roadmap.md`
-
-- [ ] **Step 1:** Update docs; `node scripts/lint-docs.mjs` PASS (reconcile rippled docs per the P1/P2 precedent).
-- [ ] **Step 2:** Full gates one last time (`pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test`).
-- [ ] **Step 3 (controller):** commit docs; `bd close mezo-9ys`; commit bd sync; `git checkout main && git pull --rebase && git merge --no-ff feat/fuel-p5-timeline -m "Merge feat/fuel-p5-timeline: Mai merged timeline — real agenda (mezo-9ys)" && git branch -d feat/fuel-p5-timeline && bd dolt push && git push`.
+- [ ] **Step 1:** Update `docs/features/fuel.md` (§2 Mai planner, §3 timelineHooks, §4 goal fields note, §5 Goal/Train/Recipes seams), `docs/features/goal-engine.md` + `me.md` (settings), `today.md` (preview), roadmap plan P5 ✅ note (planner scope + v2 spec pointer), `docs/milestones/roadmap.md`; `node scripts/lint-docs.mjs` PASS (reconcile rippled docs per precedent).
+- [ ] **Step 2:** Full gates: `./mvnw clean test` + both FE modes + build.
+- [ ] **Step 3 (controller):** docs commit; `bd close mezo-9ys`; bd sync commit; `git checkout main && git pull --rebase && git merge --no-ff feat/fuel-p5-planner -m "Merge feat/fuel-p5-planner: Mai day-planner timeline (mezo-9ys)" && git branch -d feat/fuel-p5-planner && bd dolt push && git push`.
