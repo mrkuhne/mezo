@@ -48,7 +48,14 @@ Three cheap decisions that unblock the rest. Each is an ADR in `docs/decisions/`
 
 ---
 
-## P1 — Water logging (quick win)
+## P1 — Water logging (quick win) ✅ SHIPPED (mezo-0z5, 2026-07-02)
+
+> **Shipped — the `MacroHero` water ring is now honest.** A `water_log` table (smallest owned single-row
+> aggregate — `created_by`/`is_deleted`/`log_date`/`amount_ml`, the weight/sleep-log precedent) + `POST/DELETE
+> /api/water-log` on `MealController`; `FuelDayService.consumed.water` is the real per-day Σ (was always
+> `= targets.water`, a fake 100% ring). FE: dual-mode `useWaterActions.logWater` (mock increments the
+> `['fuelDay']` cache, real POSTs + invalidates) + `+250/+500 ml` chips on `MacroHero`. **Goal/Reta-aware water
+> targets stay deferred** (the target remains a config constant). Living doc: `docs/features/fuel.md` §2/§3/§4.
 
 **Goal:** make the `MacroHero` water ring honest — today `FuelDayService` sets `consumed.water = targets.water` (always 100%).
 **Builds:** a real per-day water sum + a `+víz` quick-capture.
