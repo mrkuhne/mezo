@@ -74,6 +74,11 @@ mezo:
     # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
     progression:
       enabled: true
+  fuel:
+    protocol:
+      # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
+      # with a computed value; until then it is config, never hardcoded in code.
+      default-confidence: 0.86
   progression:
     # Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp); Lv2=100, Lv3≈303, Lv5≈919.
     curve:

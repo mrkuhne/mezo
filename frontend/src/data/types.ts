@@ -383,7 +383,7 @@ export interface StackRecommendation {
 }
 
 // --- Fuel · Stack protocol builder ---
-export interface ProtocolSlotItem { name: string; dose: string; color: string }
+export interface ProtocolSlotItem { refId: string; name: string; dose: string; color: string }
 export interface ProtocolSlotData {
   time: string
   window: string

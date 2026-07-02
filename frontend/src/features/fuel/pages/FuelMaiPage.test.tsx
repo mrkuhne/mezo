@@ -23,6 +23,17 @@ test('renders header, macro hero, timeline and micronutrients', () => {
   expect(screen.getByText(/1840/)).toBeInTheDocument()
   expect(screen.getByText('Mikrotápanyagok · heti')).toBeInTheDocument()
 })
+test('shows the protocol-meta row when a protocol is active (mock, v3)', () => {
+  renderView()
+  expect(screen.getByText(/Stack · v3/)).toBeInTheDocument()
+})
+test('hides the protocol-meta row when there is no active protocol (real-mode ghost v0)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  renderView()
+  await screen.findByRole('heading', { name: 'Pacing' })
+  expect(screen.queryByText(/Stack · v/)).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Replan' })).not.toBeInTheDocument()
+})
 test('opening a meal score sheet then closing it', async () => {
   renderView()
   await userEvent.click(screen.getAllByRole('button', { name: /AI/ })[0])

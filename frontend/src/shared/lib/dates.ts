@@ -2,6 +2,30 @@
 export const localDateString = (d: Date = new Date()) =>
   new Intl.DateTimeFormat('en-CA').format(d)
 
+/**
+ * Offset-bearing ISO-8601 datetime (`YYYY-MM-DDThh:mm:ss±hh:mm`) for a chosen local `date` + `time`.
+ * The offset is THIS browser's local UTC offset for that wall-clock moment, so the value's
+ * server-side `.toLocalDate()` equals `date`. Jackson's OffsetDateTime deserializer rejects a
+ * zone-less string, and a naive `new Date(...).toISOString()` shifts local time to UTC — rolling the
+ * day back in a +offset zone and corrupting the server's day key. Used by supplement-intake +
+ * medication-dose logging (see `nowOffsetIso`, `fuelApi.logIntake`, `LogDoseSheet`'s dose capture).
+ */
+export function offsetIso(date: string, time: string): string {
+  const local = new Date(`${date}T${time}:00`)
+  const offMin = -local.getTimezoneOffset() // e.g. +120 for UTC+02:00
+  const sign = offMin >= 0 ? '+' : '-'
+  const abs = Math.abs(offMin)
+  const oh = String(Math.floor(abs / 60)).padStart(2, '0')
+  const om = String(abs % 60).padStart(2, '0')
+  return `${date}T${time}:00${sign}${oh}:${om}`
+}
+
+/** Offset-bearing ISO-8601 datetime for browser-local NOW (to the minute) — the "log it now" timestamp. */
+export function nowOffsetIso(d: Date = new Date()): string {
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return offsetIso(localDateString(d), time)
+}
+
 // Hungarian month abbreviations + day-of-week labels, matching the Phase-1
 // mock display strings. Used to format backend ISO dates (`2026-05-01`) into
 // the HU display labels the UI expects (`Máj 1`, `Máj 20 · Sze`).

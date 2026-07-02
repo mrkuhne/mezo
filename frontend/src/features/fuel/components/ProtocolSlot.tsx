@@ -2,7 +2,18 @@ import type { ProtocolSlotData } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 
 // fuel-stack.jsx ProtocolSlot (227–280)
-export function ProtocolSlot({ slot }: { slot: ProtocolSlotData }) {
+// takenIds + onToggleItem are optional: when omitted (the default presentational usage) the item
+// rows render exactly as before; when supplied, each row becomes a tap-to-log/undo button with a
+// trailing check when the intake is already logged (mezo-09g).
+export function ProtocolSlot({
+  slot,
+  takenIds,
+  onToggleItem,
+}: {
+  slot: ProtocolSlotData
+  takenIds?: Set<string>
+  onToggleItem?: (refId: string, taken: boolean) => void
+}) {
   return (
     <div
       className="card notch-4"
@@ -66,15 +77,36 @@ export function ProtocolSlot({ slot }: { slot: ProtocolSlotData }) {
           </div>
 
           <div className="col gap-xs mt-sm">
-            {slot.items.map((it, i) => (
-              <div key={i} className="row gap-xs" style={{ alignItems: 'center' }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', background: it.color, flexShrink: 0 }} />
-                <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>{it.name}</span>
-                <span className="label-mono text-tertiary" style={{ fontSize: 10 }}>
-                  {it.dose}
-                </span>
-              </div>
-            ))}
+            {slot.items.map((it, i) => {
+              const taken = takenIds?.has(it.refId) ?? false
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  aria-label={`${it.name} bevétel`}
+                  onClick={() => onToggleItem?.(it.refId, taken)}
+                  className="row gap-xs"
+                  style={{
+                    alignItems: 'center',
+                    width: '100%',
+                    padding: 0,
+                    margin: 0,
+                    background: 'transparent',
+                    border: 'none',
+                    font: 'inherit',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ width: 5, height: 5, borderRadius: '50%', background: it.color, flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>{it.name}</span>
+                  <span className="label-mono text-tertiary" style={{ fontSize: 10 }}>
+                    {it.dose}
+                  </span>
+                  {taken && <Icon name="check" size={10} color="var(--brand-glow)" />}
+                </button>
+              )
+            })}
           </div>
 
           <p

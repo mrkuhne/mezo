@@ -92,37 +92,39 @@ export function FuelMaiPage() {
           <span className="eyebrow">Mai timeline · {plan.slots.length} slot</span>
           <span className="eyebrow brand">{doneCount}/{plan.slots.length}</span>
         </div>
-        {/* Protocol meta row */}
-        <div
-          className="row gap-sm"
-          style={{
-            padding: '6px 10px',
-            marginBottom: 12,
-            background: 'var(--surface-1)',
-            border: '1px solid var(--border-subtle)',
-            alignItems: 'center',
-          }}
-        >
-          <Icon name="sparkle" size={11} color="var(--brand-glow)" />
-          <div className="col flex-1" style={{ minWidth: 0 }}>
-            <span className="label-mono brand" style={{ fontSize: 9 }}>
-              Stack · v{protocol.version} · {protocol.builtAt}
-            </span>
-            <span className="label-mono text-tertiary" style={{ fontSize: 8, marginTop: 1 }}>
-              {protocol.lastReplanReason
-                ? '↳ ' + protocol.lastReplanReason
-                : protocol.itemCount + ' item · conf ' + (protocol.confidence * 100).toFixed(0) + '%'}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setReplanOpen(true)}
-            className="chip"
-            style={{ fontSize: 9, padding: '4px 8px', color: 'var(--brand-glow)', borderColor: 'var(--border-brand)' }}
+        {/* Protocol meta row — hidden when there is no active protocol yet (real-mode ghost, v0) */}
+        {protocol.version > 0 && (
+          <div
+            className="row gap-sm"
+            style={{
+              padding: '6px 10px',
+              marginBottom: 12,
+              background: 'var(--surface-1)',
+              border: '1px solid var(--border-subtle)',
+              alignItems: 'center',
+            }}
           >
-            <Icon name="tool" size={10} /> Replan
-          </button>
-        </div>
+            <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+            <div className="col flex-1" style={{ minWidth: 0 }}>
+              <span className="label-mono brand" style={{ fontSize: 9 }}>
+                Stack · v{protocol.version} · {protocol.builtAt}
+              </span>
+              <span className="label-mono text-tertiary" style={{ fontSize: 8, marginTop: 1 }}>
+                {protocol.lastReplanReason
+                  ? '↳ ' + protocol.lastReplanReason
+                  : protocol.itemCount + ' item · conf ' + (protocol.confidence * 100).toFixed(0) + '%'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setReplanOpen(true)}
+              className="chip"
+              style={{ fontSize: 9, padding: '4px 8px', color: 'var(--brand-glow)', borderColor: 'var(--border-brand)' }}
+            >
+              <Icon name="tool" size={10} /> Replan
+            </button>
+          </div>
+        )}
         <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} />
       </div>
 

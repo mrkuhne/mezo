@@ -10,26 +10,12 @@
 // ============================================================
 import { useState } from 'react'
 import { useMedication, useMedicationActions } from '@/data/hooks'
-import { localDateString } from '@/shared/lib/dates'
+import { localDateString, offsetIso } from '@/shared/lib/dates'
 import type { MedicationDoseInput } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
-
-// Build an offset-bearing ISO-8601 datetime (`YYYY-MM-DDThh:mm:ss±hh:mm`) for the chosen
-// local date+time. The offset is THIS browser's local UTC offset for that wall-clock moment,
-// so the result's .toLocalDate() (server-side) equals `date` — see submit() for why this
-// matters (Jackson needs an offset; .toISOString() would shift the day).
-function toOffsetIso(date: string, time: string): string {
-  const local = new Date(`${date}T${time}:00`)
-  const offMin = -local.getTimezoneOffset() // e.g. +120 for UTC+02:00
-  const sign = offMin >= 0 ? '+' : '-'
-  const abs = Math.abs(offMin)
-  const oh = String(Math.floor(abs / 60)).padStart(2, '0')
-  const om = String(abs % 60).padStart(2, '0')
-  return `${date}T${time}:00${sign}${oh}:${om}`
-}
 
 const fieldLabelStyle = { fontSize: 8, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text-tertiary)' } as const
 const fieldInputStyle = { fontSize: 14, color: 'var(--text-primary)', marginTop: 3, width: '100%' } as const
@@ -80,7 +66,7 @@ export function LogDoseSheet({ onClose }: { onClose: () => void }) {
     // the backend uses as the day key, MedicationService.logDose) stays the CHOSEN date —
     // a naive new Date(`${date}T00:00`).toISOString() shifts local-midnight to UTC and can
     // roll the date back a day in a +offset timezone, corrupting the cycle's day math.
-    const administeredAt = toOffsetIso(date, time || '00:00')
+    const administeredAt = offsetIso(date, time || '00:00')
     const input: MedicationDoseInput = {
       administeredAt,
       dose: doseNum,
