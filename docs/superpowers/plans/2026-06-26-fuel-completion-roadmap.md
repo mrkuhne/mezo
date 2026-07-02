@@ -29,7 +29,14 @@ Every phase below uses the same shape so a fresh session can act on it without r
 
 ---
 
-## P0 — Decisions / ADRs (prerequisites, ~no code)
+## P0 — Decisions / ADRs (prerequisites, ~no code) ✅ SHIPPED (mezo-ut1, 2026-07-02)
+
+> **Shipped as ADRs `0004` (P0a — Train owns the weekly schedule, Fuel = secondary editor),
+> `0005` (P0b — `pantry_item` supersedes `food_item`; `supplement_intake` FKs the pantry supplement
+> row; `nutrition_targets` stays config) and `0006` (P0c — meal-score typed jsonb envelope +
+> denormalized `meal.score` column, weights .30/.25/.25/.20, deterministic-v0 vs AI-prose split).**
+> P2/P4/P5/P7 are unblocked. Design spec for the P1+P2 round:
+> `docs/superpowers/specs/2026-07-02-fuel-stack-protocol-water-design.md`.
 
 Three cheap decisions that unblock the rest. Each is an ADR in `docs/decisions/` (see `docs/README.md` for the template); no feature code. Do these first — they prevent the `P2`/`P4`/`P5`/`P7` clusters from silently rebuilding or diverging.
 
