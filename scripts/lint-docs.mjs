@@ -34,6 +34,9 @@
 //
 // Exit code: 0 when nothing worse than ✅/info is found; 1 when any 🔶 STALE or
 // ✗ error-level finding exists — so the script can gate CI.
+// With --errors-only, STALE findings are still printed but only ✗ errors fail
+// the run (CI uses this: staleness is a review signal with known false
+// positives, so it gates advisory-only; hard errors block).
 //
 // Dependencies: NONE. Node 18+ ESM, only node:fs / node:path / node:child_process.
 // =============================================================================
@@ -50,6 +53,7 @@ const FEATURES_DIR = path.join(REPO_ROOT, 'docs', 'features');
 const RESEARCH_DIR = path.join(REPO_ROOT, 'docs', 'research');
 
 const QUIET = process.argv.includes('--quiet');
+const ERRORS_ONLY = process.argv.includes('--errors-only');
 
 // ── The 10 mandatory feature-doc sections (matched as "## N." headings). ─────
 const FEATURE_SECTIONS = 10;
@@ -59,8 +63,9 @@ const REQUIRED_FEATURE_KEYS = ['title', 'type', 'status', 'key_files'];
 const REQUIRED_RESEARCH_KEYS = ['title', 'type'];
 
 // ── Severity levels. STALE and ERROR fail the build; WARN/INFO/OK do not. ────
+// (--errors-only narrows the failing set to ERROR — staleness prints but passes.)
 const SEV = { OK: 'ok', INFO: 'info', WARN: 'warn', STALE: 'stale', ERROR: 'error' };
-const FAILING = new Set([SEV.STALE, SEV.ERROR]);
+const FAILING = ERRORS_ONLY ? new Set([SEV.ERROR]) : new Set([SEV.STALE, SEV.ERROR]);
 
 // =============================================================================
 // Small utilities
@@ -433,7 +438,8 @@ function main() {
   console.log(
     `  summary: ${total} doc(s) — ✅ ${cleanDocs} clean · ⚠️  ${warnDocs} warn · 🔶 ${staleDocs} stale · ✗ ${errorDocs} error`,
   );
-  console.log(`  result: ${fail ? 'FAIL (stale or error findings — see above)' : 'PASS'}`);
+  const failLabel = ERRORS_ONLY ? 'FAIL (error findings — see above)' : 'FAIL (stale or error findings — see above)';
+  console.log(`  result: ${fail ? failLabel : `PASS${ERRORS_ONLY && staleDocs > 0 ? ' (stale findings advisory under --errors-only)' : ''}`}`);
   console.log('');
 
   process.exit(fail ? 1 : 0);

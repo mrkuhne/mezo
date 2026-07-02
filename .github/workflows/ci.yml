@@ -1,0 +1,63 @@
+name: ci
+# Convention gates (mezo-ah18.4) — cheap static checks that keep the house
+# standards machine-enforced. Deliberately SEPARATE from deploy.yml so the
+# deploy path stays fast (mezo-oa3); this workflow gates quality, not releases.
+# The heavier test job (both FE modes + backend ITs) is tracked in mezo-ah18.5.
+# See docs/decisions/0007-machine-enforcement-of-conventions.md for the why.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # lint-docs staleness compares per-file git commit dates
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Docs lint (errors block; staleness advisory — known false positives)
+        run: node scripts/lint-docs.mjs --errors-only
+      - name: Liquibase conventions lint (filenames, constraint prefixes, seed-SQL ban)
+        run: node scripts/lint-liquibase.mjs
+
+  contract-drift:
+    # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments,
+    # or frontend api.gen.ts was not regenerated after a contract change. The
+    # backend cannot drift (openapi-generator-maven-plugin regenerates on every
+    # build) — this closes the FE half and the fragments->merge half.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Regenerate merged OpenAPI spec from fragments
+        working-directory: api/generate
+        run: |
+          npm ci
+          npm run generate:api
+      - name: Regenerate frontend API types
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm generate:api
+      - name: Fail on drift (committed spec/types stale vs fragments)
+        run: |
+          git diff --exit-code -- api/openapi.yml frontend/src/data/_client/api.gen.ts \
+            || { echo '::error::Generated contract artifacts are stale. Run: cd api/generate && npm run generate:api; cd frontend && pnpm generate:api — then commit.'; exit 1; }
