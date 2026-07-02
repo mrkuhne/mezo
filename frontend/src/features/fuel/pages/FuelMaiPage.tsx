@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FuelMeal } from '@/data/types'
-import { useFuelDay, useFuelTimeline, useProtocol, useTodayScenario, useToday } from '@/data/hooks'
+import { useFuelDay, useFuelTimeline, useProtocol, useTodayScenario, useToday, useWaterActions } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
@@ -20,6 +20,7 @@ export function FuelMaiPage() {
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
   const { today } = useToday()
+  const { logWater } = useWaterActions()
 
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
   const [replanOpen, setReplanOpen] = useState(false)
@@ -77,7 +78,7 @@ export function FuelMaiPage() {
 
       {/* Macro hero */}
       <div style={{ padding: '0 24px 12px' }}>
-        <MacroHero targets={fuel.targets} consumed={fuel.consumed} eyebrow={fuel.pacing.eyebrow} />
+        <MacroHero targets={fuel.targets} consumed={fuel.consumed} eyebrow={fuel.pacing.eyebrow} onLogWater={logWater} />
       </div>
 
       {/* Pacing insight */}

@@ -7,7 +7,7 @@ import { pct } from '@/shared/lib/pct'
 // `pct` guards 0/0 → 0: real mode renders a ZERO day during the cold-load window (no
 // static fallback in real mode), so a 0/0 percent must read as a benign 0%, never NaN.
 
-export function MacroHero({ targets, consumed, eyebrow }: { targets: MacroSet; consumed: MacroSet; eyebrow?: string }) {
+export function MacroHero({ targets, consumed, eyebrow, onLogWater }: { targets: MacroSet; consumed: MacroSet; eyebrow?: string; onLogWater?: (amountMl: number) => void }) {
   const kcalPct = pct(consumed.kcal, targets.kcal)
   return (
     <div className="card notch-12" style={{ padding: 18 }}>
@@ -59,6 +59,22 @@ export function MacroHero({ targets, consumed, eyebrow }: { targets: MacroSet; c
           </div>
           <ProgressBar className="mt-xs" value={pct(consumed.water, targets.water)} color="var(--info)" />
         </div>
+        {onLogWater && (
+          <div className="row gap-xs">
+            {[250, 500].map(ml => (
+              <button
+                key={ml}
+                type="button"
+                className="chip notch-4"
+                aria-label={`Víz +${ml} ml`}
+                style={{ fontSize: 9, padding: '4px 8px' }}
+                onClick={() => onLogWater(ml)}
+              >
+                +{ml}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
