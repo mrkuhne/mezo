@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info: { title: '', version: '' }
+tags:
+  - name: Fuel
+    description: >
+      Fuel-owned protocol + supplement-intake endpoints. The protocol persists ONLY the selected
+      pantry-item ids + version metadata (ADR/spec 2026-07-02) — timing slots are recomputed by the
+      FE buildProtocol. supplement_intake is an append-only taken-ledger FK-ing pantry_item (ADR 0005).
+paths:
+  /api/fuel/protocol:
+    get:
+      tags: [Fuel]
+      operationId: getProtocol
+      summary: The active protocol + version history (active absent when none exists — honest-empty)
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolViewResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+    post:
+      tags: [Fuel]
+      operationId: activateProtocol
+      summary: Activate a new protocol version from the current selection (previous active superseded)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolActivateRequest' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/ProtocolViewResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/intake/{date}:
+    get:
+      tags: [Fuel]
+      operationId: listIntakes
+      summary: The day's supplement intakes (feeds taken-state; the P5 timeline reuses this read)
+      parameters:
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/IntakeListResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/intake:
+    post:
+      tags: [Fuel]
+      operationId: logIntake
+      summary: Log one supplement/stim intake (dose snapshotted from the pantry item when omitted)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/IntakeRequest' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/IntakeResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Pantry item not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/fuel/intake/entry/{id}:
+    delete:
+      tags: [Fuel]
+      operationId: deleteIntake
+      summary: Soft-delete an intake entry (undo a mis-tap)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+components:
+  schemas:
+    ProtocolHistoryEntry:
+      type: object
+      required: [version, builtAt]
+      properties:
+        version: { type: integer }
+        builtAt: { type: string, format: date-time }
+        reason: { type: string }
+    ProtocolResponse:
+      type: object
+      required: [id, version, builtAt, status, selectedPantryItemIds]
+      properties:
+        id: { type: string, format: uuid }
+        version: { type: integer }
+        builtAt: { type: string, format: date-time }
+        status: { type: string, enum: [active, superseded] }
+        confidence: { type: number }
+        lastReplanReason: { type: string }
+        selectedPantryItemIds: { type: array, items: { type: string, format: uuid } }
+    ProtocolViewResponse:
+      type: object
+      required: [history]
+      properties:
+        active: { $ref: '#/components/schemas/ProtocolResponse' }
+        history: { type: array, items: { $ref: '#/components/schemas/ProtocolHistoryEntry' } }
+    ProtocolActivateRequest:
+      type: object
+      required: [selectedPantryItemIds]
+      properties:
+        selectedPantryItemIds: { type: array, minItems: 1, items: { type: string, format: uuid } }
+        reason: { type: string }
+    IntakeRequest:
+      type: object
+      required: [pantryItemId]
+      properties:
+        pantryItemId: { type: string, format: uuid }
+        takenAt: { type: string, format: date-time, description: 'Offset-bearing; defaults to now server-side' }
+        slotKey: { type: string }
+        dose: { type: string, description: 'Snapshot; defaults to the pantry item''s dose' }
+        note: { type: string }
+    IntakeResponse:
+      type: object
+      required: [id, pantryItemId, takenAt, takenDate]
+      properties:
+        id: { type: string, format: uuid }
+        pantryItemId: { type: string, format: uuid }
+        takenAt: { type: string, format: date-time }
+        takenDate: { type: string, format: date }
+        slotKey: { type: string }
+        dose: { type: string }
+        note: { type: string }
+    IntakeListResponse:
+      type: object
+      required: [intakes]
+      properties:
+        intakes: { type: array, items: { $ref: '#/components/schemas/IntakeResponse' } }

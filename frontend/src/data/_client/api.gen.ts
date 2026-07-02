@@ -883,6 +883,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/protocol": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The active protocol + version history (active absent when none exists — honest-empty) */
+        get: operations["getProtocol"];
+        put?: never;
+        /** Activate a new protocol version from the current selection (previous active superseded) */
+        post: operations["activateProtocol"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/intake/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The day's supplement intakes (feeds taken-state; the P5 timeline reuses this read) */
+        get: operations["listIntakes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/intake": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log one supplement/stim intake (dose snapshotted from the pantry item when omitted) */
+        post: operations["logIntake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/fuel/intake/entry/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Soft-delete an intake entry (undo a mis-tap) */
+        delete: operations["deleteIntake"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2078,6 +2147,61 @@ export interface components {
         SkillRef: {
             skillKey: string;
             level: number;
+        };
+        ProtocolHistoryEntry: {
+            version: number;
+            /** Format: date-time */
+            builtAt: string;
+            reason?: string;
+        };
+        ProtocolResponse: {
+            /** Format: uuid */
+            id: string;
+            version: number;
+            /** Format: date-time */
+            builtAt: string;
+            /** @enum {string} */
+            status: "active" | "superseded";
+            confidence?: number;
+            lastReplanReason?: string;
+            selectedPantryItemIds: string[];
+        };
+        ProtocolViewResponse: {
+            active?: components["schemas"]["ProtocolResponse"];
+            history: components["schemas"]["ProtocolHistoryEntry"][];
+        };
+        ProtocolActivateRequest: {
+            selectedPantryItemIds: string[];
+            reason?: string;
+        };
+        IntakeRequest: {
+            /** Format: uuid */
+            pantryItemId: string;
+            /**
+             * Format: date-time
+             * @description Offset-bearing; defaults to now server-side
+             */
+            takenAt?: string;
+            slotKey?: string;
+            /** @description Snapshot; defaults to the pantry item's dose */
+            dose?: string;
+            note?: string;
+        };
+        IntakeResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            pantryItemId: string;
+            /** Format: date-time */
+            takenAt: string;
+            /** Format: date */
+            takenDate: string;
+            slotKey?: string;
+            dose?: string;
+            note?: string;
+        };
+        IntakeListResponse: {
+            intakes: components["schemas"]["IntakeResponse"][];
         };
     };
     responses: never;
@@ -4876,6 +5000,197 @@ export interface operations {
             };
             /** @description Unauthenticated. */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getProtocol: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtocolViewResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    activateProtocol: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProtocolActivateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProtocolViewResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listIntakes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    logIntake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IntakeRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntakeResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Pantry item not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteIntake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
