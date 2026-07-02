@@ -1,5 +1,6 @@
-package io.mrkuhne.mezo.feature.progression.service;
+package io.mrkuhne.mezo.feature.train.signal;
 
+import io.mrkuhne.mezo.feature.progression.RobustnessSource;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
@@ -19,7 +20,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class RobustnessCalculator {
+public class TrainingStreakCalculator implements RobustnessSource {
 
     private static final ZoneId TZ = ZoneId.of("Europe/Budapest");
 

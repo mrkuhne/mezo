@@ -108,6 +108,7 @@ Entity: `…/feature/auth/entity/UserProfileEntity.java`. Repository: `UserProfi
 **Ownership base** (every *owned* domain table — NOT `app_user`):
 - `OwnedEntity` (`…/techcore/persistence/OwnedEntity.java`, `@MappedSuperclass`): `created_by uuid NOT NULL updatable=false`, `is_deleted boolean default false`, `created_at`. Extended by `WeightLogEntity`, Train entities, etc.
 - `OwnedRepository<T>` (`…/techcore/persistence/OwnedRepository.java`, `@NoRepositoryBean`): `findAllOwned(UUID createdBy)` = JPQL `where e.createdBy = :createdBy and e.deleted = false order by e.date asc`. Belt-and-braces with each entity's `@SQLRestriction` — the in-repo comment says keep both.
+- `OwnershipGuard` (`…/techcore/persistence/OwnershipGuard.java`, static utility): `ownedOrThrow(Optional<T extends OwnedEntity>, UUID createdBy)` + the canonical `notFound()` (`RESOURCE_NOT_FOUND`, HTTP 404) — the **foreign-row == 404 invariant in one tested place**. By-id reads gate through it (Train/Running/Workout services, the train-side signal calculators) instead of hand-rolling the filter + throw, so a row owned by someone else is indistinguishable from a missing one.
 
 **Endpoints** (auth feature) — contract source: [`api/feature/auth/auth.yml`](../../api/feature/auth/auth.yml) (tag `Auth`, "Single-user thin auth (owner login)").
 | Verb | Path | Auth | Body → Response | Errors |

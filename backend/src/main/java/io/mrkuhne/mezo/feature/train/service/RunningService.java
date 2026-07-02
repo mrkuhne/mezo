@@ -7,7 +7,7 @@ import io.mrkuhne.mezo.api.dto.RunningBlockUpsertRequest;
 import io.mrkuhne.mezo.feature.progression.ProgressionGate;
 import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
 import io.mrkuhne.mezo.feature.progression.run.RunSignal;
-import io.mrkuhne.mezo.feature.progression.run.RunSignalCalculator;
+import io.mrkuhne.mezo.feature.train.signal.RunSignalCalculator;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;

@@ -13,7 +13,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.progression.ProgressionGate;
 import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
-import io.mrkuhne.mezo.feature.progression.gym.GymSignalCalculator;
+import io.mrkuhne.mezo.feature.train.signal.GymSignalCalculator;
 import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;

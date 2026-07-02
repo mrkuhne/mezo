@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.SkillRef;
 import io.mrkuhne.mezo.feature.progression.PerkCatalog;
 import io.mrkuhne.mezo.feature.progression.ProgressionCurve;
 import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
+import io.mrkuhne.mezo.feature.progression.RobustnessSource;
 import io.mrkuhne.mezo.feature.progression.config.ProgressionProperties;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpEventEntity;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
@@ -51,7 +52,7 @@ public class ProgressionService {
     private final PerkUnlockRepository perkUnlockRepository;
     private final ProgressionCurve curve;
     private final PerkCatalog perkCatalog;
-    private final RobustnessCalculator robustnessCalculator;
+    private final RobustnessSource robustnessSource;
     private final ProgressionProperties properties;
 
     @Transactional
@@ -198,7 +199,7 @@ public class ProgressionService {
 
         return ProgressionProfileResponse.builder()
             .athleteLevel(athleteLevel)
-            .streakWeeks(robustnessCalculator.streakWeeks(createdBy))
+            .streakWeeks(robustnessSource.streakWeeks(createdBy))
             .athletic(athletic).muscle(muscle).radarAxes(axes).highlights(highlights)
             .build();
     }
@@ -285,7 +286,7 @@ public class ProgressionService {
         }
 
         // robustness (streak-only, absolute target → idempotent within a week)
-        int streak = robustnessCalculator.streakWeeks(createdBy);
+        int streak = robustnessSource.streakWeeks(createdBy);
         long robustnessTarget = (long) streak * properties.robustness().perWeekXp();
         SkillProgressEntity rob = skillProgressRepository
             .findByCreatedByAndSkillKey(createdBy, "robustness").orElseGet(() -> {
