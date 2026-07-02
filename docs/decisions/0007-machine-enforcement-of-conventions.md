@@ -47,9 +47,12 @@ mezo-oa3; `ci.yml` gates quality, not releases):
 
 - Convention violations in migrations, docs and the API contract now fail visibly on `main`
   pushes and PRs instead of rotting silently; agents get a red check instead of a prose rule.
-- `deploy.yml` is untouched — a failing `ci.yml` does **not** block a deploy yet. Whether
-  deploys should be gated on `ci` success is deliberately deferred to mezo-ah18.5 (the test
-  job), where the cost/benefit is clearer.
+- `deploy.yml` is untouched — a failing `ci.yml` does **not** block a deploy. **Decided with
+  mezo-ah18.5:** deploys stay independent of `ci`. Gating would delay every release by the IT
+  suite (~5+ min) and require rebuilding `deploy.yml` around `workflow_run` semantics; for a
+  single-user app with trivial ArgoCD rollback and a mandated local pre-push gate, fix-forward
+  on a red `ci` run is cheaper than slowing every deploy. Revisit if a second user or a real
+  outage cost appears.
 - Two more scripts to maintain (`lint-liquibase.mjs`; `lint-docs.mjs` gained `--errors-only`),
   both dependency-free Node.
 - Grandfathered exemptions live as an explicit allowlist inside `lint-liquibase.mjs` — never

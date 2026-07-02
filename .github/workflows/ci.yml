@@ -1,8 +1,9 @@
 name: ci
-# Convention gates (mezo-ah18.4) — cheap static checks that keep the house
-# standards machine-enforced. Deliberately SEPARATE from deploy.yml so the
-# deploy path stays fast (mezo-oa3); this workflow gates quality, not releases.
-# The heavier test job (both FE modes + backend ITs) is tracked in mezo-ah18.5.
+# Convention + test gates (mezo-ah18.4 lint/drift; mezo-ah18.5 tests).
+# Deliberately SEPARATE from deploy.yml so the deploy path stays fast
+# (mezo-oa3); this workflow gates quality, not releases — deploys are NOT
+# gated on it (decision recorded in ADR 0007). A red run on main means
+# fix-forward before starting new work.
 # See docs/decisions/0007-machine-enforcement-of-conventions.md for the why.
 on:
   push:
@@ -61,3 +62,46 @@ jobs:
         run: |
           git diff --exit-code -- api/openapi.yml frontend/src/data/_client/api.gen.ts \
             || { echo '::error::Generated contract artifacts are stale. Run: cd api/generate && npm run generate:api; cd frontend && pnpm generate:api — then commit.'; exit 1; }
+
+  test-frontend:
+    # The CLAUDE.md gate, machine-enforced: vitest must be green in BOTH modes
+    # (real-mode default + VITE_USE_MOCK=true). Includes the dualMode.guard test.
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Tests (real mode)
+        run: pnpm test
+      - name: Tests (mock mode)
+        env:
+          VITE_USE_MOCK: "true"
+        run: pnpm test
+
+  test-backend:
+    # Full IT suite on a throwaway Testcontainers Postgres (no fixed-DB
+    # dependency; ubuntu-latest ships Docker). Same command as the CI variant
+    # documented in CLAUDE.md "Build & Test".
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4    # full repo so ../api contract is present
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+      - name: Integration tests (Testcontainers Postgres)
+        run: ./mvnw -B clean test -Dmezo.test.use-testcontainers=true
