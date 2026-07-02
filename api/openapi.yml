@@ -3964,11 +3964,11 @@ components:
           description: 'Day-planner: eating occasions per day'
         wakeTime:
           type: string
-          pattern: '^\d{2}:\d{2}$'
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
           description: 'Day-planner wake anchor, HH:mm'
         bedTime:
           type: string
-          pattern: '^\d{2}:\d{2}$'
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
           description: 'Day-planner bed anchor, HH:mm'
         tdeeBootstrap:
           allOf:
@@ -4180,11 +4180,11 @@ components:
           description: 'Day-planner: eating occasions per day'
         wakeTime:
           type: string
-          pattern: '^\d{2}:\d{2}$'
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
           description: 'Day-planner wake anchor, HH:mm'
         bedTime:
           type: string
-          pattern: '^\d{2}:\d{2}$'
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
           description: 'Day-planner bed anchor, HH:mm'
     FeasibilityPreviewRequest:
       type: object

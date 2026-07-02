@@ -55,6 +55,13 @@ public class GoalEntity extends OwnedEntity {
     @NotNull @Column(name = "rate_target_pct_per_week", nullable = false) private BigDecimal rateTargetPctPerWeek;
     @Column(name = "identity_frame") private String identityFrame;
 
+    // Fuel P5 day-planner settings (mezo-9ys): eating-occasion count + wake/bed anchors (HH:mm).
+    // Column is smallint (3..6, DB CHECK); SMALLINT jdbc type so schema-validation matches int2.
+    @JdbcTypeCode(SqlTypes.SMALLINT)
+    @Column(name = "meals_per_day") private Integer mealsPerDay;
+    @Column(name = "wake_time") private String wakeTime;
+    @Column(name = "bed_time") private String bedTime;
+
     // Engine outputs — null until the first evaluate (G5). Typed jsonb, app-ObjectMapper serialized.
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tdee_bootstrap", columnDefinition = "jsonb")

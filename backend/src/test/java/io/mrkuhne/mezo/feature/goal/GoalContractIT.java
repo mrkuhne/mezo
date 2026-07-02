@@ -64,6 +64,53 @@ class GoalContractIT extends ApiIntegrationTest {
         assertHasFieldError(body, "targetDate", "VALIDATION_INVALID_VALUE");
     }
 
+    // ── Fuel P5 day-planner settings round-trip (mezo-9ys) ──────────────────────────────────────────
+
+    @Test
+    void testCreateGoal_shouldRoundTripPlannerSettings_whenProvided() {
+        HttpHeaders auth = ownerAuthHeaders();
+        GoalResponse created = postForBody("/api/goals",
+            req().mealsPerDay(4).wakeTime("06:00").bedTime("23:00").build(),
+            auth, HttpStatus.CREATED, GoalResponse.class);
+        assertThat(created.getMealsPerDay()).isEqualTo(4);
+        assertThat(created.getWakeTime()).isEqualTo("06:00");
+        assertThat(created.getBedTime()).isEqualTo("23:00");
+
+        // The columns persisted — a follow-up GET echoes them back.
+        GoalResponse refetched = getForBody("/api/goals/" + created.getId(), auth, HttpStatus.OK, GoalResponse.class);
+        assertThat(refetched.getMealsPerDay()).isEqualTo(4);
+        assertThat(refetched.getWakeTime()).isEqualTo("06:00");
+        assertThat(refetched.getBedTime()).isEqualTo("23:00");
+    }
+
+    @Test
+    void testUpdateGoal_shouldKeepPlannerSettingsNull_whenOmitted() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // Create WITH planner settings, then PUT WITHOUT them — the omitted fields round-trip to null.
+        GoalResponse created = postForBody("/api/goals",
+            req().mealsPerDay(4).wakeTime("06:00").bedTime("23:00").build(),
+            auth, HttpStatus.CREATED, GoalResponse.class);
+
+        GoalResponse updated = putForBody("/api/goals/" + created.getId(), req().build(),
+            auth, HttpStatus.OK, GoalResponse.class);
+        assertThat(updated.getMealsPerDay()).isNull();
+        assertThat(updated.getWakeTime()).isNull();
+        assertThat(updated.getBedTime()).isNull();
+
+        GoalResponse refetched = getForBody("/api/goals/" + created.getId(), auth, HttpStatus.OK, GoalResponse.class);
+        assertThat(refetched.getMealsPerDay()).isNull();
+        assertThat(refetched.getWakeTime()).isNull();
+        assertThat(refetched.getBedTime()).isNull();
+    }
+
+    @Test
+    void testCreateGoal_shouldReject_whenWakeTimeMalformed() {
+        // "6:00" is missing the leading hour digit → fails the HH:mm pattern → 400 FIELD error on wakeTime.
+        String body = postForBody("/api/goals", req().wakeTime("6:00").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "wakeTime", "VALIDATION_INVALID_VALUE");
+    }
+
     @Test
     void testActivateGoal_shouldFlipStatusToActive_whenCalled() {
         HttpHeaders auth = ownerAuthHeaders();
