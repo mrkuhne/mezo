@@ -764,6 +764,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/water-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log a discrete water intake entry (day rollup feeds FuelDayResponse.consumed.water) */
+        post: operations["logWater"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/water-log/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Soft-delete a water entry (undo) */
+        delete: operations["deleteWaterLog"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/medication": {
         parameters: {
             query?: never;
@@ -1930,6 +1964,21 @@ export interface components {
             targets: components["schemas"]["MacroSet"];
             consumed: components["schemas"]["MacroSet"];
             meals: components["schemas"]["MealResponse"][];
+        };
+        WaterLogRequest: {
+            /**
+             * Format: date
+             * @description Day key; defaults to the server's today when omitted
+             */
+            date?: string;
+            amountMl: number;
+        };
+        WaterLogResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            date: string;
+            amountMl: number;
         };
         MedicationPhase: {
             /** @enum {string} */
@@ -4516,6 +4565,86 @@ export interface operations {
         };
     };
     deleteMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    logWater: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WaterLogRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WaterLogResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteWaterLog: {
         parameters: {
             query?: never;
             header?: never;
