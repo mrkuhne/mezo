@@ -4,30 +4,42 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
+import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Verifies the formula-TDEE bootstrap against the spec's worked numbers (spec §6.1 + grounded
  * research {@code docs/research/queries/2026-06-18-goal-engine-numbers.md}).
  *
- * <p>Uses the real bound {@link io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties} (PAL
- * bands from {@code application.yml}), but builds {@link BiometricProfileEntity} in-memory — the
- * service is pure (no DB read), so no persistence is needed. Birth dates are derived from
- * {@code LocalDate.now()} so the age-based assertions are stable on any run date.
+ * <p>Pure logic: no Spring context (model: {@code ProgressionCurveTest}). The service is
+ * stateless and reads only {@code props.pal()}, so the properties record is built by hand with
+ * the application.yml defaults — the yml→record binding itself is covered by
+ * {@code GoalEnginePropertiesIT}. Builds {@link BiometricProfileEntity} in-memory (the service
+ * is pure, no DB read). Birth dates are derived from {@code LocalDate.now()} so the age-based
+ * assertions are stable on any run date.
  */
-@SpringBootTest
-class TdeeBootstrapServiceIT {
+class TdeeBootstrapServiceTest {
 
     /** kcal tolerance — covers double↔BigDecimal rounding across the BMR×PAL chain. */
     private static final BigDecimal TOL = new BigDecimal("0.6");
 
-    @Autowired
-    private TdeeBootstrapService service;
+    // Only pal() is read by the service; the other components are required by the record but
+    // irrelevant here — they mirror the application.yml defaults for completeness.
+    private final TdeeBootstrapService service = new TdeeBootstrapService(
+        new GoalEngineProperties(
+            new GoalEngineProperties.Pal(1.2, 1.375, 1.55, 1.725, 1.9),
+            7700,
+            new GoalEngineProperties.Protein(2.0, 1.6, 2.2, 2.3, 3.1, 2.6),
+            new GoalEngineProperties.Rate(0.7, 1.0, 0.5, 1.0),
+            new GoalEngineProperties.Volume(8, 6),
+            new GoalEngineProperties.Strength(-5.0),
+            new GoalEngineProperties.Ewma(10),
+            new GoalEngineProperties.Met(325, 500, 500, 1150),
+            0,
+            300));
 
     /** A 35-year-old today: birthDate = today − 35 years (mid-year to dodge birthday edges). */
     private static LocalDate birthDateForAge(int years) {
