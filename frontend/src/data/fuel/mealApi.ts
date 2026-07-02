@@ -81,4 +81,6 @@ export const mealApi = {
     apiFetch(`/api/meal/${id}`, { method: 'PUT', body: JSON.stringify(toRequest(input)) }).then(() => undefined),
   remove: (id: string): Promise<void> =>
     apiFetch(`/api/meal/${id}`, { method: 'DELETE' }).then(() => undefined),
+  logWater: (date: string, amountMl: number): Promise<void> =>
+    apiFetch('/api/water-log', { method: 'POST', body: JSON.stringify({ date, amountMl }) }).then(() => undefined),
 }

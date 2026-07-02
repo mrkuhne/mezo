@@ -386,6 +386,8 @@ export const handlers = [
   }),
   http.put(`${API_BASE}/api/meal/:id`, () => new HttpResponse(null, { status: 204 })),
   http.delete(`${API_BASE}/api/meal/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/water-log`, () =>
+    HttpResponse.json({ id: 'w1', date: '2026-07-02', amountMl: 250 }, { status: 201 })),
 
   // Medication (mezo-d94) — defaults; tests override with server.use() for payload capture.
   // GET day returns the fixture; POST dose echoes a new dose; DELETE dose / PUT med 204/200.

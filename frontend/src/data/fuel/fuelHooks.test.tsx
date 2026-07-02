@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useFuelDay, useMealActions } from '@/data/fuel/fuelHooks'
+import { useFuelDay, useMealActions, useWaterActions } from '@/data/fuel/fuelHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { MealInput } from '@/data/types'
@@ -131,5 +131,38 @@ describe('useFuelDay (real mode)', () => {
       expect(keys).toContain(JSON.stringify(['recipes']))
       expect(keys).toContain(JSON.stringify(['pantry']))
     })
+  })
+})
+
+describe('useWaterActions (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+
+  it('increments consumed.water and survives a subsequent meal log', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => ({ day: useFuelDay(), water: useWaterActions(), meals: useMealActions() }), { wrapper: Wrapper })
+    const before = result.current.day.fuel.consumed.water
+    act(() => result.current.water.logWater(250))
+    await waitFor(() => expect(result.current.day.fuel.consumed.water).toBe(before + 250))
+    act(() => result.current.meals.logMeal({ slot: 'snack', items: [] }))
+    await waitFor(() => expect(result.current.day.fuel.consumed.water).toBe(before + 250))
+  })
+})
+
+describe('useWaterActions (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('POSTs /api/water-log and invalidates fuelDay', async () => {
+    const posted: unknown[] = []
+    server.use(http.post(`${API_BASE}/api/water-log`, async ({ request }) => {
+      posted.push(await request.json())
+      return HttpResponse.json({ id: 'w1', date: '2026-07-02', amountMl: 250 }, { status: 201 })
+    }))
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => useWaterActions('2026-07-02'), { wrapper: Wrapper })
+    act(() => result.current.logWater(250))
+    await waitFor(() => expect(posted).toHaveLength(1))
+    expect(posted[0]).toEqual({ date: '2026-07-02', amountMl: 250 })
+    await waitFor(() => expect(spy.mock.calls.some(c => JSON.stringify(c[0]).includes('fuelDay'))).toBe(true))
   })
 })
