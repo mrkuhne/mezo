@@ -64,7 +64,7 @@ Real path — CHECK-IN SAVE ONLY (write-only):
         → CheckInMapper.toResponse → CheckInResponse   ← result DISCARDED on the FE
 ```
 
-Key behavioral facts (all in `hooks.ts`):
+Key behavioral facts (the Today hooks live in `data/today/todayHooks.ts` + `data/today/checkinHooks.ts`, re-exported by the `hooks.ts` barrel; line refs below are historical):
 - `useTodayScenario` (19–33): `dayState` falls back to `'medium'` for anything other than `good`/`rough`; `anchorMode = dayState === 'rough'`. The `retaDay` base derives from `useMedication().cycle.retaDay` in real mode (falling back to `today.retaDay` when 0), `today.retaDay` in mock mode, with the `?retaDay=` URL override on top (mezo-d94). **Called in three places now** — `TodayPage` (branch to AnchorMode), `AppLayout` (passes `anchor` to `PhoneFrame` for the warm canvas), and `FuelPlanPage`/`FuelMaiPage` (Reta surfaces) — so both `anchorMode` consumers must derive it identically, and every consumer now issues a `['medication']` query (tests need a `QueryClientProvider`).
 - `resolveBriefing` (32–35): `briefingVariants.medium` is `null`, so `medium` returns the base `briefing`; `good`/`rough` spread their `Partial<Briefing>` over the base.
 - `useCheckins` (41–65): local `useState`; `saveCheckIn` updates the slot in place, and in real mode builds a `SaveCheckInBody` (`date = localDateString()` local-tz, `slotTime = slot.time`, `state` defaulting to `'done'`, the four dims, the note) and fires `mutation.mutate`. On error it only `console.error`s — no UI rollback, no toast. The `CheckInResponse` (with the server `id`) is **discarded**; the strip is never reconciled with the server.
