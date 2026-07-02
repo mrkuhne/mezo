@@ -9,23 +9,34 @@ import type { BuiltProtocol, ProtocolSlotData, ProtocolSlotItem, Reasoning, Supp
 // ============================================================
 export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[]): BuiltProtocol {
   const items = stash.filter(i => selectedIds.includes(i.id))
-  const byId = (id: string) => items.find(i => i.id === id)
+  // Match stash items by name/id substring (lowercased) instead of mock slug ids:
+  // in real mode ids are backend UUIDs and names come from the real catalog, so
+  // slug lookups (byId('kreatin')) silently miss. Needles are lowercase; pick
+  // ones that avoid accent pitfalls (e.g. 'magn' matches 'Magnézium…').
+  const norm = (s: string) => s.toLowerCase()
+  const find = (...needles: string[]) =>
+    items.find(i => needles.some(n => norm(i.name).includes(n) || norm(i.id).includes(n)))
 
   const slots: ProtocolSlotData[] = []
   const reasoning: Reasoning[] = []
 
-  // Wake / morning caffeine + kreatin
-  const morningCaff = byId('kohi') || byId('caffeine200')
-  const kreatin = byId('kreatin')
+  // Wake / morning caffeine + kreatin.
+  // Prefer coffee/espresso over the caffeine tablet (mirrors the original
+  // byId('kohi') || byId('caffeine200') preference) so the item label stays right.
+  const coffee = find('kávé', 'kohi', 'espresso')
+  const caffTab = find('koffein', 'caffeine')
+  const morningCaff = coffee || caffTab
+  const kreatin = find('kreatin')
   if (morningCaff || kreatin) {
     const wakeItems: ProtocolSlotItem[] = []
     if (morningCaff)
       wakeItems.push({
-        name: morningCaff.id === 'kohi' ? 'Espresso · 1 shot' : 'Koffein 200mg',
+        refId: morningCaff.id,
+        name: morningCaff === coffee ? 'Espresso · 1 shot' : 'Koffein 200mg',
         dose: morningCaff.dose,
         color: 'var(--warning)',
       })
-    if (kreatin) wakeItems.push({ name: 'Kreatin', dose: '5g vízben', color: 'var(--brand-glow)' })
+    if (kreatin) wakeItems.push({ refId: kreatin.id, name: 'Kreatin', dose: '5g vízben', color: 'var(--brand-glow)' })
     slots.push({
       time: '05:50',
       window: 'wake',
@@ -41,16 +52,18 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
 
   // Pre-workout snack window
   // NOTE (adaptation vs prototype): the prototype pushes this slot
-  // unconditionally; here it is gated on a non-empty selection so that an
-  // empty selection yields zero slots (per Task 18 empty-selection contract).
-  if (items.length > 0) {
+  // unconditionally; here it is gated on whey being in the selection so the
+  // emitted item carries a real stash refId (and an empty selection still
+  // yields zero slots — the Task 18 empty-selection contract holds).
+  const whey = find('whey', 'protein')
+  if (whey) {
     slots.push({
       time: '06:20',
       window: 'pre-snack',
       kind: 'pre-fuel',
       kindColor: 'var(--info)',
       relatedTo: 'T-70min gym',
-      items: [{ name: 'Whey 20g + banán', dose: '180kcal · 21P', color: 'var(--brand-glow)' }],
+      items: [{ refId: whey.id, name: 'Whey 20g + banán', dose: '180kcal · 21P', color: 'var(--brand-glow)' }],
       reasoning:
         'Gyors-szénhidrát + komplett protein · Reta D3 reggel még magas étvágy mellett ez könnyen lemegy. Glikogén pre-loading a Pull Day-re.',
       primary: false,
@@ -58,12 +71,12 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
   }
 
   // Pre-workout stack
-  const aakg = byId('aakg')
-  const beta = byId('betaalanin')
+  const aakg = find('aakg')
+  const beta = find('beta-alanin', 'betaalanin', 'béta-alanin')
   if (aakg || beta) {
     const preItems: ProtocolSlotItem[] = []
-    if (aakg) preItems.push({ name: 'AAKG · L-Arginine', dose: aakg.dose, color: 'var(--warning)' })
-    if (beta) preItems.push({ name: 'Beta-Alanin', dose: beta.dose, color: 'var(--warning)' })
+    if (aakg) preItems.push({ refId: aakg.id, name: 'AAKG · L-Arginine', dose: aakg.dose, color: 'var(--warning)' })
+    if (beta) preItems.push({ refId: beta.id, name: 'Beta-Alanin', dose: beta.dose, color: 'var(--warning)' })
     slots.push({
       time: '06:50',
       window: 'T-40min',
@@ -83,7 +96,7 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
   }
 
   // Midday: D3 + K2 with lunch
-  const d3 = byId('d3k2')
+  const d3 = find('d3')
   if (d3) {
     slots.push({
       time: '12:30',
@@ -91,7 +104,7 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
       kind: 'fat-bound',
       kindColor: 'var(--info)',
       relatedTo: 'ebéd zsírral',
-      items: [{ name: 'D3 + K2', dose: d3.dose, color: 'var(--info)' }],
+      items: [{ refId: d3.id, name: 'D3 + K2', dose: d3.dose, color: 'var(--info)' }],
       reasoning:
         'Zsírban oldódó vitaminok · ebéddel (olívaolaj + csirke fat) a felszívódás akár 3-4× jobb mint éhgyomorra. K2 megakadályozza hogy a Ca rossz helyre menjen.',
       primary: false,
@@ -111,12 +124,12 @@ export function buildProtocol(selectedIds: string[], stash: SupplementStashItem[
   })
 
   // Evening: Mg + Omega-3
-  const mg = byId('magnez')
-  const omega = byId('omega3')
+  const mg = find('magn')
+  const omega = find('omega')
   if (mg || omega) {
     const eveningItems: ProtocolSlotItem[] = []
-    if (mg) eveningItems.push({ name: 'Magnézium-glicinát', dose: mg.dose, color: 'var(--cat-preference)' })
-    if (omega) eveningItems.push({ name: 'Omega-3 (vacsorához)', dose: omega.dose, color: 'var(--cat-physiology)' })
+    if (mg) eveningItems.push({ refId: mg.id, name: 'Magnézium-glicinát', dose: mg.dose, color: 'var(--cat-preference)' })
+    if (omega) eveningItems.push({ refId: omega.id, name: 'Omega-3 (vacsorához)', dose: omega.dose, color: 'var(--cat-physiology)' })
     slots.push({
       time: '21:00',
       window: 'T-2h sleep',
