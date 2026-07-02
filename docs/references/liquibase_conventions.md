@@ -8,51 +8,51 @@ src/main/resources/db/changelog/
 ├── 1.0.0/
 │   ├── 1.0.0_master.yml
 │   └── script/
-│       └── 202601150930_F001_create_users_table.sql
+│       └── 202606101300_mezo-v67_create_weight_log.sql
 └── 1.1.0/
     ├── 1.1.0_master.yml
     └── script/
-        └── 202602031415_F002_add_email_column.sql
+        └── 202607021015_mezo-ah18_add_note_column.sql
 ```
 
 ## ChangeSet Format
 
 ```yaml
 - changeSet:
-    id: 1.2.0:202604221430_F006_task_short_description
+    id: 1.0.0:202606101300_mezo-v67_create_weight_log
     author: firstname.lastname
     changes:
       - sqlFile:
           relativeToChangelogFile: true
-          path: script/202604221430_F006_task_short_description.sql
+          path: script/202606101300_mezo-v67_create_weight_log.sql
 ```
 
 | Field | Rule | Example |
 |---|---|---|
-| `id` | `{version}:{YYYYMMDDHHMM}_F{NNN}_{short_description}` | `1.2.0:202604221430_F006_add_user_email` |
+| `id` | `{version}:{YYYYMMDDHHMM}_{bd-id}_{short_description}` | `1.0.0:202606101300_mezo-v67_create_weight_log` |
 | `author` | Email prefix | `john.doe` |
-| `path` | Under `script/`, prefixed with `{YYYYMMDDHHMM}_F{NNN}_` | `script/202604221430_F006_add_user_email.sql` |
+| `path` | Under `script/`, prefixed with `{YYYYMMDDHHMM}_{bd-id}_` | `script/202606101300_mezo-v67_create_weight_log.sql` |
 
 ### Filename prefix rule
 
-Every script filename (and matching changeSet `id` suffix) **MUST** start with `{YYYYMMDDHHMM}_F{NNN}_` where:
+Every script filename (and matching changeSet `id` suffix) **MUST** start with `{YYYYMMDDHHMM}_{bd-id}_` where:
 
 - `{YYYYMMDDHHMM}` — the UTC minute the changeset was first authored (exactly 12 digits).
-- `F{NNN}` — the spec-kit feature ID driving the change, zero-padded to 3 digits (e.g. `F001`, `F042`). Matches the folder name under `specs/` (e.g. `specs/006-…/` → `F006`).
+- `{bd-id}` — the **driving beads issue ID** exactly as issued (e.g. `mezo-v67`, `mezo-n5q`). `bd show <id>` must resolve to the work that motivated the migration.
 
 Rationale:
 
 - **Timestamp** guarantees deterministic chronological ordering inside a version folder, independent of filesystem sort locale, and makes `git log` archaeology trivial.
-- **Feature prefix** lets you trace every migration back to the spec that motivated it — critical when diagnosing a migration in production or writing a rollback PR months later.
+- **Issue prefix** lets you trace every migration back to the bd issue that motivated it — critical when diagnosing a migration in production or writing a rollback months later.
 - Prevents duplicate `id`s when two features land in the same release version.
 
 Rules:
 
 - Timestamp: exactly 12 digits, UTC, minute granularity. Do not add seconds.
-- Feature ID: always `F` + 3 digits, even for single-digit features (`F007`, not `F7`).
-- Both parts are assigned **once** at creation and are immutable — never rename a released changeset to "fix" its timestamp or feature ID (see Core Rule #1).
+- Issue ID: the beads ID verbatim, lowercase (`mezo-v67`) — never invent or abbreviate one.
+- Both parts are assigned **once** at creation and are immutable — never rename a released changeset to "fix" its timestamp or issue ID (see Core Rule #1).
 - If two scripts would collide within the same minute, bump one of them by one minute — do not add suffixes like `_a` / `_b`.
-- If a single feature needs multiple migrations, each gets its own timestamp; the `F{NNN}` stays the same.
+- If a single issue needs multiple migrations, each gets its own timestamp; the `{bd-id}` stays the same.
 
 ## Core Rules
 
@@ -71,10 +71,10 @@ Rules:
 Feature-based, not table-based.
 
 ```
-# ✅ CORRECT — timestamp + feature ID + description
+# ✅ CORRECT — timestamp + bd issue ID + description
 script/
-├── 202604221430_F006_add_user_registration.sql
-└── 202604231015_F007_add_payment_tables.sql
+├── 202606101300_mezo-v67_create_weight_log.sql
+└── 202606111400_mezo-n5q_create_train.sql
 
 # ❌ WRONG — table-based
 script/
@@ -82,11 +82,11 @@ script/
 ├── users_dml.sql
 └── roles_ddl.sql
 
-# ❌ WRONG — missing timestamp or feature prefix
+# ❌ WRONG — missing timestamp or issue prefix
 script/
-├── add_user_registration.sql
-├── F006_add_user_registration.sql
-└── 202604221430_add_user_registration.sql
+├── create_weight_log.sql
+├── mezo-v67_create_weight_log.sql
+└── 202606101300_create_weight_log.sql
 ```
 
 ### 3. Entity annotations must mirror constraints
@@ -109,18 +109,23 @@ private String username;
 
 ### 4. DDL and DML in same file
 
+Primary keys are **UUID** in this project (`gen_random_uuid()`), and every constraint gets an
+explicit name (see Constraint Naming). Backfill DML that migrates existing rows is allowed
+here; **seed/demo data is not** (see Demo / Seed Data).
+
 ```sql
--- 202604221430_F006_add_user_registration.sql
+-- 202607021015_mezo-ah18_add_user_profile.sql
 
 -- DDL
 CREATE TABLE user_profile (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT NOT NULL
+    id UUID DEFAULT gen_random_uuid(),
+    created_by UUID NOT NULL,
+    CONSTRAINT pk_user_profile_id PRIMARY KEY (id)
 );
 
--- DML
-INSERT INTO user_profile (user_id)
-SELECT id FROM users WHERE profile_id IS NULL;
+-- DML (backfill of existing data — allowed; seed data is NOT)
+INSERT INTO user_profile (created_by)
+SELECT id FROM app_user WHERE profile_id IS NULL;
 ```
 
 ## Constraint Naming (REQUIRED)
@@ -147,6 +152,18 @@ ADD FOREIGN KEY (user_id) REFERENCES users(id);
 ```
 
 **Max constraint name length: 63 characters** (PostgreSQL limit).
+
+## Indexing Convention (owned tables)
+
+Every domain table is owner-scoped (`created_by`) and every repository query filters on it, so:
+
+- **Lead composite indexes with `created_by`**, then the common filter/sort column:
+  `idx_<table>_created_by_date`, `idx_<table>_created_by_status`. This is the established
+  pattern across the slices — follow it for every new owned table.
+- **Index every FK column** used for child-by-parent lookups (`idx_<table>_<parent>_id`).
+- Before finishing a migration, check the feature's repository methods: **every derived query
+  must have a supporting index** (a `findByCreatedByAndX` needs an index leading with
+  `created_by`; a child-table query via the parent FK can lean on the FK index).
 
 ## Demo / Seed Data
 
@@ -177,7 +194,7 @@ public class ExerciseSeedData implements CommandLineRunner {
 For the embeddings table with pgvector, use raw SQL since Liquibase doesn't natively support vector types:
 
 ```sql
--- script/202601151045_F001_create_embeddings_pgvector.sql
+-- script/202601151045_mezo-xxx_create_embeddings_pgvector.sql
 
 CREATE EXTENSION IF NOT EXISTS vector;
 
