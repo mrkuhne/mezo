@@ -6,6 +6,8 @@ import { localDateString } from '@/shared/lib/dates'
 import { fuelApi, type Intake, type ProtocolView } from '@/data/fuel/fuelApi'
 import { usePantry } from '@/data/fuel/pantryHooks'
 import { protocol as protocolSeed, supplementsStash } from '@/data/fuel/fuel'
+import { user as userSeed } from '@/data/today/today'
+import { linkedMesocycles as mesoSeed } from '@/data/me/goals'
 import type { Protocol, SupplementStashItem } from '@/data/types'
 
 const PROTOCOL_KEY = ['protocol'] as const
@@ -41,6 +43,21 @@ export function useProtocol(): { protocol: Protocol; selectedIds: string[] | nul
     realStaleTime: 0,
   })
   return { protocol: data.protocol ?? GHOST_PROTOCOL, selectedIds: data.selectedIds }
+}
+
+// Active meso short title, first word — the same value the mock useGoal() produced for the Stack
+// context cell (linkedMesocycles' active entry, e.g. "Hypertrophy 04" → "Hypertrophy").
+const activeMesoShortTitle =
+  Object.values(mesoSeed).find(m => m.status === 'active')?.shortTitle.split(' ')[0] ?? ''
+
+/**
+ * Static context labels for the Stack view's "Mit nézek most" cell (meso week + short title).
+ * These are the exact values the mock useProfile()/useGoal() produced for this card; reading the
+ * seed consts directly decouples the Stack render from the real /api/goals + profile fetches
+ * (mezo-4nu) — nothing on this page needs the live goal timeline. P4/P8 wire these live later.
+ */
+export function useStackContext(): { weekInMeso: number; mesoTitle: string } {
+  return { weekInMeso: userSeed.weekInMeso, mesoTitle: activeMesoShortTitle }
 }
 
 /** The day's supplement intakes — mock derives from the stash's taken flags; real fetches the date. */

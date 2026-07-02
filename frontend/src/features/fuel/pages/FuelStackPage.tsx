@@ -9,27 +9,32 @@
 // reasoning, recommendations, meal matches + CTAs, overlays.
 //
 // Adaptations vs prototype:
-//  - Selection/picker/toast state lives in this component; selectedIds is the
-//    only live input into buildProtocol(selectedIds, stash). Default = every
-//    non-medication stash item, per the prototype.
-//  - "Apply" does NOT mutate any global protocol (the prototype mutates
-//    D.protocol). We only show a toast; its version reads protocol.version + 1
-//    to mirror the value the prototype displayed after its mutation.
-//  - The toast auto-hides via a useEffect + setTimeout keyed on appliedToast
-//    (no Date.now / inline timer).
-//  - Context StatCell values come from the React data layer: meso week from
-//    user.weekInMeso, meso title from the active linkedMesocycle, Reta day +
-//    phase from today; the load/sleep figures match the prototype literals.
+//  - Selection state lives in this component; selectedIds is the only live input
+//    into buildProtocol(selectedIds, stash). Precedence: the user's in-session
+//    edits → the active protocol's saved selection (useProtocol) → every
+//    non-medication stash item (the prototype default).
+//  - "Apply" activates the protocol for real via useProtocolActions().applyProtocol
+//    (mock recomputes the ['protocol'] cache, real POSTs /api/fuel/protocol); the
+//    toast then shows the REAL version returned by the mutation (appliedVersion),
+//    only after it resolves.
+//  - The toast auto-hides via a useEffect + setTimeout keyed on appliedVersion
+//    (no Date.now / inline timer); null = hidden + reset value.
+//  - Each generated slot item is tap-to-log: ProtocolSlot gets takenIds (from the
+//    stash's re-derived intakes) + onToggleItem → logIntake / undoIntake.
+//  - Context StatCell values come from useStackContext (static meso week + short
+//    title seed consts — decoupled from the live /api/goals + profile fetches,
+//    mezo-4nu); Reta day + phase from useToday; load/sleep figures are literals.
 //  - Hex-alpha brand tints → color-mix per the project HEX-ALPHA rule.
 // ============================================================
 import { useEffect, useState } from 'react'
 import {
   useStack,
   useProtocol,
+  useStackActions,
+  useProtocolActions,
+  useStackContext,
   useStackRecommendations,
   useToday,
-  useProfile,
-  useGoal,
 } from '@/data/hooks'
 import { buildProtocol } from '@/features/fuel/logic/buildProtocol'
 import { StackPickerSheet } from '@/features/fuel/sheets/StackPickerSheet'
@@ -48,33 +53,42 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 
 export function FuelStackPage() {
   const { stash } = useStack()
-  const { protocol } = useProtocol()
+  const { selectedIds: activeSelection } = useProtocol()
+  const { logIntake, undoIntake } = useStackActions()
+  const { applyProtocol } = useProtocolActions()
   const { recommendations } = useStackRecommendations()
   const { today } = useToday()
-  const { user } = useProfile()
-  const { linkedMesocycles } = useGoal()
+  const { weekInMeso, mesoTitle } = useStackContext()
 
-  const [selectedIds, setSelectedIds] = useState<string[]>(() =>
-    stash.filter(s => s.type !== 'medication').map(s => s.id),
-  )
+  // Selection precedence: the user's in-session edits win; otherwise the active protocol's
+  // saved selection (null in mock / real-ghost); otherwise every non-medication stash item.
+  const defaultIds = stash.filter(s => s.type !== 'medication').map(s => s.id)
+  const [userSel, setUserSel] = useState<string[] | null>(null)
+  const selectedIds = userSel ?? activeSelection ?? defaultIds
+  const toggle = (id: string) =>
+    setUserSel(prev => {
+      const base = prev ?? selectedIds
+      return base.includes(id) ? base.filter(i => i !== id) : [...base, id]
+    })
+
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [appliedToast, setAppliedToast] = useState(false)
+  // Version returned by applyProtocol() — drives the toast. null = no toast (also the reset value).
+  const [appliedVersion, setAppliedVersion] = useState<number | null>(null)
 
   // Auto-hide the applied toast (no Date.now / inline timer).
   useEffect(() => {
-    if (!appliedToast) return
-    const t = setTimeout(() => setAppliedToast(false), 3200)
+    if (appliedVersion == null) return
+    const t = setTimeout(() => setAppliedVersion(null), 3200)
     return () => clearTimeout(t)
-  }, [appliedToast])
+  }, [appliedVersion])
 
-  const toggle = (id: string) =>
-    setSelectedIds(prev => (prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]))
+  const apply = () => {
+    void applyProtocol(selectedIds).then(view => setAppliedVersion(view.protocol?.version ?? null))
+  }
 
   const built = buildProtocol(selectedIds, stash)
   const selectedItems = selectedIds.map(id => stash.find(s => s.id === id)).filter(s => s != null)
-
-  const activeMeso = Object.values(linkedMesocycles).find(m => m.status === 'active')
-  const mesoTitle = activeMeso ? activeMeso.shortTitle.split(' ')[0] : ''
+  const takenIds = new Set(stash.filter(s => s.taken).map(s => s.id))
 
   return (
     <>
@@ -94,7 +108,7 @@ export function FuelStackPage() {
         <div className="card notch-12" style={{ padding: 14 }}>
           <Eyebrow brand>Mit nézek most</Eyebrow>
           <div className="row gap-md mt-md" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <StatCell label="Meso" val={'W' + user.weekInMeso} sub={today.mesoPhase + ' · ' + mesoTitle} color="var(--brand-glow)" />
+            <StatCell label="Meso" val={'W' + weekInMeso} sub={today.mesoPhase + ' · ' + mesoTitle} color="var(--brand-glow)" />
             <StatCell label="Reta" val={'D' + today.retaDay} sub="stable ablak" color="var(--reta-d3)" />
             <StatCell label="Heti load" val="5+4" sub="gym + vb" color="var(--cat-tendency)" />
             <StatCell label="Alvás" val="7.5h" sub="14d átlag" color="var(--cat-preference)" />
@@ -165,7 +179,12 @@ export function FuelStackPage() {
         </div>
         <div className="col gap-sm">
           {built.slots.map((slot, i) => (
-            <ProtocolSlot key={i} slot={slot} />
+            <ProtocolSlot
+              key={i}
+              slot={slot}
+              takenIds={takenIds}
+              onToggleItem={(refId, taken) => (taken ? undoIntake(refId) : logIntake(refId))}
+            />
           ))}
           {built.slots.length === 0 && (
             <div className="card notch-4" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
@@ -193,18 +212,20 @@ export function FuelStackPage() {
         </div>
       )}
 
-      {/* Recommendations */}
-      <div style={{ padding: '16px 24px 8px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-          <Eyebrow brand>Mit hozzáadnék</Eyebrow>
-          <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>auto-discover</span>
+      {/* Recommendations — hidden when the backend has none (real mode defers them) */}
+      {recommendations.length > 0 && (
+        <div style={{ padding: '16px 24px 8px' }}>
+          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
+            <Eyebrow brand>Mit hozzáadnék</Eyebrow>
+            <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>auto-discover</span>
+          </div>
+          <div className="col gap-sm">
+            {recommendations.map((rec, i) => (
+              <RecommendationCard key={i} rec={rec} />
+            ))}
+          </div>
         </div>
-        <div className="col gap-sm">
-          {recommendations.map((rec, i) => (
-            <RecommendationCard key={i} rec={rec} />
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Meal recommendations */}
       <div style={{ padding: '16px 24px 24px' }}>
@@ -219,10 +240,10 @@ export function FuelStackPage() {
         </div>
 
         <div className="row gap-sm mt-lg">
-          <button className="cta-ghost notch-4 flex-1">
-            <Icon name="bookmark" size={12} /> Mentés protokollként
+          <button className="cta-ghost notch-4 flex-1" disabled style={{ opacity: 0.5 }}>
+            <Icon name="bookmark" size={12} /> Mentés protokollként · hamarosan
           </button>
-          <button className="cta-primary notch-4 flex-1" onClick={() => setAppliedToast(true)}>
+          <button className="cta-primary notch-4 flex-1" onClick={apply}>
             <Icon name="check" size={14} /> Bekapcsolás · ma
           </button>
         </div>
@@ -232,7 +253,7 @@ export function FuelStackPage() {
         <StackPickerSheet selectedIds={selectedIds} onToggle={toggle} onClose={() => setPickerOpen(false)} />
       )}
 
-      {appliedToast && (
+      {appliedVersion != null && (
         <div
           className="toast notch-12"
           style={{
@@ -251,7 +272,7 @@ export function FuelStackPage() {
             <Icon name="sparkle" size={14} color="var(--brand-glow)" />
             <div className="col flex-1">
               <span className="label-mono brand" style={{ fontSize: 9 }}>
-                Protokoll · v{protocol.version + 1} aktív
+                Protokoll · v{appliedVersion} aktív
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>
                 Mai timeline frissítve · {selectedIds.length} item
