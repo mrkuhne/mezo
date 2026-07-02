@@ -148,6 +148,9 @@ components:
         targetWeightKg: { type: number, nullable: true }
         rateTargetPctPerWeek: { type: number }
         identityFrame: { type: string, nullable: true }
+        mealsPerDay: { type: integer, minimum: 3, maximum: 6, description: 'Day-planner: eating occasions per day' }
+        wakeTime: { type: string, pattern: '^\d{2}:\d{2}$', description: 'Day-planner wake anchor, HH:mm' }
+        bedTime: { type: string, pattern: '^\d{2}:\d{2}$', description: 'Day-planner bed anchor, HH:mm' }
         # Engine outputs — null until the goal is evaluated (POST /api/goals/{id}/evaluate).
         tdeeBootstrap: { allOf: [ { $ref: '#/components/schemas/TdeeBootstrap' } ], nullable: true }
         prescription: { allOf: [ { $ref: '#/components/schemas/GoalPrescription' } ], nullable: true }
@@ -228,6 +231,9 @@ components:
         startWeightKg: { type: number, minimum: 0 }
         targetWeightKg: { type: number, nullable: true, minimum: 0 }
         identityFrame: { type: string, nullable: true }
+        mealsPerDay: { type: integer, minimum: 3, maximum: 6, description: 'Day-planner: eating occasions per day' }
+        wakeTime: { type: string, pattern: '^\d{2}:\d{2}$', description: 'Day-planner wake anchor, HH:mm' }
+        bedTime: { type: string, pattern: '^\d{2}:\d{2}$', description: 'Day-planner bed anchor, HH:mm' }
     FeasibilityPreviewRequest:
       type: object
       description: A draft goal window — feeds the stateless realism preview (no persistence, no ownership).
