@@ -36,7 +36,7 @@ related: [_platform-data-layer, today, train, me]
 
 ## 1a. Frontend structure & naming conventions
 
-`frontend/src` is organized in **four layers**, with one uniform template per feature — the map every screen and hook lives on. Rationale in [ADR 0003](../decisions/0003-frontend-structure-conventions.md); the reorg is specced in [`2026-07-01-frontend-structure-refactor-design.md`](../superpowers/specs/2026-07-01-frontend-structure-refactor-design.md).
+`frontend/src` is organized in **four layers**, with one uniform template per feature — the map every screen and hook lives on. The **prescriptive house standard** — the rules + recipes to follow when building frontend code — is [`docs/references/frontend_conventions.md`](../references/frontend_conventions.md) (read it before touching `frontend/src`); the rationale is in [ADR 0003](../decisions/0003-frontend-structure-conventions.md), and the reorg is specced in [`2026-07-01-frontend-structure-refactor-design.md`](../superpowers/specs/2026-07-01-frontend-structure-refactor-design.md).
 
 ```
 src/
@@ -67,7 +67,7 @@ features/<domain>/
 | `*Card/Panel/Row/Hero/Stat/Bar/Grid/Chip/Cell` | presentational | `components/` |
 | pure `.ts` logic / derivations | `planner`, `agenda`, `workoutState`, `radarGeometry`, `weightStats`… | `logic/` |
 
-**`data/` layer.** `data/hooks.ts` is a thin re-export **barrel** — the single `@/data/hooks` surface every feature consumes; implementations live in per-domain `data/<domain>/<name>Hooks.ts`. Per-domain folders (`today · fuel · train · me · insights · progression`) hold hooks + mock data + types + the REST `*Api.ts` client. `data/_client/` holds cross-cutting infra (`api`, `api.gen`, `mode`, `flags`, `auth`, `useDualQuery`); the shared type spine (`types.ts`, `nova.ts`, `pantrySources.ts`, `kindMeta.ts`) stays at `data/` root to avoid a root→domain dependency inversion.
+**`data/` layer.** `data/hooks.ts` is a thin re-export **barrel** — the single `@/data/hooks` surface every feature consumes; implementations live in per-domain `data/<domain>/<name>Hooks.ts`. Per-domain folders (`today · fuel · train · me · insights · progression`) hold hooks + mock data + types + the REST `*Api.ts` client. `data/_client/` holds cross-cutting infra (`api`, `api.gen`, `mode`, `flags`, `auth`); the shared core (`types.ts`, `nova.ts`, `pantrySources.ts`, `kindMeta.ts`, `useDualQuery.ts`) stays at `data/` root to avoid a root→domain dependency inversion.
 
 **Import rules.** No barrels except `data/hooks.ts` — imports are **deep** and **absolute** through the `@/*`→`src/*` alias (`@/features/train/pages/GymPage`, `@/shared/ui/Chip`, `@/data/fuel/fuelHooks`). Tests are colocated next to their source.
 

@@ -18,7 +18,7 @@ related: [_platform-data-layer, _platform-auth-security, train, today, fuel]
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
 
-> One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/lib/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · goal · Train · **Fuel Pantry (Kamra)**; the durable backbone every backed feature flows through. Not a route/tab — it underlies all of them.
+> One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/data/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · goal · Train · **Fuel Pantry (Kamra)**; the durable backbone every backed feature flows through. Not a route/tab — it underlies all of them.
 
 This is the platform doc: read it before, or alongside, any per-feature backend doc (auth, biometrics, goal, Train, Fuel). **Fuel's Pantry/Kamra sub-slice is now backed** (slice C, `mezo-9xu`); the rest of Fuel + Insights + People are still 🔶 mock-only and will *adopt* this spine when they leave mock status; Phase-3 AI is 🟣 deferred.
 
