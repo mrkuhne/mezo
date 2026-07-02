@@ -81,8 +81,8 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         assertThat(day.getConsumed().getP()).isEqualByComparingTo(BigDecimal.valueOf(69));
         // per-line round: 100 g -> round(1.5)=2 F ; 200 g -> round(3.0)=3 F ; day F = 2+3 = 5
         assertThat(day.getConsumed().getF()).isEqualByComparingTo(BigDecimal.valueOf(5));
-        // water has no logging yet -> carried from targets default
-        assertThat(day.getConsumed().getWater()).isEqualByComparingTo(BigDecimal.valueOf(4000));
+        // water is the real Σ of the day's water-log entries -> 0 with none logged
+        assertThat(day.getConsumed().getWater()).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     @Test
