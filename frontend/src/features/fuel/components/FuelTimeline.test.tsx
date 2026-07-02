@@ -1,6 +1,7 @@
 import { render, screen, renderHook } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, vi } from 'vitest'
+import type { FuelSlot } from '@/data/types'
 import { FuelTimeline } from '@/features/fuel/components/FuelTimeline'
 import { useFuelTimeline } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -34,4 +35,13 @@ test('AI-score button opens the score sheet for a scored meal', async () => {
   expect(aiButtons.length).toBeGreaterThanOrEqual(1)   // ≈2 (09:15 + 13:00)
   await userEvent.click(aiButtons[0])
   expect(onOpenScore).toHaveBeenCalled()
+})
+test('threads onLogMeal through to a suggestion slot title', async () => {
+  const onLogMeal = vi.fn()
+  const slots: FuelSlot[] = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', state: 'pending', mealName: 'Zabkása', suggestedRecipeId: 'r1', kcal: 480, p: 30, c: 55, f: 12 },
+  ]
+  render(<FuelTimeline slots={slots} getScoredMeal={() => null} onOpenScore={() => {}} onLogMeal={onLogMeal} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Zabkása logolása' }))
+  expect(onLogMeal).toHaveBeenCalledWith(slots[0])
 })

@@ -7,11 +7,13 @@ export function TimelineSlot({
   isLast,
   scoredMeal,
   onOpenScore,
+  onLogMeal,
 }: {
   slot: FuelSlot
   isLast: boolean
   scoredMeal: FuelMeal | null
   onOpenScore: (m: FuelMeal) => void
+  onLogMeal?: (slot: FuelSlot) => void
 }) {
   const meta = KIND_META[slot.kind] ?? KIND_META.meal
   const isDone = slot.state === 'done'
@@ -66,7 +68,7 @@ export function TimelineSlot({
 
       {/* Slot content */}
       <div style={{ flex: 1, paddingBottom: 16, minWidth: 0 }}>
-        <SlotCard slot={slot} meta={meta} scoredMeal={scoredMeal} onOpenScore={onOpenScore} />
+        <SlotCard slot={slot} meta={meta} scoredMeal={scoredMeal} onOpenScore={onOpenScore} onLogMeal={onLogMeal} />
       </div>
     </div>
   )

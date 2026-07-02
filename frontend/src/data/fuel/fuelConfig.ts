@@ -2,6 +2,8 @@
 // the single source of truth for slot placement, snapping, weighting and recipe-fit math.
 // Time helpers convert between 'HH:mm' wall-clock strings and minutes-since-midnight.
 
+import type { MealSlot } from '@/data/types'
+
 export const PLANNER_DEFAULTS = { mealsPerDay: 4, wake: '06:00', bed: '23:00' } as const
 export const CAFFEINE_CUTOFF = '14:00'
 export const EATING_START_OFFSET_MIN = 45
@@ -26,4 +28,15 @@ export function toHHmm(min: number): string {
   const h = Math.floor(clamped / 60)
   const m = clamped % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
+/** A planner window label ('Reggeli'/'Ebéd'/'Vacsora'/'Uzsonna'/…) → the `MealSlot` enum the
+ *  LogMealSheet segmented control speaks. The three mains map 1:1; every snack window falls to
+ *  'snack'. Mirrors `mealSlotKey` (buildDayPlan) but keyed on the display label, not `FuelMeal.slot`. */
+export function slotKeyOfLabel(label: string): MealSlot {
+  const s = label.toLowerCase()
+  if (s.includes('reggeli')) return 'breakfast'
+  if (s.includes('ebéd') || s.includes('ebed')) return 'lunch'
+  if (s.includes('vacsora')) return 'dinner'
+  return 'snack'
 }

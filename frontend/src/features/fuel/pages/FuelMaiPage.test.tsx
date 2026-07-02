@@ -51,3 +51,14 @@ test('opens the LogMealSheet from the ＋ Log entry', async () => {
   fireEvent.click(screen.getByRole('button', { name: /log/i }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
+test('real mode: the context strip shows schedule-derived values (kitchen close, coffee cutoff)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  renderView()
+  await screen.findByRole('heading', { name: 'Pacing' })
+  // Derived from the default wake/bed rhythm: kitchen close = bed(23:00) − 90m = 21:30,
+  // caffeine cutoff pinned 14:00 (both are planner-composed, not the frozen mock plan).
+  expect(screen.getByText('Kitchen')).toBeInTheDocument()
+  expect(screen.getByText('Coffee')).toBeInTheDocument()
+  expect(screen.getAllByText('21:30').length).toBeGreaterThanOrEqual(1) // Kitchen-close cell (+ the Vacsora window snaps here)
+  expect(screen.getByText('14:00')).toBeInTheDocument()                 // Coffee-cutoff cell
+})
