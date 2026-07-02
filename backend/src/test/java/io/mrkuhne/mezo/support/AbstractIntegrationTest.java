@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +41,7 @@ import org.springframework.context.annotation.Import;
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, PantryItemPopulator.class,
-    RecipePopulator.class, MealPopulator.class,
+    RecipePopulator.class, MealPopulator.class, WaterLogPopulator.class,
     MedicationPopulator.class, MedicationDosePopulator.class,
     SkillProgressPopulator.class, LevelUpEventPopulator.class, ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
