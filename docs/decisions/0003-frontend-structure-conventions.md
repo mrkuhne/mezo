@@ -50,9 +50,9 @@ every step, and `pnpm parity` is the visual no-op proof.
   `logic/`. The old `Screen`/`View` duality is retired.
 - **`data/` per-domain, with a shared core.** Domain folders (`today · fuel · train · me ·
   insights · progression`) hold hooks + mock + types + the REST `*Api.ts` client.
-  `data/_client/` holds cross-cutting infra (`api`, `api.gen`, `mode`, `flags`, `auth`,
-  `useDualQuery`). The shared type spine (`types.ts`, `nova.ts`, `pantrySources.ts`,
-  `kindMeta.ts`) stays at `data/` root to avoid a root→domain dependency inversion.
+  `data/_client/` holds cross-cutting infra (`api`, `api.gen`, `mode`, `flags`, `auth`).
+  The shared core (`types.ts`, `nova.ts`, `pantrySources.ts`, `kindMeta.ts`,
+  `useDualQuery.ts`) stays at `data/` root to avoid a root→domain dependency inversion.
 - **`data/hooks.ts` is a thin re-export barrel** — the single `@/data/hooks` surface every
   consumer imports (the documented FE↔data boundary is preserved); implementations live in
   per-domain `data/<domain>/<name>Hooks.ts`.

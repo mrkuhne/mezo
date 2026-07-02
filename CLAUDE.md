@@ -101,11 +101,23 @@ docker compose up -d            # local Postgres 16 on :15432 (mezo + mezo_test 
 ```bash
 # API contract (under api/ — see api_contract_conventions.md)
 cd api/generate && npm run generate:api   # merge feature fragments -> api/openapi.yml
-cd frontend && pnpm generate:api          # regenerate src/lib/api.gen.ts (FE types)
+cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.ts (FE types)
 # backend Java types regenerate automatically in ./mvnw generate-sources/test
 ```
 
 **Custom local ports** (standard ones are taken by other projects on this machine): Postgres **15432** (`DB_PORT`), backend HTTP **8090** (`MEZO_PORT`), Vite dev **5180**, parity **4317**. Frontend targets the API via `VITE_API_URL` (see `frontend/.env.example`). If the `mezo_pg` volume predates `backend/initdb/`, recreate it once: `docker compose down -v && docker compose up -d`.
+
+## Frontend Development Conventions (Phase 1+) — MANDATORY
+
+> **Trigger — read the reference FIRST.** Whenever you write, review, refactor, or plan **any** `frontend/src` code — a React page, component, bottom-sheet, feature-local logic, a data hook or mock, a REST client, a shared UI primitive, routing, or a frontend test — you MUST read **[`docs/references/frontend_conventions.md`](docs/references/frontend_conventions.md)** **before** writing code, and follow it exactly. Non-negotiable house standard; the living structure is in [`docs/features/_platform-design-system.md` §1a](docs/features/_platform-design-system.md), the rationale in [ADR 0003](docs/decisions/0003-frontend-structure-conventions.md).
+
+**The non-negotiables (the reference has the full rules + recipes):**
+- **Four layers:** `app/` (shell + `router.tsx`) · `features/<domain>/{pages,components,sheets,logic}/` · `shared/{ui,lib,hooks}/` · `data/` (per-domain + `_client/` + the `data/hooks.ts` barrel).
+- **Naming:** everything routed is a `*Section` (owns an `<Outlet>`) or a `*Page` (leaf). Modals → `*Sheet` in `sheets/`; presentational → `components/`; pure logic → `logic/`. **Never introduce a new `*Screen`/`*View`.**
+- **Data:** every feature imports hooks from **`@/data/hooks` only** (a thin re-export barrel); implementations live in `data/<domain>/<name>Hooks.ts`. Dual-mode reads use `useDualQuery` — never the mock seed as a real-mode fallback.
+- **Imports:** deep + absolute via the `@/*` alias; **no barrels** except `data/hooks.ts`; no relative `../`; tests colocated.
+- **`shared/ui` is domain-free** — a UI file that imports `@/data/*` or serves one feature belongs in `features/<domain>/components/`.
+- **Gate:** `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test` — both modes green; update the feature's `docs/features/<domain>.md` + run `node scripts/lint-docs.mjs`.
 
 ## Backend Development Conventions (Phase 2+) — MANDATORY
 
@@ -120,7 +132,7 @@ cd frontend && pnpm generate:api          # regenerate src/lib/api.gen.ts (FE ty
 | `testing_standards.md` | any backend test — integration-first (`@SpringBootTest` + Testcontainers Postgres), `test{Method}_should{Result}_when{Condition}`, AssertJ only, Java `DatabasePopulator` data, no mocks/`@MockBean`/H2 in integration tests |
 | `integration_test_framework.md` | any integration test or test infrastructure — extend `AbstractIntegrationTest` (service-level) / `ApiIntegrationTest` (HTTP-level: verb helpers, `ownerAuthHeaders()`, SystemMessage asserts), data via `*Populator` factories, **new domain table → `ResetDatabase` TRUNCATE list, new aggregate → new populator** |
 | `configuration_conventions.md` | any configurable value or feature toggle — everything in `application.yml` under the `mezo:` root (switches: `mezo.feature.<name>.enabled` + `FeaturesConfiguration` constants + `@ConditionalOnProperty`; values: `@Validated` `*Properties` records), **never `@Value`**, no hardcoded tunables |
-| `api_contract_conventions.md` | any REST endpoint or FE↔BE DTO — **contract-first**: edit `api/feature/<name>/<name>.yml` BEFORE code, merge (`api/generate`), backend implements generated `<Tag>Api` + uses `api.dto` models, frontend types from `src/lib/api.gen.ts` (`satisfies` on request bodies); never hand-write boundary DTOs |
+| `api_contract_conventions.md` | any REST endpoint or FE↔BE DTO — **contract-first**: edit `api/feature/<name>/<name>.yml` BEFORE code, merge (`api/generate`), backend implements generated `<Tag>Api` + uses `api.dto` models, frontend types from `src/data/_client/api.gen.ts` (`satisfies` on request bodies); never hand-write boundary DTOs |
 
 ### Project-specific adaptations (these override the generic references where noted)
 

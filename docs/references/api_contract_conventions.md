@@ -24,8 +24,8 @@ api/
 1. **Contract first:** write/extend `api/feature/<name>/<name>.yml` BEFORE backend or frontend code.
 2. Merge: `cd api/generate && npm run generate:api` → regenerates `api/openapi.yml`. Commit it.
 3. Backend: `./mvnw clean test` regenerates Java sources automatically (generate-sources phase).
-4. Frontend: `cd frontend && pnpm generate:api` → regenerates `src/lib/api.gen.ts`. Commit it.
-5. Both generated artifacts (`api/openapi.yml`, `frontend/src/lib/api.gen.ts`) are committed;
+4. Frontend: `cd frontend && pnpm generate:api` → regenerates `src/data/_client/api.gen.ts`. Commit it.
+5. Both generated artifacts (`api/openapi.yml`, `frontend/src/data/_client/api.gen.ts`) are committed;
    the Java output under `backend/target/` is NOT (regenerated every build).
 
 ## Contract Authoring Rules
@@ -88,7 +88,7 @@ Rules:
 
 ## Frontend Consumption
 
-`openapi-typescript` generates types only (no client, no hooks) into `src/lib/api.gen.ts`:
+`openapi-typescript` generates types only (no client, no hooks) into `src/data/_client/api.gen.ts`:
 
 ```ts
 import type { components } from './api.gen'
