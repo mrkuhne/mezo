@@ -295,7 +295,7 @@ export function GoalsPage() {
       )}
 
       {sheet === 'goal' && goalId && (
-        <EditGoalSheet onClose={() => setSheet(null)} goal={goal} goalId={goalId} />
+        <EditGoalSheet onClose={() => setSheet(null)} goal={goal} goalResponse={goalResponse} goalId={goalId} />
       )}
 
       {gateOpen && (

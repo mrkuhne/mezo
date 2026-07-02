@@ -6,24 +6,32 @@ import { LabelMono } from '@/shared/ui/LabelMono'
 import { Icon } from '@/shared/ui/Icon'
 import { useGoalActions } from '@/data/hooks'
 import { FieldRow } from '@/features/me/components/FieldRow'
+import type { GoalResponse } from '@/data/me/goalApi'
 import type { Goal } from '@/data/types'
 
 // Goal manage sheet (G4b). Opened from the GoalsPage hero. Shows the read-only
-// goal fields, plus the two destructive management actions the command-center
-// needs: Archiválás (archive) + Törlés (remove, behind an inline two-step confirm).
-// On success it closes; the ['goals'] invalidation in useGoalActions makes useGoal
-// refetch — when no active goal remains, GoalsPage falls back to its empty state.
+// goal fields, an editable "Napi ritmus" day-planner section (Fuel P5), plus the
+// two destructive management actions the command-center needs: Archiválás
+// (archive) + Törlés (remove, behind an inline two-step confirm). On success it
+// closes; the ['goals'] invalidation in useGoalActions makes useGoal refetch —
+// when no active goal remains, GoalsPage falls back to its empty state.
 export function EditGoalSheet({
   onClose,
   goal,
+  goalResponse,
   goalId,
 }: {
   onClose: () => void
   goal: Goal
+  goalResponse: GoalResponse
   goalId: string
 }) {
-  const { archive, remove, pending } = useGoalActions()
+  const { archive, remove, savePlanner, pending } = useGoalActions()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  // Day-planner state (Fuel P5) — defaults from the loaded goal, else 4/06:00/23:00.
+  const [mealsPerDay, setMealsPerDay] = useState(goal.mealsPerDay ?? 4)
+  const [wakeTime, setWakeTime] = useState(goal.wakeTime ?? '06:00')
+  const [bedTime, setBedTime] = useState(goal.bedTime ?? '23:00')
 
   return (
     <Sheet onClose={onClose} labelledBy="edit-goal-title">
@@ -56,6 +64,87 @@ export function EditGoalSheet({
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* Napi ritmus (Fuel P5) — the goal's day-planner settings: étkezés/nap
+              stepper (3–6) + wake/bed time anchors. Save PUTs the full goal with
+              these overrides (window/weights preserved) via useGoalActions. */}
+          <div className="col gap-sm mt-lg">
+            <LabelMono>Napi ritmus</LabelMono>
+
+            {/* Étkezés/nap stepper — clamped 3..6 */}
+            <div
+              className="row"
+              style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}
+            >
+              <span className="label-mono" style={{ fontSize: 9 }}>Étkezés/nap</span>
+              <div className="row gap-sm" style={{ alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="chip"
+                  aria-label="Étkezés csökkentése"
+                  disabled={mealsPerDay <= 3}
+                  onClick={() => setMealsPerDay((v) => Math.max(3, v - 1))}
+                  style={{ opacity: mealsPerDay <= 3 ? 0.4 : 1 }}
+                >
+                  <Icon name="minus" size={12} />
+                </button>
+                <span
+                  aria-label="Étkezés/nap"
+                  style={{ minWidth: 18, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 14, color: 'var(--text-primary)' }}
+                >
+                  {mealsPerDay}
+                </span>
+                <button
+                  type="button"
+                  className="chip"
+                  aria-label="Étkezés növelése"
+                  disabled={mealsPerDay >= 6}
+                  onClick={() => setMealsPerDay((v) => Math.min(6, v + 1))}
+                  style={{ opacity: mealsPerDay >= 6 ? 0.4 : 1 }}
+                >
+                  <Icon name="plus" size={12} />
+                </button>
+              </div>
+            </div>
+
+            {/* Wake / bed time anchors */}
+            <div
+              className="row"
+              style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}
+            >
+              <span className="label-mono" style={{ fontSize: 9 }}>Ébredés</span>
+              <input
+                type="time"
+                aria-label="Ébredés"
+                value={wakeTime}
+                onChange={(e) => setWakeTime(e.target.value)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontFamily: 'var(--ff-mono)', fontSize: 13, colorScheme: 'dark' }}
+              />
+            </div>
+            <div
+              className="row"
+              style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}
+            >
+              <span className="label-mono" style={{ fontSize: 9 }}>Lefekvés</span>
+              <input
+                type="time"
+                aria-label="Lefekvés"
+                value={bedTime}
+                onChange={(e) => setBedTime(e.target.value)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontFamily: 'var(--ff-mono)', fontSize: 13, colorScheme: 'dark' }}
+              />
+            </div>
+
+            <button
+              type="button"
+              className="cta-primary notch-4"
+              disabled={pending}
+              style={{ opacity: pending ? 0.5 : 1 }}
+              onClick={() => savePlanner(goalId, goalResponse, { mealsPerDay, wakeTime, bedTime }).then(close)}
+            >
+              <Icon name="check" size={14} /> Ritmus mentése
+            </button>
           </div>
 
           {/* Management actions — archive + delete (destructive = var(--error)) */}
