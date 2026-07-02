@@ -3,8 +3,9 @@
 // Pure logic: given the user's wake/bed rhythm, the day's REAL training blocks, a daily
 // kcal/macro budget, the day's logged meals, a recipe catalog, the supplement protocol and
 // the day's intakes, it composes a `FuelPlanToday` (meal windows around the workouts, per-slot
-// budgets, recipe suggestions, supplement + block slots, now-flag). No Date/now/random anywhere —
-// `nowHHmm` is injected. Design: docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md §3.
+// budgets, recipe suggestions, supplement + block slots, now-flag). No ambient time (no Date.now /
+// `new Date()` / random): `nowHHmm` is injected; logged-at strings are parsed deterministically via
+// `new Date(iso)`. Design: docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md §3.
 
 import {
   CAFFEINE_CUTOFF,
@@ -214,10 +215,14 @@ const PROTOCOL_LABEL: Partial<Record<FuelKind, string>> = {
   evening: 'Esti stack',
 }
 
-/** Local wall-clock 'HH:mm' from a logged-at instant (mock `…T09:15:00`, real `…T09:15:00+02:00`). */
-function hhmmFromLoggedAt(iso: string): string {
-  const m = /T(\d{2}:\d{2})/.exec(iso)
-  return m ? m[1] : iso
+/** Local wall-clock 'HH:mm' from a logged-at instant. Parsed via `new Date` so a UTC-serialized
+ *  instant (real mode: `…T07:15:00Z`), an explicit offset (`…T09:15:00+02:00`) and an offset-less
+ *  local mock string (`…T09:15:00`, which parses as local) all render the LOCAL wall-clock uniformly.
+ *  Invalid date → the caller's fallback window/now time. */
+function hhmmFromLoggedAt(iso: string, fallback: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return fallback
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
 // ── buildDayPlan ─────────────────────────────────────────────────────────────
@@ -246,7 +251,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     if (logged) {
       cursor[w.slotKey]++
       return {
-        time: hhmmFromLoggedAt(logged.loggedAt),
+        time: hhmmFromLoggedAt(logged.loggedAt, toHHmm(w.time)),
         kind: w.kind,
         label: w.label,
         state: 'done',
@@ -277,6 +282,30 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     }
     return { time: toHHmm(w.time), kind: w.kind, label: w.label, state: 'pending', kcal: b.kcal, p: b.p, c: b.c, f: b.f }
   })
+
+  // 3b. Surplus logged meals — anything of a slotKey beyond that slot's window count (a 2nd snack on
+  //     a 4-meal day, ANY snack on a 3-meal day, a duplicate main) is NEVER dropped: it lands as an
+  //     extra done slot at its own loggedAt time, labelled from a same-slot window or the meal title.
+  const labelByKey: Partial<Record<SlotKey, string>> = {}
+  for (const w of windows) if (!(w.slotKey in labelByKey)) labelByKey[w.slotKey] = w.label
+  const extraSlots: FuelSlot[] = []
+  for (const k of Object.keys(loggedByKey) as SlotKey[]) {
+    for (let j = cursor[k]; j < loggedByKey[k].length; j++) {
+      const m = loggedByKey[k][j]
+      extraSlots.push({
+        time: hhmmFromLoggedAt(m.loggedAt, nowHHmm),
+        kind: k === 'snack' ? 'snack' : 'meal',
+        label: labelByKey[k] ?? m.title,
+        state: 'done',
+        mealId: m.id,
+        mealName: m.title,
+        kcal: m.kcal,
+        p: m.p,
+        c: m.c,
+        f: m.f,
+      })
+    }
+  }
 
   // 4. Supplement (protocol) slots — item pips done via intakes; slot done when every item taken.
   const protoSlots: FuelSlot[] = protocolSlots.map(p => {
@@ -312,8 +341,9 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
     }
   })
 
-  // 6. Merge + sort + now-flag (LAST non-done slot at or before now).
-  const slots = [...mealSlots, ...protoSlots, ...blockSlots].sort((a, z) => toMin(a.time) - toMin(z.time))
+  // 6. Merge + sort + now-flag (LAST non-done slot at or before now). Extra logged meals join the
+  //     sort/now-flag like any other slot (they are 'done', so they never receive the now-flag).
+  const slots = [...mealSlots, ...extraSlots, ...protoSlots, ...blockSlots].sort((a, z) => toMin(a.time) - toMin(z.time))
   let nowIdx = -1
   for (let i = 0; i < slots.length; i++) {
     if (toMin(slots[i].time) <= now && slots[i].state !== 'done') nowIdx = i

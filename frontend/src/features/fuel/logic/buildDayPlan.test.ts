@@ -228,6 +228,55 @@ test('multiple logged snacks fill snack windows in loggedAt order', () => {
   expect(doneSnacks.map(s => s.mealId)).toEqual(['s1', 's2']) // sorted by loggedAt
   expect(doneSnacks.map(s => s.time)).toEqual(['10:30', '17:05'])
 })
+test('a UTC-serialized loggedAt (real mode, Z) renders at the LOCAL wall-clock, not the UTC hour', () => {
+  // Real mode serializes loggedAt as UTC OffsetDateTime. Compute the expectation from the SAME
+  // Date parsing so the assertion is independent of the process TZ the suite happens to run in.
+  const logged = meal({ id: 'm1', slot: 'breakfast', title: 'Rántotta', loggedAt: '2026-07-02T07:15:00Z' })
+  const plan = buildDayPlan(baseInput({ meals: [logged], nowHHmm: '05:00' }))
+  const done = plan.slots.find(s => s.state === 'done' && s.kind === 'meal')!
+  const d = new Date('2026-07-02T07:15:00Z')
+  const expected = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  expect(done.mealId).toBe('m1')
+  expect(done.time).toBe(expected)
+})
+test('an offset-less (mock) loggedAt still renders its local wall-clock unchanged', () => {
+  const logged = meal({ id: 'm1', slot: 'breakfast', loggedAt: '2026-07-02T08:40:00' })
+  const plan = buildDayPlan(baseInput({ meals: [logged], nowHHmm: '05:00' }))
+  const done = plan.slots.find(s => s.state === 'done' && s.kind === 'meal')!
+  expect(done.time).toBe('08:40')
+})
+
+// ── nothing logged is ever dropped (surplus logged meals become extra done slots) ────────────────
+test('a second logged snack on a 4-meal day (one snack window) is never dropped', () => {
+  const s1 = meal({ id: 's1', slot: 'snack', title: 'Snack A', loggedAt: '2026-07-02T15:00:00', kcal: 200, p: 10, c: 20, f: 8 })
+  const s2 = meal({ id: 's2', slot: 'snack', title: 'Snack B', loggedAt: '2026-07-02T18:30:00', kcal: 150, p: 8, c: 18, f: 5 })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 4, meals: [s1, s2] }))
+  const doneSnacks = plan.slots.filter(s => s.kind === 'snack' && s.state === 'done')
+  expect(doneSnacks.map(s => s.mealId).sort()).toEqual(['s1', 's2'])
+  expect(doneSnacks.map(s => s.time).sort()).toEqual(['15:00', '18:30'])
+})
+test('any logged snack on a 3-meal day (no snack window) is never dropped', () => {
+  const s = meal({ id: 's1', slot: 'snack', title: 'Tízórai', loggedAt: '2026-07-02T15:00:00', kcal: 180, p: 9, c: 22, f: 6 })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 3, meals: [s] }))
+  const doneSnacks = plan.slots.filter(s => s.kind === 'snack' && s.state === 'done')
+  expect(doneSnacks).toHaveLength(1)
+  expect(doneSnacks[0]).toMatchObject({ mealId: 's1', mealName: 'Tízórai', time: '15:00', kcal: 180 })
+})
+test('done meal/snack slots carry the FULL logged-meal totals — nothing logged is dropped', () => {
+  const meals = [
+    meal({ id: 'b', slot: 'breakfast', loggedAt: '2026-07-02T08:00:00', kcal: 500, p: 40, c: 50, f: 15 }),
+    meal({ id: 's1', slot: 'snack', loggedAt: '2026-07-02T11:00:00', kcal: 200, p: 10, c: 20, f: 8 }),
+    meal({ id: 's2', slot: 'snack', loggedAt: '2026-07-02T15:00:00', kcal: 150, p: 8, c: 18, f: 5 }),
+    meal({ id: 's3', slot: 'snack', loggedAt: '2026-07-02T18:00:00', kcal: 180, p: 9, c: 22, f: 6 }),
+    meal({ id: 'd', slot: 'dinner', loggedAt: '2026-07-02T20:00:00', kcal: 700, p: 55, c: 60, f: 25 }),
+  ]
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 4, meals })) // 1 snack window → s2 + s3 are extras
+  const doneMeals = plan.slots.filter(s => s.state === 'done' && (s.kind === 'meal' || s.kind === 'snack'))
+  expect(doneMeals).toHaveLength(meals.length) // every logged meal appears exactly once
+  const sum = (k: 'kcal' | 'p' | 'c' | 'f') => doneMeals.reduce((acc, x) => acc + (x[k] ?? 0), 0)
+  const expected = meals.reduce((a, m) => ({ kcal: a.kcal + m.kcal, p: a.p + m.p, c: a.c + m.c, f: a.f + m.f }), { kcal: 0, p: 0, c: 0, f: 0 })
+  expect({ kcal: sum('kcal'), p: sum('p'), c: sum('c'), f: sum('f') }).toEqual(expected)
+})
 
 // ── protocol + intake pips ───────────────────────────────────────────────────
 test('protocol slots map kinds onto FuelKind and set item done-state from intakes', () => {
