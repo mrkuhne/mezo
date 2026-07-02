@@ -27,8 +27,9 @@ test('useFuelTimeline returns 10 slots with one now-slot + getScoredMeal works',
 })
 test('useStack returns 10 stash items, useProtocol returns v3', () => {
   // NOTE: task text said 11, but prototype data.js 337–348 has 10 stash items — data is source of truth.
-  expect(renderHook(() => useStack()).result.current.stash).toHaveLength(10)
-  expect(renderHook(() => useProtocol()).result.current.protocol.version).toBe(3)
+  // useStack/useProtocol became dual-mode TanStack queries (mezo-09g) — they need a QueryClient.
+  expect(renderHook(() => useStack(), { wrapper: QueryWrapper }).result.current.stash).toHaveLength(10)
+  expect(renderHook(() => useProtocol(), { wrapper: QueryWrapper }).result.current.protocol.version).toBe(3)
 })
 
 test('every seed meal carries structured mealItems + mealDate and a null pending score', async () => {

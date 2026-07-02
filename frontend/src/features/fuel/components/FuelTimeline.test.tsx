@@ -1,11 +1,22 @@
 import { render, screen, renderHook } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { FuelTimeline } from '@/features/fuel/components/FuelTimeline'
 import { useFuelTimeline } from '@/data/hooks'
+import { QueryWrapper } from '@/test/queryWrapper'
+
+// FuelTimeline renders supplement slots → SupplementItemRow → dual-mode useStack (mezo-09g),
+// so it needs a QueryClientProvider; pin mock mode for the seeded stash + timeline.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 function setup(onOpenScore = () => {}) {
   const { result } = renderHook(() => useFuelTimeline())
-  render(<FuelTimeline slots={result.current.plan.slots} getScoredMeal={result.current.getScoredMeal} onOpenScore={onOpenScore} />)
+  render(
+    <QueryWrapper>
+      <FuelTimeline slots={result.current.plan.slots} getScoredMeal={result.current.getScoredMeal} onOpenScore={onOpenScore} />
+    </QueryWrapper>,
+  )
   return result.current
 }
 test('renders a row per slot with its time + meal name + MOST chip', () => {

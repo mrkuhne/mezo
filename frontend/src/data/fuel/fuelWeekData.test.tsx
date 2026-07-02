@@ -1,5 +1,11 @@
 import { renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, vi } from 'vitest'
 import { useFuelWeek, useReplanScenarios, useStackRecommendations } from '@/data/hooks'
+
+// useStackRecommendations became mode-aware (mezo-09g): mock serves the seed, real defers to [].
+// useFuelWeek/useReplanScenarios stay static (mode-agnostic), so pinning mock mode is harmless.
+beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+afterEach(() => vi.unstubAllEnvs())
 
 test('useFuelWeek returns 7 reta days, gym schedule, supplement matrix, patterns', () => {
   const { result } = renderHook(() => useFuelWeek())
