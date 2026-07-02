@@ -7,6 +7,7 @@ type MealItemRequest = components['schemas']['MealItemRequest']
 type MealResponse = components['schemas']['MealResponse']
 type MealItemResponse = components['schemas']['MealItemResponse']
 type FuelDayResponse = components['schemas']['FuelDayResponse']
+type WaterLogRequest = components['schemas']['WaterLogRequest']
 
 /** What the composed useFuelDay needs from the server (targets/consumed/meals). */
 export interface FuelDayData {
@@ -81,4 +82,6 @@ export const mealApi = {
     apiFetch(`/api/meal/${id}`, { method: 'PUT', body: JSON.stringify(toRequest(input)) }).then(() => undefined),
   remove: (id: string): Promise<void> =>
     apiFetch(`/api/meal/${id}`, { method: 'DELETE' }).then(() => undefined),
+  logWater: (date: string, amountMl: number): Promise<void> =>
+    apiFetch('/api/water-log', { method: 'POST', body: JSON.stringify({ date, amountMl } satisfies WaterLogRequest) }).then(() => undefined),
 }

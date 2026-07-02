@@ -4,8 +4,11 @@ import io.mrkuhne.mezo.api.controller.MealApi;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.WaterLogRequest;
+import io.mrkuhne.mezo.api.dto.WaterLogResponse;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
+import io.mrkuhne.mezo.feature.meal.service.WaterLogService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -23,6 +26,7 @@ public class MealController implements MealApi {
 
     private final FuelDayService fuelDayService;
     private final MealService mealService;
+    private final WaterLogService waterLogService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -43,5 +47,15 @@ public class MealController implements MealApi {
     @Override
     public void deleteMeal(UUID id) {
         mealService.delete(currentUserId.get(), id);
+    }
+
+    @Override
+    public WaterLogResponse logWater(WaterLogRequest waterLogRequest) {
+        return waterLogService.logWater(currentUserId.get(), waterLogRequest);
+    }
+
+    @Override
+    public void deleteWaterLog(UUID id) {
+        waterLogService.deleteWaterLog(currentUserId.get(), id);
     }
 }

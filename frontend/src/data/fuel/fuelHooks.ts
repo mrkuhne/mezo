@@ -90,6 +90,28 @@ export function useMealActions(date: string = localDateString()) {
   return { logMeal, updateMeal, deleteMeal }
 }
 
+/** Water intake write on the ['fuelDay', date] cache. Mock increments consumed.water in place;
+ *  real POSTs /api/water-log and invalidates fuelDay so the rollup re-reads server-side. */
+export function useWaterActions(date: string = localDateString()) {
+  const qc = useQueryClient()
+  const mock = isMockMode()
+
+  const waterM = useMutation({
+    mutationFn: mock
+      ? async (amountMl: number) => {
+          qc.setQueryData<FuelDayData>(fuelDayKey(date), d => {
+            const base = d ?? { ...seedDayData, date }
+            return { ...base, consumed: { ...base.consumed, water: base.consumed.water + amountMl } }
+          })
+        }
+      : (amountMl: number) => mealApi.logWater(date, amountMl),
+    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: [FUELDAY_KEY] }),
+  })
+
+  const logWater = useCallback((amountMl: number) => waterM.mutate(amountMl), [waterM])
+  return { logWater }
+}
+
 const RECIPE_LOGS_KEY = (id: string) => ['recipeLogs', id] as const
 
 /** Per-recipe logs feeding RecipeLogsList. Mock derives from the recipe seed's recentLogs; real
@@ -169,10 +191,10 @@ function buildMeal(id: string, date: string, input: MealInput): FuelMeal {
   }
 }
 
-function recomputeConsumed(meals: FuelMeal[], targets: MacroSet): MacroSet {
+function recomputeConsumed(meals: FuelMeal[], water: number): MacroSet {
   return meals.reduce(
     (a, m) => ({ kcal: a.kcal + m.kcal, p: a.p + m.p, c: a.c + m.c, f: a.f + m.f, water: a.water }),
-    { kcal: 0, p: 0, c: 0, f: 0, water: targets.water },
+    { kcal: 0, p: 0, c: 0, f: 0, water },
   )
 }
 
@@ -180,7 +202,7 @@ function patchDay(qc: ReturnType<typeof useQueryClient>, date: string, fn: (d: F
   qc.setQueryData<FuelDayData>(fuelDayKey(date), prev => {
     const base = prev ?? seedDayData
     const meals = fn(base)
-    return { ...base, meals, consumed: recomputeConsumed(meals, base.targets) }
+    return { ...base, meals, consumed: recomputeConsumed(meals, base.consumed.water) }
   })
   return undefined
 }

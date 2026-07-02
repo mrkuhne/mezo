@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { vi } from 'vitest'
 import { MacroHero } from '@/features/fuel/components/MacroHero'
 const targets = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
 const consumed = { kcal: 1840, p: 142, c: 198, f: 58, water: 1850 }
@@ -26,4 +27,17 @@ test('renders the optional pacing eyebrow when provided, omits it otherwise', ()
   unmount()
   render(<MacroHero targets={targets} consumed={consumed} />)
   expect(screen.queryByText('Pacing · 13:42')).not.toBeInTheDocument()
+})
+it('renders +250/+500 water chips and calls onLogWater', () => {
+  const onLogWater = vi.fn()
+  render(<MacroHero targets={targets} consumed={consumed} onLogWater={onLogWater} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Víz +250 ml' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Víz +500 ml' }))
+  expect(onLogWater).toHaveBeenNthCalledWith(1, 250)
+  expect(onLogWater).toHaveBeenNthCalledWith(2, 500)
+})
+
+it('renders no water chips without onLogWater', () => {
+  render(<MacroHero targets={targets} consumed={consumed} />)
+  expect(screen.queryByRole('button', { name: /Víz \+/ })).toBeNull()
 })

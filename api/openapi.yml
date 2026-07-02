@@ -1995,6 +1995,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/water-log:
+    post:
+      tags:
+        - Meal
+      operationId: logWater
+      summary: >-
+        Log a discrete water intake entry (day rollup feeds
+        FuelDayResponse.consumed.water)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WaterLogRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaterLogResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/water-log/{id}':
+    delete:
+      tags:
+        - Meal
+      operationId: deleteWaterLog
+      summary: Soft-delete a water entry (undo)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/medication:
     get:
       tags:
@@ -4975,6 +5036,33 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MealResponse'
+    WaterLogRequest:
+      type: object
+      required:
+        - amountMl
+      properties:
+        date:
+          type: string
+          format: date
+          description: Day key; defaults to the server's today when omitted
+        amountMl:
+          type: integer
+          minimum: 1
+    WaterLogResponse:
+      type: object
+      required:
+        - id
+        - date
+        - amountMl
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        amountMl:
+          type: integer
     MedicationPhase:
       type: object
       required:
