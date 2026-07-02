@@ -1,4 +1,6 @@
-package io.mrkuhne.mezo.feature.progression.sport;
+package io.mrkuhne.mezo.feature.train.signal;
+
+import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
 
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;

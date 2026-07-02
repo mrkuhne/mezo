@@ -8,7 +8,7 @@ import io.mrkuhne.mezo.feature.progression.ProgressionGate;
 import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
-import io.mrkuhne.mezo.feature.progression.sport.SportSignalCalculator;
+import io.mrkuhne.mezo.feature.train.signal.SportSignalCalculator;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;

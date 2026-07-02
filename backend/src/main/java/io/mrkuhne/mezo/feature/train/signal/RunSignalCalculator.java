@@ -1,4 +1,6 @@
-package io.mrkuhne.mezo.feature.progression.run;
+package io.mrkuhne.mezo.feature.train.signal;
+
+import io.mrkuhne.mezo.feature.progression.run.RunSignal;
 
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;

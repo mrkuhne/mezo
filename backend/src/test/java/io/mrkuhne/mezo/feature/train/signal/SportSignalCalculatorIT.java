@@ -1,4 +1,6 @@
-package io.mrkuhne.mezo.feature.progression.sport;
+package io.mrkuhne.mezo.feature.train.signal;
+
+import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
