@@ -27,6 +27,8 @@ export interface FuelSlot {
   kcal?: number; p?: number; c?: number; f?: number
   duration?: number
   items?: SlotItem[]
+  mealId?: string
+  suggestedRecipeId?: string
 }
 export interface FuelPlanToday {
   workout: { type: string; start: string; end: string; duration: number }

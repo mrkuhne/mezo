@@ -408,6 +408,7 @@ export const fuelPlan: { today: FuelPlanToday } = {
         kind: 'meal',
         label: 'Reggeli · post-workout',
         state: 'done',
+        mealId: 'm1',
         mealName: 'Túrós zabkása · áfonyával',
         kcal: 580,
         p: 42,
@@ -432,6 +433,7 @@ export const fuelPlan: { today: FuelPlanToday } = {
         kind: 'meal',
         label: 'Ebéd',
         state: 'done',
+        mealId: 'm2',
         mealName: 'Csirke + édesburgonya + spenót',
         kcal: 720,
         p: 58,
@@ -647,6 +649,5 @@ export const protocol: Protocol = {
 }
 
 export function getScoredMeal(slot: FuelSlot, meals: FuelMeal[]): FuelMeal | null {
-  if (!slot.mealName) return null
-  return meals.find(m => m.title === slot.mealName && m.breakdown) ?? null
+  return slot.mealId ? meals.find(m => m.id === slot.mealId && m.breakdown) ?? null : null
 }
