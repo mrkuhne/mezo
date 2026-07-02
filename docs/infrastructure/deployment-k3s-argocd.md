@@ -172,13 +172,15 @@ for the build-out steps.
 `if: !contains(head_commit.message, '[skip ci]')`, so the release commit does not re-trigger the
 workflow.
 
-**Convention gates — `.github/workflows/ci.yml` (separate workflow, since mezo-ah18.4):** runs
-on every push to `main` and on PRs, parallel to `deploy.yml` and **not blocking it**. Two jobs:
+**Convention + test gates — `.github/workflows/ci.yml` (separate workflow; mezo-ah18.4 + .5):**
+runs on every push to `main` and on PRs, parallel to `deploy.yml` and **not blocking it**
+(decision in ADR 0007: fix-forward beats slowing every release). Four jobs:
 `lint` (`node scripts/lint-docs.mjs --errors-only` — doc errors block, 🔶 staleness advisory;
-`node scripts/lint-liquibase.mjs` — migration filename/constraint-prefix/seed-SQL rules) and
+`node scripts/lint-liquibase.mjs` — migration filename/constraint-prefix/seed-SQL rules),
 `contract-drift` (regenerates the OpenAPI fragment merge + FE `api.gen.ts` and fails on
-`git diff` vs the committed artifacts). Rationale and the phased plan (test job → ESLint →
-ArchUnit) in [ADR 0007](../decisions/0007-machine-enforcement-of-conventions.md).
+`git diff` vs the committed artifacts), `test-frontend` (vitest in real AND mock mode) and
+`test-backend` (full IT suite on Testcontainers Postgres). Rationale and the phased plan
+(→ ESLint → ArchUnit next) in [ADR 0007](../decisions/0007-machine-enforcement-of-conventions.md).
 
 **Workflow permissions:** `contents: write` (commit + tag back) and `packages: write` (push to
 GHCR), both via the built-in `GITHUB_TOKEN`. The cluster still pulls private images with the
