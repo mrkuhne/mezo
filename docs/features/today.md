@@ -47,14 +47,14 @@ The single FE↔data boundary is `frontend/src/data/hooks.ts`. For Today, `isMoc
 
 ```
 TodayPage.tsx (composition root)
-  ├─ useTodayScenario()   hooks.ts:19  — URL params (+ real-mode retaDay from useMedication().cycle) → TodayScenario { dayState, retaDay, niggle, vulnerable, anchorMode }
-  ├─ useToday()           hooks.ts:36  — { today, user, briefing, workout, volleyballSessions, fuelToday }  (mock, no real swap)
-  ├─ useCheckins()        hooks.ts:40  — useState(initialCheckins) + useMutation(checkinApi.save)
-  ├─ resolveBriefing(ds)  hooks.ts:31  — briefing ⊕ briefingVariants[ds]
+  ├─ useTodayScenario()   todayHooks.ts    — URL params (+ real-mode retaDay from useMedication().cycle) → TodayScenario { dayState, retaDay, niggle, vulnerable, anchorMode }
+  ├─ useToday()           todayHooks.ts    — { today, user, briefing, workout, volleyballSessions, fuelToday }  (mock, no real swap)
+  ├─ useCheckins()        checkinHooks.ts  — useState(initialCheckins) + useMutation(checkinApi.save)
+  ├─ resolveBriefing(ds)  todayHooks.ts    — briefing ⊕ briefingVariants[ds]
   └─ useFuelPreview()     todayHooks.ts — slices the dual-mode useFuelTimeline() plan (mock seed | real buildDayPlan)
 
 Real path — CHECK-IN SAVE ONLY (write-only):
-  saveCheckIn(idx, data)               hooks.ts:47
+  saveCheckIn(idx, data)               checkinHooks.ts
     └─(real mode)→ mutation.mutate(SaveCheckInBody)
         → checkinApi.save              data/me/biometricsApi.ts:48
         → apiFetch POST /api/biometrics/checkin   (Bearer token via data/_client/api.ts setToken)

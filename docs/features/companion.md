@@ -7,6 +7,7 @@ tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
   - api/feature/companion/companion.yml
+  - frontend/src/data/insights/chatHooks.ts
   - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
 related: [insights, _platform-api-backend, _platform-auth-security]
@@ -14,12 +15,13 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 
 # Companion (AI chat brain) — Feature Documentation
 
-> One-line: the Phase-3 AI companion backend — persisted conversations + a sync Hungarian
-> chat endpoint over the `CompanionLlm` port (Spring AI 2 / Gemini), with a deterministic
-> cross-feature **context snapshot** injected into every system prompt. **Status: backend ✅
-> V0.3 (spine + snapshot); FE 🔶 mock (ChatPage is still the simulated `insights` surface until
-> V0.4).** Cross-cutting Phase-3 domain with no route/tab of its own yet — the user reaches
-> "chat" only through the mock Insights ChatPage ([`insights.md`](insights.md) §2.5).
+> One-line: the Phase-3 AI companion — persisted conversations + a Hungarian chat over the
+> `CompanionLlm` port (Spring AI 2 / Gemini) with a deterministic cross-feature **context
+> snapshot** in every system prompt, answered **sync JSON or streamed SSE**, and consumed by
+> the **real dual-mode ChatPage**. **Status: backend ✅ V0.4 (spine + snapshot + SSE); FE ✅
+> V0.4 (ChatPage real: history + streamed turns + honest degraded state).** Cross-cutting
+> Phase-3 domain with no route/tab of its own — the surface is the Insights ChatPage
+> ([`insights.md`](insights.md) §2.5).
 
 ## 1. Summary
 
@@ -48,41 +50,92 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   into the `ChatService` system prompt **between the static voice and the history transcript**.
   Missing data renders as explicit `nincs adat`, never invented; no LLM anywhere in the path.
 
+**V0.4 (`mezo-fnnq.4`) shipped streaming + the real FE:**
+
+- **SSE stream endpoint** — `POST .../message/stream` (`text/event-stream`): 0..n `delta`
+  events (JSON `StreamDelta{text}`), then exactly one terminal `done` (the persisted assistant
+  `MessageResponse`) or `error` (`StreamError{code}`, assistant NOT persisted). Hand-written
+  `CompanionStreamController` + `ChatStreamService` over the port's `stream(…)` — the
+  **contract-first SSE precedent** (§9 Decision 11).
+- **Two-transaction streamed turn** — `ChatService.prepareTurn` (user row) → LLM stream →
+  `ChatService.completeTurn` (assistant row); a mid-stream failure keeps the user row only.
+- **Real dual-mode FE** — `useChat()` + `useChatActions()` (`data/insights/chatHooks.ts`) +
+  `chatApi.ts` (fetch-ReadableStream SSE client) drive the rewritten ChatPage: history load,
+  optimistic streamed turn, honest degraded state on switch-off 404.
+
 **Status per layer:**
 
 | Layer | State | Notes |
 |---|---|---|
 | Backend (tables + contract + services + sync endpoint) | ✅ V0.2 | Behind `mezo.feature.companion.enabled`; switch off ⇒ the whole HTTP surface 404s. |
 | Context snapshot | ✅ V0.3 | `ContextSnapshotAssembler` in every chat turn's system prompt; LLM-free, `nincs adat` absences, `mezo.companion.snapshot.*` windows. |
-| LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile). |
-| Streaming (SSE) | ❌ deferred → V0.4 | V0.2 answers are **sync JSON** (`POST .../message` returns the persisted assistant message). |
-| Frontend | 🔶 mock | ChatPage under Insights is still fully simulated (`insights.md` §2.5); no `useChat` real hook, no network. Wires up at V0.4. |
+| LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile, + forced-failure sentinels since V0.4). |
+| Streaming (SSE) | ✅ V0.4 | `POST .../message/stream` — `delta`/`done`/`error` events, two-transaction turn, hand-written controller (§9 Decision 11). |
+| Frontend | ✅ V0.4 | ChatPage is real dual-mode: mock = Phase-1 seeded demo; real = bootstrap + SSE streaming + degraded state. Deployed k3s keeps the switch OFF until a real `GEMINI_API_KEY` lands. |
+| Tool-chips from real data | ❌ deferred → V0.5 | `tools`/`refs` stay `[]` on the wire; the mock seed still shows demo chips. |
 | Facts / RAG / patterns | ❌ deferred | V1.x (facts), V2.x (RAG), V3.x (patterns). |
 
-**Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot). **Design of record:**
+**Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE). **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §6 guardrails); slice map
 [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
 §V0.2–V0.3; implementation plans
 [`2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md) +
-[`2026-07-03-companion-v03-context-snapshot.md`](../superpowers/plans/2026-07-03-companion-v03-context-snapshot.md);
+[`2026-07-03-companion-v03-context-snapshot.md`](../superpowers/plans/2026-07-03-companion-v03-context-snapshot.md) +
+[`2026-07-03-companion-v04-sse-fe-chat.md`](../superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md);
 provider/port ADR
 [`0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md).
 
 ## 2. User-facing behavior
 
-**None yet.** V0.2 is a pure backend slice — the frontend is untouched. The only "chat" a user
-can see is the **simulated ChatPage** under Insights (`/insights/chat`), documented in
-[`insights.md`](insights.md) §2.5: it seeds from `initialChat` into local `useState`, fakes the
-send flow with a `setTimeout(…, 1200)` canned reply that branches on the word `"fáradt"`, shows a
-hard-coded `"23 facts active · Gemini 3.1 Pro"` header string, and never touches the network or a
-real LLM. The V0.2 endpoints are reachable only by an authenticated HTTP client (curl / tests —
-see §6). The mock ChatPage becomes the **real, streamed** surface at **V0.4** (`mezo-fnnq.4`),
-which is when this section starts describing actual behavior.
+The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
+companion surface since V0.4, dual-mode:
+
+- **Real mode** (default `pnpm dev`, backend on :8090): the page bootstraps the **newest
+  conversation + its full history** on load (header: `Mezo · társ` / `Gemini · élő`). Sending a
+  message renders the user bubble immediately, thinking-dots until the first chunk, then the
+  answer **streams in incrementally** (SSE `delta`s into a draft bubble); on the terminal `done`
+  the persisted pair replaces the optimistic overlay. A first-ever message auto-creates the
+  conversation. A stream failure shows an honest inline error bubble (`Nem sikerült válaszolni —
+  próbáld újra.`) and refetches history (the user message survived server-side). History
+  persists across reloads.
+- **Degraded state (IDENT-3)** — companion switch off ⇒ the API 404s ⇒ the page renders a banner
+  (`A társ jelenleg nincs bekapcsolva…`), subtitle `a társ most nem elérhető`, disabled composer;
+  every other tab is untouched. This is exactly the **deployed k3s state** until a real
+  `GEMINI_API_KEY` lands in the `mezo-app` secret (`MEZO_FEATURE_COMPANION_ENABLED=false` in
+  `k8s/backend/deployment.yaml`).
+- **Mock mode** (`VITE_USE_MOCK=true`): the Phase-1 demo — seeded `initialChat`, the canned
+  1.2s `cannedReply` (branches on `"fáradt"`), subtitle `demo beszélgetés`. The V0.4 rewrite
+  removed the fake `"23 facts active · Gemini 3.1 Pro"` line and the `"L4 aktív"` chip — the
+  header is honest in both modes.
 
 ## 3. Architecture & data flow
 
-The path truncates at the backend today (no FE consumer). The full V0.2 flow:
+**The streamed turn (V0.4 — what the FE uses):**
+
+```
+ChatPage (send) → useChatActions.sendReal → chatApi.streamMessage        (fetch + ReadableStream)
+POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
+  → CompanionStreamController.streamMessage    controller/CompanionStreamController.java:38
+      HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
+  → ChatStreamService.streamMessage            service/ChatStreamService.java:44
+      1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
+         prompt = voice + snapshot + history, persist USER row, title-once + lastMessageAt
+      2. companionLlm.stream(systemPrompt, content)   ── NO TX: each chunk →
+         ServerSentEvent event:delta, data: StreamDelta{text} (JSON)
+      3. chatService.completeTurn(userId, id, answer) ── TX #2: persist ASSISTANT row,
+         bump lastMessageAt → terminal event:done, data: MessageResponse
+      onError ⇒ event:error, data: StreamError{code:"COMPANION_STREAM_FAILED"} — NO assistant row
+  → FE: deltas append into the optimistic draft bubble; done → the persisted pair is written
+    into the ['chat'] query cache (no refetch); error → inline error bubble + invalidate
+```
+
+MVC adapts the returned `Flux<ServerSentEvent<Object>>` onto an internal `SseEmitter`
+(reactor-core is on the classpath via Spring AI); `spring.mvc.async.request-timeout: 120s`
+covers slow LLM streams. Pre-stream failures (400/401/404) are ordinary JSON
+`SystemMessageList` responses — the FE sends `Accept: text/event-stream, application/json`.
+
+**The sync turn (V0.2 — unchanged, one transaction):**
 
 ```
 POST /api/companion/conversation/{id}/message   (sync JSON)
@@ -193,13 +246,16 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `GET /api/companion/conversation` | `ConversationResponse[]` | 200 · 401 | Owner's conversations, most-recently-active first (`ConversationService.list`). |
 | `POST /api/companion/conversation` | `ConversationResponse` | 201 · 401 | New empty conversation (`title` null; `startedAt` = `created_at`). `saveAndFlush` so `@CreationTimestamp` is populated before mapping. |
 | `GET /api/companion/conversation/{id}/messages` | `MessageResponse[]` | 200 · 401 · 404 | Full history, oldest-first. 404 for missing **or foreign** (`getOwned`, no existence leak). |
-| `POST /api/companion/conversation/{id}/message` | `MessageResponse` | 200 · 400 · 401 · 404 | The **sync** chat turn (V0.2). 400 on empty/oversize `content`. |
+| `POST /api/companion/conversation/{id}/message` | `MessageResponse` | 200 · 400 · 401 · 404 | The **sync** chat turn (V0.2, single transaction — LLM failure still rolls the whole turn back). |
+| `POST /api/companion/conversation/{id}/message/stream` | SSE `delta*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11). Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
 `MessageResponse {id, role, content, createdAt, tools[], refs[]}` (`tools`/`refs` **always empty
 until V0.5** — the null envelope maps to `[]`, `CompanionMapper.toTools/toRefs`),
 `MessageTool {type, name}`, `MessageRef {kind, id}`,
-`SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`).
+`SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
+`StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
+data line is JSON).
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)
 
@@ -220,14 +276,17 @@ until V0.5** — the null envelope maps to `[]`, `CompanionMapper.toTools/toRefs
 Companion is a **Phase-3 domain that reads from the others, never the reverse** (the roadmap's
 coupling rule). Today only the platform seams are wired; the domain seams are named future work.
 
-### 5.1 Companion ↔ Insights / ChatPage (🟣 V0.4 seam)
-The mock ChatPage (`frontend/src/data/insights/chat.ts`, [`insights.md`](insights.md) §2.5) is the
-FE surface companion will drive. **Contract crossing the seam:** the backend `MessageResponse`
-`{role, content, createdAt, tools[], refs[]}` ↔ the FE `ChatMessage {role, ts, text, tools, refs}`.
-The shapes were **deliberately aligned** (`MessageTool{type,name}` ↔ FE `Tool{type,name}`,
-`MessageRef{kind,id}` ↔ FE `ChatRef{kind,id}`) so V0.4 (SSE + `useChat`/`useChatActions` dual-mode
-hooks) and V0.5 (real tool-chips) are mechanical. Until V0.4 the FE keeps its seeded conversation
-and this seam is inert.
+### 5.1 Companion ↔ Insights / ChatPage (✅ V0.4 wired)
+The ChatPage is now the real FE surface. **Contract crossing the seam:**
+`chatApi.toChatMessage` (`frontend/src/data/insights/chatApi.ts`) maps the wire
+`MessageResponse {role, content, createdAt, tools[], refs[]}` → the FE
+`ChatMessage {role, ts, text, tools?, refs?}` (`ts` = HU `HH:MM`; empty `tools`/`refs` become
+`undefined` so user bubbles stay lean; the V0.2 shape alignment made this a cast, not a
+transform). The hook layer is `data/insights/chatHooks.ts`: `useChat()` (a single `['chat']`
+`useDualQuery` bootstrap — newest conversation + history; 404 → `degraded`; `mode: 'mock'|'live'`
+keeps `isMockMode()` out of the feature layer) + `useChatActions()` (send/stream state machine —
+optimistic `ChatTurn {userText, draft, thinking}` overlay, `done` appended into the query cache).
+V0.5 makes the `tools[]`/`refs[]` chips real — the mapping already passes them through.
 
 ### 5.2 Companion ↔ Auth & ownership (wired)
 Every companion write/read rides the auth spine ([`_platform-auth-security.md`](_platform-auth-security.md)
@@ -269,9 +328,13 @@ since-date) — plain finders, no companion dependency.
 
 ## 6. How to use it (consume)
 
-There is **no FE hook yet** — the frontend still uses the mock ChatPage. Exercise the endpoints
-with an authenticated HTTP client (bearer token from `POST /api/auth/login`; the backend must run
-with `demodata` so the owner exists, and `mezo.feature.companion.enabled=true` — the default):
+**From the FE:** import `useChat` / `useChatActions` from `@/data/hooks` (implementations in
+`data/insights/chatHooks.ts`); the ChatPage is the reference consumer. For a keyless local e2e
+run the backend with the fake adapter — the echo streams through the whole SSE path:
+`./mvnw spring-boot:run -Dspring-boot.run.profiles=demodata,companion-fake`.
+
+**Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
+the owner exists, and `mezo.feature.companion.enabled=true` — the default):
 
 ```bash
 TOKEN=... # from POST /api/auth/login
@@ -291,9 +354,17 @@ curl -s $BASE/conversation/$CID/messages -H "Authorization: Bearer $TOKEN"
 
 # 4) list conversations, most-recently-active first (title = truncated first user message)
 curl -s $BASE/conversation -H "Authorization: Bearer $TOKEN"
+
+# 5) STREAMED turn (V0.4) — -N disables buffering; note the dual Accept
+curl -sN -X POST $BASE/conversation/$CID/message/stream \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -H 'Accept: text/event-stream, application/json' \
+  -d '{"content":"mi a mai terv?"}'
+# → event:delta \n data:{"text":"..."}   (0..n times)
+# → event:done  \n data:{ ...persisted assistant MessageResponse... }
 ```
 
-Note: `tools`/`refs` are `[]` in V0.2, the first `message` sets the conversation `title` +
+Note: `tools`/`refs` are `[]` until V0.5, the first `message` sets the conversation `title` +
 `lastMessageAt`, and an empty `content` returns a 400 field error (`VALIDATION_INVALID_VALUE`).
 
 ## 7. How to extend it
@@ -318,12 +389,12 @@ execution checklist"). The house recipe, **contract-first**:
    ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 
 **Where the next slices plug in:**
-- **V0.4 (streaming + FE)** — an SSE variant of `POST .../message` (`SseEmitter`/`Flux` over the
-  port's `stream(…)`), the FE `useChat`/`useChatActions` dual-mode hooks in `data/insights/`, and
-  ChatPage wired (send/stream-render/history). The SSE-in-contract-first precedent gets decided
-  in-slice and recorded in `_platform-api-backend.md`.
 - **V0.5 (tools)** — a tool registry over existing services; the `tool_calls`/`refs` envelopes
-  (already typed, null today) start being written and map straight to the FE chips.
+  (already typed, null today) start being written and map straight to the FE chips (the
+  `toChatMessage` mapping already passes them through). Tool calling forces the message-list
+  port variant (V0.2 Decision #4).
+- **V1.1 (facts)** — knowledge facts injected into the prompt between the snapshot and the
+  history block.
 
 ## 8. Testing
 
@@ -362,11 +433,31 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 - **`CompanionApiSwitchOffIT`** — `mezo.feature.companion.enabled=false` ⇒ `/api/companion/*` 404s
   (`RESOURCE_NOT_FOUND`) — the whole surface is gone (bean-boundary gating).
 
+**V0.4 test additions:**
+
+- **`ChatStreamServiceIT`** (3 tests, deliberately NOT `@Transactional` — it observes the real
+  two-transaction turn): deltas join to the full answer + terminal `done` carries the persisted
+  row + title/lastMessageAt touched; forced stream failure (`FakeCompanionLlm.FAIL_STREAM`
+  sentinel in the content) ⇒ `error` event, **only** the user row persisted; foreign
+  conversation throws 404 before any streaming.
+- **`CompanionStreamApiIT`** (5 tests, HTTP-level): 401 / 404-as-JSON / 400 field error (the
+  hand-written `@Valid` works), raw-SSE happy path (`event:delta`/`event:done` + persistence +
+  title), error event without an assistant row. TestRestTemplate buffers the finite fake stream,
+  so the SSE body is a plain assertable String.
+- **`CompanionApiSwitchOffIT`** gained the stream-path 404 (the hand-written controller is
+  switch-gated the same way).
+- **FE:** `api.sse.test.ts` (the `apiSse` parser: named events, chunk-split/CRLF reassembly,
+  ApiError on non-OK, Accept header), `chatApi.test.ts` (wire→`ChatMessage` mapping),
+  `chatHooks.test.tsx` (mock seed; real bootstrap/empty/degraded; a streamed turn lands in the
+  query cache), `ChatPage.test.tsx` (both modes: seeded demo + fake-timer canned reply / real
+  history + streamed reply + degraded banner). MSW companion handlers
+  (`src/test/msw/handlers.ts`) mirror `initialChat` and reuse `cannedReply`, so both modes
+  assert the same strings; the stream handler answers with a real `ReadableStream` SSE body.
+
 Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echoes/streams),
 `CompanionRealWiringIT` (Gemini adapter picked when the fake profile is absent), `CompanionSwitchOffIT`
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
-`CompanionPropertiesIT` (llm tiers + the V0.2 `chat.*` window/title bindings). FE tests: none yet
-(no companion FE code until V0.4).
+`CompanionPropertiesIT` (llm tiers + the V0.2 `chat.*` window/title bindings).
 
 ## 9. Decisions, gotchas & deferred
 
@@ -404,6 +495,31 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
 transaction) — its reads are cheap single-row/short-list lookups by design; anything heavier
 (full-history scans) belongs behind a V0.5 tool, not in the snapshot.
 
+**V0.4 decisions (locked in the V0.4 plan §"Decisions locked"):**
+
+11. **SSE-in-contract-first precedent.** The stream operation IS in `companion.yml` (single
+    source of truth; `StreamDelta`/`StreamError` generate both FE types and backend DTOs) under
+    its **own tag `CompanionStream`**, whose generated `CompanionStreamApi` interface is
+    **deliberately unimplemented** (an interface that is no bean contributes no mappings — inert).
+    The controller is hand-written because the generator cannot express
+    `Flux<ServerSentEvent<?>>`; both ArchUnit guards carry a documented allowlist entry
+    (`HAND_WRITTEN_CONTROLLER_ALLOWLIST`). Full write-up:
+    [`_platform-api-backend.md`](_platform-api-backend.md) §9.
+12. **Event protocol:** named events `delta` → (`done` | `error`), every `data:` line JSON —
+    raw token text would fight SSE's multi-line framing.
+13. **Two-transaction streamed turn, honest history.** `prepareTurn` (TX #1, user row) → stream
+    (no TX) → `completeTurn` (TX #2, assistant row). Mid-stream failure ⇒ user row stays,
+    assistant row never written, partial answers never persisted. The **sync** endpoint keeps
+    its V0.2 single-transaction semantics (LLM failure still rolls back the whole turn) — the
+    two paths share `ChatService`'s private helpers but not their transaction shape.
+14. **FE transport = fetch + ReadableStream** (`apiSse` in `data/_client/api.ts`) — EventSource
+    can neither POST nor send `Authorization`. Dual `Accept: text/event-stream, application/json`
+    so pre-stream errors stay ordinary `ApiError`s.
+15. **Degraded chat = the progression 404→ghost pattern** (`degraded: true` on the bootstrap,
+    IDENT-3 honest banner + disabled composer), and the ChatPage header is honest per mode
+    (`demo beszélgetés` / `Gemini · élő` / `a társ most nem elérhető`) — the fake facts-count
+    line died with V0.4.
+
 **Gotchas:**
 
 - **The `CompanionLlm` bean is ABSENT when the switch is off** — it is
@@ -419,11 +535,20 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   `GEMINI_API_KEY` default is what keeps every context bootable key-less (ADR 0008). Keep it.
 - **`companion-fake` merges, not replaces.** `@ActiveProfiles("companion-fake")` adds to the base
   `demodata` profile — don't expect it to strip other profiles.
+- **`FakeCompanionLlm` failure sentinels (V0.4):** a test message containing `[fake-fail]`
+  (`FAIL_COMPLETE`) makes `complete()` throw; `[fake-stream-fail]` (`FAIL_STREAM`) makes
+  `stream()` emit one chunk then error — deterministic error-path ITs. The fake constructs a
+  raw `IllegalStateException` ON PURPOSE (it simulates an arbitrary provider exception) and is
+  allowlisted in the ArchUnit raw-exception rule.
+- **`streamMessage` returns the Flux only after `prepareTurn` ran** — ownership/validation
+  errors become normal JSON HTTP errors, never SSE frames. Keep any new pre-stream check
+  BEFORE the Flux is built.
 
 **Deferred (with bd ids):**
-- **V0.4 SSE streaming + FE ChatPage goes real** (`mezo-fnnq.4`) — the sync endpoint gets a stream
-  sibling; `insights.md` §2.5 becomes real then.
 - **V0.5 tool calling + tool-chips** (`mezo-fnnq.5`) — fills the `tool_calls`/`refs` envelopes.
+- **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
+  `MEZO_FEATURE_COMPANION_ENABLED=false` from `k8s/backend/deployment.yaml` (the V0.2-review
+  prerequisite; until then the deployed chat is the honest degraded state).
 - **V1.x facts · V2.x RAG (pgvector) · V3.x patterns** — see the roadmap.
 
 ## 10. Key files
@@ -432,10 +557,12 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `api/feature/companion/companion.yml` — 4 endpoints + 5 schemas (tag `Companion` → `CompanionApi`);
   registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
-**Backend — controller / services / mapper**
+**Backend — controllers / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionController.java` — `implements CompanionApi`, JWT ownership, switch-gated.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionStreamController.java` — the V0.4 **hand-written** SSE endpoint (§9 Decision 11).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` + snapshot + windowed prompt assembly + sync turn.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` + snapshot + windowed prompt assembly + sync turn + the V0.4 `prepareTurn`/`completeTurn` halves.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`done`/`error` Flux over the port).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (6 HU blocks, `nincs adat` absences).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`).
 
@@ -456,16 +583,24 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (in `1.0.0_master.yml`).
 
 **Backend — tests**
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,CompanionApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{AiConversationPopulator,AiMessagePopulator}.java` + `support/ResetDatabase.java` (`ai_message`/`ai_conversation` TRUNCATE).
+- `backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` — the two documented V0.4 allowlist entries (hand-written controller + fake-LLM raw exception).
 
-**Frontend (still mock — no companion code yet)**
-- `frontend/src/data/insights/chat.ts` + `frontend/src/features/insights/pages/ChatPage.tsx` — the simulated ChatPage this backend will drive at V0.4 ([`insights.md`](insights.md) §2.5).
+**Frontend (real since V0.4)**
+- `frontend/src/data/_client/api.ts` — `apiSse` (fetch-ReadableStream SSE reader) + its `api.sse.test.ts`.
+- `frontend/src/data/insights/chatApi.ts` — REST + stream client, `toChatMessage` wire mapper.
+- `frontend/src/data/insights/chatHooks.ts` — `useChat` (bootstrap dual-read) + `useChatActions` (send/stream state machine); re-exported from `data/hooks.ts`.
+- `frontend/src/data/insights/chat.ts` — the mock seed (`initialChat`) + the shared `cannedReply`.
+- `frontend/src/features/insights/pages/ChatPage.tsx` — the real dual-mode surface ([`insights.md`](insights.md) §2.5).
+- `frontend/src/test/msw/handlers.ts` — companion fixtures + the SSE stream handler.
+- `k8s/backend/deployment.yaml` — `MEZO_FEATURE_COMPANION_ENABLED=false` until the Gemini secret lands.
 
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 - Roadmap (14 slices): [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
 - V0.2 plan: [`docs/superpowers/plans/2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md)
+- V0.4 plan: [`docs/superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md`](../superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md)
 - ADR: [`docs/decisions/0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `java_package_structure`, `error_handling`)

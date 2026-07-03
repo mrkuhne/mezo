@@ -1,7 +1,7 @@
 ---
 title: Insights
 type: feature-domain
-status: mock-only
+status: mixed
 updated: 2026-07-03
 tags: [insights, frontend, data-layer]
 key_files:
@@ -9,14 +9,15 @@ key_files:
   - frontend/src/data/insights/insights.ts
   - frontend/src/data/insights/knowledge.ts
   - frontend/src/data/insights/chat.ts
+  - frontend/src/data/insights/chatHooks.ts
   - frontend/src/data/hooks.ts
   - frontend/src/features/today/components/InsightsTeaser.tsx
-related: [_platform-data-layer, _platform-design-system, today, me]
+related: [_platform-data-layer, _platform-design-system, today, me, companion]
 ---
 
 # Insights — Feature Documentation
 
-> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mock-only** (Phase-1 frontend; designated **🟣 Phase-3 landing zone**). Lives under the **`/insights`** tab (4th in `TabBar`, between Fuel and Me).
+> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mock-only EXCEPT Chat, which is ✅ real since companion V0.4** (streamed dual-mode surface over the companion backend — [`companion.md`](companion.md)); the rest is the designated **🟣 Phase-3 landing zone**. Lives under the **`/insights`** tab (4th in `TabBar`, between Fuel and Me).
 
 ---
 
@@ -29,8 +30,8 @@ Insights is the user-facing window onto mezo's N=1 self-model: it presents the b
 | Layer | Status | Notes |
 |---|---|---|
 | FE mock | ✅ done | 7 sub-tabs, all views + tests present |
-| FE real-mode | ❌ none | No `isMockMode()` / `apiFetch` / `*Api` path exists for any Insights surface (verified: `data/insights/insights.ts`, `data/insights/knowledge.ts`, `data/insights/chat.ts` are **pure static modules**) |
-| Backend (Java) | ❌ none | No `api/feature/insights`, no entity, no Liquibase changeset |
+| FE real-mode | 🔶 Chat only | **Chat is real since companion V0.4** (`data/insights/chatHooks.ts` + `chatApi.ts`, SSE streaming — [`companion.md`](companion.md) §5.1). The other six surfaces stay pure static modules (`data/insights/insights.ts`, `knowledge.ts`). |
+| Backend (Java) | 🔶 companion only | `feature/companion` backs the chat (`ai_conversation`/`ai_message`); no `pattern`/`knowledge_fact` backend yet. |
 
 This is **intentional**. Insights is the Phase-3 "AI brain" surface; the single FE↔data boundary (`frontend/src/data/hooks.ts`) is pre-built so the real-mode swap is mechanical, exactly as already proven for biometrics/Train. There are **two distinct roadmap stages** the doc keeps separate:
 - **Phase-2 Slice D — "Insights seed-only"**: create `pattern` / `knowledge_fact` / `ai_conversation` tables with seed rows, **no AI** — `docs/superpowers/specs/2026-06-10-phase2-backend-design.md:126`; status ⏳ remaining (`docs/milestones/roadmap.md:12`).
@@ -70,8 +71,8 @@ A literary weekly narrative. `memoir-card` with radial glow, bookmark eyebrow + 
 ### 2.4 Knowledge (`pages/KnowledgeListPage.tsx`)
 Lists `facts` (from `useKnowledge`) as cards with left accent bar (`factCategoryColor`), text, `category` mono label, `×N reinforced`, and a per-fact **`Toggle`** (the "active in prompt" switch). Toggle state is **local `useState`** seeded from `f.active` — flipping changes the header's "`{activeCount} aktív promptban`" count but **does not persist**. Footer: *"Az aktív tények minden chat-fordulóba bekerülnek a system promptba. A graph nézethez · Me → Knowledge."* — explicitly routing the user to the richer graph view in the Me tab (see §5).
 
-### 2.5 Chat (`pages/ChatPage.tsx`)
-The companion conversation. Seeds from `initialChat` into local `useState<ChatMessageT[]>`. Header: "Mezo · társ", "`23 facts active · Gemini 3.1 Pro`" (hard-coded mono string), and an "L4 aktív" status chip. **Send flow is fully simulated**: `send()` appends the user message, sets `thinking=true` (animated `pulse-soft` 3-dot indicator), then after `setTimeout(…, 1200)` appends a **canned assistant reply** that branches on whether the input contains `"fáradt"`, with fabricated `tools`/`refs`. No network, no real LLM. Composer: mic button (inert), controlled `<input>` (Enter-to-send), send button. **`ChatMessage`** (`components/ChatMessage.tsx`): user bubbles right-aligned; assistant bubbles left, preceded by a `ToolChipRow` (tool transparency) and followed by a "Hivatkozott · L3" footer of `RefTag`s when `refs` present.
+### 2.5 Chat (`pages/ChatPage.tsx`) — ✅ REAL since companion V0.4
+The companion conversation, **dual-mode** over `useChat()` + `useChatActions()` (from `@/data/hooks`; backend + hook details in [`companion.md`](companion.md) §3/§5.1). Header: "Mezo · társ" + an **honest mode subtitle** (`demo beszélgetés` / `Gemini · élő` / `a társ most nem elérhető`) — the Phase-1 fake "`23 facts active`" string and "L4 aktív" chip are gone. **Real mode:** bootstraps the newest conversation + history, `send()` renders the optimistic user bubble + thinking-dots, then the answer **streams in** (SSE deltas into a draft bubble) and the persisted pair lands in the `['chat']` cache; stream failure → inline error bubble + history refetch; companion switch off (404) → degraded banner (`A társ jelenleg nincs bekapcsolva…`) + disabled composer, no dead-end (IDENT-3). **Mock mode:** the Phase-1 demo — `initialChat` seed + the 1.2s `cannedReply` (branches on `"fáradt"`, fabricated `tools`/`refs`). Composer: mic button (inert), controlled `<input>` (Enter-to-send), send button. **`ChatMessage`** (`components/ChatMessage.tsx`, unchanged): user bubbles right-aligned; assistant bubbles left, preceded by a `ToolChipRow` (tool transparency — real `tools[]` stay `[]` until V0.5) and followed by a "Hivatkozott · L3" footer of `RefTag`s when `refs` present.
 
 ### 2.6 Predictions (`pages/PredictionsPage.tsx`)
 Header "Aktív predikciók" + hard-coded "`2 validated · 60-day acc 68%`". Each `Prediction` card: status chip (`✓ Validated` / `◐ Pending`), date, display title, confidence `bar-fill glow` + `NN%`, optional `basis` paragraph, and (when validated) an `actual` outcome line.
@@ -94,11 +95,17 @@ View (PatternsPage, WeeklyPage, …)
 
 Contrast with a real-mode feature (e.g. `useWeight` in `weightHooks.ts` / `useSleep` in `hooks.ts:79`) which switches on `isMockMode()` between static `initialData` and a real `*Api` call over `apiFetch`. The Insights hooks have **none of that machinery** — no TanStack Query, no `initialData`, no mutation, no mode switch:
 
-- `useInsights()` (`hooks.ts:131-133`) → `{ patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports.
-- `useKnowledge()` (`hooks.ts:127-129`) → `{ facts, edges, activeCount: facts.filter(f => f.active).length }`.
-- `useChat()` (`hooks.ts:135-137`) → `{ initialChat }`.
+- `useInsights()` (`data/insights/insightsHooks.ts`) → `{ patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports.
+- `useKnowledge()` (`data/insights/insightsHooks.ts`) → `{ facts, edges, activeCount: facts.filter(f => f.active).length }`.
 
-All "interactivity" (pattern Confirm/Monitor/Reject, knowledge Toggle, memoir reactions, chat send) lives in **component-local `useState`** and evaporates on unmount. The single FE↔data boundary (`hooks.ts`) is intact and ready — when Phase 3 lands, these three hooks are the **exact swap points**, by design.
+**Exception — Chat swapped at companion V0.4:** `useChat()` + `useChatActions()` moved to
+`data/insights/chatHooks.ts` (re-exported from the `hooks.ts` barrel) and are **real dual-mode**
+— `useChat` is a `useDualQuery` bootstrap (`{conversationId, messages, degraded, mode}`; mock =
+`initialChat` seed, real = newest conversation + history via `chatApi`, 404 → degraded ghost),
+`useChatActions` is the send/stream state machine over the SSE client (`chatApi.streamMessage`,
+`apiSse` in `data/_client/api.ts`). Details: [`companion.md`](companion.md) §5.1.
+
+All remaining "interactivity" (pattern Confirm/Monitor/Reject, knowledge Toggle, memoir reactions) lives in **component-local `useState`** and evaporates on unmount. The single FE↔data boundary (`hooks.ts`) is intact — the chat swap proved the recipe; `useInsights`/`useKnowledge` are the **next swap points**, by design.
 
 ---
 
@@ -129,7 +136,7 @@ All "interactivity" (pattern Confirm/Monitor/Reject, knowledge Toggle, memoir re
 
 **Chat** (`types.ts:410-418`): `ChatRole = 'user'|'assistant'`, `ChatRef { kind; id }`, `ChatMessage { role; ts; text; tools?: Tool[]; refs?: ChatRef[] }`. `Tool` is imported from `@/shared/ui/ToolChip` (`{ type: ToolType; name; args? }`, `ToolType = 'read'|'compute'|'write'`). `initialChat` = 3 messages (assistant → user → assistant).
 
-**Endpoints / contract: NONE.** `api/feature/` contains only `auth/checkin/sleep/train/weight/goal/biometrics-profile` (no `insights`/`knowledge`/`chat`). The `ChatPage` mock copy *names* fictional tool calls (`get_recent_workouts(days=3)`, `get_sleep(days=7)`, `get_reta_phase()`, `predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) — these are **UI-transparency theater**, not real endpoints, but they sketch the Phase-3 tool surface. The planned Slice-D tables are `pattern` / `knowledge_fact` / `ai_conversation` (seed-only, no AI). **Where the backend plugs in:** rewrite the three hooks in `data/insights/insightsHooks.ts` (re-exported by the `hooks.ts` barrel) to dual-mode on `isMockMode()` — see §7.
+**Endpoints / contract:** the **chat is contract-backed since companion V0.2/V0.4** — `api/feature/companion/companion.yml` (conversations, messages, sync + SSE stream turn; see [`companion.md`](companion.md) §4). Patterns/knowledge/weekly/etc. still have **no** contract. The mock seed's *named* tool calls (`get_recent_workouts(days=3)`, `get_sleep(days=7)`, `get_reta_phase()`, `predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) remain **UI-transparency theater** until V0.5 fills the real `tools[]`/`refs[]`. **Where the rest of the backend plugs in:** rewrite `useInsights`/`useKnowledge` in `data/insights/insightsHooks.ts` (re-exported by the `hooks.ts` barrel) to dual-mode on `isMockMode()` — the chat swap (`chatHooks.ts`) is the worked example — see §7.
 
 ---
 

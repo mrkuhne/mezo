@@ -113,7 +113,7 @@ GoalsPage ─┬─ useGoal()  ─┬─ mock:  mockGoal + static linkedMesocycl
                                    └─ table goal  (created_by = CurrentUserId.get())
 ```
 
-**The `useGoals → useWeight + useGoal` split (G1):** the old combined `useGoals()` hook is **removed**. It is now two hooks, both re-exported from `@/data/hooks` (`hooks.ts:179-180`):
+**The `useGoals → useWeight + useGoal` split (G1):** the old combined `useGoals()` hook is **removed**. It is now two hooks, both re-exported from the `@/data/hooks` barrel (implementations: `data/me/weightHooks.ts` / `data/me/goalHooks.ts`):
 
 **Weight (`useWeight`, `frontend/src/data/me/weightHooks.ts:11-33`):** the weight half lifted out verbatim — same `['weightLog']` cache key.
 - *read* — `useQuery(['weightLog'])`, `queryFn = mock ? () => initialWeightLog : weightApi.list`. Mock seeds `initialData` synchronously (parity with the old Phase-1 `useState`); **real mode has no `initialData`** → `[]` until the fetch resolves.
@@ -137,7 +137,7 @@ GoalsPage ─┬─ useGoal()  ─┬─ mock:  mockGoal + static linkedMesocycl
 
 **Feasibility preview (`useFeasibilityPreview`, `goalHooks.ts`, G6 `mezo-06n`):** the cél step's live realism hook. `useFeasibilityPreview(draft: FeasibilityPreviewRequest | null, { enabled?, debounceMs? }) → FeasibilityPreviewResponse | undefined`. It **debounces** the draft internally (default 400ms) into a `useState`, then keys a `useQuery` on the debounced draft — real mode hits `goalApi.feasibilityPreview` (`POST /api/goals/feasibility-preview`), **mock mode** returns the static `feasibilityPreview` (`data/me/goals.ts`, a feasible 0,6 %BW/hét). `enabled:false` (the caller passes `false` for `maintain` / no target weight / inverted window) short-circuits to `undefined` so the panel hides cleanly. The backend (Task 2, `GoalFeasibilityService`) owns the rate math; the FE only renders.
 
-**Sleep (`useSleep`, `hooks.ts:104-129`):** identical shape via `sleepApi` (`biometricsApi.ts:25-39`), `GET/POST /api/biometrics/sleep`. `useSleep` exposes `lastNight = sleepLog[sleepLog.length-1]` — this **silently depends on the date-ascending ordering** the backend `OwnedRepository.findAllOwned` guarantees.
+**Sleep (`useSleep`, `data/me/sleepHooks.ts`):** identical shape via `sleepApi` (`biometricsApi.ts:25-39`), `GET/POST /api/biometrics/sleep`. `useSleep` exposes `lastNight = sleepLog[sleepLog.length-1]` — this **silently depends on the date-ascending ordering** the backend `OwnedRepository.findAllOwned` guarantees.
 
 **Profile / People (mock-only):** `useProfile()` (`hooks.ts`) now returns just `{ user }` (from `data/today/today.ts`) — the `identityGoal`/`areas`/`quickSettings`/`notifSettings`/`appVersion` exports and `data/me.ts` were **deleted** with the Profil strip (`mezo-lfw`). `usePeople()` returns `{ people, mentions, logMention }` (the `summary`/`patterns` exports were dropped); it uses `useState(initialMentions)` and a `logMention` `useCallback` that builds a `Mention` client-side (`crypto.randomUUID()`, `hu-HU` time label) and prepends it — **no network call in either mode.**
 
