@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.support;
 
 import io.mrkuhne.mezo.TestcontainersConfiguration;
+import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
@@ -42,6 +44,7 @@ import org.springframework.context.annotation.Import;
  */
 @SpringBootTest
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
+    AiConversationPopulator.class, AiMessagePopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     PantryItemPopulator.class,

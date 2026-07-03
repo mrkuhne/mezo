@@ -16,4 +16,10 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.llm().chatModel()).isEqualTo("gemini-2.5-flash");
         assertThat(properties.llm().smartModel()).isEqualTo("gemini-2.5-pro");
     }
+
+    @Test
+    void testChatConfig_shouldBindWindowAndTitleFromYaml_whenContextStarts() {
+        assertThat(properties.chat().historyWindow()).isEqualTo(20);
+        assertThat(properties.chat().titleMaxChars()).isEqualTo(80);
+    }
 }

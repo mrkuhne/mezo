@@ -91,6 +91,11 @@ mezo:
     llm:
       chat-model: gemini-2.5-flash   # cheap/fast tier: every conversational turn
       smart-model: gemini-2.5-pro    # smart tier: heavy pipelines (V3.2 critique); unused until then
+    chat:
+      # How many prior messages (user+assistant rows) are windowed into the system prompt (20 = ~10 turns)
+      history-window: 20
+      # Auto-title = first user message truncated to this many characters (DB column caps at 120)
+      title-max-chars: 80
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
