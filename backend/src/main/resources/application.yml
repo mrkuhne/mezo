@@ -123,6 +123,10 @@ mezo:
       # Max learned_fact candidates persisted per chat turn (dedupe against confirmed facts
       # + pending candidates runs first)
       max-candidates-per-turn: 3
+    embedding:
+      # V2.1 memory vectors (L1 episodic recall) — embedding model behind the EmbeddingPort.
+      # The 768 dimension is structural (memory_embedding vector(768) + EmbeddingPort.DIMENSIONS), not config.
+      model: gemini-embedding-001
     advisors:
       # V1.3 post-response advisor chain — deterministic clinical Rx-dose guard + one cheap-tier
       # LLM verdict (never-ask-twice redundancy + grounding-lite); reject -> one corrective

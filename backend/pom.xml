@@ -102,6 +102,13 @@
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
+			<!-- pgvector column mapping (V2.1): @JdbcTypeCode(SqlTypes.VECTOR) + @Array(length=768)
+			     on float[] — Hibernate's official vector module, version managed by the Boot BOM.
+			     Only the entity mapping; ANN search runs as native SQL (<=> has no JPQL form). -->
+			<groupId>org.hibernate.orm</groupId>
+			<artifactId>hibernate-vector</artifactId>
+		</dependency>
+		<dependency>
 			<!-- Hibernate 7's typed jsonb mapping (@JdbcTypeCode(SqlTypes.JSON)) auto-detects a
 			     JSON FormatMapper, but its JacksonJsonFormatMapper is bound to Jackson 2
 			     (com.fasterxml.jackson.databind), whereas Spring Boot 4 ships only Jackson 3

@@ -21,7 +21,8 @@ public record CompanionProperties(
     @NotNull @Valid Tools tools,
     @NotNull @Valid Facts facts,
     @NotNull @Valid Extraction extraction,
-    @NotNull @Valid Advisors advisors
+    @NotNull @Valid Advisors advisors,
+    @NotNull @Valid Embedding embedding
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -67,6 +68,12 @@ public record CompanionProperties(
         @Min(0) @Max(2) int maxRetries,
         /** Prescription-med terms the clinical check guards (accent-folded contains-match). */
         @NotEmpty List<String> rxTerms
+    ) {}
+
+    /** V2.1 embedding port — which provider model produces memory vectors. */
+    public record Embedding(
+        /** gemini-embedding-001 (bd mezo-c30) — the 768 dimension is structural (vector(768) schema + EmbeddingPort.DIMENSIONS), not config. */
+        @NotBlank String model
     ) {}
 
     /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */

@@ -42,7 +42,7 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
 | **Ingress** | `Ingress` (Traefik) | HTTPS via Let's Encrypt. Host routes: `/` → frontend, `/api` → backend. |
 | **frontend** | `Deployment` + `Service` | `pnpm build` output served by nginx. Image in GHCR. REAL mode (targets `/api`). |
 | **backend** | `Deployment` + `Service` | Spring Boot, container on :8090. Profile `demodata` (owner seed). Env/secrets from `Secret`/`ConfigMap`. Image in GHCR. |
-| **postgres** | `StatefulSet` + `PVC` + `Secret` | Postgres 16. `local-path` PVC for data. Credentials in a `Secret`. Not exposed outside the cluster. |
+| **postgres** | `StatefulSet` + `PVC` + `Secret` | Postgres 16 — image `pgvector/pgvector:pg16` since 2026-07-03 (companion V2.1 vector layer; same PG16 major, data kept on the PVC). `local-path` PVC for data. Credentials in a `Secret`. Not exposed outside the cluster. |
 | **pgAdmin** | `Deployment` + `Service` | DB GUI. **No Ingress** — reach via `kubectl port-forward` or Tailscale only. |
 | **ArgoCD** | install + `Application` | GitOps controller in `argocd` namespace; `Application` points at the repo's `k8s/` directory. |
 
