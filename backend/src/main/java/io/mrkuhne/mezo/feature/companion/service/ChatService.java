@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.advisor.AdvisedAnswer;
+import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
@@ -15,6 +17,7 @@ import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
@@ -55,6 +58,8 @@ public class ChatService {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
+    private final ObjectProvider<CompanionAdvisorChain> advisorChain;
     private final CompanionToolRegistry toolRegistry;
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
@@ -78,7 +83,7 @@ public class ChatService {
                 + knowledgeFactService.renderPromptBlock(userId)
                 + renderHistory(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, request.getContent());
     }
@@ -91,10 +96,10 @@ public class ChatService {
     @Transactional
     public MessageResponse completeTurn(
             UUID userId, UUID conversationId, UUID userMessageId, String userContent,
-            String answer, ToolCallAudit audit) {
+            String answer, ToolCallAudit audit, boolean degraded) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope());
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent, answer));
@@ -113,13 +118,24 @@ public class ChatService {
                 + renderHistory(loadWindow(userId, conversationId));
 
         AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
         // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
         ToolCallAudit audit = toolRegistry.newTurnAudit();
-        String answer = companionLlm.complete(systemPrompt, request.getContent(),
-                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit));
+        String answer;
+        boolean degraded = false;
+        CompanionAdvisorChain chain = advisorChain.getIfAvailable();
+        if (chain != null) {
+            // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
+            AdvisedAnswer advised = chain.complete(systemPrompt, request.getContent(),
+                    toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit);
+            answer = advised.answer();
+            degraded = advised.degraded();
+        } else {
+            answer = companionLlm.complete(systemPrompt, request.getContent(),
+                    toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit));
+        }
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope());
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
@@ -148,7 +164,7 @@ public class ChatService {
     }
 
     private AiMessageEntity persistMessage(AiConversationEntity conversation, UUID userId, String role,
-            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs) {
+            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs, boolean degraded) {
         AiMessageEntity message = new AiMessageEntity();
         message.setConversation(conversation);
         message.setCreatedBy(userId);
@@ -156,6 +172,7 @@ public class ChatService {
         message.setContent(content);
         message.setToolCalls(toolCalls);
         message.setRefs(refs);
+        message.setDegraded(degraded);
         // saveAndFlush so the two rows of a turn get distinct created_at (history ordering key)
         return messageRepository.saveAndFlush(message);
     }

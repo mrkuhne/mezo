@@ -15,4 +15,7 @@ public class FeaturesConfiguration {
 
     /** V1.2 post-turn fact extraction — sub-switch of companion; gates ONLY the async listener. */
     public static final String COMPANION_EXTRACTION_SWITCH = "mezo.companion.extraction.enabled";
+
+    /** V1.3 advisor chain (clinical + verdict + retry/degraded) — sub-switch of companion. */
+    public static final String COMPANION_ADVISORS_SWITCH = "mezo.companion.advisors.enabled";
 }

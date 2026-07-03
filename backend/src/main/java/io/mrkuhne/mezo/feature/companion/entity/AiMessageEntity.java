@@ -61,4 +61,8 @@ public class AiMessageEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private RefsEnvelope refs;
+
+    /** V1.3: true when the advisor chain rejected the answer even after the corrective retry. */
+    @Column(nullable = false)
+    private boolean degraded;
 }

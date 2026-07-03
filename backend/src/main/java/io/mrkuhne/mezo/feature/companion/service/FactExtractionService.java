@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
@@ -14,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -75,13 +78,25 @@ public class FactExtractionService {
             return 0;
         }
 
-        Set<String> known = knownNormalizedTexts(userId);
+        Map<String, KnowledgeFactEntity> confirmed = confirmedByNormalizedText(userId);
+        Set<String> known = new HashSet<>(confirmed.keySet());
+        learnedFactRepository
+                .findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(userId)
+                .forEach(c -> known.add(normalize(c.getCandidateText())));
         int persisted = 0;
         for (ExtractedFact fact : extracted) {
             if (persisted >= properties.extraction().maxCandidatesPerTurn()) {
                 break;
             }
-            if (!known.add(normalize(fact.fact()))) {
+            String normalized = normalize(fact.fact());
+            if (!known.add(normalized)) {
+                KnowledgeFactEntity hit = confirmed.get(normalized);
+                if (hit != null) {
+                    // V1.3 reinforcement: the chat re-learned a confirmed fact — that IS a re-confirmation
+                    hit.setReinforcementCount(hit.getReinforcementCount() + 1);
+                    hit.setLastReinforcedAt(Instant.now());
+                    knowledgeFactRepository.save(hit);
+                }
                 continue; // duplicate of a confirmed fact, a pending candidate, or this batch
             }
             LearnedFactEntity candidate = new LearnedFactEntity();
@@ -110,16 +125,12 @@ public class FactExtractionService {
         }
     }
 
-    private Set<String> knownNormalizedTexts(UUID userId) {
-        Set<String> known = knowledgeFactRepository
+    /** Confirmed facts keyed by normalized text — a dedupe hit on one of these reinforces it (V1.3). */
+    private Map<String, KnowledgeFactEntity> confirmedByNormalizedText(UUID userId) {
+        return knowledgeFactRepository
                 .findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)
                 .stream()
-                .map(f -> normalize(f.getFactText()))
-                .collect(Collectors.toCollection(HashSet::new));
-        learnedFactRepository
-                .findByCreatedByAndUserDecisionIsNullAndDeletedFalseOrderByCreatedAtDesc(userId)
-                .forEach(c -> known.add(normalize(c.getCandidateText())));
-        return known;
+                .collect(Collectors.toMap(f -> normalize(f.getFactText()), f -> f, (a, b) -> a));
     }
 
     private String normalize(String text) {

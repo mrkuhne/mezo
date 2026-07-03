@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
+import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
@@ -36,6 +38,13 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final String FAIL_COMPLETE = "[fake-fail]";
     public static final String FAIL_STREAM = "[fake-stream-fail]";
 
+    /** Scripted verdicts (V1.3): violate only until the retry header appears in the checked answer. */
+    public static final String VIOLATE_ONCE = "[fake-violate]";
+    /** Scripted verdicts (V1.3): violate every round — exercises the degraded path. */
+    public static final String VIOLATE_ALWAYS = "[fake-violate-always]";
+    /** Scripted verdicts (V1.3): answer with non-JSON — exercises the fail-open path. */
+    public static final String VERDICT_BROKEN = "[fake-verdict-broken]";
+
     /** Scripted tool execution: {@code [fake-tool:get_sleep {"days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
 
@@ -52,8 +61,29 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(FactExtractionService.EXTRACTION_MARKER)) {
             return factsAnswer(userMessage);
         }
+        if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
+            return verdictAnswer(userMessage);
+        }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));
+    }
+
+    /**
+     * Deterministic, STATELESS verdict scripting (V1.3): the verdict payload embeds the checked
+     * answer, and the echo embeds the prompts in every answer — so attempt-2 answers contain the
+     * retry header, which is how {@link #VIOLATE_ONCE} "passes" the retry without the fake keeping
+     * state. {@link #VIOLATE_ALWAYS} ignores the header (degraded path); {@link #VERDICT_BROKEN}
+     * returns non-JSON (fail-open path).
+     */
+    private String verdictAnswer(String userMessage) {
+        if (userMessage.contains(VERDICT_BROKEN)) {
+            return "ez nem json";
+        }
+        boolean retryRound = userMessage.contains(AdvisorRetry.RETRY_MARKER);
+        if (userMessage.contains(VIOLATE_ALWAYS) || (userMessage.contains(VIOLATE_ONCE) && !retryRound)) {
+            return "{\"redundantQuestion\":true,\"ungroundedClaim\":false,\"reason\":\"ismert tényre kérdez rá\"}";
+        }
+        return "{\"redundantQuestion\":false,\"ungroundedClaim\":false,\"reason\":\"\"}";
     }
 
     /**

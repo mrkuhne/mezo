@@ -2,7 +2,9 @@ package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -32,6 +34,7 @@ class FactExtractionServiceIT extends AbstractIntegrationTest {
 
     @Autowired private FactExtractionService factExtractionService;
     @Autowired private LearnedFactRepository learnedFactRepository;
+    @Autowired private KnowledgeFactRepository knowledgeFactRepository;
     @Autowired private KnowledgeFactPopulator knowledgeFactPopulator;
     @Autowired private LearnedFactPopulator learnedFactPopulator;
     @Autowired private AiConversationPopulator conversationPopulator;
@@ -80,6 +83,34 @@ class FactExtractionServiceIT extends AbstractIntegrationTest {
 
         assertThat(persisted).isZero();
         assertThat(pending(userId)).hasSize(1); // only the pre-seeded candidate
+    }
+
+    @Test
+    void testExtractFromTurn_shouldReinforceConfirmedFact_whenDuplicateExtracted() {
+        UUID userId = databasePopulator.populateUser("extract-reinforce@test.local");
+        KnowledgeFactEntity fact = knowledgeFactPopulator.fact(userId, "Reggel edzik szívesebben", "train", 0);
+        String content = "megint mondom [fake-facts:[" +
+                "{\"fact\":\"reggel   edzik szívesebben\",\"category\":\"train\"}]]";
+
+        int persisted = factExtractionService.extractFromTurn(userId, null, content, "tudom");
+
+        assertThat(persisted).isZero(); // no new candidate — the confirmed fact got reinforced instead
+        KnowledgeFactEntity reloaded = knowledgeFactRepository.findById(fact.getId()).orElseThrow();
+        assertThat(reloaded.getReinforcementCount()).isEqualTo(1);
+        assertThat(reloaded.getLastReinforcedAt()).isNotNull();
+    }
+
+    @Test
+    void testExtractFromTurn_shouldNotReinforce_whenDuplicateOfPendingCandidate() {
+        UUID userId = databasePopulator.populateUser("extract-noreinforce@test.local");
+        learnedFactPopulator.candidate(userId, "esti kávé rontja az alvását", "health", null);
+        String content = "ismétlés [fake-facts:[" +
+                "{\"fact\":\"Esti kávé rontja az alvását\",\"category\":\"health\"}]]";
+
+        int persisted = factExtractionService.extractFromTurn(userId, null, content, "tudom");
+
+        assertThat(persisted).isZero();
+        assertThat(pending(userId)).hasSize(1); // still exactly the pre-seeded candidate, nothing reinforced
     }
 
     @Test

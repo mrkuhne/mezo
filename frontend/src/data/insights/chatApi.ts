@@ -20,6 +20,7 @@ export function toChatMessage(m: MessageResponse): ChatMessage {
     // wire `type` is a plain string; values come from our own backend ('read' | 'compute')
     tools: m.tools.length ? (m.tools as Tool[]) : undefined,
     refs: m.refs.length ? m.refs : undefined,
+    degraded: m.degraded || undefined,
   }
 }
 

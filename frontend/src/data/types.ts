@@ -488,6 +488,8 @@ export interface ChatMessage {
   text: string
   tools?: Tool[]
   refs?: ChatRef[]
+  /** V1.3: answer failed the backend self-check even after retry — render flagged. */
+  degraded?: boolean
 }
 
 // --- Train (mesocycles, workouts, sport) ---

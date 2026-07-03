@@ -18,6 +18,8 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.getByPlaceholderText('Mondj valamit...')).toBeInTheDocument()
     // assistant tool-transparency chip
     expect(screen.getByText('get_recent_workouts(days=3)')).toBeInTheDocument()
+    // V1.3: the mock seed never carries a degraded answer — no badge
+    expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
   })
 
   test('sending a message appends it and then simulates a reply', async () => {
@@ -61,6 +63,32 @@ describe('ChatPage (real mode)', () => {
     // V0.5: the persisted reply renders its REAL tool chip + ref tag (from the done event)
     expect(screen.getByText('get_sleep(days=3)')).toBeInTheDocument()
     expect(screen.getByText(/\[Sleep\]/)).toBeInTheDocument()
+  })
+
+  test('renders the V1.3 badge when the done event flags the answer degraded', async () => {
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, () => {
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(frame('delta', { text: 'bizonytalan válasz' })))
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-degraded', role: 'assistant', content: 'bizonytalan válasz',
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], degraded: true,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
+    const input = screen.getByPlaceholderText('Mondj valamit...')
+    fireEvent.change(input, { target: { value: 'Mennyit emeljek?' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByText('bizonytalan válasz')).toBeInTheDocument())
+    expect(screen.getByText('nem ellenőrzött')).toBeInTheDocument()
   })
 
   test('renders the honest degraded state when the companion switch is off', async () => {
