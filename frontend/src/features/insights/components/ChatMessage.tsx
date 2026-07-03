@@ -34,6 +34,15 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
         <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)' }}>
           {m.ts}
         </span>
+        {m.degraded && (
+          <span
+            className="eyebrow"
+            style={{ fontSize: 9, color: 'var(--color-warning)' }}
+            title="Ez a válasz nem ment át az önellenőrzésen — kezeld fenntartással."
+          >
+            nem ellenőrzött
+          </span>
+        )}
       </div>
       {m.tools && <ToolChipRow tools={m.tools} />}
       <div className="card notch-12" style={{ padding: 14 }}>

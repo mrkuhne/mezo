@@ -456,6 +456,7 @@ export const handlers = [
         createdAt: `2026-07-03T06:3${i}:00Z`,
         tools: m.tools ?? [],
         refs: m.refs ?? [],
+        degraded: false,
       })),
     ),
   ),
@@ -536,6 +537,7 @@ export const handlers = [
           createdAt: '2026-07-03T07:00:05Z',
           tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
           refs: [{ kind: 'Sleep', id: '2026-07-02' }],
+          degraded: false,
         })))
         controller.close()
       },
