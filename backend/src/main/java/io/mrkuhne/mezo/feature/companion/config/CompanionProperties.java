@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -23,7 +25,8 @@ public record CompanionProperties(
     @NotNull @Valid Extraction extraction,
     @NotNull @Valid Advisors advisors,
     @NotNull @Valid Embedding embedding,
-    @NotNull @Valid Summary summary
+    @NotNull @Valid Summary summary,
+    @NotNull @Valid Recall recall
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -79,6 +82,20 @@ public record CompanionProperties(
         boolean embedChatTurns,
         /** Upper cap on embedded content length (chars) per narrative unit (turn / summary). */
         @Min(200) @Max(20000) int embedMaxChars
+    ) {}
+
+    /** V2.3 episodic recall (find_similar_past_days) — rank = similarity × exp(-age/τ). */
+    public record Recall(
+        /** τ: the recency half-scale in days — how fast an old day's relevance fades. */
+        @Min(1) @Max(365) int decayDays,
+        /** Upper clamp for the tool's k arg (how many days may be recalled per call). */
+        @Min(1) @Max(10) int maxK,
+        /** Raw-cosine-similarity floor — below it a match is noise, not a memory (0..1). */
+        @DecimalMin("0.0") @DecimalMax("1.0") double minSimilarity,
+        /** ANN candidates fetched before decay re-ranking (recall quality vs query cost). */
+        @Min(1) @Max(100) int candidatePool,
+        /** Per-memory render cap in the tool result (chars) — gist over full re-quote (token budget). */
+        @Min(50) @Max(2000) int renderMaxChars
     ) {}
 
     /** V2.2 nightly daily-summary job — the narrative memory's generator. */

@@ -145,6 +145,18 @@ mezo:
       embed-chat-turns: true
       # Upper cap on embedded content length (chars) per narrative unit (turn / summary)
       embed-max-chars: 2000
+    recall:
+      # V2.3 find_similar_past_days — episodic recall ranking: similarity × exp(-age/decay-days)
+      # τ: how fast an old day's relevance fades (days)
+      decay-days: 90
+      # Upper clamp for the tool's k arg (days recalled per call)
+      max-k: 5
+      # Raw cosine-similarity floor — below it a match is noise, not a memory
+      min-similarity: 0.25
+      # ANN candidates fetched before decay re-ranking
+      candidate-pool: 20
+      # Per-memory render cap in the tool result (chars) — gist over full re-quote
+      render-max-chars: 300
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron
