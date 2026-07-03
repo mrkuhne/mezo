@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
+import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
@@ -20,10 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
-/** V2.2 embed pipeline: idempotent unit writes + the nightly catch-up over missed turns. */
+/** V2.2 embed pipeline: idempotent unit writes, message-derived dating, replace-by-day. */
 @Transactional
 @ActiveProfiles("companion-fake")
 class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
@@ -32,37 +34,73 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
 
     @Autowired private MemoryEmbeddingWriter memoryEmbeddingWriter;
     @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
+    @Autowired private DailySummaryRepository dailySummaryRepository;
     @Autowired private UserPopulator userPopulator;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private AiConversationPopulator aiConversationPopulator;
     @Autowired private AiMessagePopulator aiMessagePopulator;
 
     @Test
-    void testWriteTurn_shouldPersistEmbedding_whenNewTurn() {
+    void testEmbedTurnByMessageId_shouldPersistTurnUnit_whenNewTurn() {
         UUID owner = userPopulator.createUser().getId();
-        UUID refId = UUID.randomUUID();
+        AiConversationEntity conversation = aiConversationPopulator.conversation(owner);
+        aiMessagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "mit egyek?");
+        AiMessageEntity assistant = aiMessagePopulator.message(
+                conversation, AiMessageEntity.ROLE_ASSISTANT, "fehérjét");
 
-        memoryEmbeddingWriter.writeTurn(owner, refId, "mit egyek?", "fehérjét", DAY);
+        memoryEmbeddingWriter.embedTurnByMessageId(assistant.getId());
 
         List<MemoryEmbeddingEntity> rows = memoryEmbeddingRepository.findAll();
         assertThat(rows).hasSize(1);
         MemoryEmbeddingEntity row = rows.getFirst();
         assertThat(row.getKind()).isEqualTo(MemoryEmbeddingEntity.KIND_CHAT_TURN);
-        assertThat(row.getRefId()).isEqualTo(refId);
+        assertThat(row.getRefId()).isEqualTo(assistant.getId());
         assertThat(row.getContent()).isEqualTo("Daniel: mit egyek?\nMezo: fehérjét");
-        assertThat(row.getOccurredOn()).isEqualTo(DAY);
+        // occurred_on = the episode's day (the assistant row's creation day), never the embed day
+        assertThat(row.getOccurredOn())
+                .isEqualTo(LocalDate.ofInstant(assistant.getCreatedAt(), ZoneId.systemDefault()));
         assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
     }
 
     @Test
-    void testWriteTurn_shouldSkip_whenAlreadyEmbedded() {
+    void testEmbedTurnByMessageId_shouldSkip_whenAlreadyEmbedded() {
         UUID owner = userPopulator.createUser().getId();
-        UUID refId = UUID.randomUUID();
-        memoryEmbeddingWriter.writeTurn(owner, refId, "kérdés", "válasz", DAY);
+        AiConversationEntity conversation = aiConversationPopulator.conversation(owner);
+        aiMessagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "kérdés");
+        AiMessageEntity assistant = aiMessagePopulator.message(
+                conversation, AiMessageEntity.ROLE_ASSISTANT, "válasz");
+        memoryEmbeddingWriter.embedTurnByMessageId(assistant.getId());
 
-        memoryEmbeddingWriter.writeTurn(owner, refId, "kérdés", "válasz", DAY);
+        memoryEmbeddingWriter.embedTurnByMessageId(assistant.getId());
 
         assertThat(memoryEmbeddingRepository.findAll()).hasSize(1);
+    }
+
+    @Test
+    void testEmbedTurnByMessageId_shouldNoOp_whenIdIsNotAnAssistantRow() {
+        UUID owner = userPopulator.createUser().getId();
+        AiConversationEntity conversation = aiConversationPopulator.conversation(owner);
+        AiMessageEntity userRow = aiMessagePopulator.message(
+                conversation, AiMessageEntity.ROLE_USER, "csak kérdés");
+
+        memoryEmbeddingWriter.embedTurnByMessageId(userRow.getId());
+        memoryEmbeddingWriter.embedTurnByMessageId(UUID.randomUUID());
+
+        assertThat(memoryEmbeddingRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void testEmbedTurnByMessageId_shouldCapContent_whenOverMaxChars() {
+        UUID owner = userPopulator.createUser().getId();
+        AiConversationEntity conversation = aiConversationPopulator.conversation(owner);
+        aiMessagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "x".repeat(3000));
+        AiMessageEntity assistant = aiMessagePopulator.message(
+                conversation, AiMessageEntity.ROLE_ASSISTANT, "y");
+
+        memoryEmbeddingWriter.embedTurnByMessageId(assistant.getId());
+
+        // embed-max-chars: 2000 — the stored content IS what got embedded, capped.
+        assertThat(memoryEmbeddingRepository.findAll().getFirst().getContent()).hasSize(2000);
     }
 
     @Test
@@ -70,6 +108,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         DailySummaryEntity summary = dailySummaryPopulator.summary(owner, DAY, "kemény leg-day volt");
 
+        memoryEmbeddingWriter.writeSummary(summary);
         memoryEmbeddingWriter.writeSummary(summary);
 
         List<MemoryEmbeddingEntity> rows = memoryEmbeddingRepository.findAll();
@@ -81,30 +120,38 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testWriteTurn_shouldCapContent_whenOverMaxChars() {
+    void testWriteSummary_shouldReplaceStaleEmbedding_whenSummaryRegeneratedForSameDay() {
         UUID owner = userPopulator.createUser().getId();
+        DailySummaryEntity original = dailySummaryPopulator.summary(owner, DAY, "első verzió");
+        memoryEmbeddingWriter.writeSummary(original);
+        // The regeneration path: soft-delete the summary row, a new one is generated for the day.
+        dailySummaryRepository.delete(original);
+        dailySummaryRepository.flush();
+        DailySummaryEntity regenerated = dailySummaryPopulator.summary(owner, DAY, "második verzió");
 
-        memoryEmbeddingWriter.writeTurn(owner, UUID.randomUUID(), "x".repeat(3000), "y", DAY);
+        memoryEmbeddingWriter.writeSummary(regenerated);
 
-        // embed-max-chars: 2000 — the stored content IS what got embedded, capped.
-        assertThat(memoryEmbeddingRepository.findAll().getFirst().getContent()).hasSize(2000);
+        List<MemoryEmbeddingEntity> live = memoryEmbeddingRepository
+                .findByCreatedByAndKindAndOccurredOn(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, DAY);
+        assertThat(live).hasSize(1);
+        assertThat(live.getFirst().getRefId()).isEqualTo(regenerated.getId());
+        assertThat(live.getFirst().getContent()).isEqualTo("második verzió");
     }
 
     @Test
-    void testCatchUpTurns_shouldEmbedMissedTurns_whenTurnsUnembedded() {
+    void testFindUnembeddedTurnIds_shouldListOnlyMissingAssistantRows_whenSomeEmbedded() {
         UUID owner = userPopulator.createUser().getId();
         AiConversationEntity conversation = aiConversationPopulator.conversation(owner);
-        aiMessagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "volt már ilyen napom?");
-        AiMessageEntity assistant = aiMessagePopulator.message(
-                conversation, AiMessageEntity.ROLE_ASSISTANT, "igen, június 20-án");
+        aiMessagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "első kérdés");
+        AiMessageEntity embedded = aiMessagePopulator.message(
+                conversation, AiMessageEntity.ROLE_ASSISTANT, "első válasz");
+        aiMessagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "második kérdés");
+        AiMessageEntity missing = aiMessagePopulator.message(
+                conversation, AiMessageEntity.ROLE_ASSISTANT, "második válasz");
+        memoryEmbeddingWriter.embedTurnByMessageId(embedded.getId());
 
-        memoryEmbeddingWriter.catchUpTurns(owner, Instant.now().minusSeconds(3600));
-        memoryEmbeddingWriter.catchUpTurns(owner, Instant.now().minusSeconds(3600));
+        List<UUID> ids = memoryEmbeddingWriter.findUnembeddedTurnIds(owner, Instant.now().minusSeconds(3600));
 
-        List<MemoryEmbeddingEntity> rows = memoryEmbeddingRepository.findAll();
-        assertThat(rows).hasSize(1);
-        assertThat(rows.getFirst().getRefId()).isEqualTo(assistant.getId());
-        assertThat(rows.getFirst().getContent())
-                .contains("volt már ilyen napom?").contains("igen, június 20-án");
+        assertThat(ids).containsExactly(missing.getId());
     }
 }

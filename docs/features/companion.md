@@ -183,8 +183,13 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   vector per turn** (`Daniel: …\nMezo: …`, ref = assistant message id).
 - **Post-turn embedding** — `TurnEmbeddingListener` (AFTER_COMMIT + `@Async`, the extraction-listener
   idiom) on the extended `ChatTurnCompleted` event (now carries `assistantMessageId`), gated on
-  `mezo.companion.embedding.embed-chat-turns`; failures logged+swallowed, the nightly catch-up
-  pass (`catchUpTurns`) self-heals anything missed.
+  `mezo.companion.embedding.embed-chat-turns`; failures logged+swallowed. BOTH the live and the
+  nightly catch-up path run the same `embedTurnByMessageId` — `occurred_on` always derives from
+  the assistant ROW's creation day (the episode's day, never the embed day), and the catch-up
+  embeds **one turn per transaction** (`findUnembeddedTurnIds` + per-id call from the job), so a
+  racing/failing unit can never abort the batch (review finding). The catch-up HEALS the toggle,
+  never bypasses it. Summaries replace-by-day: a regenerated summary soft-deletes the stale
+  same-day embedding before inserting (one live summary vector per day).
 
 **Status per layer:**
 

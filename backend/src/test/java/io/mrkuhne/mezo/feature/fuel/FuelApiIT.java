@@ -73,8 +73,10 @@ class FuelApiIT extends ApiIntegrationTest {
         LocalDate today = LocalDate.now();
 
         // POST logs one intake -> 201, dose snapshotted from the pantry item
+        // FE-faithful request: the FE always sends an offset-bearing takenAt (nowOffsetIso),
+        // which keeps the row on the LOCAL "today" this test lists (window-safe at 00-02h).
         IntakeResponse logged = postForBody("/api/fuel/intake",
-            new IntakeRequest().pantryItemId(supp.getId()),
+            new IntakeRequest().pantryItemId(supp.getId()).takenAt(java.time.OffsetDateTime.now()),
             ownerAuthHeaders(), HttpStatus.CREATED, IntakeResponse.class);
         assertThat(logged.getId()).isNotNull();
         assertThat(logged.getPantryItemId()).isEqualTo(supp.getId());

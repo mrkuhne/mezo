@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.UUID;
 
 /**
  * The V2.2 nightly narrative-memory job — the app's first {@code @Scheduled} cron. For every
@@ -53,11 +54,22 @@ public class DailySummaryJob {
                     log.warn("Daily summary failed for user {} on {}", user.getId(), date, e);
                 }
             }
-            try {
-                memoryEmbeddingWriter.catchUpTurns(user.getId(),
-                        from.atStartOfDay(ZoneId.systemDefault()).toInstant());
-            } catch (Exception e) {
-                log.warn("Turn-embedding catch-up failed for user {}", user.getId(), e);
+            // The catch-up pass HEALS the listener's toggle, it must not BYPASS it: turns are
+            // only embedded (live or catch-up) while embed-chat-turns is on. One turn = one
+            // transaction, so a failing/racing unit cannot abort the rest of the batch.
+            if (properties.embedding().embedChatTurns()) {
+                try {
+                    for (UUID turnId : memoryEmbeddingWriter.findUnembeddedTurnIds(user.getId(),
+                            from.atStartOfDay(ZoneId.systemDefault()).toInstant())) {
+                        try {
+                            memoryEmbeddingWriter.embedTurnByMessageId(turnId);
+                        } catch (Exception e) {
+                            log.warn("Turn-embedding catch-up failed for turn {}", turnId, e);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("Turn-embedding catch-up failed for user {}", user.getId(), e);
+                }
             }
             log.info("Daily-summary run for user {}: {} day(s) processed in window {}..{}",
                     user.getId(), generated, from, yesterday);

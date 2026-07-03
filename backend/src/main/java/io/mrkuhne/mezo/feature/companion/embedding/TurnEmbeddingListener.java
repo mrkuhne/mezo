@@ -10,15 +10,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import java.time.LocalDate;
-
 /**
  * The V2.2 post-turn embedding trigger (the {@code FactExtractionListener} idiom): after a chat
  * turn commits, embed it into the episodic memory asynchronously. Gated on BOTH the companion
  * switch and {@code mezo.companion.embedding.embed-chat-turns} — flipping it off removes this
  * bean, so no post-turn embedding call can ever happen. Failures are logged and swallowed:
  * memory building must never affect a chat turn. Missed turns self-heal via the nightly job's
- * catch-up pass.
+ * catch-up pass, which runs the SAME {@code embedTurnByMessageId} — both paths derive
+ * {@code occurred_on} from the message row, never from the embed moment.
  */
 @Slf4j
 @Component
@@ -34,8 +33,7 @@ public class TurnEmbeddingListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onChatTurnCompleted(ChatTurnCompleted event) {
         try {
-            memoryEmbeddingWriter.writeTurn(event.userId(), event.assistantMessageId(),
-                    event.userContent(), event.assistantContent(), LocalDate.now());
+            memoryEmbeddingWriter.embedTurnByMessageId(event.assistantMessageId());
         } catch (Exception e) {
             log.warn("Post-turn embedding failed for user {}", event.userId(), e);
         }

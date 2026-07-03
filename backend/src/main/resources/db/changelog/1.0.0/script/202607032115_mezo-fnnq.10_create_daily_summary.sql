@@ -15,7 +15,7 @@ create table daily_summary (
 
 -- Partial UNIQUE index (not a table constraint): one LIVE summary per user+day, while a
 -- soft-deleted row does not block regeneration (delete row -> next night regenerates).
+-- Doubles as the lookup index — every query filters is_deleted = false (@SQLRestriction),
+-- so no separate (created_by, summary_date) index is needed.
 create unique index uq_daily_summary_created_by_summary_date
     on daily_summary (created_by, summary_date) where is_deleted = false;
-
-create index idx_daily_summary_created_by_summary_date on daily_summary (created_by, summary_date desc);

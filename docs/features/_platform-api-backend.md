@@ -314,6 +314,16 @@ cd frontend && pnpm generate:api           # regenerate src/data/_client/api.gen
 
 ---
 
+**Jackson 3 wire-format gotcha (fixed 2026-07-04, V2.2 session):** Jackson's default
+`DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE` silently normalized every incoming
+`OffsetDateTime` to UTC — so the FE's deliberately offset-bearing wall-clock timestamps
+(`nowOffsetIso` → `takenAt`/`administeredAt`) lost their offset server-side and
+`.toLocalDate()` misfiled a 00:00–02:00 local intake/dose to the previous UTC day.
+`techcore/configuration/JacksonConfiguration` disables it via a `JsonMapperBuilderCustomizer`
+(Jackson 3 moved the flag to `DateTimeFeature`; Boot 4.0.0 has no yml key for it). Test-layer
+mirror: `SupplementIntakePopulator` derives `takenDate` in the system zone (FE-faithful), and
+the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such).
+
 ## 10. Key files
 
 **Contract pipeline**
