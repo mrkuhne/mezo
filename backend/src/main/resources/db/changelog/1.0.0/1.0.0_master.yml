@@ -188,3 +188,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607030905_mezo-ah18.14_train_created_by_indexes.sql
+  - changeSet:
+      id: "1.0.0:202607031400_mezo-fnnq.2_create_ai_conversation_message"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
