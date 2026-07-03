@@ -104,12 +104,23 @@ class ArchitectureTest {
 
     // ── api_contract_conventions.md — contract-first controllers ────────────────
 
+    /**
+     * The ONE documented exception (V0.4 SSE precedent, _platform-api-backend.md §9): the
+     * stream operation IS in the contract (tag CompanionStream), but the generated interface
+     * cannot express Flux&lt;ServerSentEvent&gt;, so the controller is hand-written.
+     */
+    private static final Set<String> HAND_WRITTEN_CONTROLLER_ALLOWLIST = Set.of(
+        "io.mrkuhne.mezo.feature.companion.controller.CompanionStreamController");
+
     @ArchTest
     static final ArchRule controllers_implement_generated_api =
         classes().that().areAnnotatedWith("org.springframework.web.bind.annotation.RestController")
             .should(new ArchCondition<>("implement a generated io.mrkuhne.mezo.api.controller.*Api interface") {
                 @Override
                 public void check(JavaClass clazz, ConditionEvents events) {
+                    if (HAND_WRITTEN_CONTROLLER_ALLOWLIST.contains(clazz.getName())) {
+                        return;
+                    }
                     boolean ok = clazz.getAllRawInterfaces().stream()
                         .anyMatch(i -> i.getPackageName().equals("io.mrkuhne.mezo.api.controller"));
                     if (!ok) {
@@ -121,11 +132,17 @@ class ArchitectureTest {
 
     // ── error_handling.md — no raw generic exceptions on app paths ───────────────
 
-    /** Startup fail-fast catalog loaders are the one documented exception. */
+    /**
+     * Documented exceptions: startup fail-fast catalog loaders, plus the profile-gated LLM
+     * test fake whose failure sentinels deliberately simulate an ARBITRARY provider exception
+     * (a SystemRuntimeErrorException there would fake app-level error semantics the real
+     * Gemini adapter never has).
+     */
     private static final Set<String> RAW_EXCEPTION_ALLOWLIST = Set.of(
         "io.mrkuhne.mezo.feature.pantry.PantryCatalogLoader",
         "io.mrkuhne.mezo.feature.train.ExerciseCatalogLoader",
-        "io.mrkuhne.mezo.feature.progression.PerkCatalog");
+        "io.mrkuhne.mezo.feature.progression.PerkCatalog",
+        "io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm");
 
     private static final Set<String> RAW_EXCEPTION_TYPES = Set.of(
         "java.lang.RuntimeException", "java.lang.IllegalStateException", "java.lang.IllegalArgumentException");

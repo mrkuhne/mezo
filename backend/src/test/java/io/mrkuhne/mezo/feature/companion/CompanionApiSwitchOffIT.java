@@ -16,4 +16,15 @@ class CompanionApiSwitchOffIT extends ApiIntegrationTest {
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
+
+    @Test
+    void testStreamMessage_shouldReturn404_whenCompanionSwitchedOff() {
+        // V0.4 stream sibling — the hand-written controller is switch-gated the same way
+        String body = postForBody(
+                "/api/companion/conversation/" + java.util.UUID.randomUUID() + "/message/stream",
+                io.mrkuhne.mezo.api.dto.SendMessageRequest.builder().content("x").build(),
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
 }

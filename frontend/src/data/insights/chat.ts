@@ -1,5 +1,16 @@
 import type { ChatMessage } from '@/data/types'
 
+/** The Phase-1 demo reply — kept for mock mode; the MSW stream handler reuses it so
+ *  both test modes assert the same strings. */
+export function cannedReply(text: string): string {
+  return (
+    'Értem — és köszönöm hogy megosztottad. ' +
+    (text.toLowerCase().includes('fáradt')
+      ? 'A Reta D3-on ez gyakori; ne erőltessük a Pull Day-t ma. Egy könnyű walk és egy fehérje-snack többet adhat mint egy fél-erővel csinált edzés.'
+      : 'Nézzük meg az adatokat: az elmúlt 3 napban a kalória-pacing 80%+ volt, és a Reta D3 ablakban ez stabil — innen indulhatunk.')
+  )
+}
+
 export const initialChat: ChatMessage[] = [
   {
     role: 'assistant',
