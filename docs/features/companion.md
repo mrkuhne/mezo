@@ -17,11 +17,12 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 
 > One-line: the Phase-3 AI companion — persisted conversations + a Hungarian chat over the
 > `CompanionLlm` port (Spring AI 2 / Gemini) with a deterministic cross-feature **context
-> snapshot** in every system prompt, answered **sync JSON or streamed SSE**, and consumed by
-> the **real dual-mode ChatPage**. **Status: backend ✅ V0.4 (spine + snapshot + SSE); FE ✅
-> V0.4 (ChatPage real: history + streamed turns + honest degraded state).** Cross-cutting
-> Phase-3 domain with no route/tab of its own — the surface is the Insights ChatPage
-> ([`insights.md`](insights.md) §2.5).
+> snapshot** in every system prompt, **8 read-only tools** for history/aggregate questions
+> (audited into the message envelopes, rendered as real FE chips), answered **sync JSON or
+> streamed SSE**, and consumed by the **real dual-mode ChatPage**. **Status: backend ✅ V0.5
+> (spine + snapshot + SSE + tools/audit); FE ✅ V0.5 (ChatPage real incl. real tool-chips) —
+> v0 „lát engem" complete.** Cross-cutting Phase-3 domain with no route/tab of its own — the
+> surface is the Insights ChatPage ([`insights.md`](insights.md) §2.5).
 
 ## 1. Summary
 
@@ -63,26 +64,46 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `chatApi.ts` (fetch-ReadableStream SSE client) drive the rewritten ChatPage: history load,
   optimistic streamed turn, honest degraded state on switch-off 404.
 
+**V0.5 (`mezo-fnnq.5`) shipped tool calling + real tool-chips — v0 „lát engem" is complete:**
+
+- **8 read-only tools** in `feature/companion/tools/` (spec §5 first batch), grouped by source
+  domain: `TrainTools` (`get_recent_workouts`, `get_sport_sessions` — sport + run logs),
+  `BiometricsTools` (`get_weight_trend`, `get_sleep`), `FuelTools` (`get_recent_meals` day
+  rollups, `get_protocol_adherence`), `GoalTools` (`get_goal_progress`), `MedicationTools`
+  (`get_reta_cycle`). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
+  NEVER from model args), compact deterministic Hungarian text results, `nincs adat` absences.
+- **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
+  `RecordingToolCallback` (audit + per-turn budget, structurally unbypassable); the per-turn
+  `ToolCallAudit` rides in the Spring AI `ToolContext`, collects `{type:'read', name, args}`
+  calls + tool-contributed refs (deduped, capped), and persists into the V0.2 jsonb envelopes.
+- **Chips are real** — `CompanionMapper` puts `name(args)` on the wire
+  (`get_sleep(days=3)` — the mock-seed chip style); the FE `toChatMessage` already passed
+  `tools[]`/`refs[]` through, so history AND the streamed `done` event now render real chips.
+- **IDENT-2 structurally** — new ArchUnit rule `companion_tools_are_internal_sphere_only`
+  (no HTTP/mail client deps in the tools package, ever).
+
 **Status per layer:**
 
 | Layer | State | Notes |
 |---|---|---|
 | Backend (tables + contract + services + sync endpoint) | ✅ V0.2 | Behind `mezo.feature.companion.enabled`; switch off ⇒ the whole HTTP surface 404s. |
 | Context snapshot | ✅ V0.3 | `ContextSnapshotAssembler` in every chat turn's system prompt; LLM-free, `nincs adat` absences, `mezo.companion.snapshot.*` windows. |
-| LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile, + forced-failure sentinels since V0.4). |
+| LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile, + forced-failure sentinels since V0.4, + `[fake-tool:…]` scripted tool execution since V0.5). |
 | Streaming (SSE) | ✅ V0.4 | `POST .../message/stream` — `delta`/`done`/`error` events, two-transaction turn, hand-written controller (§9 Decision 11). |
-| Frontend | ✅ V0.4 | ChatPage is real dual-mode: mock = Phase-1 seeded demo; real = bootstrap + SSE streaming + degraded state. Deployed k3s keeps the switch OFF until a real `GEMINI_API_KEY` lands. |
-| Tool-chips from real data | ❌ deferred → V0.5 | `tools`/`refs` stay `[]` on the wire; the mock seed still shows demo chips. |
+| Tool calling + audit | ✅ V0.5 | 8 read tools over existing services; `RecordingToolCallback` audit + per-turn cap; `tool_calls`/`refs` envelopes persisted; `mezo.companion.tools.*` tunables. |
+| Frontend | ✅ V0.5 | ChatPage is real dual-mode: mock = Phase-1 seeded demo; real = bootstrap + SSE streaming + degraded state + **real tool-chips/refs on streamed turns**. Deployed k3s keeps the switch OFF until a real `GEMINI_API_KEY` lands. |
 | Facts / RAG / patterns | ❌ deferred | V1.x (facts), V2.x (RAG), V3.x (patterns). |
 
-**Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE). **Design of record:**
+**Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
+`mezo-fnnq.5` (tools + chips). **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
-(§3 data model, §4 snapshot, §6 guardrails); slice map
+(§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
 [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
-§V0.2–V0.3; implementation plans
+§V0.2–V0.5; implementation plans
 [`2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md) +
 [`2026-07-03-companion-v03-context-snapshot.md`](../superpowers/plans/2026-07-03-companion-v03-context-snapshot.md) +
-[`2026-07-03-companion-v04-sse-fe-chat.md`](../superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md);
+[`2026-07-03-companion-v04-sse-fe-chat.md`](../superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md) +
+[`2026-07-03-companion-v05-tools.md`](../superpowers/plans/2026-07-03-companion-v05-tools.md);
 provider/port ADR
 [`0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md).
 
@@ -111,23 +132,28 @@ companion surface since V0.4, dual-mode:
 
 ## 3. Architecture & data flow
 
-**The streamed turn (V0.4 — what the FE uses):**
+**The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
 ```
 ChatPage (send) → useChatActions.sendReal → chatApi.streamMessage        (fetch + ReadableStream)
 POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
   → CompanionStreamController.streamMessage    controller/CompanionStreamController.java:38
       HAND-WRITTEN (§9 Decision 11) — @Valid + mapping live here, not on a generated interface
-  → ChatStreamService.streamMessage            service/ChatStreamService.java:44
+  → ChatStreamService.streamMessage            service/ChatStreamService.java:47
       1. chatService.prepareTurn(userId, id, req)     ── TX #1: getOwned (404 BEFORE the stream),
          prompt = voice + snapshot + history, persist USER row, title-once + lastMessageAt
-      2. companionLlm.stream(systemPrompt, content)   ── NO TX: each chunk →
-         ServerSentEvent event:delta, data: StreamDelta{text} (JSON)
-      3. chatService.completeTurn(userId, id, answer) ── TX #2: persist ASSISTANT row,
-         bump lastMessageAt → terminal event:done, data: MessageResponse
+      2. audit = toolRegistry.newTurnAudit()          ── V0.5: per-turn budget + call/ref collector
+      3. companionLlm.stream(prompt, content,         ── NO TX: Spring AI runs the tool loop
+             toolRegistry.callbacks(audit),              internally — each RecordingToolCallback
+             toolRegistry.toolContext(userId, audit))     records {name,args} + tools add refs;
+         each text chunk → event:delta, data: StreamDelta{text} (JSON)
+      4. chatService.completeTurn(userId, id, answer, audit) ── TX #2: persist ASSISTANT row
+         WITH tool_calls/refs envelopes → terminal event:done, data: MessageResponse
+         (tools[] = "name(args)" chips, refs[] = tool-contributed data refs)
       onError ⇒ event:error, data: StreamError{code:"COMPANION_STREAM_FAILED"} — NO assistant row
   → FE: deltas append into the optimistic draft bubble; done → the persisted pair is written
-    into the ['chat'] query cache (no refetch); error → inline error bubble + invalidate
+    into the ['chat'] query cache (no refetch) and the chips/refs render; error → inline error
+    bubble + invalidate
 ```
 
 MVC adapts the returned `Flux<ServerSentEvent<Object>>` onto an internal `SseEmitter`
@@ -141,19 +167,37 @@ covers slow LLM streams. Pre-stream failures (400/401/404) are ordinary JSON
 POST /api/companion/conversation/{id}/message   (sync JSON)
   → CompanionController.sendMessage            controller/CompanionController.java:42  (implements CompanionApi)
       currentUserId.get()  (JWT subject → UUID; techcore/security/CurrentUserId)
-  → ChatService.sendMessage(userId, id, req)   service/ChatService.java:52
+  → ChatService.sendMessage(userId, id, req)   service/ChatService.java:90
       1. conversationService.getOwned(userId, id)          → 404 RESOURCE_NOT_FOUND if missing/foreign
-      2. systemPrompt = SYSTEM_PROMPT                                               :57
+      2. systemPrompt = SYSTEM_PROMPT (incl. the V0.5 tool-usage line)
                       + contextSnapshotAssembler.render(userId, LocalDate.now())    ── V0.3 ──
                       + renderHistory(loadWindow())  ("Daniel:"/"Mezo:" transcript)
       3. persist the USER row (saveAndFlush → distinct created_at)
-      4. answer = companionLlm.complete(systemPrompt, req.content)                  ── PORT ──►
-         (real: GeminiCompanionLlm → Gemini · tests: FakeCompanionLlm echoes both halves)
-      5. persist the ASSISTANT row (tool_calls/refs left null)
+      4. audit = toolRegistry.newTurnAudit(); answer = companionLlm.complete(       ── V0.5 ──
+             systemPrompt, req.content, toolRegistry.callbacks(audit),
+             toolRegistry.toolContext(userId, audit))                               ── PORT ──►
+         (real: GeminiCompanionLlm → Gemini tool loop · tests: FakeCompanionLlm echoes both
+          halves + executes [fake-tool:…] sentinels through the REAL callbacks)
+      5. persist the ASSISTANT row with audit.toToolCallsEnvelope()/toRefsEnvelope()
+         (null when no tool ran — the V0.2 steady state is unchanged)
       6. touchConversation → lastMessageAt = now; title = first user msg (once)
   → CompanionMapper.toMessageResponse(assistant)   mapper/CompanionMapper.java:30
-      (null envelope → empty tools[]/refs[] on the wire)
+      (null envelope → []; envelope entry {type,name,args} → wire MessageTool{type, "name(args)"})
 ```
+
+**The tool pipeline (V0.5).** `CompanionToolRegistry` (`tools/CompanionToolRegistry.java`) is the
+ONLY assembly point: it builds the 8 callbacks from the 5 domain toolsets via `ToolCallbacks.from`
+and wraps each in `RecordingToolCallback` (`tools/RecordingToolCallback.java`) bound to the turn's
+`ToolCallAudit` (`tools/ToolCallAudit.java`). The decorator records `{type:'read', name, args}`
+BEFORE delegating (a tool cannot forget its audit), soft-fails past
+`mezo.companion.tools.max-calls-per-turn` with honest in-band text, and converts a tool exception
+into an honest error result (one broken read never kills a streamed turn). Tools receive the
+Spring AI `ToolContext` carrying `userId` (ownership scoping is structural — model args are never
+trusted for identity, `tools/ToolContexts.java`) and the audit (for `addRef(kind, id)` — deduped,
+capped at `max-refs-per-turn`). Results are compact deterministic Hungarian text with `nincs adat`
+absences and config-clamped windows (`max-window-days`, `max-trend-weeks`) — token budget by
+construction. Window args are model-optional (`@ToolParam(required = false)`) with in-code
+defaults (7 days / 4 weeks).
 
 **The context snapshot (V0.3).** `ContextSnapshotAssembler.render(userId, today)`
 (`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with six lines in
@@ -178,9 +222,11 @@ block (`ChatService.java:54-58`). `renderHistory` (`ChatService.java:73`) prepen
 message — `"Daniel: …"` for a user row, `"Mezo: …"` for an assistant row. `SYSTEM_PROMPT`
 (`ChatService.java:32`) is the static Hungarian companion voice (IDENT-1 "társ, nem edző" + the
 clinical guard "Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az
-orvosi döntés." + "számot vagy adatot kitalálni tilos", spec §6). The
-`CompanionLlm` port keeps its V0.1 two-string shape (`complete(systemPrompt, userMessage)`) — a
-message-list variant is V0.5's problem (Decision #4).
+orvosi döntés." + "számot vagy adatot kitalálni tilos", spec §6, + the V0.5 tool-usage line
+"Múltbeli vagy összesítő kérdéshez … használd a kapott tool-okat"). The `CompanionLlm` port keeps
+the two-string prompt shape and carries the tools alongside (`complete(system, user, tools,
+toolContext)`) — the message-list variant V0.2 Decision #4 predicted turned out unnecessary
+(Decision 16).
 
 **Switch-gating (every bean conditional).** `CompanionController`, `ConversationService`,
 `ChatService`, `CompanionMapper` (via the services), and both LLM adapters are
@@ -250,12 +296,27 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `POST /api/companion/conversation/{id}/message/stream` | SSE `delta*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11). Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
-`MessageResponse {id, role, content, createdAt, tools[], refs[]}` (`tools`/`refs` **always empty
-until V0.5** — the null envelope maps to `[]`, `CompanionMapper.toTools/toRefs`),
-`MessageTool {type, name}`, `MessageRef {kind, id}`,
+`MessageResponse {id, role, content, createdAt, tools[], refs[]}` (**filled since V0.5** on
+tool-using turns; a tool-less turn's null envelope still maps to `[]`,
+`CompanionMapper.toTools/toRefs`), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
+carries the args baked in — `get_sleep(days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
+`Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON).
+
+### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
+
+| Tool (args) | Source (existing reads) | Ref |
+|---|---|---|
+| `get_recent_workouts(days)` | `WorkoutSessionRepository.findDoneInstancesBetween` (new finder) + per-instance sets → date, dayLabel, set count, Σ volume kg | `Workout`/date (≤5) |
+| `get_sport_sessions(days)` | sport + run since-date finders (existed) → sport/duration/intensity/RPE + run week/rounds | `Sport`+`Run`/date (≤3+3) |
+| `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
+| `get_recent_meals(days)` | `FuelDayService.getDay` looped per day → kcal/F vs targets, meal count + titles (≤3) | `FuelDay`/date (≤5) |
+| `get_sleep(days)` | `SleepLogRepository` since-date finder (new) → duration, quality, awakenings | `Sleep`/date (≤5) |
+| `get_protocol_adherence(days)` | `ProtocolService.getView().getActive()` + intake since-date finder (new) → per-day taken/expected + total % | `Protocol`/`v{n}` |
+| `get_goal_progress()` | active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept | `Goal`/title |
+| `get_reta_cycle()` | `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due | `Medication`/name |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)
 
@@ -267,6 +328,14 @@ data line is JSON).
   snapshot's train digest (gym/sport/run counts) looks, including today (V0.3).
 - `mezo.companion.snapshot.checkin-note-max-chars` = **200** (`@Min(0) @Max(1000)`) — the latest
   check-in note is included verbatim, truncated to this many characters (V0.3).
+- `mezo.companion.tools.max-calls-per-turn` = **6** (`@Min(1) @Max(20)`) — recorded tool calls per
+  turn; past it every tool soft-fails with honest in-band text (V0.5).
+- `mezo.companion.tools.max-window-days` = **30** (`@Min(1) @Max(60)`) — upper clamp for the
+  `days` tool args (V0.5).
+- `mezo.companion.tools.max-trend-weeks` = **26** (`@Min(1) @Max(52)`) — upper clamp for
+  `get_weight_trend(weeks)` (V0.5).
+- `mezo.companion.tools.max-refs-per-turn` = **10** (`@Min(1) @Max(30)`) — refs persisted per turn,
+  deduped in insertion order (V0.5).
 - `mezo.companion.llm.chat-model` = `gemini-2.5-flash` (every turn) / `smart-model` =
   `gemini-2.5-pro` (heavy pipelines, unused until V3.2) — model tiers are config, not code (ADR 0008).
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
@@ -276,7 +345,7 @@ data line is JSON).
 Companion is a **Phase-3 domain that reads from the others, never the reverse** (the roadmap's
 coupling rule). Today only the platform seams are wired; the domain seams are named future work.
 
-### 5.1 Companion ↔ Insights / ChatPage (✅ V0.4 wired)
+### 5.1 Companion ↔ Insights / ChatPage (✅ V0.5 wired, chips real)
 The ChatPage is now the real FE surface. **Contract crossing the seam:**
 `chatApi.toChatMessage` (`frontend/src/data/insights/chatApi.ts`) maps the wire
 `MessageResponse {role, content, createdAt, tools[], refs[]}` → the FE
@@ -286,7 +355,10 @@ transform). The hook layer is `data/insights/chatHooks.ts`: `useChat()` (a singl
 `useDualQuery` bootstrap — newest conversation + history; 404 → `degraded`; `mode: 'mock'|'live'`
 keeps `isMockMode()` out of the feature layer) + `useChatActions()` (send/stream state machine —
 optimistic `ChatTurn {userText, draft, thinking}` overlay, `done` appended into the query cache).
-V0.5 makes the `tools[]`/`refs[]` chips real — the mapping already passes them through.
+**Since V0.5 the chips are real**: the wire `tools[]` (`{type:'read', name:'get_sleep(days=3)'}`)
+render as `ToolChip`s and `refs[]` as `RefTag`s on history AND streamed turns — the FE needed
+zero code changes (the pass-through was built at V0.4); chips appear when the terminal `done`
+lands (the in-flight draft bubble stays chip-less by design — chips describe the persisted truth).
 
 ### 5.2 Companion ↔ Auth & ownership (wired)
 Every companion write/read rides the auth spine ([`_platform-auth-security.md`](_platform-auth-security.md)
@@ -320,11 +392,20 @@ String` — the callee services' read methods with explicit `userId` scoping; st
 V0.3 also added four derived finders to those features' repos (sleep/check-in latest, sport/run
 since-date) — plain finders, no companion dependency.
 
+**V0.5 tools seam (✅ wired).** The 8 read tools in `feature/companion/tools/` compose the same
+one-way reads (see §4 catalog). V0.5 added **three plain finders** to the owning features' repos
+(the V0.3 precedent — no companion dependency): `SleepLogRepository` since-date,
+`WorkoutSessionRepository.findDoneInstancesBetween` (entities variant of `findDoneInstanceDates`,
+same ≥1-logged-set semantics), `SupplementIntakeRepository` since-date — plus the static
+`GoalPrescriptionJson.currentSegment` helper extracted from the snapshot assembler (both now
+share it). Guard rails: tools call ONLY read methods (`GoalEngineService.evaluate` is a WRITE and
+is deliberately not wrapped); the IDENT-2 ArchUnit rule bans HTTP/mail client deps in the tools
+package.
+
 **Named future seams:**
-- **V0.5 tools** (`mezo-fnnq.5`): read-only wrappers (`get_weight_trend`, `get_recent_meals`, …)
-  over the same services, ownership-scoped, logged into `ai_message.tool_calls`/`refs`.
-- **V1.1 knowledge facts** injected into the prompt; **V2.x** RAG over daily summaries; **V3.x**
-  pattern engine — see the roadmap dependency graph.
+- **V1.1 knowledge facts** injected into the prompt; **V2.3** `find_similar_past_days` joins the
+  tool registry; **V2.x** RAG over daily summaries; **V3.x** pattern engine — see the roadmap
+  dependency graph.
 
 ## 6. How to use it (consume)
 
@@ -364,8 +445,10 @@ curl -sN -X POST $BASE/conversation/$CID/message/stream \
 # → event:done  \n data:{ ...persisted assistant MessageResponse... }
 ```
 
-Note: `tools`/`refs` are `[]` until V0.5, the first `message` sets the conversation `title` +
-`lastMessageAt`, and an empty `content` returns a 400 field error (`VALIDATION_INVALID_VALUE`).
+Note: `tools`/`refs` fill up when the turn used tools (V0.5) — with the fake adapter you can
+force it deterministically: `{"content":"aludtam eleget? [fake-tool:get_sleep {\"days\":3}]"}`.
+The first `message` sets the conversation `title` + `lastMessageAt`, and an empty `content`
+returns a 400 field error (`VALIDATION_INVALID_VALUE`).
 
 ## 7. How to extend it
 
@@ -389,12 +472,12 @@ execution checklist"). The house recipe, **contract-first**:
    ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 
 **Where the next slices plug in:**
-- **V0.5 (tools)** — a tool registry over existing services; the `tool_calls`/`refs` envelopes
-  (already typed, null today) start being written and map straight to the FE chips (the
-  `toChatMessage` mapping already passes them through). Tool calling forces the message-list
-  port variant (V0.2 Decision #4).
 - **V1.1 (facts)** — knowledge facts injected into the prompt between the snapshot and the
   history block.
+- **New tool?** — add a `@Tool` method to the matching domain toolset (or a new one), wire it
+  into `CompanionToolRegistry.callbacks(...)`, keep it read-only + `ToolContexts.userId`-scoped,
+  add its render test to `CompanionToolsRenderIT` and the registry-batch assert in
+  `CompanionToolRegistryIT`. The decorator gives audit/budget/error-shielding for free.
 
 ## 8. Testing
 
@@ -454,6 +537,26 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   (`src/test/msw/handlers.ts`) mirror `initialChat` and reuse `cannedReply`, so both modes
   assert the same strings; the stream handler answers with a real `ReadableStream` SSE body.
 
+**V0.5 test additions:**
+
+- **`CompanionToolsRenderIT`** (14 tests, `@Transactional` + fake profile) — every tool's rendered
+  Hungarian text + contributed refs against populator-seeded data, LLM-free (tools called directly
+  with a hand-built `ToolContext`): happy paths, `nincs adat`/`nincs aktív …` absences, window
+  clamping (`getSleep(90)` → 30), volume math, adherence counting, honest-zero reta.
+- **`CompanionToolRegistryIT`** — exactly the 8-tool batch registered, every callback wrapped in
+  `RecordingToolCallback`; the tool-context carries `userId` + audit.
+- **`ToolCallAuditTest` + `RecordingToolCallbackTest`** (pure units) — null envelopes when empty,
+  `read` typing, budget exhaustion (soft-fail, not recorded), ref dedupe/cap, error-to-honest-text,
+  `compactArgs` flattening (`{"days":7}` → `days=7`).
+- **Extended ITs:** `ChatServiceIT` (scripted `[fake-tool:…]` turn → envelope persisted + wire
+  chips `get_sleep(days=3)`/`read` + refs; tool-less turn keeps null envelopes; 7 sentinels →
+  cap at 6 + budget text in the answer; the system prompt carries the tool-usage line),
+  `ChatStreamServiceIT` (the `done` event carries chips + the row's envelope),
+  `CompanionStreamApiIT` (raw SSE body contains the chip JSON), `CompanionLlmFakeIT` (sentinel
+  execution, streamed tool chunk, UNKNOWN echo), `CompanionPropertiesIT` (`tools.*` bindings),
+  `AiMessageJsonbRoundTripIT` (3-field `ToolCall{type,name,args}` round-trip),
+  `ArchitectureTest` (`companion_tools_are_internal_sphere_only`).
+
 Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echoes/streams),
 `CompanionRealWiringIT` (Gemini adapter picked when the fake profile is absent), `CompanionSwitchOffIT`
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
@@ -471,11 +574,12 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
    `startedAt` maps from it (`CompanionMapper.toConversationResponse`). A duplicate column would
    only drift — the spec §3 field list is "essence", not DDL.
 4. **History windowing lives in the system prompt** (a rendered `Daniel:`/`Mezo:` transcript), so
-   the `CompanionLlm` port keeps its V0.1 two-string shape (`complete(system, user)`). A
-   message-list port variant is V0.5's problem — tool calling forces it anyway.
+   the `CompanionLlm` port keeps the two-string prompt shape. (The predicted message-list variant
+   never materialized — V0.5 carries tools alongside the two strings instead; Decision 16.)
 5. **Typed jsonb envelope shapes, always null in V0.2.** `ToolCallsEnvelope{calls:[{type,name}]}`,
    `RefsEnvelope{refs:[{kind,id}]}` — field names mirror the FE mock `Tool{type,name}` /
-   `ChatRef{kind,id}` so V0.4/V0.5 wiring is mechanical (ADR 0006 / `ProvenanceEnvelope` precedent).
+   `ChatRef{kind,id}` so V0.4/V0.5 wiring is mechanical (ADR 0006 / `ProvenanceEnvelope`
+   precedent). (V0.5 extended `ToolCall` with `args` — Decision 18.)
 
 **V0.3 decisions (locked in the V0.3 plan §"Decisions locked"):**
 
@@ -520,6 +624,31 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     (`demo beszélgetés` / `Gemini · élő` / `a társ most nem elérhető`) — the fake facts-count
     line died with V0.4.
 
+**V0.5 decisions (locked in the V0.5 plan §"Decisions locked"):**
+
+16. **Port keeps two strings + tools; NO message-list variant.** V0.2 Decision #4 predicted tool
+    calling would force a message-list port — it doesn't (Spring AI runs the tool-execution loop
+    inside the adapter). `complete/stream(system, user, List<ToolCallback>, Map toolContext)` with
+    `default` two-arg overloads. `ToolCallback`/`ToolContext` are spring-ai-core types shared by
+    every provider starter — not provider types, so ADR 0008's isolation holds.
+17. **Audit = decorator, refs = explicit, identity = context.** `RecordingToolCallback` records
+    every call (unbypassable) + enforces the cap (soft-fail text in-band, attempt not recorded) +
+    shields tool exceptions (honest error result); tools add their own refs via the audit in the
+    `ToolContext`; `userId` comes ONLY from the tool context, never model args.
+18. **Envelope grows `args`; wire stays `{type,name}`.** `ToolCall{type,name,args}` (args =
+    compact display form, `days=7` — full fidelity for flat scalar V0.5 args; pre-V0.5 rows
+    deserialize `args = null`); the mapper renders `name(args)` — the mock-seed chip style; `type`
+    is always `read` in V0.5. No migration (columns existed since V0.2; null-when-empty preserved).
+19. **Tool results are snapshot-idiom text**, windows clamped by `mezo.companion.tools.*` — token
+    budget by construction. `get_sport_sessions` covers sport + run; `get_protocol_adherence`
+    measures against the CURRENT active protocol for the whole window (version time-travel is
+    v1+ material); `get_goal_progress` is a pure read composition (the engine's `evaluate` is a
+    write and stays out of the registry).
+20. **The fake scripts tools via content sentinels** — `[fake-tool:name {json}]` executes the
+    REAL wrapped callback (audit/budget/refs included), so the whole pipeline is IT-covered with
+    zero LLM. Spring AI's result converter JSON-encodes a tool's String return — the fake's echo
+    shows `tool:name=["…"]` (quoted).
+
 **Gotchas:**
 
 - **The `CompanionLlm` bean is ABSENT when the switch is off** — it is
@@ -543,13 +672,24 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **`streamMessage` returns the Flux only after `prepareTurn` ran** — ownership/validation
   errors become normal JSON HTTP errors, never SSE frames. Keep any new pre-stream check
   BEFORE the Flux is built.
+- **`ChatClient.toolCallbacks(...)` is deprecated in Spring AI 2.0** — the unified registration
+  API is `tools(Object...)` (accepts `ToolCallback`s and `@Tool` objects alike);
+  `GeminiCompanionLlm.request` uses it.
+- **A chip appears even when the tool found no data** — the CALL is the audited fact
+  (`get_sleep(days=3)` with a `nincs adat` result is an honest chip); refs only exist when data
+  backed the answer.
+- **Streamed tool turns run the tool reads OUTSIDE a transaction** (between TX #1 and TX #2) —
+  every tool read is a self-contained repo/service call (`FuelDayService.getDay` carries its own
+  `@Transactional(readOnly = true)`); don't add a lazy-walking read to a tool without one.
 
 **Deferred (with bd ids):**
-- **V0.5 tool calling + tool-chips** (`mezo-fnnq.5`) — fills the `tool_calls`/`refs` envelopes.
 - **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
   `MEZO_FEATURE_COMPANION_ENABLED=false` from `k8s/backend/deployment.yaml` (the V0.2-review
-  prerequisite; until then the deployed chat is the honest degraded state).
-- **V1.x facts · V2.x RAG (pgvector) · V3.x patterns** — see the roadmap.
+  prerequisite; until then the deployed chat is the honest degraded state). The v0 exit criterion
+  ("mit egyek ma edzés előtt?" on the phone, grounded + chip-annotated) needs this to be provable
+  end-to-end on the real model — the real-API tool smoke is part of that rollout.
+- **V1.x facts · V2.x RAG (pgvector) · V3.x patterns** — see the roadmap; `find_similar_past_days`
+  joins the registry at V2.3 (`mezo-fnnq.11`).
 
 ## 10. Key files
 
@@ -567,10 +707,16 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`).
 
 **Backend — LLM port (ADR 0008)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port (`complete` + `stream`).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port (`complete` + `stream`, tools variants since V0.5).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); `tools(Object...)` + `toolContext` registration.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/CompanionHelloRunner.java` — `companion-smoke` real-API round-trip proof.
+
+**Backend — tools (V0.5)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{TrainTools,BiometricsTools,FuelTools,GoalTools,MedicationTools}.java` — the 8 `@Tool` reads.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine.
+- New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
 
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope}.java`
@@ -584,8 +730,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5 tool batch.
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{AiConversationPopulator,AiMessagePopulator}.java` + `support/ResetDatabase.java` (`ai_message`/`ai_conversation` TRUNCATE).
-- `backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` — the two documented V0.4 allowlist entries (hand-written controller + fake-LLM raw exception).
+- `backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` — the two documented V0.4 allowlist entries (hand-written controller + fake-LLM raw exception) + the V0.5 `companion_tools_are_internal_sphere_only` rule.
 
 **Frontend (real since V0.4)**
 - `frontend/src/data/_client/api.ts` — `apiSse` (fetch-ReadableStream SSE reader) + its `api.sse.test.ts`.
@@ -601,6 +748,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - Roadmap (14 slices): [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
 - V0.2 plan: [`docs/superpowers/plans/2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md)
 - V0.4 plan: [`docs/superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md`](../superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md)
+- V0.5 plan: [`docs/superpowers/plans/2026-07-03-companion-v05-tools.md`](../superpowers/plans/2026-07-03-companion-v05-tools.md)
 - ADR: [`docs/decisions/0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `java_package_structure`, `error_handling`)
