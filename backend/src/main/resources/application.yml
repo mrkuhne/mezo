@@ -3,6 +3,11 @@ server:
 spring:
   application:
     name: mezo
+  mvc:
+    async:
+      # SSE chat turns (companion V0.4): Gemini streams can exceed the container's ~30s
+      # async default; only the streaming endpoint is async, everything else is unaffected.
+      request-timeout: 120s
   datasource:
     url: jdbc:postgresql://localhost:${DB_PORT:15432}/mezo
     username: ${DB_USER:mezo}
