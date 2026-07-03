@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,7 +28,8 @@ public class ChatService {
 
     /**
      * Static Hungarian companion voice — IDENT-1 (companion, not coach), the clinical guard and
-     * grounding-lite from the design spec §6. V0.3 appends the context snapshot; V1.1 the knowledge facts.
+     * grounding-lite from the design spec §6. V0.3 appends the context snapshot below; V1.1 adds
+     * the knowledge facts.
      */
     static final String SYSTEM_PROMPT = """
             Te vagy a mezo, Daniel személyes egészség- és teljesítmény-társa.
@@ -43,6 +45,7 @@ public class ChatService {
     private final AiConversationRepository conversationRepository;
     private final AiMessageRepository messageRepository;
     private final ConversationService conversationService;
+    private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final CompanionLlm companionLlm;
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
@@ -52,7 +55,10 @@ public class ChatService {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
 
         // Window BEFORE persisting the new message — the current content travels as the user param.
-        String systemPrompt = SYSTEM_PROMPT + renderHistory(loadWindow(userId, conversationId));
+        // V0.3: snapshot between the static voice and the history transcript (V1.1 adds facts here).
+        String systemPrompt = SYSTEM_PROMPT
+                + contextSnapshotAssembler.render(userId, LocalDate.now())
+                + renderHistory(loadWindow(userId, conversationId));
 
         persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent());
         String answer = companionLlm.complete(systemPrompt, request.getContent());

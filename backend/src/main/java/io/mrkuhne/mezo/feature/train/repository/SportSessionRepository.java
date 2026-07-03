@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.repository;
 
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,4 +19,8 @@ public interface SportSessionRepository extends JpaRepository<SportSessionEntity
 
     /** Ownership-scoped lookup (used by SportSignalCalculator to resolve a just-saved session). */
     Optional<SportSessionEntity> findByIdAndCreatedBy(UUID id, UUID createdBy);
+
+    /** Sessions on/after {@code from} — the companion snapshot's last-N-days digest. */
+    List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
+        UUID createdBy, LocalDate from);
 }

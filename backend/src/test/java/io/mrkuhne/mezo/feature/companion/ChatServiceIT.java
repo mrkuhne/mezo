@@ -65,6 +65,26 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndHistory_whenSending() {
+        UUID userId = databasePopulator.populateUser("chat-snapshot@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a mai terv?"));
+
+        String echoed = answer.getContent();
+        int voice = echoed.indexOf("Te vagy a mezo");
+        int snapshot = echoed.indexOf("AKTUÁLIS ÁLLAPOT");
+        int history = echoed.indexOf("Eddigi beszélgetés");
+        assertThat(voice).isPositive();
+        assertThat(snapshot).isGreaterThan(voice);
+        assertThat(history).isGreaterThan(snapshot);
+        assertThat(echoed).contains("[Profil]").contains("[Regeneráció]");
+        // the snapshot renders today's date
+        assertThat(echoed).contains("pillanatkép — " + java.time.LocalDate.now());
+    }
+
+    @Test
     void testSendMessage_shouldIncludeCompanionVoiceAndUserMessageInPrompt_whenCalled() {
         UUID userId = databasePopulator.populateUser("chat-voice@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);

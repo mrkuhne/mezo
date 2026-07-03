@@ -61,6 +61,13 @@ public class MealPopulator {
         return repository.saveAndFlush(meal);
     }
 
+    /** Same breakfast pantry meal, logged on an explicit date — day-rollup/snapshot tests. */
+    public MealEntity createPantryMeal(UUID owner, PantryItemEntity pantryItem, LocalDate mealDate) {
+        MealEntity meal = createPantryMeal(owner, pantryItem);
+        meal.setMealDate(mealDate);
+        return repository.saveAndFlush(meal);
+    }
+
     private MealEntity newMeal(UUID owner, String slot, String title) {
         MealEntity meal = new MealEntity();
         meal.setCreatedBy(owner);

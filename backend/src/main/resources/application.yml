@@ -96,6 +96,11 @@ mezo:
       history-window: 20
       # Auto-title = first user message truncated to this many characters (DB column caps at 120)
       title-max-chars: 80
+    snapshot:
+      # How many days back the context-snapshot train digest looks (including today)
+      digest-days: 7
+      # The latest check-in note is included verbatim, truncated to this many characters
+      checkin-note-max-chars: 200
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

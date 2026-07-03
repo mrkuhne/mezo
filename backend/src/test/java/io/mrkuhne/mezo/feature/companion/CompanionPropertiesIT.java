@@ -22,4 +22,10 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.chat().historyWindow()).isEqualTo(20);
         assertThat(properties.chat().titleMaxChars()).isEqualTo(80);
     }
+
+    @Test
+    void testSnapshotConfig_shouldBindWindowsFromYaml_whenContextStarts() {
+        assertThat(properties.snapshot().digestDays()).isEqualTo(7);
+        assertThat(properties.snapshot().checkinNoteMaxChars()).isEqualTo(200);
+    }
 }
