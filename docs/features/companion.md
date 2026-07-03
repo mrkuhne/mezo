@@ -117,6 +117,24 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   inline / Elvet), persisting `include_in_prompt` toggles, degraded banner on switch-off 404.
   The FE `FactCategory` unified on the backend enum (`train|fuel|health|life`).
 
+**V1.3 (`mezo-fnnq.8`) shipped never-ask-twice + the advisor chain v1 — v1 „megjegyez" complete:**
+
+- **Post-response advisor chain** (`feature/companion/advisor/`, old docs §4.5 retry semantics
+  on the port): `CompanionAdvisorChain.review(...)` runs after every LLM answer —
+  `ClinicalOutputCheck` first (deterministic accent-folded regex: Rx term + dose-change verb in
+  one sentence; a hit skips the verdict that round), then `TurnVerdictCheck` (ONE cheap-tier
+  LLM call → strict-JSON `{redundantQuestion, ungroundedClaim, reason}`, defensively parsed,
+  **fail-open**). Violation → corrective re-prompt (`AdvisorRetry.block` appended to the system
+  prompt; same tools + same audit) up to `advisors.max-retries`; a still-violating answer ships
+  with `ai_message.degraded = true`. Sync path retries before delivery; the streamed path
+  reviews post-hoc between the last delta and `done` (the done row is authoritative — the FE
+  swap silently carries a corrected answer).
+- **Degraded on the wire + badge** — `MessageResponse.degraded` (required boolean); the FE
+  `ChatMessage` bubble renders a subtle `nem ellenőrzött` eyebrow (tooltip) on flagged answers.
+- **Reinforcement starts** — an extraction dedupe-hit against a CONFIRMED fact now increments
+  `reinforcement_count` + `last_reinforced_at` (the chat re-learned it) instead of silently
+  dropping; pending-candidate duplicates still just skip.
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -129,10 +147,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). Deployed k3s keeps the switch OFF until a real `GEMINI_API_KEY` lands. |
 | Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
-| Advisors / RAG / patterns | ❌ deferred | V1.3 (redundancy guard + advisors), V2.x (RAG), V3.x (patterns). |
+| Advisor chain (never-ask-twice + self-check) | ✅ V1.3 | Clinical regex + LLM verdict, retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
+| RAG / patterns | ❌ deferred | V2.x (pgvector RAG), V3.x (patterns). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
-`mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI).
+`mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI) +
+`mezo-fnnq.8` (advisors + degraded + reinforcement).
 **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
@@ -141,7 +161,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 [`2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md) +
 [`2026-07-03-companion-v03-context-snapshot.md`](../superpowers/plans/2026-07-03-companion-v03-context-snapshot.md) +
 [`2026-07-03-companion-v04-sse-fe-chat.md`](../superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md) +
-[`2026-07-03-companion-v05-tools.md`](../superpowers/plans/2026-07-03-companion-v05-tools.md);
+[`2026-07-03-companion-v05-tools.md`](../superpowers/plans/2026-07-03-companion-v05-tools.md) +
+[`2026-07-03-companion-v13-advisors.md`](../superpowers/plans/2026-07-03-companion-v13-advisors.md);
 provider/port ADR
 [`0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md).
 
@@ -163,6 +184,11 @@ companion surface since V0.4, dual-mode:
   every other tab is untouched. This is exactly the **deployed k3s state** until a real
   `GEMINI_API_KEY` lands in the `mezo-app` secret (`MEZO_FEATURE_COMPANION_ENABLED=false` in
   `k8s/backend/deployment.yaml`).
+- **Degraded ANSWER badge (V1.3)** — an assistant bubble whose answer failed the advisor
+  self-check even after the corrective retry carries a subtle `nem ellenőrzött` eyebrow next to
+  the timestamp (tooltip: „Ez a válasz nem ment át az önellenőrzésen — kezeld fenntartással.").
+  On a streamed turn a rejected attempt-1 may briefly be visible while streaming; the `done`
+  swap replaces it with the corrected answer (or flags it). Mock mode never shows the badge.
 - **Mock mode** (`VITE_USE_MOCK=true`): the Phase-1 demo — seeded `initialChat`, the canned
   1.2s `cannedReply` (branches on `"fáradt"`), subtitle `demo beszélgetés`. The V0.4 rewrite
   removed the fake `"23 facts active · Gemini 3.1 Pro"` line and the `"L4 aktív"` chip — the
@@ -185,9 +211,13 @@ POST /api/companion/conversation/{id}/message/stream   (text/event-stream)
              toolRegistry.callbacks(audit),              internally — each RecordingToolCallback
              toolRegistry.toolContext(userId, audit))     records {name,args} + tools add refs;
          each text chunk → event:delta, data: StreamDelta{text} (JSON)
-      4. chatService.completeTurn(userId, id, answer, audit) ── TX #2: persist ASSISTANT row
-         WITH tool_calls/refs envelopes → terminal event:done, data: MessageResponse
-         (tools[] = "name(args)" chips, refs[] = tool-contributed data refs)
+      4. advisorChain.review(prompt, content, answer, …)   ── V1.3 (NO TX, bean present only when
+         mezo.companion.advisors.enabled): clinical regex → LLM verdict; violation → ONE
+         corrective re-prompt (AdvisorRetry.block appended; same tools+audit) → re-check;
+         still violating ⇒ degraded=true. The done row carries the FINAL (possibly retried) text.
+      5. chatService.completeTurn(userId, id, answer, audit, degraded) ── TX #2: persist ASSISTANT
+         row WITH tool_calls/refs envelopes + degraded → terminal event:done, data: MessageResponse
+         (tools[] = "name(args)" chips, refs[] = tool-contributed data refs, degraded flag)
       onError ⇒ event:error, data: StreamError{code:"COMPANION_STREAM_FAILED"} — NO assistant row
   → FE: deltas append into the optimistic draft bubble; done → the persisted pair is written
     into the ['chat'] query cache (no refetch) and the chips/refs render; error → inline error
@@ -212,13 +242,14 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
                       + knowledgeFactService.renderPromptBlock(userId)              ── V1.1 ──
                       + renderHistory(loadWindow())  ("Daniel:"/"Mezo:" transcript)
       3. persist the USER row (saveAndFlush → distinct created_at)
-      4. audit = toolRegistry.newTurnAudit(); answer = companionLlm.complete(       ── V0.5 ──
-             systemPrompt, req.content, toolRegistry.callbacks(audit),
-             toolRegistry.toolContext(userId, audit))                               ── PORT ──►
+      4. audit = toolRegistry.newTurnAudit(); answer = advisorChain.complete(...)   ── V1.3 ──
+         when the advisors switch is on (ObjectProvider): attempt + review + retry inside the
+         chain; falls back to the direct companionLlm.complete(...) call when off     ── PORT ──►
          (real: GeminiCompanionLlm → Gemini tool loop · tests: FakeCompanionLlm echoes both
-          halves + executes [fake-tool:…] sentinels through the REAL callbacks)
-      5. persist the ASSISTANT row with audit.toToolCallsEnvelope()/toRefsEnvelope()
-         (null when no tool ran — the V0.2 steady state is unchanged)
+          halves + executes [fake-tool:…] sentinels through the REAL callbacks + answers
+          verdict calls via the [fake-violate…] sentinels)
+      5. persist the ASSISTANT row with audit.toToolCallsEnvelope()/toRefsEnvelope() + degraded
+         (null envelopes when no tool ran — the V0.2 steady state is unchanged)
       6. touchConversation → lastMessageAt = now; title = first user msg (once)
       6b. publish ChatTurnCompleted ── V1.2: AFTER_COMMIT → @Async FactExtractionListener
           → FactExtractionService.extractFromTurn (cheap-tier LLM, JSON parse, dedupe, cap)
@@ -265,6 +296,22 @@ fact — categories render as deterministic Hungarian labels (train→edzés, fu
 health→egészség, life→élet). No facts ⇒ `""` (no empty header). Both `sendMessage` and
 `prepareTurn` insert it **between the snapshot and the history**, so the sync AND streamed turns
 silently know every confirmed fact.
+
+**The advisor chain (V1.3).** `feature/companion/advisor/` — `CompanionAdvisorChain` wraps the
+port with the old docs' §4.5 semantics: `runChecks` = `ClinicalOutputCheck.check(answer)`
+(deterministic: accent-folded lowercase (NFD strip), sentence-split on `[.!?\n]`, violation when
+an `advisors.rx-terms` term AND a dose-change verb (`emeld|emeljük|csökkentsd|…hagyd el|állítsd
+át…` — imperative/we-forms only, written accent-folded) share a sentence) first; a clinical hit
+skips `TurnVerdictCheck` that round. The verdict is ONE cheap-tier call through the two-string
+port (`VERDICT_MARKER`-prefixed judge prompt; payload = the turn's full system prompt + the
+tool-call name list from `ToolCallAudit.callNames()` + the user message + the answer) parsed
+first-`{`-to-last-`}` into `{redundantQuestion, ungroundedClaim, reason}` — **fail-open** on any
+call/parse failure. Violations map to `redundancy`/`grounding`; retry = `systemPrompt +
+AdvisorRetry.block(violations)` with the same tools and the SAME audit (chips reflect the whole
+turn), re-checked; after `advisors.max-retries` rounds a still-violating answer returns
+`AdvisedAnswer(answer, degraded=true)`. Both callers hold the chain as
+`ObjectProvider<CompanionAdvisorChain>` — advisors off ⇒ no chain bean ⇒ V1.2 behavior
+byte-for-byte. Timing + verdict are `log.info`-ed per turn (the roadmap's "measure!" decision).
 
 **Prompt assembly (the load-bearing shape).** The window is loaded **before** persisting the new
 message, so the current turn travels as the `userMessage` param, never inside the rendered history
@@ -320,7 +367,9 @@ Migration `202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (registe
   `created_at`, `conversation_id uuid fk→ai_conversation ON DELETE CASCADE`, `role varchar(16)`
   (`ck_ai_message_role IN ('user','assistant')`), `content text`, `tool_calls jsonb`, `refs jsonb`
   (**both null in V0.2** — filled at V0.5); indexes `idx_ai_message_conversation_id_created_at`
-  (history/window ordering key) + `idx_ai_message_created_by`.
+  (history/window ordering key) + `idx_ai_message_created_by`. **V1.3** adds `degraded boolean
+  not null default false` (`202607031900_mezo-fnnq.8_ai_message_degraded.sql`) — true when the
+  advisor chain rejected the answer even after the corrective retry.
 
 ### Backend tables (V1.1, ✅)
 
@@ -377,9 +426,10 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
-`MessageResponse {id, role, content, createdAt, tools[], refs[]}` (**filled since V0.5** on
-tool-using turns; a tool-less turn's null envelope still maps to `[]`,
-`CompanionMapper.toTools/toRefs`), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
+`MessageResponse {id, role, content, createdAt, tools[], refs[], degraded}` (**filled since
+V0.5** on tool-using turns; a tool-less turn's null envelope still maps to `[]`,
+`CompanionMapper.toTools/toRefs`; `degraded` required boolean since V1.3 — always false on user
+rows), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
 carries the args baked in — `get_sleep(days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
 `Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
@@ -424,6 +474,13 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   (`COMPANION_EXTRACTION_SWITCH`); off ⇒ the AFTER_COMMIT listener bean does not exist.
 - `mezo.companion.extraction.max-candidates-per-turn` = **3** (`@Min(1) @Max(10)`) — candidates
   persisted per chat turn (dedupe runs before the cap).
+- `mezo.companion.advisors.enabled` = **true** — the V1.3 advisor-chain master toggle
+  (`COMPANION_ADVISORS_SWITCH`); off ⇒ the chain/check beans do not exist (V1.2 behavior).
+- `mezo.companion.advisors.max-retries` = **1** (`@Min(0) @Max(2)`) — corrective re-prompts
+  before a violating answer ships `degraded` (0 = check-only flagging; old docs §4.5: 1).
+- `mezo.companion.advisors.rx-terms` = `[retatrutid, reta, tirzepatid, mounjaro, szemaglutid,
+  ozempic, wegovy]` (`@NotEmpty`) — the clinical check's guarded prescription-med terms
+  (accent-folded contains-match; only dose-CHANGE verbs trigger).
 - `mezo.companion.llm.chat-model` = `gemini-2.5-flash` (every turn) / `smart-model` =
   `gemini-2.5-pro` (heavy pipelines, unused until V3.2) — model tiers are config, not code (ADR 0008).
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
@@ -529,7 +586,7 @@ CID=$(curl -s -X POST $BASE/conversation -H "Authorization: Bearer $TOKEN" | jq 
 curl -s -X POST $BASE/conversation/$CID/message \
   -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
   -d '{"content":"mi a mai terv?"}'
-# → { "id":…, "role":"assistant", "content":"…", "createdAt":…, "tools":[], "refs":[] }
+# → { "id":…, "role":"assistant", "content":"…", "createdAt":…, "tools":[], "refs":[], "degraded":false }
 
 # 3) full history, oldest first
 curl -s $BASE/conversation/$CID/messages -H "Authorization: Bearer $TOKEN"
@@ -597,9 +654,10 @@ execution checklist"). The house recipe, **contract-first**:
    ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 
 **Where the next slices plug in:**
-- **V1.3 (never-ask-twice + advisors)** — the redundancy guard reads the confirmed
-  `knowledge_fact` set post-response; reinforcement (`reinforcement_count++`,
-  `last_reinforced_at`) starts here; the grounding-lite advisor wraps the port calls.
+- **New advisor check?** — add a component in `advisor/` and call it from
+  `CompanionAdvisorChain.runChecks` (cheap/deterministic checks first, LLM-backed after); keep
+  fail-open semantics for anything that can break, and give the fake LLM a sentinel if it needs
+  scripted answers. V2.3's similar-days recall and the deferred full EvidenceCheck both land here.
 - **New post-turn work?** — subscribe another `@TransactionalEventListener(AFTER_COMMIT)` to
   `ChatTurnCompleted` (own switch, own `@Async` method, catch-everything) — the V1.2 listener
   is the template; never do post-turn work inline in the turn transaction.
@@ -730,6 +788,31 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   `KnowledgeListPage.test.tsx` both modes (candidate actions, inline refine, toggle, degraded),
   `KnowledgePage.test.tsx` pinned to mock mode (graph prototype); MSW fact/candidate fixtures
   mirror the seeds.
+
+**V1.3 test additions:**
+
+- **The stateless fake-verdict trick** — verdict calls are keyed on the `VERDICT_MARKER` prompt
+  prefix, and the verdict payload embeds the checked ANSWER; since the fake's echo embeds the
+  prompts in every answer, attempt-2 answers contain `AdvisorRetry.RETRY_MARKER`, so
+  `[fake-violate]` (violate until the marker appears) exercises retry-then-recover WITHOUT the
+  fake keeping state. `[fake-violate-always]` → the degraded path; `[fake-verdict-broken]` →
+  non-JSON → fail-open. Clinical scenarios need no scripting at all: the echo copies the user's
+  Rx phrase into the "answer" and the regex fires on both rounds.
+- **`ClinicalOutputCheckTest`** (5 tests, pure unit — no Spring) — verb+term same-sentence
+  violation, accent-folded inflection (`Retát`), term-without-verb, verb-without-term,
+  cross-sentence pass.
+- **`TurnVerdictCheckIT`** (3) — clean / scripted-redundancy mapping / fail-open on non-JSON.
+- **`CompanionAdvisorChainIT`** (5, via `ChatService.sendMessage`) — clean turn, retry-recover
+  (`RETRY_MARKER` in the echo proves round 2), degraded persisted+on-wire, clinical-persists →
+  degraded, verdict-broken → fail-open without retry.
+- **`ChatStreamAdvisorIT`** (2, NOT `@Transactional`) — deltas carry attempt-1 (no marker),
+  `done` carries the retried answer clean; violate-always → `done.degraded` + persisted flag.
+- **`CompanionAdvisorsSwitchOffIT`** (2) — no chain bean; violation sentinels change nothing.
+- **Extended:** `ChatServiceIT` (clean turn ⇒ `degraded=false` persisted + on-wire),
+  `CompanionPropertiesIT` (advisors binding), `FactExtractionServiceIT` (+2: confirmed-dupe
+  reinforces `reinforcement_count`/`last_reinforced_at`, pending-dupe does not).
+- **FE:** `chatApi.test.ts` (degraded mapping: false → undefined, true → true),
+  `ChatPage.test.tsx` (mock seed shows no badge; a degraded `done` renders `nem ellenőrzött`).
 
 Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echoes/streams),
 `CompanionRealWiringIT` (Gemini adapter picked when the fake profile is absent), `CompanionSwitchOffIT`
@@ -864,6 +947,41 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     `train|fuel|health|life`, 4 HU labels, colors reuse 4 existing `--cat-*` vars (no CSS
     change); the Me graph page stays a mock-mode prototype (real mode: honest `edges: []`).
 
+**V1.3 decisions (locked in the V1.3 plan §"Decisions locked"):**
+
+32. **The "Spring AI Advisor" is a port-level chain, not a `ChatClient` advisor** — the codebase
+    talks to the model through the hand-rolled `CompanionLlm` port (ADR 0008), so the chain
+    wraps port calls explicitly (`CompanionAdvisorChain`). Same §4.5 semantics, no new framework
+    surface.
+33. **Chain depth v1 = 2 checks** (the roadmap's latency question answered small): deterministic
+    clinical regex (~0 ms, first; a hit skips the LLM that round) + ONE combined cheap-tier
+    verdict call for redundancy AND grounding-lite. Full per-claim EvidenceCheck +
+    numericGroundingCheck stay deferred (classifier-tier cost data first). Old ContinuityGate /
+    MultiHorizonLoader intent is covered by the snapshot injection — not carried.
+34. **Retry semantics per old docs §4.5:** violation → ONE corrective re-prompt with the
+    violation summary appended to the system prompt (same user message, same tools, SAME audit —
+    chips honestly reflect all calls of the turn); still violating ⇒ ship WITH `degraded=true`
+    (never block the answer). Budget = `advisors.max-retries` (0..2, default 1).
+    `SelfHealthCheck` persistence deferred — `log.warn` is the V1.3 record.
+35. **The verdict is FAIL-OPEN** — a broken/unreachable judge yields zero violations + a warn
+    log; only a *detected violation surviving the retry budget* degrades. Availability over
+    strictness: the judge must never take the chat down with it.
+36. **Streamed turns review post-hoc** — deltas stream attempt-1 unbuffered (TTFB intact), the
+    review runs between the last delta and `done`, and the authoritative done row carries the
+    corrected (or flagged) answer through the FE's existing done-swap. Known v1 limitation: a
+    rejected attempt-1 is briefly visible while streaming.
+37. **Redundancy scope = the injected fact block** (top-N `include_in_prompt`) — exactly what
+    the answering model could know; a prompt-excluded fact can't be culpably re-asked, and the
+    retry can actually fix what the guard flags. Tool RESULTS are not shown to the judge in v1
+    (call names only, claims from listed tools presumed grounded) — the high-value catch is the
+    no-tool fabrication case; result capture is a bd follow-up.
+38. **Reinforcement v1 = extraction dedupe-hit on a CONFIRMED fact** (`reinforcement_count++`,
+    `last_reinforced_at=now()`) — the chat re-learning a fact IS a re-confirmation; pending and
+    in-batch duplicates still just skip. The old `reinforce_knowledge_fact` TOOL stays v3.
+39. **`degraded` is a persisted wire attribute** (`ai_message.degraded` NOT NULL default false;
+    `MessageResponse.degraded` required) — the FE renders a subtle `nem ellenőrzött` eyebrow;
+    mock messages never set it (`toChatMessage` maps false → `undefined`).
+
 **Gotchas:**
 
 - **The `CompanionLlm` bean is ABSENT when the switch is off** — it is
@@ -901,6 +1019,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   Any new AFTER_COMMIT listener inherits the guard for free (it drains the shared executor).
 - **The extraction listener swallows everything** (`log.warn`) — extraction must never affect a
   chat turn. Don't "fix" the catch-all; alert on the log if it ever matters.
+- **The fake's verdict scripting keys on the ANSWER, not the request** — `[fake-violate]` in a
+  test message reaches the verdict via the echo; if you change the echo format or
+  `AdvisorRetry.RETRY_MARKER`, the stateless violate-once trick breaks with it (the fake checks
+  the marker's presence in the payload to recognize a retry round).
+- **The retry shares the turn's `ToolCallAudit`** — retry-round tool calls count against the
+  same `max-calls-per-turn` budget and land in the same chips. Intentional (honest transparency);
+  don't give the retry a fresh audit.
 
 **Deferred (with bd ids):**
 - **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
@@ -908,9 +1033,12 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   prerequisite; until then the deployed chat is the honest degraded state). The v0 exit criterion
   ("mit egyek ma edzés előtt?" on the phone, grounded + chip-annotated) needs this to be provable
   end-to-end on the real model — the real-API tool smoke is part of that rollout.
-- **V1.3 advisors (`mezo-fnnq.8`) · V2.x RAG (pgvector) · V3.x patterns** — see the roadmap;
-  `find_similar_past_days` joins the registry at V2.3 (`mezo-fnnq.11`);
-  `get_knowledge_facts(topic)` is a v1-batch tool candidate once facts outgrow the top-N window.
+- **V2.x RAG (pgvector) · V3.x patterns** — see the roadmap; `find_similar_past_days` joins the
+  registry at V2.3 (`mezo-fnnq.11`); `get_knowledge_facts(topic)` is a v1-batch tool candidate
+  once facts outgrow the top-N window.
+- **Advisor hardening (V1.3 follow-ups, bd-filed):** tool-RESULT capture into `ToolCallAudit`
+  for the verdict judge · `SelfHealthCheck` persistence for violations (log-only today) ·
+  latency/cost review of the verdict call after real-key usage (classifier-tier decision).
 - **Knowledge graph edges** — the Me KnowledgePage graph layer has no backend (real mode renders
   `edges: []`); file its slice when the graph view earns it.
 
@@ -932,7 +1060,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/{ChatTurnCompleted,FactExtractionListener}.java` — the V1.2 AFTER_COMMIT async trigger.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactCandidateService.java` — V1.2 pending inbox + accept/refine/reject decision.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/AsyncConfiguration.java` — `@EnableAsync` (born with V1.2).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`; + `degraded` since V1.3).
+
+**Backend — advisor chain (V1.3)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/CompanionAdvisorChain.java` — the §4.5 retry/degrade orchestrator (`complete` sync / `review` streamed).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/ClinicalOutputCheck.java` — deterministic Rx dose-change regex (accent-folded, sentence-scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/TurnVerdictCheck.java` — the combined LLM verdict (`VERDICT_MARKER`, fail-open parse).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/advisor/{AdvisorRetry,AdvisorViolation,AdvisedAnswer}.java` — retry block + value records.
 
 **Backend — LLM port (ADR 0008)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port (`complete` + `stream`, tools variants since V0.5).
@@ -949,26 +1083,29 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope,KnowledgeFactEntity,LearnedFactEntity}.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/{AiConversationRepository,AiMessageRepository,KnowledgeFactRepository,LearnedFactRepository}.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` records.
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `COMPANION_SWITCH`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Llm` + `Chat` + `Snapshot` + `Tools` + `Facts` + `Extraction` + `Advisors` records.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `COMPANION_SWITCH` + extraction/advisors sub-switches.
 - `backend/src/main/resources/application.yml` — `mezo.feature.companion.enabled` + `mezo.companion.llm.*`/`chat.*` + `spring.ai.google.genai.api-key`.
 
 **Backend — migration**
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031812_mezo-fnnq.7_learned_fact_category.sql` (in `1.0.0_master.yml`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202607031900_mezo-fnnq.8_ai_message_degraded.sql` (in `1.0.0_master.yml`).
 
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5 tool batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,TurnVerdictCheckIT}.java` — the V1.3 advisor batch.
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{AiConversationPopulator,AiMessagePopulator,KnowledgeFactPopulator,LearnedFactPopulator}.java` + `support/ResetDatabase.java` (companion tables in the TRUNCATE list).
 - `backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` — the two documented V0.4 allowlist entries (hand-written controller + fake-LLM raw exception) + the V0.5 `companion_tools_are_internal_sphere_only` rule.
 
 **Frontend (chat real since V0.4, knowledge since V1.2)**
 - `frontend/src/data/_client/api.ts` — `apiSse` (fetch-ReadableStream SSE reader) + its `api.sse.test.ts`.
-- `frontend/src/data/insights/chatApi.ts` — REST + stream client, `toChatMessage` wire mapper.
+- `frontend/src/data/insights/chatApi.ts` — REST + stream client, `toChatMessage` wire mapper (+ `degraded` since V1.3).
+- `frontend/src/features/insights/components/ChatMessage.tsx` — the bubble (chips, refs, V1.3 `nem ellenőrzött` badge).
 - `frontend/src/data/insights/chatHooks.ts` — `useChat` (bootstrap dual-read) + `useChatActions` (send/stream state machine); re-exported from `data/hooks.ts`.
 - `frontend/src/data/insights/chat.ts` — the mock seed (`initialChat`) + the shared `cannedReply`.
 - `frontend/src/data/insights/knowledgeApi.ts` — V1.2 fact/candidate REST client + wire mappers.
@@ -983,6 +1120,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - Design spec: [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 - Roadmap (14 slices): [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
 - V1.2 plan: [`docs/superpowers/plans/2026-07-03-companion-v12-fact-extraction.md`](../superpowers/plans/2026-07-03-companion-v12-fact-extraction.md)
+- V1.3 plan: [`docs/superpowers/plans/2026-07-03-companion-v13-advisors.md`](../superpowers/plans/2026-07-03-companion-v13-advisors.md)
 - V0.2 plan: [`docs/superpowers/plans/2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md)
 - V0.4 plan: [`docs/superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md`](../superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md)
 - V0.5 plan: [`docs/superpowers/plans/2026-07-03-companion-v05-tools.md`](../superpowers/plans/2026-07-03-companion-v05-tools.md)
