@@ -13,6 +13,14 @@ spring:
     open-in-view: false
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
+  ai:
+    google:
+      genai:
+        # Gemini API key (Google AI Studio) — ADR 0008. Real value comes from the environment
+        # (local shell / k3s mezo-app secret); the dummy default keeps every context bootable
+        # key-less (tests, CI, k3s before rollout) since the starter builds its ChatModel bean
+        # regardless of the mezo.feature.companion switch. Real calls fail without a real key.
+        api-key: ${GEMINI_API_KEY:dummy-key-set-GEMINI_API_KEY}
 mezo:
   auth:
     jwt-secret: ${MEZO_JWT_SECRET:dev-only-change-me-32-bytes-minimum-secret}
@@ -74,6 +82,15 @@ mezo:
     # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
     progression:
       enabled: true
+    # Phase-3 companion (LLM chat + AI memory, ADR 0008). Gates every CompanionLlm bean;
+    # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
+    companion:
+      enabled: true
+  companion:
+    # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
+    llm:
+      chat-model: gemini-2.5-flash   # cheap/fast tier: every conversational turn
+      smart-model: gemini-2.5-pro    # smart tier: heavy pipelines (V3.2 critique); unused until then
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
