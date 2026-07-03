@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
@@ -100,15 +101,19 @@ public class ContextSnapshotAssembler {
             b.append(", ").append("M".equals(profile.getSex()) ? "férfi" : "nő");
         }
         b.append("; súlytrend: ");
-        if (trend.getLatestTrendKg() == null) {
+        // empty series = no weigh-ins at all — the service's zeros would read as fabricated numbers
+        if (trend.getLatestTrendKg() == null || trend.getEwmaSeries().isEmpty()) {
             b.append(NO_DATA);
         } else {
             b.append(num(trend.getLatestTrendKg())).append(" kg");
-            if (trend.getWeeklyRateKgPerWeek() != null) {
-                b.append(", heti ").append(num(trend.getWeeklyRateKgPerWeek())).append(" kg");
-            }
-            if (trend.getWeeklyRatePctPerWeek() != null) {
-                b.append(" (").append(num(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
+            // rates are only defined from 2+ distinct days (NONE = no slope yet)
+            if (trend.getDataSufficiency() != WeightTrendResponse.DataSufficiencyEnum.NONE) {
+                if (trend.getWeeklyRateKgPerWeek() != null) {
+                    b.append(", heti ").append(num(trend.getWeeklyRateKgPerWeek())).append(" kg");
+                }
+                if (trend.getWeeklyRatePctPerWeek() != null) {
+                    b.append(" (").append(num(trend.getWeeklyRatePctPerWeek())).append("%/hét)");
+                }
             }
         }
         return b.toString();
@@ -127,7 +132,39 @@ public class ContextSnapshotAssembler {
                 .append(" kg, ").append(goal.getStartDate()).append(" → ").append(goal.getTargetDate());
         long week = ChronoUnit.DAYS.between(goal.getStartDate(), today) / 7 + 1;
         b.append(", ").append(week).append(". hét");
+        GoalPrescriptionJson.Segment seg = currentSegment(goal.getPrescription(), week);
+        if (seg != null) {
+            b.append("; e heti recept: ").append(seg.kcal()).append(" kcal, ")
+                    .append(seg.proteinG()).append(" g fehérje");
+            if (seg.sleepTargetH() != null) {
+                b.append(", alvás ").append(num(seg.sleepTargetH())).append(" h");
+            }
+            if (seg.restDays() != null && !seg.restDays().isEmpty()) {
+                b.append(", pihenőnap: ").append(seg.restDays().stream()
+                        .map(ContextSnapshotAssembler::huDay).collect(Collectors.joining(", ")));
+            }
+        }
+        if (goal.getMealsPerDay() != null) {
+            b.append("; étkezés/nap: ").append(goal.getMealsPerDay());
+        }
+        if (goal.getWakeTime() != null) {
+            b.append(", ébredés: ").append(goal.getWakeTime());
+        }
+        if (goal.getBedTime() != null) {
+            b.append(", lefekvés: ").append(goal.getBedTime());
+        }
         return b.toString();
+    }
+
+    /** The prescription segment whose fromWeek..toWeek (inclusive) contains {@code week}; null when none. */
+    private static GoalPrescriptionJson.Segment currentSegment(GoalPrescriptionJson prescription, long week) {
+        if (prescription == null || prescription.segments() == null) {
+            return null;
+        }
+        return prescription.segments().stream()
+                .filter(s -> s.fromWeek() != null && s.toWeek() != null
+                        && week >= s.fromWeek() && week <= s.toWeek())
+                .findFirst().orElse(null);
     }
 
     private String trainBlock(UUID userId, LocalDate today) {
