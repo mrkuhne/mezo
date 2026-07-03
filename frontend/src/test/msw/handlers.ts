@@ -1,5 +1,6 @@
 import { http, HttpResponse } from 'msw'
 import { API_BASE } from '@/data/_client/api'
+import { initialChat, cannedReply } from '@/data/insights/chat'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -433,4 +434,47 @@ export const handlers = [
     )
   }),
   http.delete(`${API_BASE}/api/fuel/intake/entry/:id`, () => new HttpResponse(null, { status: 204 })),
+
+  // Companion chat (V0.4) — fixtures mirror the mock seed (initialChat) so page/hook tests
+  // assert the same strings in both modes. Tests exercise switch-off by overriding the
+  // conversation list with a 404 (server.use).
+  http.get(`${API_BASE}/api/companion/conversation`, () =>
+    HttpResponse.json([
+      { id: 'c-1', title: 'Aludtam 7h-t…', startedAt: '2026-07-03T06:32:00Z', lastMessageAt: '2026-07-03T06:34:00Z' },
+    ]),
+  ),
+  http.post(`${API_BASE}/api/companion/conversation`, () =>
+    HttpResponse.json({ id: 'c-new', title: null, startedAt: '2026-07-03T07:00:00Z', lastMessageAt: null }, { status: 201 }),
+  ),
+  http.get(`${API_BASE}/api/companion/conversation/:id/messages`, () =>
+    HttpResponse.json(
+      initialChat.map((m, i) => ({
+        id: `msg-${i}`,
+        role: m.role,
+        content: m.text,
+        createdAt: `2026-07-03T06:3${i}:00Z`,
+        tools: m.tools ?? [],
+        refs: m.refs ?? [],
+      })),
+    ),
+  ),
+  http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+    const { content } = (await request.json()) as { content: string }
+    const reply = cannedReply(content)
+    const mid = Math.ceil(reply.length / 2)
+    const encoder = new TextEncoder()
+    const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(0, mid) })))
+        controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(mid) })))
+        controller.enqueue(encoder.encode(frame('done', {
+          id: 'msg-done', role: 'assistant', content: reply,
+          createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [],
+        })))
+        controller.close()
+      },
+    })
+    return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+  }),
 ]
