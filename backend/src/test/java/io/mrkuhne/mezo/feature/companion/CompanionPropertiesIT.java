@@ -35,6 +35,12 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testExtractionConfig_shouldBindFromYaml_whenContextStarts() {
+        assertThat(properties.extraction().enabled()).isTrue();
+        assertThat(properties.extraction().maxCandidatesPerTurn()).isEqualTo(3);
+    }
+
+    @Test
     void testToolsConfig_shouldBindToolTunablesFromYaml_whenContextStarts() {
         assertThat(properties.tools().maxCallsPerTurn()).isEqualTo(6);
         assertThat(properties.tools().maxWindowDays()).isEqualTo(30);

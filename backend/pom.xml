@@ -184,6 +184,12 @@
 			<version>1.4.1</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<!-- V1.2: rides out the async post-turn extraction hop in the commit-path flow IT -->
+			<groupId>org.awaitility</groupId>
+			<artifactId>awaitility</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

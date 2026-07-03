@@ -26,6 +26,15 @@ class CompanionApiSwitchOffIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testListFactCandidates_shouldReturn404_whenCompanionSwitchedOff() {
+        // V1.2 candidate inbox — the same bean-boundary gate as the rest of the surface
+        String body = getForBody(
+                "/api/companion/fact/candidate", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
     void testStreamMessage_shouldReturn404_whenCompanionSwitchedOff() {
         // V0.4 stream sibling — the hand-written controller is switch-gated the same way
         String body = postForBody(

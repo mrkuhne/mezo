@@ -3,12 +3,15 @@ package io.mrkuhne.mezo.feature.companion.controller;
 import io.mrkuhne.mezo.api.controller.CompanionApi;
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.CreateFactRequest;
+import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
+import io.mrkuhne.mezo.api.dto.FactDecisionRequest;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
+import io.mrkuhne.mezo.feature.companion.service.FactCandidateService;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
@@ -27,6 +30,7 @@ public class CompanionController implements CompanionApi {
     private final ConversationService conversationService;
     private final ChatService chatService;
     private final KnowledgeFactService knowledgeFactService;
+    private final FactCandidateService factCandidateService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -62,5 +66,15 @@ public class CompanionController implements CompanionApi {
     @Override
     public KnowledgeFactResponse updateFact(UUID factId, UpdateFactRequest request) {
         return knowledgeFactService.update(currentUserId.get(), factId, request);
+    }
+
+    @Override
+    public List<FactCandidateResponse> listFactCandidates() {
+        return factCandidateService.listPending(currentUserId.get());
+    }
+
+    @Override
+    public FactCandidateResponse decideFactCandidate(UUID candidateId, FactDecisionRequest request) {
+        return factCandidateService.decide(currentUserId.get(), candidateId, request);
     }
 }

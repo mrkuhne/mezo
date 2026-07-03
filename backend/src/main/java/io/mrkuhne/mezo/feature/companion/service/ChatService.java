@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,9 +58,10 @@ public class ChatService {
     private final CompanionToolRegistry toolRegistry;
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     /** One prepared chat turn — everything the LLM call needs, produced inside one transaction. */
-    public record PreparedTurn(UUID conversationId, String systemPrompt, String userContent) {}
+    public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt, String userContent) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -75,22 +77,27 @@ public class ChatService {
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
                 + knowledgeFactService.renderPromptBlock(userId)
                 + renderHistory(loadWindow(userId, conversationId));
-        persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
+        AiMessageEntity userRow = persistMessage(
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
         touchConversation(conversation, request.getContent());
-        return new PreparedTurn(conversationId, systemPrompt, request.getContent());
+        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, request.getContent());
     }
 
     /**
      * Second half of a STREAMED turn (own transaction): persist the ASSISTANT row with the turn's
-     * tool audit (V0.5) + bump lastMessageAt.
+     * tool audit (V0.5) + bump lastMessageAt. Publishes {@link ChatTurnCompleted} for the V1.2
+     * post-turn extraction (fires AFTER this transaction commits).
      */
     @Transactional
-    public MessageResponse completeTurn(UUID userId, UUID conversationId, String answer, ToolCallAudit audit) {
+    public MessageResponse completeTurn(
+            UUID userId, UUID conversationId, UUID userMessageId, String userContent,
+            String answer, ToolCallAudit audit) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope());
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
+        eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent, answer));
         return mapper.toMessageResponse(assistant);
     }
 
@@ -105,7 +112,8 @@ public class ChatService {
                 + knowledgeFactService.renderPromptBlock(userId)
                 + renderHistory(loadWindow(userId, conversationId));
 
-        persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
+        AiMessageEntity userRow = persistMessage(
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
         // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
         ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer = companionLlm.complete(systemPrompt, request.getContent(),
@@ -114,6 +122,8 @@ public class ChatService {
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope());
 
         touchConversation(conversation, request.getContent());
+        // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
+        eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(), answer));
         return mapper.toMessageResponse(assistant);
     }
 

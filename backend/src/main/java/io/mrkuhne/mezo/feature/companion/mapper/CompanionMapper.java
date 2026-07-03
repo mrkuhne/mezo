@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.mapper;
 
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
+import io.mrkuhne.mezo.api.dto.FactCandidateResponse;
 import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
@@ -8,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import org.mapstruct.Mapper;
@@ -49,6 +51,18 @@ public interface CompanionMapper {
                 .reinforcementCount(entity.getReinforcementCount())
                 .includeInPrompt(entity.isIncludeInPrompt())
                 .lastReinforcedAt(toOffset(entity.getLastReinforcedAt()))
+                .createdAt(toOffset(entity.getCreatedAt()))
+                .build();
+    }
+
+    default FactCandidateResponse toFactCandidateResponse(LearnedFactEntity entity) {
+        return FactCandidateResponse.builder()
+                .id(entity.getId())
+                .candidateText(entity.getCandidateText())
+                .category(entity.getCategory())
+                .userDecision(entity.getUserDecision())
+                .refinedText(entity.getRefinedText())
+                .promotedFactId(entity.getPromotedFactId())
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .build();
     }

@@ -39,10 +39,11 @@ class LearnedFactPersistenceIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
         AiMessageEntity message = messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "laktózérzékeny vagyok");
 
-        LearnedFactEntity candidate = learnedFactPopulator.candidate(userId, "Laktózérzékeny", message.getId());
+        LearnedFactEntity candidate = learnedFactPopulator.candidate(userId, "Laktózérzékeny", "health", message.getId());
 
         LearnedFactEntity reloaded = learnedFactRepository.findById(candidate.getId()).orElseThrow();
         assertThat(reloaded.getCandidateText()).isEqualTo("Laktózérzékeny");
+        assertThat(reloaded.getCategory()).isEqualTo("health");
         assertThat(reloaded.getDerivedFromMessageId()).isEqualTo(message.getId());
         assertThat(reloaded.getUserDecision()).isNull();
         assertThat(reloaded.getRefinedText()).isNull();

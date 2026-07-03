@@ -16,7 +16,8 @@ public record CompanionProperties(
     @NotNull @Valid Chat chat,
     @NotNull @Valid Snapshot snapshot,
     @NotNull @Valid Tools tools,
-    @NotNull @Valid Facts facts
+    @NotNull @Valid Facts facts,
+    @NotNull @Valid Extraction extraction
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -44,6 +45,14 @@ public record CompanionProperties(
     public record Facts(
         /** Top-N facts (by reinforcement count, then newest) injected into the system prompt. */
         @Min(1) @Max(50) int topN
+    ) {}
+
+    /** V1.2 post-turn fact extraction — async, per-turn, LLM-backed candidate capture. */
+    public record Extraction(
+        /** Master toggle — off removes the AFTER_COMMIT listener bean entirely (COMPANION_EXTRACTION_SWITCH). */
+        boolean enabled,
+        /** Max learned_fact candidates persisted per chat turn (dedupe runs before the cap). */
+        @Min(1) @Max(10) int maxCandidatesPerTurn
     ) {}
 
     /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */

@@ -116,6 +116,13 @@ mezo:
       # V1.1 knowledge facts — how many confirmed facts (by reinforcement count, then newest)
       # are injected into every chat turn's system prompt
       top-n: 10
+    extraction:
+      # V1.2 post-turn fact extraction — async candidate capture after every chat turn;
+      # off = the AFTER_COMMIT listener bean does not exist (no extraction LLM call ever)
+      enabled: true
+      # Max learned_fact candidates persisted per chat turn (dedupe against confirmed facts
+      # + pending candidates runs first)
+      max-candidates-per-turn: 3
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

@@ -42,6 +42,13 @@ public class LearnedFactEntity extends OwnedEntity {
     @Column(name = "candidate_text", nullable = false, columnDefinition = "text")
     private String candidateText;
 
+    /** Mirrors ck_learned_fact_category — classified by the extractor at capture time (V1.2). */
+    @NotNull
+    @Size(max = 16)
+    @Pattern(regexp = "train|fuel|health|life")
+    @Column(nullable = false, length = 16)
+    private String category;
+
     /** The chat message the candidate was extracted from (loose ref — ON DELETE SET NULL). */
     @Column(name = "derived_from_message_id", columnDefinition = "uuid")
     private UUID derivedFromMessageId;
