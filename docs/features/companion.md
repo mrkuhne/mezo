@@ -15,10 +15,11 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 # Companion (AI chat brain) — Feature Documentation
 
 > One-line: the Phase-3 AI companion backend — persisted conversations + a sync Hungarian
-> chat endpoint over the `CompanionLlm` port (Spring AI 2 / Gemini). **Status: backend ✅
-> V0.2 (spine); FE 🔶 mock (ChatPage is still the simulated `insights` surface until V0.4).**
-> Cross-cutting Phase-3 domain with no route/tab of its own yet — the user reaches "chat" only
-> through the mock Insights ChatPage ([`insights.md`](insights.md) §2.5).
+> chat endpoint over the `CompanionLlm` port (Spring AI 2 / Gemini), with a deterministic
+> cross-feature **context snapshot** injected into every system prompt. **Status: backend ✅
+> V0.3 (spine + snapshot); FE 🔶 mock (ChatPage is still the simulated `insights` surface until
+> V0.4).** Cross-cutting Phase-3 domain with no route/tab of its own yet — the user reaches
+> "chat" only through the mock Insights ChatPage ([`insights.md`](insights.md) §2.5).
 
 ## 1. Summary
 
@@ -37,22 +38,34 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `CompanionLlm.complete()` call → persists both turns).
 - **A controller** — `CompanionController implements CompanionApi`, ownership from the JWT.
 
+**V0.3 (`mezo-fnnq.3`) shipped the context snapshot — the "pain-killer":**
+
+- **`ContextSnapshotAssembler`** (`service/ContextSnapshotAssembler.java`) — a read-only,
+  deterministic composition of the OTHER features' reads (profile + weight trend, active goal +
+  prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
+  FuelDay rollup + protocol + intakes, retaDay/phase, last sleep + latest check-in), rendered as
+  six Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT (pillanatkép — {dátum}):` and inserted
+  into the `ChatService` system prompt **between the static voice and the history transcript**.
+  Missing data renders as explicit `nincs adat`, never invented; no LLM anywhere in the path.
+
 **Status per layer:**
 
 | Layer | State | Notes |
 |---|---|---|
 | Backend (tables + contract + services + sync endpoint) | ✅ V0.2 | Behind `mezo.feature.companion.enabled`; switch off ⇒ the whole HTTP surface 404s. |
+| Context snapshot | ✅ V0.3 | `ContextSnapshotAssembler` in every chat turn's system prompt; LLM-free, `nincs adat` absences, `mezo.companion.snapshot.*` windows. |
 | LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile). |
 | Streaming (SSE) | ❌ deferred → V0.4 | V0.2 answers are **sync JSON** (`POST .../message` returns the persisted assistant message). |
 | Frontend | 🔶 mock | ChatPage under Insights is still fully simulated (`insights.md` §2.5); no `useChat` real hook, no network. Wires up at V0.4. |
-| Context snapshot / facts / RAG / patterns | ❌ deferred | V0.3 (snapshot), V1.x (facts), V2.x (RAG), V3.x (patterns). |
+| Facts / RAG / patterns | ❌ deferred | V1.x (facts), V2.x (RAG), V3.x (patterns). |
 
-**Driver:** `mezo-fnnq.2`. **Design of record:**
+**Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot). **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
-(§3 data model, §6 guardrails); slice map
+(§3 data model, §4 snapshot, §6 guardrails); slice map
 [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
-§V0.2; the V0.2 implementation plan
-[`docs/superpowers/plans/2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md);
+§V0.2–V0.3; implementation plans
+[`2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md) +
+[`2026-07-03-companion-v03-context-snapshot.md`](../superpowers/plans/2026-07-03-companion-v03-context-snapshot.md);
 provider/port ADR
 [`0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md).
 
@@ -75,18 +88,35 @@ The path truncates at the backend today (no FE consumer). The full V0.2 flow:
 POST /api/companion/conversation/{id}/message   (sync JSON)
   → CompanionController.sendMessage            controller/CompanionController.java:42  (implements CompanionApi)
       currentUserId.get()  (JWT subject → UUID; techcore/security/CurrentUserId)
-  → ChatService.sendMessage(userId, id, req)   service/ChatService.java:50
+  → ChatService.sendMessage(userId, id, req)   service/ChatService.java:52
       1. conversationService.getOwned(userId, id)          → 404 RESOURCE_NOT_FOUND if missing/foreign
-      2. window = loadWindow()  (last N messages, newest-first page, .reversed())   ChatService.java:66
-         systemPrompt = SYSTEM_PROMPT + renderHistory(window)  ("Daniel:"/"Mezo:" transcript)   :55,:73
-      3. persist the USER row (saveAndFlush → distinct created_at)                  :57,:86
-      4. answer = companionLlm.complete(systemPrompt, req.content)                  :58  ── PORT ──►
+      2. systemPrompt = SYSTEM_PROMPT                                               :57
+                      + contextSnapshotAssembler.render(userId, LocalDate.now())    ── V0.3 ──
+                      + renderHistory(loadWindow())  ("Daniel:"/"Mezo:" transcript)
+      3. persist the USER row (saveAndFlush → distinct created_at)
+      4. answer = companionLlm.complete(systemPrompt, req.content)                  ── PORT ──►
          (real: GeminiCompanionLlm → Gemini · tests: FakeCompanionLlm echoes both halves)
-      5. persist the ASSISTANT row (tool_calls/refs left null)                      :59
-      6. touchConversation → lastMessageAt = now; title = first user msg (once)     :62,:97
+      5. persist the ASSISTANT row (tool_calls/refs left null)
+      6. touchConversation → lastMessageAt = now; title = first user msg (once)
   → CompanionMapper.toMessageResponse(assistant)   mapper/CompanionMapper.java:30
-      (null envelope → empty tools[]/refs[] on the wire)                            :42,:51
+      (null envelope → empty tools[]/refs[] on the wire)
 ```
+
+**The context snapshot (V0.3).** `ContextSnapshotAssembler.render(userId, today)`
+(`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with six lines in
+spec §4 order — `[Profil]` (biometric profile + `WeightTrendService` trend; an empty weigh-in
+series renders `nincs adat`, and rates are omitted while `dataSufficiency = NONE` — a zero trend
+would be a fabricated number), `[Cél]` (active goal, derived current week
+`DAYS(startDate→today)/7+1`, the prescription segment whose `fromWeek..toWeek` contains it, and
+the `mealsPerDay`/`wakeTime`/`bedTime` planner fields), `[Edzés]` (active meso with the week
+DERIVED from `startDate` — the stored `currentWeek` can lag; gym/sport weekly rhythm; last-N-days
+gym/sport/run digest), `[Mai üzemanyag]` (`FuelDayService.getDay` consumed/targets incl. water +
+active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` retaDay +
+phase; an active med with no dose renders `nincs rögzített dózis` — honest zero), and
+`[Regeneráció]` (latest sleep + latest check-in, note truncated to
+`snapshot.checkin-note-max-chars`). Every lookup uses `Optional`/status-filtered repo finders —
+the assembler NEVER throws for missing data. Composition is strictly one-way (companion → other
+features; ArchUnit's cycle rule guards the reverse).
 
 **Prompt assembly (the load-bearing shape).** The window is loaded **before** persisting the new
 message, so the current turn travels as the `userMessage` param, never inside the rendered history
@@ -177,6 +207,10 @@ until V0.5** — the null envelope maps to `[]`, `CompanionMapper.toTools/toRefs
   user+assistant rows (≈10 turns) are windowed into the system prompt (Decision #1).
 - `mezo.companion.chat.title-max-chars` = **80** (`@Min(10) @Max(120)`) — auto-title = first user
   message truncated to this many chars (DB column caps at 120; Decision #2).
+- `mezo.companion.snapshot.digest-days` = **7** (`@Min(1) @Max(30)`) — how many days back the
+  snapshot's train digest (gym/sport/run counts) looks, including today (V0.3).
+- `mezo.companion.snapshot.checkin-note-max-chars` = **200** (`@Min(0) @Max(1000)`) — the latest
+  check-in note is included verbatim, truncated to this many characters (V0.3).
 - `mezo.companion.llm.chat-model` = `gemini-2.5-flash` (every turn) / `smart-model` =
   `gemini-2.5-pro` (heavy pipelines, unused until V3.2) — model tiers are config, not code (ADR 0008).
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
@@ -214,12 +248,20 @@ Companion is now a backed feature on the contract-first pipeline
 `api/openapi.yml` → generated `CompanionApi` + DTOs (backend) and `api.gen.ts` types (FE). Drift =
 compile error.
 
-### 5.5 Companion ← other features (🟣 named future seams — read-only)
-- **V0.3 `ContextSnapshotAssembler`** (`mezo-fnnq.3`): a deterministic HU text block composed from
-  **existing** services (goal + prescription current week + day-planner; active meso + week;
-  gym/sport schedule; last-7d train digest; FuelDay + protocol + intakes; `MedicationCycleService`
-  retaDay/phase; last-night sleep; latest check-in; weight 7/14d trend), injected into the
-  `ChatService` system prompt. Reads only — companion depends on those features, never the reverse.
+### 5.5 Companion ← other features (✅ V0.3 wired — read-only)
+**`ContextSnapshotAssembler` is live**: companion now injects reads from **six** other features —
+`biometrics` (`BiometricProfileRepository`, `WeightTrendService`, `SleepLogRepository`,
+`CheckInRepository`), `goal` (`GoalRepository` + the prescription jsonb), `train`
+(`MesocycleRepository`, `GymScheduleService`, `SportService`, `WorkoutSessionRepository.findDoneInstanceDates`,
+`SportSessionRepository`/`RunSessionLogRepository` since-date finders), `meal` (`FuelDayService`),
+`fuel` (`ProtocolService`, `IntakeService`) and `medication` (`MedicationRepository`,
+`MedicationCycleService`). **Contract crossing the seam:** `render(UUID userId, LocalDate today) →
+String` — the callee services' read methods with explicit `userId` scoping; strictly one-way
+(no feature may import companion; the frozen ArchUnit cycle rule fails the build otherwise).
+V0.3 also added four derived finders to those features' repos (sleep/check-in latest, sport/run
+since-date) — plain finders, no companion dependency.
+
+**Named future seams:**
 - **V0.5 tools** (`mezo-fnnq.5`): read-only wrappers (`get_weight_trend`, `get_recent_meals`, …)
   over the same services, ownership-scoped, logged into `ai_message.tool_calls`/`refs`.
 - **V1.1 knowledge facts** injected into the prompt; **V2.x** RAG over daily summaries; **V3.x**
@@ -276,9 +318,6 @@ execution checklist"). The house recipe, **contract-first**:
    ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 
 **Where the next slices plug in:**
-- **V0.3 (snapshot)** — a new `ContextSnapshotAssembler` bean whose rendered block is appended to
-  `ChatService`'s `SYSTEM_PROMPT` composition (`ChatService.java:55`), between the static voice and
-  the history transcript. Pure read-composition of existing services; unit/IT-tested with no LLM.
 - **V0.4 (streaming + FE)** — an SSE variant of `POST .../message` (`SseEmitter`/`Flux` over the
   port's `stream(…)`), the FE `useChat`/`useChatActions` dual-mode hooks in `data/insights/`, and
   ChatPage wired (send/stream-render/history). The SSE-in-contract-first precedent gets decided
@@ -300,6 +339,14 @@ both prompt halves** (`"FAKE-LLM system=[…] user=[…]"`, `FakeCompanionLlm.ja
 companion voice (`"Te vagy a mezo"`, `"retatrutid"`), the windowed history block
 (`"Daniel: …"`/`"Mezo: …"`), and that the current message rides as the `user=[…]` param, not the
 history.
+
+**`ContextSnapshotAssemblerIT` (V0.3, 10 tests)** — the snapshot is fully assertable without any
+LLM: empty-user render (all six blocks in order, every absence an explicit `nincs adat`, config
+targets still render), profile+trend, current-week segment + planner selection, train digest +
+schedules, digest-window exclusion, FuelDay/protocol/intakes, retaDay+phase (`4. nap (Stabil)`),
+sleep+check-in, note truncation at 200 chars, and determinism (two renders are `equals`).
+`ChatServiceIT` gained `testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndHistory…` —
+the fake's echo proves voice → `AKTUÁLIS ÁLLAPOT` → history ordering in the real prompt.
 
 The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
 
@@ -339,6 +386,24 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
    `RefsEnvelope{refs:[{kind,id}]}` — field names mirror the FE mock `Tool{type,name}` /
    `ChatRef{kind,id}` so V0.4/V0.5 wiring is mechanical (ADR 0006 / `ProvenanceEnvelope` precedent).
 
+**V0.3 decisions (locked in the V0.3 plan §"Decisions locked"):**
+
+6. **`ContextSnapshotAssembler` keeps the design-of-record name** (not `*Service`) — it is the
+   name the spec/roadmap/living doc all use; still a switch-gated `@Service` in `service/`.
+7. **`render(userId, today)` takes the date as a parameter** — deterministic and boundary-testable;
+   `ChatService` passes `LocalDate.now()` (codebase convention, no `Clock` bean).
+8. **Weeks are DERIVED, not read** — goal week from `goal.startDate`, meso week from
+   `meso.startDate` clamped to `[1, weeks]` (the stored `currentWeek` can lag).
+9. **No fabricated trend**: empty weigh-in series → `súlytrend: nincs adat`; rates omitted while
+   `dataSufficiency = NONE` (`WeightTrendService.empty()` returns zeros, not nulls — rendering
+   them would violate spec §6).
+10. **Budget by construction, no hard truncation** — the block is bounded by `digest-days` and
+    one-line-per-block rendering (~0.5–1k token, well under the 2–4k spec budget).
+
+**V0.3 gotcha:** the assembler runs inside EVERY chat turn (`ChatService.sendMessage` is one
+transaction) — its reads are cheap single-row/short-list lookups by design; anything heavier
+(full-history scans) belongs behind a V0.5 tool, not in the snapshot.
+
 **Gotchas:**
 
 - **The `CompanionLlm` bean is ABSENT when the switch is off** — it is
@@ -356,7 +421,6 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
   `demodata` profile — don't expect it to strip other profiles.
 
 **Deferred (with bd ids):**
-- **V0.3 context snapshot** (`mezo-fnnq.3`) — the pain-killer; injected into the system prompt.
 - **V0.4 SSE streaming + FE ChatPage goes real** (`mezo-fnnq.4`) — the sync endpoint gets a stream
   sibling; `insights.md` §2.5 becomes real then.
 - **V0.5 tool calling + tool-chips** (`mezo-fnnq.5`) — fills the `tool_calls`/`refs` envelopes.
@@ -371,7 +435,8 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
 **Backend — controller / services / mapper**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/controller/CompanionController.java` — `implements CompanionApi`, JWT ownership, switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` + windowed prompt assembly + sync turn.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` + snapshot + windowed prompt assembly + sync turn.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (6 HU blocks, `nincs adat` absences).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`).
 
 **Backend — LLM port (ADR 0008)**
