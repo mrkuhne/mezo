@@ -21,7 +21,7 @@ public class CheckInPopulator {
         e.setCreatedBy(owner);
         e.setDate(date);
         e.setSlotTime(slotTime);
-        e.setState("ok");
+        e.setState("done");
         e.setEnergy(energy);
         e.setStress(stress);
         e.setBody(3);

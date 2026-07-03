@@ -6,10 +6,22 @@ import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
+import io.mrkuhne.mezo.support.populator.MedicationPopulator;
+import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
+import io.mrkuhne.mezo.support.populator.RunningPopulator;
+import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +43,17 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private BiometricProfilePopulator biometricProfilePopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private GoalPopulator goalPopulator;
+    @Autowired private TrainPopulator trainPopulator;
+    @Autowired private RunningPopulator runningPopulator;
+    @Autowired private PantryItemPopulator pantryItemPopulator;
+    @Autowired private MealPopulator mealPopulator;
+    @Autowired private WaterLogPopulator waterLogPopulator;
+    @Autowired private ProtocolPopulator protocolPopulator;
+    @Autowired private SupplementIntakePopulator supplementIntakePopulator;
+    @Autowired private MedicationPopulator medicationPopulator;
+    @Autowired private MedicationDosePopulator medicationDosePopulator;
+    @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private CheckInPopulator checkInPopulator;
 
     @Test
     void testRender_shouldRenderAllBlocksWithNincsAdat_whenUserHasNoData() {
@@ -109,6 +132,100 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(block).contains("3. hét");
         assertThat(block).contains("e heti recept: 2100 kcal, 180 g fehérje, alvás 7.5 h, pihenőnap: Szo, V");
         assertThat(block).contains("étkezés/nap: 4, ébredés: 06:30, lefekvés: 22:30");
+    }
+
+    @Test
+    void testRender_shouldRenderTrainDigestAndSchedules_whenActiveMesoAndSessions() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "upper", 0, "planned");
+        var instance = trainPopulator.createWorkoutInstance(owner, template, today.minusDays(2), "completed");
+        var exercise = trainPopulator.createExercise(owner, template.getId(), "Húzódzkodás", 0);
+        trainPopulator.createLoggedSet(owner, exercise.getId(), instance.getId(), 0, "80", 8, 1);
+        trainPopulator.createGymSlot(owner, 0, "18:00");
+        trainPopulator.createScheduleSlot(owner, 1, "19:00", 90, "training");
+        trainPopulator.createSportSession(owner, today.minusDays(1));
+        var runBlock = runningPopulator.createBlock(owner, "Sprint blokk", "active");
+        runningPopulator.createRunLog(owner, runBlock.getId(), 1, "w1-sprint", today.minusDays(3),
+            6, 8, null, null, 25);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("mezociklus: Hipertrófia blokk");
+        assertThat(snapshot).contains("gym-rend: H 18:00");
+        assertThat(snapshot).contains("sport-rend: K 19:00");
+        assertThat(snapshot).contains("1 gym-edzés (" + today.minusDays(2) + ")");
+        assertThat(snapshot).contains("1 sportalkalom").contains("1 futás");
+    }
+
+    @Test
+    void testRender_shouldExcludeSessionsOutsideDigestWindow_whenOlderThanConfiguredDays() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        trainPopulator.createSportSession(owner, today.minusDays(10)); // outside the 7-day window
+        trainPopulator.createSportSession(owner, today.minusDays(3));  // inside
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("1 sportalkalom");
+    }
+
+    @Test
+    void testRender_shouldRenderFuelDayProtocolAndIntakes_whenLoggedToday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var pantry = pantryItemPopulator.createFood(owner, "Csirkemell", today.plusDays(3));
+        mealPopulator.createPantryMeal(owner, pantry, today);
+        waterLogPopulator.createWaterLog(owner, today, 500);
+        var supplement = pantryItemPopulator.createSupplement(owner, "Kreatin");
+        protocolPopulator.createProtocol(owner, 2, "active", List.of(supplement.getId()));
+        supplementIntakePopulator.createIntake(owner, supplement.getId(), Instant.now());
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("víz 500/");
+        assertThat(snapshot).contains("protokoll: v2 aktív, mai bevitel: 1");
+        assertThat(snapshot).doesNotContain("[Mai üzemanyag] 0/"); // the meal's kcal landed
+    }
+
+    @Test
+    void testRender_shouldRenderRetaDayAndPhase_whenActiveMedicationWithDose() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var med = medicationPopulator.createReta(owner);
+        medicationDosePopulator.createDose(owner, med.getId(), today.minusDays(3), new BigDecimal("6"));
+
+        String snapshot = assembler.render(owner, today);
+
+        // dose 3 days ago → retaDay 4 → "Stabil" phase (3-5) of the populator's 7-day cycle
+        assertThat(snapshot).contains("[Gyógyszer] Retatrutide: ciklus 4. nap (Stabil)");
+    }
+
+    @Test
+    void testRender_shouldRenderSleepAndCheckIn_whenLogged() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.2"), 4);
+        checkInPopulator.createCheckIn(owner, today, "08:00", 4, 2, "fáradtan ébredtem");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("alvás (" + today.minusDays(1) + "): 7.2 h, minőség 4/5");
+        assertThat(snapshot).contains(
+            "check-in (" + today + " 08:00): energia 4/5, stressz 2/5, megjegyzés: \"fáradtan ébredtem\"");
+    }
+
+    @Test
+    void testRender_shouldTruncateCheckInNote_whenLongerThanConfiguredMax() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 3, 3, "x".repeat(300));
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("megjegyzés: \"" + "x".repeat(200) + "…\"");
+        assertThat(snapshot).doesNotContain("x".repeat(201));
     }
 
     @Test
