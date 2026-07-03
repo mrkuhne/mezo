@@ -38,13 +38,17 @@ public interface CompanionMapper {
                 .build();
     }
 
-    /** Null envelope (the V0.2 steady state) maps to an empty array on the wire. */
+    /** Null envelope maps to []; the wire name carries the args — "get_sleep(days=3)" (FE chip style). */
     default List<MessageTool> toTools(ToolCallsEnvelope envelope) {
         if (envelope == null || envelope.calls() == null) {
             return List.of();
         }
         return envelope.calls().stream()
-                .map(call -> MessageTool.builder().type(call.type()).name(call.name()).build())
+                .map(call -> MessageTool.builder()
+                        .type(call.type())
+                        .name(call.args() == null || call.args().isBlank()
+                                ? call.name() : call.name() + "(" + call.args() + ")")
+                        .build())
                 .toList();
     }
 

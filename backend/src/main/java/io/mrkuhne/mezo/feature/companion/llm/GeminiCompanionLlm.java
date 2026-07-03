@@ -51,7 +51,8 @@ public class GeminiCompanionLlm implements CompanionLlm {
                                                      List<ToolCallback> tools, Map<String, Object> toolContext) {
         ChatClient.ChatClientRequestSpec spec = chatClient.prompt().system(systemPrompt).user(userMessage);
         if (!tools.isEmpty()) {
-            spec = spec.toolCallbacks(tools).toolContext(toolContext);
+            // tools(Object...) is the unified 2.0 registration API (toolCallbacks(..) is deprecated)
+            spec = spec.tools((Object[]) tools.toArray(ToolCallback[]::new)).toolContext(toolContext);
         }
         return spec;
     }

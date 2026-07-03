@@ -66,6 +66,22 @@ class CompanionStreamApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testStreamMessage_shouldRenderToolChipsInDoneEvent_whenScriptedToolRuns() {
+        ConversationResponse conversation = postForBody(
+                CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+
+        String sse = postForBody(streamUri(conversation.getId()),
+                SendMessageRequest.builder()
+                        .content("aludtam eleget? [fake-tool:get_sleep {\"days\":3}]").build(),
+                sseHeaders(), HttpStatus.OK, String.class);
+
+        // the done event's persisted MessageResponse carries the real chip (name = args baked in)
+        assertThat(sse).contains("event:done")
+                .contains("\"name\":\"get_sleep(days=3)\"")
+                .contains("\"type\":\"read\"");
+    }
+
+    @Test
     void testStreamMessage_shouldStreamDeltasThenDoneAndPersist_whenValid() {
         ConversationResponse conversation = postForBody(
                 CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);

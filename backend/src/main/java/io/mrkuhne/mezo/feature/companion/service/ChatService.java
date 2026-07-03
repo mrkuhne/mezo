@@ -6,9 +6,13 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
+import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
+import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -38,6 +42,8 @@ public class ChatService {
             Csak Daniel saját, naplózott adataira és a beszélgetésben elhangzottakra támaszkodj.
             Ha valamit nem tudsz, mondd ki őszintén, hogy nem tudod — számot vagy adatot kitalálni tilos.
             Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi döntés.
+            Múltbeli vagy összesítő kérdéshez (edzések, étkezés, súly, alvás, protokoll, gyógyszerciklus) \
+            használd a kapott tool-okat — a pillanatkép csak a mai napot mutatja; tool nélkül ne találgass.
             Válaszolj magyarul, tömören.""";
 
     static final String HISTORY_HEADER = "\n\nEddigi beszélgetés (legrégebbitől a legújabbig):\n";
@@ -47,6 +53,7 @@ public class ChatService {
     private final ConversationService conversationService;
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final CompanionLlm companionLlm;
+    private final CompanionToolRegistry toolRegistry;
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
 
@@ -66,17 +73,20 @@ public class ChatService {
         String systemPrompt = SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
                 + renderHistory(loadWindow(userId, conversationId));
-        persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent());
+        persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, systemPrompt, request.getContent());
     }
 
-    /** Second half of a STREAMED turn (own transaction): persist the ASSISTANT row + bump lastMessageAt. */
+    /**
+     * Second half of a STREAMED turn (own transaction): persist the ASSISTANT row with the turn's
+     * tool audit (V0.5) + bump lastMessageAt.
+     */
     @Transactional
-    public MessageResponse completeTurn(UUID userId, UUID conversationId, String answer) {
+    public MessageResponse completeTurn(UUID userId, UUID conversationId, String answer, ToolCallAudit audit) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
-        AiMessageEntity assistant =
-                persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT, answer);
+        AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope());
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         return mapper.toMessageResponse(assistant);
@@ -92,10 +102,13 @@ public class ChatService {
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
                 + renderHistory(loadWindow(userId, conversationId));
 
-        persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent());
-        String answer = companionLlm.complete(systemPrompt, request.getContent());
-        AiMessageEntity assistant =
-                persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT, answer);
+        persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
+        // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
+        ToolCallAudit audit = toolRegistry.newTurnAudit();
+        String answer = companionLlm.complete(systemPrompt, request.getContent(),
+                toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit));
+        AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope());
 
         touchConversation(conversation, request.getContent());
         return mapper.toMessageResponse(assistant);
@@ -121,13 +134,15 @@ public class ChatService {
         return history.toString();
     }
 
-    private AiMessageEntity persistMessage(
-            AiConversationEntity conversation, UUID userId, String role, String content) {
+    private AiMessageEntity persistMessage(AiConversationEntity conversation, UUID userId, String role,
+            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs) {
         AiMessageEntity message = new AiMessageEntity();
         message.setConversation(conversation);
         message.setCreatedBy(userId);
         message.setRole(role);
         message.setContent(content);
+        message.setToolCalls(toolCalls);
+        message.setRefs(refs);
         // saveAndFlush so the two rows of a turn get distinct created_at (history ordering key)
         return messageRepository.saveAndFlush(message);
     }

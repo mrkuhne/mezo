@@ -1,23 +1,29 @@
 package io.mrkuhne.mezo.feature.companion;
 
 import io.mrkuhne.mezo.api.dto.MessageResponse;
+import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
 import io.mrkuhne.mezo.api.dto.StreamError;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
+import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.service.ChatStreamService;
 import io.mrkuhne.mezo.feature.companion.service.ConversationService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
+import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,11 +42,38 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
     @Autowired private ChatStreamService chatStreamService;
     @Autowired private ConversationService conversationService;
     @Autowired private AiConversationRepository conversationRepository;
+    @Autowired private AiMessageRepository messageRepository;
     @Autowired private AiConversationPopulator conversationPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private SleepLogPopulator sleepLogPopulator;
 
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
+    }
+
+    @Test
+    void testStreamMessage_shouldCarryToolChipsOnDoneAndPersistEnvelope_whenScriptedToolRuns() {
+        UUID userId = databasePopulator.populateUser("stream-tools@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        List<ServerSentEvent<Object>> events = chatStreamService
+                .streamMessage(userId, conversation.getId(),
+                        request("aludtam eleget? [fake-tool:get_sleep {\"days\":3}]"))
+                .collectList().block();
+
+        ServerSentEvent<Object> done = events.getLast();
+        assertThat(done.event()).isEqualTo("done");
+        MessageResponse resp = (MessageResponse) done.data();
+        assertThat(resp.getTools()).extracting(MessageTool::getName).containsExactly("get_sleep(days=3)");
+        assertThat(resp.getRefs()).isNotEmpty();
+
+        AiMessageEntity assistant = messageRepository
+                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(
+                        conversation.getId(), userId)
+                .getLast();
+        assertThat(assistant.getToolCalls().calls()).hasSize(1);
+        assertThat(assistant.getToolCalls().calls().getFirst().name()).isEqualTo("get_sleep");
     }
 
     @Test
