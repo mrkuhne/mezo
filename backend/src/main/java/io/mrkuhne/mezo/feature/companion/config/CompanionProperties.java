@@ -15,7 +15,8 @@ public record CompanionProperties(
     @NotNull @Valid Llm llm,
     @NotNull @Valid Chat chat,
     @NotNull @Valid Snapshot snapshot,
-    @NotNull @Valid Tools tools
+    @NotNull @Valid Tools tools,
+    @NotNull @Valid Facts facts
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -37,6 +38,12 @@ public record CompanionProperties(
         @Min(1) @Max(30) int digestDays,
         /** The latest check-in note is included verbatim, truncated to this many characters. */
         @Min(0) @Max(1000) int checkinNoteMaxChars
+    ) {}
+
+    /** V1.1 knowledge-fact injection — how much confirmed memory rides in every system prompt. */
+    public record Facts(
+        /** Top-N facts (by reinforcement count, then newest) injected into the system prompt. */
+        @Min(1) @Max(50) int topN
     ) {}
 
     /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */

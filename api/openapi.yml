@@ -2503,6 +2503,105 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/fact:
+    get:
+      tags:
+        - Companion
+      operationId: listFacts
+      summary: >-
+        List the owner's confirmed knowledge facts, strongest reinforcement
+        first (V1.1)
+      responses:
+        '200':
+          description: 'Facts ordered by reinforcement count (desc), then newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KnowledgeFactResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Companion
+      operationId: createFact
+      summary: Manually add a confirmed knowledge fact (source = manual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFactRequest'
+      responses:
+        '201':
+          description: The created fact (include_in_prompt defaults to true)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeFactResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/fact/{factId}':
+    patch:
+      tags:
+        - Companion
+      operationId: updateFact
+      summary: >-
+        Partially update a fact — edit its text/category or toggle
+        include_in_prompt
+      parameters:
+        - name: factId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFactRequest'
+      responses:
+        '200':
+          description: The updated fact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KnowledgeFactResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Fact not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/companion/conversation/{conversationId}/message/stream':
     post:
       tags:
@@ -5906,6 +6005,76 @@ components:
           type: string
           minLength: 1
           maxLength: 4000
+    KnowledgeFactResponse:
+      type: object
+      required:
+        - id
+        - factText
+        - category
+        - source
+        - reinforcementCount
+        - includeInPrompt
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        factText:
+          type: string
+        category:
+          type: string
+          description: '''train'' | ''fuel'' | ''health'' | ''life'''
+        source:
+          type: string
+          description: >-
+            'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat'
+            arrives with V1.2 extraction, 'pattern' with V3.3 promotion
+        reinforcementCount:
+          type: integer
+          description: >-
+            How many times the fact was re-confirmed/re-detected (V1.3+/V3.3
+            increment it).
+        includeInPrompt:
+          type: boolean
+          description: >-
+            Whether the fact competes for the top-N system-prompt injection
+            slots.
+        lastReinforcedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    CreateFactRequest:
+      type: object
+      required:
+        - factText
+        - category
+      properties:
+        factText:
+          type: string
+          minLength: 1
+          maxLength: 500
+        category:
+          type: string
+          pattern: ^(train|fuel|health|life)$
+    UpdateFactRequest:
+      type: object
+      description: Partial update — only the provided fields are applied.
+      properties:
+        factText:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+        category:
+          type: string
+          pattern: ^(train|fuel|health|life)$
+          nullable: true
+        includeInPrompt:
+          type: boolean
+          nullable: true
     StreamDelta:
       type: object
       required:

@@ -30,6 +30,11 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testFactsConfig_shouldBindTopNFromYaml_whenContextStarts() {
+        assertThat(properties.facts().topN()).isEqualTo(10);
+    }
+
+    @Test
     void testToolsConfig_shouldBindToolTunablesFromYaml_whenContextStarts() {
         assertThat(properties.tools().maxCallsPerTurn()).isEqualTo(6);
         assertThat(properties.tools().maxWindowDays()).isEqualTo(30);

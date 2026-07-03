@@ -18,6 +18,14 @@ class CompanionApiSwitchOffIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testListFacts_shouldReturn404_whenCompanionSwitchedOff() {
+        // V1.1 fact surface — gated by the same switch as the rest of the companion
+        String body = getForBody("/api/companion/fact", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
     void testStreamMessage_shouldReturn404_whenCompanionSwitchedOff() {
         // V0.4 stream sibling — the hand-written controller is switch-gated the same way
         String body = postForBody(

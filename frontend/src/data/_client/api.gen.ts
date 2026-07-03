@@ -1004,6 +1004,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/fact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the owner's confirmed knowledge facts, strongest reinforcement first (V1.1) */
+        get: operations["listFacts"];
+        put?: never;
+        /** Manually add a confirmed knowledge fact (source = manual) */
+        post: operations["createFact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/fact/{factId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Partially update a fact — edit its text/category or toggle include_in_prompt */
+        patch: operations["updateFact"];
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/message/stream": {
         parameters: {
             query?: never;
@@ -2318,6 +2353,33 @@ export interface components {
         };
         SendMessageRequest: {
             content: string;
+        };
+        KnowledgeFactResponse: {
+            /** Format: uuid */
+            id: string;
+            factText: string;
+            /** @description 'train' | 'fuel' | 'health' | 'life' */
+            category: string;
+            /** @description 'chat' | 'pattern' | 'manual' — V1.1 creates only 'manual'; 'chat' arrives with V1.2 extraction, 'pattern' with V3.3 promotion */
+            source: string;
+            /** @description How many times the fact was re-confirmed/re-detected (V1.3+/V3.3 increment it). */
+            reinforcementCount: number;
+            /** @description Whether the fact competes for the top-N system-prompt injection slots. */
+            includeInPrompt: boolean;
+            /** Format: date-time */
+            lastReinforcedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateFactRequest: {
+            factText: string;
+            category: string;
+        };
+        /** @description Partial update — only the provided fields are applied. */
+        UpdateFactRequest: {
+            factText?: string | null;
+            category?: string | null;
+            includeInPrompt?: boolean | null;
         };
         StreamDelta: {
             /** @description One streamed answer chunk (token/segment delta). */
@@ -5465,6 +5527,130 @@ export interface operations {
                 };
             };
             /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listFacts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Facts ordered by reinforcement count (desc), then newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeFactResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFactRequest"];
+            };
+        };
+        responses: {
+            /** @description The created fact (include_in_prompt defaults to true) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeFactResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateFact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                factId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFactRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated fact */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeFactResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Fact not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

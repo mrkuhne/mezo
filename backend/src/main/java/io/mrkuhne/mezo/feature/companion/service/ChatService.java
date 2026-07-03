@@ -52,6 +52,7 @@ public class ChatService {
     private final AiMessageRepository messageRepository;
     private final ConversationService conversationService;
     private final ContextSnapshotAssembler contextSnapshotAssembler;
+    private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
     private final CompanionToolRegistry toolRegistry;
     private final CompanionProperties properties;
@@ -72,6 +73,7 @@ public class ChatService {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         String systemPrompt = SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
+                + knowledgeFactService.renderPromptBlock(userId)
                 + renderHistory(loadWindow(userId, conversationId));
         persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
         touchConversation(conversation, request.getContent());
@@ -97,9 +99,10 @@ public class ChatService {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
 
         // Window BEFORE persisting the new message — the current content travels as the user param.
-        // V0.3: snapshot between the static voice and the history transcript (V1.1 adds facts here).
+        // Prompt order: voice -> context snapshot (V0.3) -> top-N knowledge facts (V1.1) -> history.
         String systemPrompt = SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
+                + knowledgeFactService.renderPromptBlock(userId)
                 + renderHistory(loadWindow(userId, conversationId));
 
         persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
