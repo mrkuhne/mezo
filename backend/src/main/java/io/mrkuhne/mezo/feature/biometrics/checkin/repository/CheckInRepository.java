@@ -11,4 +11,7 @@ public interface CheckInRepository extends OwnedRepository<CheckInEntity> {
     List<CheckInEntity> findByCreatedByAndDateOrderBySlotTime(UUID createdBy, LocalDate date);
 
     Optional<CheckInEntity> findByCreatedByAndDateAndSlotTime(UUID createdBy, LocalDate date, String slotTime);
+
+    /** Latest check-in across days (date, then slot) for the companion context snapshot. */
+    Optional<CheckInEntity> findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc(UUID createdBy);
 }

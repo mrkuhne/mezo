@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.support.populator;
 
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,6 +35,27 @@ public class GoalPopulator {
         g.setTargetWeightKg(new BigDecimal("80.00"));
         g.setRateTargetPctPerWeek(new BigDecimal("0.70"));
         g.setIdentityFrame("Erő megtartva a cut alatt.");
+        return goalRepository.saveAndFlush(g);
+    }
+
+    /** Active cut goal with explicit dates, prescription and day-planner fields — snapshot tests. */
+    public GoalEntity createGoalFull(UUID owner, LocalDate startDate, LocalDate targetDate,
+        GoalPrescriptionJson prescription, Integer mealsPerDay, String wakeTime, String bedTime) {
+        GoalEntity g = new GoalEntity();
+        g.setCreatedBy(owner);
+        g.setTitle("Nyári cut");
+        g.setTrajectory("cut");
+        g.setGuards(List.of("strength", "muscle"));
+        g.setStatus("active");
+        g.setStartDate(startDate);
+        g.setTargetDate(targetDate);
+        g.setStartWeightKg(new BigDecimal("84.20"));
+        g.setTargetWeightKg(new BigDecimal("80.00"));
+        g.setRateTargetPctPerWeek(new BigDecimal("0.70"));
+        g.setPrescription(prescription);
+        g.setMealsPerDay(mealsPerDay);
+        g.setWakeTime(wakeTime);
+        g.setBedTime(bedTime);
         return goalRepository.saveAndFlush(g);
     }
 }

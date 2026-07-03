@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.support.populator;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
+import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
@@ -13,6 +14,7 @@ import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
+import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
@@ -42,6 +44,7 @@ public class TrainPopulator {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
+    private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportSessionRepository sportSessionRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
 
@@ -274,6 +277,14 @@ public class TrainPopulator {
         s.setRounds(rounds);
         s.setRpe(new BigDecimal(rpe));
         return sportSessionRepository.saveAndFlush(s);
+    }
+
+    public GymScheduleSlotEntity createGymSlot(UUID createdBy, int dayOfWeek, String time) {
+        GymScheduleSlotEntity s = new GymScheduleSlotEntity();
+        s.setCreatedBy(createdBy);
+        s.setDayOfWeek(dayOfWeek);
+        s.setTime(time);
+        return gymScheduleSlotRepository.saveAndFlush(s);
     }
 
     public SportScheduleSlotEntity createScheduleSlot(UUID createdBy, int dayOfWeek, String time,

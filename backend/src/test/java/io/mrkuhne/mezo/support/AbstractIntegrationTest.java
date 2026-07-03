@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.TestcontainersConfiguration;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
@@ -47,6 +48,7 @@ import org.springframework.context.annotation.Import;
     AiConversationPopulator.class, AiMessagePopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
+    CheckInPopulator.class,
     PantryItemPopulator.class,
     RecipePopulator.class, MealPopulator.class, WaterLogPopulator.class,
     MedicationPopulator.class, MedicationDosePopulator.class,
