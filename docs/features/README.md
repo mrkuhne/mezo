@@ -93,7 +93,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | `OwnedEntity` / `CurrentUserId` / soft delete / typed jsonb | — | [`_platform-api-backend.md`](_platform-api-backend.md) §4b · [`_platform-auth-security.md`](_platform-auth-security.md) §4 |
 | Login / JWT / owner seed / token bootstrap | `/api/auth/login` | [`_platform-auth-security.md`](_platform-auth-security.md) §3–§4 |
 | Tokens / primitives / `Sheet` / `GhostState` / accent convention | — | [`_platform-design-system.md`](_platform-design-system.md) §5–§6 |
-| Companion chat backend (conversations + sync message) | /api/companion/* | [`companion.md`](companion.md) §3–§4 |
+| Companion chat backend (conversations + sync message) | `/api/companion/*` | [`companion.md`](companion.md) §3–§4 |
 
 ---
 

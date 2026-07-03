@@ -94,7 +94,8 @@ block (`ChatService.java:54-58`). `renderHistory` (`ChatService.java:73`) prepen
 `HISTORY_HEADER` (`"Eddigi beszélgetés (legrégebbitől a legújabbig):"`) then one line per prior
 message — `"Daniel: …"` for a user row, `"Mezo: …"` for an assistant row. `SYSTEM_PROMPT`
 (`ChatService.java:32`) is the static Hungarian companion voice (IDENT-1 "társ, nem edző" + the
-clinical guard "Rx dózisváltoztatást SOHA ne javasolj" + "számot kitalálni tilos", spec §6). The
+clinical guard "Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az
+orvosi döntés." + "számot vagy adatot kitalálni tilos", spec §6). The
 `CompanionLlm` port keeps its V0.1 two-string shape (`complete(systemPrompt, userMessage)`) — a
 message-list variant is V0.5's problem (Decision #4).
 
