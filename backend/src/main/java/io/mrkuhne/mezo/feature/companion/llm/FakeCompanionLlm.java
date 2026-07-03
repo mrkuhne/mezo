@@ -21,13 +21,25 @@ public class FakeCompanionLlm implements CompanionLlm {
 
     public static final String PREFIX = "FAKE-LLM";
 
+    /** Content markers that force a deterministic failure — lets ITs exercise error paths. */
+    public static final String FAIL_COMPLETE = "[fake-fail]";
+    public static final String FAIL_STREAM = "[fake-stream-fail]";
+
     @Override
     public String complete(String systemPrompt, String userMessage) {
+        if (userMessage.contains(FAIL_COMPLETE)) {
+            throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]";
     }
 
     @Override
     public Flux<String> stream(String systemPrompt, String userMessage) {
+        if (userMessage.contains(FAIL_STREAM)) {
+            return Flux.concat(
+                Flux.just(PREFIX),
+                Flux.error(new IllegalStateException("FAKE-LLM forced stream failure")));
+        }
         return Flux.fromIterable(List.of(
             PREFIX,
             " system=[" + systemPrompt + "]",

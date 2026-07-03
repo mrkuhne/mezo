@@ -50,6 +50,38 @@ public class ChatService {
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
 
+    /** One prepared chat turn — everything the LLM call needs, produced inside one transaction. */
+    public record PreparedTurn(UUID conversationId, String systemPrompt, String userContent) {}
+
+    /**
+     * First half of a STREAMED turn (own transaction when called through the proxy):
+     * ownership check, prompt assembly (window BEFORE persisting the new message), persist
+     * the USER row, set title-once + lastMessageAt. Splitting the turn means a later LLM
+     * failure keeps the user message — honest history for the streamed path (the sync
+     * {@link #sendMessage} keeps its single-transaction rollback semantics).
+     */
+    @Transactional
+    public PreparedTurn prepareTurn(UUID userId, UUID conversationId, SendMessageRequest request) {
+        AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
+        String systemPrompt = SYSTEM_PROMPT
+                + contextSnapshotAssembler.render(userId, LocalDate.now())
+                + renderHistory(loadWindow(userId, conversationId));
+        persistMessage(conversation, userId, AiMessageEntity.ROLE_USER, request.getContent());
+        touchConversation(conversation, request.getContent());
+        return new PreparedTurn(conversationId, systemPrompt, request.getContent());
+    }
+
+    /** Second half of a STREAMED turn (own transaction): persist the ASSISTANT row + bump lastMessageAt. */
+    @Transactional
+    public MessageResponse completeTurn(UUID userId, UUID conversationId, String answer) {
+        AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
+        AiMessageEntity assistant =
+                persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT, answer);
+        conversation.setLastMessageAt(Instant.now());
+        conversationRepository.save(conversation);
+        return mapper.toMessageResponse(assistant);
+    }
+
     @Transactional
     public MessageResponse sendMessage(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
