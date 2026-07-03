@@ -223,3 +223,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607032033_mezo-fnnq.9_create_memory_embedding_pgvector.sql
+  - changeSet:
+      id: "1.0.0:202607032115_mezo-fnnq.10_create_daily_summary"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607032115_mezo-fnnq.10_create_daily_summary.sql

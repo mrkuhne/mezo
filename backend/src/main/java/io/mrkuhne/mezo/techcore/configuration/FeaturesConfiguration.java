@@ -18,4 +18,10 @@ public class FeaturesConfiguration {
 
     /** V1.3 advisor chain (clinical + verdict + retry/degraded) — sub-switch of companion. */
     public static final String COMPANION_ADVISORS_SWITCH = "mezo.companion.advisors.enabled";
+
+    /** V2.2 post-turn chat embedding — sub-switch of companion; gates ONLY the async listener. */
+    public static final String COMPANION_EMBED_TURNS_SWITCH = "mezo.companion.embedding.embed-chat-turns";
+
+    /** V2.2 nightly daily-summary job (the app's first cron) — techcore cron zone. */
+    public static final String DAILY_SUMMARY_JOB_SWITCH = "mezo.techcore.cron.daily-summary-job.enabled";
 }

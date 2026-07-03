@@ -310,9 +310,19 @@ cd frontend && pnpm generate:api           # regenerate src/data/_client/api.gen
 - **`useResponseEntity=false` + `interfaceOnly` + `skipDefaultInterface`** → the spec's response codes are load-bearing (the first 2xx code becomes the HTTP status).
 - **HS256 must be set explicitly** in `AuthService` (NimbusJwtEncoder can't infer the alg from a symmetric secret).
 - **No login UI in Phase 2** — single owner, token bootstrapped from env (`VITE_OWNER_EMAIL`/`VITE_OWNER_PASSWORD`).
-- **Deferred / not yet adopted:** Fuel/Insights/People backends + their contract fragments are unbuilt (🔶 mock-only). WireMock (first external API), mail/Firebase/RabbitMQ mocks, and a multi-user role matrix are all deferred. **Phase 3** (🟣 Spring AI, pgvector, RAG) is entirely deferred — `ProvenanceEnvelope`'s "Fuel reuses this for meal score" note and the pgvector section of `liquibase_conventions.md` are forward-looking only.
+- **Deferred / not yet adopted:** Fuel/Insights/People backends + their contract fragments are unbuilt (🔶 mock-only). WireMock (first external API), mail/Firebase/RabbitMQ mocks, and a multi-user role matrix are all deferred. **Phase 3 is live since V0.1–V2.2** (Spring AI 2 + Gemini behind the `CompanionLlm`/`EmbeddingPort` ports, pgvector `memory_embedding` with hibernate-vector `float[]` mapping + native `<=>` ANN queries, the app's first `@Scheduled` cron, and a session-level `hnsw.iterative_scan` GUC via Hikari `connection-init-sql`) — see [`companion.md`](companion.md); RAG recall-in-chat (V2.3) and the pattern engine (V3.x) remain.
 
 ---
+
+**Jackson 3 wire-format gotcha (fixed 2026-07-04, V2.2 session):** Jackson's default
+`DateTimeFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE` silently normalized every incoming
+`OffsetDateTime` to UTC — so the FE's deliberately offset-bearing wall-clock timestamps
+(`nowOffsetIso` → `takenAt`/`administeredAt`) lost their offset server-side and
+`.toLocalDate()` misfiled a 00:00–02:00 local intake/dose to the previous UTC day.
+`techcore/configuration/JacksonConfiguration` disables it via a `JsonMapperBuilderCustomizer`
+(Jackson 3 moved the flag to `DateTimeFeature`; Boot 4.0.0 has no yml key for it). Test-layer
+mirror: `SupplementIntakePopulator` derives `takenDate` in the system zone (FE-faithful), and
+the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such).
 
 ## 10. Key files
 

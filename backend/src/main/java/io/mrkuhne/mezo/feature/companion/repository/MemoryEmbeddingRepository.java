@@ -40,6 +40,12 @@ public interface MemoryEmbeddingRepository extends JpaRepository<MemoryEmbedding
     List<MemoryMatch> findNearest(@Param("userId") UUID userId, @Param("kind") String kind,
                                   @Param("queryVector") String queryVector, @Param("k") int k);
 
+    /** The embed pipeline's idempotence probe (V2.2) — one live embedding per source unit. */
+    boolean existsByKindAndRefId(String kind, UUID refId);
+
+    /** Same-day live rows of a kind — the summary replace-by-day guard (V2.2). */
+    List<MemoryEmbeddingEntity> findByCreatedByAndKindAndOccurredOn(UUID createdBy, String kind, LocalDate occurredOn);
+
     /** Renders a float[] as the pgvector text literal ({@code [0.1,0.2,...]}) native queries bind. */
     static String toVectorLiteral(float[] vector) {
         StringBuilder literal = new StringBuilder("[");

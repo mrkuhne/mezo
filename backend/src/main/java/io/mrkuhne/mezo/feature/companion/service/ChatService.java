@@ -102,7 +102,8 @@ public class ChatService {
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
-        eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent, answer));
+        eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent,
+                assistant.getId(), answer));
         return mapper.toMessageResponse(assistant);
     }
 
@@ -139,7 +140,8 @@ public class ChatService {
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
-        eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(), answer));
+        eventPublisher.publishEvent(new ChatTurnCompleted(userId, userRow.getId(), request.getContent(),
+                assistant.getId(), answer));
         return mapper.toMessageResponse(assistant);
     }
 

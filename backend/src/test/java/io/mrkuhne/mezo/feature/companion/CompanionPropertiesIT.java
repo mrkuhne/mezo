@@ -50,6 +50,14 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     @Test
     void testEmbeddingConfig_shouldBindModelFromYaml_whenContextStarts() {
         assertThat(properties.embedding().model()).isEqualTo("gemini-embedding-001");
+        assertThat(properties.embedding().embedChatTurns()).isTrue();
+        assertThat(properties.embedding().embedMaxChars()).isEqualTo(2000);
+    }
+
+    @Test
+    void testSummaryConfig_shouldBindCronAndWindowFromYaml_whenContextStarts() {
+        assertThat(properties.summary().cron()).isEqualTo("0 20 2 * * *");
+        assertThat(properties.summary().catchUpDays()).isEqualTo(7);
     }
 
     @Test

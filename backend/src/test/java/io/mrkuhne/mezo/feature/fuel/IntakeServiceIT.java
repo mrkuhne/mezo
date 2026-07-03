@@ -66,7 +66,9 @@ class IntakeServiceIT extends AbstractIntegrationTest {
         assertThat(res.getTakenAt()).isNotNull();
         assertThat(res.getTakenAt()).isAfterOrEqualTo(before.minusMinutes(1));
         assertThat(res.getTakenAt()).isBeforeOrEqualTo(OffsetDateTime.now().plusMinutes(1));
-        assertThat(res.getTakenDate()).isEqualTo(LocalDate.now());
+        // The omitted-takenAt fallback is deliberately UTC-now (IntakeService) — assert THAT
+        // contract, not the local day (they differ in the 00:00–02:00 local window).
+        assertThat(res.getTakenDate()).isEqualTo(LocalDate.now(ZoneOffset.UTC));
     }
 
     @Test
