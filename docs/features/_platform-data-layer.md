@@ -88,6 +88,11 @@ React view (features/**/*.tsx)
 **Provider / bootstrap** (`frontend/src/app/providers/QueryProvider.tsx`, mounted above the router in `frontend/src/main.tsx`):
 
 - One app-wide `QueryClient` with `defaultOptions.queries: { staleTime: 30_000, retry: 1 }`.
+- **Global write-error feedback (mezo-ah18.8):** the client carries a `MutationCache.onError` that
+  `console.error`s the failure and emits a Hungarian error toast (short `exceptionTraceId` appended
+  when the failure is an `ApiError`) through `shared/lib/toastBus` → the `ToastProvider` host in
+  `AppLayout`. Every failed mutation is surfaced; per-mutation `onError` handlers still run on top
+  for richer handling. Mock-mode mutations no-op successfully, so mock never toasts errors.
 - In **real mode** the provider gates rendering on `bootstrapOwnerToken()` (`frontend/src/data/_client/auth.ts`): POSTs `VITE_OWNER_EMAIL`/`VITE_OWNER_PASSWORD` to `/api/auth/login`, then `setToken(token)` so `apiFetch` injects the Bearer header. `ready` starts `false` and renders `null` until the token lands — *or* until login fails, in which case it renders anyway so the app degrades gracefully. In **mock mode** `ready` starts `true` and no login is attempted.
 - `setToken` stores the JWT in a **module-level `let token`** in `data/_client/api.ts:19` (not `localStorage`) — there is no login UI; ownership is single-user.
 
