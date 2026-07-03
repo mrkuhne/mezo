@@ -8,16 +8,22 @@ import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
+import io.mrkuhne.mezo.api.dto.MessageRef;
+import io.mrkuhne.mezo.api.dto.MessageTool;
+import io.mrkuhne.mezo.feature.companion.tools.RecordingToolCallback;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
+import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -35,9 +41,59 @@ class ChatServiceIT extends AbstractIntegrationTest {
     @Autowired private AiConversationPopulator conversationPopulator;
     @Autowired private AiMessagePopulator messagePopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private SleepLogPopulator sleepLogPopulator;
 
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
+    }
+
+    private AiMessageEntity lastAssistantRow(UUID conversationId, UUID userId) {
+        return messageRepository
+                .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversationId, userId)
+                .getLast();
+    }
+
+    @Test
+    void testSendMessage_shouldPersistToolAuditAndMapChips_whenFakeExecutesScriptedTool() {
+        UUID userId = databasePopulator.populateUser("chat-tools@test.local");
+        sleepLogPopulator.createSleepLog(userId, LocalDate.now(), new BigDecimal("7.0"), 3);
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(),
+                request("aludtam eleget? [fake-tool:get_sleep {\"days\":3}]"));
+
+        assertThat(resp.getTools()).extracting(MessageTool::getName).containsExactly("get_sleep(days=3)");
+        assertThat(resp.getTools()).extracting(MessageTool::getType).containsExactly("read");
+        assertThat(resp.getRefs()).extracting(MessageRef::getKind).contains("Sleep");
+        AiMessageEntity assistant = lastAssistantRow(conversation.getId(), userId);
+        assertThat(assistant.getToolCalls().calls()).hasSize(1);
+        assertThat(assistant.getToolCalls().calls().getFirst().name()).isEqualTo("get_sleep");
+        assertThat(assistant.getToolCalls().calls().getFirst().args()).isEqualTo("days=3");
+        assertThat(assistant.getRefs().refs()).isNotEmpty();
+        // the fake echoes the tool result — Spring AI's result converter JSON-encodes the String
+        assertThat(resp.getContent()).contains("tool:get_sleep=[\"Alvás");
+    }
+
+    @Test
+    void testSendMessage_shouldMentionToolsInSystemPrompt_whenSending() {
+        UUID userId = databasePopulator.populateUser("chat-tool-hint@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        assertThat(resp.getContent()).contains("használd a kapott tool-okat");
+    }
+
+    @Test
+    void testSendMessage_shouldStopRecordingAtCap_whenMoreSentinelsThanBudget() {
+        UUID userId = databasePopulator.populateUser("chat-tool-cap@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        String sevenCalls = "[fake-tool:get_goal_progress]".repeat(7);
+
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request(sevenCalls));
+
+        assertThat(resp.getTools()).hasSize(6); // mezo.companion.tools.max-calls-per-turn
+        assertThat(resp.getContent()).contains(RecordingToolCallback.BUDGET_EXHAUSTED);
     }
 
     @Test

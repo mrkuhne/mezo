@@ -36,6 +36,17 @@ public record GoalPrescriptionJson(
     ) {
     }
 
+    /** The segment whose fromWeek..toWeek (inclusive) contains {@code week}; null when none. */
+    public static Segment currentSegment(GoalPrescriptionJson prescription, long week) {
+        if (prescription == null || prescription.segments() == null) {
+            return null;
+        }
+        return prescription.segments().stream()
+                .filter(s -> s.fromWeek() != null && s.toWeek() != null
+                        && week >= s.fromWeek() && week <= s.toWeek())
+                .findFirst().orElse(null);
+    }
+
     public record GuardStatus(Strength strength, Muscle muscle) {
 
         public record Strength(

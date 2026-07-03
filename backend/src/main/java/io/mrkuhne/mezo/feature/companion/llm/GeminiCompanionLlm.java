@@ -6,15 +6,20 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.tool.ToolCallback;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * Real {@link CompanionLlm} adapter over the autoconfigured Gemini {@link ChatModel}
  * (spring-ai-starter-model-google-genai, ADR 0008). Absent under the {@code companion-fake}
- * profile so integration tests never construct a network-bound client path.
+ * profile so integration tests never construct a network-bound client path. Tools ride the
+ * ChatClient request spec; Spring AI runs the tool-execution loop internally (V0.5).
  */
 @Component
 @Profile("!companion-fake")
@@ -31,20 +36,24 @@ public class GeminiCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public String complete(String systemPrompt, String userMessage) {
-        return chatClient.prompt()
-            .system(systemPrompt)
-            .user(userMessage)
-            .call()
-            .content();
+    public String complete(String systemPrompt, String userMessage,
+                           List<ToolCallback> tools, Map<String, Object> toolContext) {
+        return request(systemPrompt, userMessage, tools, toolContext).call().content();
     }
 
     @Override
-    public Flux<String> stream(String systemPrompt, String userMessage) {
-        return chatClient.prompt()
-            .system(systemPrompt)
-            .user(userMessage)
-            .stream()
-            .content();
+    public Flux<String> stream(String systemPrompt, String userMessage,
+                               List<ToolCallback> tools, Map<String, Object> toolContext) {
+        return request(systemPrompt, userMessage, tools, toolContext).stream().content();
+    }
+
+    private ChatClient.ChatClientRequestSpec request(String systemPrompt, String userMessage,
+                                                     List<ToolCallback> tools, Map<String, Object> toolContext) {
+        ChatClient.ChatClientRequestSpec spec = chatClient.prompt().system(systemPrompt).user(userMessage);
+        if (!tools.isEmpty()) {
+            // tools(Object...) is the unified 2.0 registration API (toolCallbacks(..) is deprecated)
+            spec = spec.tools((Object[]) tools.toArray(ToolCallback[]::new)).toolContext(toolContext);
+        }
+        return spec;
     }
 }

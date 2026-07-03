@@ -102,6 +102,21 @@ class ArchitectureTest {
             }
         }).because("configuration_conventions.md bans @Value(\"${...}\") in favour of *Properties records");
 
+    // ── companion spec §6 — IDENT-2 internal-sphere-only tool registry ──────────
+
+    /** IDENT-2 (spec §6): the tool registry NEVER contains an outward-acting tool — structural, not prompt-level. */
+    @ArchTest
+    static final ArchRule companion_tools_are_internal_sphere_only =
+        noClasses().that().resideInAPackage("..feature.companion.tools..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                "org.springframework.web.client..",
+                "org.springframework.web.reactive.function.client..",
+                "java.net.http..",
+                "jakarta.mail..",
+                "org.apache.hc..",
+                "okhttp3..")
+            .because("IDENT-2: companion tools are internal-sphere reads only (no HTTP/mail/outward action)");
+
     // ── api_contract_conventions.md — contract-first controllers ────────────────
 
     /**

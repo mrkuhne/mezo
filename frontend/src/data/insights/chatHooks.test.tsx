@@ -62,5 +62,10 @@ describe('useChatActions (real mode)', () => {
     expect(texts).toContain('Fáradt vagyok')
     expect(texts).toContain(cannedReply('Fáradt vagyok'))
     expect(actions.result.current.error).toBeNull()
+
+    // V0.5: the persisted done event carries the turn's REAL tool chips + refs
+    const assistant = chat.result.current.data.messages.at(-1)!
+    expect(assistant.tools).toEqual([{ type: 'read', name: 'get_sleep(days=3)' }])
+    expect(assistant.refs).toEqual([{ kind: 'Sleep', id: '2026-07-02' }])
   })
 })

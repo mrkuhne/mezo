@@ -41,6 +41,24 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
         @Param("createdBy") UUID createdBy, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
     /**
+     * The owner's gym workout INSTANCES (templateSessionId not null) within [from, to] that carry
+     * at least one logged set — {@link #findDoneInstanceDates} returning the entities instead of
+     * dates, for the companion get_recent_workouts tool (V0.5). Plain finder, no companion
+     * dependency; same status-agnostic + skip-marker semantics.
+     */
+    @Query("""
+        SELECT s FROM WorkoutSessionEntity s
+        WHERE s.createdBy = :createdBy
+          AND s.templateSessionId IS NOT NULL
+          AND s.date BETWEEN :from AND :to
+          AND EXISTS (SELECT 1 FROM ExerciseSetEntity es
+                      WHERE es.workoutSessionId = s.id AND es.skipped = false)
+        ORDER BY s.date ASC
+        """)
+    List<WorkoutSessionEntity> findDoneInstancesBetween(
+        @Param("createdBy") UUID createdBy, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
      * Dates of the owner's gym workout INSTANCES (templateSessionId not null) that carry a date,
      * unbounded. Feeds the progression robustness streak (any logged gym instance counts as a
      * training day in its ISO week). Status-agnostic, like {@link #findDoneInstanceDates}.

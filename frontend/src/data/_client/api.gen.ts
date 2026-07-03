@@ -2302,13 +2302,13 @@ export interface components {
             content: string;
             /** Format: date-time */
             createdAt: string;
-            /** @description Tool calls behind this answer — always empty until V0.5. */
+            /** @description Tool calls behind this answer (V0.5): read-tool invocations of this turn, name carries the args, e.g. "get_weight_trend(weeks=2)". Empty when the turn used no tools. */
             tools: components["schemas"]["MessageTool"][];
-            /** @description Data references backing this answer — always empty until V0.5. */
+            /** @description Data references backing this answer (V0.5): entity refs contributed by the executed tools (deduped, capped). Empty when the turn used no tools. */
             refs: components["schemas"]["MessageRef"][];
         };
         MessageTool: {
-            /** @description 'read' | 'compute' (mirrors the FE ToolType) */
+            /** @description 'read' | 'compute' (mirrors the FE ToolType) — V0.5 emits only 'read' */
             type: string;
             name: string;
         };

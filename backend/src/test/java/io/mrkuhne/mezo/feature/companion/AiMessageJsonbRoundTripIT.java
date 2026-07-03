@@ -41,7 +41,7 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
         message.setRole(AiMessageEntity.ROLE_ASSISTANT);
         message.setContent("válasz");
         message.setToolCalls(new ToolCallsEnvelope(List.of(
-                new ToolCallsEnvelope.ToolCall("read", "get_weight_trend"))));
+                new ToolCallsEnvelope.ToolCall("read", "get_weight_trend", "weeks=2"))));
         message.setRefs(new RefsEnvelope(List.of(
                 new RefsEnvelope.Ref("weight", "2026-07-01"))));
         UUID id = messageRepository.saveAndFlush(message).getId();
@@ -50,6 +50,7 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
         AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
         assertThat(reloaded.getToolCalls().calls()).hasSize(1);
         assertThat(reloaded.getToolCalls().calls().getFirst().name()).isEqualTo("get_weight_trend");
+        assertThat(reloaded.getToolCalls().calls().getFirst().args()).isEqualTo("weeks=2");
         assertThat(reloaded.getRefs().refs().getFirst().kind()).isEqualTo("weight");
         assertThat(jdbcTemplate.queryForObject(
                 "select jsonb_typeof(tool_calls) from ai_message where id = ?", String.class, id))

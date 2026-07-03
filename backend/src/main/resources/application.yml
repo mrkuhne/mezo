@@ -106,6 +106,12 @@ mezo:
       digest-days: 7
       # The latest check-in note is included verbatim, truncated to this many characters
       checkin-note-max-chars: 200
+    tools:
+      # V0.5 tool calling — per-turn call budget + result-window clamps (spec §5 discipline)
+      max-calls-per-turn: 6
+      max-window-days: 30
+      max-trend-weeks: 26
+      max-refs-per-turn: 10
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
