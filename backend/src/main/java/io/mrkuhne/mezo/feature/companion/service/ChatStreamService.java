@@ -58,7 +58,7 @@ public class ChatStreamService {
                         StreamDelta.builder().text(chunk).build()).event(EVENT_DELTA).build())
                 .concatWith(Mono.fromCallable(() -> ServerSentEvent.<Object>builder(
                                 chatService.completeTurn(userId, conversationId,
-                                        turn.userMessageId(), turn.userContent(), answer.toString(), audit))
+                                        turn.userMessageId(), turn.userContent(), answer.toString(), audit, false))
                         .event(EVENT_DONE).build()))
                 .onErrorResume(e -> {
                     log.warn("Companion stream failed for conversation {}", conversationId, e);

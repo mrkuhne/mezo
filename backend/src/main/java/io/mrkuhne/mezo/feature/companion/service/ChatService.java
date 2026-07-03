@@ -78,7 +78,7 @@ public class ChatService {
                 + knowledgeFactService.renderPromptBlock(userId)
                 + renderHistory(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, request.getContent());
     }
@@ -91,10 +91,10 @@ public class ChatService {
     @Transactional
     public MessageResponse completeTurn(
             UUID userId, UUID conversationId, UUID userMessageId, String userContent,
-            String answer, ToolCallAudit audit) {
+            String answer, ToolCallAudit audit, boolean degraded) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope());
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded);
         conversation.setLastMessageAt(Instant.now());
         conversationRepository.save(conversation);
         eventPublisher.publishEvent(new ChatTurnCompleted(userId, userMessageId, userContent, answer));
@@ -113,13 +113,13 @@ public class ChatService {
                 + renderHistory(loadWindow(userId, conversationId));
 
         AiMessageEntity userRow = persistMessage(
-                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null);
+                conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
         // V0.5: tools registered on the turn; the audit lands in the assistant row's envelopes
         ToolCallAudit audit = toolRegistry.newTurnAudit();
         String answer = companionLlm.complete(systemPrompt, request.getContent(),
                 toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit));
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
-                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope());
+                answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), false);
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
@@ -148,7 +148,7 @@ public class ChatService {
     }
 
     private AiMessageEntity persistMessage(AiConversationEntity conversation, UUID userId, String role,
-            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs) {
+            String content, ToolCallsEnvelope toolCalls, RefsEnvelope refs, boolean degraded) {
         AiMessageEntity message = new AiMessageEntity();
         message.setConversation(conversation);
         message.setCreatedBy(userId);
@@ -156,6 +156,7 @@ public class ChatService {
         message.setContent(content);
         message.setToolCalls(toolCalls);
         message.setRefs(refs);
+        message.setDegraded(degraded);
         // saveAndFlush so the two rows of a turn get distinct created_at (history ordering key)
         return messageRepository.saveAndFlush(message);
     }

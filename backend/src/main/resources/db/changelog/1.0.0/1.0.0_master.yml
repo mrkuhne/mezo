@@ -209,3 +209,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607031812_mezo-fnnq.7_learned_fact_category.sql
+  - changeSet:
+      id: "1.0.0:202607031900_mezo-fnnq.8_ai_message_degraded"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607031900_mezo-fnnq.8_ai_message_degraded.sql

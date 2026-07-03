@@ -114,8 +114,11 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(rows.getLast().getContent()).startsWith(FakeCompanionLlm.PREFIX);
         assertThat(rows.getLast().getToolCalls()).isNull();
         assertThat(rows.getLast().getRefs()).isNull();
+        // V1.3: a clean turn is never degraded — persisted and on the wire
+        assertThat(rows.getLast().isDegraded()).isFalse();
         assertThat(answer.getRole()).isEqualTo("assistant");
         assertThat(answer.getTools()).isEmpty();
+        assertThat(answer.getDegraded()).isFalse();
 
         AiConversationEntity touched = conversationRepository.findById(conversation.getId()).orElseThrow();
         assertThat(touched.getLastMessageAt()).isNotNull();

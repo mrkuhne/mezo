@@ -39,6 +39,7 @@ public interface CompanionMapper {
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .tools(toTools(entity.getToolCalls()))
                 .refs(toRefs(entity.getRefs()))
+                .degraded(entity.isDegraded())
                 .build();
     }
 
