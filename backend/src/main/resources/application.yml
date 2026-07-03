@@ -12,6 +12,13 @@ spring:
     url: jdbc:postgresql://localhost:${DB_PORT:15432}/mezo
     username: ${DB_USER:mezo}
     password: ${DB_PASSWORD:mezo}
+    hikari:
+      # pgvector 0.8+: HNSW scans keep searching until LIMIT is satisfied instead of stopping at
+      # the ef_search frontier (default 40) — without this, a filtered ANN query (kind/is_deleted
+      # in memory_embedding.findNearest) silently returns fewer than k rows once the table outgrows
+      # the frontier. Session-level GUC on every pooled connection; a placeholder no-op until the
+      # vector extension is loaded, exact result ordering preserved (strict_order).
+      connection-init-sql: SET hnsw.iterative_scan = strict_order
   jpa:
     hibernate:
       ddl-auto: validate          # Liquibase owns the schema, never Hibernate

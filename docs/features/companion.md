@@ -443,6 +443,10 @@ apply → `is_deleted = false` is explicit in the query), returns a `MemoryMatch
 (id/kind/refId/content/occurredOn + `distance`); `toVectorLiteral(float[])` renders the pgvector
 text literal the query binds. Proven by `MemoryEmbeddingRepositoryIT` over hand-seeded axis vectors
 (order, kind filter, ownership, soft-delete, k-limit, uq violation — no embedding provider in tests).
+**Filtered-ANN recall guard:** every pooled connection runs `SET hnsw.iterative_scan =
+strict_order` (Hikari `connection-init-sql`) — without it a `kind`-filtered `findNearest` silently
+returns fewer than k rows once the table outgrows the HNSW frontier (`hnsw.ef_search`, default 40);
+regression-proven by the 63-row frontier IT case.
 
 `KnowledgeFactEntity` + `LearnedFactEntity` (`entity/`) both `extends OwnedEntity`, soft-deleted;
 category/source/decision are `String` + `@Pattern` mirrors of the CHECK constraints with constants

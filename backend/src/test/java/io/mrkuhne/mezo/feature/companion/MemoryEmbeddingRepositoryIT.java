@@ -140,6 +140,39 @@ class MemoryEmbeddingRepositoryIT extends AbstractIntegrationTest {
         assertThat(matches).extracting(MemoryMatch::getId).containsExactly(kept.getId());
     }
 
+    /**
+     * Recall regression (review finding, V2.1): a filtered ANN query must not silently lose rows
+     * when the HNSW frontier (hnsw.ef_search, default 40) fills up with other-kind vectors —
+     * guarded by {@code SET hnsw.iterative_scan = strict_order} on every pooled connection
+     * (hikari connection-init-sql). enable_seqscan is forced off so the planner actually walks
+     * the HNSW index (63 rows would otherwise seq-scan and hide the frontier entirely).
+     */
+    @Test
+    void testFindNearest_shouldReturnAllKindMatches_whenOtherKindRowsExceedHnswFrontier() {
+        // The guard itself must be live on the pooled connection (connection-init-sql) —
+        // without it the geometry below fails only probabilistically (tie-selection).
+        assertThat(jdbcTemplate.queryForObject(
+            "select current_setting('hnsw.iterative_scan')", String.class))
+            .isEqualTo("strict_order");
+        UUID owner = userPopulator.createUser().getId();
+        for (int axis = 0; axis < 60; axis++) {
+            memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, DAY, axis);
+        }
+        MemoryEmbeddingEntity nearest = memoryEmbeddingPopulator.embedding(
+            owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, DAY, 60);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, DAY, 61);
+        memoryEmbeddingPopulator.embedding(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, DAY, 62);
+        jdbcTemplate.execute("SET LOCAL enable_seqscan = off");
+
+        List<MemoryMatch> matches = memoryEmbeddingRepository.findNearest(owner,
+            MemoryEmbeddingEntity.KIND_DAILY_SUMMARY,
+            MemoryEmbeddingRepository.toVectorLiteral(MemoryEmbeddingPopulator.axisVector(60)), 3);
+
+        assertThat(matches).hasSize(3);
+        assertThat(matches.getFirst().getId()).isEqualTo(nearest.getId());
+        assertThat(matches.getFirst().getDistance()).isCloseTo(0.0, within(1e-6));
+    }
+
     @Test
     void testSave_shouldRejectDuplicate_whenSameKindAndRefId() {
         UUID owner = userPopulator.createUser().getId();
