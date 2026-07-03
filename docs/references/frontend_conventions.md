@@ -74,6 +74,19 @@ Only folders with content exist. A non-routed full-screen overlay provider (e.g.
 
 **Add a shared primitive:** `shared/ui/<Name>.tsx`, `cn()` for classes, `var(--token)` colors only (no raw hex/`rgba()`), no `@/data/*` import. If it needs domain data, it's a feature component instead.
 
+## 7a. Error & feedback standard (the loading/empty/error triad)
+
+- **Render errors** are caught by `shared/ui/ErrorBoundary` — mounted app-level (`main.tsx`) and
+  tab-level (`AppLayout`, `resetKey={pathname}`). Never add bare try/catch UI per page; if a page
+  needs a custom crash fallback, pass the boundary's `fallback` prop.
+- **Write errors** surface globally: the `QueryClient` mutation cache (`app/providers/QueryProvider.tsx`)
+  toasts every failed mutation. Do NOT swallow mutation errors with empty `.catch()`; add a
+  per-mutation `onError` only for *richer* handling (field errors, rollback), not for basic feedback.
+- **Imperative feedback** (success/info confirmations) goes through `useToast()` from
+  `@/shared/ui/ToastProvider` (host mounted once in `AppLayout`; non-React code emits via
+  `@/shared/lib/toastBus`). Do not hand-roll `useState`+`setTimeout` floating toasts; purpose-built
+  rich confirmations (e.g. the FuelStack protocol card) may stay feature-local.
+
 ## 8. Red flags — stop if you're about to…
 
 - name something `*Screen` or `*View`, or put a routed component outside `pages/`;
