@@ -24,4 +24,7 @@ public class FeaturesConfiguration {
 
     /** V2.2 nightly daily-summary job (the app's first cron) — techcore cron zone. */
     public static final String DAILY_SUMMARY_JOB_SWITCH = "mezo.techcore.cron.daily-summary-job.enabled";
+
+    /** V3.1 nightly statistical pattern-detection job — techcore cron zone. */
+    public static final String PATTERN_DETECTION_JOB_SWITCH = "mezo.techcore.cron.pattern-detection-job.enabled";
 }

@@ -2,9 +2,9 @@ import { patterns, predictions, experiments, weekly, memoir, recentlyConfirmed, 
 
 test('three patterns, all above the confidence floor', () => {
   expect(patterns).toHaveLength(3)
-  expect(patterns.every((p) => p.confidence >= MIN_PATTERN_CONFIDENCE)).toBe(true)
+  expect(patterns.every((p) => (p.confidence ?? 0) >= MIN_PATTERN_CONFIDENCE)).toBe(true)
   expect(patterns[0].title).toBe('Reta beadás + 36h ablakban étvágy lefulladás')
-  expect(patterns[0].critique.actionability).toBe(0.88)
+  expect(patterns[0].critique?.actionability).toBe(0.88)
 })
 
 test('pattern category colour maps to a --cat-* token', () => {

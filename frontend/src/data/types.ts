@@ -426,7 +426,10 @@ export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 
 
 // --- Insights (AI-memory surface) ---
 export type PatternCategory = 'physiology' | 'trigger' | 'response'
+/** The decision verbs of the L2 surface (wire PatternDecisionRequest). */
 export type PatternStatus = 'confirm' | 'monitor' | 'reject'
+/** A pattern row's persisted judgement state (wire PatternResponse.status). */
+export type PatternRowStatus = 'proposed' | 'monitoring' | 'confirmed' | 'rejected'
 export interface PatternCritique {
   statistical: number
   confounders: number
@@ -437,12 +440,16 @@ export interface Pattern {
   id: string
   category: PatternCategory
   categoryLabel: string
-  confidence: number
+  /** undefined on statistical rows — honest small-n, renders as "tanulom" (V3.1). */
+  confidence?: number
   title: string
   mechanism: string
   evidence: string[]
-  critique: PatternCritique
+  /** V3.2 hypotheses only — statistical rows carry evidence chips instead. */
+  critique?: PatternCritique
   thinking?: string
+  status?: PatternRowStatus
+  kind?: 'statistical' | 'ai_hypothesis'
 }
 
 export interface MemoirAnchor { kind: string; label: string }

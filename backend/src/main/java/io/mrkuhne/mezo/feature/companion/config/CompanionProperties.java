@@ -26,7 +26,8 @@ public record CompanionProperties(
     @NotNull @Valid Advisors advisors,
     @NotNull @Valid Embedding embedding,
     @NotNull @Valid Summary summary,
-    @NotNull @Valid Recall recall
+    @NotNull @Valid Recall recall,
+    @NotNull @Valid Patterns patterns
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -96,6 +97,34 @@ public record CompanionProperties(
         @Min(1) @Max(100) int candidatePool,
         /** Per-memory render cap in the tool result (chars) — gist over full re-quote (token budget). */
         @Min(50) @Max(2000) int renderMaxChars
+    ) {}
+
+    /** V3.1 nightly statistical pattern engine — Pearson over the metric-pair catalog. */
+    public record Patterns(
+        /** Cron for the nightly correlation job (server zone) — after the summary job by convention. */
+        @NotBlank String cron,
+        /** How many finished days back the correlation window reaches. */
+        @Min(14) @Max(365) int lookbackDays,
+        /** Minimum aligned sample size before a pair may surface at all (honest small-n gate). */
+        @Min(3) @Max(60) int minN,
+        /** The metric-pair catalog — trim/re-lag pairs here; new metrics need a MetricKey entry. */
+        @NotEmpty List<@Valid PatternPair> pairs
+    ) {}
+
+    /** One correlation candidate: two per-day metrics, an optional day lag, and its FE identity. */
+    public record PatternPair(
+        /** Stable pattern identity (uq (created_by, kind, pair_key)) — never rename a live key. */
+        @NotBlank @jakarta.validation.constraints.Pattern(regexp = "[a-z0-9~-]{3,64}") String key,
+        /** The FE PatternCategory chip. */
+        @NotBlank @jakarta.validation.constraints.Pattern(regexp = "physiology|trigger|response") String category,
+        /** Hungarian category chip label. */
+        @NotBlank String label,
+        /** The pattern card title (HU). */
+        @NotBlank String title,
+        @NotNull io.mrkuhne.mezo.feature.companion.service.MetricKey metricA,
+        @NotNull io.mrkuhne.mezo.feature.companion.service.MetricKey metricB,
+        /** metricB is read lagDays AFTER metricA's day (0 = same day). */
+        @Min(0) @Max(7) int lagDays
     ) {}
 
     /** V2.2 nightly daily-summary job — the narrative memory's generator. */

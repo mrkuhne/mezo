@@ -104,6 +104,10 @@ mezo:
       # off = the DailySummaryJob bean does not exist
       daily-summary-job:
         enabled: true
+      # V3.1 nightly statistical pattern detection (schedule: mezo.companion.patterns.cron);
+      # off = the PatternDetectionJob bean does not exist
+      pattern-detection-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -163,6 +167,72 @@ mezo:
       cron: "0 20 2 * * *"
       # Finished days back the job checks and self-heals (idempotent catch-up doubles as backfill)
       catch-up-days: 7
+    patterns:
+      # V3.1 nightly Pearson correlation over the pair catalog — 02:40, after the summary job
+      cron: "0 40 2 * * *"
+      # Correlation window (finished days)
+      lookback-days: 60
+      # Minimum aligned days before a pair may surface (honest small-n gate)
+      min-n: 8
+      # The metric-pair catalog: key is the pattern's stable identity (never rename a live key);
+      # metric-b is read lag-days AFTER metric-a's day (0 = same day)
+      pairs:
+        - key: sleep-quality~next-day-training-rpe
+          category: physiology
+          label: Fiziológia
+          title: "Alvásminőség ↔ másnapi edzés-RPE"
+          metric-a: sleep-quality
+          metric-b: training-rpe
+          lag-days: 1
+        - key: sleep-duration~next-day-training-rpe
+          category: physiology
+          label: Fiziológia
+          title: "Alváshossz ↔ másnapi edzés-RPE"
+          metric-a: sleep-duration-h
+          metric-b: training-rpe
+          lag-days: 1
+        - key: late-meal~next-sleep-quality
+          category: trigger
+          label: Trigger
+          title: "Késői étkezés ↔ rákövetkező alvásminőség"
+          metric-a: late-meal-hour
+          metric-b: sleep-quality
+          lag-days: 1
+        - key: reta-cycle-day~daily-kcal
+          category: physiology
+          label: Fiziológia
+          title: "Reta-ciklusnap ↔ napi kalória"
+          metric-a: reta-cycle-day
+          metric-b: daily-kcal
+          lag-days: 0
+        - key: sport-load~next-day-gym-volume
+          category: response
+          label: Response
+          title: "Sportterhelés ↔ másnapi gym-volumen"
+          metric-a: sport-load-min
+          metric-b: gym-volume-kg
+          lag-days: 1
+        - key: daily-kcal~next-morning-weight-delta
+          category: response
+          label: Response
+          title: "Napi kalória ↔ másnap reggeli súlyváltozás"
+          metric-a: daily-kcal
+          metric-b: weight-delta-kg
+          lag-days: 1
+        - key: checkin-stress~sleep-quality
+          category: trigger
+          label: Trigger
+          title: "Stressz-szint ↔ aznapi alvásminőség"
+          metric-a: checkin-stress
+          metric-b: sleep-quality
+          lag-days: 0
+        - key: daily-water~checkin-energy
+          category: physiology
+          label: Fiziológia
+          title: "Vízbevitel ↔ energia-szint"
+          metric-a: daily-water-ml
+          metric-b: checkin-energy
+          lag-days: 0
     advisors:
       # V1.3 post-response advisor chain — deterministic clinical Rx-dose guard + one cheap-tier
       # LLM verdict (never-ask-twice redundancy + grounding-lite); reject -> one corrective

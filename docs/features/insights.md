@@ -57,10 +57,24 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 The shell `InsightsSection` (`frontend/src/features/insights/pages/InsightsSection.tsx`) renders a `page-header` (`Eyebrow brand "Insights"` + `PageTitle` tracking the active tab's label, derived from `pathname.split('/')[2]`), a **decorative, handler-less** settings `chip` (`aria-label="Insights beállítások"`), the sticky `InsightsSubNav` (`aria-label="Insights alnavigáció"`), and an `<Outlet/>`.
 
-### 2.1 Patterns (`pages/PatternsPage.tsx`)
-Default tab. Filters `patterns` to `confidence >= MIN_PATTERN_CONFIDENCE` (`0.65`) and renders a `PatternCard` per pattern. Header: `Új minták · {count}` + `min. 65% conf`. Empty-state card ("Csak alacsonyabb confidence minták vannak."). Below: a "Recently confirmed · L3" card listing `recentlyConfirmed` strings.
+### 2.1 Patterns (`pages/PatternsPage.tsx`) — **real dual-mode since companion V3.1**
+Default tab — the pattern-engine Inbox ([`companion.md`](companion.md) §1 V3.1). Reads
+`usePatterns()` (`data/insights/patternsHooks.ts`, `['patterns']` dual-read: `{patterns,
+recentlyConfirmed, degraded, mode}` — real mode maps `GET /api/companion/pattern`, 404 ⇒ honest
+degraded card; mock keeps the `insights.ts` seeds). Filter: rows with a `confidence` gate on
+`MIN_PATTERN_CONFIDENCE` (`0.65`); **statistical rows (confidence null) always list** — they
+passed the server-side n-gate. Header: `Új minták · {count}` + `min. 65% conf`; empty-state and
+empty-confirmed copy. "Recently confirmed · L3" = confirmed rows' titles in real mode.
 
-**`PatternCard`** (`components/PatternCard.tsx`) is the richest component: left accent bar in the category color (`patternCategoryColor(cat)` → `var(--cat-{cat})`), category chip + `conf NN%`, Antonio display title, mechanism paragraph, and a **4-row "critique grid"** (`Statistical / Confounders / L3 align / Actionability`), each a labeled progress `bar` colored by confidence band. Evidence string chips. An expandable **"AI gondolatmenete"** disclosure (local `useState`, shown only if `pattern.thinking` present) revealing the model's reasoning. Footer: three mutually-exclusive **Confirm / Monitor / Reject** buttons setting local `status` state (`PatternStatus`) — **local-only, no persistence** (the would-be human-in-the-loop accept/reject gate).
+**`PatternCard`** (`components/PatternCard.tsx`): left accent bar in the category color
+(`patternCategoryColor(cat)` → `var(--cat-{cat})`), category chip + `conf NN%` **or „tanulom"**
+(null confidence — honest small-n), Antonio display title, mechanism paragraph, a **conditional
+4-row "critique grid"** (only when `critique` present — V3.2 hypotheses), evidence string chips
+(statistical rows carry `r=… / n=… nap / p=…`), the expandable **"AI gondolatmenete"** disclosure
+(`pattern.thinking`). Footer: **Confirm / Monitor / Reject** call `onDecide` →
+`usePatternActions().decide(id, decision)` (real: `POST /api/companion/pattern/{id}/decision` +
+invalidate — **repeatable transitions**; mock: cache mutation) — the badge renders from the
+PERSISTED `pattern.status`, no local decision state.
 
 ### 2.2 Weekly (`pages/WeeklyPage.tsx`)
 A big `score` `/100` with `delta` vs "hét 20", a bordered list of `weekly.items` (label · value · trend arrow `↗/↘/→`), then a "Mezo · heti tervjavaslat" card showing `weeklySuggestion` with inert **"Elfogad" / "Hangoljuk"** buttons.

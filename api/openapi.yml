@@ -2670,6 +2670,74 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/pattern:
+    get:
+      tags:
+        - Companion
+      operationId: listPatterns
+      summary: 'The pattern inbox (V3.1) — detected correlations, strongest/newest first'
+      responses:
+        '200':
+          description: All live patterns (proposed + monitoring + confirmed + rejected)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PatternResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/pattern/{patternId}/decision':
+    post:
+      tags:
+        - Companion
+      operationId: decidePattern
+      summary: >-
+        Judge a pattern (V3.1, L2 surface) — confirm/monitor/reject. Unlike fact
+        candidates a pattern is a standing judgement: transitions between the
+        three user states are repeatable.
+      parameters:
+        - name: patternId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatternDecisionRequest'
+      responses:
+        '200':
+          description: The pattern with its new status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatternResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Pattern not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/companion/conversation/{conversationId}/message/stream':
     post:
       tags:
@@ -6215,3 +6283,87 @@ components:
         code:
           type: string
           description: Stream failure code — 'COMPANION_STREAM_FAILED'.
+    PatternResponse:
+      type: object
+      required:
+        - id
+        - kind
+        - category
+        - categoryLabel
+        - title
+        - evidence
+        - status
+        - lastDetectedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          pattern: ^(statistical|ai_hypothesis)$
+          description: >-
+            statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM
+            loop (V3.2).
+        category:
+          type: string
+          pattern: ^(physiology|trigger|response)$
+          description: The FE PatternCategory — assigned by the metric-pair catalog.
+        categoryLabel:
+          type: string
+          description: Hungarian category chip label.
+        title:
+          type: string
+        mechanism:
+          type: string
+          nullable: true
+          description: >-
+            Deterministic HU description for statistical rows; LLM mechanism for
+            V3.2 hypotheses.
+        evidence:
+          type: array
+          items:
+            type: string
+          description: 'Deterministic evidence chips (r=…, n=… nap, p=…, window).'
+        confidence:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            NULL for statistical rows (honest small-n — the FE renders
+            "tanulom"); the 4-factor critique score for V3.2 hypotheses.
+        critique:
+          $ref: '#/components/schemas/PatternCritique'
+        status:
+          type: string
+          pattern: ^(proposed|monitoring|confirmed|rejected)$
+        lastDetectedAt:
+          type: string
+          format: date-time
+          description: When the nightly job last computed/refreshed the stats.
+    PatternCritique:
+      type: object
+      nullable: true
+      description: >-
+        The V3.2 4-factor critique (0..1 each) — null until the hypothesis loop
+        lands.
+      properties:
+        statistical:
+          type: number
+          format: double
+        confounders:
+          type: number
+          format: double
+        l3align:
+          type: number
+          format: double
+        actionability:
+          type: number
+          format: double
+    PatternDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          pattern: ^(confirm|monitor|reject)$

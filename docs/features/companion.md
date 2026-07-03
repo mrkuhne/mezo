@@ -206,6 +206,27 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - Tool-only recall for now: auto-recall-on-every-turn stays deferred until it earns its latency
   (roadmap decision).
 
+**V3.1 (`mezo-fnnq.12`) shipped statistical patterns + the Inbox — v3 „észrevesz" started:**
+
+- **The second nightly cron** — `PatternDetectionJob` (02:40, switch
+  `mezo.techcore.cron.pattern-detection-job.enabled`): for every pair in the config catalog
+  (`mezo.companion.patterns.pairs`, 8 pairs v1) it lag-aligns two per-day metric series over the
+  lookback window, gates on `min-n` (8), runs PURE Pearson math (`PearsonCorrelation` — r, n and
+  a real two-sided p via the incomplete-beta t-test, fixture-tested; no LLM anywhere) and
+  **upserts one row per `(user, kind, pair_key)`**: stats refresh while `proposed`/`monitoring`,
+  a user-judged `confirmed`/`rejected` row is never auto-touched (V3.3 adds reinforcement).
+- **Series extraction** — `MetricSeriesService`: 12 `MetricKey`s (sleep quality/duration,
+  training RPE, sport load, gym volume, late-meal hour, daily kcal, Reta cycle-day, water,
+  morning weight-delta, check-in stress/energy) composed read-only from the owning features'
+  EXISTING reads; deterministic multi-row aggregation, absence is absence (never bridged).
+- **Honest numbers** — `confidence` is NULL on statistical rows (FE renders „tanulom");
+  evidence chips carry `r=… · n=… nap · p=… · window`; mechanism is a deterministic HU sentence.
+- **Inbox API + PatternsPage real** — `GET /api/companion/pattern` +
+  `POST …/pattern/{id}/decision` (confirm/monitor/reject — REPEATABLE transitions, a pattern is
+  a standing judgement); FE `usePatterns`/`usePatternActions` dual-mode (the knowledge recipe),
+  PatternCard's decision buttons persist, critique bars render only when present (V3.2),
+  degraded card on switch-off 404.
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -222,14 +243,16 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
-| Patterns | ❌ deferred | V3.1–V3.3 (`mezo-fnnq.12`–`.14`). |
+| Statistical patterns + Inbox | ✅ V3.1 | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`). |
+| Hypothesis loop / promotion | ❌ deferred | V3.2 (`mezo-fnnq.13`), V3.3 (`mezo-fnnq.14`). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
 `mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI) +
 `mezo-fnnq.8` (advisors + degraded + reinforcement) + `mezo-fnnq.9` (pgvector + embedding port) +
 `mezo-fnnq.10` (daily summaries + embed pipeline; plan
 [`2026-07-03-companion-v22-daily-summaries.md`](../superpowers/plans/2026-07-03-companion-v22-daily-summaries.md)) +
-`mezo-fnnq.11` (similar-days recall).
+`mezo-fnnq.11` (similar-days recall) + `mezo-fnnq.12` (statistical patterns + Inbox; plan
+[`2026-07-04-companion-v31-statistical-patterns.md`](../superpowers/plans/2026-07-04-companion-v31-statistical-patterns.md)).
 **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
@@ -625,6 +648,15 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   before the decay re-rank.
 - `mezo.companion.recall.render-max-chars` = **300** (`@Min(50) @Max(2000)`) — per-memory render
   cap in the tool result (gist over full re-quote; token budget).
+- `mezo.companion.patterns.cron` = `"0 40 2 * * *"` — the V3.1 nightly correlation job (after the
+  summary job by convention); switch `mezo.techcore.cron.pattern-detection-job.enabled`
+  (`PATTERN_DETECTION_JOB_SWITCH`).
+- `mezo.companion.patterns.lookback-days` = **60** (`@Min(14) @Max(365)`) — correlation window.
+- `mezo.companion.patterns.min-n` = **8** (`@Min(3) @Max(60)`) — aligned-days floor before a pair
+  may surface at all.
+- `mezo.companion.patterns.pairs` = the 8-pair catalog (`@NotEmpty`, each
+  `{key, category, label, title, metric-a, metric-b, lag-days}`) — pair keys are pattern identity
+  (never rename a live key); metrics come from the `MetricKey` enum.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ## 5. Integrations
@@ -721,9 +753,15 @@ precedent). The nightly job iterates `AppUserRepository.findAll()` (companion �
 **V2.3 recall seam (✅ wired).** `find_similar_past_days` is companion-internal (tools →
 `MemoryRecallService` → the V2.1 repository + V2.1 `EmbeddingPort`) — no new cross-feature reads.
 
+**V3.1 patterns seam (✅ wired — read-only, one-way).** `MetricSeriesService` composes the
+owning features' existing reads date-scoped (sleep/sport/run/workout+sets/meal/FuelDay/medication
+cycle/water/weight/check-in) — zero new cross-feature finders; `PatternsPage` consumes
+`usePatterns`/`usePatternActions` from `@/data/hooks` ([`insights.md`](insights.md) §2.1).
+
 **Named future seams:**
-- **V3.x** pattern engine (`pattern` table → Inbox → promotion into `knowledge_fact`) — see the
-  roadmap dependency graph.
+- **V3.2** weekly hypothesis loop fills `critique`/`confidence` on `kind=ai_hypothesis` rows;
+  **V3.3** confirm-promotion into `knowledge_fact` + recurrence reinforcement — the last two
+  slices of the epic.
 
 ## 6. How to use it (consume)
 

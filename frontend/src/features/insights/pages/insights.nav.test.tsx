@@ -19,7 +19,7 @@ function renderApp(path: string) {
 test('Insights opens on Patterns and the page title tracks the active sub-tab', async () => {
   renderApp('/insights')
   expect(screen.getByRole('heading', { level: 1, name: 'Patterns' })).toBeInTheDocument()
-  expect(screen.getByText('Új minták · 3')).toBeInTheDocument()
+  expect(await screen.findByText('Új minták · 3')).toBeInTheDocument() // real mode fetches (V3.1)
 
   await userEvent.click(screen.getByRole('link', { name: 'Memoir' }))
   expect(screen.getByRole('heading', { level: 1, name: 'Memoir' })).toBeInTheDocument()
