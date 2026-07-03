@@ -46,6 +46,11 @@ public class ToolCallAudit {
         return calls.size();
     }
 
+    /** Names of the calls recorded so far — the V1.3 verdict payload's tool-call list. */
+    public List<String> callNames() {
+        return calls.stream().map(ToolCallsEnvelope.ToolCall::name).toList();
+    }
+
     /** Null when no tool ran — a tool-less turn persists exactly like V0.2 (null envelope → [] on the wire). */
     public ToolCallsEnvelope toToolCallsEnvelope() {
         return calls.isEmpty() ? null : new ToolCallsEnvelope(List.copyOf(calls));
