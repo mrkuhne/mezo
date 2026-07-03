@@ -11,7 +11,7 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
   - Slice B (Train): ✅ done
   - Slice C (Fuel): 🟢 core shipped — Pantry (mezo-9xu), Recipes (mezo-lns), Meal-logging (mezo-arb), **Medication/Gyógyszer (mezo-d94)** closed/backend-backed. Remaining work is a **phased completion plan** ([`fuel-completion-roadmap`](../superpowers/plans/2026-06-26-fuel-completion-roadmap.md), epic `mezo-6r1`): P0 decisions → ✅ P1 **water logging** (shipped mezo-0z5) → ✅ P2 **Stack/Protocol** (shipped mezo-09g) → ✅ P3 **Gyógyszer tab + `medication` domain (first-class) + derived retaDay broadcast** (shipped mezo-d94) → P4 weekly-plan → ✅ P5 **timeline / Mai day-planner** (shipped mezo-9ys) → P6 import → P7 meal-scoring → P8 Phase-3 AI. Stock tracking parked (mezo-6nu).
   - Slice D (Insights seed) → E (People): ⏳ remaining
-- **Phase 3 — AI brain:** 🔜 later. Spring AI, pgvector, RAG, pattern/companion pipeline.
+- **Phase 3 — AI brain:** 🗺️ mapped, ready to start. Context-aware companion chat + layered AI memory (snapshot → tools → facts → RAG → patterns) in 14 session-sized slices (v0 „lát engem" → v1 „megjegyez" → v2 „emlékszik" → v3 „észrevesz"). Epic `mezo-fnnq` (one child per slice); design spec [`phase3-companion-chat-design`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md) + roadmap [`companion-roadmap`](../superpowers/plans/2026-07-03-companion-roadmap.md) — the spec distills the old Supabase-era PRD/architecture (`docs/old docs/`) onto Spring Boot 4 + Spring AI + pgvector. First slice: `mezo-fnnq.1` (Spring AI + provider ADR).
 
 ## Cross-cutting tracks
 
@@ -24,6 +24,7 @@ Detail lives elsewhere (`decisions/`, `infrastructure/`, `superpowers/`); this i
 
 | Date | Milestone |
 |---|---|
+| 2026-07-03 | **Phase 3 (AI brain) mapped**: the old Supabase-era PRD+architecture (`docs/old docs/`) surveyed and distilled into a current-stack design spec (`2026-07-03-phase3-companion-chat-design.md`) + a 14-slice companion roadmap (`2026-07-03-companion-roadmap.md`, epic `mezo-fnnq`, session-per-slice handoff). Key calls: deterministic context snapshot (not RAG) is the chat's backbone; RAG = episodic layer over narrative units; facts via confirm-promote pipeline; old Phase-7 motivation system explicitly out (XP-vs-narrative tension parked for a future ADR). Fuel P8 umbrella (`mezo-0h6w`) note-linked. |
 | 2026-06-13 | Deploy direction decided: self-managed k3s + ArgoCD + pgAdmin (learning track). ADR 0001 + infra doc written. `docs/` decision/infra/milestone structure established. |
 | 2026-06-14 | Deploy steps 0-2 done: Hetzner VPS hardened + Tailscale, k3s installed, full mezo (Postgres + backend + frontend) live on k8s at `https://46.225.112.172.sslip.io/` with Let's Encrypt HTTPS. `k8s/` manifests + Dockerfiles committed. Pending: pgAdmin (step 3), ArgoCD/GitOps (step 4). |
 | 2026-06-24 | Slice C (Fuel) core shipped: Pantry (`pantry_item`, mezo-9xu) + 146-item catalog (mezo-zza), Recipes (`recipe`/`recipe_ingredient`, mezo-lns), Meal-logging (`meal`/`meal_item` + `/api/fuel/day/{date}`, mezo-arb) — backends + dual-mode FE, green both modes. Remaining Fuel (Stack/Protocol, weekly-plan, meal-scoring) Phase-3-deferred. |
