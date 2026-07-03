@@ -6,8 +6,7 @@ updated: 2026-07-03
 tags: [today, biometrics, frontend, data-layer]
 key_files:
   - frontend/src/features/today
-  - frontend/src/data/hooks.ts
-  - frontend/src/data/today/today.ts
+  - frontend/src/data/today
   - frontend/src/data/me/biometricsApi.ts
   - api/feature/checkin/checkin.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin
