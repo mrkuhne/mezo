@@ -24,7 +24,7 @@ test('renders the Napi ritmus section defaulting from the loaded goal', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   render(<EditGoalSheet onClose={() => {}} goal={goal} goalResponse={goalResponse} goalId={goal.id} />, { wrapper: QueryWrapper })
   expect(screen.getByText('Napi ritmus')).toBeInTheDocument()
-  expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('4')
+  expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('4')
   expect(screen.getByLabelText('Ébredés')).toHaveValue('06:00')
   expect(screen.getByLabelText('Lefekvés')).toHaveValue('23:00')
 })
@@ -38,13 +38,13 @@ test('the meal stepper clamps between 3 and 6', async () => {
   await userEvent.click(inc)
   await userEvent.click(inc)
   await userEvent.click(inc) // clamped
-  expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('6')
+  expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('6')
   // back down to the 3 floor
   await userEvent.click(dec)
   await userEvent.click(dec)
   await userEvent.click(dec)
   await userEvent.click(dec) // clamped
-  expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('3')
+  expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('3')
 })
 
 test('the planner defaults fall back to 4 / 06:00 / 23:00 when the goal has none', () => {
@@ -59,7 +59,7 @@ test('the planner defaults fall back to 4 / 06:00 / 23:00 when the goal has none
     />,
     { wrapper: QueryWrapper },
   )
-  expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('4')
+  expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('4')
   expect(screen.getByLabelText('Ébredés')).toHaveValue('06:00')
   expect(screen.getByLabelText('Lefekvés')).toHaveValue('23:00')
 })

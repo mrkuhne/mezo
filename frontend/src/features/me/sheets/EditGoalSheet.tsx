@@ -90,7 +90,7 @@ export function EditGoalSheet({
                   <Icon name="minus" size={12} />
                 </button>
                 <span
-                  aria-label="Étkezés/nap"
+                  aria-label={`Étkezés/nap ${mealsPerDay}`}
                   style={{ minWidth: 18, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 14, color: 'var(--text-primary)' }}
                 >
                   {mealsPerDay}

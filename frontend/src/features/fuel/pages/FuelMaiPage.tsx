@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
-import { useFuelDay, useFuelTimeline, useProtocol, useTodayScenario, useToday, useWaterActions } from '@/data/hooks'
+import { useFuelDay, useFuelTimeline, useProtocol, useTodayScenario, useWaterActions } from '@/data/hooks'
 import { slotKeyOfLabel } from '@/data/fuel/fuelConfig'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
@@ -21,7 +21,6 @@ export function FuelMaiPage() {
   const { plan, getScoredMeal } = useFuelTimeline()
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
-  const { today } = useToday()
   const { logWater } = useWaterActions()
 
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
@@ -75,7 +74,7 @@ export function FuelMaiPage() {
         <div className="card notch-4" style={{ padding: 12, background: 'var(--surface-1)' }}>
           <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
             <StatCell
-              label={plan.workout.start === '—' ? 'Gym' : today.workoutType}
+              label={plan.workout.start === '—' ? 'Gym' : (plan.workout.type || 'Gym')}
               val={plan.workout.start}
               sub={plan.workout.duration ? plan.workout.duration + 'p' : ''}
               color="var(--brand-glow)"
