@@ -1,0 +1,63 @@
+package io.mrkuhne.mezo.feature.companion.mapper;
+
+import io.mrkuhne.mezo.api.dto.ConversationResponse;
+import io.mrkuhne.mezo.api.dto.MessageRef;
+import io.mrkuhne.mezo.api.dto.MessageResponse;
+import io.mrkuhne.mezo.api.dto.MessageTool;
+import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
+import org.mapstruct.Mapper;
+
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+
+@Mapper(componentModel = "spring")
+public interface CompanionMapper {
+
+    default ConversationResponse toConversationResponse(AiConversationEntity entity) {
+        return ConversationResponse.builder()
+                .id(entity.getId())
+                .title(entity.getTitle())
+                .startedAt(toOffset(entity.getCreatedAt()))
+                .lastMessageAt(toOffset(entity.getLastMessageAt()))
+                .build();
+    }
+
+    default MessageResponse toMessageResponse(AiMessageEntity entity) {
+        return MessageResponse.builder()
+                .id(entity.getId())
+                .role(entity.getRole())
+                .content(entity.getContent())
+                .createdAt(toOffset(entity.getCreatedAt()))
+                .tools(toTools(entity.getToolCalls()))
+                .refs(toRefs(entity.getRefs()))
+                .build();
+    }
+
+    /** Null envelope (the V0.2 steady state) maps to an empty array on the wire. */
+    default List<MessageTool> toTools(ToolCallsEnvelope envelope) {
+        if (envelope == null || envelope.calls() == null) {
+            return List.of();
+        }
+        return envelope.calls().stream()
+                .map(call -> MessageTool.builder().type(call.type()).name(call.name()).build())
+                .toList();
+    }
+
+    default List<MessageRef> toRefs(RefsEnvelope envelope) {
+        if (envelope == null || envelope.refs() == null) {
+            return List.of();
+        }
+        return envelope.refs().stream()
+                .map(ref -> MessageRef.builder().kind(ref.kind()).id(ref.id()).build())
+                .toList();
+    }
+
+    default OffsetDateTime toOffset(Instant instant) {
+        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
+    }
+}
