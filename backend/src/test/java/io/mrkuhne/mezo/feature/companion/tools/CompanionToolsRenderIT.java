@@ -3,13 +3,18 @@ package io.mrkuhne.mezo.feature.companion.tools;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
+import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
+import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
@@ -42,6 +47,11 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private BiometricsTools biometricsTools;
     @Autowired private TrainTools trainTools;
     @Autowired private FuelTools fuelTools;
+    @Autowired private GoalTools goalTools;
+    @Autowired private MedicationTools medicationTools;
+    @Autowired private GoalPopulator goalPopulator;
+    @Autowired private MedicationPopulator medicationPopulator;
+    @Autowired private MedicationDosePopulator medicationDosePopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
@@ -181,5 +191,56 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     void testGetProtocolAdherence_shouldRenderNincsAktivProtokoll_whenNoneActive() {
         assertThat(fuelTools.getProtocolAdherence(7, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Protokoll-követés: nincs aktív protokoll");
+    }
+
+    @Test
+    void testGetGoalProgress_shouldComposeGoalTrendAndSegment_whenActiveGoalExists() {
+        UUID owner = userPopulator.createUser().getId();
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
+                List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", 2100, 160,
+                        new BigDecimal("7.5"), List.of(5, 6), null, null)),
+                null, null);
+        // started 2 weeks + 1 day ago → day 15 → week 3
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(2).minusDays(1),
+                LocalDate.now().plusWeeks(10), prescription, 4, "06:30", "22:30");
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(8), new BigDecimal("87.1"));
+        weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("86.4"));
+
+        String out = goalTools.getGoalProgress(ctx(owner));
+
+        assertThat(out).startsWith("Cél: Nyári cut (cut), 3. hét; 84.2 → 80 kg")
+                .contains("trendsúly most ").contains("eddig ")
+                .contains("e heti recept: 2100 kcal, 160 g fehérje");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
+    }
+
+    @Test
+    void testGetGoalProgress_shouldRenderNincsAktivCel_whenNone() {
+        assertThat(goalTools.getGoalProgress(ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Cél: nincs aktív cél");
+    }
+
+    @Test
+    void testGetRetaCycle_shouldRenderCyclePhaseAndDoses_whenDoseAnchored() {
+        UUID owner = userPopulator.createUser().getId();
+        MedicationEntity med = medicationPopulator.createReta(owner);
+        medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
+
+        String out = medicationTools.getRetaCycle(ctx(owner));
+
+        assertThat(out).startsWith("Retatrutid ciklus: Retatrutide — 4. nap (Stabil)")
+                .contains("utolsó dózis: " + LocalDate.now().minusDays(3) + " (4 mg)")
+                .contains("következő esedékes: " + LocalDate.now().minusDays(3).plusDays(7));
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Medication", "Retatrutide"));
+    }
+
+    @Test
+    void testGetRetaCycle_shouldRenderHonestZero_whenNoDose() {
+        UUID owner = userPopulator.createUser().getId();
+        medicationPopulator.createReta(owner);
+        assertThat(medicationTools.getRetaCycle(ctx(owner)))
+                .isEqualTo("Retatrutid ciklus: Retatrutide — nincs rögzített dózis");
     }
 }
