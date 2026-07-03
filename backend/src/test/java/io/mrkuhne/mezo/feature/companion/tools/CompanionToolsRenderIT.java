@@ -3,19 +3,25 @@ package io.mrkuhne.mezo.feature.companion.tools;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -35,11 +41,16 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
     @Autowired private BiometricsTools biometricsTools;
     @Autowired private TrainTools trainTools;
+    @Autowired private FuelTools fuelTools;
     @Autowired private UserPopulator userPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private RunningPopulator runningPopulator;
+    @Autowired private PantryItemPopulator pantryItemPopulator;
+    @Autowired private MealPopulator mealPopulator;
+    @Autowired private ProtocolPopulator protocolPopulator;
+    @Autowired private SupplementIntakePopulator supplementIntakePopulator;
 
     private ToolCallAudit audit;
 
@@ -131,5 +142,44 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         assertThat(audit.toRefsEnvelope().refs()).contains(
                 new RefsEnvelope.Ref("Sport", LocalDate.now().minusDays(1).toString()),
                 new RefsEnvelope.Ref("Run", LocalDate.now().minusDays(3).toString()));
+    }
+
+    @Test
+    void testGetRecentMeals_shouldRenderDayRollupsWithTitles_whenMealLogged() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Csirkemell", LocalDate.now().plusDays(5));
+        mealPopulator.createPantryMeal(owner, item, LocalDate.now().minusDays(1));
+
+        String out = fuelTools.getRecentMeals(3, ctx(owner));
+
+        assertThat(out).startsWith("Napi étkezés-összesítők (utolsó 3 nap):")
+                .contains(LocalDate.now().minusDays(1) + ": ")
+                .contains("kcal").contains("1 étkezés (Reggeli)")
+                .contains(LocalDate.now() + ": ").contains("0 étkezés");
+        assertThat(audit.toRefsEnvelope().refs()).containsExactly(
+                new RefsEnvelope.Ref("FuelDay", LocalDate.now().minusDays(1).toString()));
+    }
+
+    @Test
+    void testGetProtocolAdherence_shouldRenderPerDayCoverage_whenProtocolActive() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity a = pantryItemPopulator.createSupplement(owner, "Kreatin");
+        PantryItemEntity b = pantryItemPopulator.createSupplement(owner, "D3-vitamin");
+        protocolPopulator.createProtocol(owner, 3, "active", List.of(a.getId(), b.getId()));
+        supplementIntakePopulator.createIntake(owner, a.getId(), Instant.now());
+
+        String out = fuelTools.getProtocolAdherence(1, ctx(owner));
+
+        assertThat(out).startsWith("Protokoll-követés (utolsó 1 nap): aktív protokoll v3, 2 elem")
+                .contains(LocalDate.now() + ": 1/2")
+                .contains("Összesen: 1/2 (50%)");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Protocol", "v3"));
+    }
+
+    @Test
+    void testGetProtocolAdherence_shouldRenderNincsAktivProtokoll_whenNoneActive() {
+        assertThat(fuelTools.getProtocolAdherence(7, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Protokoll-követés: nincs aktív protokoll");
     }
 }
