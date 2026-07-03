@@ -503,7 +503,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetToday_shouldExcludeSetlessAndOutOfWeekInstances_fromDoneDates() {
+    void testGetToday_shouldExcludeInstancesFromDoneDates_whenSetlessOrOutOfWeek() {
         UUID user = databasePopulator.populateUser("workout@test.local");
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
         WorkoutSessionEntity template =

@@ -84,7 +84,7 @@ class IntakeServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testListForDay_shouldReturnOnlyThatDaysRows_orderedByTakenAt() {
+    void testListForDay_shouldReturnOnlyThatDaysRowsOrdered_whenOtherDaysExist() {
         PantryItemEntity supp = pantryPop.createSupplement(owner, "Kreatin");
         Instant morning = Instant.parse("2026-06-15T06:00:00Z");
         Instant evening = Instant.parse("2026-06-15T20:00:00Z");
@@ -102,7 +102,7 @@ class IntakeServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testDeleteIntake_shouldSoftDeleteOwnRow_and404OnForeign() {
+    void testDeleteIntake_shouldSoftDeleteOr404_whenOwnVsForeignRow() {
         PantryItemEntity supp = pantryPop.createSupplement(owner, "Kreatin");
         SupplementIntakeEntity intake =
             intakePop.createIntake(owner, supp.getId(), Instant.parse("2026-06-15T06:00:00Z"));
