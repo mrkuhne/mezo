@@ -160,6 +160,32 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - **Nothing writes embeddings yet** — the daily-summary generator + embed pipeline is V2.2;
   recall-in-chat is V2.3.
 
+**V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
+
+- **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
+  deterministic, date-scoped Hungarian digest of one FINISHED day's L0 (train/sport/run, fuel-day
+  rollup, sleep, weight, Reta cycle-day + dose, check-ins — reusing the owning features' reads;
+  `nincs adat` semantics by omission) → ONE cheap-tier `CompanionLlm` call (prompt behind
+  `SUMMARY_MARKER`) → past-tense narrative row. Digest = pure code, narrative = pure LLM
+  (NFR-M-4). Empty day ⇒ no row; existing day ⇒ returned untouched (no LLM call). Uniqueness is
+  a PARTIAL index (`where is_deleted = false`) so soft-deleting a summary lets the next night
+  regenerate it.
+- **The app's first `@Scheduled` cron** — `DailySummaryJob` (nightly, `mezo.companion.summary.cron`,
+  default 02:20; switch `mezo.techcore.cron.daily-summary-job.enabled`; `SchedulingConfiguration`
+  born in techcore): for every user × every finished day in the catch-up window
+  (`summary.catch-up-days`, 7) it generates + embeds what's missing — **idempotent catch-up IS the
+  backfill** (missed nights, crashes and pre-V2.2 history self-heal; per-date failures isolated).
+- **Embed pipeline** — `MemoryEmbeddingWriter` (feature/companion/embedding/): narrative unit →
+  `EmbeddingPort.embedDocuments` → `memory_embedding` row; content capped at
+  `embedding.embed-max-chars` BEFORE embedding (the stored text IS what the vector describes);
+  idempotent via exists-probe + the uq constraint (a lost race degrades to a logged skip).
+  Summaries → kind=`daily_summary` (ref = summary row); chat turns → kind=`chat_turn`, **one
+  vector per turn** (`Daniel: …\nMezo: …`, ref = assistant message id).
+- **Post-turn embedding** — `TurnEmbeddingListener` (AFTER_COMMIT + `@Async`, the extraction-listener
+  idiom) on the extended `ChatTurnCompleted` event (now carries `assistantMessageId`), gated on
+  `mezo.companion.embedding.embed-chat-turns`; failures logged+swallowed, the nightly catch-up
+  pass (`catchUpTurns`) self-heals anything missed.
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -174,11 +200,14 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
 | Advisor chain (never-ask-twice + self-check) | ✅ V1.3 | Clinical regex + LLM verdict, retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
-| RAG pipeline / patterns | ❌ deferred | V2.2 (summaries + embed pipeline), V2.3 (recall tool), V3.x (patterns). |
+| Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
+| RAG recall / patterns | ❌ deferred | V2.3 (`find_similar_past_days` tool), V3.x (patterns). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
 `mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI) +
-`mezo-fnnq.8` (advisors + degraded + reinforcement) + `mezo-fnnq.9` (pgvector + embedding port).
+`mezo-fnnq.8` (advisors + degraded + reinforcement) + `mezo-fnnq.9` (pgvector + embedding port) +
+`mezo-fnnq.10` (daily summaries + embed pipeline; plan
+[`2026-07-03-companion-v22-daily-summaries.md`](../superpowers/plans/2026-07-03-companion-v22-daily-summaries.md)).
 **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
@@ -416,6 +445,16 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
   NULL passes = undecided), `refined_text text`, `promoted_fact_id uuid fk→knowledge_fact
   ON DELETE SET NULL`; indexes on `(created_by, user_decision)` + both loose-ref FKs.
 
+### Backend tables (V2.2, ✅)
+
+Migration `202607032115_mezo-fnnq.10_create_daily_summary.sql` (in `1.0.0_master.yml`):
+
+- **`daily_summary`** — `id uuid pk`, `created_by fk→app_user ON DELETE CASCADE`, `is_deleted`,
+  `created_at`, `summary_date date not null`, `narrative text not null`. Uniqueness is a
+  **partial unique index** `uq_daily_summary_created_by_summary_date … where is_deleted = false`
+  (one LIVE summary per user+day; a soft-deleted row doesn't block regeneration — deliberate,
+  summaries are regenerable data) + `idx_daily_summary_created_by_summary_date desc`.
+
 ### Backend tables (V2.1, ✅)
 
 Migration `202607032033_mezo-fnnq.9_create_memory_embedding_pgvector.sql` (in `1.0.0_master.yml`) —
@@ -542,6 +581,16 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 - `mezo.companion.embedding.model` = `gemini-embedding-001` (`@NotBlank`) — the V2.1 embedding
   model behind `EmbeddingPort`; the **768 dimension is structural** (the `vector(768)` schema +
   `EmbeddingPort.DIMENSIONS` constant), deliberately NOT config.
+- `mezo.companion.embedding.embed-chat-turns` = **true** — the V2.2 post-turn embedding toggle
+  (`COMPANION_EMBED_TURNS_SWITCH`); off ⇒ the `TurnEmbeddingListener` bean does not exist.
+- `mezo.companion.embedding.embed-max-chars` = **2000** (`@Min(200) @Max(20000)`) — content cap
+  per embedded narrative unit, applied BEFORE embedding (the stored text is the embedded text).
+- `mezo.companion.summary.cron` = `"0 20 2 * * *"` (`@NotBlank`, server zone) — the nightly
+  daily-summary job schedule (02:20, so "yesterday" is truly finished).
+- `mezo.companion.summary.catch-up-days` = **7** (`@Min(1) @Max(60)`) — finished days back the job
+  checks and self-heals each night (idempotent catch-up doubles as backfill).
+- Job switch `mezo.techcore.cron.daily-summary-job.enabled` (`DAILY_SUMMARY_JOB_SWITCH`) — off ⇒
+  the `DailySummaryJob` bean does not exist.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ## 5. Integrations
@@ -627,10 +676,17 @@ real inbox + toggles; Me KnowledgePage — mock-mode graph prototype, real-mode 
 `reinforcementCount`, `candidateText`) onto the lean FE domain (`text`/`active`/`reinforced`);
 `FactCategory` IS the backend enum since V1.2 ([`insights.md`](insights.md) §2.4, §5.1).
 
+**V2.2 daily-digest seam (✅ wired — read-only, one-way).** `DailySummaryService.digest` composes
+the same owning-feature reads the snapshot/tools use, but date-scoped to ONE past day:
+`WorkoutSessionRepository.findDoneInstancesBetween(date,date)` + set counts, sport/run since-date
+finders filtered to the day, `FuelDayService.getDay(date)`, sleep/check-in by-date finders,
+`MedicationCycleService.derive(userId, med, date)` (it already took an explicit date), and ONE new
+plain finder in the owning feature (`WeightLogRepository.findFirstBy…AndDate…` — the V0.3/V0.5
+precedent). The nightly job iterates `AppUserRepository.findAll()` (companion → auth read).
+
 **Named future seams:**
-- **V1.3** advisor chain reads the confirmed facts; **V2.3** `find_similar_past_days` joins the
-  tool registry; **V2.x** RAG over daily summaries; **V3.x** pattern engine — see the roadmap
-  dependency graph.
+- **V2.3** `find_similar_past_days` joins the tool registry over the now-filling
+  `memory_embedding`; **V3.x** pattern engine — see the roadmap dependency graph.
 
 ## 6. How to use it (consume)
 

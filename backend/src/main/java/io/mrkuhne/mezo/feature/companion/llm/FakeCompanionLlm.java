@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
+import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,6 +53,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern FACTS_SENTINEL =
             Pattern.compile("\\[fake-facts:(\\[.*?]|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Scripted narrative (V2.2): {@code [fake-summary:…]} payload becomes the summary answer. */
+    public static final Pattern SUMMARY_SENTINEL =
+            Pattern.compile("\\[fake-summary:([^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -63,6 +68,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
             return verdictAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
+            return summaryAnswer(userMessage);
         }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));
@@ -94,6 +102,17 @@ public class FakeCompanionLlm implements CompanionLlm {
     private String factsAnswer(String userMessage) {
         Matcher m = FACTS_SENTINEL.matcher(userMessage);
         return m.find() ? m.group(1) : "[]";
+    }
+
+    /**
+     * Summary calls (V2.2) answer deterministically: a {@code [fake-summary:…]} sentinel in the
+     * digest (plant it via a check-in note) becomes the narrative verbatim; otherwise the digest
+     * is echoed inside {@code ÖSSZEFOGLALÓ(…)} so ITs can assert real day-facts land in the
+     * persisted narrative without any LLM.
+     */
+    private String summaryAnswer(String userMessage) {
+        Matcher m = SUMMARY_SENTINEL.matcher(userMessage);
+        return m.find() ? m.group(1) : "ÖSSZEFOGLALÓ(" + userMessage + ")";
     }
 
     @Override

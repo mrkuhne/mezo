@@ -22,7 +22,8 @@ public record CompanionProperties(
     @NotNull @Valid Facts facts,
     @NotNull @Valid Extraction extraction,
     @NotNull @Valid Advisors advisors,
-    @NotNull @Valid Embedding embedding
+    @NotNull @Valid Embedding embedding,
+    @NotNull @Valid Summary summary
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -70,10 +71,22 @@ public record CompanionProperties(
         @NotEmpty List<String> rxTerms
     ) {}
 
-    /** V2.1 embedding port — which provider model produces memory vectors. */
+    /** V2.1 embedding port — which provider model produces memory vectors (+ V2.2 pipeline tuning). */
     public record Embedding(
         /** gemini-embedding-001 (bd mezo-c30) — the 768 dimension is structural (vector(768) schema + EmbeddingPort.DIMENSIONS), not config. */
-        @NotBlank String model
+        @NotBlank String model,
+        /** V2.2: embed each completed chat turn (user+assistant as one unit, post-commit async) — off removes the listener bean (COMPANION_EMBED_TURNS_SWITCH). */
+        boolean embedChatTurns,
+        /** Upper cap on embedded content length (chars) per narrative unit (turn / summary). */
+        @Min(200) @Max(20000) int embedMaxChars
+    ) {}
+
+    /** V2.2 nightly daily-summary job — the narrative memory's generator. */
+    public record Summary(
+        /** Cron for the nightly job (server zone), late enough that "yesterday" is truly finished. */
+        @NotBlank String cron,
+        /** How many finished days back the job checks and self-heals (idempotent catch-up = backfill). */
+        @Min(1) @Max(60) int catchUpDays
     ) {}
 
     /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */

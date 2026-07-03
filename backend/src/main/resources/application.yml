@@ -98,6 +98,12 @@ mezo:
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
     companion:
       enabled: true
+  techcore:
+    cron:
+      # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
+      # off = the DailySummaryJob bean does not exist
+      daily-summary-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -134,6 +140,17 @@ mezo:
       # V2.1 memory vectors (L1 episodic recall) — embedding model behind the EmbeddingPort.
       # The 768 dimension is structural (memory_embedding vector(768) + EmbeddingPort.DIMENSIONS), not config.
       model: gemini-embedding-001
+      # V2.2: embed each completed chat turn (user+assistant as ONE unit) after commit;
+      # off = the TurnEmbeddingListener bean does not exist (no post-turn embedding call ever)
+      embed-chat-turns: true
+      # Upper cap on embedded content length (chars) per narrative unit (turn / summary)
+      embed-max-chars: 2000
+    summary:
+      # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
+      # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron
+      cron: "0 20 2 * * *"
+      # Finished days back the job checks and self-heals (idempotent catch-up doubles as backfill)
+      catch-up-days: 7
     advisors:
       # V1.3 post-response advisor chain — deterministic clinical Rx-dose guard + one cheap-tier
       # LLM verdict (never-ask-twice redundancy + grounding-lite); reject -> one corrective
