@@ -37,3 +37,6 @@ create unique index uq_pattern_created_by_kind_pair_key
     on pattern (created_by, kind, pair_key) where is_deleted = false;
 
 create index idx_pattern_created_by_status on pattern (created_by, status);
+
+-- The inbox read's ordering key (findByCreatedBy...OrderByLastDetectedAtDesc).
+create index idx_pattern_created_by_last_detected_at on pattern (created_by, last_detected_at desc);

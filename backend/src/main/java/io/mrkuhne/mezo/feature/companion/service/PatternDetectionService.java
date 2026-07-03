@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,8 +38,13 @@ public class PatternDetectionService {
     private final PatternRepository patternRepository;
     private final CompanionProperties properties;
 
-    /** Runs detection for one user over the finished-days window; returns pairs upserted. */
-    @Transactional
+    /**
+     * Runs detection for one user over the finished-days window; returns pairs upserted.
+     * Deliberately NOT @Transactional: each repository call runs its own transaction, so one
+     * pair's DB failure (e.g. a rare uq race on the partial index) cannot mark a shared
+     * transaction rollback-only and silently discard every other pair's upsert — the per-pair
+     * catch below then isolates for real (review finding).
+     */
     public int detect(UUID userId) {
         CompanionProperties.Patterns config = properties.patterns();
         LocalDate to = LocalDate.now().minusDays(1);

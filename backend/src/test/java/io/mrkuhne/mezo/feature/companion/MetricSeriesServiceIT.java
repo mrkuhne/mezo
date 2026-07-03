@@ -98,6 +98,20 @@ class MetricSeriesServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSeries_shouldUseLatestSameDayWeighIn_whenDayHasTwoRows() {
+        UUID owner = userPopulator.createUser().getId();
+        weightLogPopulator.createWeightLog(owner, DAY.minusDays(1), new BigDecimal("105.0"));
+        // same-day correction: the typo first, the real value second — the LATER row must win
+        weightLogPopulator.createWeightLog(owner, DAY, new BigDecimal("108.5"));
+        weightLogPopulator.createWeightLog(owner, DAY, new BigDecimal("104.5"));
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.WEIGHT_DELTA_KG, DAY.minusDays(7), DAY);
+
+        assertThat(series.get(DAY)).isCloseTo(-0.5, within(1e-9));
+    }
+
+    @Test
     void testSeries_shouldSkipUnloggedDays_whenWaterQueried() {
         UUID owner = userPopulator.createUser().getId();
         waterLogPopulator.createWaterLog(owner, DAY, 2500);

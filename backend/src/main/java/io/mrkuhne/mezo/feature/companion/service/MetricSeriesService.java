@@ -221,11 +221,13 @@ public class MetricSeriesService {
     /** Morning weight change vs the PREVIOUS calendar day — gaps yield no point (never bridged). */
     private Map<LocalDate, Double> weightDelta(UUID userId, LocalDate from, LocalDate to) {
         TreeMap<LocalDate, Double> weights = new TreeMap<>();
-        for (WeightLogEntity log : weightLogRepository.findAllOwned(userId)) {
-            if (!log.getDate().isBefore(from.minusDays(1)) && !log.getDate().isAfter(to)) {
-                weights.put(log.getDate(), log.getWeightKg().doubleValue()); // findAllOwned is date-asc → latest wins
-            }
-        }
+        // date-asc alone leaves same-day rows in unspecified SQL order — sort by createdAt too,
+        // so the LAST put is deterministically the latest weigh-in of the day (review finding).
+        weightLogRepository.findAllOwned(userId).stream()
+                .filter(log -> !log.getDate().isBefore(from.minusDays(1)) && !log.getDate().isAfter(to))
+                .sorted(java.util.Comparator.comparing(WeightLogEntity::getDate)
+                        .thenComparing(WeightLogEntity::getCreatedAt))
+                .forEach(log -> weights.put(log.getDate(), log.getWeightKg().doubleValue()));
         Map<LocalDate, Double> series = new HashMap<>();
         weights.forEach((day, weight) -> {
             Double previous = weights.get(day.minusDays(1));
