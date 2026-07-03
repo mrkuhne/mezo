@@ -29,6 +29,7 @@ public class CompanionToolRegistry {
     private final FuelTools fuelTools;
     private final GoalTools goalTools;
     private final MedicationTools medicationTools;
+    private final MemoryTools memoryTools;
     private final CompanionProperties properties;
 
     public ToolCallAudit newTurnAudit() {
@@ -38,7 +39,7 @@ public class CompanionToolRegistry {
 
     public List<ToolCallback> callbacks(ToolCallAudit audit) {
         return Arrays.stream(
-                        ToolCallbacks.from(trainTools, biometricsTools, fuelTools, goalTools, medicationTools))
+                        ToolCallbacks.from(trainTools, biometricsTools, fuelTools, goalTools, medicationTools, memoryTools))
                 .<ToolCallback>map(cb -> new RecordingToolCallback(cb, audit))
                 .toList();
     }

@@ -23,8 +23,9 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 > ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
 > confirms on the **real KnowledgeListPage** (accept/refine/reject — L2). **Status: backend ✅
 > V2.1 (spine + snapshot + SSE + tools/audit + facts + extraction/decision + advisors +
-> pgvector/EmbeddingPort infra); FE ✅ V1.3 (ChatPage + KnowledgeListPage real + degraded badge)
-> — v0 „lát engem" + v1 „megjegyez" complete, v2 „emlékszik" 1/3.**
+> pgvector/EmbeddingPort infra + narrative-memory pipeline + episodic recall tool); FE ✅ V1.3
+> (ChatPage + KnowledgeListPage real + degraded badge)
+> — v0 „lát engem" + v1 „megjegyez" + **v2 „emlékszik" complete**.**
 > Cross-cutting Phase-3 domain with no route/tab of its own — the surfaces are the Insights
 > ChatPage + KnowledgeListPage ([`insights.md`](insights.md) §2.4–2.5).
 
@@ -191,6 +192,20 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   never bypasses it. Summaries replace-by-day: a regenerated summary soft-deletes the stale
   same-day embedding before inserting (one live summary vector per day).
 
+**V2.3 (`mezo-fnnq.11`) shipped similar-days recall — v2 „emlékszik" is complete:**
+
+- **`find_similar_past_days(description, k)`** joins the V0.5 tool registry (`tools/MemoryTools`,
+  wrapped + audited like every tool): embeds the query (`EmbeddingPort.embedQuery`), ANN-searches
+  the **daily-summary** vectors (kind-scoped — the tool answers about past DAYS; chat-turn vectors
+  stay for a later always-on recall layer), and re-ranks in code by
+  **`similarity × exp(-age/τ)`** (`MemoryRecallService` — cosine alone is time-blind, spec §7).
+- **Honest floor** — matches under `recall.min-similarity` are dropped (a weak cosine match is
+  noise, not a memory); an empty result renders `nincs adat`, never a fabricated resemblance.
+- **Chips carry the recalled days** — each recalled day adds a `Memory`/date ref to the turn's
+  audit, so the FE shows what got remembered (no FE change — the `MessageRef` envelope flows).
+- Tool-only recall for now: auto-recall-on-every-turn stays deferred until it earns its latency
+  (roadmap decision).
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -206,13 +221,15 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 | Advisor chain (never-ask-twice + self-check) | ✅ V1.3 | Clinical regex + LLM verdict, retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
-| RAG recall / patterns | ❌ deferred | V2.3 (`find_similar_past_days` tool), V3.x (patterns). |
+| Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
+| Patterns | ❌ deferred | V3.1–V3.3 (`mezo-fnnq.12`–`.14`). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
 `mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI) +
 `mezo-fnnq.8` (advisors + degraded + reinforcement) + `mezo-fnnq.9` (pgvector + embedding port) +
 `mezo-fnnq.10` (daily summaries + embed pipeline; plan
-[`2026-07-03-companion-v22-daily-summaries.md`](../superpowers/plans/2026-07-03-companion-v22-daily-summaries.md)).
+[`2026-07-03-companion-v22-daily-summaries.md`](../superpowers/plans/2026-07-03-companion-v22-daily-summaries.md)) +
+`mezo-fnnq.11` (similar-days recall).
 **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
@@ -531,7 +548,8 @@ V0.5** on tool-using turns; a tool-less turn's null envelope still maps to `[]`,
 `CompanionMapper.toTools/toRefs`; `degraded` required boolean since V1.3 — always false on user
 rows), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
 carries the args baked in — `get_sleep(days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
-`Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`),
+`Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`, and since
+V2.3 `Memory` — a recalled day's date),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
@@ -549,6 +567,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_protocol_adherence(days)` | `ProtocolService.getView().getActive()` + intake since-date finder (new) → per-day taken/expected + total % | `Protocol`/`v{n}` |
 | `get_goal_progress()` | active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept | `Goal`/title |
 | `get_reta_cycle()` | `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due | `Medication`/name |
+| `find_similar_past_days(description, k)` (V2.3) | `MemoryRecallService.recallSimilarDays` — query embed → ANN over daily-summary vectors → similarity × recency-decay re-rank | `Memory`/date (≤k) |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)
 
@@ -596,6 +615,14 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   checks and self-heals each night (idempotent catch-up doubles as backfill).
 - Job switch `mezo.techcore.cron.daily-summary-job.enabled` (`DAILY_SUMMARY_JOB_SWITCH`) — off ⇒
   the `DailySummaryJob` bean does not exist.
+- `mezo.companion.recall.decay-days` = **90** (`@Min(1) @Max(365)`) — τ: how fast an old day's
+  relevance fades in the V2.3 recall ranking.
+- `mezo.companion.recall.max-k` = **5** (`@Min(1) @Max(10)`) — upper clamp for the recall tool's
+  `k` arg.
+- `mezo.companion.recall.min-similarity` = **0.25** (0..1) — raw-cosine floor; below it a match
+  is noise, not a memory.
+- `mezo.companion.recall.candidate-pool` = **20** (`@Min(1) @Max(100)`) — ANN candidates fetched
+  before the decay re-rank.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ## 5. Integrations
@@ -689,9 +716,12 @@ finders filtered to the day, `FuelDayService.getDay(date)`, sleep/check-in by-da
 plain finder in the owning feature (`WeightLogRepository.findFirstBy…AndDate…` — the V0.3/V0.5
 precedent). The nightly job iterates `AppUserRepository.findAll()` (companion → auth read).
 
+**V2.3 recall seam (✅ wired).** `find_similar_past_days` is companion-internal (tools →
+`MemoryRecallService` → the V2.1 repository + V2.1 `EmbeddingPort`) — no new cross-feature reads.
+
 **Named future seams:**
-- **V2.3** `find_similar_past_days` joins the tool registry over the now-filling
-  `memory_embedding`; **V3.x** pattern engine — see the roadmap dependency graph.
+- **V3.x** pattern engine (`pattern` table → Inbox → promotion into `knowledge_fact`) — see the
+  roadmap dependency graph.
 
 ## 6. How to use it (consume)
 

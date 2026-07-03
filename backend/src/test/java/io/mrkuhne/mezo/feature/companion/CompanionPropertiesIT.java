@@ -61,6 +61,14 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRecallConfig_shouldBindRankingKnobsFromYaml_whenContextStarts() {
+        assertThat(properties.recall().decayDays()).isEqualTo(90);
+        assertThat(properties.recall().maxK()).isEqualTo(5);
+        assertThat(properties.recall().minSimilarity()).isEqualTo(0.25);
+        assertThat(properties.recall().candidatePool()).isEqualTo(20);
+    }
+
+    @Test
     void testToolsConfig_shouldBindToolTunablesFromYaml_whenContextStarts() {
         assertThat(properties.tools().maxCallsPerTurn()).isEqualTo(6);
         assertThat(properties.tools().maxWindowDays()).isEqualTo(30);
