@@ -6,10 +6,14 @@ import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.MessageTool;
+import io.mrkuhne.mezo.api.dto.PatternCritique;
+import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.LearnedFactEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternCritiqueEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import org.mapstruct.Mapper;
@@ -40,6 +44,34 @@ public interface CompanionMapper {
                 .tools(toTools(entity.getToolCalls()))
                 .refs(toRefs(entity.getRefs()))
                 .degraded(entity.isDegraded())
+                .build();
+    }
+
+    default PatternResponse toPatternResponse(PatternEntity entity) {
+        return PatternResponse.builder()
+                .id(entity.getId())
+                .kind(entity.getKind())
+                .category(entity.getCategory())
+                .categoryLabel(entity.getCategoryLabel())
+                .title(entity.getTitle())
+                .mechanism(entity.getMechanism())
+                .evidence(entity.getEvidence() == null ? List.of() : entity.getEvidence().items())
+                .confidence(entity.getConfidence() == null ? null : entity.getConfidence().doubleValue())
+                .critique(toCritique(entity.getCritique()))
+                .status(entity.getStatus())
+                .lastDetectedAt(toOffset(entity.getLastDetectedAt()))
+                .build();
+    }
+
+    default PatternCritique toCritique(PatternCritiqueEnvelope envelope) {
+        if (envelope == null) {
+            return null;
+        }
+        return PatternCritique.builder()
+                .statistical(envelope.statistical())
+                .confounders(envelope.confounders())
+                .l3align(envelope.l3align())
+                .actionability(envelope.actionability())
                 .build();
     }
 

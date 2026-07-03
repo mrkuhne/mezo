@@ -70,6 +70,19 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testPatternsConfig_shouldBindCatalogFromYaml_whenContextStarts() {
+        assertThat(properties.patterns().cron()).isEqualTo("0 40 2 * * *");
+        assertThat(properties.patterns().lookbackDays()).isEqualTo(60);
+        assertThat(properties.patterns().minN()).isEqualTo(8);
+        assertThat(properties.patterns().pairs()).hasSize(8);
+        assertThat(properties.patterns().pairs().getFirst().key())
+                .isEqualTo("sleep-quality~next-day-training-rpe");
+        assertThat(properties.patterns().pairs().getFirst().metricA())
+                .isEqualTo(io.mrkuhne.mezo.feature.companion.service.MetricKey.SLEEP_QUALITY);
+        assertThat(properties.patterns().pairs().getFirst().lagDays()).isEqualTo(1);
+    }
+
+    @Test
     void testToolsConfig_shouldBindToolTunablesFromYaml_whenContextStarts() {
         assertThat(properties.tools().maxCallsPerTurn()).isEqualTo(6);
         assertThat(properties.tools().maxWindowDays()).isEqualTo(30);

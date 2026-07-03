@@ -1073,6 +1073,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/pattern": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The pattern inbox (V3.1) — detected correlations, strongest/newest first */
+        get: operations["listPatterns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/pattern/{patternId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Judge a pattern (V3.1, L2 surface) — confirm/monitor/reject. Unlike fact candidates a pattern is a standing judgement: transitions between the three user states are repeatable. */
+        post: operations["decidePattern"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/message/stream": {
         parameters: {
             query?: never;
@@ -2447,6 +2481,47 @@ export interface components {
         StreamError: {
             /** @description Stream failure code — 'COMPANION_STREAM_FAILED'. */
             code: string;
+        };
+        PatternResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM loop (V3.2). */
+            kind: string;
+            /** @description The FE PatternCategory — assigned by the metric-pair catalog. */
+            category: string;
+            /** @description Hungarian category chip label. */
+            categoryLabel: string;
+            title: string;
+            /** @description Deterministic HU description for statistical rows; LLM mechanism for V3.2 hypotheses. */
+            mechanism?: string | null;
+            /** @description Deterministic evidence chips (r=…, n=… nap, p=…, window). */
+            evidence: string[];
+            /**
+             * Format: double
+             * @description NULL for statistical rows (honest small-n — the FE renders "tanulom"); the 4-factor critique score for V3.2 hypotheses.
+             */
+            confidence?: number | null;
+            critique?: components["schemas"]["PatternCritique"];
+            status: string;
+            /**
+             * Format: date-time
+             * @description When the nightly job last computed/refreshed the stats.
+             */
+            lastDetectedAt: string;
+        };
+        /** @description The V3.2 4-factor critique (0..1 each) — null until the hypothesis loop lands. */
+        PatternCritique: {
+            /** Format: double */
+            statistical?: number;
+            /** Format: double */
+            confounders?: number;
+            /** Format: double */
+            l3align?: number;
+            /** Format: double */
+            actionability?: number;
+        } | null;
+        PatternDecisionRequest: {
+            decision: string;
         };
     };
     responses: never;
@@ -5792,6 +5867,88 @@ export interface operations {
                 };
             };
             /** @description Candidate not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listPatterns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All live patterns (proposed + monitoring + confirmed + rejected) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatternResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decidePattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patternId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatternDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The pattern with its new status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatternResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Pattern not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

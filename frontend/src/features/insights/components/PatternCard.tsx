@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { patternCategoryColor } from '@/data/insights/insights'
-import type { Pattern, PatternCritique, PatternStatus } from '@/data/types'
+import type { Pattern, PatternCritique, PatternRowStatus, PatternStatus } from '@/data/types'
 
 const CRITIQUE_ROWS: Array<{ lbl: string; key: keyof PatternCritique }> = [
   { lbl: 'Statistical', key: 'statistical' },
@@ -10,18 +10,19 @@ const CRITIQUE_ROWS: Array<{ lbl: string; key: keyof PatternCritique }> = [
   { lbl: 'Actionability', key: 'actionability' },
 ]
 
-function statusLabel(s: PatternStatus): string {
-  return s === 'confirm' ? '✓ Megerősítve' : s === 'monitor' ? '◐ Megfigyelve' : '✗ Elutasítva'
+function statusLabel(s: PatternRowStatus): string | null {
+  return s === 'confirmed' ? '✓ Megerősítve' : s === 'monitoring' ? '◐ Megfigyelve' : s === 'rejected' ? '✗ Elutasítva' : null
 }
 
 function critiqueColor(v: number): string {
   return v > 0.8 ? 'var(--success)' : v > 0.7 ? 'var(--brand-primary)' : 'var(--warning)'
 }
 
-export function PatternCard({ pattern }: { pattern: Pattern }) {
+export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?: (d: PatternStatus) => void }) {
   const [expanded, setExpanded] = useState(false)
-  const [status, setStatus] = useState<PatternStatus | null>(null)
   const catColor = patternCategoryColor(pattern.category)
+  const status = pattern.status ?? 'proposed'
+  const badge = statusLabel(status)
 
   return (
     <div className="card notch-12" style={{ padding: 16, position: 'relative', overflow: 'hidden' }}>
@@ -35,9 +36,11 @@ export function PatternCard({ pattern }: { pattern: Pattern }) {
           >
             {pattern.categoryLabel}
           </span>
-          <span className="eyebrow text-tertiary">conf {(pattern.confidence * 100).toFixed(0)}%</span>
+          <span className="eyebrow text-tertiary">
+            {pattern.confidence != null ? `conf ${(pattern.confidence * 100).toFixed(0)}%` : 'tanulom'}
+          </span>
         </div>
-        {status && <span className="chip brand" style={{ fontSize: 9 }}>{statusLabel(status)}</span>}
+        {badge && <span className="chip brand" style={{ fontSize: 9 }}>{badge}</span>}
       </div>
 
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 17, marginTop: 10, lineHeight: 1.2, color: 'var(--text-primary)' }}>
@@ -46,22 +49,24 @@ export function PatternCard({ pattern }: { pattern: Pattern }) {
 
       <p className="text-secondary mt-md" style={{ fontSize: 13, lineHeight: 1.5 }}>{pattern.mechanism}</p>
 
-      <div className="critique-grid">
-        {CRITIQUE_ROWS.map((c) => {
-          const val = pattern.critique[c.key]
-          return (
-            <div key={c.key} className="col gap-xs">
-              <div className="row" style={{ justifyContent: 'space-between' }}>
-                <span className="lbl">{c.lbl}</span>
-                <span className="lbl" style={{ color: 'var(--text-primary)' }}>{val.toFixed(2)}</span>
+      {pattern.critique && (
+        <div className="critique-grid">
+          {CRITIQUE_ROWS.map((c) => {
+            const val = pattern.critique![c.key]
+            return (
+              <div key={c.key} className="col gap-xs">
+                <div className="row" style={{ justifyContent: 'space-between' }}>
+                  <span className="lbl">{c.lbl}</span>
+                  <span className="lbl" style={{ color: 'var(--text-primary)' }}>{val.toFixed(2)}</span>
+                </div>
+                <div className="bar">
+                  <div className="bar-fill" style={{ width: `${val * 100}%`, background: critiqueColor(val) }} />
+                </div>
               </div>
-              <div className="bar">
-                <div className="bar-fill" style={{ width: `${val * 100}%`, background: critiqueColor(val) }} />
-              </div>
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      )}
 
       <div className="row gap-xs flex-wrap mt-md">
         {pattern.evidence.map((e, i) => (
@@ -89,25 +94,25 @@ export function PatternCard({ pattern }: { pattern: Pattern }) {
       <div className="row gap-sm mt-lg" style={{ paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
         <button
           type="button"
-          onClick={() => setStatus('confirm')}
+          onClick={() => onDecide?.('confirm')}
           className="cta-ghost notch-4 flex-1"
-          style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'confirm' ? 'rgba(52, 211, 153, 0.1)' : 'transparent', borderColor: status === 'confirm' ? 'var(--success)' : 'var(--border-strong)' }}
+          style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'confirmed' ? 'rgba(52, 211, 153, 0.1)' : 'transparent', borderColor: status === 'confirmed' ? 'var(--success)' : 'var(--border-strong)' }}
         >
-          <Icon name="check" size={12} color={status === 'confirm' ? 'var(--success)' : undefined} /> Confirm
+          <Icon name="check" size={12} color={status === 'confirmed' ? 'var(--success)' : undefined} /> Confirm
         </button>
         <button
           type="button"
-          onClick={() => setStatus('monitor')}
+          onClick={() => onDecide?.('monitor')}
           className="cta-ghost notch-4 flex-1"
-          style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'monitor' ? 'rgba(245, 158, 11, 0.1)' : 'transparent', borderColor: status === 'monitor' ? 'var(--warning)' : 'var(--border-strong)' }}
+          style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'monitoring' ? 'rgba(245, 158, 11, 0.1)' : 'transparent', borderColor: status === 'monitoring' ? 'var(--warning)' : 'var(--border-strong)' }}
         >
           Monitor
         </button>
         <button
           type="button"
-          onClick={() => setStatus('reject')}
+          onClick={() => onDecide?.('reject')}
           className="cta-ghost notch-4 flex-1"
-          style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'reject' ? 'rgba(244, 63, 94, 0.1)' : 'transparent', borderColor: status === 'reject' ? 'var(--error)' : 'var(--border-strong)' }}
+          style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'rejected' ? 'rgba(244, 63, 94, 0.1)' : 'transparent', borderColor: status === 'rejected' ? 'var(--error)' : 'var(--border-strong)' }}
         >
           Reject
         </button>

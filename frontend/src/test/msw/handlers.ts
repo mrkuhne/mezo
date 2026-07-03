@@ -2,6 +2,7 @@ import { http, HttpResponse } from 'msw'
 import { API_BASE } from '@/data/_client/api'
 import { initialChat, cannedReply } from '@/data/insights/chat'
 import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
+import { patterns as patternSeed } from '@/data/insights/insights'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -490,6 +491,43 @@ export const handlers = [
       })),
     ),
   ),
+  // Companion patterns (V3.1) — wire fixtures mirror the mock seeds (proposed, hypothesis-shaped).
+  http.get(`${API_BASE}/api/companion/pattern`, () =>
+    HttpResponse.json(
+      patternSeed.map((p) => ({
+        id: p.id,
+        kind: 'ai_hypothesis',
+        category: p.category,
+        categoryLabel: p.categoryLabel,
+        title: p.title,
+        mechanism: p.mechanism,
+        evidence: p.evidence,
+        confidence: p.confidence,
+        critique: p.critique,
+        status: 'proposed',
+        lastDetectedAt: '2026-07-03T02:40:00Z',
+      })),
+    ),
+  ),
+  http.post(`${API_BASE}/api/companion/pattern/:id/decision`, async ({ params, request }) => {
+    const body = (await request.json()) as { decision: 'confirm' | 'monitor' | 'reject' }
+    const p = patternSeed.find((x) => x.id === params.id)
+    if (!p) return HttpResponse.json([{ code: 'COMPANION_PATTERN_NOT_FOUND' }], { status: 404 })
+    const status = body.decision === 'confirm' ? 'confirmed' : body.decision === 'monitor' ? 'monitoring' : 'rejected'
+    return HttpResponse.json({
+      id: p.id,
+      kind: 'ai_hypothesis',
+      category: p.category,
+      categoryLabel: p.categoryLabel,
+      title: p.title,
+      mechanism: p.mechanism,
+      evidence: p.evidence,
+      confidence: p.confidence,
+      critique: p.critique,
+      status,
+      lastDetectedAt: '2026-07-03T02:40:00Z',
+    })
+  }),
   http.patch(`${API_BASE}/api/companion/fact/:id`, async ({ params, request }) => {
     const body = (await request.json()) as { includeInPrompt?: boolean; factText?: string; category?: string }
     const fact = knowledgeSeed.find((f) => f.id === params.id)
