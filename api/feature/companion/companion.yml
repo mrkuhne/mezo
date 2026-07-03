@@ -187,6 +187,62 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/fact/candidate:
+    get:
+      tags: [Companion]
+      operationId: listFactCandidates
+      summary: Pending (undecided) extraction candidates, newest first (V1.2)
+      responses:
+        '200':
+          description: Pending candidates awaiting an explicit L2 decision
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/FactCandidateResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/fact/candidate/{candidateId}/decision:
+    post:
+      tags: [Companion]
+      operationId: decideFactCandidate
+      summary: >-
+        Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact (source=chat),
+        reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent.
+      parameters:
+        - name: candidateId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FactDecisionRequest' }
+      responses:
+        '200':
+          description: The decided candidate (promotedFactId set on accept/refine)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FactCandidateResponse' }
+        '400':
+          description: Validation error / candidate already decided
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Candidate not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/companion/conversation/{conversationId}/message/stream:
     post:
       tags: [CompanionStream]
@@ -305,6 +361,23 @@ components:
         factText: { type: string, minLength: 1, maxLength: 500, nullable: true }
         category: { type: string, pattern: '^(train|fuel|health|life)$', nullable: true }
         includeInPrompt: { type: boolean, nullable: true }
+    FactCandidateResponse:
+      type: object
+      required: [id, candidateText, category, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        candidateText: { type: string }
+        category: { type: string, description: "'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time" }
+        userDecision: { type: string, nullable: true, description: "'accept' | 'reject' | 'refine' — null while pending" }
+        refinedText: { type: string, nullable: true, description: 'The user-edited wording when the decision was refine.' }
+        promotedFactId: { type: string, format: uuid, nullable: true, description: 'The knowledge fact this candidate was promoted into (accept/refine).' }
+        createdAt: { type: string, format: date-time }
+    FactDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, pattern: '^(accept|reject|refine)$' }
+        refinedText: { type: string, minLength: 1, maxLength: 500, nullable: true, description: 'Required when decision is refine — the corrected fact wording.' }
     StreamDelta:
       type: object
       required: [text]
