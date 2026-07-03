@@ -468,9 +468,13 @@ export const handlers = [
       start(controller) {
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(0, mid) })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(mid) })))
+        // V0.5: the done event carries the persisted assistant row's REAL chips — name bakes
+        // the args in ("get_sleep(days=3)"), refs are the tool-contributed data references
         controller.enqueue(encoder.encode(frame('done', {
           id: 'msg-done', role: 'assistant', content: reply,
-          createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [],
+          createdAt: '2026-07-03T07:00:05Z',
+          tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+          refs: [{ kind: 'Sleep', id: '2026-07-02' }],
         })))
         controller.close()
       },

@@ -58,6 +58,9 @@ describe('ChatPage (real mode)', () => {
     // appended cache pair when the stream completes, so a captured node can go stale.
     await waitFor(() => expect(screen.getByText('Fáradt vagyok')).toBeInTheDocument())
     await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+    // V0.5: the persisted reply renders its REAL tool chip + ref tag (from the done event)
+    expect(screen.getByText('get_sleep(days=3)')).toBeInTheDocument()
+    expect(screen.getByText(/\[Sleep\]/)).toBeInTheDocument()
   })
 
   test('renders the honest degraded state when the companion switch is off', async () => {
