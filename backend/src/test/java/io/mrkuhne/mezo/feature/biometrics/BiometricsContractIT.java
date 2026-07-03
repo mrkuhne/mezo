@@ -2,8 +2,10 @@ package io.mrkuhne.mezo.feature.biometrics;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.LogSleepRequest;
 import io.mrkuhne.mezo.api.dto.LogWeightRequest;
 import io.mrkuhne.mezo.api.dto.SaveCheckInRequest;
+import io.mrkuhne.mezo.api.dto.SleepLogResponse;
 import io.mrkuhne.mezo.api.dto.WeightLogResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.api.dto.CheckInResponse;
@@ -33,6 +35,42 @@ class BiometricsContractIT extends ApiIntegrationTest {
             getForList("/api/biometrics/weight", headers, HttpStatus.OK, WeightLogResponse.class);
         assertThat(all).hasSize(1);
         assertThat(all.get(0).getId()).isEqualTo(created.getId());
+    }
+
+    @Test
+    void testLogSleep_shouldRoundTrip_whenPostedViaContract() {
+        HttpHeaders headers = ownerAuthHeaders();
+        SleepLogResponse created = postForBody("/api/biometrics/sleep",
+            LogSleepRequest.builder()
+                .date(LocalDate.parse("2026-06-11"))
+                .bedtime("23:10")
+                .wakeup("06:45")
+                .durationH(new BigDecimal("7.58"))
+                .quality(8)
+                .build(),
+            headers, HttpStatus.CREATED, SleepLogResponse.class);
+        assertThat(created.getQuality()).isEqualTo(8);
+
+        List<SleepLogResponse> all =
+            getForList("/api/biometrics/sleep", headers, HttpStatus.OK, SleepLogResponse.class);
+        assertThat(all).hasSize(1);
+        assertThat(all.get(0).getId()).isEqualTo(created.getId());
+    }
+
+    @Test
+    void testLogSleep_shouldReturn400FieldError_whenQualityOutOfRange() {
+        String body = postForBody("/api/biometrics/sleep",
+            LogSleepRequest.builder()
+                .date(LocalDate.parse("2026-06-11"))
+                .quality(0)   // spec: minimum 1 -> generated @Min -> FIELD error
+                .build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "quality", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testSleepEndpoints_shouldReturn401_whenNoToken() {
+        getForBody("/api/biometrics/sleep", null, HttpStatus.UNAUTHORIZED, Void.class);
     }
 
     @Test

@@ -40,7 +40,7 @@ class GymScheduleContractIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testPutGymSchedule_shouldReplaceAll_andReturnOrdered() {
+    void testPutGymSchedule_shouldReplaceAllOrdered_whenFullListPut() {
         HttpHeaders auth = ownerAuthHeaders();
 
         List<GymScheduleSlotResponse> put =

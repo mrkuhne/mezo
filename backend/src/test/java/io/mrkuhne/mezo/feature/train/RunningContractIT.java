@@ -130,7 +130,7 @@ class RunningContractIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testCreateRunningBlock_shouldDeriveCurrentWeekFromStartDate_ignoringClientValue() {
+    void testCreateRunningBlock_shouldDeriveCurrentWeekFromStartDate_whenClientSendsOwnValue() {
         HttpHeaders auth = ownerAuthHeaders();
 
         // A plan starting today is on week 1 — the bogus client currentWeek (5) is ignored.

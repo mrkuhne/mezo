@@ -17,7 +17,7 @@ class MedicationMapperTest {
     final MedicationMapper m = org.mapstruct.factory.Mappers.getMapper(MedicationMapper.class);
 
     @Test
-    void testToCycleResponse_shouldMapWeekAndCurrent() {
+    void testToCycleResponse_shouldMapWeekAndCurrent_whenCycleActive() {
         var cycle = new MedicationCycle(3, "stable", "Stabil",
             java.time.Instant.parse("2026-06-22T00:00:00Z"),
             java.util.List.of(new MedicationCycle.Cell(1, "peak", "Peak", false),
