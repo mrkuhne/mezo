@@ -13,7 +13,8 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "mezo.companion")
 public record CompanionProperties(
     @NotNull @Valid Llm llm,
-    @NotNull @Valid Chat chat
+    @NotNull @Valid Chat chat,
+    @NotNull @Valid Snapshot snapshot
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -27,5 +28,13 @@ public record CompanionProperties(
         @Min(0) @Max(200) int historyWindow,
         /** Auto-title = first user message truncated to this many chars (DB column caps at 120). */
         @Min(10) @Max(120) int titleMaxChars
+    ) {}
+
+    /** Context-snapshot (V0.3) windows — how much of "today" the system prompt carries. */
+    public record Snapshot(
+        /** How many days back the train digest (gym/sport/run counts) looks, including today. */
+        @Min(1) @Max(30) int digestDays,
+        /** The latest check-in note is included verbatim, truncated to this many characters. */
+        @Min(0) @Max(1000) int checkinNoteMaxChars
     ) {}
 }
