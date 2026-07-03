@@ -952,6 +952,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/conversation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the owner's conversations, most recently active first */
+        get: operations["listConversations"];
+        put?: never;
+        /** Start a new, empty conversation (title is set by the first message) */
+        post: operations["createConversation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/conversation/{conversationId}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Full message history of one conversation, oldest first */
+        get: operations["listMessages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/conversation/{conversationId}/message": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a user message and get the assistant's answer (sync JSON — V0.2; SSE arrives in V0.4) */
+        post: operations["sendMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2214,6 +2266,41 @@ export interface components {
         };
         IntakeListResponse: {
             intakes: components["schemas"]["IntakeResponse"][];
+        };
+        ConversationResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description Null until the first user message; then that message truncated. */
+            title?: string | null;
+            /** Format: date-time */
+            startedAt: string;
+            /** Format: date-time */
+            lastMessageAt?: string | null;
+        };
+        MessageResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description 'user' | 'assistant' */
+            role: string;
+            content: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Tool calls behind this answer — always empty until V0.5. */
+            tools: components["schemas"]["MessageTool"][];
+            /** @description Data references backing this answer — always empty until V0.5. */
+            refs: components["schemas"]["MessageRef"][];
+        };
+        MessageTool: {
+            /** @description 'read' | 'compute' (mirrors the FE ToolType) */
+            type: string;
+            name: string;
+        };
+        MessageRef: {
+            kind: string;
+            id: string;
+        };
+        SendMessageRequest: {
+            content: string;
         };
     };
     responses: never;
@@ -5202,6 +5289,157 @@ export interface operations {
                 };
             };
             /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listConversations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Conversations ordered by last activity (newest first) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The created conversation */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Messages in chronological order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    sendMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description The persisted assistant message */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

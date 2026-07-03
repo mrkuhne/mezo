@@ -1,0 +1,146 @@
+openapi: 3.0.3
+info: { title: '', version: '' }
+tags:
+  - name: Companion
+    description: Phase-3 companion chat — conversations + messages (mezo-fnnq)
+paths:
+  /api/companion/conversation:
+    get:
+      tags: [Companion]
+      operationId: listConversations
+      summary: List the owner's conversations, most recently active first
+      responses:
+        '200':
+          description: Conversations ordered by last activity (newest first)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ConversationResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    post:
+      tags: [Companion]
+      operationId: createConversation
+      summary: Start a new, empty conversation (title is set by the first message)
+      responses:
+        '201':
+          description: The created conversation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConversationResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/conversation/{conversationId}/messages:
+    get:
+      tags: [Companion]
+      operationId: listMessages
+      summary: Full message history of one conversation, oldest first
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Messages in chronological order
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MessageResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/conversation/{conversationId}/message:
+    post:
+      tags: [Companion]
+      operationId: sendMessage
+      summary: Send a user message and get the assistant's answer (sync JSON — V0.2; SSE arrives in V0.4)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SendMessageRequest' }
+      responses:
+        '200':
+          description: The persisted assistant message
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessageResponse' }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    ConversationResponse:
+      type: object
+      required: [id, startedAt]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string, nullable: true, maxLength: 120, description: 'Null until the first user message; then that message truncated.' }
+        startedAt: { type: string, format: date-time }
+        lastMessageAt: { type: string, format: date-time, nullable: true }
+    MessageResponse:
+      type: object
+      required: [id, role, content, createdAt, tools, refs]
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string, description: "'user' | 'assistant'" }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+        tools:
+          type: array
+          description: Tool calls behind this answer — always empty until V0.5.
+          items: { $ref: '#/components/schemas/MessageTool' }
+        refs:
+          type: array
+          description: Data references backing this answer — always empty until V0.5.
+          items: { $ref: '#/components/schemas/MessageRef' }
+    MessageTool:
+      type: object
+      required: [type, name]
+      properties:
+        type: { type: string, description: "'read' | 'compute' (mirrors the FE ToolType)" }
+        name: { type: string }
+    MessageRef:
+      type: object
+      required: [kind, id]
+      properties:
+        kind: { type: string }
+        id: { type: string }
+    SendMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 4000 }
