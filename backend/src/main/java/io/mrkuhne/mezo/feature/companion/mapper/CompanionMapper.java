@@ -60,6 +60,7 @@ public interface CompanionMapper {
                 .critique(toCritique(entity.getCritique()))
                 .status(entity.getStatus())
                 .lastDetectedAt(toOffset(entity.getLastDetectedAt()))
+                .thinking(entity.getCritique() == null ? null : entity.getCritique().reasoning())
                 .build();
     }
 

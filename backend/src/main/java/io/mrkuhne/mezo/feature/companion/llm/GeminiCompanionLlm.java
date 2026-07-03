@@ -27,12 +27,23 @@ import java.util.Map;
 public class GeminiCompanionLlm implements CompanionLlm {
 
     private final ChatClient chatClient;
+    private final ChatClient smartChatClient;
 
     public GeminiCompanionLlm(ChatModel chatModel, CompanionProperties companionProperties) {
         this.chatClient = ChatClient.builder(chatModel)
             .defaultOptions(ChatOptions.builder()
                 .model(companionProperties.llm().chatModel()))
             .build();
+        // V3.2: the smart tier (llm.smart-model) — weekly pipelines only, never chat turns
+        this.smartChatClient = ChatClient.builder(chatModel)
+            .defaultOptions(ChatOptions.builder()
+                .model(companionProperties.llm().smartModel()))
+            .build();
+    }
+
+    @Override
+    public String completeSmart(String systemPrompt, String userMessage) {
+        return smartChatClient.prompt().system(systemPrompt).user(userMessage).call().content();
     }
 
     @Override

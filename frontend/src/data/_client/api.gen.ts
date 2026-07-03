@@ -2508,6 +2508,8 @@ export interface components {
              * @description When the nightly job last computed/refreshed the stats.
              */
             lastDetectedAt: string;
+            /** @description The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete'; null on statistical rows. */
+            thinking?: string | null;
         };
         /** @description The V3.2 4-factor critique (0..1 each) — null until the hypothesis loop lands. */
         PatternCritique: {

@@ -83,6 +83,14 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testHypothesesConfig_shouldBindLoopKnobsFromYaml_whenContextStarts() {
+        assertThat(properties.hypotheses().cron()).isEqualTo("0 0 3 * * SUN");
+        assertThat(properties.hypotheses().maxPerRun()).isEqualTo(3);
+        assertThat(properties.hypotheses().keepThreshold()).isEqualTo(0.75);
+        assertThat(properties.hypotheses().reviseThreshold()).isEqualTo(0.50);
+    }
+
+    @Test
     void testToolsConfig_shouldBindToolTunablesFromYaml_whenContextStarts() {
         assertThat(properties.tools().maxCallsPerTurn()).isEqualTo(6);
         assertThat(properties.tools().maxWindowDays()).isEqualTo(30);

@@ -227,6 +227,27 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   PatternCard's decision buttons persist, critique bars render only when present (V3.2),
   degraded card on switch-off 404.
 
+**V3.2 (`mezo-fnnq.13`) shipped the AI hypothesis loop — propose → critique → revise:**
+
+- **The weekly smart-tier pipeline** — `HypothesisPipelineService` (cron `HypothesisJob`, Sunday
+  03:00, switch `mezo.techcore.cron.hypothesis-job.enabled`): gather (last-7 daily-summary
+  narratives + confirmed-facts block + the live statistical patterns' r/n/p — grounded
+  statistical support) → **propose** (strict-JSON, `llm.smart-model` — the Pro tier's debut) →
+  **critique** per hypothesis (4-factor 0..1 + prose reasoning) → **score**
+  (`0.35·stat + 0.25·conf + 0.20·l3align + 0.20·act`, arch §4.7 — weights are code) → route:
+  keep ≥ `keep-threshold` (0.75) · revise ONCE ≥ `revise-threshold` (0.50) then re-critique ·
+  else discard. Every stage pure-compute or pure-LLM (NFR-M-4); defensive JSON parsing all the
+  way down (broken answer = zero survivors).
+- **Survivors join the V3.1 Inbox** as `kind=ai_hypothesis` rows: `confidence` = the weighted
+  score, critique jsonb attached (+`reasoning`), `r/n/p` null. Identity =
+  `"hyp-" + hash(normalized title)` — an existing row in ANY status is never re-proposed
+  (rejected stays rejected). The FE renders them with the existing critique grid + confidence.
+- **`thinking` on the wire** — additive `PatternResponse.thinking` = the critic's prose
+  reasoning (the card's "AI gondolatmenete"); rides the critique envelope, no migration.
+- **Port grew a smart tier** — `CompanionLlm.completeSmart` (default = cheap tier;
+  `GeminiCompanionLlm` builds a second ChatClient on `llm.smart-model`; the fake keeps one
+  marker dispatch).
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -244,7 +265,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Statistical patterns + Inbox | ✅ V3.1 | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`). |
-| Hypothesis loop / promotion | ❌ deferred | V3.2 (`mezo-fnnq.13`), V3.3 (`mezo-fnnq.14`). |
+| AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
+| Pattern → fact promotion | ❌ deferred | V3.3 (`mezo-fnnq.14`) — the epic's last slice. |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
 `mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI) +
@@ -252,7 +274,9 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 `mezo-fnnq.10` (daily summaries + embed pipeline; plan
 [`2026-07-03-companion-v22-daily-summaries.md`](../superpowers/plans/2026-07-03-companion-v22-daily-summaries.md)) +
 `mezo-fnnq.11` (similar-days recall) + `mezo-fnnq.12` (statistical patterns + Inbox; plan
-[`2026-07-04-companion-v31-statistical-patterns.md`](../superpowers/plans/2026-07-04-companion-v31-statistical-patterns.md)).
+[`2026-07-04-companion-v31-statistical-patterns.md`](../superpowers/plans/2026-07-04-companion-v31-statistical-patterns.md)) +
+`mezo-fnnq.13` (hypothesis loop; plan
+[`2026-07-04-companion-v32-hypothesis-loop.md`](../superpowers/plans/2026-07-04-companion-v32-hypothesis-loop.md)).
 **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
@@ -657,6 +681,11 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 - `mezo.companion.patterns.pairs` = the 8-pair catalog (`@NotEmpty`, each
   `{key, category, label, title, metric-a, metric-b, lag-days}`) — pair keys are pattern identity
   (never rename a live key); metrics come from the `MetricKey` enum.
+- `mezo.companion.hypotheses.cron` = `"0 0 3 * * SUN"` — the V3.2 weekly loop; switch
+  `mezo.techcore.cron.hypothesis-job.enabled` (`HYPOTHESIS_JOB_SWITCH`).
+- `mezo.companion.hypotheses.max-per-run` = **3** (`@Min(1) @Max(10)`) — hypotheses judged per run.
+- `mezo.companion.hypotheses.keep-threshold` = **0.75** / `revise-threshold` = **0.50** (0..1) —
+  the arch §4.7 routing thresholds; the four WEIGHTS are code constants (they define the score).
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ## 5. Integrations
@@ -759,9 +788,8 @@ cycle/water/weight/check-in) — zero new cross-feature finders; `PatternsPage` 
 `usePatterns`/`usePatternActions` from `@/data/hooks` ([`insights.md`](insights.md) §2.1).
 
 **Named future seams:**
-- **V3.2** weekly hypothesis loop fills `critique`/`confidence` on `kind=ai_hypothesis` rows;
-  **V3.3** confirm-promotion into `knowledge_fact` + recurrence reinforcement — the last two
-  slices of the epic.
+- **V3.3** confirm-promotion into `knowledge_fact` (source=`pattern`) + recurrence reinforcement
+  + in-chat acknowledgment — the epic's last slice.
 
 ## 6. How to use it (consume)
 

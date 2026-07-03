@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
+import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -57,6 +58,18 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SUMMARY_SENTINEL =
             Pattern.compile("\\[fake-summary:([^\\]]*)]", Pattern.DOTALL);
 
+    /** Scripted hypotheses (V3.2): {@code [fake-hypotheses:<json-array>]} in the weekly context. */
+    public static final Pattern HYPOTHESES_SENTINEL =
+            Pattern.compile("\\[fake-hypotheses:(\\[.*?\\])]", Pattern.DOTALL);
+
+    /** Scripted critique (V3.2): {@code [fake-critique:{…}]} planted in the hypothesis title. */
+    public static final Pattern CRITIQUE_SENTINEL =
+            Pattern.compile("\\[fake-critique:(\\{.*?\\})]", Pattern.DOTALL);
+
+    /** Scripted revision (V3.2): {@code [fake-revise:{…}]} planted in the hypothesis title. */
+    public static final Pattern REVISE_SENTINEL =
+            Pattern.compile("\\[fake-revise:(\\{.*?\\})]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -71,6 +84,21 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
             return summaryAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
+            Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "[]";
+        }
+        if (systemPrompt.startsWith(HypothesisPipelineService.CRITIQUE_MARKER)) {
+            // sentinels script the HYPOTHESIS under judgement, never the shared weekly context
+            Matcher m = CRITIQUE_SENTINEL.matcher(userMessage.split("KONTEXTUS:", 2)[0]);
+            // default GOOD critique — the keep path is the e2e baseline; script to steer
+            return m.find() ? m.group(1)
+                    : "{\"statistical\":0.8,\"confounders\":0.8,\"l3align\":0.8,\"actionability\":0.8,\"reasoning\":\"rendben\"}";
+        }
+        if (systemPrompt.startsWith(HypothesisPipelineService.REVISE_MARKER)) {
+            Matcher m = REVISE_SENTINEL.matcher(userMessage.split("KONTEXTUS:", 2)[0]);
+            return m.find() ? m.group(1) : "{}";
         }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));

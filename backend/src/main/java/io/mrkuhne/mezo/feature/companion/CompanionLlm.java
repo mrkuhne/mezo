@@ -31,6 +31,15 @@ public interface CompanionLlm {
         return complete(systemPrompt, userMessage, List.of(), Map.of());
     }
 
+    /**
+     * One-shot completion on the SMART tier (V3.2 — the heavy weekly pipelines; ADR 0008 model
+     * tiers). Defaults to the cheap tier so the fake (and any adapter without a smart model)
+     * keeps a single deterministic dispatch path.
+     */
+    default String completeSmart(String systemPrompt, String userMessage) {
+        return complete(systemPrompt, userMessage);
+    }
+
     default Flux<String> stream(String systemPrompt, String userMessage) {
         return stream(systemPrompt, userMessage, List.of(), Map.of());
     }

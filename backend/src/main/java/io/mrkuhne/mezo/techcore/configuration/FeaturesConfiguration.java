@@ -27,4 +27,7 @@ public class FeaturesConfiguration {
 
     /** V3.1 nightly statistical pattern-detection job — techcore cron zone. */
     public static final String PATTERN_DETECTION_JOB_SWITCH = "mezo.techcore.cron.pattern-detection-job.enabled";
+
+    /** V3.2 weekly hypothesis pipeline — techcore cron zone. */
+    public static final String HYPOTHESIS_JOB_SWITCH = "mezo.techcore.cron.hypothesis-job.enabled";
 }
