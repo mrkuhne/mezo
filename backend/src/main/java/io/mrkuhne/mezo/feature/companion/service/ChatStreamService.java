@@ -4,11 +4,14 @@ import io.mrkuhne.mezo.api.dto.SendMessageRequest;
 import io.mrkuhne.mezo.api.dto.StreamDelta;
 import io.mrkuhne.mezo.api.dto.StreamError;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.advisor.AdvisedAnswer;
+import io.mrkuhne.mezo.feature.companion.advisor.CompanionAdvisorChain;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
@@ -41,6 +44,8 @@ public class ChatStreamService {
 
     private final ChatService chatService;
     private final CompanionLlm companionLlm;
+    /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
+    private final ObjectProvider<CompanionAdvisorChain> advisorChain;
     private final CompanionToolRegistry toolRegistry;
 
     public Flux<ServerSentEvent<Object>> streamMessage(
@@ -56,10 +61,24 @@ public class ChatStreamService {
                 .doOnNext(answer::append)
                 .map(chunk -> ServerSentEvent.<Object>builder(
                         StreamDelta.builder().text(chunk).build()).event(EVENT_DELTA).build())
-                .concatWith(Mono.fromCallable(() -> ServerSentEvent.<Object>builder(
-                                chatService.completeTurn(userId, conversationId,
-                                        turn.userMessageId(), turn.userContent(), answer.toString(), audit, false))
-                        .event(EVENT_DONE).build()))
+                .concatWith(Mono.fromCallable(() -> {
+                    // V1.3: post-hoc review — deltas already delivered attempt-1; the done row is
+                    // authoritative (the FE swaps it in), so a corrective retry lands silently here.
+                    String finalAnswer = answer.toString();
+                    boolean degraded = false;
+                    CompanionAdvisorChain chain = advisorChain.getIfAvailable();
+                    if (chain != null) {
+                        AdvisedAnswer advised = chain.review(turn.systemPrompt(), turn.userContent(),
+                                finalAnswer, toolRegistry.callbacks(audit),
+                                toolRegistry.toolContext(userId, audit), audit);
+                        finalAnswer = advised.answer();
+                        degraded = advised.degraded();
+                    }
+                    return ServerSentEvent.<Object>builder(
+                                    chatService.completeTurn(userId, conversationId, turn.userMessageId(),
+                                            turn.userContent(), finalAnswer, audit, degraded))
+                            .event(EVENT_DONE).build();
+                }))
                 .onErrorResume(e -> {
                     log.warn("Companion stream failed for conversation {}", conversationId, e);
                     return Mono.just(ServerSentEvent.<Object>builder(
