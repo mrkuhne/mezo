@@ -1,0 +1,19 @@
+package io.mrkuhne.mezo.feature.companion;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+class CompanionPropertiesIT extends AbstractIntegrationTest {
+
+    @Autowired private CompanionProperties properties;
+
+    @Test
+    void testLlmConfig_shouldBindModelTiersFromYaml_whenContextStarts() {
+        assertThat(properties.llm().chatModel()).isEqualTo("gemini-2.5-flash");
+        assertThat(properties.llm().smartModel()).isEqualTo("gemini-2.5-pro");
+    }
+}

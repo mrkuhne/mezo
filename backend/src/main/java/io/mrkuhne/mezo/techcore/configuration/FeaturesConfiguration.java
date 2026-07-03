@@ -9,4 +9,7 @@ public class FeaturesConfiguration {
 
     /** Gamified progression (post-workout level-up + XP). First production feature switch. */
     public static final String PROGRESSION_SWITCH = "mezo.feature.progression.enabled";
+
+    /** Phase-3 companion (LLM chat + AI memory). Gates every CompanionLlm bean (ADR 0008). */
+    public static final String COMPANION_SWITCH = "mezo.feature.companion.enabled";
 }

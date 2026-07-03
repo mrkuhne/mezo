@@ -98,7 +98,7 @@ Tip: steps 1–3 can be rehearsed locally on **k3d/minikube** with zero VPS cost
 | Public URL | `https://46.225.112.172.sslip.io/` (Let's Encrypt via cert-manager) |
 | Images | `ghcr.io/mrkuhne/mezo-backend:0.0.1`, `ghcr.io/mrkuhne/mezo-frontend:0.0.1` (private; pulled with `ghcr-pull` secret) |
 | Owner login | `owner@mezo.local` / `owner` (demodata seed; baked into the frontend build) |
-| Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed) |
+| Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed). Planned: `GEMINI_API_KEY` joins `mezo-app` + the backend Deployment env when the Phase-3 companion first deploys (ADR 0008) — until then the backend boots on its dummy-key default. |
 
 Local admin access:
 - `kubectl` from the Mac: `export KUBECONFIG=~/.kube/mezo-k3s.yaml` (context `mezo`, server `https://100.75.51.113:6443` over Tailscale).
