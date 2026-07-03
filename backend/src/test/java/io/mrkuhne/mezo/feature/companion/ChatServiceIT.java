@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
+import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
     @Autowired private AiMessagePopulator messagePopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private KnowledgeFactPopulator factPopulator;
 
     private SendMessageRequest request(String content) {
         return SendMessageRequest.builder().content(content).build();
@@ -138,6 +140,37 @@ class ChatServiceIT extends AbstractIntegrationTest {
         assertThat(echoed).contains("[Profil]").contains("[Regeneráció]");
         // the snapshot renders today's date
         assertThat(echoed).contains("pillanatkép — " + java.time.LocalDate.now());
+    }
+
+    @Test
+    void testSendMessage_shouldInjectFactsBetweenSnapshotAndHistory_whenConfirmedFactsExist() {
+        UUID userId = databasePopulator.populateUser("chat-facts@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        messagePopulator.message(conversation, AiMessageEntity.ROLE_USER, "korábbi kérdés");
+        factPopulator.fact(userId, "Laktózérzékeny", "health", 2);
+        factPopulator.fact(userId, "Kikapcsolt tény", "life", 9, false, "manual");
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("mi a helyzet?"));
+
+        String echoed = answer.getContent();
+        int snapshot = echoed.indexOf("AKTUÁLIS ÁLLAPOT");
+        int facts = echoed.indexOf("MEGERŐSÍTETT TÉNYEK");
+        int history = echoed.indexOf("Eddigi beszélgetés");
+        assertThat(snapshot).isPositive();
+        assertThat(facts).isGreaterThan(snapshot);
+        assertThat(history).isGreaterThan(facts);
+        assertThat(echoed).contains("- (egészség) Laktózérzékeny");
+        assertThat(echoed).doesNotContain("Kikapcsolt tény");
+    }
+
+    @Test
+    void testSendMessage_shouldOmitFactsBlock_whenUserHasNoFacts() {
+        UUID userId = databasePopulator.populateUser("chat-no-facts@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        assertThat(answer.getContent()).doesNotContain("MEGERŐSÍTETT TÉNYEK");
     }
 
     @Test

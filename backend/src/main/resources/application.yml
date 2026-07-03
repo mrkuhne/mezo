@@ -112,6 +112,10 @@ mezo:
       max-window-days: 30
       max-trend-weeks: 26
       max-refs-per-turn: 10
+    facts:
+      # V1.1 knowledge facts — how many confirmed facts (by reinforcement count, then newest)
+      # are injected into every chat turn's system prompt
+      top-n: 10
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

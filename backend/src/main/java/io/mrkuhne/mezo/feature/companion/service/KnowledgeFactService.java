@@ -1,0 +1,105 @@
+package io.mrkuhne.mezo.feature.companion.service;
+
+import io.mrkuhne.mezo.api.dto.CreateFactRequest;
+import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
+import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
+import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
+import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+/** V1.1 knowledge facts — CRUD spine + the top-N prompt-injection block (roadmap §V1.1, spec §3 L3). */
+@Service
+@RequiredArgsConstructor
+@ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
+public class KnowledgeFactService {
+
+    /** The injection block header — ChatService inserts it between the context snapshot and the history. */
+    public static final String FACTS_HEADER = "\n\nMEGERŐSÍTETT TÉNYEK Danielről (legfontosabb elöl):\n";
+
+    /** Deterministic Hungarian labels for the category enum — the snapshot's labelled-block idiom. */
+    private static final Map<String, String> CATEGORY_LABELS = Map.of(
+            "train", "edzés",
+            "fuel", "étkezés",
+            "health", "egészség",
+            "life", "élet");
+
+    private final KnowledgeFactRepository repository;
+    private final CompanionProperties properties;
+    private final CompanionMapper mapper;
+
+    public List<KnowledgeFactResponse> list(UUID userId) {
+        return repository.findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)
+                .stream()
+                .map(mapper::toKnowledgeFactResponse)
+                .toList();
+    }
+
+    @Transactional
+    public KnowledgeFactResponse create(UUID userId, CreateFactRequest request) {
+        KnowledgeFactEntity fact = new KnowledgeFactEntity();
+        fact.setCreatedBy(userId);
+        fact.setFactText(request.getFactText());
+        fact.setCategory(request.getCategory());
+        fact.setSource(KnowledgeFactEntity.SOURCE_MANUAL);
+        // saveAndFlush so @CreationTimestamp is populated before mapping
+        return mapper.toKnowledgeFactResponse(repository.saveAndFlush(fact));
+    }
+
+    /** Partial update — only the provided fields are applied (contract: UpdateFactRequest). */
+    @Transactional
+    public KnowledgeFactResponse update(UUID userId, UUID factId, UpdateFactRequest request) {
+        KnowledgeFactEntity fact = getOwned(userId, factId);
+        if (request.getFactText() != null) {
+            fact.setFactText(request.getFactText());
+        }
+        if (request.getCategory() != null) {
+            fact.setCategory(request.getCategory());
+        }
+        if (request.getIncludeInPrompt() != null) {
+            fact.setIncludeInPrompt(request.getIncludeInPrompt());
+        }
+        return mapper.toKnowledgeFactResponse(repository.save(fact));
+    }
+
+    /**
+     * The V1.1 injection block: top-N prompt-included facts by reinforcement (then newest),
+     * one Hungarian-labelled line each; "" when the user has no qualifying facts (no empty header).
+     */
+    public String renderPromptBlock(UUID userId) {
+        List<KnowledgeFactEntity> facts = repository
+                .findByCreatedByAndIncludeInPromptTrueAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(
+                        userId, PageRequest.of(0, properties.facts().topN()));
+        if (facts.isEmpty()) {
+            return "";
+        }
+        StringBuilder block = new StringBuilder(FACTS_HEADER);
+        for (KnowledgeFactEntity fact : facts) {
+            block.append("- (")
+                    .append(CATEGORY_LABELS.getOrDefault(fact.getCategory(), fact.getCategory()))
+                    .append(") ")
+                    .append(fact.getFactText())
+                    .append('\n');
+        }
+        return block.toString();
+    }
+
+    private KnowledgeFactEntity getOwned(UUID userId, UUID factId) {
+        return repository.findByIdAndCreatedByAndDeletedFalse(factId, userId)
+                .orElseThrow(() -> new SystemRuntimeErrorException(
+                        SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+    }
+}

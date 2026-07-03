@@ -80,6 +80,10 @@ public abstract class ApiIntegrationTest extends AbstractIntegrationTest {
         return exchangeForBody(HttpMethod.PUT, uri, request, headers, expectedStatus, bodyType);
     }
 
+    protected <T> T patchForBody(String uri, Object request, HttpHeaders headers, HttpStatus expectedStatus, Class<T> bodyType) {
+        return exchangeForBody(HttpMethod.PATCH, uri, request, headers, expectedStatus, bodyType);
+    }
+
     protected void deleteAndExpect(String uri, HttpHeaders headers, HttpStatus expectedStatus) {
         exchangeForBody(HttpMethod.DELETE, uri, null, headers, expectedStatus, String.class);
     }

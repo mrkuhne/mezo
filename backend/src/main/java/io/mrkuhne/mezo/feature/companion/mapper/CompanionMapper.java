@@ -1,11 +1,13 @@
 package io.mrkuhne.mezo.feature.companion.mapper;
 
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
+import io.mrkuhne.mezo.api.dto.KnowledgeFactResponse;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
 import org.mapstruct.Mapper;
@@ -35,6 +37,19 @@ public interface CompanionMapper {
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .tools(toTools(entity.getToolCalls()))
                 .refs(toRefs(entity.getRefs()))
+                .build();
+    }
+
+    default KnowledgeFactResponse toKnowledgeFactResponse(KnowledgeFactEntity entity) {
+        return KnowledgeFactResponse.builder()
+                .id(entity.getId())
+                .factText(entity.getFactText())
+                .category(entity.getCategory())
+                .source(entity.getSource())
+                .reinforcementCount(entity.getReinforcementCount())
+                .includeInPrompt(entity.isIncludeInPrompt())
+                .lastReinforcedAt(toOffset(entity.getLastReinforcedAt()))
+                .createdAt(toOffset(entity.getCreatedAt()))
                 .build();
     }
 
