@@ -18,7 +18,8 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:16
+          # pgvector-enabled Postgres 16 (same PG major, data-compatible) — V2.1 memory_embedding.
+          image: pgvector/pgvector:pg16
           ports:
             - containerPort: 5432
           # POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD come from the

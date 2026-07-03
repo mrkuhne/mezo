@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:16
+    # pgvector-enabled Postgres 16 (same PG major, data-compatible) — V2.1 memory_embedding.
+    # If the volume predates this image: docker compose down -v && docker compose up -d
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: mezo
       POSTGRES_USER: mezo
