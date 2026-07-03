@@ -11,14 +11,19 @@ export function SlotCard({
   meta,
   scoredMeal,
   onOpenScore,
+  onLogMeal,
 }: {
   slot: FuelSlot
   meta: KindMeta
   scoredMeal: FuelMeal | null
   onOpenScore: (m: FuelMeal) => void
+  onLogMeal?: (slot: FuelSlot) => void
 }) {
   const isDone = slot.state === 'done'
   const isNow = slot.state === 'now'
+  // Planner (P5) pending shapes — additive; absent on logged/mock slots so their render is unchanged.
+  const isSuggestion = !isDone && !!slot.suggestedRecipeId
+  const isBudgetSlot = !slot.mealName && (slot.kind === 'meal' || slot.kind === 'snack') && !isDone && !!slot.kcal
 
   return (
     <div
@@ -55,6 +60,23 @@ export function SlotCard({
               {slot.windowTip}
             </span>
           )}
+          {isSuggestion && (
+            <span
+              className="label-mono"
+              style={{
+                padding: '2px 6px',
+                fontSize: 8,
+                fontWeight: 600,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: 'var(--brand-glow)',
+                border: '1px solid var(--border-brand)',
+                background: 'color-mix(in srgb, var(--brand-glow) 6%, transparent)',
+              }}
+            >
+              ajánlott
+            </span>
+          )}
         </div>
         {isNow && <span className="chip brand" style={{ fontSize: 9, padding: '2px 6px' }}>MOST</span>}
         {isDone && <Icon name="check" size={12} color="var(--brand-glow)" />}
@@ -63,19 +85,43 @@ export function SlotCard({
       {/* Title / meal name + AI-score */}
       {slot.mealName && (
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginTop: 8 }}>
-          <div
-            style={{
-              fontFamily: 'var(--ff-display)',
-              fontSize: 15,
-              fontWeight: 600,
-              color: 'var(--text-primary)',
-              lineHeight: 1.2,
-              flex: 1,
-              minWidth: 0,
-            }}
-          >
-            {slot.mealName}
-          </div>
+          {isSuggestion ? (
+            <button
+              type="button"
+              aria-label={`${slot.mealName} logolása`}
+              onClick={() => onLogMeal?.(slot)}
+              style={{
+                fontFamily: 'var(--ff-display)',
+                fontSize: 15,
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                lineHeight: 1.2,
+                flex: 1,
+                minWidth: 0,
+                textAlign: 'left',
+                background: 'transparent',
+                border: 'none',
+                padding: 0,
+                cursor: 'pointer',
+              }}
+            >
+              {slot.mealName}
+            </button>
+          ) : (
+            <div
+              style={{
+                fontFamily: 'var(--ff-display)',
+                fontSize: 15,
+                fontWeight: 600,
+                color: 'var(--text-primary)',
+                lineHeight: 1.2,
+                flex: 1,
+                minWidth: 0,
+              }}
+            >
+              {slot.mealName}
+            </div>
+          )}
           {scoredMeal && (
             <button
               type="button"
@@ -114,15 +160,34 @@ export function SlotCard({
         </div>
       )}
 
-      {slot.kind === 'workout' && (
+      {(slot.kind === 'workout' || slot.kind === 'sport') && (
         <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>
-          {slot.label} · {slot.duration} perc
+          {slot.label}{slot.duration ? ` · ${slot.duration} perc` : ''}
         </div>
       )}
-      {slot.kind === 'sport' && (
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>
-          {slot.label} · {slot.duration} perc
-        </div>
+
+      {/* Budget-only pending meal/snack window (no recipe suggestion) — label + a mono budget
+          line + a tap-to-log affordance that opens the sheet on the mapped slot. */}
+      {isBudgetSlot && (
+        <>
+          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>
+            {slot.label}
+          </div>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 6 }}>
+            <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+              ~{slot.kcal} kcal · P{slot.p} C{slot.c} F{slot.f}
+            </span>
+            <button
+              type="button"
+              aria-label={`${slot.label} logolása`}
+              onClick={() => onLogMeal?.(slot)}
+              className="chip brand"
+              style={{ fontSize: 9, padding: '3px 8px', flexShrink: 0 }}
+            >
+              Logolás
+            </button>
+          </div>
+        </>
       )}
 
       {/* Supplement items */}

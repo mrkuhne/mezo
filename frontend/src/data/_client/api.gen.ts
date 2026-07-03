@@ -1605,6 +1605,12 @@ export interface components {
             targetWeightKg?: number | null;
             rateTargetPctPerWeek: number;
             identityFrame?: string | null;
+            /** @description Day-planner: eating occasions per day */
+            mealsPerDay?: number;
+            /** @description Day-planner wake anchor, HH:mm */
+            wakeTime?: string;
+            /** @description Day-planner bed anchor, HH:mm */
+            bedTime?: string;
             tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
             prescription?: components["schemas"]["GoalPrescription"] | null;
         };
@@ -1679,6 +1685,12 @@ export interface components {
             startWeightKg: number;
             targetWeightKg?: number | null;
             identityFrame?: string | null;
+            /** @description Day-planner: eating occasions per day */
+            mealsPerDay?: number;
+            /** @description Day-planner wake anchor, HH:mm */
+            wakeTime?: string;
+            /** @description Day-planner bed anchor, HH:mm */
+            bedTime?: string;
         };
         /** @description A draft goal window — feeds the stateless realism preview (no persistence, no ownership). */
         FeasibilityPreviewRequest: {

@@ -1,12 +1,9 @@
-import { fuelDay, fuelPlan, getScoredMeal } from '@/data/fuel/fuel'
 import { retaWeek, gymSchedule, weeklySupplements, recurringPatterns, weeklyStats, replanScenarios, stackRecommendations } from '@/data/fuel/fuelWeek'
 import { volleyballSessions } from '@/data/today/today'
 import { isMockMode } from '@/data/_client/mode'
-import type { FuelSlot } from '@/data/types'
 
-export function useFuelTimeline() {
-  return { plan: fuelPlan.today, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuelDay.meals) }
-}
+// NOTE: useFuelTimeline moved to `@/data/fuel/timelineHooks` (Fuel P5) — it became a composed
+// dual-mode hook (mock seed vs. buildDayPlan real composition); the static reader lived here.
 
 export function useFuelWeek() {
   return { retaWeek, gymSchedule, weeklySupplements, patterns: recurringPatterns, weeklyStats, volleyball: volleyballSessions }

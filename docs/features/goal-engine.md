@@ -2,7 +2,7 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-06-22
+updated: 2026-07-03
 tags: [goal, engine, backend, tdee, projection, guards]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/GoalEngineProperties.java
@@ -92,6 +92,8 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 
 Both jsonb records are **plain records, no Jackson/Hibernate annotations** — the app `ObjectMapper` serializes them via `@JdbcTypeCode(SqlTypes.JSON)` (the `ProvenanceEnvelope` idiom). `GoalMapper` (`feature/goal/mapper/GoalMapper.java:39-41`) projects them to the contract DTOs (`TdeeBootstrap`/`GoalPrescription`), mapping the `String` `formula`/`verdict` to the generated enums.
 
+**Day-planner settings (Fuel P5, `mezo-9ys`) — non-engine goal fields.** The `goal` table additionally gained three plain nullable columns — `meals_per_day smallint` (CHECK `between 3 and 6`), `wake_time`/`bed_time varchar(5)` — via migration `202607021500_mezo-9ys_goal_planner_settings.sql`, surfaced additively on `GoalRequest`/`GoalResponse` (`mealsPerDay`/`wakeTime`/`bedTime`). **The engine neither reads nor writes them** — they are pure contract passthrough (`GoalService.applyUpsert` maps them straight through) consumed by Fuel's Mai day-planner timeline (see [`fuel.md`](fuel.md) §4/§5). They ride this aggregate for storage only and do not touch the TDEE/projection/guard/prescription pipeline. (The reverse bridge — `prescription.kcal/proteinG` → Fuel's daily budget — is the §5 deferred bridge that Fuel P5 now consumes.)
+
 **Endpoints** (contract-first — `api/feature/goal/goal.yml`, `api/feature/weight/weight.yml`, `api/feature/biometrics-profile/biometrics-profile.yml`):
 
 | Verb | Path | Returns | Notes |
@@ -134,7 +136,7 @@ The engine is a **consumer hub** — it reads three other domains and writes one
 - **← Train (mesocycles + running blocks).** *Contract:* the goal's `GoalPlanLinkEntity` rows + the linked `MesocycleEntity.phaseCurve` (the per-week phase class) / `RunningBlockEntity.structure` (sessions-per-week) read via the Train repos (ownership-checked), and `MuscleGroupVolumeLogEntity` + `ExerciseSetEntity`/`ExerciseRepository` for the guards (the strength leg deliberately reuses the `ExerciseRecordService` Epley/identity idiom). See [`train.md`](train.md) for those aggregates.
 - **→ Goal (writes).** *Contract:* `tdeeBootstrap` + `prescription` jsonb persisted onto `GoalEntity`, surfaced via `GoalResponse` → the FE `GoalRecept` card ([`me.md`](me.md) §2).
 
-**Deferred / future bridges (spec §5.4, narrated but not wired):** `prescription.kcal/proteinG` → Fuel targets; `sleepTargetH` (seeded at 8.0) → Sleep; `restDays`/deload → Train/Today. These are emitted as fields today but consumed by no other domain yet.
+**Cross-domain bridges (spec §5.4):** `prescription.kcal/proteinG` → Fuel is **now wired** — Fuel P5 (`mezo-9ys`) reads the current-week segment as the Mai day-planner's daily budget (`deriveDailyBudget`; see [`fuel.md`](fuel.md) §5). Still emitted-but-unconsumed: `sleepTargetH` (seeded at 8.0) → Sleep; `restDays`/deload → Train/Today.
 
 ## 6. How to use it (consume)
 

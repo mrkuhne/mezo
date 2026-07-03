@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import type { FuelMeal } from '@/data/types'
-import { useFuelDay, useFuelTimeline, useProtocol, useTodayScenario, useToday, useWaterActions } from '@/data/hooks'
+import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
+import { useFuelDay, useFuelTimeline, useProtocol, useTodayScenario, useWaterActions } from '@/data/hooks'
+import { slotKeyOfLabel } from '@/data/fuel/fuelConfig'
+import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
@@ -19,14 +21,27 @@ export function FuelMaiPage() {
   const { plan, getScoredMeal } = useFuelTimeline()
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
-  const { today } = useToday()
   const { logWater } = useWaterActions()
 
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
   const [replanOpen, setReplanOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
+  const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
+  const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
 
   const doneCount = plan.slots.filter(s => s.state === 'done').length
+
+  // Tap-to-log a planner slot: a recipe suggestion prefills the sheet from that recipe; a budget-only
+  // window opens the sheet on its mapped slot (label → MealSlot) so the user just picks items.
+  const openLog = (prefill: LogMealPrefill = null, slot?: MealSlot) => {
+    setLogPrefill(prefill)
+    setLogInitialSlot(slot)
+    setLogOpen(true)
+  }
+  const handleLogMeal = (slot: FuelSlot) => {
+    if (slot.suggestedRecipeId) openLog({ source: 'recipe', recipeId: slot.suggestedRecipeId })
+    else openLog(null, slotKeyOfLabel(slot.label))
+  }
 
   return (
     <>
@@ -38,7 +53,7 @@ export function FuelMaiPage() {
         </div>
         <button
           type="button"
-          onClick={() => setLogOpen(true)}
+          onClick={() => openLog()}
           className="chip brand"
           aria-label="Logolás"
           style={{ fontSize: 10, padding: '6px 10px' }}
@@ -59,7 +74,7 @@ export function FuelMaiPage() {
         <div className="card notch-4" style={{ padding: 12, background: 'var(--surface-1)' }}>
           <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
             <StatCell
-              label={plan.workout.start === '—' ? 'Gym' : today.workoutType}
+              label={plan.workout.start === '—' ? 'Gym' : (plan.workout.type || 'Gym')}
               val={plan.workout.start}
               sub={plan.workout.duration ? plan.workout.duration + 'p' : ''}
               color="var(--brand-glow)"
@@ -125,7 +140,7 @@ export function FuelMaiPage() {
             </button>
           </div>
         )}
-        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} />
+        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} />
       </div>
 
       {/* Micronutrients */}
@@ -153,7 +168,7 @@ export function FuelMaiPage() {
 
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}
-      {logOpen && <LogMealSheet onClose={() => setLogOpen(false)} />}
+      {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
     </>
   )
 }

@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-06-29
+updated: 2026-07-03
 tags: [train, running, sport, frontend, backend, data-layer, progression]
 key_files:
   - frontend/src/features/train
@@ -167,7 +167,7 @@ This is the highest-value section: Train both consumes and exposes a number of s
 
 **The canonical internal integration** is `TrainTodayPage`: it merges `gymSchedule` (from `useTrain`, itself the meso-days × gym-slots join of `deriveGymSchedule`), `sport.schedule` (volleyball), and `runSessionsForDay(activeRunningBlock, dayIdx)` (from `useRunning`, via `data/train/runningAgenda.ts`) into one `WeeklyAgendaDay[]`, then orders each day by time-of-day through the shared `daySessions` helper (`features/train/logic/agenda.ts`). Logging from here reuses the **shared sheets** `SportLogSheet`/`RunLogSheet`. Note the cross-load seams (Sport→everything, Running→gym volume) are the documented bidirectional contracts but their **live engines are Phase 3** — today they render static rows.
 
-**Inbound seams (one-sided — no live data crosses yet):** Today (`/today`) links here via `WorkoutTeaser` navigation only — it renders its **own** mock `Workout`, not this backend. Fuel keeps a *private copy* of the gym/volleyball schedule (`GymScheduleDay`/`VolleyballSession` in `data/fuel/fuelWeek.ts`), **not** sourced from Train — the Fuel (Slice C) backend will later reconcile them. Both are documented from the consuming side in `today.md` §5 / `fuel.md` §5.
+**Inbound seams (consuming side):** Today (`/today`) links here via `WorkoutTeaser` navigation only — it renders its **own** mock `Workout`, not this backend. Fuel's **Terv** weekly view still keeps a *private copy* of the gym/volleyball schedule (`GymScheduleDay`/`VolleyballSession` in `data/fuel/fuelWeek.ts`), **not** sourced from Train (P4 will reconcile it). **But Fuel's Mai day-planner timeline (P5, `mezo-9ys`) now consumes Train's REAL schedule** — `useFuelTimeline` reads `useTrain().gymSchedule`/`sport.schedule` + `useRunning().activeRunningBlock` (via `runSessionsForDay`) as today's gym/sport/run `PlannerBlock`s, the first live Train→Fuel data crossing. All documented from the consuming side in `today.md` §5 / `fuel.md` §5.
 
 ---
 

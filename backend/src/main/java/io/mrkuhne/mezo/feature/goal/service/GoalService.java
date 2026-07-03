@@ -123,6 +123,11 @@ public class GoalService {
                 req.getTrajectory(), req.getStartWeightKg(), req.getTargetWeightKg(),
                 req.getStartDate(), req.getTargetDate()));
         e.setIdentityFrame(req.getIdentityFrame());
+        // Fuel P5 day-planner settings (mezo-9ys) — optional; omitted values round-trip to null.
+        // The HH:mm shape + 3..6 range are enforced by bean validation on the request DTO.
+        e.setMealsPerDay(req.getMealsPerDay());
+        e.setWakeTime(req.getWakeTime());
+        e.setBedTime(req.getBedTime());
     }
 
     /** Ownership gate: missing and foreign rows are indistinguishable (404). */

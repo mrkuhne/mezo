@@ -7,6 +7,30 @@ export type GoalUpsertRequest = components['schemas']['GoalUpsertRequest']
 export type FeasibilityPreviewRequest = components['schemas']['FeasibilityPreviewRequest']
 export type FeasibilityPreviewResponse = components['schemas']['FeasibilityPreviewResponse']
 
+// toRequest mapper — rebuild a full GoalUpsertRequest from a persisted
+// GoalResponse so a partial edit (e.g. the day-planner settings) can PUT the
+// whole contract without dropping the window/weights/guards it must round-trip.
+// `rateTargetPctPerWeek` is intentionally omitted — the backend derives it (G6).
+// Planner overrides win over the stored values (undefined = keep as-is).
+export function goalResponseToUpsert(
+  res: GoalResponse,
+  planner?: { mealsPerDay?: number; wakeTime?: string; bedTime?: string },
+): GoalUpsertRequest {
+  return {
+    title: res.title,
+    trajectory: res.trajectory,
+    guards: res.guards,
+    startDate: res.startDate,
+    targetDate: res.targetDate,
+    startWeightKg: res.startWeightKg,
+    targetWeightKg: res.targetWeightKg ?? null,
+    identityFrame: res.identityFrame ?? null,
+    mealsPerDay: planner?.mealsPerDay ?? res.mealsPerDay,
+    wakeTime: planner?.wakeTime ?? res.wakeTime,
+    bedTime: planner?.bedTime ?? res.bedTime,
+  } satisfies GoalUpsertRequest
+}
+
 export const goalApi = {
   list: (): Promise<GoalResponse[]> => apiFetch<GoalResponse[]>('/api/goals'),
   get: (id: string): Promise<GoalResponse> => apiFetch<GoalResponse>(`/api/goals/${id}`),

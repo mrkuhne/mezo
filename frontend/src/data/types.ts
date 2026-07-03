@@ -27,6 +27,8 @@ export interface FuelSlot {
   kcal?: number; p?: number; c?: number; f?: number
   duration?: number
   items?: SlotItem[]
+  mealId?: string
+  suggestedRecipeId?: string
 }
 export interface FuelPlanToday {
   workout: { type: string; start: string; end: string; duration: number }
@@ -266,6 +268,13 @@ export interface Goal {
   rateTarget: { value: number; unit: string; direction: 'down' | 'up' }
   mesocycles: string[]
   identityFrame: string
+  // Day-planner settings (Fuel P5) — the eating-occasion count + wake/bed anchors
+  // the fuel timeline plans around. Null until the goal carries them; the edit UI
+  // defaults to 4 / '06:00' / '23:00'. Round-trips via GoalUpsertRequest (the
+  // request contract = the "GoalInput" — already carries these generated fields).
+  mealsPerDay: number | null
+  wakeTime: string | null
+  bedTime: string | null
 }
 export interface WeightEntry { date: string; value: number; note?: string }
 /** Phase 2 REST DTO — POST /weight-log. `date` is stamped to today by the caller (no UI date picker). */

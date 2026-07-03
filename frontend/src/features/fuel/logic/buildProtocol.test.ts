@@ -68,3 +68,38 @@ test('every emitted protocol item carries its source stash refId', () => {
     expect(validIds.has(item.refId)).toBe(true)
   }
 })
+
+// --- Anchor-aware slot times (Fuel P5) ---
+// When the caller passes the user's real day anchors, slot TIMES derive from
+// them instead of the hardcoded mock times. String prose is untouched (P8).
+const byKind = (built: ReturnType<typeof buildProtocol>, kind: string) =>
+  built.slots.find(s => s.kind === kind)
+
+test('anchored: slot times derive from wake / preWorkout / bedtime anchors', () => {
+  const sel = realStash.map(s => s.id)
+  const built = buildProtocol(sel, realStash, { wake: '06:30', preWorkout: '17:15', bedtime: '22:30' })
+  expect(byKind(built, 'morning')?.time).toBe('06:30')
+  expect(byKind(built, 'pre-fuel')?.time).toBe('16:45') // pre-workout − 30
+  expect(byKind(built, 'pre-workout')?.time).toBe('17:15')
+  expect(byKind(built, 'evening')?.time).toBe('20:30') // bedtime − 120
+  expect(byKind(built, 'fat-bound')?.time).toBe('12:30') // midday unchanged
+})
+
+test('anchored without preWorkout (rest day): pre-workout slot stays relative to wake', () => {
+  const sel = realStash.map(s => s.id)
+  const built = buildProtocol(sel, realStash, { wake: '07:00', bedtime: '23:00' })
+  expect(byKind(built, 'pre-workout')?.time).toBe('08:00') // wake + 60
+  expect(byKind(built, 'pre-fuel')?.time).toBe('07:30') // pre-workout − 30
+  expect(byKind(built, 'morning')?.time).toBe('07:00')
+  expect(byKind(built, 'evening')?.time).toBe('21:00') // bedtime − 120
+})
+
+test('no anchors: every hardcoded mock time is preserved', () => {
+  const sel = realStash.map(s => s.id)
+  const built = buildProtocol(sel, realStash)
+  expect(byKind(built, 'morning')?.time).toBe('05:50')
+  expect(byKind(built, 'pre-fuel')?.time).toBe('06:20')
+  expect(byKind(built, 'pre-workout')?.time).toBe('06:50')
+  expect(byKind(built, 'fat-bound')?.time).toBe('12:30')
+  expect(byKind(built, 'evening')?.time).toBe('21:00')
+})

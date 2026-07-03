@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   goalApi,
+  goalResponseToUpsert,
   type GoalResponse,
   type GoalUpsertRequest,
   type FeasibilityPreviewRequest,
@@ -44,6 +45,11 @@ function toGoal(res: GoalResponse, weightLog: WeightEntry[]): Goal {
     rateTarget: { value: Number(res.rateTargetPctPerWeek), unit: '%/hét', direction: res.trajectory === 'bulk' ? 'up' : 'down' },
     mesocycles: [], // populated from the goal timeline (G3) — see useGoal
     identityFrame: res.identityFrame ?? '',
+    // Day-planner settings (Fuel P5) — null until the goal carries them; the
+    // EditGoalSheet defaults to 4 / '06:00' / '23:00' when null.
+    mealsPerDay: res.mealsPerDay ?? null,
+    wakeTime: res.wakeTime ?? null,
+    bedTime: res.bedTime ?? null,
   }
 }
 
@@ -168,6 +174,25 @@ export function useGoalActions() {
     mutationFn: async (id: string) => { if (mock) return null; return goalApi.evaluate(id) },
     onSuccess: (_data, id) => { invalidateGoals(); invalidateTimeline(id) },
   })
+  // Day-planner edit (Fuel P5) — rebuild a full GoalUpsertRequest from the
+  // persisted GoalResponse (preserving window/weights/guards) with the edited
+  // planner overrides, then PUT. Real mode invalidates ['goals'] so useGoal
+  // re-derives; mock no-ops (the Napi ritmus edit is Phase-1 fire-and-forget).
+  const savePlannerM = useMutation({
+    mutationFn: async ({
+      goalId,
+      res,
+      planner,
+    }: {
+      goalId: string
+      res: GoalResponse
+      planner: { mealsPerDay: number; wakeTime: string; bedTime: string }
+    }) => {
+      if (mock) return null
+      return goalApi.update(goalId, goalResponseToUpsert(res, planner))
+    },
+    onSuccess: () => invalidateGoals(),
+  })
 
   const archive = useCallback((id: string) => archiveM.mutateAsync(id), [archiveM])
   const remove = useCallback((id: string) => removeM.mutateAsync(id), [removeM])
@@ -181,11 +206,16 @@ export function useGoalActions() {
     [detachM],
   )
   const evaluate = useCallback((id: string) => evaluateM.mutateAsync(id), [evaluateM])
+  const savePlanner = useCallback(
+    (goalId: string, res: GoalResponse, planner: { mealsPerDay: number; wakeTime: string; bedTime: string }) =>
+      savePlannerM.mutateAsync({ goalId, res, planner }),
+    [savePlannerM],
+  )
 
   const pending =
-    archiveM.isPending || removeM.isPending || activateM.isPending || attachM.isPending || detachM.isPending || evaluateM.isPending
+    archiveM.isPending || removeM.isPending || activateM.isPending || attachM.isPending || detachM.isPending || evaluateM.isPending || savePlannerM.isPending
 
-  return { archive, remove, activate, attachPlan, detachPlan, evaluate, pending, evaluating: evaluateM.isPending }
+  return { archive, remove, activate, attachPlan, detachPlan, evaluate, savePlanner, pending, evaluating: evaluateM.isPending }
 }
 
 // Goal-creation wizard save chain. Real mode creates the goal, optionally

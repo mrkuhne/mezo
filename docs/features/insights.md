@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mock-only
-updated: 2026-07-02
+updated: 2026-07-03
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights

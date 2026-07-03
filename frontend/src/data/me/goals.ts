@@ -16,6 +16,11 @@ export const goal: Goal = {
   rateTarget: { value: 0.6, unit: '%/hét', direction: 'down' },
   mesocycles: ['meso-hyp-04', 'meso-str-02', 'meso-maint-01'],
   identityFrame: 'Egészséges erő · nem csak alak — a teljes energiám jobb 73kg-on a Reta cycle után.',
+  // Day-planner settings (Fuel P5) — the eating-occasion count + wake/bed anchors
+  // the fuel timeline plans around. Editable via EditGoalSheet's "Napi ritmus".
+  mealsPerDay: 4,
+  wakeTime: '06:00',
+  bedTime: '23:00',
 }
 
 // Mock raw GoalResponse — the G4b command-center hero reads the contract shape
@@ -33,6 +38,11 @@ export const goalResponse: GoalResponse = {
   targetWeightKg: goal.targetWeight,
   rateTargetPctPerWeek: 0.6,
   identityFrame: goal.identityFrame,
+  // Day-planner settings (Fuel P5) — mirror the domain goal above so mock mode
+  // supplies the same envelope the backend round-trips (GoalResponse shape).
+  mealsPerDay: goal.mealsPerDay ?? undefined,
+  wakeTime: goal.wakeTime ?? undefined,
+  bedTime: goal.bedTime ?? undefined,
   // G5 engine output (mock) — a feasible-with-warnings verdict + two recept
   // segments (deficit during the gym blocks, taper near the target) + the guard
   // status the recept card renders. Mirrors the GoalPrescription contract so the

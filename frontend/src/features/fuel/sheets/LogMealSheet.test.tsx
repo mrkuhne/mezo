@@ -77,6 +77,18 @@ describe('LogMealSheet', () => {
     })
   })
 
+  it('seeds the slot segmented control from initialSlot', () => {
+    const { qc } = setup()
+    render(
+      <QueryClientProvider client={qc}>
+        <LogMealSheet initialSlot="dinner" onClose={vi.fn()} />
+      </QueryClientProvider>,
+    )
+    // The 'Vacsora' (dinner) segment is pre-selected without any user interaction.
+    expect(screen.getByRole('button', { name: 'Vacsora' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Reggeli' })).toHaveAttribute('aria-pressed', 'false')
+  })
+
   it('disables save when there are no items', () => {
     const { qc } = setup()
     render(

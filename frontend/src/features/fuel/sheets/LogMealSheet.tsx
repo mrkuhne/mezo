@@ -9,7 +9,7 @@
 // docs/design/meal-logging-sheet.html (left phone).
 // ============================================================
 import { useState } from 'react'
-import type { Ingredient, MealInput, Recipe } from '@/data/types'
+import type { Ingredient, MealInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -56,13 +56,15 @@ function nowLabel(): string {
   return 'ma · ' + new Date().toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
 }
 
-export function LogMealSheet({ prefill, onClose }: { prefill?: LogMealPrefill; onClose: () => void }) {
+export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogMealPrefill; initialSlot?: MealSlot; onClose: () => void }) {
   const { recipes } = useRecipes()
   const { ingredients } = usePantry()
   const { fuel } = useFuelDay()
   const { logMeal } = useMealActions()
 
-  const [slot, setSlot] = useState<Slot>(defaultSlot)
+  // `initialSlot` (planner tap-to-log) seeds the segmented control; without it, fall back to the
+  // wall-clock default. Read once at mount — the user can still switch slots afterwards.
+  const [slot, setSlot] = useState<Slot>(() => initialSlot ?? defaultSlot())
   const [pickerOpen, setPickerOpen] = useState(false)
   const [lines, setLines] = useState<DraftLine[]>(() => {
     if (!prefill) return []

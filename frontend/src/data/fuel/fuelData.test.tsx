@@ -1,6 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { useFuelDay, useFuelTimeline, useStack, useProtocol } from '@/data/hooks'
+import type { FuelSlot } from '@/data/types'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // useFuelDay became a composed dual-mode TanStack query (mezo-arb). Pin mock mode so it returns
@@ -17,7 +18,9 @@ test('useFuelDay returns macros, 4 meals, micronutrients', () => {
   expect(result.current.fuel.micronutrients).toHaveLength(5)
 })
 test('useFuelTimeline returns 10 slots with one now-slot + getScoredMeal works', () => {
-  const { result } = renderHook(() => useFuelTimeline())
+  // useFuelTimeline became a composed dual-mode hook (mezo-9ys) — it calls useFuelDay/useGoal/…
+  // TanStack queries, so it needs a QueryClient even in mock mode (all seed synchronously).
+  const { result } = renderHook(() => useFuelTimeline(), { wrapper: QueryWrapper })
   expect(result.current.plan.slots).toHaveLength(10)
   expect(result.current.plan.slots.filter(s => s.state === 'now')).toHaveLength(1)
   // NOTE: in the prototype data only kind==='meal' done slots map to a scored meal
@@ -43,4 +46,26 @@ test('every seed meal carries structured mealItems + mealDate and a null pending
     expect(typeof m.loggedAt).toBe('string')
     expect(m.score).toBeNull()
   }
+})
+
+test('getScoredMeal resolves a slot by mealId (id-join, not title-join)', async () => {
+  const { getScoredMeal, fuelDay } = await import('@/data/fuel/fuel')
+  const slot: FuelSlot = { time: '09:15', kind: 'meal', label: 'Reggeli', state: 'done', mealId: 'm1' }
+  const meal = getScoredMeal(slot, fuelDay.meals)
+  expect(meal?.id).toBe('m1')
+  expect(meal?.breakdown).toBeDefined()
+})
+
+test('getScoredMeal returns null for a slot with a matching title but NO mealId (title-join is dead)', async () => {
+  const { getScoredMeal, fuelDay } = await import('@/data/fuel/fuel')
+  const slot: FuelSlot = { time: '09:15', kind: 'meal', label: 'Reggeli', state: 'done', mealName: 'Túrós zabkása · áfonyával' }
+  expect(getScoredMeal(slot, fuelDay.meals)).toBeNull()
+})
+
+test('toMin/toHHmm convert and clamp HH:mm ↔ minutes', async () => {
+  const { toMin, toHHmm } = await import('@/data/fuel/fuelConfig')
+  expect(toMin('07:30')).toBe(450)
+  expect(toHHmm(450)).toBe('07:30')
+  expect(toHHmm(-10)).toBe('00:00')
+  expect(toHHmm(2000)).toBe('23:59')
 })

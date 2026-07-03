@@ -119,7 +119,10 @@ Three cheap decisions that unblock the rest. Each is an ADR in `docs/decisions/`
 
 ---
 
-## P5 — Fuel-Timeline view (the deferred merged VIEW)
+## P5 — Fuel-Timeline view (the deferred merged VIEW) ✅ SHIPPED (mezo-9ys, 2026-07-03)
+
+> **Shipped — the Mai pacing timeline + Today's preview are now a real client-composed day-planner.** Per the v2 design (`docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md`): a pure `buildDayPlan` (`features/fuel/logic/buildDayPlan.ts`) merges **planned meal/snack windows** (spread across wake→kitchen-close, snapped around the day's REAL gym/sport/run blocks — pre −75m / post +45m) + **per-slot budgets** from the goal `prescription` current-week segment (`deriveDailyBudget`, config `FuelDay.targets` fallback) + **recipe-fit suggestions** (±20% of the slot budget, ranked `|Δkcal| → starred → |Δp|`) + the anchor-aware supplement protocol/intakes. `useFuelTimeline` (`data/fuel/timelineHooks.ts`) is dual-mode (mock = the hand-authored seed byte-for-byte; real = the composition of already-real reads); `useFuelPreview` slices the same plan so Today never diverges. **The only backend work was three day-planner settings on the goal** — `mealsPerDay`/`wakeTime`/`bedTime` (columns + contract + `EditGoalSheet`'s "Napi ritmus", the **FE's first goal write-back** via `goalResponseToUpsert`'s full-replace mapper). **Client-side merge — no `/api/fuel/timeline` endpoint.** Living docs: `docs/features/fuel.md` §2–§5, `today.md` §3/§5, `me.md` §2, `goal-engine.md` §4.
+> **Deferred to P8:** sleep-log-derived wake/bed anchors (the data exists — `sleep_log.bedtime/wakeup`), consumed-based intra-day rebalancing / real replan, and the `mezoNote`/`windowTip` prose (meal score → P7).
 
 **Goal:** replace the hand-authored mock pacing timeline (`FuelMaiView` slot list + Today's `FuelTimelinePreview`) with a real merged agenda joining logged meals (real) + supplement/medication intakes (`P2`/`P3`) + the day's gym/volleyball blocks (Train), with state (done/now/pending). This is the explicitly-deferred "fuel-timeline merged view" (master spec + meal-logging spec §1).
 **Builds:** the meal + schedule halves join NOW (both real); the supplement/medication half lights up once `P2`/`P3` land.
