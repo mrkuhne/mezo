@@ -123,6 +123,15 @@ mezo:
       # Max learned_fact candidates persisted per chat turn (dedupe against confirmed facts
       # + pending candidates runs first)
       max-candidates-per-turn: 3
+    advisors:
+      # V1.3 post-response advisor chain — deterministic clinical Rx-dose guard + one cheap-tier
+      # LLM verdict (never-ask-twice redundancy + grounding-lite); reject -> one corrective
+      # re-prompt -> degraded flag. Off = the chain beans do not exist (V1.2 behavior).
+      enabled: true
+      # Corrective re-prompts before an answer ships degraded (0 = check-only flagging)
+      max-retries: 1
+      # Prescription-med terms the clinical check guards (accent-folded match; dose-CHANGE verbs only)
+      rx-terms: [retatrutid, reta, tirzepatid, mounjaro, szemaglutid, ozempic, wegovy]
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

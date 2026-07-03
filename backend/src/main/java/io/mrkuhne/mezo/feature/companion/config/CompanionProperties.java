@@ -4,9 +4,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+
+import java.util.List;
 
 /** Companion tuning (mezo.companion). LLM model tiers per ADR 0008 — config, never code. */
 @Validated
@@ -17,7 +20,8 @@ public record CompanionProperties(
     @NotNull @Valid Snapshot snapshot,
     @NotNull @Valid Tools tools,
     @NotNull @Valid Facts facts,
-    @NotNull @Valid Extraction extraction
+    @NotNull @Valid Extraction extraction,
+    @NotNull @Valid Advisors advisors
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -53,6 +57,16 @@ public record CompanionProperties(
         boolean enabled,
         /** Max learned_fact candidates persisted per chat turn (dedupe runs before the cap). */
         @Min(1) @Max(10) int maxCandidatesPerTurn
+    ) {}
+
+    /** V1.3 post-response advisor chain — clinical output check + LLM verdict (redundancy/grounding-lite). */
+    public record Advisors(
+        /** Master toggle — off removes the chain beans entirely (COMPANION_ADVISORS_SWITCH). */
+        boolean enabled,
+        /** Corrective re-prompts a violating answer gets before shipping degraded (old docs §4.5: 1). */
+        @Min(0) @Max(2) int maxRetries,
+        /** Prescription-med terms the clinical check guards (accent-folded contains-match). */
+        @NotEmpty List<String> rxTerms
     ) {}
 
     /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */
