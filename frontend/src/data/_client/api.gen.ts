@@ -996,8 +996,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send a user message and get the assistant's answer (sync JSON — V0.2; SSE arrives in V0.4) */
+        /** Send a user message and get the assistant's answer (sync JSON; streaming sibling at .../message/stream) */
         post: operations["sendMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/conversation/{conversationId}/message/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send a user message and stream the assistant's answer as Server-Sent Events (V0.4). Events: 0..n 'delta' (data = StreamDelta JSON), then exactly one terminal event — 'done' (data = the persisted assistant MessageResponse JSON) or 'error' (data = StreamError JSON; the assistant turn is NOT persisted, the user message is). Every data line is JSON. Clients should send "Accept: text/event-stream, application/json" so pre-stream errors (400/401/404) arrive as normal SystemMessageList JSON. */
+        post: operations["streamMessage"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2301,6 +2318,14 @@ export interface components {
         };
         SendMessageRequest: {
             content: string;
+        };
+        StreamDelta: {
+            /** @description One streamed answer chunk (token/segment delta). */
+            text: string;
+        };
+        StreamError: {
+            /** @description Stream failure code — 'COMPANION_STREAM_FAILED'. */
+            code: string;
         };
     };
     responses: never;
@@ -5422,6 +5447,59 @@ export interface operations {
                 };
             };
             /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    streamMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description SSE frames — see the per-event data schemas (StreamDelta / MessageResponse / StreamError) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["StreamDelta"] | components["schemas"]["MessageResponse"] | components["schemas"]["StreamError"];
+                };
+            };
+            /** @description Validation error (emitted before the stream starts) */
             400: {
                 headers: {
                     [name: string]: unknown;

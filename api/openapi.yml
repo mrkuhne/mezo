@@ -54,6 +54,14 @@ tags:
       is an append-only taken-ledger FK-ing pantry_item (ADR 0005).
   - name: Companion
     description: Phase-3 companion chat — conversations + messages (mezo-fnnq)
+  - name: CompanionStream
+    description: >-
+      Phase-3 companion chat — SSE streaming turn (mezo-fnnq.4). PRECEDENT: this
+      tag's generated interface (CompanionStreamApi) is deliberately NOT
+      implemented — SSE (Flux<ServerSentEvent>) is outside the generator's
+      vocabulary, so the endpoint is hand-written (CompanionStreamController)
+      while the contract stays the single source of truth. See
+      docs/features/_platform-api-backend.md §9.
 paths:
   /api/auth/login:
     post:
@@ -2455,8 +2463,8 @@ paths:
         - Companion
       operationId: sendMessage
       summary: >-
-        Send a user message and get the assistant's answer (sync JSON — V0.2;
-        SSE arrives in V0.4)
+        Send a user message and get the assistant's answer (sync JSON; streaming
+        sibling at .../message/stream)
       parameters:
         - name: conversationId
           in: path
@@ -2479,6 +2487,62 @@ paths:
                 $ref: '#/components/schemas/MessageResponse'
         '400':
           description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/conversation/{conversationId}/message/stream':
+    post:
+      tags:
+        - CompanionStream
+      operationId: streamMessage
+      summary: >-
+        Send a user message and stream the assistant's answer as Server-Sent
+        Events (V0.4). Events: 0..n 'delta' (data = StreamDelta JSON), then
+        exactly one terminal event — 'done' (data = the persisted assistant
+        MessageResponse JSON) or 'error' (data = StreamError JSON; the assistant
+        turn is NOT persisted, the user message is). Every data line is JSON.
+        Clients should send "Accept: text/event-stream, application/json" so
+        pre-stream errors (400/401/404) arrive as normal SystemMessageList JSON.
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: >-
+            SSE frames — see the per-event data schemas (StreamDelta /
+            MessageResponse / StreamError)
+          content:
+            text/event-stream:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/StreamDelta'
+                  - $ref: '#/components/schemas/MessageResponse'
+                  - $ref: '#/components/schemas/StreamError'
+        '400':
+          description: Validation error (emitted before the stream starts)
           content:
             application/json:
               schema:
@@ -5834,3 +5898,19 @@ components:
           type: string
           minLength: 1
           maxLength: 4000
+    StreamDelta:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: One streamed answer chunk (token/segment delta).
+    StreamError:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          description: Stream failure code — 'COMPANION_STREAM_FAILED'.
