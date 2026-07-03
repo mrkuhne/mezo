@@ -21,7 +21,7 @@ running **k3s** `v1.35.5+k3s1` (single node, control-plane + workload). k3s bund
 
 | Namespace | What | Notes |
 |---|---|---|
-| `mezo` | the app: `postgres` (StatefulSet), `backend` (Deployment), `frontend` (Deployment), `pgadmin` (Deployment) | the product |
+| `mezo` | the app: `postgres` (StatefulSet, image `pgvector/pgvector:pg16` since 2026-07-03 — companion V2.1), `backend` (Deployment), `frontend` (Deployment), `pgadmin` (Deployment) | the product |
 | `kube-system` | k3s core (Traefik, CoreDNS, metrics-server, local-path) + **sealed-secrets controller** | platform |
 | `cert-manager` | cert-manager (Let's Encrypt certs) | public HTTPS |
 | `argocd` | ArgoCD (GitOps controller + UI) | deploys `k8s/` from git |
@@ -180,8 +180,18 @@ A fresh cluster can be rebuilt by re-bootstrapping ArgoCD pointed at this repo.
 
 **NOT in git — must be backed up / re-createable:**
 - **Postgres data** — lives only on the node's local-path PVC. ⚠️ **No automated backup yet** —
-  this is the biggest gap. Until addressed, take manual dumps:
+  this is the biggest gap (bd `mezo-osj`). Until addressed, take manual dumps:
   `kubectl exec -n mezo postgres-0 -- pg_dump -U mezo mezo > mezo-$(date +%F).sql`
+  (last manual dump: 2026-07-03, `~/MrKuhne/mezo-live-backups/` on the admin Mac, taken before
+  the pgvector image swap).
+
+**Postgres image-swap note (2026-07-03, companion V2.1):** the StatefulSet image moved
+`postgres:16` → `pgvector/pgvector:pg16` (same PG16 major — the PVC data is reused as-is; only
+the extension binaries are new). The pgvector image's glibc is older than the previous image's,
+so Postgres warned about a **collation version mismatch**; fixed once with
+`ALTER DATABASE mezo REFRESH COLLATION VERSION;` + `REINDEX DATABASE mezo;` (and the same
+`REFRESH` on `postgres`/`template1`). Repeat those two commands if the image lineage ever
+changes again and the warning reappears.
 - **Sealed-secrets sealing key** — `kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml`.
   Back this up, or old SealedSecrets become undecryptable after a cluster rebuild.
 - **Tailscale OAuth client** — revocable/re-creatable in the Tailscale admin console.

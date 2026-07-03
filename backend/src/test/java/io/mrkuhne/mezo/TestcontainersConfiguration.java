@@ -21,7 +21,9 @@ public class TestcontainersConfiguration {
 	@ServiceConnection
 	@ConditionalOnProperty(name = "mezo.test.use-testcontainers", havingValue = "true")
 	PostgreSQLContainer postgresContainer() {
-		return new PostgreSQLContainer(DockerImageName.parse("postgres:16"));
+		// pgvector-enabled Postgres 16 mirroring compose + k3s (V2.1) — a compatible postgres superset.
+		return new PostgreSQLContainer(
+				DockerImageName.parse("pgvector/pgvector:pg16").asCompatibleSubstituteFor("postgres"));
 	}
 
 }

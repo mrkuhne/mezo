@@ -22,8 +22,9 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 > FE chips), answered **sync JSON or streamed SSE**, and consumed by the **real dual-mode
 > ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
 > confirms on the **real KnowledgeListPage** (accept/refine/reject — L2). **Status: backend ✅
-> V1.2 (spine + snapshot + SSE + tools/audit + facts + extraction/decision); FE ✅ V1.2
-> (ChatPage + KnowledgeListPage real) — v0 „lát engem" complete, v1 „megjegyez" 2/3.**
+> V2.1 (spine + snapshot + SSE + tools/audit + facts + extraction/decision + advisors +
+> pgvector/EmbeddingPort infra); FE ✅ V1.3 (ChatPage + KnowledgeListPage real + degraded badge)
+> — v0 „lát engem" + v1 „megjegyez" complete, v2 „emlékszik" 1/3.**
 > Cross-cutting Phase-3 domain with no route/tab of its own — the surfaces are the Insights
 > ChatPage + KnowledgeListPage ([`insights.md`](insights.md) §2.4–2.5).
 
@@ -135,6 +136,30 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `reinforcement_count` + `last_reinforced_at` (the chat re-learned it) instead of silently
   dropping; pending-candidate duplicates still just skip.
 
+**V2.1 (`mezo-fnnq.9`) shipped the vector layer — pgvector infra + the embedding port:**
+
+- **pgvector everywhere the app runs** — the Postgres image is `pgvector/pgvector:pg16` in all
+  three environments (local compose, k3s StatefulSet, Testcontainers — same PG16 major,
+  data-compatible superset; the k3s swap included a pre-swap `pg_dump` + post-swap
+  `REFRESH COLLATION VERSION` + `REINDEX`, see the runbook). The Liquibase changeset
+  (`202607032033_mezo-fnnq.9_create_memory_embedding_pgvector.sql`) runs
+  `CREATE EXTENSION IF NOT EXISTS vector` + creates `memory_embedding`.
+- **`memory_embedding` table** — the L1 episodic layer's store: one `vector(768)` row per
+  NARRATIVE unit (`kind` = `chat_turn|daily_summary|weekly_summary`, `ref_id` unique per kind —
+  the V2.2 pipeline's idempotence anchor), HNSW cosine index. Entity maps `float[]` via
+  hibernate-vector (`@JdbcTypeCode(SqlTypes.VECTOR)` + `@Array(length=768)`); ANN search is a
+  native-SQL repository method (`<=>` has no JPQL form) returning entity fields + distance.
+- **`EmbeddingPort`** (the `CompanionLlm` pattern, V2 decision): `embedDocuments(texts)` /
+  `embedQuery(text)` — asymmetric Gemini task types (`RETRIEVAL_DOCUMENT`/`RETRIEVAL_QUERY`).
+  Real `GeminiEmbeddingAdapter` calls the Google GenAI SDK `Client` (the bean the chat starter
+  already provides) **directly** — Spring AI 2.0.0 ships no Gemini `EmbeddingModel`, so
+  `embedContent` goes through the SDK; same provider, same API key, detail hidden by the port.
+  Vectors are L2-normalized client-side (`gemini-embedding-001` only self-normalizes at 3072).
+  Deterministic `FakeEmbeddingAdapter` (`companion-fake`): seeded-random unit vectors per text
+  + a `[fake-embed:0.6 0.8]` scripting sentinel.
+- **Nothing writes embeddings yet** — the daily-summary generator + embed pipeline is V2.2;
+  recall-in-chat is V2.3.
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -148,11 +173,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 | Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
 | Advisor chain (never-ask-twice + self-check) | ✅ V1.3 | Clinical regex + LLM verdict, retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
-| RAG / patterns | ❌ deferred | V2.x (pgvector RAG), V3.x (patterns). |
+| Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
+| RAG pipeline / patterns | ❌ deferred | V2.2 (summaries + embed pipeline), V2.3 (recall tool), V3.x (patterns). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
 `mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI) +
-`mezo-fnnq.8` (advisors + degraded + reinforcement).
+`mezo-fnnq.8` (advisors + degraded + reinforcement) + `mezo-fnnq.9` (pgvector + embedding port).
 **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
@@ -390,7 +416,37 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
   NULL passes = undecided), `refined_text text`, `promoted_fact_id uuid fk→knowledge_fact
   ON DELETE SET NULL`; indexes on `(created_by, user_decision)` + both loose-ref FKs.
 
+### Backend tables (V2.1, ✅)
+
+Migration `202607032033_mezo-fnnq.9_create_memory_embedding_pgvector.sql` (in `1.0.0_master.yml`) —
+runs `CREATE EXTENSION IF NOT EXISTS vector` first (needs the `pgvector/pgvector:pg16` image,
+swapped in-slice across compose/k3s/Testcontainers):
+
+- **`memory_embedding`** — `id uuid pk`, `created_by fk→app_user ON DELETE CASCADE`, `is_deleted`,
+  `created_at`, `kind varchar(20)` (`ck_memory_embedding_kind IN
+  (chat_turn,daily_summary,weekly_summary)`), `ref_id uuid`
+  (`uq_memory_embedding_kind_ref_id (kind, ref_id)` — one embedding per source unit, the V2.2
+  pipeline's idempotence anchor), `content text` (the embedded narrative, kept verbatim so recall
+  can quote it), `embedding vector(768) not null`, `occurred_on date` (when the episode happened —
+  the recency-ranking key); indexes `idx_memory_embedding_created_by_kind_occurred_on
+  (created_by, kind, occurred_on desc)` + `idx_memory_embedding_vector` (**HNSW,
+  `vector_cosine_ops`** — pairs with the `<=>` operator).
+
 ### Entities
+
+`MemoryEmbeddingEntity` (`entity/MemoryEmbeddingEntity.java`, V2.1) `extends OwnedEntity`,
+soft-deleted, `KIND_*` constants + `@Pattern` mirror; the vector maps as `float[]` via
+**hibernate-vector** (`@JdbcTypeCode(SqlTypes.VECTOR)` + `@Array(length = EmbeddingPort.DIMENSIONS)`
+— new pom dependency, Boot-BOM managed). ANN search: `MemoryEmbeddingRepository.findNearest(userId,
+kind?, vectorLiteral, k)` — **native SQL** (`<=>` has no JPQL form, so `@SQLRestriction` does NOT
+apply → `is_deleted = false` is explicit in the query), returns a `MemoryMatch` projection
+(id/kind/refId/content/occurredOn + `distance`); `toVectorLiteral(float[])` renders the pgvector
+text literal the query binds. Proven by `MemoryEmbeddingRepositoryIT` over hand-seeded axis vectors
+(order, kind filter, ownership, soft-delete, k-limit, uq violation — no embedding provider in tests).
+**Filtered-ANN recall guard:** every pooled connection runs `SET hnsw.iterative_scan =
+strict_order` (Hikari `connection-init-sql`) — without it a `kind`-filtered `findNearest` silently
+returns fewer than k rows once the table outgrows the HNSW frontier (`hnsw.ef_search`, default 40);
+regression-proven by the 63-row frontier IT case.
 
 `KnowledgeFactEntity` + `LearnedFactEntity` (`entity/`) both `extends OwnedEntity`, soft-deleted;
 category/source/decision are `String` + `@Pattern` mirrors of the CHECK constraints with constants
@@ -483,6 +539,9 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   (accent-folded contains-match; only dose-CHANGE verbs trigger).
 - `mezo.companion.llm.chat-model` = `gemini-2.5-flash` (every turn) / `smart-model` =
   `gemini-2.5-pro` (heavy pipelines, unused until V3.2) — model tiers are config, not code (ADR 0008).
+- `mezo.companion.embedding.model` = `gemini-embedding-001` (`@NotBlank`) — the V2.1 embedding
+  model behind `EmbeddingPort`; the **768 dimension is structural** (the `vector(768)` schema +
+  `EmbeddingPort.DIMENSIONS` constant), deliberately NOT config.
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ## 5. Integrations
@@ -517,6 +576,14 @@ All model access goes through the `CompanionLlm` port (`CompanionLlm.java`). **C
 the seam:** `complete(systemPrompt, userMessage) → String` (V0.2 uses only `complete`; `stream(…) →
 Flux<String>` exists for V0.4). Real adapter `GeminiCompanionLlm` / test fake `FakeCompanionLlm`;
 provider swap = one new adapter + one starter swap (ADR 0008).
+
+**V2.1 embedding seam (✅ wired, unused until V2.2).** All embedding access goes through the
+`EmbeddingPort` (`EmbeddingPort.java`) — `embedDocuments(List<String>) → List<float[]>` /
+`embedQuery(String) → float[]`, unit vectors at `DIMENSIONS=768`. Real `GeminiEmbeddingAdapter`
+talks to the Google GenAI SDK `Client` bean directly (Spring AI 2.0.0 has no Gemini
+EmbeddingModel — the SDK call is the slice's provider decision, hidden by the port; same key as
+chat); fake `FakeEmbeddingAdapter` under `companion-fake` (seeded-random unit vectors +
+`[fake-embed:…]` sentinel).
 
 ### 5.4 Companion ↔ API contract & backend platform (wired)
 Companion is now a backed feature on the contract-first pipeline

@@ -48,6 +48,11 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testEmbeddingConfig_shouldBindModelFromYaml_whenContextStarts() {
+        assertThat(properties.embedding().model()).isEqualTo("gemini-embedding-001");
+    }
+
+    @Test
     void testToolsConfig_shouldBindToolTunablesFromYaml_whenContextStarts() {
         assertThat(properties.tools().maxCallsPerTurn()).isEqualTo(6);
         assertThat(properties.tools().maxWindowDays()).isEqualTo(30);
