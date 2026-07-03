@@ -6,7 +6,8 @@ updated: 2026-07-03
 tags: [platform, auth, backend, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth
-  - backend/src/main/java/io/mrkuhne/mezo/techcore
+  - backend/src/main/java/io/mrkuhne/mezo/techcore/security
+  - backend/src/main/java/io/mrkuhne/mezo/techcore/exception
   - api/feature/auth/auth.yml
   - backend/src/main/resources/application.yml
   - frontend/src/data/_client/auth.ts

@@ -20,10 +20,12 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 > snapshot** + the **top-N confirmed knowledge facts** in every system prompt, **8 read-only
 > tools** for history/aggregate questions (audited into the message envelopes, rendered as real
 > FE chips), answered **sync JSON or streamed SSE**, and consumed by the **real dual-mode
-> ChatPage**. **Status: backend ✅ V1.1 (spine + snapshot + SSE + tools/audit + fact
-> tables/CRUD/prompt-injection); FE ✅ V0.5 (ChatPage real incl. real tool-chips) — v0 „lát
-> engem" complete, v1 „megjegyez" started.** Cross-cutting Phase-3 domain with no route/tab of
-> its own — the surface is the Insights ChatPage ([`insights.md`](insights.md) §2.5).
+> ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
+> confirms on the **real KnowledgeListPage** (accept/refine/reject — L2). **Status: backend ✅
+> V1.2 (spine + snapshot + SSE + tools/audit + facts + extraction/decision); FE ✅ V1.2
+> (ChatPage + KnowledgeListPage real) — v0 „lát engem" complete, v1 „megjegyez" 2/3.**
+> Cross-cutting Phase-3 domain with no route/tab of its own — the surfaces are the Insights
+> ChatPage + KnowledgeListPage ([`insights.md`](insights.md) §2.4–2.5).
 
 ## 1. Summary
 
@@ -98,6 +100,23 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `- (kategória) tény` line each, `""` when none) and inserted into BOTH turn paths' system
   prompt **between the context snapshot and the history transcript**.
 
+**V1.2 (`mezo-fnnq.7`) shipped extraction + the confirm UI — the learning loop's front half:**
+
+- **Post-turn async extraction** — `ChatService` publishes `ChatTurnCompleted` (sync + streamed
+  turn); the `FactExtractionListener` (`@TransactionalEventListener(AFTER_COMMIT)` + `@Async`,
+  gated on `mezo.companion.extraction.enabled`) runs `FactExtractionService`: one cheap-tier
+  LLM call over the turn transcript (strict-JSON answer, defensively parsed), normalized
+  string-dedupe against confirmed facts + pending candidates, per-turn cap → undecided
+  `learned_fact` rows. A broken answer means zero candidates, never a broken turn.
+- **Decision endpoint + inbox** — `GET /api/companion/fact/candidate` (pending, newest first) +
+  `POST .../candidate/{id}/decision` (`accept|reject|refine` + `refinedText`); accept/refine
+  promote into `knowledge_fact` (`source=chat`) which the V1.1 top-N injection then carries
+  into every prompt. One decision per candidate (400 `COMPANION_CANDIDATE_ALREADY_DECIDED`).
+- **KnowledgeListPage goes real** — dual-mode `useKnowledge`/`useKnowledgeActions`
+  (`data/insights/knowledge{Api,Hooks}.ts`): pending L2 candidate cards (Elfogad / Pontosít
+  inline / Elvet), persisting `include_in_prompt` toggles, degraded banner on switch-off 404.
+  The FE `FactCategory` unified on the backend enum (`train|fuel|health|life`).
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -107,12 +126,14 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 | LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile, + forced-failure sentinels since V0.4, + `[fake-tool:…]` scripted tool execution since V0.5). |
 | Streaming (SSE) | ✅ V0.4 | `POST .../message/stream` — `delta`/`done`/`error` events, two-transaction turn, hand-written controller (§9 Decision 11). |
 | Tool calling + audit | ✅ V0.5 | 8 read tools over existing services; `RecordingToolCallback` audit + per-turn cap; `tool_calls`/`refs` envelopes persisted; `mezo.companion.tools.*` tunables. |
-| Frontend | ✅ V0.5 | ChatPage is real dual-mode: mock = Phase-1 seeded demo; real = bootstrap + SSE streaming + degraded state + **real tool-chips/refs on streamed turns**. Deployed k3s keeps the switch OFF until a real `GEMINI_API_KEY` lands. |
-| Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). Extraction + confirm UI = V1.2; redundancy guard = V1.3. |
-| Fact extraction / RAG / patterns | ❌ deferred | V1.2 (extraction+UI), V1.3 (advisors), V2.x (RAG), V3.x (patterns). |
+| Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). Deployed k3s keeps the switch OFF until a real `GEMINI_API_KEY` lands. |
+| Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
+| Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
+| Advisors / RAG / patterns | ❌ deferred | V1.3 (redundancy guard + advisors), V2.x (RAG), V3.x (patterns). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
-`mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts). **Design of record:**
+`mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI).
+**Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
 [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
@@ -199,6 +220,9 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
       5. persist the ASSISTANT row with audit.toToolCallsEnvelope()/toRefsEnvelope()
          (null when no tool ran — the V0.2 steady state is unchanged)
       6. touchConversation → lastMessageAt = now; title = first user msg (once)
+      6b. publish ChatTurnCompleted ── V1.2: AFTER_COMMIT → @Async FactExtractionListener
+          → FactExtractionService.extractFromTurn (cheap-tier LLM, JSON parse, dedupe, cap)
+          → undecided learned_fact candidates (the streamed path publishes in completeTurn)
   → CompanionMapper.toMessageResponse(assistant)   mapper/CompanionMapper.java:30
       (null envelope → []; envelope entry {type,name,args} → wire MessageTool{type, "name(args)"})
 ```
@@ -310,11 +334,12 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
   `idx_knowledge_fact_created_by_include_reinforcement (created_by, include_in_prompt,
   reinforcement_count desc)` — the injection query's key.
 - **`learned_fact`** — `id uuid pk`, owner columns as above, `candidate_text text`,
-  `derived_from_message_id uuid fk→ai_message ON DELETE SET NULL`, `user_decision varchar(16)`
-  (`ck_learned_fact_user_decision IN (accept,reject,refine)` — NULL passes = undecided),
-  `refined_text text`, `promoted_fact_id uuid fk→knowledge_fact ON DELETE SET NULL`; indexes on
-  `(created_by, user_decision)` + both loose-ref FKs. **No service/endpoint yet** — V1.2 brings
-  the extraction + decision flow.
+  `category varchar(16)` (`ck_learned_fact_category`, **added by the V1.2 migration**
+  `202607031812_mezo-fnnq.7_learned_fact_category.sql` — the extractor classifies at capture,
+  promotion carries it), `derived_from_message_id uuid fk→ai_message ON DELETE SET NULL`,
+  `user_decision varchar(16)` (`ck_learned_fact_user_decision IN (accept,reject,refine)` —
+  NULL passes = undecided), `refined_text text`, `promoted_fact_id uuid fk→knowledge_fact
+  ON DELETE SET NULL`; indexes on `(created_by, user_decision)` + both loose-ref FKs.
 
 ### Entities
 
@@ -347,7 +372,9 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `POST /api/companion/conversation/{id}/message/stream` | SSE `delta*, (done\|error)` | 200 · 400 · 401 · 404 | The **streamed** turn (V0.4, tag `CompanionStream`, **hand-written** — §9 Decision 11). Two-transaction; `error` ⇒ no assistant row. Non-2xx are plain JSON before the stream starts. |
 | `GET /api/companion/fact` | `KnowledgeFactResponse[]` | 200 · 401 | V1.1 — owner's facts, `reinforcement_count desc, created_at desc`. |
 | `POST /api/companion/fact` | `KnowledgeFactResponse` | 201 · 400 · 401 | V1.1 manual add — `CreateFactRequest {factText 1..500, category pattern}`; `source=manual`, `include_in_prompt=true`, `reinforcement_count=0`. |
-| `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the toggle surface for V1.2's UI). |
+| `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the KnowledgeListPage toggle). |
+| `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
+| `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
 
 **Schemas:** `ConversationResponse {id, title?, startedAt, lastMessageAt?}`,
 `MessageResponse {id, role, content, createdAt, tools[], refs[]}` (**filled since V0.5** on
@@ -393,6 +420,10 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   deduped in insertion order (V0.5).
 - `mezo.companion.facts.top-n` = **10** (`@Min(1) @Max(50)`) — how many confirmed facts (by
   reinforcement count, then newest) ride in every system prompt (V1.1).
+- `mezo.companion.extraction.enabled` = **true** — the V1.2 post-turn extraction master toggle
+  (`COMPANION_EXTRACTION_SWITCH`); off ⇒ the AFTER_COMMIT listener bean does not exist.
+- `mezo.companion.extraction.max-candidates-per-turn` = **3** (`@Min(1) @Max(10)`) — candidates
+  persisted per chat turn (dedupe runs before the cap).
 - `mezo.companion.llm.chat-model` = `gemini-2.5-flash` (every turn) / `smart-model` =
   `gemini-2.5-pro` (heavy pipelines, unused until V3.2) — model tiers are config, not code (ADR 0008).
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
@@ -460,15 +491,22 @@ is deliberately not wrapped); the IDENT-2 ArchUnit rule bans HTTP/mail client de
 package.
 
 **V1.1 facts seam (✅ wired).** The knowledge-fact block is companion-internal (no cross-feature
-read), but it is the seam the later slices hang onto: V1.2 extraction writes `learned_fact`
-candidates and promotes them into `knowledge_fact` (source=`chat`), V1.3's redundancy guard reads
-the same confirmed set, V3.3 promotes patterns into it (source=`pattern`) and increments
-`reinforcement_count`.
+read), but it is the seam the later slices hang onto: V1.2's extraction now writes `learned_fact`
+candidates and its decision flow promotes them into `knowledge_fact` (source=`chat`); V1.3's
+redundancy guard reads the same confirmed set; V3.3 promotes patterns into it (source=`pattern`)
+and increments `reinforcement_count`.
+
+**V1.2 Knowledge UI seam (✅ wired).** `useKnowledge()`/`useKnowledgeActions()`
+(`data/insights/knowledgeHooks.ts`) serve BOTH knowledge surfaces (Insights KnowledgeListPage —
+real inbox + toggles; Me KnowledgePage — mock-mode graph prototype, real-mode honest `edges: []`).
+**Contract crossing the seam:** `knowledgeApi` maps the wire (`factText`/`includeInPrompt`/
+`reinforcementCount`, `candidateText`) onto the lean FE domain (`text`/`active`/`reinforced`);
+`FactCategory` IS the backend enum since V1.2 ([`insights.md`](insights.md) §2.4, §5.1).
 
 **Named future seams:**
-- **V1.2** fact extraction + confirm UI (KnowledgeListPage goes real); **V2.3**
-  `find_similar_past_days` joins the tool registry; **V2.x** RAG over daily summaries;
-  **V3.x** pattern engine — see the roadmap dependency graph.
+- **V1.3** advisor chain reads the confirmed facts; **V2.3** `find_similar_past_days` joins the
+  tool registry; **V2.x** RAG over daily summaries; **V3.x** pattern engine — see the roadmap
+  dependency graph.
 
 ## 6. How to use it (consume)
 
@@ -525,6 +563,18 @@ curl -s -X PATCH $BASE/fact/$FID -H "Authorization: Bearer $TOKEN" -H 'Content-T
 Every prompt-included fact rides in the next chat turn's system prompt automatically (the
 `MEGERŐSÍTETT TÉNYEK` block) — with the fake adapter the echo makes it visible in the answer.
 
+```bash
+# 7) extraction candidates (V1.2) — pending inbox + one-tap decision
+curl -s $BASE/fact/candidate -H "Authorization: Bearer $TOKEN"
+curl -s -X POST $BASE/fact/candidate/$CAND_ID/decision -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' -d '{"decision":"accept"}'
+# refine: {"decision":"refine","refinedText":"Pontosított tény"} · reject: {"decision":"reject"}
+```
+
+Candidates appear automatically after chat turns (async extraction; with the fake adapter script
+them: `{"content":"mesélek [fake-facts:[{\"fact\":\"Laktózérzékeny\",\"category\":\"health\"}]]"}`).
+The FE surface is the Insights KnowledgeListPage (`/insights/knowledge`).
+
 ## 7. How to extend it
 
 Follow the per-slice checklist in the roadmap
@@ -547,10 +597,12 @@ execution checklist"). The house recipe, **contract-first**:
    ([`configuration_conventions.md`](../references/configuration_conventions.md)).
 
 **Where the next slices plug in:**
-- **V1.2 (extraction + confirm UI)** — post-turn extraction writes `learned_fact` candidates
-  (add the pending-inbox finders to `LearnedFactRepository`), the decision endpoint promotes
-  accepted ones via `KnowledgeFactService` (source=`chat`), and `KnowledgeListPage` goes real
-  over the existing fact CRUD + a new decision contract.
+- **V1.3 (never-ask-twice + advisors)** — the redundancy guard reads the confirmed
+  `knowledge_fact` set post-response; reinforcement (`reinforcement_count++`,
+  `last_reinforced_at`) starts here; the grounding-lite advisor wraps the port calls.
+- **New post-turn work?** — subscribe another `@TransactionalEventListener(AFTER_COMMIT)` to
+  `ChatTurnCompleted` (own switch, own `@Async` method, catch-everything) — the V1.2 listener
+  is the template; never do post-turn work inline in the turn transaction.
 - **New tool?** — add a `@Tool` method to the matching domain toolset (or a new one), wire it
   into `CompanionToolRegistry.callbacks(...)`, keep it read-only + `ToolContexts.userId`-scoped,
   add its render test to `CompanionToolsRenderIT` and the registry-batch assert in
@@ -652,6 +704,32 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   surface 404s with the switch off), `CompanionPropertiesIT` (`facts.top-n` binding).
 - New populators `KnowledgeFactPopulator`/`LearnedFactPopulator`; both tables in the
   `ResetDatabase` TRUNCATE list.
+
+**V1.2 test additions:**
+
+- **`FactExtractionServiceIT`** (6 tests, fake profile) — the fake answers extraction calls
+  (system prompt keyed on `EXTRACTION_MARKER`) with the `[fake-facts:<json>]` sentinel from the
+  turn content: happy-path persist (category + `derived_from_message_id`), dedupe vs
+  confirmed + pending (case/whitespace variants), per-turn cap, invalid-item drops
+  (unknown category / blank fact), not-JSON → zero rows without throwing, sentinel-less → zero.
+- **`FactCandidateServiceIT`** (7 tests) — pending list (undecided/newest/owner-scoped),
+  accept promotes (`source=chat`, category carried, `include_in_prompt` true), refine uses the
+  corrected text + requires it (FIELD error), reject promotes nothing, re-decide → 400
+  conflict, foreign → 404.
+- **`CompanionFactCandidateApiIT`** (5 tests, HTTP) — 401, accept round-trip (inbox empties +
+  the promoted fact appears in `GET /fact`), refine-without-text 400 FIELD, already-decided 400
+  REQUEST, unknown 404.
+- **`ChatExtractionFlowIT`** — the WHOLE pipeline over a committing HTTP turn (AFTER_COMMIT →
+  async → candidate row), ridden out with **Awaitility** (new test dependency);
+  `ChatExtractionSwitchOffIT` — extraction off ⇒ no listener bean.
+- **Test-infra hardening:** `AbstractIntegrationTest` drains leftover `@Async` work before each
+  test (bounded busy-wait on `applicationTaskExecutor`) — post-turn extraction from a previous
+  committing test must never race the next test's DB reset.
+- **FE:** `knowledgeApi.test.ts` (wire mapping + PATCH/POST bodies), `knowledgeHooks.test.tsx`
+  (mock seed; real bootstrap/degraded; mock cache-mutating + real invalidating actions),
+  `KnowledgeListPage.test.tsx` both modes (candidate actions, inline refine, toggle, degraded),
+  `KnowledgePage.test.tsx` pinned to mock mode (graph prototype); MSW fact/candidate fixtures
+  mirror the seeds.
 
 Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echoes/streams),
 `CompanionRealWiringIT` (Gemini adapter picked when the fake profile is absent), `CompanionSwitchOffIT`
@@ -763,6 +841,29 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     endpoint in the app; `ApiIntegrationTest` grew the `patchForBody` helper (the framework's
     add-to-base rule).
 
+**V1.2 decisions (locked in the V1.2 plan §"Decisions locked"):**
+
+26. **Trigger = Spring event, AFTER_COMMIT + @Async** (`ChatTurnCompleted`, published in both
+    turn paths; `PreparedTurn` grew `userMessageId` so streamed candidates anchor honestly).
+    In rolled-back `@Transactional` ITs the event never fires — no cross-test interference by
+    construction.
+27. **Cadence: per-turn async, config-gated** (`mezo.companion.extraction.enabled`) — the
+    roadmap's in-slice decision; daily batch deferred. The listener is the ONLY gated bean;
+    the service exists whenever companion is on (directly testable).
+28. **Extraction scope: the whole turn** (user + assistant text), restricted by prompt to facts
+    *Daniel stated or confirmed*. Strict-JSON over the existing two-string port — no port
+    change; defensive parse (first `[`..last `]`), unknown category/blank fact dropped.
+29. **Dedupe v1 = normalized string equality** (trim/lowercase/whitespace-collapse) vs confirmed
+    facts + pending candidates + the in-batch set; embedding-level dedupe re-evaluated after
+    V2.1. Accept does NOT re-dedupe (double-confirm collapse = V1.3 redundancy territory).
+30. **Decision lives on the candidate resource** (`/fact/candidate/{id}/decision`), one decision
+    per candidate, promotion writes `knowledge_fact` directly (`source=chat`); refine requires
+    `refinedText` as a service-level FIELD error (a conditional requirement the contract cannot
+    express).
+31. **FE taxonomy unified on the backend enum** — the mock seed remapped onto
+    `train|fuel|health|life`, 4 HU labels, colors reuse 4 existing `--cat-*` vars (no CSS
+    change); the Me graph page stays a mock-mode prototype (real mode: honest `edges: []`).
+
 **Gotchas:**
 
 - **The `CompanionLlm` bean is ABSENT when the switch is off** — it is
@@ -795,6 +896,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **Streamed tool turns run the tool reads OUTSIDE a transaction** (between TX #1 and TX #2) —
   every tool read is a self-contained repo/service call (`FuelDayService.getDay` carries its own
   `@Transactional(readOnly = true)`); don't add a lazy-walking read to a tool without one.
+- **Post-turn async work outlives the HTTP response** — a committing IT's extraction can still
+  be running when the next test starts; `AbstractIntegrationTest.drainAsyncWork()` guards this.
+  Any new AFTER_COMMIT listener inherits the guard for free (it drains the shared executor).
+- **The extraction listener swallows everything** (`log.warn`) — extraction must never affect a
+  chat turn. Don't "fix" the catch-all; alert on the log if it ever matters.
 
 **Deferred (with bd ids):**
 - **Deployed Gemini secret** — set a real `GEMINI_API_KEY` in the `mezo-app` secret, then drop
@@ -802,10 +908,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   prerequisite; until then the deployed chat is the honest degraded state). The v0 exit criterion
   ("mit egyek ma edzés előtt?" on the phone, grounded + chip-annotated) needs this to be provable
   end-to-end on the real model — the real-API tool smoke is part of that rollout.
-- **V1.2 extraction + confirm UI (`mezo-fnnq.7`) · V1.3 advisors (`mezo-fnnq.8`) · V2.x RAG
-  (pgvector) · V3.x patterns** — see the roadmap; `find_similar_past_days` joins the registry at
-  V2.3 (`mezo-fnnq.11`); `get_knowledge_facts(topic)` is a v1-batch tool candidate once facts
-  outgrow the top-N window.
+- **V1.3 advisors (`mezo-fnnq.8`) · V2.x RAG (pgvector) · V3.x patterns** — see the roadmap;
+  `find_similar_past_days` joins the registry at V2.3 (`mezo-fnnq.11`);
+  `get_knowledge_facts(topic)` is a v1-batch tool candidate once facts outgrow the top-N window.
+- **Knowledge graph edges** — the Me KnowledgePage graph layer has no backend (real mode renders
+  `edges: []`); file its slice when the graph view earns it.
 
 ## 10. Key files
 
@@ -821,6 +928,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`done`/`error` Flux over the port).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (6 HU blocks, `nincs adat` absences).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/KnowledgeFactService.java` — V1.1 fact CRUD + `renderPromptBlock` (top-N injection, `FACTS_HEADER`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactExtractionService.java` — V1.2 post-turn extraction (`EXTRACTION_MARKER`, parse/dedupe/cap).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/{ChatTurnCompleted,FactExtractionListener}.java` — the V1.2 AFTER_COMMIT async trigger.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactCandidateService.java` — V1.2 pending inbox + accept/refine/reject decision.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/AsyncConfiguration.java` — `@EnableAsync` (born with V1.2).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`).
 
 **Backend — LLM port (ADR 0008)**
@@ -845,26 +956,33 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — migration**
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.0_master.yml`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202607031812_mezo-fnnq.7_learned_fact_category.sql` (in `1.0.0_master.yml`).
 
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5 tool batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{AiConversationPopulator,AiMessagePopulator,KnowledgeFactPopulator,LearnedFactPopulator}.java` + `support/ResetDatabase.java` (companion tables in the TRUNCATE list).
 - `backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` — the two documented V0.4 allowlist entries (hand-written controller + fake-LLM raw exception) + the V0.5 `companion_tools_are_internal_sphere_only` rule.
 
-**Frontend (real since V0.4)**
+**Frontend (chat real since V0.4, knowledge since V1.2)**
 - `frontend/src/data/_client/api.ts` — `apiSse` (fetch-ReadableStream SSE reader) + its `api.sse.test.ts`.
 - `frontend/src/data/insights/chatApi.ts` — REST + stream client, `toChatMessage` wire mapper.
 - `frontend/src/data/insights/chatHooks.ts` — `useChat` (bootstrap dual-read) + `useChatActions` (send/stream state machine); re-exported from `data/hooks.ts`.
 - `frontend/src/data/insights/chat.ts` — the mock seed (`initialChat`) + the shared `cannedReply`.
-- `frontend/src/features/insights/pages/ChatPage.tsx` — the real dual-mode surface ([`insights.md`](insights.md) §2.5).
-- `frontend/src/test/msw/handlers.ts` — companion fixtures + the SSE stream handler.
+- `frontend/src/data/insights/knowledgeApi.ts` — V1.2 fact/candidate REST client + wire mappers.
+- `frontend/src/data/insights/knowledgeHooks.ts` — `useKnowledge` (facts+candidates dual-read) + `useKnowledgeActions` (toggle/decide).
+- `frontend/src/data/insights/knowledge.ts` — the mock seeds (`facts`, `candidateSeed`, `edges`) + the 4-category labels/colors.
+- `frontend/src/features/insights/pages/ChatPage.tsx` — the real dual-mode chat surface ([`insights.md`](insights.md) §2.5).
+- `frontend/src/features/insights/pages/KnowledgeListPage.tsx` — the real dual-mode L2 confirm surface ([`insights.md`](insights.md) §2.4).
+- `frontend/src/test/msw/handlers.ts` — companion fixtures (chat + facts/candidates) + the SSE stream handler.
 - `k8s/backend/deployment.yaml` — `MEZO_FEATURE_COMPANION_ENABLED=false` until the Gemini secret lands.
 
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 - Roadmap (14 slices): [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
+- V1.2 plan: [`docs/superpowers/plans/2026-07-03-companion-v12-fact-extraction.md`](../superpowers/plans/2026-07-03-companion-v12-fact-extraction.md)
 - V0.2 plan: [`docs/superpowers/plans/2026-07-03-companion-v02-conversations.md`](../superpowers/plans/2026-07-03-companion-v02-conversations.md)
 - V0.4 plan: [`docs/superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md`](../superpowers/plans/2026-07-03-companion-v04-sse-fe-chat.md)
 - V0.5 plan: [`docs/superpowers/plans/2026-07-03-companion-v05-tools.md`](../superpowers/plans/2026-07-03-companion-v05-tools.md)

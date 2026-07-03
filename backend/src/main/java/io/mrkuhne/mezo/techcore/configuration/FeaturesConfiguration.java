@@ -12,4 +12,7 @@ public class FeaturesConfiguration {
 
     /** Phase-3 companion (LLM chat + AI memory). Gates every CompanionLlm bean (ADR 0008). */
     public static final String COMPANION_SWITCH = "mezo.feature.companion.enabled";
+
+    /** V1.2 post-turn fact extraction — sub-switch of companion; gates ONLY the async listener. */
+    public static final String COMPANION_EXTRACTION_SWITCH = "mezo.companion.extraction.enabled";
 }

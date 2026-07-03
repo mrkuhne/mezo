@@ -62,8 +62,34 @@ public abstract class AbstractIntegrationTest {
     @Autowired
     private ResetDatabase resetDatabase;
 
+    @Autowired(required = false)
+    private org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor applicationTaskExecutor;
+
     @BeforeEach
     void resetDatabaseState() {
+        drainAsyncWork();
         resetDatabase.resetExceptMasterData();
+    }
+
+    /**
+     * V1.2: committed chat turns trigger AFTER_COMMIT {@code @Async} work (fact extraction).
+     * A leftover async task from a previous test must not race this test's DB reset or writes —
+     * wait until the executor is idle before truncating (bounded, so a hung task cannot stall the suite).
+     */
+    private void drainAsyncWork() {
+        if (applicationTaskExecutor == null) {
+            return;
+        }
+        long deadline = System.currentTimeMillis() + 2000;
+        while ((applicationTaskExecutor.getActiveCount() > 0
+                || !applicationTaskExecutor.getThreadPoolExecutor().getQueue().isEmpty())
+                && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
     }
 }

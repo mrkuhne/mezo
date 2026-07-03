@@ -1039,6 +1039,40 @@ export interface paths {
         patch: operations["updateFact"];
         trace?: never;
     };
+    "/api/companion/fact/candidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending (undecided) extraction candidates, newest first (V1.2) */
+        get: operations["listFactCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/fact/candidate/{candidateId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact (source=chat), reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent. */
+        post: operations["decideFactCandidate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/message/stream": {
         parameters: {
             query?: never;
@@ -2380,6 +2414,29 @@ export interface components {
             factText?: string | null;
             category?: string | null;
             includeInPrompt?: boolean | null;
+        };
+        FactCandidateResponse: {
+            /** Format: uuid */
+            id: string;
+            candidateText: string;
+            /** @description 'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time */
+            category: string;
+            /** @description 'accept' | 'reject' | 'refine' — null while pending */
+            userDecision?: string | null;
+            /** @description The user-edited wording when the decision was refine. */
+            refinedText?: string | null;
+            /**
+             * Format: uuid
+             * @description The knowledge fact this candidate was promoted into (accept/refine).
+             */
+            promotedFactId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        FactDecisionRequest: {
+            decision: string;
+            /** @description Required when decision is refine — the corrected fact wording. */
+            refinedText?: string | null;
         };
         StreamDelta: {
             /** @description One streamed answer chunk (token/segment delta). */
@@ -5651,6 +5708,88 @@ export interface operations {
                 };
             };
             /** @description Fact not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listFactCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending candidates awaiting an explicit L2 decision */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactCandidateResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decideFactCandidate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                candidateId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FactDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The decided candidate (promotedFactId set on accept/refine) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FactCandidateResponse"];
+                };
+            };
+            /** @description Validation error / candidate already decided */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Candidate not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;

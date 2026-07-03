@@ -202,3 +202,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql
+  - changeSet:
+      id: "1.0.0:202607031812_mezo-fnnq.7_learned_fact_category"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607031812_mezo-fnnq.7_learned_fact_category.sql

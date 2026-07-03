@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,14 +39,31 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted tool execution: {@code [fake-tool:get_sleep {"days":3}]} runs the real callback. */
     public static final Pattern TOOL_SENTINEL = Pattern.compile("\\[fake-tool:([a-z_]+)(?: (\\{.*?\\}))?]");
 
+    /** Scripted extraction (V1.2): {@code [fake-facts:<json-array>]} is returned verbatim to extraction calls. */
+    public static final Pattern FACTS_SENTINEL =
+            Pattern.compile("\\[fake-facts:(\\[.*?]|[^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         if (userMessage.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
         }
+        if (systemPrompt.startsWith(FactExtractionService.EXTRACTION_MARKER)) {
+            return factsAnswer(userMessage);
+        }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));
+    }
+
+    /**
+     * Extraction calls answer deterministically: the {@code [fake-facts:…]} sentinel payload found
+     * in the turn content becomes the "LLM" answer (a flat JSON array of fact objects, or any
+     * malformed payload a test scripts), {@code []} when the turn carries no sentinel.
+     */
+    private String factsAnswer(String userMessage) {
+        Matcher m = FACTS_SENTINEL.matcher(userMessage);
+        return m.find() ? m.group(1) : "[]";
     }
 
     @Override
