@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mock-only
-updated: 2026-07-02
+updated: 2026-07-03
 tags: [today, biometrics, frontend, data-layer]
 key_files:
   - frontend/src/features/today

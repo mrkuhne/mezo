@@ -60,7 +60,7 @@ output: FuelPlanToday                    // existing shape; FuelSlot gains mealI
 5 = +2 snacks; 6 = +3 snacks. Windows spread across the eating span (`wake+45min` → `kitchenClose`,
 where `kitchenClose = bed − 90min`), main meals at proportional positions, snacks between. Training
 adjustments (v1 rules, unit-test-pinned): the nearest meal/snack BEFORE a block snaps to `block − 75min`
-(pre-workout fueling); the nearest main meal AFTER a block snaps to `block end + 45min` (post-workout);
+(pre-workout fueling); the main meal NEAREST the block snaps to `block end + 45min` (post-workout);
 windows keep ≥ 90min spacing and never cross `kitchenClose`.
 
 **Per-slot budgets.** Slot weights: main meal 2, snack 1; the post-workout main meal weighs 2.5.
