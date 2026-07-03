@@ -60,7 +60,9 @@ public class FactCandidateService {
                 candidate.setPromotedFactId(promote(userId, request.getRefinedText(), candidate.getCategory()));
             }
             case LearnedFactEntity.DECISION_REJECT -> { /* decision only — nothing is promoted */ }
-            default -> throw new IllegalStateException("Contract pattern guarantees a known decision");
+            // unreachable while the contract pattern holds — honest 400 if it ever drifts
+            default -> throw new SystemRuntimeErrorException(
+                    SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
         candidate.setUserDecision(request.getDecision());
         return mapper.toFactCandidateResponse(learnedFactRepository.saveAndFlush(candidate));

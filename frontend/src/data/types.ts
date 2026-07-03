@@ -416,8 +416,12 @@ export interface BuiltProtocol {
 }
 
 // --- Tudás (knowledge) ---
-export type FactCategory = 'physiology' | 'preference' | 'trigger' | 'tendency' | 'goal_state'
+// V1.2: unified on the backend taxonomy (knowledge_fact.category CHECK constraint)
+export type FactCategory = 'train' | 'fuel' | 'health' | 'life'
 export interface KnowledgeFact { id: string; text: string; category: FactCategory; active: boolean; reinforced: number }
+/** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
+export interface FactCandidate { id: string; text: string; category: FactCategory }
+export type FactDecision = 'accept' | 'reject' | 'refine'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
 
 // --- Insights (AI-memory surface) ---

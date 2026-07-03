@@ -1,6 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { API_BASE } from '@/data/_client/api'
 import { initialChat, cannedReply } from '@/data/insights/chat'
+import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -458,6 +459,66 @@ export const handlers = [
       })),
     ),
   ),
+  // Companion knowledge facts (V1.2) — wire fixtures mirror the mock seeds so page/hook
+  // tests assert the same strings in both modes. Stateless by design: tests that need a
+  // mutating flow (accept → refetch without the candidate) override with server.use.
+  http.get(`${API_BASE}/api/companion/fact`, () =>
+    HttpResponse.json(
+      knowledgeSeed.map((f, i) => ({
+        id: f.id,
+        factText: f.text,
+        category: f.category,
+        source: 'manual',
+        reinforcementCount: f.reinforced,
+        includeInPrompt: f.active,
+        lastReinforcedAt: null,
+        createdAt: `2026-07-01T06:${String(i).padStart(2, '0')}:00Z`,
+      })),
+    ),
+  ),
+  http.get(`${API_BASE}/api/companion/fact/candidate`, () =>
+    HttpResponse.json(
+      candidateSeed.map((c, i) => ({
+        id: c.id,
+        candidateText: c.text,
+        category: c.category,
+        userDecision: null,
+        refinedText: null,
+        promotedFactId: null,
+        createdAt: `2026-07-03T06:0${i}:00Z`,
+      })),
+    ),
+  ),
+  http.patch(`${API_BASE}/api/companion/fact/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as { includeInPrompt?: boolean; factText?: string; category?: string }
+    const fact = knowledgeSeed.find((f) => f.id === params.id)
+    if (!fact) return HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })
+    return HttpResponse.json({
+      id: fact.id,
+      factText: body.factText ?? fact.text,
+      category: body.category ?? fact.category,
+      source: 'manual',
+      reinforcementCount: fact.reinforced,
+      includeInPrompt: body.includeInPrompt ?? fact.active,
+      lastReinforcedAt: null,
+      createdAt: '2026-07-01T06:00:00Z',
+    })
+  }),
+  http.post(`${API_BASE}/api/companion/fact/candidate/:id/decision`, async ({ params, request }) => {
+    const body = (await request.json()) as { decision: string; refinedText?: string }
+    const candidate = candidateSeed.find((c) => c.id === params.id)
+    if (!candidate) return HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND' }], { status: 404 })
+    return HttpResponse.json({
+      id: candidate.id,
+      candidateText: candidate.text,
+      category: candidate.category,
+      userDecision: body.decision,
+      refinedText: body.refinedText ?? null,
+      promotedFactId: body.decision === 'reject' ? null : `kf-${candidate.id}`,
+      createdAt: '2026-07-03T06:00:00Z',
+    })
+  }),
+
   http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
     const { content } = (await request.json()) as { content: string }
     const reply = cannedReply(content)
