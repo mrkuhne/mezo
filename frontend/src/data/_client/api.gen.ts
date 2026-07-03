@@ -2371,6 +2371,8 @@ export interface components {
             content: string;
             /** Format: date-time */
             createdAt: string;
+            /** @description True when the answer failed the V1.3 advisor self-check (redundancy / grounding / clinical) even after the corrective retry — render it flagged, honest (old docs §4.5 [degraded] semantics). Always false on user rows. */
+            degraded: boolean;
             /** @description Tool calls behind this answer (V0.5): read-tool invocations of this turn, name carries the args, e.g. "get_weight_trend(weeks=2)". Empty when the turn used no tools. */
             tools: components["schemas"]["MessageTool"][];
             /** @description Data references backing this answer (V0.5): entity refs contributed by the executed tools (deduped, capped). Empty when the turn used no tools. */

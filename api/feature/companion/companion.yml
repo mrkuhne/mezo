@@ -301,12 +301,18 @@ components:
         lastMessageAt: { type: string, format: date-time, nullable: true }
     MessageResponse:
       type: object
-      required: [id, role, content, createdAt, tools, refs]
+      required: [id, role, content, createdAt, tools, refs, degraded]
       properties:
         id: { type: string, format: uuid }
         role: { type: string, description: "'user' | 'assistant'" }
         content: { type: string }
         createdAt: { type: string, format: date-time }
+        degraded:
+          type: boolean
+          description: >-
+            True when the answer failed the V1.3 advisor self-check (redundancy / grounding /
+            clinical) even after the corrective retry — render it flagged, honest (old docs §4.5
+            [degraded] semantics). Always false on user rows.
         tools:
           type: array
           description: >-
