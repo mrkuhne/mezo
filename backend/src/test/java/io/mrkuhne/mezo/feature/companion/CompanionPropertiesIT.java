@@ -66,6 +66,7 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.recall().maxK()).isEqualTo(5);
         assertThat(properties.recall().minSimilarity()).isEqualTo(0.25);
         assertThat(properties.recall().candidatePool()).isEqualTo(20);
+        assertThat(properties.recall().renderMaxChars()).isEqualTo(300);
     }
 
     @Test

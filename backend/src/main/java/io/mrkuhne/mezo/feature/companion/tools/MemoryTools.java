@@ -24,9 +24,6 @@ import java.util.UUID;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class MemoryTools {
 
-    /** Per-memory render cap — the model needs the gist, not the full narrative re-quoted. */
-    private static final int RENDER_MAX_CHARS = 300;
-
     private final MemoryRecallService memoryRecallService;
     private final CompanionProperties properties;
 
@@ -36,9 +33,13 @@ public class MemoryTools {
             + " szöveges leírása; k = hány napot idézzen fel.")
     public String findSimilarPastDays(
             @ToolParam(description = "A keresett élmény/téma/állapot leírása") String description,
-            @ToolParam(required = false, description = "Hány hasonló napot idézzen fel") Integer k,
+            @ToolParam(required = false, description = "Hány hasonló napot idézzen fel (alapértelmezés 3)") Integer k,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
+        // 'required' only shapes the advertised schema — the model can still omit/null the arg.
+        if (description == null || description.isBlank()) {
+            return "Hasonló korábbi napok: " + ToolText.NO_DATA;
+        }
         int limit = ToolText.clamp(k, 1, properties.recall().maxK(), 3);
         List<RecalledMemory> memories = memoryRecallService.recallSimilarDays(userId, description, limit);
         if (memories.isEmpty()) {
@@ -47,8 +48,9 @@ public class MemoryTools {
         StringBuilder b = new StringBuilder("Hasonló korábbi napok (téma-egyezés és frissesség szerint):");
         for (RecalledMemory memory : memories) {
             ToolContexts.audit(toolContext).addRef("Memory", memory.occurredOn().toString());
-            String content = memory.content().length() > RENDER_MAX_CHARS
-                    ? memory.content().substring(0, RENDER_MAX_CHARS) + "…"
+            int renderCap = properties.recall().renderMaxChars();
+            String content = memory.content().length() > renderCap
+                    ? memory.content().substring(0, renderCap) + "…"
                     : memory.content();
             b.append('\n').append(memory.occurredOn())
                     .append(" (egyezés ").append(Math.round(memory.similarity() * 100)).append("%): ")

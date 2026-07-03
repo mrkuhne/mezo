@@ -623,6 +623,8 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   is noise, not a memory.
 - `mezo.companion.recall.candidate-pool` = **20** (`@Min(1) @Max(100)`) — ANN candidates fetched
   before the decay re-rank.
+- `mezo.companion.recall.render-max-chars` = **300** (`@Min(50) @Max(2000)`) — per-memory render
+  cap in the tool result (gist over full re-quote; token budget).
 - Feature switch `mezo.feature.companion.enabled` (`FeaturesConfiguration.COMPANION_SWITCH`).
 
 ## 5. Integrations

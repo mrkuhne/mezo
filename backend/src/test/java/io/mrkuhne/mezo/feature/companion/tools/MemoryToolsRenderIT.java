@@ -58,6 +58,18 @@ class MemoryToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testFindSimilarPastDays_shouldRenderNoData_whenDescriptionMissing() {
+        UUID owner = userPopulator.createUser().getId();
+
+        // 'required' is schema-advertised only — an omitting model must get an honest no-data,
+        // not a TOOL_FAILED internal error from an NPE deep in the embed path.
+        assertThat(memoryTools.findSimilarPastDays(null, 2, ctx(owner)))
+                .isEqualTo("Hasonló korábbi napok: nincs adat");
+        assertThat(memoryTools.findSimilarPastDays("   ", 2, ctx(owner)))
+                .isEqualTo("Hasonló korábbi napok: nincs adat");
+    }
+
+    @Test
     void testFindSimilarPastDays_shouldRenderNoData_whenNothingMatches() {
         UUID owner = userPopulator.createUser().getId();
 

@@ -9,7 +9,6 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -37,7 +36,8 @@ public class MemoryRecallService {
     private final MemoryEmbeddingRepository memoryEmbeddingRepository;
     private final CompanionProperties properties;
 
-    @Transactional(readOnly = true)
+    // No @Transactional: the native-query interface projection is fully materialized (no LAZY
+    // traversal), and skipping the tx keeps the connection free during the embed network call.
     public List<RecalledMemory> recallSimilarDays(UUID userId, String query, int k) {
         CompanionProperties.Recall recall = properties.recall();
         List<MemoryMatch> candidates = memoryEmbeddingRepository.findNearest(userId,

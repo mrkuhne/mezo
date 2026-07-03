@@ -155,6 +155,8 @@ mezo:
       min-similarity: 0.25
       # ANN candidates fetched before decay re-ranking
       candidate-pool: 20
+      # Per-memory render cap in the tool result (chars) — gist over full re-quote
+      render-max-chars: 300
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron

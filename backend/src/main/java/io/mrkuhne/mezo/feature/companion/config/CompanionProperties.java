@@ -93,7 +93,9 @@ public record CompanionProperties(
         /** Raw-cosine-similarity floor — below it a match is noise, not a memory (0..1). */
         @DecimalMin("0.0") @DecimalMax("1.0") double minSimilarity,
         /** ANN candidates fetched before decay re-ranking (recall quality vs query cost). */
-        @Min(1) @Max(100) int candidatePool
+        @Min(1) @Max(100) int candidatePool,
+        /** Per-memory render cap in the tool result (chars) — gist over full re-quote (token budget). */
+        @Min(50) @Max(2000) int renderMaxChars
     ) {}
 
     /** V2.2 nightly daily-summary job — the narrative memory's generator. */
