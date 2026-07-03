@@ -28,4 +28,12 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.snapshot().digestDays()).isEqualTo(7);
         assertThat(properties.snapshot().checkinNoteMaxChars()).isEqualTo(200);
     }
+
+    @Test
+    void testToolsConfig_shouldBindToolTunablesFromYaml_whenContextStarts() {
+        assertThat(properties.tools().maxCallsPerTurn()).isEqualTo(6);
+        assertThat(properties.tools().maxWindowDays()).isEqualTo(30);
+        assertThat(properties.tools().maxTrendWeeks()).isEqualTo(26);
+        assertThat(properties.tools().maxRefsPerTurn()).isEqualTo(10);
+    }
 }

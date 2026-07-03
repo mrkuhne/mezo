@@ -14,7 +14,8 @@ import org.springframework.validation.annotation.Validated;
 public record CompanionProperties(
     @NotNull @Valid Llm llm,
     @NotNull @Valid Chat chat,
-    @NotNull @Valid Snapshot snapshot
+    @NotNull @Valid Snapshot snapshot,
+    @NotNull @Valid Tools tools
 ) {
     /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
     public record Llm(
@@ -36,5 +37,17 @@ public record CompanionProperties(
         @Min(1) @Max(30) int digestDays,
         /** The latest check-in note is included verbatim, truncated to this many characters. */
         @Min(0) @Max(1000) int checkinNoteMaxChars
+    ) {}
+
+    /** V0.5 tool-calling tuning — per-turn budget + result-window clamps (token budget by construction). */
+    public record Tools(
+        /** Max recorded tool calls per chat turn; past it tools soft-fail with an honest in-band message. */
+        @Min(1) @Max(20) int maxCallsPerTurn,
+        /** Upper clamp for the day-window tool args (days=...). */
+        @Min(1) @Max(60) int maxWindowDays,
+        /** Upper clamp for get_weight_trend(weeks=...). */
+        @Min(1) @Max(52) int maxTrendWeeks,
+        /** Max refs persisted per turn (deduped, insertion-ordered). */
+        @Min(1) @Max(30) int maxRefsPerTurn
     ) {}
 }
