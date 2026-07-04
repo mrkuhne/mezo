@@ -121,8 +121,10 @@ public class KnowledgeFactService {
         if (ackDays == 0) {
             return "";
         }
+        // include_in_prompt is the user's kill-switch for EVERY injection channel — a toggled-off
+        // fact must never be announced either (review finding)
         List<KnowledgeFactEntity> fresh = repository
-                .findByCreatedByAndSourceAndCreatedAtGreaterThanEqualAndDeletedFalseOrderByCreatedAtDesc(
+                .findByCreatedByAndSourceAndIncludeInPromptTrueAndCreatedAtGreaterThanEqualAndDeletedFalseOrderByCreatedAtDesc(
                         userId, KnowledgeFactEntity.SOURCE_PATTERN,
                         Instant.now().minus(ackDays, ChronoUnit.DAYS));
         if (fresh.isEmpty()) {

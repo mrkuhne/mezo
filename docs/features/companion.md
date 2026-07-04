@@ -258,12 +258,15 @@ COMPLETE (all 14 slices):**
   tab owns its lifecycle. Repeat confirms never duplicate.
 - **Recurrence reinforcement** — when the nightly detection re-detects a CONFIRMED pattern in
   the SAME direction (sign of r), the promoted fact gets `reinforcement_count++` +
-  `last_reinforced_at`; the pattern's own stats stay frozen (the user judged THAT correlation).
-  Monitoring rows never reinforce (silent monitoring stays silent); a direction flip is NOT the
-  confirmed pattern recurring.
+  `last_reinforced_at` — at most once per `reinforce-cooldown-days` (7): the sliding window
+  re-counts the same evidence nightly, so uncapped increments would crowd the top-N injection.
+  The pattern's own stats stay frozen (the user judged THAT correlation). Monitoring rows never
+  reinforce (silent monitoring stays silent); a direction flip is NOT the pattern recurring.
 - **In-chat acknowledgment** — pattern-facts promoted within `facts.pattern-ack-days` (3) get an
   `ÚJ FELISMERÉSEK` block in BOTH chat paths' system prompt (after the top-N facts) — the
   companion naturally mentions "ezt megtanultam rólad" on the next conversation.
+  `include_in_prompt` is the user's kill-switch for EVERY injection channel: a toggled-off fact
+  is never announced either (review finding).
 - **Evidence link on the Knowledge tab** — additive `KnowledgeFactResponse.patternTitle` (the
   promoting pattern's title, batch reverse-lookup); the FE fact card renders a `minta: …` chip.
 
@@ -700,6 +703,9 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 - `mezo.companion.patterns.lookback-days` = **60** (`@Min(14) @Max(365)`) — correlation window.
 - `mezo.companion.patterns.min-n` = **8** (`@Min(3) @Max(60)`) — aligned-days floor before a pair
   may surface at all.
+- `mezo.companion.patterns.reinforce-cooldown-days` = **7** (`@Min(1) @Max(60)`) — a confirmed
+  pattern reinforces its promoted fact at most once per window (the nightly lookback slides one
+  day; re-counting the same evidence would inflate top-N ranks — review finding).
 - `mezo.companion.patterns.pairs` = the 8-pair catalog (`@NotEmpty`, each
   `{key, category, label, title, metric-a, metric-b, lag-days}`) — pair keys are pattern identity
   (never rename a live key); metrics come from the `MetricKey` enum.

@@ -136,7 +136,12 @@ public class PatternDetectionService {
         if (Math.signum(result.r()) != Math.signum(pattern.getR().doubleValue())) {
             return; // direction flipped — that is NOT the confirmed pattern recurring
         }
+        Instant cooldownFloor = Instant.now().minus(
+                properties.patterns().reinforceCooldownDays(), java.time.temporal.ChronoUnit.DAYS);
         knowledgeFactRepository.findById(pattern.getPromotedFactId()).ifPresent(fact -> {
+            if (fact.getLastReinforcedAt() != null && fact.getLastReinforcedAt().isAfter(cooldownFloor)) {
+                return; // the sliding window re-counts the SAME evidence — cool down (review finding)
+            }
             fact.setReinforcementCount(fact.getReinforcementCount() + 1);
             fact.setLastReinforcedAt(Instant.now());
             knowledgeFactRepository.saveAndFlush(fact);

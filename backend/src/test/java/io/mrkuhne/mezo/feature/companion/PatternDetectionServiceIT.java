@@ -101,13 +101,11 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
                 .isEmpty();
     }
 
+    @Autowired private io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator knowledgeFactPopulator;
+
     private KnowledgeFactEntity promotedFact(UUID owner) {
-        KnowledgeFactEntity fact = new KnowledgeFactEntity();
-        fact.setCreatedBy(owner);
-        fact.setFactText("Stressz rontja az alvást");
-        fact.setCategory("health");
-        fact.setSource(KnowledgeFactEntity.SOURCE_PATTERN);
-        return knowledgeFactRepository.saveAndFlush(fact);
+        return knowledgeFactPopulator.fact(owner, "Stressz rontja az alvást", "health", 0, true,
+                KnowledgeFactEntity.SOURCE_PATTERN);
     }
 
     @Test
@@ -126,6 +124,23 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         assertThat(after.getLastReinforcedAt()).isNotNull();
         // the confirmed pattern's stats stay frozen
         assertThat(patternRepository.findById(confirmed.getId()).orElseThrow().getN()).isEqualTo(12);
+    }
+
+    @Test
+    void testDetect_shouldReinforceOnlyOncePerCooldown_whenRunNightly() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+        KnowledgeFactEntity fact = promotedFact(owner);
+        PatternEntity confirmed = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_CONFIRMED);
+        confirmed.setPromotedFactId(fact.getId());
+        patternRepository.saveAndFlush(confirmed);
+
+        patternDetectionService.detect(owner);
+        patternDetectionService.detect(owner); // "next night" inside the cooldown window
+
+        // the sliding window re-counts the same evidence — one increment per cooldown, not per night
+        assertThat(knowledgeFactRepository.findById(fact.getId()).orElseThrow().getReinforcementCount())
+                .isEqualTo(1);
     }
 
     @Test
