@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class PatternDetectionService {
 
     private final MetricSeriesService metricSeriesService;
     private final PatternRepository patternRepository;
+    private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionProperties properties;
 
     /**
@@ -96,9 +98,15 @@ public class PatternDetectionService {
                 .findByCreatedByAndKindAndPairKeyAndDeletedFalse(
                         userId, PatternEntity.KIND_STATISTICAL, pair.key())
                 .orElse(null);
-        if (pattern != null && (PatternEntity.STATUS_CONFIRMED.equals(pattern.getStatus())
-                || PatternEntity.STATUS_REJECTED.equals(pattern.getStatus()))) {
-            return; // user-judged — frozen for the nightly job (V3.3 adds reinforcement)
+        if (pattern != null && PatternEntity.STATUS_CONFIRMED.equals(pattern.getStatus())) {
+            // V3.3: re-detecting a CONFIRMED pattern (same direction) reinforces its promoted
+            // fact — the stats themselves stay frozen (the user judged THAT correlation).
+            // Monitoring rows do NOT reinforce (decision: silent monitoring stays silent).
+            reinforcePromotedFact(pattern, result);
+            return;
+        }
+        if (pattern != null && PatternEntity.STATUS_REJECTED.equals(pattern.getStatus())) {
+            return; // user-judged — frozen for the nightly job
         }
         if (pattern == null) {
             pattern = new PatternEntity();
@@ -118,6 +126,28 @@ public class PatternDetectionService {
         pattern.setConfidence(null); // honest small-n — V3.2's critique fills it for hypotheses
         pattern.setLastDetectedAt(Instant.now());
         patternRepository.saveAndFlush(pattern);
+    }
+
+    /** Same-direction re-detection bumps the promoted fact's reinforcement (V3.3). */
+    private void reinforcePromotedFact(PatternEntity pattern, PearsonCorrelation.Result result) {
+        if (pattern.getPromotedFactId() == null || pattern.getR() == null) {
+            return;
+        }
+        if (Math.signum(result.r()) != Math.signum(pattern.getR().doubleValue())) {
+            return; // direction flipped — that is NOT the confirmed pattern recurring
+        }
+        Instant cooldownFloor = Instant.now().minus(
+                properties.patterns().reinforceCooldownDays(), java.time.temporal.ChronoUnit.DAYS);
+        knowledgeFactRepository.findById(pattern.getPromotedFactId()).ifPresent(fact -> {
+            if (fact.getLastReinforcedAt() != null && fact.getLastReinforcedAt().isAfter(cooldownFloor)) {
+                return; // the sliding window re-counts the SAME evidence — cool down (review finding)
+            }
+            fact.setReinforcementCount(fact.getReinforcementCount() + 1);
+            fact.setLastReinforcedAt(Instant.now());
+            knowledgeFactRepository.saveAndFlush(fact);
+            log.info("Confirmed pattern {} recurred — fact {} reinforced to {}",
+                    pattern.getPairKey(), fact.getId(), fact.getReinforcementCount());
+        });
     }
 
     /** Deterministic Hungarian description — strength + direction + the two metric labels. */

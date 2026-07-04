@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.api.dto.UpdateFactRequest;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -17,9 +19,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /** V1.1 knowledge facts — CRUD spine + the top-N prompt-injection block (roadmap §V1.1, spec §3 L3). */
 @Service
@@ -30,6 +35,10 @@ public class KnowledgeFactService {
     /** The injection block header — ChatService inserts it between the context snapshot and the history. */
     public static final String FACTS_HEADER = "\n\nMEGERŐSÍTETT TÉNYEK Danielről (legfontosabb elöl):\n";
 
+    /** The V3.3 acknowledgment header — freshly promoted pattern-facts the companion mentions once. */
+    public static final String NEW_PATTERN_FACTS_HEADER =
+            "\n\nÚJ FELISMERÉSEK (nemrég megerősített minták — említsd meg természetesen, hogy ezt megtanultad):\n";
+
     /** Deterministic Hungarian labels for the category enum — the snapshot's labelled-block idiom. */
     private static final Map<String, String> CATEGORY_LABELS = Map.of(
             "train", "edzés",
@@ -38,13 +47,19 @@ public class KnowledgeFactService {
             "life", "élet");
 
     private final KnowledgeFactRepository repository;
+    private final PatternRepository patternRepository;
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
 
     public List<KnowledgeFactResponse> list(UUID userId) {
+        // V3.3 evidence link: pattern-sourced facts carry their promoting pattern's title
+        Map<UUID, String> patternTitleByFactId = patternRepository
+                .findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(userId).stream()
+                .collect(Collectors.toMap(PatternEntity::getPromotedFactId, PatternEntity::getTitle,
+                        (first, second) -> first));
         return repository.findByCreatedByAndDeletedFalseOrderByReinforcementCountDescCreatedAtDesc(userId)
                 .stream()
-                .map(mapper::toKnowledgeFactResponse)
+                .map(fact -> mapper.toKnowledgeFactResponse(fact, patternTitleByFactId.get(fact.getId())))
                 .toList();
     }
 
@@ -93,6 +108,31 @@ public class KnowledgeFactService {
                     .append(") ")
                     .append(fact.getFactText())
                     .append('\n');
+        }
+        return block.toString();
+    }
+
+    /**
+     * The V3.3 acknowledgment block: pattern-facts promoted in the last {@code pattern-ack-days},
+     * so the companion can say "ezt megtanultam rólad" on the next conversation; "" when none.
+     */
+    public String renderNewPatternFactsBlock(UUID userId) {
+        int ackDays = properties.facts().patternAckDays();
+        if (ackDays == 0) {
+            return "";
+        }
+        // include_in_prompt is the user's kill-switch for EVERY injection channel — a toggled-off
+        // fact must never be announced either (review finding)
+        List<KnowledgeFactEntity> fresh = repository
+                .findByCreatedByAndSourceAndIncludeInPromptTrueAndCreatedAtGreaterThanEqualAndDeletedFalseOrderByCreatedAtDesc(
+                        userId, KnowledgeFactEntity.SOURCE_PATTERN,
+                        Instant.now().minus(ackDays, ChronoUnit.DAYS));
+        if (fresh.isEmpty()) {
+            return "";
+        }
+        StringBuilder block = new StringBuilder(NEW_PATTERN_FACTS_HEADER);
+        for (KnowledgeFactEntity fact : fresh) {
+            block.append("- ").append(fact.getFactText()).append('\n');
         }
         return block.toString();
     }

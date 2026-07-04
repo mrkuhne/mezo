@@ -167,6 +167,37 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSendMessage_shouldAcknowledgeFreshPatternFacts_whenPromotedRecently() {
+        UUID userId = databasePopulator.populateUser("chat-ack@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        // a freshly promoted pattern-fact (createdAt = now) sits inside the ack window (3 days)
+        factPopulator.fact(userId, "Stressz rontja az alvást", "health", 0, true, "pattern");
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        String echoed = answer.getContent();
+        assertThat(echoed).contains("ÚJ FELISMERÉSEK");
+        assertThat(echoed).contains("- Stressz rontja az alvást");
+        // ordering: the acknowledgment block sits between the facts block and the history
+        int facts = echoed.indexOf("MEGERŐSÍTETT TÉNYEK");
+        int ack = echoed.indexOf("ÚJ FELISMERÉSEK");
+        assertThat(ack).isGreaterThan(facts);
+    }
+
+    @Test
+    void testSendMessage_shouldNotAcknowledgeToggledOffPatternFact_whenPromptExcluded() {
+        UUID userId = databasePopulator.populateUser("chat-ack-off@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        // include_in_prompt=false is the user's kill-switch for EVERY injection channel
+        factPopulator.fact(userId, "Kikapcsolt felismerés", "health", 0, false, "pattern");
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        assertThat(answer.getContent()).doesNotContain("ÚJ FELISMERÉSEK");
+        assertThat(answer.getContent()).doesNotContain("Kikapcsolt felismerés");
+    }
+
+    @Test
     void testSendMessage_shouldOmitFactsBlock_whenUserHasNoFacts() {
         UUID userId = databasePopulator.populateUser("chat-no-facts@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);

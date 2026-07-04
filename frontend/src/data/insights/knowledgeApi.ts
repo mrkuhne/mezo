@@ -18,6 +18,7 @@ export function toKnowledgeFact(f: KnowledgeFactResponse): KnowledgeFact {
     category: f.category as FactCategory,
     active: f.includeInPrompt,
     reinforced: f.reinforcementCount,
+    patternTitle: f.patternTitle ?? undefined,
   }
 }
 

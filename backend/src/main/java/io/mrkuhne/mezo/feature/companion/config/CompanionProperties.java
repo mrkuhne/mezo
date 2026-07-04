@@ -55,7 +55,9 @@ public record CompanionProperties(
     /** V1.1 knowledge-fact injection — how much confirmed memory rides in every system prompt. */
     public record Facts(
         /** Top-N facts (by reinforcement count, then newest) injected into the system prompt. */
-        @Min(1) @Max(50) int topN
+        @Min(1) @Max(50) int topN,
+        /** V3.3: freshly promoted pattern-facts younger than this many days get an in-chat acknowledgment block (0 = off). */
+        @Min(0) @Max(30) int patternAckDays
     ) {}
 
     /** V1.2 post-turn fact extraction — async, per-turn, LLM-backed candidate capture. */
@@ -120,6 +122,10 @@ public record CompanionProperties(
         @Min(14) @Max(365) int lookbackDays,
         /** Minimum aligned sample size before a pair may surface at all (honest small-n gate). */
         @Min(3) @Max(60) int minN,
+        /** V3.3: a confirmed pattern's promoted fact reinforces at most once per this many days —
+         *  the nightly window slides by one day, so nightly increments would be the SAME evidence
+         *  re-counted (and would crowd the top-N injection). */
+        @Min(1) @Max(60) int reinforceCooldownDays,
         /** The metric-pair catalog — trim/re-lag pairs here; new metrics need a MetricKey entry. */
         @NotEmpty List<@Valid PatternPair> pairs
     ) {}

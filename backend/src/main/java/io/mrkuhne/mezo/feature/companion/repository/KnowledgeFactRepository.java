@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,4 +20,8 @@ public interface KnowledgeFactRepository extends JpaRepository<KnowledgeFactEnti
             UUID createdBy, Pageable pageable);
 
     Optional<KnowledgeFactEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
+    /** The V3.3 in-chat acknowledgment window — freshly promoted, still-prompt-enabled facts. */
+    List<KnowledgeFactEntity> findByCreatedByAndSourceAndIncludeInPromptTrueAndCreatedAtGreaterThanEqualAndDeletedFalseOrderByCreatedAtDesc(
+            UUID createdBy, String source, Instant since);
 }

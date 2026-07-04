@@ -475,6 +475,7 @@ export const handlers = [
         includeInPrompt: f.active,
         lastReinforcedAt: null,
         createdAt: `2026-07-01T06:${String(i).padStart(2, '0')}:00Z`,
+        patternTitle: null,
       })),
     ),
   ),

@@ -6,7 +6,10 @@ import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -23,6 +26,8 @@ import java.util.UUID;
 class CompanionPatternApiIT extends ApiIntegrationTest {
 
     @Autowired private PatternPopulator patternPopulator;
+    @Autowired private PatternRepository patternRepository;
+    @Autowired private KnowledgeFactRepository knowledgeFactRepository;
     @Autowired private UserPopulator userPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
@@ -62,6 +67,48 @@ class CompanionPatternApiIT extends ApiIntegrationTest {
                 new PatternDecisionRequest().decision("monitor"),
                 ownerAuthHeaders(), HttpStatus.OK, PatternResponse.class);
         assertThat(monitored.getStatus()).isEqualTo("monitoring");
+    }
+
+    @Test
+    void testDecidePattern_shouldPromoteIntoKnowledgeFact_whenFirstConfirm() {
+        PatternEntity pattern = patternPopulator.statistical(ownerId());
+
+        postForBody("/api/companion/pattern/" + pattern.getId() + "/decision",
+                new PatternDecisionRequest().decision("confirm"),
+                ownerAuthHeaders(), HttpStatus.OK, PatternResponse.class);
+
+        PatternEntity after = patternRepository.findById(pattern.getId()).orElseThrow();
+        assertThat(after.getPromotedFactId()).isNotNull();
+        KnowledgeFactEntity fact = knowledgeFactRepository.findById(after.getPromotedFactId()).orElseThrow();
+        assertThat(fact.getSource()).isEqualTo(KnowledgeFactEntity.SOURCE_PATTERN);
+        assertThat(fact.getFactText()).isEqualTo(pattern.getTitle());
+        assertThat(fact.getCategory()).isEqualTo("health"); // physiology → health (v1 heuristic)
+
+        // repeat confirm (via monitor detour) must NOT duplicate the fact
+        postForBody("/api/companion/pattern/" + pattern.getId() + "/decision",
+                new PatternDecisionRequest().decision("monitor"),
+                ownerAuthHeaders(), HttpStatus.OK, PatternResponse.class);
+        postForBody("/api/companion/pattern/" + pattern.getId() + "/decision",
+                new PatternDecisionRequest().decision("confirm"),
+                ownerAuthHeaders(), HttpStatus.OK, PatternResponse.class);
+        assertThat(patternRepository.findById(pattern.getId()).orElseThrow().getPromotedFactId())
+                .isEqualTo(after.getPromotedFactId());
+    }
+
+    @Test
+    void testListFacts_shouldCarryPatternTitle_whenFactWasPromoted() {
+        PatternEntity pattern = patternPopulator.statistical(ownerId());
+        postForBody("/api/companion/pattern/" + pattern.getId() + "/decision",
+                new PatternDecisionRequest().decision("confirm"),
+                ownerAuthHeaders(), HttpStatus.OK, PatternResponse.class);
+
+        List<io.mrkuhne.mezo.api.dto.KnowledgeFactResponse> facts = getForList("/api/companion/fact",
+                ownerAuthHeaders(), HttpStatus.OK, io.mrkuhne.mezo.api.dto.KnowledgeFactResponse.class);
+
+        assertThat(facts).anySatisfy(f -> {
+            assertThat(f.getSource()).isEqualTo("pattern");
+            assertThat(f.getPatternTitle()).isEqualTo(pattern.getTitle());
+        });
     }
 
     @Test

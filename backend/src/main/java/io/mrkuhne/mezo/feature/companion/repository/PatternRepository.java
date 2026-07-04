@@ -22,4 +22,7 @@ public interface PatternRepository extends JpaRepository<PatternEntity, UUID> {
     /** Status-scoped read — recentlyConfirmed on the FE, V3.3 promotion/reinforcement. */
     List<PatternEntity> findByCreatedByAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(
             UUID createdBy, String status);
+
+    /** All promoting patterns of a user — the V3.3 fact→pattern evidence-link batch map. */
+    List<PatternEntity> findByCreatedByAndPromotedFactIdIsNotNullAndDeletedFalse(UUID createdBy);
 }

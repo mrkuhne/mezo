@@ -32,6 +32,7 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
     @Test
     void testFactsConfig_shouldBindTopNFromYaml_whenContextStarts() {
         assertThat(properties.facts().topN()).isEqualTo(10);
+        assertThat(properties.facts().patternAckDays()).isEqualTo(3);
     }
 
     @Test
@@ -74,6 +75,7 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.patterns().cron()).isEqualTo("0 40 2 * * *");
         assertThat(properties.patterns().lookbackDays()).isEqualTo(60);
         assertThat(properties.patterns().minN()).isEqualTo(8);
+        assertThat(properties.patterns().reinforceCooldownDays()).isEqualTo(7);
         assertThat(properties.patterns().pairs()).hasSize(8);
         assertThat(properties.patterns().pairs().getFirst().key())
                 .isEqualTo("sleep-quality~next-day-training-rpe");

@@ -137,6 +137,9 @@ mezo:
       # V1.1 knowledge facts — how many confirmed facts (by reinforcement count, then newest)
       # are injected into every chat turn's system prompt
       top-n: 10
+      # V3.3: pattern-facts promoted within this many days get an in-chat acknowledgment
+      # block ("ezt megtanultam rólad"); 0 = off
+      pattern-ack-days: 3
     extraction:
       # V1.2 post-turn fact extraction — async candidate capture after every chat turn;
       # off = the AFTER_COMMIT listener bean does not exist (no extraction LLM call ever)
@@ -187,6 +190,9 @@ mezo:
       lookback-days: 60
       # Minimum aligned days before a pair may surface (honest small-n gate)
       min-n: 8
+      # A confirmed pattern reinforces its promoted fact at most once per this many days
+      # (the nightly window slides one day - re-counting the same evidence would inflate ranks)
+      reinforce-cooldown-days: 7
       # The metric-pair catalog: key is the pattern's stable identity (never rename a live key);
       # metric-b is read lag-days AFTER metric-a's day (0 = same day)
       pairs:

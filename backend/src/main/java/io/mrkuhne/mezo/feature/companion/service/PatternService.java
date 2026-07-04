@@ -2,7 +2,9 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -35,6 +37,7 @@ public class PatternService {
             "reject", PatternEntity.STATUS_REJECTED);
 
     private final PatternRepository patternRepository;
+    private final KnowledgeFactRepository knowledgeFactRepository;
     private final CompanionMapper mapper;
 
     public List<PatternResponse> list(UUID userId) {
@@ -56,6 +59,22 @@ public class PatternService {
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
         pattern.setStatus(status);
+        // V3.3: the learning loop closes — a FIRST confirm promotes the pattern into a durable
+        // knowledge fact (source=pattern, linked back); later un-confirms leave the fact alone
+        // (it is Daniel's knowledge now — the Knowledge tab owns its lifecycle).
+        if (PatternEntity.STATUS_CONFIRMED.equals(status) && pattern.getPromotedFactId() == null) {
+            pattern.setPromotedFactId(promote(userId, pattern));
+        }
         return mapper.toPatternResponse(patternRepository.saveAndFlush(pattern));
+    }
+
+    /** v1 category heuristic: physiology/trigger → health, response → train (documented). */
+    private UUID promote(UUID userId, PatternEntity pattern) {
+        KnowledgeFactEntity fact = new KnowledgeFactEntity();
+        fact.setCreatedBy(userId);
+        fact.setFactText(pattern.getTitle());
+        fact.setCategory("response".equals(pattern.getCategory()) ? "train" : "health");
+        fact.setSource(KnowledgeFactEntity.SOURCE_PATTERN);
+        return knowledgeFactRepository.saveAndFlush(fact).getId();
     }
 }

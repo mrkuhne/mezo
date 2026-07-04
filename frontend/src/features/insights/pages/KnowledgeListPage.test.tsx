@@ -61,6 +61,36 @@ describe('KnowledgeListPage (mock mode)', () => {
   })
 })
 
+describe('KnowledgeListPage (V3.3 evidence link, real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('a pattern-sourced fact renders the promoting pattern chip', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/fact`, () =>
+        HttpResponse.json([
+          {
+            id: 'pf1',
+            factText: 'Stressz rontja az alvást',
+            category: 'health',
+            source: 'pattern',
+            reinforcementCount: 2,
+            includeInPrompt: true,
+            lastReinforcedAt: null,
+            createdAt: '2026-07-04T02:40:00Z',
+            patternTitle: 'Stressz-szint ↔ aznapi alvásminőség',
+          },
+        ]),
+      ),
+      http.get(`${API_BASE}/api/companion/fact/candidate`, () => HttpResponse.json([])),
+    )
+    renderPage()
+
+    expect(await screen.findByText('Stressz rontja az alvást')).toBeInTheDocument()
+    expect(screen.getByText('minta: Stressz-szint ↔ aznapi alvásminőség')).toBeInTheDocument()
+  })
+})
+
 describe('KnowledgeListPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
