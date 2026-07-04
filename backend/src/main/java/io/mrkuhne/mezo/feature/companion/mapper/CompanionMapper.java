@@ -77,6 +77,11 @@ public interface CompanionMapper {
     }
 
     default KnowledgeFactResponse toKnowledgeFactResponse(KnowledgeFactEntity entity) {
+        return toKnowledgeFactResponse(entity, null);
+    }
+
+    /** V3.3: the list surface joins the promoting pattern's title (evidence link). */
+    default KnowledgeFactResponse toKnowledgeFactResponse(KnowledgeFactEntity entity, String patternTitle) {
         return KnowledgeFactResponse.builder()
                 .id(entity.getId())
                 .factText(entity.getFactText())
@@ -86,6 +91,7 @@ public interface CompanionMapper {
                 .includeInPrompt(entity.isIncludeInPrompt())
                 .lastReinforcedAt(toOffset(entity.getLastReinforcedAt()))
                 .createdAt(toOffset(entity.getCreatedAt()))
+                .patternTitle(patternTitle)
                 .build();
     }
 

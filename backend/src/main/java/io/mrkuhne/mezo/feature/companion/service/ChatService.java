@@ -81,6 +81,7 @@ public class ChatService {
         String systemPrompt = SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
                 + knowledgeFactService.renderPromptBlock(userId)
+                + knowledgeFactService.renderNewPatternFactsBlock(userId)
                 + renderHistory(loadWindow(userId, conversationId));
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false);
@@ -112,10 +113,12 @@ public class ChatService {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
 
         // Window BEFORE persisting the new message — the current content travels as the user param.
-        // Prompt order: voice -> context snapshot (V0.3) -> top-N knowledge facts (V1.1) -> history.
+        // Prompt order: voice -> snapshot (V0.3) -> top-N facts (V1.1) -> fresh pattern-facts
+        // acknowledgment (V3.3) -> history.
         String systemPrompt = SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, LocalDate.now())
                 + knowledgeFactService.renderPromptBlock(userId)
+                + knowledgeFactService.renderNewPatternFactsBlock(userId)
                 + renderHistory(loadWindow(userId, conversationId));
 
         AiMessageEntity userRow = persistMessage(

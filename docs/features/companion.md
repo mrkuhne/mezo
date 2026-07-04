@@ -248,6 +248,25 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `GeminiCompanionLlm` builds a second ChatClient on `llm.smart-model`; the fake keeps one
   marker dispatch).
 
+**V3.3 (`mezo-fnnq.14`) shipped pattern→knowledge promotion + reinforcement — the epic is
+COMPLETE (all 14 slices):**
+
+- **The learning loop closes** — a FIRST confirm on a pattern promotes it into a durable
+  `knowledge_fact` (`source=pattern`, factText = the pattern title, linked back via
+  `pattern.promoted_fact_id`; v1 category heuristic: physiology/trigger → health, response →
+  train). Later un-confirms leave the fact alone — it is Daniel's knowledge now, the Knowledge
+  tab owns its lifecycle. Repeat confirms never duplicate.
+- **Recurrence reinforcement** — when the nightly detection re-detects a CONFIRMED pattern in
+  the SAME direction (sign of r), the promoted fact gets `reinforcement_count++` +
+  `last_reinforced_at`; the pattern's own stats stay frozen (the user judged THAT correlation).
+  Monitoring rows never reinforce (silent monitoring stays silent); a direction flip is NOT the
+  confirmed pattern recurring.
+- **In-chat acknowledgment** — pattern-facts promoted within `facts.pattern-ack-days` (3) get an
+  `ÚJ FELISMERÉSEK` block in BOTH chat paths' system prompt (after the top-N facts) — the
+  companion naturally mentions "ezt megtanultam rólad" on the next conversation.
+- **Evidence link on the Knowledge tab** — additive `KnowledgeFactResponse.patternTitle` (the
+  promoting pattern's title, batch reverse-lookup); the FE fact card renders a `minta: …` chip.
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -266,7 +285,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Statistical patterns + Inbox | ✅ V3.1 | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
-| Pattern → fact promotion | ❌ deferred | V3.3 (`mezo-fnnq.14`) — the epic's last slice. |
+| Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
 `mezo-fnnq.5` (tools + chips) + `mezo-fnnq.6` (facts) + `mezo-fnnq.7` (extraction + confirm UI) +
@@ -276,7 +295,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 `mezo-fnnq.11` (similar-days recall) + `mezo-fnnq.12` (statistical patterns + Inbox; plan
 [`2026-07-04-companion-v31-statistical-patterns.md`](../superpowers/plans/2026-07-04-companion-v31-statistical-patterns.md)) +
 `mezo-fnnq.13` (hypothesis loop; plan
-[`2026-07-04-companion-v32-hypothesis-loop.md`](../superpowers/plans/2026-07-04-companion-v32-hypothesis-loop.md)).
+[`2026-07-04-companion-v32-hypothesis-loop.md`](../superpowers/plans/2026-07-04-companion-v32-hypothesis-loop.md)) +
+`mezo-fnnq.14` (promotion + reinforcement) — **all 14 slices of `mezo-fnnq` shipped**.
 **Design of record:**
 [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
 (§3 data model, §4 snapshot, §5 tool catalog, §6 guardrails); slice map
@@ -636,6 +656,8 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   deduped in insertion order (V0.5).
 - `mezo.companion.facts.top-n` = **10** (`@Min(1) @Max(50)`) — how many confirmed facts (by
   reinforcement count, then newest) ride in every system prompt (V1.1).
+- `mezo.companion.facts.pattern-ack-days` = **3** (`@Min(0) @Max(30)`) — pattern-facts younger
+  than this get the V3.3 in-chat acknowledgment block (0 = off).
 - `mezo.companion.extraction.enabled` = **true** — the V1.2 post-turn extraction master toggle
   (`COMPANION_EXTRACTION_SWITCH`); off ⇒ the AFTER_COMMIT listener bean does not exist.
 - `mezo.companion.extraction.max-candidates-per-turn` = **3** (`@Min(1) @Max(10)`) — candidates
@@ -787,9 +809,11 @@ owning features' existing reads date-scoped (sleep/sport/run/workout+sets/meal/F
 cycle/water/weight/check-in) — zero new cross-feature finders; `PatternsPage` consumes
 `usePatterns`/`usePatternActions` from `@/data/hooks` ([`insights.md`](insights.md) §2.1).
 
-**Named future seams:**
-- **V3.3** confirm-promotion into `knowledge_fact` (source=`pattern`) + recurrence reinforcement
-  + in-chat acknowledgment — the epic's last slice.
+**V3.3 promotion seam (✅ wired — the loop closes).** Pattern-confirm →
+`knowledge_fact(source=pattern)` → the V1.1 top-N injection carries it into every prompt → the
+V3.1 nightly re-detection reinforces it → the reinforcement raises its injection rank. The next
+epics (proactive briefing/heartbeat/memoir, Fuel P8) build on the now-complete
+snapshot+facts+summaries+patterns stack — see the roadmap's "Relationship to other roadmaps".
 
 ## 6. How to use it (consume)
 

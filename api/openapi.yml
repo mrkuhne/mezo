@@ -6190,6 +6190,12 @@ components:
         createdAt:
           type: string
           format: date-time
+        patternTitle:
+          type: string
+          nullable: true
+          description: >-
+            The promoting pattern's title (source=pattern facts only) — the V3.3
+            evidence link.
     CreateFactRequest:
       type: object
       required:

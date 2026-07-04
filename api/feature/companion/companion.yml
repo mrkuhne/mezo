@@ -410,6 +410,7 @@ components:
         includeInPrompt: { type: boolean, description: 'Whether the fact competes for the top-N system-prompt injection slots.' }
         lastReinforcedAt: { type: string, format: date-time, nullable: true }
         createdAt: { type: string, format: date-time }
+        patternTitle: { type: string, nullable: true, description: 'The promoting pattern''s title (source=pattern facts only) — the V3.3 evidence link.' }
     CreateFactRequest:
       type: object
       required: [factText, category]

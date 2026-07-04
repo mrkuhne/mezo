@@ -167,6 +167,24 @@ class ChatServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testSendMessage_shouldAcknowledgeFreshPatternFacts_whenPromotedRecently() {
+        UUID userId = databasePopulator.populateUser("chat-ack@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        // a freshly promoted pattern-fact (createdAt = now) sits inside the ack window (3 days)
+        factPopulator.fact(userId, "Stressz rontja az alvást", "health", 0, true, "pattern");
+
+        MessageResponse answer = chatService.sendMessage(userId, conversation.getId(), request("szia"));
+
+        String echoed = answer.getContent();
+        assertThat(echoed).contains("ÚJ FELISMERÉSEK");
+        assertThat(echoed).contains("- Stressz rontja az alvást");
+        // ordering: the acknowledgment block sits between the facts block and the history
+        int facts = echoed.indexOf("MEGERŐSÍTETT TÉNYEK");
+        int ack = echoed.indexOf("ÚJ FELISMERÉSEK");
+        assertThat(ack).isGreaterThan(facts);
+    }
+
+    @Test
     void testSendMessage_shouldOmitFactsBlock_whenUserHasNoFacts() {
         UUID userId = databasePopulator.populateUser("chat-no-facts@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);

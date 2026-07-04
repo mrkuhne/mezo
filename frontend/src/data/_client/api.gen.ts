@@ -2440,6 +2440,8 @@ export interface components {
             lastReinforcedAt?: string | null;
             /** Format: date-time */
             createdAt: string;
+            /** @description The promoting pattern's title (source=pattern facts only) — the V3.3 evidence link. */
+            patternTitle?: string | null;
         };
         CreateFactRequest: {
             factText: string;

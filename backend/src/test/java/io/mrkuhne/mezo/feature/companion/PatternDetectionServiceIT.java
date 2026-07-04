@@ -2,7 +2,9 @@ package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternDetectionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -34,6 +36,7 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
 
     @Autowired private PatternDetectionService patternDetectionService;
     @Autowired private PatternRepository patternRepository;
+    @Autowired private KnowledgeFactRepository knowledgeFactRepository;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
@@ -96,6 +99,65 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
         assertThat(patternRepository
                 .findByCreatedByAndKindAndPairKeyAndDeletedFalse(owner, PatternEntity.KIND_STATISTICAL, PAIR_KEY))
                 .isEmpty();
+    }
+
+    private KnowledgeFactEntity promotedFact(UUID owner) {
+        KnowledgeFactEntity fact = new KnowledgeFactEntity();
+        fact.setCreatedBy(owner);
+        fact.setFactText("Stressz rontja az alvást");
+        fact.setCategory("health");
+        fact.setSource(KnowledgeFactEntity.SOURCE_PATTERN);
+        return knowledgeFactRepository.saveAndFlush(fact);
+    }
+
+    @Test
+    void testDetect_shouldReinforcePromotedFact_whenConfirmedPatternRecursSameDirection() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+        KnowledgeFactEntity fact = promotedFact(owner);
+        PatternEntity confirmed = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_CONFIRMED);
+        confirmed.setPromotedFactId(fact.getId()); // populator r is -0.55 — same sign as the seed
+        patternRepository.saveAndFlush(confirmed);
+
+        patternDetectionService.detect(owner);
+
+        KnowledgeFactEntity after = knowledgeFactRepository.findById(fact.getId()).orElseThrow();
+        assertThat(after.getReinforcementCount()).isEqualTo(1);
+        assertThat(after.getLastReinforcedAt()).isNotNull();
+        // the confirmed pattern's stats stay frozen
+        assertThat(patternRepository.findById(confirmed.getId()).orElseThrow().getN()).isEqualTo(12);
+    }
+
+    @Test
+    void testDetect_shouldNotReinforce_whenDirectionFlipped() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10); // fresh r is NEGATIVE
+        KnowledgeFactEntity fact = promotedFact(owner);
+        PatternEntity confirmed = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_CONFIRMED);
+        confirmed.setR(new java.math.BigDecimal("0.5500")); // stored as POSITIVE — direction flipped
+        confirmed.setPromotedFactId(fact.getId());
+        patternRepository.saveAndFlush(confirmed);
+
+        patternDetectionService.detect(owner);
+
+        assertThat(knowledgeFactRepository.findById(fact.getId()).orElseThrow().getReinforcementCount())
+                .isZero();
+    }
+
+    @Test
+    void testDetect_shouldNotReinforce_whenPatternOnlyMonitoring() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+        KnowledgeFactEntity fact = promotedFact(owner);
+        PatternEntity monitoring = patternPopulator.statistical(owner, PAIR_KEY, PatternEntity.STATUS_MONITORING);
+        monitoring.setPromotedFactId(fact.getId());
+        patternRepository.saveAndFlush(monitoring);
+
+        patternDetectionService.detect(owner);
+
+        // monitoring rows refresh stats but never reinforce (silent monitoring stays silent)
+        assertThat(knowledgeFactRepository.findById(fact.getId()).orElseThrow().getReinforcementCount())
+                .isZero();
     }
 
     @Test

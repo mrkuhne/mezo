@@ -418,7 +418,15 @@ export interface BuiltProtocol {
 // --- Tudás (knowledge) ---
 // V1.2: unified on the backend taxonomy (knowledge_fact.category CHECK constraint)
 export type FactCategory = 'train' | 'fuel' | 'health' | 'life'
-export interface KnowledgeFact { id: string; text: string; category: FactCategory; active: boolean; reinforced: number }
+export interface KnowledgeFact {
+  id: string
+  text: string
+  category: FactCategory
+  active: boolean
+  reinforced: number
+  /** V3.3 evidence link — the promoting pattern's title on source=pattern facts. */
+  patternTitle?: string
+}
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
 export interface FactCandidate { id: string; text: string; category: FactCategory }
 export type FactDecision = 'accept' | 'reject' | 'refine'
