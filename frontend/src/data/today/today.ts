@@ -4,6 +4,7 @@ import type {
   UserMeta,
   VolleyballSession,
   Workout,
+  WorkoutPrediction,
 } from '@/data/types'
 
 export { fuelToday } from '@/data/fuel/fuel'
@@ -12,7 +13,7 @@ export const today: TodayMeta = {
   dayLabel: 'Csütörtök',
   dateLabel: 'Máj 22',
   workoutType: 'Pull Day',
-  workoutTime: '07:30',
+  workoutTime: '17:00',
   retaDay: 3,
   mesoPhase: 'MAV',
 }
@@ -108,6 +109,12 @@ export const workout: Workout = {
     detail: 'Március 18 óta enyhe niggle. Múlt héten szépen érezhető lett, ezért a Cable Pull-Around-ot előrébb hozzuk és a Lat Pulldown-nál pronated griffel megyünk (csukló kíméletesebb).',
   },
 }
+
+// Demo-only teaser copy (previously hardcoded in the components) — real mode passes
+// null instead (predictions + AI notes belong to the proactive epic).
+export const workoutPrediction: WorkoutPrediction = { confidence: 0.72, label: 'Chest Row PR 107.5 × 8' }
+export const volleyballNote =
+  'Pull Day 17:00, Volleyball 19:30. A T-2h carb-ablakot pre-volleyball-ra hozzuk · vacsorát 21:30 előtt zárjuk.'
 
 export const volleyballSessions: VolleyballSession[] = [
   { day: 'Hét', time: '18:15', duration: 90, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés' },

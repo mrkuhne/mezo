@@ -31,6 +31,10 @@ export function nowOffsetIso(d: Date = new Date()): string {
 // the HU display labels the UI expects (`Máj 1`, `Máj 20 · Sze`).
 const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
 const HU_DOW = ['Vas', 'Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo']
+const HU_DOW_FULL = ['Vasárnap', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat']
+
+/** Full Hungarian weekday name for a Date — the Today header's real-mode dayLabel. */
+export const huWeekdayFull = (d: Date = new Date()) => HU_DOW_FULL[d.getDay()]
 
 /** '2026-05-01' -> 'Máj 1' (Hungarian month abbrev, no leading zero). */
 export function huMonthDay(iso: string): string {
