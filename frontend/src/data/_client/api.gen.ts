@@ -729,6 +729,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/week/{start}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Seven-day nutrition rollup from {start} — per-day targets + consumed, no meal bodies (Terv weekly stats / Insights weekly read-model) */
+        get: operations["getFuelWeek"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/meal": {
         parameters: {
             query?: never;
@@ -2217,6 +2234,17 @@ export interface components {
             targets: components["schemas"]["MacroSet"];
             consumed: components["schemas"]["MacroSet"];
             meals: components["schemas"]["MealResponse"][];
+        };
+        FuelDayRollup: {
+            /** Format: date */
+            date: string;
+            targets: components["schemas"]["MacroSet"];
+            consumed: components["schemas"]["MacroSet"];
+        };
+        FuelWeekResponse: {
+            /** Format: date */
+            start: string;
+            days: components["schemas"]["FuelDayRollup"][];
         };
         WaterLogRequest: {
             /**
@@ -4906,6 +4934,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FuelDayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFuelWeek: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fuel week (7 rollups, start..start+6) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelWeekResponse"];
                 };
             };
             /** @description Missing/invalid token */

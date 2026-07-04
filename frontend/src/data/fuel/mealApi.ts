@@ -7,6 +7,7 @@ type MealItemRequest = components['schemas']['MealItemRequest']
 type MealResponse = components['schemas']['MealResponse']
 type MealItemResponse = components['schemas']['MealItemResponse']
 type FuelDayResponse = components['schemas']['FuelDayResponse']
+type FuelWeekResponse = components['schemas']['FuelWeekResponse']
 type WaterLogRequest = components['schemas']['WaterLogRequest']
 
 /** What the composed useFuelDay needs from the server (targets/consumed/meals). */
@@ -15,6 +16,17 @@ export interface FuelDayData {
   targets: MacroSet
   consumed: MacroSet
   meals: FuelMeal[]
+}
+
+/** One day of the 7-day rollup (`GET /api/fuel/week/{start}`) — no meal bodies. */
+export interface FuelWeekDay {
+  date: string
+  targets: MacroSet
+  consumed: MacroSet
+}
+export interface FuelWeekData {
+  start: string
+  days: FuelWeekDay[]
 }
 
 /** Editor input → contract request. The single `refId` is routed to recipeId | pantryItemId by
@@ -76,6 +88,11 @@ function fromDayResponse(d: FuelDayResponse): FuelDayData {
 export const mealApi = {
   getDay: (date: string): Promise<FuelDayData> =>
     apiFetch<FuelDayResponse>(`/api/fuel/day/${date}`).then(fromDayResponse),
+  getWeek: (start: string): Promise<FuelWeekData> =>
+    apiFetch<FuelWeekResponse>(`/api/fuel/week/${start}`).then((w) => ({
+      start: w.start,
+      days: w.days.map((d) => ({ date: d.date, targets: d.targets, consumed: d.consumed })),
+    })),
   create: (input: MealInput): Promise<void> =>
     apiFetch('/api/meal', { method: 'POST', body: JSON.stringify(toRequest(input)) }).then(() => undefined),
   update: (id: string, input: MealInput): Promise<void> =>

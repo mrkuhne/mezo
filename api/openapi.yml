@@ -1911,6 +1911,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/fuel/week/{start}':
+    get:
+      tags:
+        - Meal
+      operationId: getFuelWeek
+      summary: >-
+        Seven-day nutrition rollup from {start} — per-day targets + consumed, no
+        meal bodies (Terv weekly stats / Insights weekly read-model)
+      parameters:
+        - name: start
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Fuel week (7 rollups, start..start+6)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FuelWeekResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/meal:
     post:
       tags:
@@ -5636,6 +5664,33 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MealResponse'
+    FuelDayRollup:
+      type: object
+      required:
+        - date
+        - targets
+        - consumed
+      properties:
+        date:
+          type: string
+          format: date
+        targets:
+          $ref: '#/components/schemas/MacroSet'
+        consumed:
+          $ref: '#/components/schemas/MacroSet'
+    FuelWeekResponse:
+      type: object
+      required:
+        - start
+        - days
+      properties:
+        start:
+          type: string
+          format: date
+        days:
+          type: array
+          items:
+            $ref: '#/components/schemas/FuelDayRollup'
     WaterLogRequest:
       type: object
       required:

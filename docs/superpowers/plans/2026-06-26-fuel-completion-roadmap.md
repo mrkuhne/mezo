@@ -106,7 +106,19 @@ Three cheap decisions that unblock the rest. Each is an ADR in `docs/decisions/`
 
 ---
 
-## P4 — Weekly Plan / Rhythm (Terv)
+## P4 — Weekly Plan / Rhythm (Terv) ✅ SHIPPED (mezo-kpo, 2026-07-04)
+
+> **Shipped per the brief, one addition: a small server read-model.** `useFuelWeek` split into the
+> composing dual-mode `data/fuel/fuelWeekHooks.ts` (+ `useFuelWeekActions`); real mode = Train's
+> `deriveGymSchedule` week (default `DEFAULT_BLOCK_MIN` duration) + Train sport-schedule volleyball +
+> `toRetaCells(useMedication().cycle.week)` (the P3 leftover retaWeek swap — card hides on ghost) +
+> weekly stats from the **new `GET /api/fuel/week/{start}`** (`meal.yml`; `FuelDayService.getWeek`
+> loops the per-day rollup — the server aggregate D′ reuses). Sheet saves write through
+> (`gymDaysToSlots` → `PUT /api/train/gym-schedule`; day+time only — type/active meso-owned,
+> documented). Title date-derived in real mode; `weeklyStats` typed (`supplementsAdherence:
+> number | null` → honest `—`); patterns/supplement-map/coach-note honest-empty in real mode
+> (deferred to P8/proactive). Design spec: `docs/superpowers/specs/2026-07-04-fuel-p4-weekly-plan-design.md`.
+> Living doc: `docs/features/fuel.md` §2/§3/§4/§5.
 
 **Goal:** make the Terv weekly view real — gym-time edits persist (they vanish on reload today), and the week grid / Reta strip / weekly stats feed from real data.
 **Builds:** `GymScheduleSheet` writes through to Train's `PUT /api/train/gym-schedule` (per `P0a`); `WeekRhythmGrid` renders the real Train gym + volleyball week; `weeklyStats` (kcal avg / protein-hit days) from the now-real per-day meal rollups.

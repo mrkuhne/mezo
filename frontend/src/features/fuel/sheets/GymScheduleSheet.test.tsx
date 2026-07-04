@@ -1,12 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderHook } from '@testing-library/react'
 import { GymScheduleSheet } from '@/features/fuel/sheets/GymScheduleSheet'
-import { useFuelWeek } from '@/data/hooks'
+// Prop-driven sheet test — fed the Phase-1 seed directly (useFuelWeek became a composed
+// dual-mode hook in Fuel P4; the sheet itself stays mode-agnostic).
+import { gymSchedule } from '@/data/fuel/fuelWeek'
 
 function setup(onSave = () => {}, onClose = () => {}) {
-  const { result } = renderHook(() => useFuelWeek())
-  render(<GymScheduleSheet schedule={result.current.gymSchedule} onSave={onSave} onClose={onClose} />)
+  render(<GymScheduleSheet schedule={gymSchedule} onSave={onSave} onClose={onClose} />)
 }
 
 test('renders the schedule editor with day rows', () => {

@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.meal.controller;
 
 import io.mrkuhne.mezo.api.controller.MealApi;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.WaterLogRequest;
@@ -32,6 +33,11 @@ public class MealController implements MealApi {
     @Override
     public FuelDayResponse getFuelDay(LocalDate date) {
         return fuelDayService.getDay(currentUserId.get(), date);
+    }
+
+    @Override
+    public FuelWeekResponse getFuelWeek(LocalDate start) {
+        return fuelDayService.getWeek(currentUserId.get(), start);
     }
 
     @Override
