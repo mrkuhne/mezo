@@ -62,11 +62,16 @@ spec:
                 secretKeyRef:
                   name: mezo-app
                   key: MEZO_OWNER_NAME
-            # Phase-3 companion stays OFF in the deployed env until a real GEMINI_API_KEY
-            # lands in the mezo-app secret (mezo-fnnq.4 note) — the FE renders the switch-off
-            # 404 as an honest degraded chat state.
+            # Phase-3 companion is LIVE (activated 2026-07-04, epic mezo-fnnq complete):
+            # the Gemini key rides the mezo-app SealedSecret; the nightly/weekly crons
+            # (02:20 summaries, 02:40 patterns, Sun 03:00 hypotheses) fill the memory.
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: GEMINI_API_KEY
             - name: MEZO_FEATURE_COMPANION_ENABLED
-              value: "false"
+              value: "true"
           # startupProbe gives Spring Boot + Liquibase time to come up before
           # liveness/readiness start judging it. /actuator/health is exposed.
           startupProbe:
