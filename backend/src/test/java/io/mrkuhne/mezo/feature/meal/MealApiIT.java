@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.meal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealItemResponse;
 import io.mrkuhne.mezo.api.dto.MealRequest;
@@ -156,6 +157,21 @@ class MealApiIT extends ApiIntegrationTest {
         assertThat(day.getMeals()).isEmpty();
         assertThat(day.getTargets().getKcal()).isEqualByComparingTo("3100");
         assertThat(day.getConsumed().getKcal()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void testGetFuelWeek_shouldReturnSevenRollupsWithConfigTargets_whenNoMealsLogged() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        FuelWeekResponse week = getForBody(
+            "/api/fuel/week/2026-06-22", auth, HttpStatus.OK, FuelWeekResponse.class);
+
+        assertThat(week.getStart()).isEqualTo(LocalDate.of(2026, 6, 22));
+        assertThat(week.getDays()).hasSize(7);
+        assertThat(week.getDays().getFirst().getDate()).isEqualTo(LocalDate.of(2026, 6, 22));
+        assertThat(week.getDays().getLast().getDate()).isEqualTo(LocalDate.of(2026, 6, 28));
+        assertThat(week.getDays().getFirst().getTargets().getKcal()).isEqualByComparingTo("3100");
+        assertThat(week.getDays().getFirst().getConsumed().getKcal()).isEqualByComparingTo("0");
     }
 
     @Test

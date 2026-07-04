@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.FuelDayRollup;
+import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.feature.meal.config.NutritionTargetsProperties;
@@ -43,6 +45,31 @@ public class FuelDayService {
             .consumed(consumed(meals, water))
             .meals(meals)
             .build();
+    }
+
+    /**
+     * Seven-day rollup {@code start..start+6} — per-day config targets + consumed Σ, no meal
+     * bodies. Feeds the Terv weekly stats (kcal avg / protein-hit days) and is the designated
+     * server aggregate for the Insights Weekly review (Phase-2 roadmap D′).
+     */
+    @Transactional(readOnly = true)
+    public FuelWeekResponse getWeek(UUID userId, LocalDate start) {
+        List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
+            .map(d -> FuelDayRollup.builder()
+                .date(d)
+                .targets(targetSet())
+                .consumed(consumedFor(userId, d))
+                .build())
+            .toList();
+        return FuelWeekResponse.builder().start(start).days(days).build();
+    }
+
+    private MacroSet consumedFor(UUID userId, LocalDate date) {
+        List<MealResponse> meals = mealRepository
+            .findByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(userId, date).stream()
+            .map(mapper::toResponse)
+            .toList();
+        return consumed(meals, waterLogService.sumForDay(userId, date));
     }
 
     private MacroSet targetSet() {

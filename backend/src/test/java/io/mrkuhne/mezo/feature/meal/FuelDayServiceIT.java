@@ -3,8 +3,10 @@ package io.mrkuhne.mezo.feature.meal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealRequest;
+import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 class FuelDayServiceIT extends AbstractIntegrationTest {
 
     @Autowired private MealService service;
+    @Autowired private FuelDayService fuelDayService;
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
@@ -83,6 +86,52 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         assertThat(day.getConsumed().getF()).isEqualByComparingTo(BigDecimal.valueOf(5));
         // water is the real Σ of the day's water-log entries -> 0 with none logged
         assertThat(day.getConsumed().getWater()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void testGetWeek_shouldReturnSevenZeroRollups_whenNoMeals() {
+        LocalDate start = LocalDate.of(2026, 6, 22); // Monday
+
+        FuelWeekResponse week = fuelDayService.getWeek(owner, start);
+
+        assertThat(week.getStart()).isEqualTo(start);
+        assertThat(week.getDays()).hasSize(7);
+        assertThat(week.getDays().getFirst().getDate()).isEqualTo(start);
+        assertThat(week.getDays().getLast().getDate()).isEqualTo(start.plusDays(6));
+        assertThat(week.getDays()).allSatisfy(d -> {
+            assertThat(d.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(3100));
+            assertThat(d.getConsumed().getKcal()).isEqualByComparingTo(BigDecimal.ZERO);
+            assertThat(d.getConsumed().getWater()).isEqualByComparingTo(BigDecimal.ZERO);
+        });
+    }
+
+    @Test
+    void testGetWeek_shouldSumConsumedPerDay_whenMealsSpanDays() {
+        PantryItemEntity p = food("Csirkemell"); // 110/23/0/1.5 per 100 g
+        service.create(owner, mealAt(8, p.getId().toString(), "100"));  // Wed 06-24: 110 kcal / 23 P
+        service.create(owner, mealAt(13, p.getId().toString(), "200")); // Wed 06-24: 220 kcal / 46 P
+        MealRequest thursday = mealAt(13, p.getId().toString(), "100");
+        thursday.setLoggedAt(OffsetDateTime.of(2026, 6, 25, 13, 0, 0, 0, ZoneOffset.UTC));
+        service.create(owner, thursday);                                // Thu 06-25: 110 kcal / 23 P
+
+        FuelWeekResponse week = fuelDayService.getWeek(owner, LocalDate.of(2026, 6, 22));
+
+        assertThat(week.getDays().get(2).getConsumed().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(330));
+        assertThat(week.getDays().get(2).getConsumed().getP()).isEqualByComparingTo(BigDecimal.valueOf(69));
+        assertThat(week.getDays().get(3).getConsumed().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(110));
+        assertThat(week.getDays().get(0).getConsumed().getKcal()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void testGetWeek_shouldScopeToOwner_whenAnotherUsersMealsExist() {
+        UUID other = databasePopulator.populateUser("b@test.local");
+        PantryItemEntity p = pantryPopulator.createFood(other, "Rizs", LocalDate.of(2026, 5, 25));
+        service.create(other, mealAt(8, p.getId().toString(), "100"));
+
+        FuelWeekResponse week = fuelDayService.getWeek(owner, LocalDate.of(2026, 6, 22));
+
+        assertThat(week.getDays()).allSatisfy(
+            d -> assertThat(d.getConsumed().getKcal()).isEqualByComparingTo(BigDecimal.ZERO));
     }
 
     @Test

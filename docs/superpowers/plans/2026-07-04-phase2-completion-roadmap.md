@@ -42,7 +42,7 @@ The complete residual mock/partial surface (hook-level audit, 2026-07-04):
 
 | Hook | Domain | Status | Covered by |
 |---|---|---|---|
-| `useFuelWeek` | fuel | MOCK-ONLY | **Fuel P4** (`mezo-kpo`) |
+| `useFuelWeek` | fuel | ✅ REAL (2026-07-04) | **Fuel P4** (`mezo-kpo`) — shipped, incl. `GET /api/fuel/week/{start}` (the D′ server aggregate) |
 | `usePantry().imports/suggestions` | fuel | absent | **Fuel P6** (`mezo-bka`) |
 | `meal.score/breakdown` | fuel | null | **Fuel P7** (`mezo-yta`) |
 | `useInsights` (weekly/memoir/predictions/experiments) | insights | MOCK-ONLY | **D′** (`mezo-t16y.1`) |

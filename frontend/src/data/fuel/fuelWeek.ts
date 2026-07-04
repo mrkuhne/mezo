@@ -5,7 +5,16 @@ import type {
   RecurringPattern,
   ReplanScenario,
   StackRecommendation,
+  WeeklyStats,
 } from '@/data/types'
+
+// fuel-plan.jsx FuelPlanPage header title (55) — the mock demo week; real mode date-derives.
+export const weekTitle = 'Máj 18 – 24'
+
+// fuel-plan.jsx FuelPlanPage stats-card Mezo note (81–84) — hand-authored coach prose;
+// real mode returns null (the generated weekly note is proactive-epic work).
+export const weeklyNote =
+  'Most kell egy **középmagas-protein héttel** menni — Reta D3-D5 a peak étvágy-süllyedés.'
 
 // fuel-plan.jsx RetaWeekStrip phases (227–235)
 export const retaWeek: RetaDayCell[] = [
@@ -78,7 +87,7 @@ export const recurringPatterns: RecurringPattern[] = [
 ]
 
 // fuel-plan.jsx FuelPlanPage weekly stats magic numbers (58–63)
-export const weeklyStats = {
+export const weeklyStats: WeeklyStats = {
   kcalTarget: 3100,
   kcalAvgFactor: 0.91,
   proteinHitDays: 6,

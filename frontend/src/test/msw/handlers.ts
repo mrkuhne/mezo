@@ -383,6 +383,25 @@ export const handlers = [
   http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
     HttpResponse.json({ ...fuelDayFixture, date: String(params.date) }),
   ),
+  // 7-day rollup (Fuel P4, mezo-kpo) — two logged days (Mon 2800 kcal protein-hit, Tue 2635
+  // kcal below the 220 p target), the rest zero. kcal avg = 2717.5 → factor 2717.5/3100.
+  http.get(`${API_BASE}/api/fuel/week/:start`, ({ params }) => {
+    const start = String(params.start)
+    const day = (offset: number, consumed: { kcal: number; p: number; c: number; f: number; water: number }) => {
+      const d = new Date(`${start}T00:00:00`)
+      d.setDate(d.getDate() + offset)
+      return { date: d.toISOString().slice(0, 10), targets: fuelDayFixture.targets, consumed }
+    }
+    const zero = { kcal: 0, p: 0, c: 0, f: 0, water: 0 }
+    return HttpResponse.json({
+      start,
+      days: [
+        day(0, { kcal: 2800, p: 225, c: 300, f: 80, water: 2500 }),
+        day(1, { kcal: 2635, p: 180, c: 290, f: 75, water: 2000 }),
+        day(2, zero), day(3, zero), day(4, zero), day(5, zero), day(6, zero),
+      ],
+    })
+  }),
   http.post(`${API_BASE}/api/meal`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json({ ...mealFixture, ...body, id: 'me1f3a0e2-0000-4000-8000-0000000000be' }, { status: 201 })

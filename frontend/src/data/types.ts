@@ -368,6 +368,15 @@ export interface GymScheduleDay {
 }
 /** Standalone weekly gym slot (persists across mesocycles). `dayOfWeek`: 0=Hét .. 6=Vas. */
 export interface GymScheduleSlot { dayOfWeek: number; time: string }
+/** Terv weekly stats card. Real mode derives kcal/protein from the 7-day rollup
+ *  (`GET /api/fuel/week/{start}`); `supplementsAdherence` is null until planned-vs-taken
+ *  semantics exist (Fuel P8) — the card renders an honest `—`. */
+export interface WeeklyStats {
+  kcalTarget: number
+  kcalAvgFactor: number
+  proteinHitDays: number
+  supplementsAdherence: number | null
+}
 export interface WeeklySupplementRow { name: string; dose: string; days: number[]; color: string; note?: string }
 export interface RecurringPattern { icon: IconName; color: string; title: string; detail: string }
 export interface ReplanCascade { system: 'Fuel' | 'Train' | 'Sleep' | 'Insights'; impact: string; detail: string }
