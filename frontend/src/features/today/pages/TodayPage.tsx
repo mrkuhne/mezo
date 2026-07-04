@@ -16,7 +16,10 @@ import { AnchorModeView } from '@/features/today/pages/AnchorModeView'
 
 export function TodayPage() {
   const scenario = useTodayScenario()
-  const { today, user, workout, volleyballSessions } = useToday()
+  const {
+    today, user, workout, volleyballSessions,
+    workoutTime, prediction, volleyballNote, briefingDemo,
+  } = useToday()
   const { checkins, saveCheckIn } = useCheckins()
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
 
@@ -29,10 +32,12 @@ export function TodayPage() {
       <BrandRow />
       <RetaPhaseSection day={scenario.retaDay} />
       <DateMesoHeader today={today} user={user} />
-      <BriefingCard briefing={resolveBriefing(scenario.dayState)} />
+      <BriefingCard briefing={resolveBriefing(scenario.dayState)} demo={briefingDemo} />
       <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
-      <WorkoutTeaser workout={workout} niggle={scenario.niggle} />
-      <VolleyballCard session={todaySport} />
+      {workout && (
+        <WorkoutTeaser workout={workout} niggle={scenario.niggle} time={workoutTime} prediction={prediction} />
+      )}
+      <VolleyballCard session={todaySport} note={volleyballNote} />
       {scenario.vulnerable && <VulnerabilityCard />}
       <FuelTimelinePreview />
       <QuickStatsRow />

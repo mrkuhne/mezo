@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-07-03
+updated: 2026-07-04
 tags: [me, biometrics, progression, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/me
@@ -185,7 +185,7 @@ Domain types: `WeightEntry`, `WeightTrends`, `Goal`/`GoalKind`, `LinkedMeso`, `S
 The Me area's seams are mostly **conceptual/narrative** in the mock (illustrating the Phase-3 pattern engine) with a few **wired** code paths. Be precise about which is which.
 
 ### 5.1 Today ↔ Me (wired)
-`useProfile()` re-exports the same `user: UserMeta` object defined in `data/today/today.ts` (imported into `hooks.ts`). The whole `biometrics` backend feature is shared: Today's check-ins (`useCheckins` → `checkinApi`, `POST /api/biometrics/checkin`) are siblings of Me's weight/sleep under one backend package `feature/biometrics/{weight,sleep,checkin}` and one API client file `frontend/src/data/me/biometricsApi.ts`. **Contract crossing the seam:** `UserMeta` (profile), `CheckInResponse`/`SaveCheckInRequest` (Today). (`ProfilePage` no longer renders `user` fields after the strip — `mezo-lfw`; the `user` mock is now consumed by Today + `FuelStackPage`.)
+`useProfile()` re-exports the same `user: UserMeta` object defined in `data/today/today.ts` (imported into `hooks.ts`); since Slice T Today's real mode overrides the meso-derived fields (`weekInMeso`/`dayInWeek`/`mesoLabel`) from `useTrain()` — the identity statics remain the Slice-E `useProfile` decision. The whole `biometrics` backend feature is shared: Today's check-ins (`useCheckins` → `checkinApi`, `GET`+`POST /api/biometrics/checkin` — read+write since Slice T) are siblings of Me's weight/sleep under one backend package `feature/biometrics/{weight,sleep,checkin}` and one API client file `frontend/src/data/me/biometricsApi.ts`; Today's `useQuickStats` also reads the weight/sleep logs through Me's hooks (shared cache keys). **Contract crossing the seam:** `UserMeta` (profile), `CheckInResponse`/`SaveCheckInRequest` (Today). (`ProfilePage` no longer renders `user` fields after the strip — `mezo-lfw`; the `user` mock is now consumed by Today + `FuelStackPage`.)
 
 ### 5.2 Train ↔ `Cél` (real plan-links since G3)
 `Goal.mesocycles: string[]` holds plan IDs resolved via `linkedMesocycles`; **since G4b the `GoalsPage` lane is `<GoalTimeline>`** (consumes the raw `timeline.links[]` for start/end-week positions — `LinkedMeso` has no lane data — and `detachPlan` for the ✕ affordance). (**`FuelStackPage` no longer reads `linkedMesocycles`** — it decoupled to a seed const via `useStackContext`, mezo-09g / mezo-4nu #1.) **G4b also wires the attach direction (`GoalPlanSlots`/`AttachPlanSheet`):** the slots launch the Train planners (meso `/train/mesocycles/new`; run create-then-navigate to `/train/futas/:id`) and the attach sheet reads the Train plan lists (`useTrain().mesocycles` / `useRunning().runningBlocks`) to attach an owned plan to the goal (`attachPlan` → POST `/api/goals/{goalId}/plans`), excluding plans already in `timeline.links[]`. **Real since G3:** `useGoal` fetches `goalLinkApi.timeline(goalId)` (`GET /api/goals/{id}/timeline`) and builds `goal.mesocycles` (= `links.map(l => l.planId)`), `linkedMesocycles` (`Record<planId, LinkedMeso>` from each `link.plan`), and exposes the raw `timeline`. In **mock mode** they come from `data/me/goals.ts` (`linkedMesocycles` + the static `goalTimeline`). **Contract crossing the seam:** `GoalTimelineResponse` (`links[]` of `GoalPlanLinkResponse`, each with an embedded `GoalPlanRef` plan summary; plus `gaps[]`).

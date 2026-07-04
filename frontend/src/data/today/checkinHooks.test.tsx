@@ -2,12 +2,51 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, expect, test, vi } from 'vitest'
 import { useCheckins } from '@/data/hooks'
+import { buildDaySlots } from '@/data/today/checkinHooks'
+import type { CheckInResponse } from '@/data/me/biometricsApi'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { makeHookWrapper } from '@/test/queryWrapper'
 
 afterEach(() => {
   vi.unstubAllEnvs()
+})
+
+test('buildDaySlots derives wall-clock states for empty slots', () => {
+  const at = (h: number, m: number) => new Date(2026, 6, 4, h, m)
+  expect(buildDaySlots([], at(14, 30)).map(s => s.state)).toEqual(['skipped', 'skipped', 'now', 'pending'])
+  expect(buildDaySlots([], at(5, 0)).map(s => s.state)).toEqual(['pending', 'pending', 'pending', 'pending'])
+  expect(buildDaySlots([], at(21, 0)).map(s => s.state)).toEqual(['skipped', 'skipped', 'skipped', 'now'])
+})
+
+test('buildDaySlots overlays server rows onto the canonical slots', () => {
+  const rows: CheckInResponse[] = [
+    {
+      id: 'c1', date: '2026-07-04', slotTime: '06:30', state: 'done',
+      energy: 7, stress: 3, body: 6, mental: 7, note: 'reggel', savedAt: '2026-07-04T06:31:00Z',
+    },
+  ]
+  const slots = buildDaySlots(rows, new Date(2026, 6, 4, 9, 0))
+  expect(slots[0]).toMatchObject({ time: '06:30', state: 'done', note: 'reggel' })
+  expect(slots[0].values).toEqual({ energy: 7, stress: 3, body: 6, mental: 7 })
+  expect(slots[1].state).toBe('pending')
+})
+
+test('useCheckins (real mode) hydrates the strip from the day read', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/biometrics/checkin`, () =>
+      HttpResponse.json([
+        {
+          id: 'c1', date: '2026-07-04', slotTime: '06:30', state: 'done',
+          energy: 8, stress: 2, body: 7, mental: 8, note: null, savedAt: '2026-07-04T06:31:00Z',
+        },
+      ]),
+    ),
+  )
+  const { result } = renderHook(() => useCheckins(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.checkins[0].state).toBe('done'))
+  expect(result.current.checkins[0].values?.energy).toBe(8)
 })
 
 test('useCheckins (real mode) updates the slot locally AND POSTs exactly once with the slot body', async () => {
