@@ -21,7 +21,7 @@ running **k3s** `v1.35.5+k3s1` (single node, control-plane + workload). k3s bund
 
 | Namespace | What | Notes |
 |---|---|---|
-| `mezo` | the app: `postgres` (StatefulSet, image `pgvector/pgvector:pg16` since 2026-07-03 — companion V2.1), `backend` (Deployment), `frontend` (Deployment), `pgadmin` (Deployment) | the product |
+| `mezo` | the app: `postgres` (StatefulSet, image `pgvector/pgvector:pg16` since 2026-07-03 — companion V2.1), `backend` (Deployment — **Phase-3 companion LIVE since 2026-07-04**: `GEMINI_API_KEY` in the `mezo-app` SealedSecret, nightly crons 02:20/02:40 + Sun 03:00), `frontend` (Deployment), `pgadmin` (Deployment) | the product |
 | `kube-system` | k3s core (Traefik, CoreDNS, metrics-server, local-path) + **sealed-secrets controller** | platform |
 | `cert-manager` | cert-manager (Let's Encrypt certs) | public HTTPS |
 | `argocd` | ArgoCD (GitOps controller + UI) | deploys `k8s/` from git |
