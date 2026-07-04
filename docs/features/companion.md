@@ -27,7 +27,8 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 > (ChatPage + KnowledgeListPage real + degraded badge)
 > — v0 „lát engem" + v1 „megjegyez" + **v2 „emlékszik" complete**.**
 > Cross-cutting Phase-3 domain with no route/tab of its own — the surfaces are the Insights
-> ChatPage + KnowledgeListPage ([`insights.md`](insights.md) §2.4–2.5).
+> ChatPage + KnowledgeListPage ([`insights.md`](insights.md) §2.4–2.5). Nem-technikai
+> működés-magyarázó: [`docs/guides/companion-hogyan-mukodik.md`](../guides/companion-hogyan-mukodik.md).
 
 ## 1. Summary
 
