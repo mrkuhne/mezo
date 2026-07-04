@@ -34,7 +34,7 @@ Insights is the user-facing window onto mezo's N=1 self-model: it presents the b
 | Backend (Java) | 🔶 companion only | `feature/companion` backs the chat (`ai_conversation`/`ai_message`); no `pattern`/`knowledge_fact` backend yet. |
 
 This is **intentional**. Insights is the Phase-3 "AI brain" surface; the single FE↔data boundary (`frontend/src/data/hooks.ts`) is pre-built so the real-mode swap is mechanical, exactly as already proven for biometrics/Train. There are **two distinct roadmap stages** the doc keeps separate:
-- **Phase-2 Slice D — "Insights seed-only"**: create `pattern` / `knowledge_fact` / `ai_conversation` tables with seed rows, **no AI** — `docs/superpowers/specs/2026-06-10-phase2-backend-design.md:126`; status ⏳ remaining (`docs/milestones/roadmap.md:12`).
+- **Phase-2 Slice D — "Insights seed-only"**: **DROPPED as superseded (2026-07-04 re-map)** — Phase 3 built the real `pattern`/`knowledge_fact`/`ai_conversation` stack, so seeding was never needed. What remains is **D′** (`mezo-t16y.1`): deterministic Weekly review + honest surface for Memoir/Predictions/Experiments — `docs/superpowers/plans/2026-07-04-phase2-completion-roadmap.md` §D′.
 - **Phase 3 — the actual AI**: Spring AI + pgvector + RAG + pattern/companion pipeline (`docs/milestones/roadmap.md:13`).
 
 Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Slice D §126; Phase-3 out of scope §6) · `docs/milestones/roadmap.md:12-13`.
@@ -263,7 +263,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 ## 9. Decisions, gotchas & deferred
 
 - **Mock-only, intentionally** — Insights is the Phase-3 brain surface; the FE↔data boundary (`hooks.ts`) is pre-built for a mechanical real-mode swap, matching biometrics/Train.
-- **Two roadmap stages, do not conflate:** (a) Phase-2 **Slice D "Insights seed-only"** = tables + seed rows, *no AI* (`design spec:126`; ⏳ `roadmap.md:12`); (b) Phase-3 = the actual AI (Spring AI/pgvector/RAG, `roadmap.md:13`).
+- **Two roadmap stages, do not conflate:** (a) Phase-2 Insights work is now **D′** (deterministic Weekly + honest surface, `mezo-t16y.1` — the old seed-only Slice D was dropped as superseded on 2026-07-04); (b) Phase-3 = the actual AI (Spring AI/pgvector/RAG) — ✅ shipped (`mezo-fnnq`, see `companion.md`).
 - **All interactivity is local/ephemeral:** pattern Confirm/Monitor/Reject, knowledge Toggle, memoir reactions, chat send — none persist. These are the **validation/feedback loops to wire to the backend** in Phase 3.
 - **Chat is fully faked:** `setTimeout` + keyword branch on `"fáradt"`; `"Gemini 3.1 Pro"`, `"23 facts active"`, `"L4 aktív"`, `"60-day acc 68%"` are **hard-coded strings**, not derived. The named tool calls are illustrative, not real endpoints.
 - **Two overlapping "insight" types:** rich `Pattern` (Insights tab) vs lightweight `TrendInsight` (`InsightCard`, embedded in Goals/Sleep, `types.ts:157-158`). And **two category enums** that overlap but differ: `PatternCategory` (`physiology|trigger|response`) vs `FactCategory` (`physiology|preference|trigger|tendency|goal_state`). Phase 3 must decide whether to unify.
