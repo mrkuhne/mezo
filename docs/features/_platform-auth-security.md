@@ -2,7 +2,7 @@
 title: Auth & Security
 type: feature-platform
 status: mixed
-updated: 2026-07-03
+updated: 2026-07-04
 tags: [platform, auth, backend, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/auth

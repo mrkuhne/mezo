@@ -23,11 +23,15 @@ export function PeoplePage() {
   const [prechosen, setPrechosen] = useState<string | undefined>(undefined)
   const [detailPerson, setDetailPerson] = useState<PersonEntry | null>(null)
 
+  // "Hét" = rolling 7 days anchored to the newest mention (works for live data AND the mock seed;
+  // the old hardcoded '2026-05-18' threshold only made sense for the seed's May dates).
+  const newestMs = mentions.reduce((a, m) => Math.max(a, new Date(m.ts).getTime()), 0)
+  const weekFloorMs = newestMs - 7 * 86_400_000
   const visible =
     filter === 'all'
       ? mentions
       : filter === 'week'
-        ? mentions.filter(m => m.ts >= '2026-05-18')
+        ? mentions.filter(m => new Date(m.ts).getTime() >= weekFloorMs)
         : mentions.filter(m => m.flagged)
 
   return (

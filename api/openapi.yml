@@ -62,6 +62,8 @@ tags:
       vocabulary, so the endpoint is hand-written (CompanionStreamController)
       while the contract stays the single source of truth. See
       docs/features/_platform-api-backend.md §9.
+  - name: People
+    description: Inner-circle persons + mention logging (Emberek)
 paths:
   /api/auth/login:
     post:
@@ -2818,6 +2820,71 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/people:
+    get:
+      tags:
+        - People
+      operationId: getPeopleBootstrap
+      summary: >-
+        Persons (mention-count desc) + recent mentions (ts desc, max 50) of the
+        current user
+      responses:
+        '200':
+          description: People bootstrap
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeopleResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}/mentions':
+    post:
+      tags:
+        - People
+      operationId: logMention
+      summary: Log a mention for an owned person (source/ts/flagged are server-stamped)
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogMentionRequest'
+      responses:
+        '201':
+          description: Mention created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentionResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Person missing or foreign (indistinguishable)
           content:
             application/json:
               schema:
@@ -6434,3 +6501,137 @@ components:
         decision:
           type: string
           pattern: ^(confirm|monitor|reject)$
+    LogMentionRequest:
+      type: object
+      required:
+        - tone
+      properties:
+        tone:
+          type: string
+          pattern: ^(positive|neutral|mixed|negative)$
+        text:
+          type: string
+          maxLength: 500
+    PeopleResponse:
+      type: object
+      required:
+        - persons
+        - mentions
+      properties:
+        persons:
+          type: array
+          items:
+            $ref: '#/components/schemas/PersonResponse'
+        mentions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MentionResponse'
+    PersonResponse:
+      type: object
+      required:
+        - id
+        - name
+        - initial
+        - relationship
+        - relationshipHu
+        - affectBaseline
+        - mentionCount
+        - mentionsThisWeek
+        - knownFacts
+        - ties
+        - affectTrend
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        initial:
+          type: string
+        relationship:
+          type: string
+          enum:
+            - partner
+            - teammate
+            - mentee
+        relationshipHu:
+          type: string
+        affectBaseline:
+          type: string
+          enum:
+            - positive
+            - neutral
+            - mixed
+            - negative
+        contactCadenceLabel:
+          type: string
+        notes:
+          type: string
+        knownFacts:
+          type: array
+          items:
+            type: string
+        ties:
+          type: array
+          items:
+            type: string
+        affectTrend:
+          type: array
+          items:
+            type: integer
+        mentionCount:
+          type: integer
+          description: 'Count of live mention rows — computed, never seeded'
+        mentionsThisWeek:
+          type: integer
+          description: Mentions in the rolling last 7 days
+        lastMentionedAt:
+          type: string
+          format: date-time
+    MentionResponse:
+      type: object
+      required:
+        - id
+        - ts
+        - personId
+        - personName
+        - source
+        - excerpt
+        - tone
+        - flagged
+      properties:
+        id:
+          type: string
+          format: uuid
+        ts:
+          type: string
+          format: date-time
+        personId:
+          type: string
+          format: uuid
+        personName:
+          type: string
+        source:
+          type: string
+          enum:
+            - voice
+            - camera
+            - chip
+            - text
+        durationS:
+          type: integer
+        excerpt:
+          type: string
+        tone:
+          type: string
+          enum:
+            - positive
+            - neutral
+            - mixed
+            - negative
+        tiedToKind:
+          type: string
+        tiedToLabel:
+          type: string
+        flagged:
+          type: boolean
