@@ -1,5 +1,8 @@
 # Companion Roadmap — Phase 3 chat & AI memory, phased master plan (V0.1–V3.3)
 
+> **STATUS: ✅ COMPLETE (2026-07-04)** — all 14 slices (`mezo-fnnq.1`–`.14`) shipped; the epic is
+> closed. This doc remains as the design-of-record map; live state: `docs/features/companion.md`.
+>
 > **What this is.** The single durable map for building the **Phase 3 AI brain** — the context-aware
 > companion chat — in 14 session-sized slices across 4 value stages. It is a *roadmap of slices*, not an
 > implementation plan: each slice gets its OWN detailed plan (and, where marked, a dated `specs/` ADR/design
