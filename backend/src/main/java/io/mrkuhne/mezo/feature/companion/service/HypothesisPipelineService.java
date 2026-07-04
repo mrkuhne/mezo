@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -102,9 +104,12 @@ public class HypothesisPipelineService {
             return 0;
         }
         int max = properties.hypotheses().maxPerRun();
+        // null-safe end to end: JDK Set.of().contains(null) THROWS, and a category-less
+        // proposal is valid-looking LLM output — it must skip one hypothesis, never the round
         List<Hypothesis> proposals = propose(userId, context).stream()
+                .filter(java.util.Objects::nonNull)
                 .filter(h -> h.title() != null && !h.title().isBlank())
-                .filter(h -> CATEGORIES.contains(h.category()))
+                .filter(h -> h.category() != null && CATEGORIES.contains(h.category()))
                 .limit(max)
                 .toList();
         int persisted = 0;
@@ -131,7 +136,7 @@ public class HypothesisPipelineService {
         if (score >= config.reviseThreshold()) {
             Hypothesis revised = revise(context, hypothesis, critique);
             if (revised == null || revised.title() == null || revised.title().isBlank()
-                    || !CATEGORIES.contains(revised.category())) {
+                    || revised.category() == null || !CATEGORIES.contains(revised.category())) {
                 return false;
             }
             Critique reCritique = critique(context, revised);
@@ -270,8 +275,7 @@ public class HypothesisPipelineService {
             return "hyp-" + HexFormat.of().formatHex(digest, 0, 4);
         } catch (Exception e) {
             // unreachable — SHA-256 is JDK-guaranteed; error_handling.md forbids raw runtime types
-            throw new io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException(
-                    io.mrkuhne.mezo.techcore.exception.SystemMessage.error("INTERNAL_ERROR").build());
+            throw new SystemRuntimeErrorException(SystemMessage.error("INTERNAL_ERROR").build());
         }
     }
 

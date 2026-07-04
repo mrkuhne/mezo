@@ -115,6 +115,20 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRun_shouldSkipCategorylessProposal_whenSiblingIsValid() {
+        UUID owner = userPopulator.createUser().getId();
+        // a category-less proposal is valid-looking LLM output — it must not abort the round
+        seedContext(owner, """
+                [{"title":"Kategória nélküli","mechanism":"M"},\
+                {"title":"Ép hipotézis","mechanism":"M","category":"trigger"}]""");
+
+        assertThat(pipeline.run(owner)).isEqualTo(1);
+        List<PatternEntity> rows = patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst().getTitle()).isEqualTo("Ép hipotézis");
+    }
+
+    @Test
     void testRun_shouldSurviveBrokenProposalJson_whenAnswerNotParseable() {
         UUID owner = userPopulator.createUser().getId();
         dailySummaryPopulator.summary(owner, DAY, "Nap. [fake-hypotheses:[ez-nem-json]]");
