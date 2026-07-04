@@ -36,14 +36,14 @@ test('useSleep.logSleep appends a mapped SleepEntry', async () => {
   expect(result.current.lastNight).toMatchObject({ duration: 7.5, quality: 8, awakenings: 1, notes: 'jó' })
 })
 
-test('usePeople.logMention prepends an enriched Mention', () => {
-  const { result } = renderHook(() => usePeople())
+test('usePeople.logMention prepends an enriched Mention', async () => {
+  const { result } = renderHook(() => usePeople(), { wrapper: QueryWrapper })
   const before = result.current.mentions.length
   const target = people[0]
   act(() => {
     result.current.logMention({ personId: target.id, tone: 'positive', text: 'jó beszélgetés' })
   })
-  expect(result.current.mentions.length).toBe(before + 1)
+  await waitFor(() => expect(result.current.mentions.length).toBe(before + 1))
   expect(result.current.mentions[0]).toMatchObject({
     person_id: target.id, personName: target.name, tone: 'positive',
     excerpt: 'jó beszélgetés', source: 'chip',

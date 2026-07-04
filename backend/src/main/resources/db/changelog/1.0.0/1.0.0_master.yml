@@ -237,3 +237,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607032245_mezo-fnnq.12_create_pattern.sql
+  - changeSet:
+      id: "1.0.0:202607041030_mezo-t16y.2_create_person_mention"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607041030_mezo-t16y.2_create_person_mention.sql

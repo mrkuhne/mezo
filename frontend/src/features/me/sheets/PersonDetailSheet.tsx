@@ -39,6 +39,7 @@ export function PersonDetailSheet({
           <div className="card notch-4 mt-lg" style={{ padding: 12 }}>
             <p style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.5 }}>{person.notes}</p>
           </div>
+          {person.knownFacts.length > 0 && (
           <div className="mt-lg">
             <span className="eyebrow" style={{ marginBottom: 8, display: 'block' }}>Amit Mezo tud</span>
             <div className="col gap-xs">
@@ -50,6 +51,7 @@ export function PersonDetailSheet({
               ))}
             </div>
           </div>
+          )}
           {person.ties.length > 0 && (
             <div className="mt-lg">
               <span className="eyebrow" style={{ marginBottom: 8, display: 'block' }}>Kapcsolt patternek</span>

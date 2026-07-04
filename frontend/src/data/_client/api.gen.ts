@@ -1141,6 +1141,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Persons (mention-count desc) + recent mentions (ts desc, max 50) of the current user */
+        get: operations["getPeopleBootstrap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/{personId}/mentions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log a mention for an owned person (source/ts/flagged are server-stamped) */
+        post: operations["logMention"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2554,6 +2588,54 @@ export interface components {
         } | null;
         PatternDecisionRequest: {
             decision: string;
+        };
+        LogMentionRequest: {
+            tone: string;
+            text?: string;
+        };
+        PeopleResponse: {
+            persons: components["schemas"]["PersonResponse"][];
+            mentions: components["schemas"]["MentionResponse"][];
+        };
+        PersonResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            initial: string;
+            /** @enum {string} */
+            relationship: "partner" | "teammate" | "mentee";
+            relationshipHu: string;
+            /** @enum {string} */
+            affectBaseline: "positive" | "neutral" | "mixed" | "negative";
+            contactCadenceLabel?: string;
+            notes?: string;
+            knownFacts: string[];
+            ties: string[];
+            affectTrend: number[];
+            /** @description Count of live mention rows — computed, never seeded */
+            mentionCount: number;
+            /** @description Mentions in the rolling last 7 days */
+            mentionsThisWeek: number;
+            /** Format: date-time */
+            lastMentionedAt?: string;
+        };
+        MentionResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            ts: string;
+            /** Format: uuid */
+            personId: string;
+            personName: string;
+            /** @enum {string} */
+            source: "voice" | "camera" | "chip" | "text";
+            durationS?: number;
+            excerpt: string;
+            /** @enum {string} */
+            tone: "positive" | "neutral" | "mixed" | "negative";
+            tiedToKind?: string;
+            tiedToLabel?: string;
+            flagged: boolean;
         };
     };
     responses: never;
@@ -6065,6 +6147,88 @@ export interface operations {
                 };
             };
             /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getPeopleBootstrap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description People bootstrap */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    logMention: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogMentionRequest"];
+            };
+        };
+        responses: {
+            /** @description Mention created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MentionResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Person missing or foreign (indistinguishable) */
             404: {
                 headers: {
                     [name: string]: unknown;

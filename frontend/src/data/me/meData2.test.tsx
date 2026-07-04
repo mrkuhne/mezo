@@ -3,11 +3,16 @@ import { usePeople, useKnowledge } from '@/data/hooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { affectLabel } from '@/data/me/people'
 
-test('usePeople returns the people list + mentions', () => {
-  const { result } = renderHook(() => usePeople())
-  expect(result.current.people).toHaveLength(5)
-  expect(result.current.mentions).toHaveLength(10)
-  expect(result.current.mentions.filter(m => m.flagged)).toHaveLength(2)
+test('usePeople returns the people list + mentions (mock seed)', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true') // dual-mode since Slice E — pin the mock seed
+  try {
+    const { result } = renderHook(() => usePeople(), { wrapper: makeHookWrapper() })
+    expect(result.current.people).toHaveLength(5)
+    expect(result.current.mentions).toHaveLength(10)
+    expect(result.current.mentions.filter(m => m.flagged)).toHaveLength(2)
+  } finally {
+    vi.unstubAllEnvs()
+  }
 })
 
 test('useKnowledge returns 15 facts, 13 edges, 14 active (mock seed)', () => {

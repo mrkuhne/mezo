@@ -160,6 +160,10 @@ export const handlers = [
   }),
 
   http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),
+
+  // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
+  http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
+
   http.post(`${API_BASE}/api/biometrics/checkin`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json({ id: 'c1', ...body, savedAt: '2026-06-01T09:00:00Z' }, { status: 200 })
