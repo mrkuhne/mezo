@@ -108,6 +108,10 @@ mezo:
       # off = the PatternDetectionJob bean does not exist
       pattern-detection-job:
         enabled: true
+      # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
+      # off = the HypothesisJob bean does not exist
+      hypothesis-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -167,6 +171,15 @@ mezo:
       cron: "0 20 2 * * *"
       # Finished days back the job checks and self-heals (idempotent catch-up doubles as backfill)
       catch-up-days: 7
+    hypotheses:
+      # V3.2 weekly hypothesis loop (smart tier) — Sunday 03:00, after the nightly jobs
+      cron: "0 0 3 * * SUN"
+      # Max hypotheses judged per run
+      max-per-run: 3
+      # Weighted-critique keep threshold (arch §4.7)
+      keep-threshold: 0.75
+      # Borderline band floor — one revise + re-critique pass (arch §4.7)
+      revise-threshold: 0.50
     patterns:
       # V3.1 nightly Pearson correlation over the pair catalog — 02:40, after the summary job
       cron: "0 40 2 * * *"

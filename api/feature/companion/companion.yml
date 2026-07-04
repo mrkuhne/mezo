@@ -468,6 +468,7 @@ components:
         critique: { $ref: '#/components/schemas/PatternCritique' }
         status: { type: string, pattern: '^(proposed|monitoring|confirmed|rejected)$' }
         lastDetectedAt: { type: string, format: date-time, description: 'When the nightly job last computed/refreshed the stats.' }
+        thinking: { type: string, nullable: true, description: "The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete'; null on statistical rows." }
     PatternCritique:
       type: object
       nullable: true

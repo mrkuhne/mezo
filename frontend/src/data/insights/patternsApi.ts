@@ -29,6 +29,7 @@ export function toPattern(w: PatternResponse): Pattern {
         : undefined,
     status: w.status as PatternRowStatus,
     kind: w.kind as Pattern['kind'],
+    thinking: w.thinking ?? undefined,
   }
 }
 
