@@ -1,0 +1,15 @@
+# Dedicated volume for the nightly pg_dump archives (mezo-osj). Separate from the
+# database PVC on purpose: a corrupted/filled data volume must not take the backup
+# history with it. local-path = same node SSD — the OFFSITE copy is the admin Mac's
+# daily pull (scripts/backup-live-db.sh, runbook §6); this PVC is the on-cluster
+# rotation window.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backup
+  namespace: mezo
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- launchd agent for the daily offsite mezo DB pull (mezo-osj, runbook §6).
+     Install:
+       cp scripts/com.mezo.db-backup.plist ~/Library/LaunchAgents/
+       launchctl load ~/Library/LaunchAgents/com.mezo.db-backup.plist
+     If the Mac is asleep at 09:15, launchd runs the job on the next wake. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mezo.db-backup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-lc</string>
+    <string>"$HOME/MrKuhne/mezo/scripts/backup-live-db.sh"</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key>
+    <integer>9</integer>
+    <key>Minute</key>
+    <integer>15</integer>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/com.mezo.db-backup.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/com.mezo.db-backup.log</string>
+</dict>
+</plist>

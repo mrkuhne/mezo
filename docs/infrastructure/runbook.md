@@ -179,11 +179,20 @@ Or directly: `kubectl exec -n mezo postgres-0 -it -- psql -U mezo -d mezo`.
 A fresh cluster can be rebuilt by re-bootstrapping ArgoCD pointed at this repo.
 
 **NOT in git — must be backed up / re-createable:**
-- **Postgres data** — lives only on the node's local-path PVC. ⚠️ **No automated backup yet** —
-  this is the biggest gap (bd `mezo-osj`). Until addressed, take manual dumps:
-  `kubectl exec -n mezo postgres-0 -- pg_dump -U mezo mezo > mezo-$(date +%F).sql`
-  (last manual dump: 2026-07-03, `~/MrKuhne/mezo-live-backups/` on the admin Mac, taken before
-  the pgvector image swap).
+- **Postgres data** — ✅ **automated since 2026-07-05** (`mezo-osj`, [ADR 0009](../decisions/0009-postgres-backup-cronjob-plus-mac-pull.md)), two independent layers:
+  1. **On-cluster:** the `postgres-backup` CronJob (`k8s/postgres/backup-cronjob.yaml`) runs
+     nightly at 03:30 (Europe/Budapest): `pg_dump -Fc` onto the dedicated `postgres-backup`
+     PVC, 14-day rotation. Check it: `kubectl get cronjob,job -n mezo`; list dumps:
+     `kubectl exec -n mezo postgres-0 -- ls /backups` won't work (separate PVC) — instead
+     read the last Job's log: `kubectl logs -n mezo job/<newest postgres-backup-...>`.
+     Manual run: `kubectl create job -n mezo --from=cronjob/postgres-backup pg-backup-manual`.
+  2. **Offsite (admin Mac):** `scripts/backup-live-db.sh` (launchd agent
+     `com.mezo.db-backup`, daily 09:15, runs on wake if the Mac slept through it) streams a
+     fresh dump over Tailscale into `~/MrKuhne/mezo-live-backups/` (30-copy rotation) and
+     refreshes the sealed-secrets sealing-key export. Log: `/tmp/com.mezo.db-backup.log`.
+  **Restore** (custom-format dump): copy a dump into the pod and
+  `kubectl exec -i -n mezo postgres-0 -- pg_restore -U mezo -d mezo --clean --if-exists < mezo-<date>.dump`
+  (or `createdb` a fresh target first). Plain-SQL era dumps (pre-2026-07-05) restore with `psql`.
 
 **Postgres image-swap note (2026-07-03, companion V2.1):** the StatefulSet image moved
 `postgres:16` → `pgvector/pgvector:pg16` (same PG16 major — the PVC data is reused as-is; only
