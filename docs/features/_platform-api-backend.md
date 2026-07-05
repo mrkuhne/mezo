@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-07-04
+updated: 2026-07-05
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -148,7 +148,7 @@ UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Colu
 
 **The Pantry single-table model (Model B, `mezo-9xu`).** All pantry rows live in one `pantry_item` table (migration `db/changelog/1.0.0/script/202606221200_mezo-9xu_create_pantry_item.sql`), with a `kind` column (`food`/`supplement`/`stim`/`med`) acting as the discriminator. `feature/pantry/service/PantryService.getPantry` reads the owner's items once and **projects them by kind** into the `PantryResponse` shape `{ ingredients, stash }` — food rows map to `IngredientResponse`, supplement/stim/med rows to `SupplementStashResponse` (`PantryMapper`). Rather than DB CHECK constraints per kind, **per-kind required fields are validated in the service** (`PantryService.validatePerKind` — e.g. `food` needs macros/serving fields) so the single table stays flexible; entity micros are typed jsonb (`MicroFact` list via `@JdbcTypeCode(SqlTypes.JSON)`), with the usual UUID PK + `created_by` ownership + soft-delete columns. Scrape/import (`imports`), AI `suggestions`, recipe scoring, and pantry-logging are **deferred** — the read DTO carries `imports`/`suggestions` only as `[]` from the FE config side; the backend owns inventory CRUD only.
 
-**Mock-only domains (no backend, no fragment):** the rest of Fuel (day/timeline/week, recipes, stack, protocol) lives in `frontend/src/data/fuel/fuel.ts` / `pantry.ts` (the static seed, distinct from the now-backed Pantry inventory) / `fuelWeek.ts`; Insights in `data/insights/insights.ts`. (People left this list in Slice E `mezo-t16y.2` — `data/me/people.ts` is now the mock-mode seed only.) The backend will plug in by adding `api/feature/<x>/<x>.yml`, a `feature/<x>` backend package, and swapping the mock hook to dual-mode — exactly the recipe in §7. (`ProvenanceEnvelope`'s docstring already forward-references "Fuel reuses this pattern for meal score".)
+**Mock-only domains (no backend, no fragment):** the rest of Fuel (day/timeline/week, recipes, stack, protocol) lives in `frontend/src/data/fuel/fuel.ts` / `pantry.ts` (the static seed, distinct from the now-backed Pantry inventory) / `fuelWeek.ts`; Insights in `data/insights/insights.ts`. (Insights **Weekly** went dual-mode in D′ `mezo-t16y.1` **without** a backend/fragment — `useWeekly` composes it client-side over existing Fuel/Train/biometrics contracts; the one contract touch was Train's new `GET /api/train/workouts?from&to`. Chat/Patterns/Knowledge are backed by the companion — see `companion.md`.) (People left this list in Slice E `mezo-t16y.2` — `data/me/people.ts` is now the mock-mode seed only.) The backend will plug in by adding `api/feature/<x>/<x>.yml`, a `feature/<x>` backend package, and swapping the mock hook to dual-mode — exactly the recipe in §7. (`ProvenanceEnvelope`'s docstring already forward-references "Fuel reuses this pattern for meal score".)
 
 ### 4d. The goal-plan-link aggregate (G3 — timeline coupling, `mezo-3sc`)
 

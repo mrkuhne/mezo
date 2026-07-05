@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
 import io.mrkuhne.mezo.api.dto.VolumeRecompute;
+import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -19,6 +20,7 @@ import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -65,6 +67,9 @@ public interface TrainMapper {
     @Mapping(target = "type", expression = "java(TodayExercise.TypeEnum.fromValue(entity.getType()))")
     @Mapping(target = "lastWeek", ignore = true)
     TodayExercise toTodayExercise(ExerciseEntity entity);
+
+    @Mapping(target = "status", expression = "java(WorkoutSummaryResponse.StatusEnum.fromValue(entity.getStatus()))")
+    WorkoutSummaryResponse toWorkoutSummary(WorkoutSessionEntity entity);
 
     VolumeRecompute toRecompute(VolumeRecomputeJson json);
 

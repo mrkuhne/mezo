@@ -1,9 +1,13 @@
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { useInsights } from '@/data/hooks'
+import { isMockMode } from '@/data/_client/mode'
+import { PhaseTeaserCard } from '@/features/insights/components/PhaseTeaserCard'
 
 export function PredictionsPage() {
   const { predictions } = useInsights()
+
+  if (!isMockMode()) return <PhaseTeaserCard text="A predikciókat a minta-motor adja majd — a proaktív réteggel érkezik." />
 
   return (
     <div className="col gap-md">

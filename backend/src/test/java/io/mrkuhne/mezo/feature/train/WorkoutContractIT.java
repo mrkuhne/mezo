@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutSkipRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
@@ -262,6 +263,67 @@ class WorkoutContractIT extends ApiIntegrationTest {
         putForBody("/api/train/exercises/" + UUID.randomUUID() + "/note",
             ExerciseNoteRequest.builder().note("akármi").build(),
             null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testListWorkouts_shouldReturnLoggedInstancesInRange_whenRangeCoversThem() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        WorkoutSessionEntity template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hét", "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+
+        WorkoutSessionEntity inRange = trainPopulator.createWorkoutInstance(owner, template, LocalDate.of(2026, 6, 22), "completed");
+        trainPopulator.createLoggedSet(owner, exercise.getId(), inRange.getId(), 0, "100", 8, 1);
+        WorkoutSessionEntity outOfRange = trainPopulator.createWorkoutInstance(owner, template, LocalDate.of(2026, 6, 29), "completed");
+        trainPopulator.createLoggedSet(owner, exercise.getId(), outOfRange.getId(), 0, "100", 8, 1);
+        trainPopulator.createWorkoutInstance(owner, template, LocalDate.of(2026, 6, 23), "planned"); // no sets -> excluded
+
+        List<WorkoutSummaryResponse> result = getForList(
+            "/api/train/workouts?from=2026-06-22&to=2026-06-28",
+            ownerAuthHeaders(), HttpStatus.OK, WorkoutSummaryResponse.class);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.getFirst().getId()).isEqualTo(inRange.getId());
+        assertThat(result.getFirst().getDate()).isEqualTo(LocalDate.of(2026, 6, 22));
+        assertThat(result.getFirst().getStatus()).isEqualTo(WorkoutSummaryResponse.StatusEnum.COMPLETED);
+    }
+
+    @Test
+    void testListWorkouts_shouldReturnEmpty_whenNoLoggedWorkInRange() {
+        ownerId();
+        List<WorkoutSummaryResponse> result = getForList(
+            "/api/train/workouts?from=2026-06-22&to=2026-06-28",
+            ownerAuthHeaders(), HttpStatus.OK, WorkoutSummaryResponse.class);
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void testListWorkouts_shouldRejectRange_whenFromAfterTo() {
+        ownerId();
+        String body = getForBody("/api/train/workouts?from=2026-06-29&to=2026-06-22",
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(body, "TRAIN_INVALID_DATE_RANGE");
+    }
+
+    @Test
+    void testListWorkouts_shouldReturn401_whenUnauthenticated() {
+        getForBody("/api/train/workouts?from=2026-06-22&to=2026-06-28", null, HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    @Test
+    void testListWorkouts_shouldIsolateOwners_whenOtherUserHasLoggedWork() {
+        ownerId();
+        UUID other = databasePopulator.populateUser("other@test.local");
+        MesocycleEntity meso = trainPopulator.createMesocycle(other, "Idegen", "active");
+        WorkoutSessionEntity template = trainPopulator.createWorkoutSession(other, meso.getId(), "Hét", "Pull Day", 0, "planned");
+        ExerciseEntity exercise = trainPopulator.createExercise(other, template.getId(), "Row", 0);
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(other, template, LocalDate.of(2026, 6, 22), "completed");
+        trainPopulator.createLoggedSet(other, exercise.getId(), instance.getId(), 0, "100", 8, 1);
+
+        List<WorkoutSummaryResponse> result = getForList(
+            "/api/train/workouts?from=2026-06-22&to=2026-06-28",
+            ownerAuthHeaders(), HttpStatus.OK, WorkoutSummaryResponse.class);
+        assertThat(result).isEmpty();
     }
 
     @Test

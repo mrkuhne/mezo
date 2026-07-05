@@ -273,7 +273,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Workout instances with logged work (≥1 non-skipped set) in the inclusive date range — same "done" semantics as weekDoneDates */
+        get: operations["listWorkouts"];
         put?: never;
         /** Start (or resume) a workout instance for a template day — an open instance is returned, never duplicated */
         post: operations["startWorkout"];
@@ -1551,6 +1552,14 @@ export interface components {
             status: "active" | "completed";
             sets: components["schemas"]["ExerciseSetResponse"][];
             levelUp?: components["schemas"]["LevelUpResult"];
+        };
+        WorkoutSummaryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            status: "planned" | "active" | "completed" | "skipped";
         };
         LevelUpResult: {
             /** @enum {string} */
@@ -3424,6 +3433,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkoutTodayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listWorkouts: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Date-ascending workout summaries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutSummaryResponse"][];
+                };
+            };
+            /** @description Invalid range (from > to) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */

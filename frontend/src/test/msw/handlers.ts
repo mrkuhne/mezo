@@ -256,6 +256,7 @@ export const handlers = [
       openWorkout: null,
     }),
   ),
+  http.get(`${API_BASE}/api/train/workouts`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/train/workouts`, () =>
     HttpResponse.json(
       {

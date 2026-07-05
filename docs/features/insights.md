@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-07-04
+updated: 2026-07-05
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -10,6 +10,7 @@ key_files:
   - frontend/src/data/insights/knowledge.ts
   - frontend/src/data/insights/chat.ts
   - frontend/src/data/insights/chatHooks.ts
+  - frontend/src/data/insights/weeklyHooks.ts
   - frontend/src/data/hooks.ts
   - frontend/src/features/today/components/InsightsTeaser.tsx
 related: [_platform-data-layer, _platform-design-system, today, me, companion]
@@ -17,7 +18,7 @@ related: [_platform-data-layer, _platform-design-system, today, me, companion]
 
 # Insights — Feature Documentation
 
-> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mock-only EXCEPT Chat, which is ✅ real since companion V0.4** (streamed dual-mode surface over the companion backend — [`companion.md`](companion.md)); the rest is the designated **🟣 Phase-3 landing zone**. Lives under the **`/insights`** tab (4th in `TabBar`, between Fuel and Me).
+> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (no backend); **Memoir/Predictions/Experiments** stay hand-authored demo and are **hidden in real mode** (honest ghost) — the designated **🟣 proactive-epic landing zone**. Lives under the **`/insights`** tab (4th in `TabBar`, between Fuel and Me).
 
 ---
 
@@ -30,7 +31,7 @@ Insights is the user-facing window onto mezo's N=1 self-model: it presents the b
 | Layer | Status | Notes |
 |---|---|---|
 | FE mock | ✅ done | 7 sub-tabs, all views + tests present |
-| FE real-mode | 🔶 Chat only | **Chat is real since companion V0.4** (`data/insights/chatHooks.ts` + `chatApi.ts`, SSE streaming — [`companion.md`](companion.md) §5.1). The other six surfaces stay pure static modules (`data/insights/insights.ts`, `knowledge.ts`). |
+| FE real-mode | 🔶 Chat + Patterns + Knowledge + **Weekly** | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend; **Weekly** real since **D′ (`mezo-t16y.1`)** — `data/insights/weeklyHooks.ts` composes it client-side from existing fuel/train/biometrics reads (no Insights backend). Memoir/Predictions/Experiments stay static demo modules (`insights.ts`) and are **hidden** in real mode (§2). |
 | Backend (Java) | 🔶 companion only | `feature/companion` backs the chat (`ai_conversation`/`ai_message`); no `pattern`/`knowledge_fact` backend yet. |
 
 This is **intentional**. Insights is the Phase-3 "AI brain" surface; the single FE↔data boundary (`frontend/src/data/hooks.ts`) is pre-built so the real-mode swap is mechanical, exactly as already proven for biometrics/Train. There are **two distinct roadmap stages** the doc keeps separate:
@@ -45,15 +46,17 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 **Route:** `/insights` (`frontend/src/app/TabBar.tsx:10`, icon `insights`). Shell + 7 sub-tabs wired in `frontend/src/app/router.tsx:76-87` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
 
-| Sub-tab | Route | Label (verbatim) | View |
-|---|---|---|---|
-| patterns | `/insights` (index) | `Patterns` | `PatternsPage` |
-| weekly | `/insights/weekly` | `Weekly` | `WeeklyPage` |
-| memoir | `/insights/memoir` | `Memoir` | `MemoirPage` |
-| knowledge | `/insights/knowledge` | `Knowledge` | `KnowledgeListPage` |
-| chat | `/insights/chat` | `Chat` | `ChatPage` |
-| predictions | `/insights/predictions` | `Predictions` | `PredictionsPage` |
-| experiments | `/insights/experiments` | `Experiments` | `ExperimentsPage` |
+| Sub-tab | Route | Label (verbatim) | View | Real mode |
+|---|---|---|---|---|
+| patterns | `/insights` (index) | `Patterns` | `PatternsPage` | shown |
+| weekly | `/insights/weekly` | `Weekly` | `WeeklyPage` | shown |
+| memoir | `/insights/memoir` | `Memoir` | `MemoirPage` | **hidden** → ghost |
+| knowledge | `/insights/knowledge` | `Knowledge` | `KnowledgeListPage` | shown |
+| chat | `/insights/chat` | `Chat` | `ChatPage` | shown |
+| predictions | `/insights/predictions` | `Predictions` | `PredictionsPage` | **hidden** → ghost |
+| experiments | `/insights/experiments` | `Experiments` | `ExperimentsPage` | **hidden** → ghost |
+
+**Honest surface (mezo-t16y.1):** the three Phase-3+ demo tabs — Memoir, Predictions, Experiments — carry only hand-authored demo fiction, so **in real mode the sub-nav hides them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; `InsightsSubNav` maps that instead of `INSIGHTS_TABS`). The routes still exist, so a **direct URL** to a hidden page renders an honest **`PhaseTeaserCard`** ("hamarosan" eyebrow + one-line "a proaktív réteggel érkezik" copy) instead of the fiction — the page components early-return the teaser when `!isMockMode()`. Mock mode keeps all 7 tabs + full demo.
 
 The shell `InsightsSection` (`frontend/src/features/insights/pages/InsightsSection.tsx`) renders a `page-header` (`Eyebrow brand "Insights"` + `PageTitle` tracking the active tab's label, derived from `pathname.split('/')[2]`), a **decorative, handler-less** settings `chip` (`aria-label="Insights beállítások"`), the sticky `InsightsSubNav` (`aria-label="Insights alnavigáció"`), and an `<Outlet/>`.
 
@@ -76,10 +79,14 @@ empty-confirmed copy. "Recently confirmed · L3" = confirmed rows' titles in rea
 invalidate — **repeatable transitions**; mock: cache mutation) — the badge renders from the
 PERSISTED `pattern.status`, no local decision state.
 
-### 2.2 Weekly (`pages/WeeklyPage.tsx`)
-A big `score` `/100` with `delta` vs "hét 20", a bordered list of `weekly.items` (label · value · trend arrow `↗/↘/→`), then a "Mezo · heti tervjavaslat" card showing `weeklySuggestion` with inert **"Elfogad" / "Hangoljuk"** buttons.
+### 2.2 Weekly (`pages/WeeklyPage.tsx`) — **REAL dual-mode since D′ (`mezo-t16y.1`)**
+A big `score` `/100` with a `delta` label, a bordered list of `weekly.items` (label · value · trend arrow `↗/↘/→`), then a "Mezo · heti tervjavaslat" card. Reads `useWeekly()` (`data/insights/weeklyHooks.ts`, exported via the `hooks.ts` barrel) → `{ weekly:{title,score,delta,items}, deltaLabel, weeklySuggestion, mode }`.
+- **Mock:** byte-parity with the Phase-1 seed — `mockWeekly` + `deltaLabel 'vs hét 20'` + the seed `weeklySuggestion` prose with inert **"Elfogad" / "Hangoljuk"** buttons.
+- **Real:** the review is **composed client-side** from the user's own data (no Insights backend — see §3) with a **documented deterministic score** (§4 / the formula in `weeklyHooks.ts:137-151`). `deltaLabel` becomes `'vs előző hét'`; `title` date-derives (`Hét N áttekintés · …`). `weeklySuggestion` is **null** → the card renders the honest placeholder *"A társ heti tervjavaslata hamarosan."* (the generated plan is proactive-epic work), never the demo prose.
+- **Honest null-state:** when no sub-score has data the `score` is **null** and the page renders the patterns-precedent **„tanulom"** placeholder (*"még gyűjtöm az adatokat a heti értékeléshez"*, `WeeklyPage.tsx:27-35`) instead of a fabricated number; `delta` is likewise null when either week's score is missing. The **Súly trend** row is trend-only (goal-ward arrow) and is **excluded from the score**.
 
-### 2.3 Memoir (`pages/MemoirPage.tsx`)
+### 2.3 Memoir (`pages/MemoirPage.tsx`) — **real-mode: honest ghost**
+Real mode early-returns a `PhaseTeaserCard text="A heti memoirt a társ írja majd — a proaktív réteggel érkezik."` (the guard sits AFTER `useInsights()`/`useState` to respect the rules of hooks). Mock mode renders the full demo:
 A literary weekly narrative. `memoir-card` with radial glow, bookmark eyebrow + `memoir.week`, display title, long `body` prose, an **Anchors** row rendering `RefTag` per `memoir.anchor` (`[kind] label`). Four reaction toggles (👍 Like / Love / Save / Dismiss) backed by a local `Record<ReactionKey, boolean>` — **local-only**. Below: an "Évforduló · 1 hónap" card (`anniversaryNote`) and a static "Memoir archive · 17 darab →" footer (inert).
 
 ### 2.4 Knowledge (`pages/KnowledgeListPage.tsx`) — **real dual-mode since companion V1.2**
@@ -96,10 +103,12 @@ after the corrective retry (`MessageResponse.degraded`) carries a subtle `nem el
 eyebrow next to the timestamp (tooltip; [`companion.md`](companion.md) §2) — mock mode never
 shows it.
 
-### 2.6 Predictions (`pages/PredictionsPage.tsx`)
+### 2.6 Predictions (`pages/PredictionsPage.tsx`) — **real-mode: honest ghost**
+Real mode early-returns a `PhaseTeaserCard text="A predikciókat a minta-motor adja majd — a proaktív réteggel érkezik."`. Mock mode renders the full demo:
 Header "Aktív predikciók" + hard-coded "`2 validated · 60-day acc 68%`". Each `Prediction` card: status chip (`✓ Validated` / `◐ Pending`), date, display title, confidence `bar-fill glow` + `NN%`, optional `basis` paragraph, and (when validated) an `actual` outcome line.
 
-### 2.7 Experiments (`pages/ExperimentsPage.tsx`)
+### 2.7 Experiments (`pages/ExperimentsPage.tsx`) — **real-mode: honest ghost**
+Real mode early-returns a `PhaseTeaserCard text="Az N=1 kísérletek a proaktív réteggel érkeznek."`. Mock mode renders the full demo:
 "N=1 kísérletek · {count}". Each `Experiment` card: status chip (active→"◐ Aktív"; completed+good→"✓ Megerősítve"; else "◯ Lezárva"), `day/total nap`, display title, `hypothesis`, a progress `bar-fill glow` = `day/total`, optional `outcome` line. Footer: inert **"+ Új kísérlet javasol Mezo"** button.
 
 ---
@@ -117,7 +126,7 @@ View (PatternsPage, WeeklyPage, …)
 
 Contrast with a real-mode feature (e.g. `useWeight` in `weightHooks.ts` / `useSleep` in `hooks.ts:79`) which switches on `isMockMode()` between static `initialData` and a real `*Api` call over `apiFetch`. The Insights hooks have **none of that machinery** — no TanStack Query, no `initialData`, no mutation, no mode switch:
 
-- `useInsights()` (`data/insights/insightsHooks.ts`) → `{ patterns, recentlyConfirmed, weekly, weeklySuggestion, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports.
+- `useInsights()` (`data/insights/insightsHooks.ts`) → `{ patterns, recentlyConfirmed, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports. **Since D′ it no longer returns `weekly`/`weeklySuggestion`** — `WeeklyPage` was the only consumer and now reads the dedicated `useWeekly()` (below).
 - `useKnowledge()` (`data/insights/knowledgeHooks.ts` since V1.2) → dual-mode `{ facts, candidates, edges, activeCount, degraded, mode }` (`['knowledge']` `useDualQuery`; real fetches `GET /api/companion/fact` + `.../fact/candidate`, `edges` real-mode `[]`; mock = seed). Actions: `useKnowledgeActions()` → `{ toggle, decide, pending }`.
 
 **Exception — Chat swapped at companion V0.4:** `useChat()` + `useChatActions()` moved to
@@ -127,13 +136,29 @@ Contrast with a real-mode feature (e.g. `useWeight` in `weightHooks.ts` / `useSl
 `useChatActions` is the send/stream state machine over the SSE client (`chatApi.streamMessage`,
 `apiSse` in `data/_client/api.ts`). Details: [`companion.md`](companion.md) §5.1.
 
-The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir reactions) lives in **component-local `useState`** and evaporates on unmount; the knowledge Toggle + candidate decisions are REAL since V1.2. The single FE↔data boundary (`hooks.ts`) is intact — chat (V0.4) and knowledge (V1.2) proved the swap recipe; `useInsights` (patterns) is the **next swap point** (V3.1), by design.
+**Exception — Weekly is REAL by CLIENT-SIDE COMPOSITION (D′, `mezo-t16y.1`):** `useWeekly()` (`data/insights/weeklyHooks.ts`, re-exported from the barrel) needs **no Insights backend** — real mode composes the review from reads the other features already expose, so the pipeline fans OUT instead of stopping at a single api client:
+
+```
+WeeklyPage → useWeekly()  (data/insights/weeklyHooks.ts)
+  MOCK: { mockWeekly, deltaLabel 'vs hét 20', mockWeeklySuggestion }   (byte-parity seed)
+  REAL: deterministic composition over the user's own reads —
+    ├─ ['fuelWeek', start] ×2 weeks  → mealApi.getWeek(start)   (F-P4 aggregate GET /api/fuel/week/{start})
+    ├─ ['insightsWeekly','workouts', start] ×2 → trainApi.listWorkouts(start, weekEnd)   (NEW GET /api/train/workouts?from&to — logged work "done")
+    ├─ ['insightsWeekly','sportSessions'|'gymSchedule'|'sportSchedule'] → trainApi.*   (sessions "done" + schedules "planned")
+    ├─ useSleep().sleepLog        (client-filtered per week via inWeek())
+    └─ useWeight().weightTrends   (EWMA last7d.weeklyRate — trend-only row)
+      → deriveWeekMetrics() ×2 → deriveItems() + deriveScore()  (pure fns, weeklyHooks.ts:62-151)
+```
+
+The composition uses the `useRealQuery` idiom (the `fuelWeekHooks` pattern): mock resolves `null`, real fetches. Fuel rollups **share the F-P4 cache key** (`['fuelWeek', start]`); the raw train reads sit under an **own `['insightsWeekly',…]` namespace** so they don't collide with `trainHooks`' keys (which cache MAPPED domain shapes). **Known simplification:** `trainPlanned` uses the CURRENT gym+sport schedules for BOTH the current and previous week (no historical schedule read) — the schedule is treated as stable week-to-week (`weeklyHooks.ts:194,204-211`).
+
+The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir reactions) lives in **component-local `useState`** and evaporates on unmount; the knowledge Toggle + candidate decisions are REAL since V1.2. The single FE↔data boundary (`hooks.ts`) is intact — chat (V0.4), knowledge (V1.2), patterns (V3.1) and **weekly (D′, by composition)** all proved the swap; only Memoir/Predictions/Experiments remain static (and hidden in real mode), by design.
 
 ---
 
 ## 4. Data model & API
 
-> **No backend, no API contract, no DB.** Everything below is the **mock data shape** (the contract the views and tests pin). All types live in `frontend/src/data/types.ts:349-418` ("--- Tudás (knowledge) ---" + "--- Insights (AI-memory surface) ---"). Instances in `data/insights/insights.ts` / `data/insights/knowledge.ts` / `data/insights/chat.ts`.
+> **No Insights-owned backend, contract, or DB.** Everything below is the **mock data shape** (the contract the views and tests pin). All types live in `frontend/src/data/types.ts:349-418` ("--- Tudás (knowledge) ---" + "--- Insights (AI-memory surface) ---"). Instances in `data/insights/insights.ts` / `data/insights/knowledge.ts` / `data/insights/chat.ts`. **Exception — Weekly (D′):** real mode is composed client-side over OTHER features' contracts (Fuel week, Train workouts/sport/schedules, biometrics) — no Insights endpoint; the one contract change D′ required is the new Train `listWorkouts` op (see below + `train.md` §4).
 
 **Knowledge** (`types.ts:350-352`):
 - `FactCategory = 'physiology' | 'preference' | 'trigger' | 'tendency' | 'goal_state'`
@@ -150,7 +175,9 @@ The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir react
 
 **Memoir** (`types.ts:375-381`): `MemoirAnchor { kind; label }`, `Memoir { week; title; body; anchors }` — single `memoir` + `anniversaryNote` string.
 
-**Weekly** (`types.ts:406-408`): `WeeklyTrend = 'up'|'down'|'flat'`, `WeeklyItem { label; value; trend }`, `WeeklyReview { title; score; delta; items }` — single `weekly` + `weeklySuggestion`.
+**Weekly** (`types.ts:406-408`): `WeeklyTrend = 'up'|'down'|'flat'`, `WeeklyItem { label; value; trend }`, `WeeklyReview { title; score; delta; items }` — mock `weekly` + `weeklySuggestion` seed. **Real mode (D′)** builds the same shape client-side in `useWeekly` (`weeklyHooks.ts`), returning `WeeklyView { weekly; deltaLabel; weeklySuggestion: string|null; mode }`.
+
+**Weekly score — the documented deterministic formula (D′, `weeklyHooks.ts:137-151`):** `score = round(100 × mean(available sub-scores))`, equal weights, only sub-scores with data participate; **no data → null → the „tanulom" null-state** (never a fabricated number). Sub-scores: **kcal** closeness-to-target inside a ±`KCAL_BAND` linear band · **protein** hit-days/7 · **sleep** avg/`SLEEP_TARGET_H` (capped) · **train** done/planned (capped, skipped when planned=0). **Weight is EXCLUDED from the score** — it is a trend-only row whose arrow maps goal-ward (`weightTrendOf`: losing = good = `up`, single-user cut) off the EWMA `weeklyRate`, gated by `WEIGHT_RATE_EPSILON`. Constants are **exported FE `const`s** — `SLEEP_TARGET_H=8`, `KCAL_BAND=0.25`, `WEIGHT_RATE_EPSILON=0.1` (`weeklyHooks.ts:22-24`); **promote to backend config with the proactive epic** (`configuration_conventions.md`), same trajectory as `MIN_PATTERN_CONFIDENCE`. "Done" = the same logged-work semantics as Train's `weekDoneDates`; trend arrows compare the current vs previous week (`trendOf`, epsilon-tied → honest `flat`).
 
 **Predictions** (`types.ts:383-392`): `PredictionStatus = 'pending'|'validated'`, `Prediction { id; title; confidence; status; date; basis?; actual? }` — 4 instances.
 
@@ -158,7 +185,7 @@ The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir react
 
 **Chat** (`types.ts:410-418`): `ChatRole = 'user'|'assistant'`, `ChatRef { kind; id }`, `ChatMessage { role; ts; text; tools?: Tool[]; refs?: ChatRef[] }`. `Tool` is imported from `@/shared/ui/ToolChip` (`{ type: ToolType; name; args? }`, `ToolType = 'read'|'compute'|'write'`). `initialChat` = 3 messages (assistant → user → assistant).
 
-**Endpoints / contract:** the **chat is contract-backed since companion V0.2/V0.4, tool-chips real since V0.5, knowledge facts + candidates since V1.1/V1.2** — `api/feature/companion/companion.yml` (conversations, messages, sync + SSE stream turn, fact CRUD, candidate inbox + decision; see [`companion.md`](companion.md) §4). The FE `FactCategory` is the backend enum (`train|fuel|health|life`) since V1.2. Patterns/weekly/etc. still have **no** contract. Real turns now carry the V0.5 read-tool calls (`get_recent_workouts`, `get_sport_sessions`, `get_weight_trend`, `get_recent_meals`, `get_sleep`, `get_protocol_adherence`, `get_goal_progress`, `get_reta_cycle` — [`companion.md`](companion.md) §4 catalog); only the MOCK seed's fancier names (`predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) remain demo theater. **Where the rest of the backend plugs in:** rewrite `useInsights`/`useKnowledge` in `data/insights/insightsHooks.ts` (re-exported by the `hooks.ts` barrel) to dual-mode on `isMockMode()` — the chat swap (`chatHooks.ts`) is the worked example — see §7.
+**Endpoints / contract:** the **chat is contract-backed since companion V0.2/V0.4, tool-chips real since V0.5, knowledge facts + candidates since V1.1/V1.2** — `api/feature/companion/companion.yml` (conversations, messages, sync + SSE stream turn, fact CRUD, candidate inbox + decision; see [`companion.md`](companion.md) §4). The FE `FactCategory` is the backend enum (`train|fuel|health|life`) since V1.2. Patterns still have **no dedicated Insights contract** (served by the companion `pattern` endpoints). **Weekly (D′)** owns no endpoint either — it composes over existing contracts, and the only new op it required is Train's **`GET /api/train/workouts?from&to`** → `WorkoutSummaryResponse {id, date, status}[]` (inclusive range, date-asc; instances with ≥1 non-skipped set = "logged work", the same semantics as `weekDoneDates`; `from>to` → 400 `TRAIN_INVALID_DATE_RANGE`) — documented in full in [`train.md`](train.md) §4 + `api/feature/train/train.yml`. Real turns now carry the V0.5 read-tool calls (`get_recent_workouts`, `get_sport_sessions`, `get_weight_trend`, `get_recent_meals`, `get_sleep`, `get_protocol_adherence`, `get_goal_progress`, `get_reta_cycle` — [`companion.md`](companion.md) §4 catalog); only the MOCK seed's fancier names (`predictAppetiteCurve()`, `recallSharedMemory(theme=…)`) remain demo theater. **Where the rest of the backend plugs in:** rewrite `useInsights`/`useKnowledge` in `data/insights/insightsHooks.ts` (re-exported by the `hooks.ts` barrel) to dual-mode on `isMockMode()` — the chat swap (`chatHooks.ts`) is the worked example — see §7.
 
 ---
 
@@ -202,12 +229,16 @@ Multiple features narrate an off-screen **"pattern engine"** that Insights surfa
 Import the three hooks from the boundary — **never** from `@/data/insights/insights` directly (except the stateless helpers below):
 
 ```ts
-import { useInsights, useKnowledge, useChat } from '@/data/hooks'
+import { useInsights, useKnowledge, useChat, useWeekly } from '@/data/hooks'
 
-const { patterns, recentlyConfirmed, weekly, weeklySuggestion,
+const { patterns, recentlyConfirmed,
         memoir, anniversaryNote, predictions, experiments } = useInsights()
 const { facts, edges, activeCount } = useKnowledge()
 const { initialChat } = useChat()
+
+// Weekly (D′) — dual-mode; score/delta may be null (render the „tanulom" null-state),
+// weeklySuggestion is null in real mode (render the honest placeholder).
+const { weekly, deltaLabel, weeklySuggestion } = useWeekly()
 ```
 
 Two pure helpers may be imported straight from the data module (stateless constants/utils, not data): `MIN_PATTERN_CONFIDENCE` and `patternCategoryColor` from `@/data/insights/insights`; `factCategoryColor` and `FACT_CATEGORIES` from `@/data/insights/knowledge`.
@@ -248,7 +279,8 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
 - **Data-layer:** `frontend/src/data/insights/insightsData.test.tsx` (3 patterns all ≥ floor; `p1` critique; weekly score / 4 items; memoir title + 3 anchors; `recentlyConfirmed`×3; 4 predictions w/ validated `actual`; active experiment; `patternCategoryColor('response')`). `frontend/src/data/insights/chatData.test.tsx` (3 msgs assistant→user→assistant; tool/ref shapes). *(Knowledge has no dedicated `data/` test.)*
 - **Views:** `pages/{PatternsPage,WeeklyPage,MemoirPage,KnowledgeListPage,ChatPage,PredictionsPage,ExperimentsPage}.test.tsx`, plus `components/PatternCard.test.tsx`.
 - **`ChatPage.test` gotcha** (documented in-file): `userEvent.type` deadlocks under `vi.useFakeTimers()`; the test uses `fireEvent.change` + `fireEvent.keyDown` and `vi.advanceTimersByTime(1300)` to exercise the 1200 ms canned-reply timer.
-- **Nav/shell:** `insights.nav.test.tsx` (lands on Patterns; title tracks the tab; Memoir/Chat navigation), `InsightsSubNav.test.tsx`; plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark.
+- **Nav/shell:** `insights.nav.test.tsx` (**split into `(real mode default)` + `(mock mode)` describes** — real: lands on Patterns, Weekly link works, Memoir hidden; mock: Memoir navigation renders the demo), `InsightsSubNav.test.tsx` (**mock describe = 7 tabs; real describe = 4 tabs, Phase-3 tabs hidden**); plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark.
+- **Ghost pages:** `MemoirPage.test.tsx` / `PredictionsPage.test.tsx` / `ExperimentsPage.test.tsx` each carry a `(mock mode)` describe (the original demo assertions, unchanged) + a `(real mode)` describe asserting the `hamarosan` ghost + verbatim teaser copy and the **absence** of the demo fiction. Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
 
 **Commands** (run from `frontend/`):
 ```bash
@@ -268,9 +300,11 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **Chat is fully faked:** `setTimeout` + keyword branch on `"fáradt"`; `"Gemini 3.1 Pro"`, `"23 facts active"`, `"L4 aktív"`, `"60-day acc 68%"` are **hard-coded strings**, not derived. The named tool calls are illustrative, not real endpoints.
 - **Two overlapping "insight" types:** rich `Pattern` (Insights tab) vs lightweight `TrendInsight` (`InsightCard`, embedded in Goals/Sleep, `types.ts:157-158`). And **two category enums** that overlap but differ: `PatternCategory` (`physiology|trigger|response`) vs `FactCategory` (`physiology|preference|trigger|tendency|goal_state`). Phase 3 must decide whether to unify.
 - **`MIN_PATTERN_CONFIDENCE = 0.65`** is a hard-coded FE constant — should become backend config (`configuration_conventions.md`) when the engine is real.
+- **Weekly is real by CLIENT-SIDE composition, not a backend (D′, `mezo-t16y.1`):** `useWeekly` composes the review from existing fuel/train/biometrics reads — cheaper than an Insights backend and honest (real numbers or the „tanulom" null-state, never fabricated). The **score formula is deterministic + documented** (§4); its constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) are FE `const`s to **promote to backend config with the proactive epic** — same trajectory as `MIN_PATTERN_CONFIDENCE`. **Known simplification:** both weeks use the CURRENT schedules for `trainPlanned` (no historical schedule read, §3). `weeklySuggestion` stays honest-null in real mode (generated plan = proactive epic). The composition adds one Train op (`listWorkouts`, §4) but no Insights endpoint/table.
 - **`useKnowledge` is shared across Insights + Me tabs** (§5.1) — co-design any knowledge backend for both.
 - **Cross-domain pattern IDs** (`P2`/`P3`) are referenced as mock copy in Sleep/Fuel/Train/Goals — making them real requires a shared pattern-engine service with stable IDs (§5.4).
 - **Inert affordances:** the settings chip, "Memoir archive →", "+ Új kísérlet javasol Mezo", "Elfogad/Hangoljuk", "Elfogad/Hangoljuk", mic button — all handler-less.
+- **Honest surface (mezo-t16y.1):** rather than ship demo fiction in production, real mode **hides** Memoir/Predictions/Experiments from the sub-nav (`visibleInsightsTabs()`) and their pages render a `PhaseTeaserCard` ghost — a direct URL never shows fabricated content. Ghost guards sit AFTER the `useInsights()`/`useState` calls (rules of hooks). When Phase 3 gives these surfaces real data, drop the `PHASE3_TAB_IDS` entries + the per-page guards.
 
 ---
 
@@ -278,18 +312,21 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 **Feature (`frontend/src/features/insights/`):**
 - `InsightsSection.tsx` — shell (header + subnav + outlet)
-- `InsightsSubNav.tsx` — sticky 7-tab nav (`NavLink`)
-- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end)
-- `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 sub-tabs
+- `InsightsSubNav.tsx` — sticky nav (`NavLink`), maps `visibleInsightsTabs()` (7 in mock, 4 in real)
+- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end) + `visibleInsightsTabs()` (real-mode Phase-3 filter, `PHASE3_TAB_IDS`)
+- `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 sub-tabs (Memoir/Predictions/Experiments early-return the ghost in real mode)
+- `components/PhaseTeaserCard.tsx` — honest "hamarosan" ghost for hidden Phase-3 tabs (direct-URL guard)
 - `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject
 - `components/ChatMessage.tsx` — chat bubble + tool/ref rows
 - Tests: `pages/*.test.tsx`, `components/PatternCard.test.tsx`, `InsightsSubNav.test.tsx`, `insights.nav.test.tsx`
 
 **Data layer (`frontend/src/data/`):**
-- `insights.ts` — patterns, weekly, memoir, predictions, experiments + `MIN_PATTERN_CONFIDENCE`, `patternCategoryColor`
+- `insights.ts` — patterns, weekly (seed), memoir, predictions, experiments + `MIN_PATTERN_CONFIDENCE`, `patternCategoryColor`
 - `knowledge.ts` — facts, edges, `FACT_CATEGORIES`, `factCategoryColor`
 - `chat.ts` — `initialChat`
-- `hooks.ts:127-137` — `useKnowledge`, `useInsights`, `useChat` (the boundary / Phase-3 swap point)
+- `weeklyHooks.ts` — **`useWeekly` (D′)**: dual-mode client-side composition + the pure rollup fns (`deriveWeekMetrics`/`deriveItems`/`deriveScore`/`trendOf`) + score constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`)
+- `insightsHooks.ts` — `useInsights` (no longer returns `weekly`/`weeklySuggestion` since D′)
+- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`** (the boundary / Phase-3 swap point)
 - `types.ts:349-418` — all Insights/Knowledge/Chat types
 - Tests: `insightsData.test.tsx`, `chatData.test.tsx`
 
@@ -303,8 +340,9 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `frontend/src/styles/prototype.css:36-41,115-120` — `--cat-*` tokens
 
 **Docs (link, don't duplicate):**
+- `docs/superpowers/specs/2026-07-05-insights-weekly-honest-design.md` (D′ — deterministic Weekly v0 + honest surface for Memoir/Predictions/Experiments)
 - `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Slice D §126; Phase-3 out-of-scope §6)
 - `docs/milestones/roadmap.md:12-13` (Slice D remaining; Phase-3 AI brain)
 - House standards: `docs/references/{api_contract_conventions,liquibase_conventions,java_package_structure,spring_patterns,error_handling,configuration_conventions,testing_standards,integration_test_framework}.md`
 
-**Confirmed absent (Phase-3 gap):** no `api/feature/insights|knowledge|chat`, no `backend/**` Java for any Insights domain, no Liquibase changeset, no real-mode hook path.
+**Confirmed absent (Phase-3 gap):** no `api/feature/insights|knowledge|chat`, no `backend/**` Java for any Insights domain, no Liquibase changeset. **Weekly (D′) has a real-mode hook path but no Insights backend** — it composes over other features' contracts (Fuel/Train/biometrics) client-side.
