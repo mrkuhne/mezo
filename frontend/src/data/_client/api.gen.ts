@@ -2185,6 +2185,7 @@ export interface components {
             tags: string[];
             starred: boolean;
             createdDate: string;
+            /** @description NOVA class 1..4 (converged with meal_item.nova — mezo-2dy) */
             novaDominant: number;
             macros: components["schemas"]["RecipeMacros"];
             mezoFit: components["schemas"]["RecipeMezoFit"];
@@ -2206,6 +2207,8 @@ export interface components {
             p: number;
             c: number;
             f: number;
+            /** @description The logged meal's deterministic score 0..1 (mezo-yta); null for pre-scoring rows */
+            score?: number | null;
         };
         RecipeLogListResponse: {
             recentLogs: components["schemas"]["RecipeLogResponse"][];
@@ -2225,9 +2228,83 @@ export interface components {
         };
         MealScore: {
             value?: number | null;
-            breakdown?: {
-                [key: string]: unknown;
-            } | null;
+            breakdown?: components["schemas"]["MealBreakdown"] | null;
+        };
+        /** @description Typed 4-dimension score envelope (deterministic v0, mezo-yta / ADR 0006). summary/improve are P8 prose — null/empty until then. */
+        MealBreakdown: {
+            /** @description Weighted total 0..1 — duplicates meal.score by design (ADR 0006) */
+            value: number;
+            /** @description Coverage-weighted numeric confidence 0..1 */
+            confidence: number;
+            summary?: string | null;
+            dimensions: components["schemas"]["MealScoreDimension"][];
+            improve: components["schemas"]["MealImproveRow"][];
+            tools: components["schemas"]["MealToolRow"][];
+        };
+        /** @description One weighted dimension; exactly one of macro/micros/nova/context is populated, matching id. */
+        MealScoreDimension: {
+            id: string;
+            label: string;
+            /** @description 0 when the dimension degraded (no input coverage) — total renormalizes */
+            weight: number;
+            score: number;
+            detail: string;
+            macro?: components["schemas"]["MealMacroDetail"] | null;
+            micros?: components["schemas"]["MealMicroRow"][] | null;
+            nova?: components["schemas"]["MealNovaDetail"] | null;
+            context?: components["schemas"]["MealContextRow"][] | null;
+        };
+        MealMacroDetail: {
+            /** @description Protein kcal-share of the meal, % */
+            ratioP: number;
+            ratioC: number;
+            ratioF: number;
+            /** @description Display string of the config target share */
+            targetP: string;
+            targetC: string;
+            targetF: string;
+            kcalShareOfDay: number;
+            /** @description P8 prose — null in v0 */
+            notes?: string | null;
+        };
+        MealMicroRow: {
+            name: string;
+            /** @description Display value, e.g. "9.5 g" */
+            value: string;
+            /** @description Fiber: % of the per-meal allotment reached; limits: % of the allotment used */
+            pct: number;
+            status: string;
+        };
+        MealNovaDetail: {
+            /** @description NOVA group 1..4 with the largest kcal share */
+            dominant: number;
+            stack: components["schemas"]["MealNovaStackRow"][];
+            items: components["schemas"]["MealNovaItemRow"][];
+        };
+        MealNovaStackRow: {
+            nova: number;
+            /** @description kcal share of this NOVA group, % */
+            pct: number;
+            /** @description Item names of the group joined, or "—" at 0% */
+            label: string;
+        };
+        MealNovaItemRow: {
+            name: string;
+            nova: number;
+            /** @description true for NOVA 4 (ultra-processed) lines */
+            warning: boolean;
+        };
+        MealContextRow: {
+            label: string;
+            value: string;
+        };
+        MealImproveRow: {
+            text: string;
+            impact: string;
+        };
+        MealToolRow: {
+            type: string;
+            name: string;
         };
         MealItemRequest: {
             source: string;

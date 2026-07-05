@@ -138,7 +138,7 @@ components:
         tags: { type: array, items: { type: string } }
         starred: { type: boolean }
         createdDate: { type: string }
-        novaDominant: { type: number }
+        novaDominant: { type: integer, description: 'NOVA class 1..4 (converged with meal_item.nova — mezo-2dy)' }
         macros: { $ref: '#/components/schemas/RecipeMacros' }
         mezoFit: { $ref: '#/components/schemas/RecipeMezoFit' }
         timesLogged: { type: integer }
@@ -161,6 +161,7 @@ components:
         p: { type: number }
         c: { type: number }
         f: { type: number }
+        score: { type: number, nullable: true, description: 'The logged meal''s deterministic score 0..1 (mezo-yta); null for pre-scoring rows' }
     RecipeLogListResponse:
       type: object
       required: [recentLogs]
