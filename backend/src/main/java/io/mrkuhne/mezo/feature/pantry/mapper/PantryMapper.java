@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.pantry.mapper;
 
 import io.mrkuhne.mezo.api.dto.IngredientResponse;
+import io.mrkuhne.mezo.api.dto.PantryImportEntryResponse;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryMacros;
@@ -8,18 +9,24 @@ import io.mrkuhne.mezo.api.dto.PantryMicro;
 import io.mrkuhne.mezo.api.dto.PantryStock;
 import io.mrkuhne.mezo.api.dto.SupplementStashResponse;
 import io.mrkuhne.mezo.feature.pantry.entity.MicroFact;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryImportEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.mapstruct.Mapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Mapper(componentModel = "spring")
 public interface PantryMapper {
 
     /** Expiry is "low" when within 3 days. */
     int LOW_EXPIRY_DAYS = 3;
+
+    Logger LOG = LoggerFactory.getLogger(PantryMapper.class);
 
     default void applyRequest(PantryItemEntity e, PantryItemRequest r) {
         e.setKind(r.getKind() == null ? null : r.getKind().getValue());
@@ -105,7 +112,7 @@ public interface PantryMapper {
             .id(e.getId())
             .name(e.getName())
             .brand(e.getBrand() == null ? "" : e.getBrand())
-            .source(IngredientResponse.SourceEnum.fromValue(e.getSource()))
+            .source(toIngredientSource(e.getSource()))
             .category(e.getCategory() == null ? "" : e.getCategory())
             .per(e.getServingAmount())
             .unit(e.getServingUnit())
@@ -156,7 +163,7 @@ public interface PantryMapper {
             // Nutrition + commerce (mezo-1za9): supplements carry macros/nutrients/price to the UI
             // too. macros stays null for pure dose/protocol items (kcal unset) so the detail view
             // hides the Makrók block; nz() zero-fills a partial macro row when kcal is present.
-            .source(e.getSource() == null ? null : SupplementStashResponse.SourceEnum.fromValue(e.getSource()))
+            .source(e.getSource() == null ? null : toStashSource(e.getSource()))
             .per(e.getServingAmount())
             .unit(e.getServingUnit())
             .macros(e.getKcal() == null ? null : PantryMacros.builder()
@@ -183,6 +190,52 @@ public interface PantryMapper {
             .source(e.getSource())
             .category(e.getCategory())
             .build();
+    }
+
+    /** Import-feed row -> the pinned FE PantryImport shape (P6, mezo-bka). */
+    default PantryImportEntryResponse toImportEntry(PantryImportEntity e) {
+        return PantryImportEntryResponse.builder()
+            .id(e.getId())
+            .source(PantryImportEntryResponse.SourceEnum.fromValue(e.getSource()))
+            .when(e.getImportedAt().atOffset(ZoneOffset.UTC))
+            .items(e.getItemCount())
+            .status(PantryImportEntryResponse.StatusEnum.fromValue(e.getStatus()))
+            .ofWhat(e.getItemName())
+            .build();
+    }
+
+    /**
+     * Defensive source mapping (mezo-w3o): the generated enums throw on any DB value outside the
+     * contract enum, turning one drifted row into a 500 on the WHOLE pantry read. The allow-lists
+     * are kept in lockstep (DB CHECK == contract enum), so this fallback should never fire — but
+     * if they ever drift, degrade that row's source to "manual" and log, never 500.
+     */
+    default IngredientResponse.SourceEnum toIngredientSource(String value) {
+        try {
+            return IngredientResponse.SourceEnum.fromValue(value);
+        } catch (IllegalArgumentException ex) {
+            LOG.warn("pantry_item.source '{}' outside the contract enum — degrading to manual (mezo-w3o)", value);
+            return IngredientResponse.SourceEnum.MANUAL;
+        }
+    }
+
+    /**
+     * See {@link #toIngredientSource(String)} — same guard for the stash projection. The stash
+     * enum is nullable in the contract, so its generated {@code fromValue} returns null instead
+     * of throwing; both drift shapes degrade to manual.
+     */
+    default SupplementStashResponse.SourceEnum toStashSource(String value) {
+        try {
+            SupplementStashResponse.SourceEnum mapped = SupplementStashResponse.SourceEnum.fromValue(value);
+            if (mapped == null) {
+                LOG.warn("pantry_item.source '{}' outside the contract enum — degrading to manual (mezo-w3o)", value);
+                return SupplementStashResponse.SourceEnum.MANUAL;
+            }
+            return mapped;
+        } catch (IllegalArgumentException ex) {
+            LOG.warn("pantry_item.source '{}' outside the contract enum — degrading to manual (mezo-w3o)", value);
+            return SupplementStashResponse.SourceEnum.MANUAL;
+        }
     }
 
     private static BigDecimal nz(BigDecimal v) { return v == null ? BigDecimal.ZERO : v; }

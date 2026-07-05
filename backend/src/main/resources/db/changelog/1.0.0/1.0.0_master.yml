@@ -251,3 +251,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607051000_mezo-yta_meal_score_column.sql
+  - changeSet:
+      id: "1.0.0:202607051415_mezo-bka_pantry_import"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607051415_mezo-bka_pantry_import.sql

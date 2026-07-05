@@ -30,4 +30,7 @@ public class FeaturesConfiguration {
 
     /** V3.2 weekly hypothesis pipeline — techcore cron zone. */
     public static final String HYPOTHESIS_JOB_SWITCH = "mezo.techcore.cron.hypothesis-job.enabled";
+
+    /** Fuel P6 pantry import (OpenFoodFacts lookup + import endpoints). Gates OffClient + PantryImportController. */
+    public static final String PANTRY_IMPORT_SWITCH = "mezo.feature.pantry-import.enabled";
 }

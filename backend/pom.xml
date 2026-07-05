@@ -88,6 +88,13 @@
 		</dependency>
 
 		<dependency>
+			<!-- Outbound HTTP (RestClient + ClientHttpRequestFactory settings) — first consumer
+			     is the OpenFoodFacts pantry-import client (Fuel P6, mezo-bka). -->
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-restclient</artifactId>
+		</dependency>
+
+		<dependency>
 			<!-- Companion LLM provider (ADR 0008): Google Gen AI SDK based Gemini starter.
 			     Autoconfigures a ChatModel; the app only ever talks to it through the
 			     CompanionLlm port (feature/companion), so a provider swap is one adapter
@@ -183,6 +190,15 @@
 		<dependency>
 			<groupId>org.testcontainers</groupId>
 			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<!-- Stubs external HTTP APIs in ITs (integration_test_framework.md: brought in with the
+			     FIRST real external API — the OpenFoodFacts pantry-import client, Fuel P6).
+			     Standalone jar = shaded Jetty, no servlet-stack version clashes with Boot. -->
+			<groupId>org.wiremock</groupId>
+			<artifactId>wiremock-standalone</artifactId>
+			<version>3.13.1</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
