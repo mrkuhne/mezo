@@ -1,0 +1,63 @@
+# Nightly logical backup of the live mezo database (mezo-osj, ADR 0009).
+# pg_dump custom format (compressed, pg_restore-able selectively) onto the
+# postgres-backup PVC, 14-day rotation. Uses the same pgvector/pgvector:pg16
+# image as the server so the client tools always match the server major.
+# Offsite copy = the admin Mac's daily pull (scripts/backup-live-db.sh).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: mezo
+spec:
+  # 03:30 local — after the app's nightly companion crons, before the day starts.
+  schedule: "30 3 * * *"
+  timeZone: Europe/Budapest
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: pg-dump
+              image: pgvector/pgvector:pg16
+              command: ["/bin/bash", "-ceu"]
+              args:
+                - |
+                  STAMP=$(date +%F-%H%M)
+                  FILE="/backups/mezo-${STAMP}.dump"
+                  pg_dump --format=custom --file="${FILE}.part" "${PGDATABASE}"
+                  mv "${FILE}.part" "${FILE}"
+                  # rotation: keep 14 days on-cluster (offsite history lives on the Mac)
+                  find /backups -name 'mezo-*.dump' -mtime +14 -delete
+                  rm -f /backups/*.part
+                  echo "backup OK: ${FILE} ($(du -h "${FILE}" | cut -f1)) · kept: $(ls /backups | wc -l)"
+              env:
+                - name: PGHOST
+                  value: postgres
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef: { name: mezo-db, key: POSTGRES_USER }
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef: { name: mezo-db, key: POSTGRES_PASSWORD }
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef: { name: mezo-db, key: POSTGRES_DB }
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+              resources:
+                requests:
+                  cpu: "50m"
+                  memory: "64Mi"
+                limits:
+                  memory: "256Mi"
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: postgres-backup

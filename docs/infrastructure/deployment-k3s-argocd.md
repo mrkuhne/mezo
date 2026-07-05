@@ -44,6 +44,7 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
 | **backend** | `Deployment` + `Service` | Spring Boot, container on :8090. Profile `demodata` (owner seed). Env/secrets from `Secret`/`ConfigMap`. Image in GHCR. |
 | **postgres** | `StatefulSet` + `PVC` + `Secret` | Postgres 16 — image `pgvector/pgvector:pg16` since 2026-07-03 (companion V2.1 vector layer; same PG16 major, data kept on the PVC). `local-path` PVC for data. Credentials in a `Secret`. Not exposed outside the cluster. |
 | **pgAdmin** | `Deployment` + `Service` | DB GUI. **No Ingress** — reach via `kubectl port-forward` or Tailscale only. |
+| **DB backup** | `CronJob` + `PVC` | Nightly `pg_dump -Fc` → `postgres-backup` PVC (14-day rotation) + daily offsite pull to the admin Mac (`scripts/backup-live-db.sh`, launchd). [ADR 0009](../decisions/0009-postgres-backup-cronjob-plus-mac-pull.md), runbook §6. |
 | **ArgoCD** | install + `Application` | GitOps controller in `argocd` namespace; `Application` points at the repo's `k8s/` directory. |
 
 ## Repository layout (target)
@@ -207,4 +208,4 @@ commit-back push is rejected — it would then need a PAT / GitHub App token or 
 - Multi-node cluster / real HA.
 - Postgres operator (CloudNativePG) instead of a hand-rolled StatefulSet.
 - Sealed Secrets / SOPS for git-committed secrets.
-- Observability (Prometheus + Grafana), backups automation, log aggregation.
+- Observability (Prometheus + Grafana), log aggregation. (Backups automation DONE 2026-07-05 — ADR 0009; a CloudNativePG move would supersede it.)
