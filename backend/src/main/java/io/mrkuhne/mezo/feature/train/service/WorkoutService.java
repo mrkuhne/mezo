@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -115,6 +116,20 @@ public class WorkoutService {
             .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
             .weekDoneDates(weekDoneDates)
             .build();
+    }
+
+    /**
+     * Workout instances with logged work (>=1 non-skipped set) in the inclusive date range, date
+     * ascending — the same "done" semantics as {@link #doneDatesThisWeek}. Read method: no
+     * {@code @Transactional}, matching {@link #getToday}.
+     */
+    public List<WorkoutSummaryResponse> listWorkouts(UUID createdBy, LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new SystemRuntimeErrorException(SystemMessage.error("TRAIN_INVALID_DATE_RANGE").build());
+        }
+        return workoutSessionRepository.findDoneInstancesBetween(createdBy, from, to).stream()
+            .map(mapper::toWorkoutSummary)
+            .toList();
     }
 
     /** Dates (this Mon–Sun week) with a gym instance carrying >=1 logged set — gym done-state. */

@@ -24,6 +24,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutSkipRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
+import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
@@ -33,6 +34,7 @@ import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -120,6 +122,11 @@ public class TrainController implements TrainApi {
     @Override
     public WorkoutTodayResponse getTodayWorkout() {
         return workoutService.getToday(currentUserId.get());
+    }
+
+    @Override
+    public List<WorkoutSummaryResponse> listWorkouts(LocalDate from, LocalDate to) {
+        return workoutService.listWorkouts(currentUserId.get(), from, to);
     }
 
     @Override
