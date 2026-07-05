@@ -10,6 +10,7 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -71,6 +72,10 @@ public class MealEntity extends OwnedEntity {
 
     @Column
     private String title;
+
+    /** Denormalized scalar of {@code breakdown.value} (ADR 0006 §4) — MealScoringService sets both atomically. */
+    @Column
+    private BigDecimal score;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")

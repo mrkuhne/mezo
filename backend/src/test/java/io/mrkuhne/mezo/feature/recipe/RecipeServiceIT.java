@@ -72,7 +72,7 @@ class RecipeServiceIT extends AbstractIntegrationTest {
         assertThat(created.getMacros().getP()).isEqualByComparingTo(BigDecimal.valueOf(46));
         assertThat(created.getMacros().getC()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(created.getMacros().getF()).isEqualByComparingTo(BigDecimal.valueOf(3));
-        assertThat(created.getNovaDominant()).isEqualByComparingTo(BigDecimal.valueOf(1));
+        assertThat(created.getNovaDominant()).isEqualTo(1); // integer since mezo-2dy
         assertThat(created.getIngredients()).singleElement()
             .satisfies(i -> {
                 assertThat(i.getName()).isEqualTo("Csirkemell"); // snapshot name

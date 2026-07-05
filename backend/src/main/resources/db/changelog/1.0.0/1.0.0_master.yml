@@ -244,3 +244,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607041030_mezo-t16y.2_create_person_mention.sql
+  - changeSet:
+      id: "1.0.0:202607051000_mezo-yta_meal_score_column"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607051000_mezo-yta_meal_score_column.sql
