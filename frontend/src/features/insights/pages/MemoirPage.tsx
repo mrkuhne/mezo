@@ -20,7 +20,6 @@ export function MemoirPage() {
 
   if (!isMockMode()) return <PhaseTeaserCard text="A heti memoirt a társ írja majd — a proaktív réteggel érkezik." />
 
-
   return (
     <div className="col gap-md">
       <div className="memoir-card notch-12" style={{ padding: 22, position: 'relative', overflow: 'hidden' }}>

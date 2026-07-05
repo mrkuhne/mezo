@@ -192,10 +192,12 @@ export function useWeekly(): WeeklyView {
   }
 
   const planned = gymSlots != null && sportSlots != null ? gymSlots.length + sportSlots.length : null
+  // Distinct gym-workout DAYS (matches weekDoneDates semantics — two instances on one
+  // calendar day count once) + sport sessions logged inside the week.
   const doneOf = (workouts: { date: string }[] | null | undefined, weekStart: string) =>
     workouts == null || sportSessions == null
       ? null
-      : workouts.length + sportSessions.filter((s) => inWeek(s.date, weekStart)).length
+      : new Set(workouts.map((w) => w.date)).size + sportSessions.filter((s) => inWeek(s.date, weekStart)).length
 
   const cur = deriveWeekMetrics({
     fuelDays: curFuel?.days ?? [],
