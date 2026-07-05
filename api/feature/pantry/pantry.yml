@@ -108,7 +108,9 @@ components:
         lowExpiry: { type: boolean, nullable: true }
     IngredientResponse:
       type: object
-      required: [id, name, brand, source, category, per, unit, macros, price, priceUnit, pkg, micros, nova, lastUsed, usedInRecipes]
+      # nova left OUT of required since mezo-32ko: an unclassified item is an honest null,
+      # not a fabricated NOVA 1 (the old mapper default masked the data gap on the Kamra UI).
+      required: [id, name, brand, source, category, per, unit, macros, price, priceUnit, pkg, micros, lastUsed, usedInRecipes]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
@@ -122,7 +124,7 @@ components:
         priceUnit: { type: string }
         pkg: { type: string }
         micros: { type: array, items: { $ref: '#/components/schemas/PantryMicro' } }
-        nova: { type: integer, minimum: 1, maximum: 4 }
+        nova: { type: integer, minimum: 1, maximum: 4, nullable: true }
         stock: { allOf: [ { $ref: '#/components/schemas/PantryStock' } ], nullable: true }
         # extended nutrition facts (per serving) — preserved from the imported catalog
         fiberG: { type: number, nullable: true }

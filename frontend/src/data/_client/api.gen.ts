@@ -2077,7 +2077,7 @@ export interface components {
             priceUnit: string;
             pkg: string;
             micros: components["schemas"]["PantryMicro"][];
-            nova: number;
+            nova?: number | null;
             stock?: components["schemas"]["PantryStock"] | null;
             fiberG?: number | null;
             sugarG?: number | null;

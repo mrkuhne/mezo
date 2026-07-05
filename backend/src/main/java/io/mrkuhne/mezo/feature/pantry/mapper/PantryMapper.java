@@ -123,7 +123,9 @@ public interface PantryMapper {
             .pkg(e.getPackageLabel() == null ? "" : e.getPackageLabel())
             .micros(e.getMicros() == null ? List.of()
                 : e.getMicros().stream().map(m -> PantryMicro.builder().name(m.name()).pct(m.pct()).build()).toList())
-            .nova(e.getNova() == null ? 1 : e.getNova().intValue())
+            // Honest null since mezo-32ko — the old `null -> 1` default dressed unclassified
+            // items up as NOVA 1 on the Kamra UI while the score engine honestly degraded.
+            .nova(e.getNova() == null ? null : e.getNova().intValue())
             .stock(toStock(e))
             .fiberG(e.getFiberG())
             .sugarG(e.getSugarG())

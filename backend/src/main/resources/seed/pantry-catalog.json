@@ -17,7 +17,8 @@
     "priceHuf": 590,
     "packageLabel": "500g csomag",
     "stockQty": 2.0,
-    "stockUnit": "csomag"
+    "stockUnit": "csomag",
+    "nova": 1
   },
   {
     "name": "Collagen Protein MyProtein",
@@ -37,7 +38,8 @@
     "priceHuf": 9900,
     "packageLabel": "2500g csomag",
     "stockQty": 1.0,
-    "stockUnit": "csomag"
+    "stockUnit": "csomag",
+    "nova": 4
   },
   {
     "name": "Collagen Protein",
@@ -57,7 +59,8 @@
     "priceHuf": 20490,
     "packageLabel": null,
     "stockQty": 1.0,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Soy Milk",
@@ -77,7 +80,8 @@
     "priceHuf": 990,
     "packageLabel": "1000ml doboz",
     "stockQty": 3.0,
-    "stockUnit": "doboz"
+    "stockUnit": "doboz",
+    "nova": 3
   },
   {
     "name": "Szezámmag",
@@ -97,7 +101,8 @@
     "priceHuf": 1390,
     "packageLabel": "250g csomag",
     "stockQty": 1.0,
-    "stockUnit": "csomag"
+    "stockUnit": "csomag",
+    "nova": 1
   },
   {
     "name": "Tomato Passata Tesco",
@@ -117,7 +122,8 @@
     "priceHuf": 690,
     "packageLabel": "700g Üveg",
     "stockQty": 2.0,
-    "stockUnit": "Üveg"
+    "stockUnit": "Üveg",
+    "nova": 3
   },
   {
     "name": "Beef Neck Gourmet",
@@ -137,7 +143,8 @@
     "priceHuf": 2743,
     "packageLabel": "500g Doboz",
     "stockQty": 2.0,
-    "stockUnit": "Doboz"
+    "stockUnit": "Doboz",
+    "nova": 1
   },
   {
     "name": "Soy Bean Spaghetti",
@@ -157,7 +164,8 @@
     "priceHuf": 1259,
     "packageLabel": "200g Doboz",
     "stockQty": 2.0,
-    "stockUnit": "Doboz"
+    "stockUnit": "Doboz",
+    "nova": 1
   },
   {
     "name": "Fermented Immune Booster",
@@ -177,7 +185,8 @@
     "priceHuf": 2900,
     "packageLabel": "245g Üveg",
     "stockQty": 1.0,
-    "stockUnit": "Üveg"
+    "stockUnit": "Üveg",
+    "nova": 3
   },
   {
     "name": "Beef Rostelyos",
@@ -197,7 +206,8 @@
     "priceHuf": 5399,
     "packageLabel": "260g Darab",
     "stockQty": 0.0,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Fermented Cabbage",
@@ -217,7 +227,8 @@
     "priceHuf": 4100,
     "packageLabel": null,
     "stockQty": 1.0,
-    "stockUnit": "g"
+    "stockUnit": "g",
+    "nova": 3
   },
   {
     "name": "Rump Steak Cooked",
@@ -237,7 +248,8 @@
     "priceHuf": 3899,
     "packageLabel": "250g Db",
     "stockQty": 0.0,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Rapsberries",
@@ -257,7 +269,8 @@
     "priceHuf": 999,
     "packageLabel": "125g Doboz",
     "stockQty": 1.0,
-    "stockUnit": "Doboz"
+    "stockUnit": "Doboz",
+    "nova": 1
   },
   {
     "name": "Energy Gel",
@@ -277,7 +290,8 @@
     "priceHuf": 349,
     "packageLabel": "300g Doboz",
     "stockQty": 10.0,
-    "stockUnit": "Doboz"
+    "stockUnit": "Doboz",
+    "nova": 4
   },
   {
     "name": "Black Beans",
@@ -297,7 +311,8 @@
     "priceHuf": 549,
     "packageLabel": "500g Konzerv",
     "stockQty": 1.0,
-    "stockUnit": "Konzerv"
+    "stockUnit": "Konzerv",
+    "nova": 1
   },
   {
     "name": "Mag Mix Lidl",
@@ -317,7 +332,8 @@
     "priceHuf": 1190,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Salted Caramel Vegan Whey",
@@ -337,7 +353,8 @@
     "priceHuf": 8590,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Cherry Tomatoes",
@@ -357,7 +374,8 @@
     "priceHuf": 1290,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Sweetcorn",
@@ -377,7 +395,8 @@
     "priceHuf": 390,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Hummus with Mango",
@@ -397,7 +416,8 @@
     "priceHuf": 749,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Lentil Salad",
@@ -417,7 +437,8 @@
     "priceHuf": 749,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Cashews Raw",
@@ -437,7 +458,8 @@
     "priceHuf": 1490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Tuna In Brine",
@@ -457,7 +479,8 @@
     "priceHuf": 540,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Fussili Whole Wheat",
@@ -477,7 +500,8 @@
     "priceHuf": 490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Almond Milk",
@@ -497,7 +521,8 @@
     "priceHuf": 490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Peanut Butter Powder Nutriversum",
@@ -517,7 +542,8 @@
     "priceHuf": 2500,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Mousse High Protein Chocolate",
@@ -537,7 +563,8 @@
     "priceHuf": 490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Cucumber",
@@ -557,7 +584,8 @@
     "priceHuf": 290,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Tofu Plain",
@@ -577,7 +605,8 @@
     "priceHuf": 539,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Pudding High Protein Chocolate",
@@ -597,7 +626,8 @@
     "priceHuf": 490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Joghurt Mayo Sauce Homemade",
@@ -617,7 +647,8 @@
     "priceHuf": 500,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 2
   },
   {
     "name": "Potatoes Yellow",
@@ -637,7 +668,8 @@
     "priceHuf": 265,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Ground Turkey",
@@ -657,7 +689,8 @@
     "priceHuf": 1099,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Cacao Powder",
@@ -677,7 +710,8 @@
     "priceHuf": 799,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Jamon Serrano Lidl",
@@ -697,7 +731,8 @@
     "priceHuf": 999,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Baby Spinach",
@@ -717,7 +752,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Avocado",
@@ -737,7 +773,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Tortila Wrap Penny Market",
@@ -757,7 +794,8 @@
     "priceHuf": 600,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Protein bar Crunchy Pink",
@@ -777,7 +815,8 @@
     "priceHuf": 600,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Csabai Kolbász",
@@ -797,7 +836,8 @@
     "priceHuf": 1200,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Red Beans",
@@ -817,7 +857,8 @@
     "priceHuf": 349,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Kiwi",
@@ -837,7 +878,8 @@
     "priceHuf": 249,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Oat Flour",
@@ -857,7 +899,8 @@
     "priceHuf": 499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Brown Onion",
@@ -877,7 +920,8 @@
     "priceHuf": 529,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Maggi Chicken Broth",
@@ -897,7 +941,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Cornstarch",
@@ -917,7 +962,8 @@
     "priceHuf": 399,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 2
   },
   {
     "name": "Strawberries Frozen Lidl",
@@ -937,7 +983,8 @@
     "priceHuf": 1732,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Orange",
@@ -957,7 +1004,8 @@
     "priceHuf": 799,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Cheddar Cheese",
@@ -977,7 +1025,8 @@
     "priceHuf": 1490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Apple Idared",
@@ -997,7 +1046,8 @@
     "priceHuf": 750,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Protein bar Peanuts",
@@ -1017,7 +1067,8 @@
     "priceHuf": 600,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Chia Seeds",
@@ -1037,7 +1088,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Ginger Fresh",
@@ -1057,7 +1109,8 @@
     "priceHuf": 2599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Celery Stick",
@@ -1077,7 +1130,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Csiperkegomba",
@@ -1097,7 +1151,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Túrórudi Laktózmentes Óriás",
@@ -1117,7 +1172,8 @@
     "priceHuf": 349,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Coconut Milk Light Lidl",
@@ -1137,7 +1193,8 @@
     "priceHuf": 349,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Jenny Kaja",
@@ -1177,7 +1234,8 @@
     "priceHuf": 1499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Pineapple",
@@ -1197,7 +1255,8 @@
     "priceHuf": 1699,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Parmeggiano Regiano Lidl",
@@ -1217,7 +1276,8 @@
     "priceHuf": 2929,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Bulgur Lidl",
@@ -1237,7 +1297,8 @@
     "priceHuf": 699,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Pecans",
@@ -1257,7 +1318,8 @@
     "priceHuf": 1900,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Pork shoulder",
@@ -1277,7 +1339,8 @@
     "priceHuf": 1399,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Pork parisian",
@@ -1297,7 +1360,8 @@
     "priceHuf": 1299,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "ProteinCo Biscuit Cookie",
@@ -1317,7 +1381,8 @@
     "priceHuf": 13000,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Rice Pudding High Protein Lidl",
@@ -1337,7 +1402,8 @@
     "priceHuf": 490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "White Beans",
@@ -1357,7 +1423,8 @@
     "priceHuf": 299,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Oat Rolled",
@@ -1377,7 +1444,8 @@
     "priceHuf": 359,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Duck fat",
@@ -1397,7 +1465,8 @@
     "priceHuf": 799,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 2
   },
   {
     "name": "Túrórudi",
@@ -1417,7 +1486,8 @@
     "priceHuf": 299,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Soy Milk High Protein LM Lidl",
@@ -1437,7 +1507,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Basmati Rice",
@@ -1457,7 +1528,8 @@
     "priceHuf": 899,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Banana",
@@ -1477,7 +1549,8 @@
     "priceHuf": 1000,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Red Lentil Pasta",
@@ -1497,7 +1570,8 @@
     "priceHuf": 699,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Worcestershire Sauce",
@@ -1517,7 +1591,8 @@
     "priceHuf": 489,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Chickpeas Canned",
@@ -1537,7 +1612,8 @@
     "priceHuf": 299,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Joghurt Plain High Protein LM Lidl",
@@ -1557,7 +1633,8 @@
     "priceHuf": 289,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Sweet Potato",
@@ -1577,7 +1654,8 @@
     "priceHuf": 1200,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Turkey Liver",
@@ -1597,7 +1675,8 @@
     "priceHuf": 1798,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Belbake Flour",
@@ -1617,7 +1696,8 @@
     "priceHuf": 200,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Chicken Breast Cooked",
@@ -1637,7 +1717,8 @@
     "priceHuf": 2289,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Chickpea Pasta",
@@ -1657,7 +1738,8 @@
     "priceHuf": 699,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Corn",
@@ -1677,7 +1759,8 @@
     "priceHuf": 299,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Honey",
@@ -1697,7 +1780,8 @@
     "priceHuf": 1999,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 2
   },
   {
     "name": "Joghurt Blueberry High Protein LM Lidl",
@@ -1717,7 +1801,8 @@
     "priceHuf": 215,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Joghurt Strawberry High Protein LM Lidl",
@@ -1737,7 +1822,8 @@
     "priceHuf": 215,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Blueberries Frozen Lidl",
@@ -1757,7 +1843,8 @@
     "priceHuf": 2598,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Soy Sauce Lidl",
@@ -1777,7 +1864,8 @@
     "priceHuf": 489,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Quark LM Lidl",
@@ -1797,7 +1885,8 @@
     "priceHuf": 489,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Baresa Tomato Puree Lidl",
@@ -1817,7 +1906,8 @@
     "priceHuf": 559,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Heinz Smokey & Rich BBQ",
@@ -1837,7 +1927,8 @@
     "priceHuf": 499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Iso Whey Nutriversum Vanilla",
@@ -1857,7 +1948,8 @@
     "priceHuf": 9490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Joghurt LM Lidl",
@@ -1877,7 +1969,8 @@
     "priceHuf": 95,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Iso Whey Nutriversum Chocolate",
@@ -1897,7 +1990,8 @@
     "priceHuf": 9490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Chicken Ham",
@@ -1917,7 +2011,8 @@
     "priceHuf": 899,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Eggs",
@@ -1937,7 +2032,8 @@
     "priceHuf": 829,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Cashew Nuts Roasted",
@@ -1957,7 +2053,8 @@
     "priceHuf": 2989,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Green Beans",
@@ -1977,7 +2074,8 @@
     "priceHuf": 1000,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Tuna In Oil",
@@ -1997,7 +2095,8 @@
     "priceHuf": 590,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Greek yoghurt",
@@ -2017,7 +2116,8 @@
     "priceHuf": 1290,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Túró rögös zsír szegény",
@@ -2037,7 +2137,8 @@
     "priceHuf": 780,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Orange Juice",
@@ -2057,7 +2158,8 @@
     "priceHuf": 990,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Peanut Butter Homemade",
@@ -2077,7 +2179,8 @@
     "priceHuf": 1499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Protein Bar Cookies & Cream Lidl",
@@ -2097,7 +2200,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Túrórudi High Protein Lidl",
@@ -2117,7 +2221,8 @@
     "priceHuf": 299,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Ground Turkey Cooked",
@@ -2137,7 +2242,8 @@
     "priceHuf": 500,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Chicken Thigh Skinless Cooked",
@@ -2157,7 +2263,8 @@
     "priceHuf": 1400,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Carrots",
@@ -2177,7 +2284,8 @@
     "priceHuf": 499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Olive oil",
@@ -2197,7 +2305,8 @@
     "priceHuf": 4000,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 2
   },
   {
     "name": "Red Onion",
@@ -2217,7 +2326,8 @@
     "priceHuf": 499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Chopped Tomatoes",
@@ -2237,7 +2347,8 @@
     "priceHuf": 499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Lentils Happy Harvest",
@@ -2257,7 +2368,8 @@
     "priceHuf": 479,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Mustard",
@@ -2277,7 +2389,8 @@
     "priceHuf": 399,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "ProteinCo Cinnamon Milk",
@@ -2297,7 +2410,8 @@
     "priceHuf": 13000,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Wellness Whole Bread",
@@ -2317,7 +2431,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Broccoli",
@@ -2337,7 +2452,8 @@
     "priceHuf": 1600,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Rolled Oat Crownfield",
@@ -2357,7 +2473,8 @@
     "priceHuf": 359,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Sajt Szeleteltt Laktózmentes Sissy",
@@ -2377,7 +2494,8 @@
     "priceHuf": 515,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Tomato Chopped Baresa",
@@ -2397,7 +2515,8 @@
     "priceHuf": 490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Mayo Light Lidl",
@@ -2417,7 +2536,8 @@
     "priceHuf": 899,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Ground Pork",
@@ -2437,7 +2557,8 @@
     "priceHuf": 1399,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Garlic",
@@ -2457,7 +2578,8 @@
     "priceHuf": 499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Cottage Cheese LM Lidl",
@@ -2477,7 +2599,8 @@
     "priceHuf": 599,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Mango",
@@ -2497,7 +2620,8 @@
     "priceHuf": 1490,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Green Pea Frozen Lidl",
@@ -2517,7 +2641,8 @@
     "priceHuf": 799,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Cherry Frozen Lidl",
@@ -2537,7 +2662,8 @@
     "priceHuf": 899,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Impact Whey Blueberry MyProtein",
@@ -2557,7 +2683,8 @@
     "priceHuf": 16900,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Lasagne Pasta Combino",
@@ -2577,7 +2704,8 @@
     "priceHuf": 690,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Spaghetti Combino Whole Wheat",
@@ -2597,7 +2725,8 @@
     "priceHuf": 465,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Tortilla Wrap Lidl",
@@ -2617,7 +2746,8 @@
     "priceHuf": 899,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Ground Beef",
@@ -2637,7 +2767,8 @@
     "priceHuf": 1500,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Hesters Life Blackcherry",
@@ -2657,7 +2788,8 @@
     "priceHuf": 1699,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Mozzarella LM Lidl",
@@ -2677,7 +2809,8 @@
     "priceHuf": 829,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Bacon Lidl",
@@ -2697,7 +2830,8 @@
     "priceHuf": 900,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Tomato Puree",
@@ -2717,7 +2851,8 @@
     "priceHuf": 240,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Sertés Lapocka",
@@ -2737,7 +2872,8 @@
     "priceHuf": 1400,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Tejföl LM",
@@ -2757,7 +2893,8 @@
     "priceHuf": 409,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Tomato Passata Baresa",
@@ -2777,7 +2914,8 @@
     "priceHuf": 549,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Butter LM Lidl",
@@ -2797,7 +2935,8 @@
     "priceHuf": 940,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 2
   },
   {
     "name": "Carrots Baby",
@@ -2817,7 +2956,8 @@
     "priceHuf": 689,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Ginger",
@@ -2837,7 +2977,8 @@
     "priceHuf": 2999,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 1
   },
   {
     "name": "Brown rice chips",
@@ -2857,7 +2998,8 @@
     "priceHuf": 499,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Cooking Cream Milbona LM",
@@ -2877,7 +3019,8 @@
     "priceHuf": 1189,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 3
   },
   {
     "name": "Peanut Butter ProteinCo",
@@ -2897,7 +3040,8 @@
     "priceHuf": 3290,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "ProteinCo Strawberry Milkshake",
@@ -2917,7 +3061,8 @@
     "priceHuf": 13000,
     "packageLabel": null,
     "stockQty": null,
-    "stockUnit": null
+    "stockUnit": null,
+    "nova": 4
   },
   {
     "name": "Szilvia Törlőkendő",
