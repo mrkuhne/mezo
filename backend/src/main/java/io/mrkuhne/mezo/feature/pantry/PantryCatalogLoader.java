@@ -8,9 +8,12 @@ import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -27,6 +30,7 @@ import tools.jackson.databind.ObjectMapper;
  * curated their shelf is left untouched. Runs after {@link io.mrkuhne.mezo.feature.auth.OwnerSeedData}
  * (Order 0) so the owner exists.
  */
+@Slf4j
 @Component
 @Profile("demodata")
 @Order(60)
@@ -45,7 +49,8 @@ public class PantryCatalogLoader implements CommandLineRunner {
         BigDecimal kcal, BigDecimal proteinG, BigDecimal carbsG, BigDecimal fatG,
         BigDecimal fiberG, BigDecimal sugarG, BigDecimal saltG, BigDecimal saturatedFatG,
         Integer priceHuf, String packageLabel,
-        BigDecimal stockQty, String stockUnit) {}
+        BigDecimal stockQty, String stockUnit,
+        Short nova) {}
 
     @Override
     @Transactional
@@ -61,11 +66,39 @@ public class PantryCatalogLoader implements CommandLineRunner {
             return; // no owner yet (non-demodata path) — nothing to seed
         }
         UUID ownerId = owner.getId();
-        if (!repository.findByCreatedByAndDeletedFalseOrderByNameAsc(ownerId).isEmpty()) {
-            return; // owner already has a pantry — leave it untouched (idempotent)
+        List<PantryItemEntity> existing = repository.findByCreatedByAndDeletedFalseOrderByNameAsc(ownerId);
+        if (!existing.isEmpty()) {
+            backfillNova(existing); // curated shelf stays untouched EXCEPT the additive nova backfill
+            return;
         }
         for (CatalogRow row : readCatalog()) {
             repository.save(toEntity(ownerId, row));
+        }
+    }
+
+    /**
+     * mezo-32ko: the catalog originally shipped without NOVA classes, so live rows have
+     * {@code nova = null} and both the meal score's NOVA dimension and the low-NOVA swap
+     * suggestion degrade. Backfill is additive + idempotent: only rows whose name matches a
+     * catalog row AND whose nova is still null get the catalog value — a user who has since
+     * set/cleared nova by hand, renamed, or added items is never overwritten.
+     */
+    private void backfillNova(List<PantryItemEntity> existing) {
+        Map<String, Short> catalogNova = new HashMap<>();
+        for (CatalogRow row : readCatalog()) {
+            if (row.nova() != null) catalogNova.put(row.name(), row.nova());
+        }
+        int updated = 0;
+        for (PantryItemEntity e : existing) {
+            Short nova = catalogNova.get(e.getName());
+            if (e.getNova() == null && nova != null) {
+                e.setNova(nova);
+                repository.save(e);
+                updated++;
+            }
+        }
+        if (updated > 0) {
+            log.info("pantry catalog nova backfill: {} row(s) updated (mezo-32ko)", updated);
         }
     }
 
@@ -99,6 +132,7 @@ public class PantryCatalogLoader implements CommandLineRunner {
         e.setPackageLabel(r.packageLabel());
         e.setStockQty(r.stockQty());
         e.setStockUnit(r.stockUnit());
+        e.setNova(r.nova());
         return e;
     }
 }

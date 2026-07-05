@@ -5144,7 +5144,6 @@ components:
         - priceUnit
         - pkg
         - micros
-        - nova
         - lastUsed
         - usedInRecipes
       properties:
@@ -5191,6 +5190,7 @@ components:
           type: integer
           minimum: 1
           maximum: 4
+          nullable: true
         stock:
           allOf:
             - $ref: '#/components/schemas/PantryStock'
