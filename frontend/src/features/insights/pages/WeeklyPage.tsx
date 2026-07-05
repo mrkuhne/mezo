@@ -1,4 +1,4 @@
-import { useInsights } from '@/data/hooks'
+import { useWeekly } from '@/data/hooks'
 import type { WeeklyTrend } from '@/data/types'
 
 function trendArrow(t: WeeklyTrend): string {
@@ -10,7 +10,7 @@ function trendColor(t: WeeklyTrend): string {
 }
 
 export function WeeklyPage() {
-  const { weekly, weeklySuggestion } = useInsights()
+  const { weekly, deltaLabel, weeklySuggestion } = useWeekly()
 
   return (
     <div className="col gap-md">
@@ -18,17 +18,31 @@ export function WeeklyPage() {
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div className="col">
             <span className="eyebrow brand">{weekly.title}</span>
-            <div style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, lineHeight: 1, marginTop: 8 }}>
-              {weekly.score}
-              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 16, color: 'var(--text-tertiary)', marginLeft: 6 }}>/100</span>
+            {weekly.score != null ? (
+              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, lineHeight: 1, marginTop: 8 }}>
+                {weekly.score}
+                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 16, color: 'var(--text-tertiary)', marginLeft: 6 }}>/100</span>
+              </div>
+            ) : (
+              // The patterns-precedent honest null-state: no data yet, never a fabricated score.
+              <div className="col" style={{ marginTop: 8 }}>
+                <span style={{ fontFamily: 'var(--ff-display)', fontSize: 34, fontWeight: 600, lineHeight: 1, color: 'var(--text-tertiary)' }}>
+                  tanulom
+                </span>
+                <span className="text-tertiary" style={{ fontSize: 11, marginTop: 6 }}>
+                  még gyűjtöm az adatokat a heti értékeléshez
+                </span>
+              </div>
+            )}
+          </div>
+          {weekly.delta != null && (
+            <div className="col" style={{ alignItems: 'flex-end' }}>
+              <span className="label-mono" style={{ color: weekly.delta >= 0 ? 'var(--success)' : 'var(--error)' }}>
+                {weekly.delta > 0 ? '+' : ''}{weekly.delta}
+              </span>
+              <span className="text-tertiary" style={{ fontSize: 10, marginTop: 4 }}>{deltaLabel}</span>
             </div>
-          </div>
-          <div className="col" style={{ alignItems: 'flex-end' }}>
-            <span className="label-mono" style={{ color: weekly.delta > 0 ? 'var(--success)' : 'var(--error)' }}>
-              {weekly.delta > 0 ? '+' : ''}{weekly.delta}
-            </span>
-            <span className="text-tertiary" style={{ fontSize: 10, marginTop: 4 }}>vs hét 20</span>
-          </div>
+          )}
         </div>
 
         <div className="col gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
@@ -46,11 +60,19 @@ export function WeeklyPage() {
 
       <div className="card notch-4" style={{ padding: 14 }}>
         <span className="eyebrow brand">Mezo · heti tervjavaslat</span>
-        <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>{weeklySuggestion}</p>
-        <div className="row gap-sm mt-md">
-          <button type="button" className="cta-ghost notch-4" style={{ fontSize: 10 }}>Elfogad</button>
-          <button type="button" className="chip" style={{ fontSize: 9 }}>Hangoljuk</button>
-        </div>
+        {weeklySuggestion != null ? (
+          <>
+            <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>{weeklySuggestion}</p>
+            <div className="row gap-sm mt-md">
+              <button type="button" className="cta-ghost notch-4" style={{ fontSize: 10 }}>Elfogad</button>
+              <button type="button" className="chip" style={{ fontSize: 9 }}>Hangoljuk</button>
+            </div>
+          </>
+        ) : (
+          <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+            A társ heti tervjavaslata hamarosan.
+          </p>
+        )}
       </div>
     </div>
   )
