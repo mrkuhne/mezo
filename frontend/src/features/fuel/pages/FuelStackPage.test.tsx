@@ -63,6 +63,19 @@ test('tapping a slot item toggles its intake (log when empty, undo when taken)',
   )
 })
 
+test('hides the "Mit nézek most" context card in real mode — seed meso/reta/load cells were fiction (mezo-t16y.4)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  renderView()
+  await screen.findByRole('heading', { name: 'AI builder' })
+  expect(screen.queryByText('Mit nézek most')).not.toBeInTheDocument()
+})
+
+test('shows the "Mit nézek most" demo context card in mock mode', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  renderView()
+  expect(screen.getByText('Mit nézek most')).toBeInTheDocument()
+})
+
 test('hides the recommendations section when the backend has none (real mode)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   renderView()

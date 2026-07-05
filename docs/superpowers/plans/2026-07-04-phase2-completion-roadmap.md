@@ -32,7 +32,7 @@
   Dual-mode via `useDualQuery`/`isMockMode()`; both FE test modes green.
 - **Session-sized slices** — the proven Fuel-P size. If a slice needs two branches, split it.
 
-## Where we are (2026-07-04 inventory)
+## Where we are (2026-07-04 inventory · CLOSED by the X audit, 2026-07-05 — every row ✅ or ⛔-as-designed)
 
 Phase 2 slices A (biometrics+auth), B (Train) and C-core (Fuel: pantry/recipes/meals/water/protocol/
 medication + P5 timeline) are ✅. Phase 3 (companion, `mezo-fnnq`) shipped and **superseded** most of
@@ -43,11 +43,11 @@ The complete residual mock/partial surface (hook-level audit, 2026-07-04):
 | Hook | Domain | Status | Covered by |
 |---|---|---|---|
 | `useFuelWeek` | fuel | ✅ REAL (2026-07-04) | **Fuel P4** (`mezo-kpo`) — shipped, incl. `GET /api/fuel/week/{start}` (the D′ server aggregate) |
-| `usePantry().imports/suggestions` | fuel | absent | **Fuel P6** (`mezo-bka`) |
-| `meal.score/breakdown` | fuel | null | **Fuel P7** (`mezo-yta`) |
-| `useInsights` (weekly/memoir/predictions/experiments) | insights | MOCK-ONLY | **D′** (`mezo-t16y.1`) |
-| `usePeople` + `useProfile` | me | MOCK-ONLY | **E** (`mezo-t16y.2`) |
-| `useToday` / `resolveBriefing` / `useCheckins` read / `useTodayScenario` rest | today | MOCK/PARTIAL | **T** (`mezo-t16y.3`) |
+| `usePantry().imports/suggestions` | fuel | ✅ REAL (2026-07-05) | **Fuel P6** (`mezo-bka`) — shipped: OFF lookup-import + deterministic swap suggestions |
+| `meal.score/breakdown` | fuel | ✅ REAL (2026-07-05) | **Fuel P7** (`mezo-yta`) — shipped: deterministic 4-dim engine |
+| `useInsights` (weekly/memoir/predictions/experiments) | insights | ✅ weekly REAL, rest hidden-honest (2026-07-05) | **D′** (`mezo-t16y.1`) — shipped |
+| `usePeople` + `useProfile` | me | ✅ REAL / static-is-fine recorded (2026-07-04) | **E** (`mezo-t16y.2`) — shipped |
+| `useToday` / `resolveBriefing` / `useCheckins` read / `useTodayScenario` rest | today | ✅ REAL/honest-labelled (2026-07-04) | **T** (`mezo-t16y.3`) — shipped |
 | `useReplanScenarios`, `useStackRecommendations` | fuel | MOCK / GHOST | ⛔ stays — **Fuel P8** (`mezo-0h6w`) |
 | `useKnowledge().edges` (graph) | insights | GHOST (`[]` real) | ⛔ stays — future companion slice |
 | briefing/memoir/suggestion PROSE, predictions engine | insights/today | mock copy | ⛔ stays — **proactive epic** (next) |
