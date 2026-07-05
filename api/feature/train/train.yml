@@ -382,6 +382,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
   /api/train/workouts:
+    get:
+      tags: [Train]
+      operationId: listWorkouts
+      summary: Workout instances with logged work (≥1 non-skipped set) in the inclusive date range — same "done" semantics as weekDoneDates
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Date-ascending workout summaries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WorkoutSummaryResponse'
+        '400':
+          description: Invalid range (from > to)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
     post:
       tags: [Train]
       operationId: startWorkout
@@ -1360,6 +1398,19 @@ components:
             $ref: '#/components/schemas/ExerciseSetResponse'
         levelUp:
           $ref: '#/components/schemas/LevelUpResult'
+    WorkoutSummaryResponse:
+      type: object
+      required: [id, date, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [planned, active, completed, skipped]
     LevelUpResult:
       type: object
       required: [source, totalXp, gains, levelUps, perks, robustness]
