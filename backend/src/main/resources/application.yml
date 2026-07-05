@@ -90,9 +90,31 @@ mezo:
     c: 380
     f: 95
     water: 4000
+  pantry-import:
+    # OpenFoodFacts lookup client (Fuel P6, mezo-bka) — deterministic HTTP, not AI.
+    # Binds onto PantryImportProperties; base-url is overridden to WireMock in ITs.
+    base-url: https://world.openfoodfacts.org
+    # Connect + read timeout for OFF calls (ms)
+    timeout-ms: 5000
+    # OFF etiquette: identify the app + a contact in the User-Agent
+    user-agent: mezo/0.1 (${MEZO_OWNER_EMAIL:owner@mezo.local})
+    # Max results per text search (and per lookup response)
+    search-page-size: 8
+    # How many recent import-feed rows PantryResponse.imports carries
+    feed-size: 5
+  pantry-suggestion:
+    # Deterministic Kamra swap heuristics (Fuel P6) — binds onto PantrySuggestionProperties
+    # Max suggestions surfaced on the Kamra
+    max-items: 3
+    # Cheapest same-category item must cost <= this fraction of the priciest (0.8 = 20% cheaper)
+    cheaper-ratio: 0.8
   feature:
     # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
     progression:
+      enabled: true
+    # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
+    # the import feed + suggestions in GET /api/pantry stay on regardless.
+    pantry-import:
       enabled: true
     # Phase-3 companion (LLM chat + AI memory, ADR 0008). Gates every CompanionLlm bean;
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.

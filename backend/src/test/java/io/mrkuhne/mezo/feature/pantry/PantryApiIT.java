@@ -59,6 +59,9 @@ class PantryApiIT extends ApiIntegrationTest {
         PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
 
         assertThat(pantry.getIngredients()).extracting("name").contains("Túró");
+        // P6 (mezo-bka): the response always carries the feed + suggestion arrays (honest-empty)
+        assertThat(pantry.getImports()).isNotNull();
+        assertThat(pantry.getSuggestions()).isNotNull();
     }
 
     @Test

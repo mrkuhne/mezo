@@ -436,9 +436,19 @@ export const handlers = [
     return HttpResponse.json({ ...medicationDayFixture.medication, ...body })
   }),
 
-  // Pantry — honest-empty default (ingredients + supplement stash); tests override with
-  // server.use() when they need a populated stash (e.g. the P5 planner's protocol slots).
-  http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [] })),
+  // Pantry — honest-empty default (ingredients + stash + P6 imports/suggestions); tests
+  // override with server.use() when they need a populated stash or feed.
+  http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [], imports: [], suggestions: [] })),
+
+  // Pantry import (P6, mezo-bka) — OFF lookup proxy + confirmed-draft import.
+  http.get(`${API_BASE}/api/pantry-import/lookup`, () => HttpResponse.json({ results: [] })),
+  http.post(`${API_BASE}/api/pantry-import`, async ({ request }) => {
+    const body = (await request.json()) as { name: string }
+    return HttpResponse.json(
+      { id: 'imported-1', kind: 'food', name: body.name, source: 'openfoodfacts' },
+      { status: 201 },
+    )
+  }),
 
   // Fuel Stack/Protocol (mezo-09g) — honest-empty defaults; tests override with server.use().
   // GET protocol → no active protocol yet (ghost); GET intake/:date → no intakes; POST protocol

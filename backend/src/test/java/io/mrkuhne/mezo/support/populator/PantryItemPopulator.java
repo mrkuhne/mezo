@@ -40,6 +40,24 @@ public class PantryItemPopulator {
         return repository.saveAndFlush(e);
     }
 
+    /** A minimal food row with an explicit category, price and NOVA — the suggestion-heuristic fixture (P6). */
+    public PantryItemEntity createPricedFood(UUID owner, String name, String category,
+                                             Integer priceHuf, String priceUnit, Short nova) {
+        PantryItemEntity e = new PantryItemEntity();
+        e.setCreatedBy(owner);
+        e.setKind("food");
+        e.setName(name);
+        e.setSource("manual");
+        e.setCategory(category);
+        e.setServingAmount(new BigDecimal("100"));
+        e.setServingUnit("g");
+        e.setKcal(new BigDecimal("100"));
+        e.setPriceHuf(priceHuf);
+        e.setPriceUnit(priceUnit);
+        e.setNova(nova);
+        return repository.saveAndFlush(e);
+    }
+
     /** A supplement row with dose + protocol + stock-as-doses. */
     public PantryItemEntity createSupplement(UUID owner, String name) {
         PantryItemEntity e = new PantryItemEntity();

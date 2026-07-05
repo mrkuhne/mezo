@@ -1,19 +1,23 @@
 import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { pantryApi } from '@/data/fuel/pantryApi'
+import { pantryApi, type PantryData } from '@/data/fuel/pantryApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
-import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions } from '@/data/fuel/pantry'
+import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, pantryLookupFixture } from '@/data/fuel/pantry'
 import { pantrySources } from '@/data/pantrySources'
 import { supplementsStash } from '@/data/fuel/fuel'
-import type { Ingredient, SupplementStashItem, PantryItemInput } from '@/data/types'
+import type { Ingredient, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryLookupItem } from '@/data/types'
 
 const PANTRY_KEY = ['pantry'] as const
-const mockData = { ingredients: mockIngredients, stash: supplementsStash }
+// P6 (mezo-bka): imports + suggestions ride the same PantryResponse — one query, no extra key.
+const mockData: PantryData = {
+  ingredients: mockIngredients, stash: supplementsStash,
+  imports: pantryImports, suggestions: pantrySuggestions,
+}
 // Real-mode unresolved fallback — empty, NEVER the seed (the "no static fallback in
 // real mode" invariant, enforced by useDualQuery). usePantryActions still seeds its
 // mock cache from `mockData`; only the real-mode loading window changes.
-const PANTRY_EMPTY: typeof mockData = { ingredients: [], stash: [] }
+const PANTRY_EMPTY: PantryData = { ingredients: [], stash: [], imports: [], suggestions: [] }
 
 /** Keeps the exact pre-existing return shape — views/buildKamraItems are untouched. */
 export function usePantry() {
@@ -32,8 +36,8 @@ export function usePantry() {
     stash: data.stash,
     sources: pantrySources,           // static presentation config
     categoryMeta: pantryCategoryMeta, // static presentation config
-    imports: mock ? pantryImports : [],       // scrape feed deferred in real mode
-    suggestions: mock ? pantrySuggestions : [], // suggestions deferred in real mode
+    imports: data.imports,       // REAL dual-mode since P6 (mezo-bka) — was mock-only
+    suggestions: data.suggestions, // REAL dual-mode since P6 (mezo-bka) — was mock-only
     // Real-mode loading window only (mock seeds synchronously → always false);
     // views branch on it to show the skeleton (mirrors runningPending, mezo-f2z).
     pending: !mock && isPending,
@@ -66,14 +70,55 @@ export function usePantryActions() {
     onSuccess: mock ? undefined : invalidate,
   })
 
+  // P6 (mezo-bka): confirmed-draft import — mutateAsync so ImportItemSheet can await + close.
+  const importMut = useMutation({
+    mutationFn: mock
+      ? async (input: PantryImportInput) => mockImport(qc, input)
+      : (input: PantryImportInput) => pantryApi.importItem(input),
+    onSuccess: mock ? undefined : invalidate,
+  })
+
   const addItem = useCallback((input: PantryItemInput) => add.mutate(input), [add])
   const updateItem = useCallback((id: string, input: PantryItemInput) => update.mutate({ id, input }), [update])
   const deleteItem = useCallback((id: string) => remove.mutate(id), [remove])
-  return { addItem, updateItem, deleteItem }
+  const importItem = useCallback((input: PantryImportInput) => importMut.mutateAsync(input), [importMut])
+  // OFF lookup is a plain read (no cache — results are ephemeral search hits);
+  // mock mode serves the canned fixture after a demo delay.
+  const lookupItems = useCallback(
+    (q: string): Promise<PantryLookupItem[]> =>
+      mock
+        ? new Promise(resolve => setTimeout(() => resolve(pantryLookupFixture), 700))
+        : pantryApi.lookup(q),
+    [mock],
+  )
+  return { addItem, updateItem, deleteItem, importItem, lookupItems }
 }
 
 // --- mock-mode cache mutators: keep the offline app interactive ---
-type PantryCache = { ingredients: Ingredient[]; stash: SupplementStashItem[] }
+type PantryCache = PantryData
+
+/** Mock import: append the draft as a food ingredient + prepend an imports-feed row. */
+function mockImport(qc: ReturnType<typeof useQueryClient>, input: PantryImportInput) {
+  qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {
+    const base = prev ?? mockData
+    const ing: Ingredient = {
+      id: crypto.randomUUID(), name: input.name, brand: input.brand ?? '', source: 'openfoodfacts',
+      category: input.category ?? 'other', per: input.per, unit: input.unit,
+      macros: { kcal: input.kcal ?? 0, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 },
+      price: 0, priceUnit: '', pkg: '',
+      micros: [], nova: input.nova ?? 1,
+      fiberG: input.fiberG ?? undefined, sugarG: input.sugarG ?? undefined,
+      saltG: input.saltG ?? undefined, saturatedFatG: input.saturatedFatG ?? undefined,
+      stock: null, lastUsed: '—', usedInRecipes: 0,
+    }
+    const feed: PantryImport = {
+      id: crypto.randomUUID(), source: 'openfoodfacts', when: 'ma',
+      items: 1, status: 'synced', ofWhat: input.name,
+    }
+    return { ...base, ingredients: [...base.ingredients, ing], imports: [feed, ...base.imports] }
+  })
+  return undefined
+}
 function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) {
   qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {
     const base = prev ?? mockData
@@ -113,6 +158,7 @@ function mockUpdate(qc: ReturnType<typeof useQueryClient>, id: string, input: Pa
   qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {
     const base = prev ?? mockData
     return {
+      ...base,
       ingredients: base.ingredients.map(i => i.id === id ? applyIngredientUpdate(i, input) : i),
       stash: base.stash.map(s => s.id === id ? applyStashUpdate(s, input) : s),
     }
@@ -188,7 +234,7 @@ function applyStashUpdate(s: SupplementStashItem, input: PantryItemInput): Suppl
 function mockRemove(qc: ReturnType<typeof useQueryClient>, id: string) {
   qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {
     const base = prev ?? mockData
-    return { ingredients: base.ingredients.filter(i => i.id !== id), stash: base.stash.filter(s => s.id !== id) }
+    return { ...base, ingredients: base.ingredients.filter(i => i.id !== id), stash: base.stash.filter(s => s.id !== id) }
   })
   return undefined
 }

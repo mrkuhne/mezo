@@ -30,6 +30,11 @@ tags:
     description: >-
       Pantry (Kamra) — food + supplement inventory (single pantry_item table,
       kind-projected)
+  - name: PantryImport
+    description: >-
+      Pantry import — OpenFoodFacts lookup + confirmed-draft import (separate
+      tag so the whole feature is bean-gated via
+      mezo.feature.pantry-import.enabled)
   - name: Recipe
     description: >-
       Recipes (Receptek) — owned recipe + recipe_ingredient aggregate; lines
@@ -1739,6 +1744,80 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/pantry-import/lookup:
+    get:
+      tags:
+        - PantryImport
+      operationId: lookupPantryItem
+      summary: >-
+        OpenFoodFacts lookup — all-digit q (>=8 chars) is a barcode fetch, else
+        text search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 120
+      responses:
+        '200':
+          description: Lookup results (empty array when nothing matches)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PantryLookupResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: OpenFoodFacts unreachable / upstream error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/pantry-import:
+    post:
+      tags:
+        - PantryImport
+      operationId: importPantryItem
+      summary: >-
+        Persist a confirmed lookup draft — creates the pantry_item (kind food,
+        source openfoodfacts) + a pantry_import feed row
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PantryImportRequest'
+      responses:
+        '201':
+          description: Imported
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PantryItemResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -4989,6 +5068,8 @@ components:
       required:
         - ingredients
         - stash
+        - imports
+        - suggestions
       properties:
         ingredients:
           type: array
@@ -4998,6 +5079,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SupplementStashResponse'
+        imports:
+          type: array
+          items:
+            $ref: '#/components/schemas/PantryImportEntryResponse'
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PantrySuggestionResponse'
     PantryMacros:
       type: object
       required:
@@ -5079,6 +5168,7 @@ components:
             - herbahaz
             - nutrifit
             - decathlon
+            - openfoodfacts
         category:
           type: string
         per:
@@ -5182,6 +5272,7 @@ components:
             - herbahaz
             - nutrifit
             - decathlon
+            - openfoodfacts
           nullable: true
         per:
           type: number
@@ -5255,6 +5346,7 @@ components:
             - herbahaz
             - nutrifit
             - decathlon
+            - openfoodfacts
           nullable: true
         category:
           type: string
@@ -5383,6 +5475,208 @@ components:
         category:
           type: string
           nullable: true
+    PantryLookupResponse:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PantryLookupResult'
+    PantryLookupResult:
+      type: object
+      required:
+        - name
+        - per
+        - unit
+      properties:
+        name:
+          type: string
+        brand:
+          type: string
+          nullable: true
+        barcode:
+          type: string
+          nullable: true
+        per:
+          type: number
+        unit:
+          type: string
+        kcal:
+          type: number
+          nullable: true
+        proteinG:
+          type: number
+          nullable: true
+        carbsG:
+          type: number
+          nullable: true
+        fatG:
+          type: number
+          nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
+          nullable: true
+        nova:
+          type: integer
+          minimum: 1
+          maximum: 4
+          nullable: true
+    PantryImportRequest:
+      type: object
+      required:
+        - name
+        - per
+        - unit
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        brand:
+          type: string
+          nullable: true
+          maxLength: 200
+        barcode:
+          type: string
+          nullable: true
+          maxLength: 32
+        category:
+          type: string
+          nullable: true
+          enum:
+            - vegetables
+            - fruits
+            - meat
+            - fish
+            - eggs
+            - dairy
+            - cheese
+            - legumes
+            - grains
+            - pasta
+            - bakery
+            - nuts_seeds
+            - oils_fats
+            - condiments
+            - snacks
+            - beverages
+            - supplement
+            - other
+        per:
+          type: number
+          minimum: 0
+          exclusiveMinimum: true
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 16
+        kcal:
+          type: number
+          nullable: true
+        proteinG:
+          type: number
+          nullable: true
+        carbsG:
+          type: number
+          nullable: true
+        fatG:
+          type: number
+          nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
+          nullable: true
+        nova:
+          type: integer
+          minimum: 1
+          maximum: 4
+          nullable: true
+    PantryImportEntryResponse:
+      type: object
+      required:
+        - id
+        - source
+        - when
+        - items
+        - status
+        - ofWhat
+      properties:
+        id:
+          type: string
+          format: uuid
+        source:
+          type: string
+          enum:
+            - kifli.hu
+            - myprotein.hu
+            - tesco.hu
+            - auchan.hu
+            - manual
+            - lidl
+            - nutriversum
+            - herbahaz
+            - nutrifit
+            - decathlon
+            - openfoodfacts
+        when:
+          type: string
+          format: date-time
+        items:
+          type: integer
+        status:
+          type: string
+          enum:
+            - synced
+            - manual-review
+        ofWhat:
+          type: string
+    PantrySuggestionResponse:
+      type: object
+      required:
+        - name
+        - source
+        - price
+        - reason
+      properties:
+        name:
+          type: string
+        source:
+          type: string
+          enum:
+            - kifli.hu
+            - myprotein.hu
+            - tesco.hu
+            - auchan.hu
+            - manual
+            - lidl
+            - nutriversum
+            - herbahaz
+            - nutrifit
+            - decathlon
+            - openfoodfacts
+        price:
+          type: string
+        reason:
+          type: string
     RecipeMacros:
       type: object
       required:

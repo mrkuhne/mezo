@@ -28,8 +28,15 @@ test('food card shows macros, hides stock; click opens', async () => {
   expect(onOpen).toHaveBeenCalled()
 })
 
-test('SuggestionCard shows reason + Polcra button', () => {
-  render(<SuggestionCard sug={{ name: 'ZMA', source: 'myprotein.hu', price: '4 990 Ft', reason: 'Alvás-minőség' }} />)
+test('SuggestionCard shows the reason; Polcra renders only when onAdd is wired (P6)', () => {
+  const { rerender } = render(
+    <SuggestionCard sug={{ name: 'ZMA', source: 'myprotein.hu', price: '4 990 Ft', reason: 'Alvás-minőség' }} />,
+  )
   expect(screen.getByText('Alvás-minőség')).toBeInTheDocument()
+  // Swap suggestions reference items already on the shelf — no CTA without a real add-flow.
+  expect(screen.queryByRole('button', { name: 'Polcra' })).toBeNull()
+  rerender(
+    <SuggestionCard sug={{ name: 'ZMA', source: 'myprotein.hu', price: '4 990 Ft', reason: 'Alvás-minőség' }} onAdd={() => {}} />,
+  )
   expect(screen.getByRole('button', { name: 'Polcra' })).toBeInTheDocument()
 })

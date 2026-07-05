@@ -13,9 +13,10 @@
 // Renders directly into the app-shell .screen-content (no nested wrapper — the
 // old wrapper double-offset the scrollport and left a large top gap).
 //
-// Placeholder/mock UI removed (returns with the real features in later slices):
-// the scrape-feed card + ImportItemSheet, the Mezo suggestions feed. Data is
-// backend-backed via usePantry().
+// Since Fuel P6 (mezo-bka) the import + suggestion surfaces are REAL: the header Import
+// chip opens the OFF-lookup ImportItemSheet, and the "Mezo javaslatok" (deterministic
+// swap heuristics) + "Legutóbbi importok" (pantry_import feed) sections render when
+// non-empty (honest-empty hidden). Data is backend-backed via usePantry().
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -27,7 +28,10 @@ import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { StatCell } from '@/shared/ui/StatCell'
 import { KamraCard } from '@/features/fuel/components/KamraCard'
+import { SuggestionCard } from '@/features/fuel/components/SuggestionCard'
+import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
+import { ImportItemSheet } from '@/features/fuel/sheets/ImportItemSheet'
 import { CategoryFilterSheet, categoryOption } from '@/features/fuel/sheets/CategoryFilterSheet'
 import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 import KamraSkeleton from '@/features/fuel/pages/KamraSkeleton'
@@ -50,12 +54,13 @@ const TYPE_ORDER = ['food', 'supplement', 'stim', 'med'] as const
 
 export function FuelKamraPage() {
   const navigate = useNavigate()
-  const { ingredients, stash, categoryMeta, pending } = usePantry()
+  const { ingredients, stash, categoryMeta, imports, suggestions, pending } = usePantry()
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [categoryFilter, setCategoryFilter] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const [filterOpen, setFilterOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   const allItems = buildKamraItems(ingredients, stash)
   const ingItems = allItems.filter(it => !it.isStashOnly)
@@ -104,9 +109,14 @@ export function FuelKamraPage() {
           <Eyebrow brand>Fuel · Kamra</Eyebrow>
           <PageTitle className="mt-sm">Polc</PageTitle>
         </div>
-        <button onClick={() => setAddOpen(true)} className="chip brand" style={{ padding: '8px 10px' }}>
-          <Icon name="plus" size={12} /> Új tétel
-        </button>
+        <div className="row gap-xs">
+          <button onClick={() => setImportOpen(true)} className="chip" style={{ padding: '8px 10px' }}>
+            <Icon name="search" size={12} /> Import
+          </button>
+          <button onClick={() => setAddOpen(true)} className="chip brand" style={{ padding: '8px 10px' }}>
+            <Icon name="plus" size={12} /> Új tétel
+          </button>
+        </div>
       </div>
 
       {isEmpty ? (
@@ -252,6 +262,48 @@ export function FuelKamraPage() {
               </div>
             ))}
           </div>
+
+          {/* Mezo suggestions — deterministic swap heuristics (P6, mezo-bka); hidden when empty */}
+          {suggestions.length > 0 && (
+            <div style={{ padding: '0 24px 24px' }}>
+              <div className="row" style={{ marginBottom: 10, alignItems: 'center', gap: 9 }}>
+                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+                <span className="eyebrow">Mezo javaslatok</span>
+                <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, var(--border-subtle), transparent)' }} />
+              </div>
+              <div className="col gap-sm">
+                {suggestions.map((sug, i) => <SuggestionCard key={`${sug.name}-${i}`} sug={sug} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Recent imports feed (P6, mezo-bka); hidden when empty */}
+          {imports.length > 0 && (
+            <div style={{ padding: '0 24px 32px' }}>
+              <div className="row" style={{ marginBottom: 10, alignItems: 'center', gap: 9 }}>
+                <span className="eyebrow">Legutóbbi importok</span>
+                <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, var(--border-subtle), transparent)' }} />
+              </div>
+              <div className="col gap-xs">
+                {imports.map(imp => (
+                  <div key={imp.id} className="card notch-4 row" style={{ padding: '10px 12px', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                    <div className="row gap-sm" style={{ alignItems: 'center', minWidth: 0 }}>
+                      <SourceBadge source={imp.source} />
+                      <span style={{ fontSize: 12, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {imp.ofWhat}
+                      </span>
+                    </div>
+                    <div className="row gap-sm" style={{ alignItems: 'center', flexShrink: 0 }}>
+                      {imp.status === 'manual-review' && (
+                        <span className="label-mono" style={{ fontSize: 9, color: 'var(--warning)' }}>ellenőrzés</span>
+                      )}
+                      <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>{imp.when}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -265,6 +317,7 @@ export function FuelKamraPage() {
         />
       )}
       <AddPantryItemSheet open={addOpen} onClose={() => setAddOpen(false)} />
+      {importOpen && <ImportItemSheet onClose={() => setImportOpen(false)} />}
     </>
   )
 }

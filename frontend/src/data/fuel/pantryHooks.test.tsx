@@ -112,7 +112,7 @@ describe('usePantry (real mode)', () => {
     expect(result.current.pending).toBe(true)
   })
 
-  it('loads ingredients + stash from the API and defers imports/suggestions', async () => {
+  it('loads ingredients + stash + REAL imports/suggestions from the API (P6, mezo-bka)', async () => {
     server.use(
       http.get(`${API_BASE}/api/pantry`, () =>
         HttpResponse.json({
@@ -130,6 +130,12 @@ describe('usePantry (real mode)', () => {
               dose: '5g', form: 'por', stock: 30, stockUnit: 'adag', protocol: '', timing: 'flexible', taken: false,
             },
           ],
+          imports: [
+            { id: 'pi1', source: 'openfoodfacts', when: '2026-05-02T09:14:00Z', items: 1, status: 'synced', ofWhat: 'Skyr natúr' },
+          ],
+          suggestions: [
+            { name: 'Zabpehely', source: 'manual', price: '899 Ft/kg', reason: 'NOVA 4 → NOVA 1 csere a(z) Gabonapehely helyett' },
+          ],
         }),
       ),
     )
@@ -139,11 +145,33 @@ describe('usePantry (real mode)', () => {
     await waitFor(() => expect(result.current.ingredients.length).toBe(1))
     expect(result.current.ingredients[0].name).toBe('Csirkemell')
     expect(result.current.stash[0].name).toBe('Kreatin')
-    // Real mode defers the scrape feed + suggestions (deferred per Task 7 brief).
-    expect(result.current.imports).toEqual([])
-    expect(result.current.suggestions).toEqual([])
+    // REAL dual-mode since P6: the feed rows map through (when humanized to 'Máj 2').
+    expect(result.current.imports).toEqual([
+      { id: 'pi1', source: 'openfoodfacts', when: 'Máj 2', items: 1, status: 'synced', ofWhat: 'Skyr natúr' },
+    ])
+    expect(result.current.suggestions).toEqual([
+      { name: 'Zabpehely', source: 'manual', price: '899 Ft/kg', reason: 'NOVA 4 → NOVA 1 csere a(z) Gabonapehely helyett' },
+    ])
     // Static presentation config is still present in real mode.
     expect(result.current.sources).toBeDefined()
     expect(result.current.categoryMeta).toBeDefined()
+  })
+
+  it('importItem POSTs the draft then refetches the pantry (P6, mezo-bka)', async () => {
+    let posted: Record<string, unknown> | null = null
+    server.use(
+      http.post(`${API_BASE}/api/pantry-import`, async ({ request }) => {
+        posted = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ id: 'new-1', kind: 'food', name: 'Skyr natúr', source: 'openfoodfacts' }, { status: 201 })
+      }),
+    )
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    await act(async () => {
+      await result.current.importItem({ name: 'Skyr natúr', per: 100, unit: 'g', kcal: 63, category: 'dairy' })
+    })
+
+    expect(posted).toMatchObject({ name: 'Skyr natúr', per: 100, unit: 'g', kcal: 63, category: 'dairy' })
   })
 })

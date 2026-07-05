@@ -2,7 +2,10 @@ import type { PantrySuggestion } from '@/data/types'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { Icon } from '@/shared/ui/Icon'
 
-export function SuggestionCard({ sug }: { sug: PantrySuggestion }) {
+// onAdd is optional on purpose (P6, mezo-bka): the deterministic swap suggestions reference
+// items already on the shelf, so v1 renders no CTA — an inert "Polcra" would be a false
+// affordance. Wire onAdd when a real add-flow exists (P8 reasoned suggestions).
+export function SuggestionCard({ sug, onAdd }: { sug: PantrySuggestion; onAdd?: () => void }) {
   return (
     <div
       className="card notch-4"
@@ -25,9 +28,11 @@ export function SuggestionCard({ sug }: { sug: PantrySuggestion }) {
         </div>
         <div className="col" style={{ alignItems: 'flex-end', flexShrink: 0 }}>
           <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-primary)' }}>{sug.price}</span>
-          <button className="chip brand" style={{ fontSize: 9, padding: '4px 8px', marginTop: 6 }}>
-            <Icon name="plus" size={9} /> Polcra
-          </button>
+          {onAdd && (
+            <button className="chip brand" onClick={onAdd} style={{ fontSize: 9, padding: '4px 8px', marginTop: 6 }}>
+              <Icon name="plus" size={9} /> Polcra
+            </button>
+          )}
         </div>
       </div>
     </div>

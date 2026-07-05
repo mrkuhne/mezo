@@ -3,14 +3,17 @@ package io.mrkuhne.mezo.feature.pantry.service;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
+import io.mrkuhne.mezo.feature.pantry.config.PantryImportProperties;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryImportRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +23,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class PantryService {
 
     private final PantryItemRepository repository;
+    private final PantryImportRepository importRepository;
+    private final PantrySuggestionService suggestionService;
+    private final PantryImportProperties importProperties;
     private final PantryMapper mapper;
 
-    /** All owned items, projected by kind: food -> ingredients; supplement/stim/med -> stash. */
+    /**
+     * All owned items, projected by kind: food -> ingredients; supplement/stim/med -> stash.
+     * Since P6 (mezo-bka) the response also carries the recent import feed + the deterministic
+     * swap suggestions — both computed here regardless of the import switch (the toggle only
+     * gates the OFF lookup/import endpoints; existing feed rows stay honest data).
+     */
     public PantryResponse getPantry(UUID userId) {
         List<PantryItemEntity> items = repository.findByCreatedByAndDeletedFalseOrderByNameAsc(userId);
         return PantryResponse.builder()
@@ -30,6 +41,10 @@ public class PantryService {
                 .map(mapper::toIngredientResponse).toList())
             .stash(items.stream().filter(e -> !"food".equals(e.getKind()))
                 .map(mapper::toSupplementResponse).toList())
+            .imports(importRepository
+                .findByCreatedByAndDeletedFalseOrderByImportedAtDesc(userId, Limit.of(importProperties.feedSize()))
+                .stream().map(mapper::toImportEntry).toList())
+            .suggestions(suggestionService.suggest(items))
             .build();
     }
 
