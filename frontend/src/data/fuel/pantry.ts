@@ -5,6 +5,7 @@ import type {
   PantryCategoryMeta,
   PantryImport,
   PantrySuggestion,
+  PantryLookupItem,
   MealBreakdown,
   FuelMeal,
 } from '@/data/types'
@@ -325,6 +326,12 @@ export const pantrySuggestions: PantrySuggestion[] = [
   { name: 'Görög joghurt 10% · 500g', source: 'kifli.hu', price: '1790 Ft', reason: 'Stack-illeszkedés · esti casein +2 recipe' },
   { name: 'Mogyoróvaj 100% · 500g', source: 'kifli.hu', price: '2490 Ft', reason: 'Olcsóbb fat-source mint mandulavaj' },
   { name: 'Creapure Kreatin · 500g', source: 'myprotein.hu', price: '7990 Ft', reason: 'Stash → 25 nap múlva fogy ki' },
+]
+
+// === Mock OFF-lookup fixture (P6, mezo-bka) — what the demo ImportItemSheet "finds" ===
+export const pantryLookupFixture: PantryLookupItem[] = [
+  { name: 'Görög joghurt 10%', brand: 'Mizo', barcode: '5998200711113', per: 100, unit: 'g', kcal: 119, proteinG: 6, carbsG: 4, fatG: 9, sugarG: 3.8, saltG: 0.1, saturatedFatG: 6.2, nova: 3 },
+  { name: 'Skyr natúr', brand: 'Ehrmann', barcode: '4002971243307', per: 100, unit: 'g', kcal: 63, proteinG: 10.6, carbsG: 4, fatG: 0.2, sugarG: 3.9, saltG: 0.09, saturatedFatG: 0.1, nova: 1 },
 ]
 
 // === Standalone template breakdowns for orphan recipes (pantry-data.js:335–530) ===

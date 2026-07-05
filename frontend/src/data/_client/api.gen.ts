@@ -659,6 +659,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pantry-import/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** OpenFoodFacts lookup — all-digit q (>=8 chars) is a barcode fetch, else text search */
+        get: operations["lookupPantryItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/pantry-import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Persist a confirmed lookup draft — creates the pantry_item (kind food, source openfoodfacts) + a pantry_import feed row */
+        post: operations["importPantryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recipe": {
         parameters: {
             query?: never;
@@ -2009,6 +2043,8 @@ export interface components {
         PantryResponse: {
             ingredients: components["schemas"]["IngredientResponse"][];
             stash: components["schemas"]["SupplementStashResponse"][];
+            imports: components["schemas"]["PantryImportEntryResponse"][];
+            suggestions: components["schemas"]["PantrySuggestionResponse"][];
         };
         PantryMacros: {
             kcal: number;
@@ -2032,7 +2068,7 @@ export interface components {
             name: string;
             brand: string;
             /** @enum {string} */
-            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon";
+            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts";
             category: string;
             per: number;
             unit: string;
@@ -2067,7 +2103,7 @@ export interface components {
             taken: boolean;
             caffeine?: boolean | null;
             /** @enum {string|null} */
-            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | null;
+            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts" | null;
             per?: number | null;
             unit?: string | null;
             macros?: components["schemas"]["PantryMacros"] | null;
@@ -2087,7 +2123,7 @@ export interface components {
             name: string;
             brand?: string | null;
             /** @enum {string|null} */
-            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | null;
+            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts" | null;
             /** @enum {string|null} */
             category?: "vegetables" | "fruits" | "meat" | "fish" | "eggs" | "dairy" | "cheese" | "legumes" | "grains" | "pasta" | "bakery" | "nuts_seeds" | "oils_fats" | "condiments" | "snacks" | "beverages" | "supplement" | "other" | null;
             notes?: string | null;
@@ -2125,6 +2161,62 @@ export interface components {
             brand?: string | null;
             source?: string | null;
             category?: string | null;
+        };
+        PantryLookupResponse: {
+            results: components["schemas"]["PantryLookupResult"][];
+        };
+        PantryLookupResult: {
+            name: string;
+            brand?: string | null;
+            barcode?: string | null;
+            per: number;
+            unit: string;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
+            nova?: number | null;
+        };
+        PantryImportRequest: {
+            name: string;
+            brand?: string | null;
+            barcode?: string | null;
+            /** @enum {string|null} */
+            category?: "vegetables" | "fruits" | "meat" | "fish" | "eggs" | "dairy" | "cheese" | "legumes" | "grains" | "pasta" | "bakery" | "nuts_seeds" | "oils_fats" | "condiments" | "snacks" | "beverages" | "supplement" | "other" | null;
+            per: number;
+            unit: string;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
+            nova?: number | null;
+        };
+        PantryImportEntryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts";
+            /** Format: date-time */
+            when: string;
+            items: number;
+            /** @enum {string} */
+            status: "synced" | "manual-review";
+            ofWhat: string;
+        };
+        PantrySuggestionResponse: {
+            name: string;
+            /** @enum {string} */
+            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts";
+            price: string;
+            reason: string;
         };
         RecipeMacros: {
             kcal: number;
@@ -4876,6 +4968,97 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    lookupPantryItem: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lookup results (empty array when nothing matches) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryLookupResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description OpenFoodFacts unreachable / upstream error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    importPantryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PantryImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Imported */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryItemResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

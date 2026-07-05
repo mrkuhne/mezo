@@ -1,67 +1,77 @@
 // ============================================================
-// Mezo · ImportItemSheet
-// 3-phase scrape-import wizard for adding a new Kamra item:
-//   input  → URL field + source picker + inert quick-import chips
-//   scraping → SourceBadge + 5 ScrapeStep rows (auto-advances)
-//   preview → scraped result card (macros + micros) + toolchips
-// Ports prototype fuel-kamra.jsx:508-709 faithfully.
+// Mezo · ImportItemSheet (Fuel P6, mezo-bka — real since this slice)
+// 3-phase OpenFoodFacts import wizard for adding a new Kamra item:
+//   input     → one search field (terméknév VAGY vonalkód) + inert quick-import chips
+//   searching → OFF lookup in flight (mock mode: canned fixture after a demo delay)
+//   preview   → result list → picked draft (name editable, category select) → "Polcra"
+//               runs usePantryActions().importItem and closes
+// The old per-vendor scrape wizard is gone (P8 territory); source is always
+// 'openfoodfacts'. Camera/OCR/mic chips stay inert affordances (P8+).
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { StatCell } from '@/shared/ui/StatCell'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
-import { ToolChipRow } from '@/shared/ui/ToolChipRow'
-import type { Tool } from '@/shared/ui/ToolChip'
-import { type PantrySourceKey } from '@/data/pantrySources'
-import type { NovaGroup } from '@/data/nova'
+import { usePantry, usePantryActions } from '@/data/hooks'
+import type { PantryLookupItem } from '@/data/types'
 
-type Phase = 'input' | 'scraping' | 'preview'
+type Phase = 'input' | 'searching' | 'preview'
 
-interface SourceOption { id: PantrySourceKey; label: string; hint: string }
-
-const sources: SourceOption[] = [
-  { id: 'kifli.hu', label: 'kifli.hu', hint: 'termék-url vagy keresés' },
-  { id: 'myprotein.hu', label: 'myprotein', hint: 'supplement url' },
-  { id: 'tesco.hu', label: 'tesco', hint: 'online katalógus' },
-  { id: 'manual', label: 'Kézi', hint: 'saját bevitel' },
-]
-
-// Fake preview data (scraped fixture)
-const preview = {
-  name: 'Görög joghurt 10% · 500g',
-  brand: 'Mizo',
-  macros: { kcal: 119, p: 6.0, c: 4.0, f: 9.0 },
-  per: 100,
-  unit: 'g',
-  price: '1 790 Ft',
-  pkg: '500g pohár',
-  nova: 3 as NovaGroup,
-  micros: [
-    { name: 'Ca', pct: 78 },
-    { name: 'B12', pct: 64 },
-    { name: 'Casein', pct: 88 },
-  ],
-}
-
-const previewTools: Tool[] = [
-  { type: 'read', name: 'fetch_product', args: 'url' },
-  { type: 'compute', name: 'extractMacros', args: 'html' },
-  { type: 'compute', name: 'classifyNOVA', args: 'items=1' },
-]
+// The contract's PantryImportRequest category enum — the draft's pick list.
+const CONTRACT_CATEGORIES = [
+  'vegetables', 'fruits', 'meat', 'fish', 'eggs', 'dairy', 'cheese', 'legumes', 'grains',
+  'pasta', 'bakery', 'nuts_seeds', 'oils_fats', 'condiments', 'snacks', 'beverages',
+  'supplement', 'other',
+] as const
 
 export function ImportItemSheet({ onClose }: { onClose: () => void }) {
-  const [source, setSource] = useState<PantrySourceKey>('kifli.hu')
-  const [url, setUrl] = useState('')
+  const { categoryMeta } = usePantry()
+  const { lookupItems, importItem } = usePantryActions()
   const [phase, setPhase] = useState<Phase>('input')
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<PantryLookupItem[]>([])
+  const [picked, setPicked] = useState<number | null>(null)
+  const [name, setName] = useState('')
+  const [category, setCategory] = useState('other')
+  const [error, setError] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (phase !== 'scraping') return
-    const t = setTimeout(() => setPhase('preview'), 1400)
-    return () => clearTimeout(t)
-  }, [phase])
+  const search = async () => {
+    if (query.trim().length < 2) return
+    setPhase('searching')
+    setError(null)
+    try {
+      const found = await lookupItems(query.trim())
+      setResults(found)
+      setPicked(found.length ? 0 : null)
+      setName(found[0]?.name ?? '')
+      setPhase('preview')
+    } catch {
+      setError('A keresés most nem érhető el — próbáld újra kicsit később.')
+      setPhase('input')
+    }
+  }
+
+  const pick = (i: number) => {
+    setPicked(i)
+    setName(results[i].name)
+  }
+
+  const save = async (close: () => void) => {
+    if (picked == null || saving) return
+    setSaving(true)
+    try {
+      await importItem({ ...results[picked], name: name.trim() || results[picked].name, category })
+      close()
+    } catch {
+      setError('A mentés nem sikerült — próbáld újra.')
+      setPhase('input')
+      setSaving(false)
+    }
+  }
 
   return (
     <Sheet onClose={onClose} labelledBy="import-item-title">
@@ -69,7 +79,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
         <>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <Eyebrow brand>Import · scrape</Eyebrow>
+              <Eyebrow brand>Import · OpenFoodFacts</Eyebrow>
               <div id="import-item-title" className="h-display size-md" style={{ marginTop: 4 }}>Új tétel a Kamrába</div>
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
@@ -78,43 +88,37 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
           </div>
 
           <p className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5, marginBottom: 14 }}>
-            A Mezo lehúzza a termékadatokat — makrók, ár, csomagolás, mikrótápanyag-profil — és katalógusba teszi. Receptbe és napi logolásba is használhatod.
+            Keresés az OpenFoodFacts adatbázisban — makrók, tápértékek és NOVA-osztály automatikusan.
+            Terméknevet vagy vonalkódot is beírhatsz.
           </p>
-
-          {/* Source picker */}
-          <div className="row gap-xs flex-wrap" style={{ marginBottom: 12 }}>
-            {sources.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => { setSource(s.id); setPhase('input') }}
-                className={'chip' + (source === s.id ? ' brand' : '')}
-                style={{ fontSize: 10, padding: '8px 12px' }}
-              >{s.label}</button>
-            ))}
-          </div>
 
           {phase === 'input' && (
             <>
               <div className="card notch-4" style={{ padding: '10px 12px', marginBottom: 10 }}>
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>URL · {source}</span>
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Terméknév vagy vonalkód</span>
                 <input
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder={'https://' + source + '/...'}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') void search() }}
+                  placeholder="pl. skyr · 5900512300108"
                   style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 4, width: '100%', fontFamily: 'var(--ff-mono)' }}
                 />
               </div>
 
+              {error && (
+                <p style={{ fontSize: 11, color: 'var(--error)', marginBottom: 10 }}>{error}</p>
+              )}
+
               <div className="card notch-4" style={{ padding: 12, marginBottom: 14, background: 'var(--surface-1)' }}>
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>VAGY · gyors-import</span>
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>HAMAROSAN · gyors-import</span>
                 <div className="row gap-xs mt-sm flex-wrap">
-                  <button className="chip" style={{ fontSize: 9, padding: '6px 10px' }}>
+                  <button className="chip" disabled style={{ fontSize: 9, padding: '6px 10px', opacity: 0.5 }}>
                     <Icon name="camera" size={11} /> Címke fotó
                   </button>
-                  <button className="chip" style={{ fontSize: 9, padding: '6px 10px' }}>
-                    <Icon name="tool" size={11} /> Vonalkód
+                  <button className="chip" disabled style={{ fontSize: 9, padding: '6px 10px', opacity: 0.5 }}>
+                    <Icon name="tool" size={11} /> Vonalkód-szkenner
                   </button>
-                  <button className="chip" style={{ fontSize: 9, padding: '6px 10px' }}>
+                  <button className="chip" disabled style={{ fontSize: 9, padding: '6px 10px', opacity: 0.5 }}>
                     <Icon name="mic" size={11} /> Diktálás
                   </button>
                 </div>
@@ -122,80 +126,118 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
 
               <div className="row gap-sm">
                 <button className="cta-ghost notch-4 flex-1" onClick={close}>Mégse</button>
-                <button className="cta-primary notch-4 flex-1" onClick={() => setPhase('scraping')}>
-                  <Icon name="send" size={14} /> Adatok lehúzása
+                <button className="cta-primary notch-4 flex-1" onClick={() => void search()} disabled={query.trim().length < 2}>
+                  <Icon name="search" size={14} /> Keresés
                 </button>
               </div>
             </>
           )}
 
-          {phase === 'scraping' && (
+          {phase === 'searching' && (
             <div className="card notch-12" style={{
               padding: 24, textAlign: 'center',
               background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)',
               borderColor: 'var(--border-brand)',
             }}>
-              <Icon name="tool" size={20} color="var(--brand-glow)" />
+              <Icon name="search" size={20} color="var(--brand-glow)" />
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
-                Scraping <SourceBadge source={source} size="lg" />
+                Keresés <SourceBadge source="openfoodfacts" size="lg" />
               </div>
-              <div className="col gap-xs mt-md" style={{ alignItems: 'flex-start', textAlign: 'left', maxWidth: 280, margin: '16px auto 0' }}>
-                <ScrapeStep label="HTML fetch" done />
-                <ScrapeStep label="Makró-extrakció" done />
-                <ScrapeStep label="Mikrótápanyag-density becslés" active />
-                <ScrapeStep label="NOVA-klasszifikáció" />
-                <ScrapeStep label="Ár + csomag normalizálás" />
-              </div>
+              <div style={{
+                width: 12, height: 12, borderRadius: '50%', margin: '16px auto 0',
+                border: '1.5px solid var(--brand-glow)', animation: 'pulse 1.2s ease-in-out infinite',
+              }} />
             </div>
           )}
 
           {phase === 'preview' && (
             <>
-              <div className="card notch-4" style={{
-                padding: 14, marginBottom: 12,
-                background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)',
-                borderColor: 'var(--border-brand)',
-              }}>
-                <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-                  <Eyebrow brand>Beolvasva</Eyebrow>
-                  <span className="label-mono brand" style={{ fontSize: 9 }}>0.91 confidence</span>
+              {results.length === 0 && (
+                <div className="card notch-4" style={{ padding: 14, marginBottom: 12, textAlign: 'center' }}>
+                  <span className="text-secondary" style={{ fontSize: 12 }}>
+                    Nincs találat erre: „{query}" — próbáld pontosabb névvel vagy vonalkóddal.
+                  </span>
                 </div>
-                <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.15 }}>
-                  {preview.name}
-                </div>
-                <div className="row gap-sm mt-xs" style={{ alignItems: 'center' }}>
-                  <SourceBadge source={source} />
-                  <span className="text-tertiary" style={{ fontSize: 11, fontFamily: 'var(--ff-mono)' }}>{preview.brand}</span>
-                  <NovaDot nova={preview.nova} />
-                </div>
+              )}
 
-                <div className="card notch-4 row" style={{ padding: 10, marginTop: 12, justifyContent: 'space-between', background: 'var(--surface-1)' }}>
-                  <StatCell label="kcal / 100g" val={String(preview.macros.kcal)} sub="" color="var(--brand-glow)" />
-                  <StatCell label="P" val={preview.macros.p + 'g'} sub="" color="var(--cat-physiology)" />
-                  <StatCell label="C" val={preview.macros.c + 'g'} sub="" color="var(--warning)" />
-                  <StatCell label="F" val={preview.macros.f + 'g'} sub="" color="var(--cat-preference)" />
-                </div>
-
-                <div className="row mt-md" style={{ justifyContent: 'space-between' }}>
-                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-primary)' }}>{preview.price}</span>
-                  <span className="label-mono text-tertiary" style={{ fontSize: 10 }}>{preview.pkg}</span>
-                </div>
-
-                <div className="row gap-xs mt-md flex-wrap">
-                  {preview.micros.map((m, i) => (
-                    <span key={i} className="chip" style={{ fontSize: 9, padding: '3px 7px' }}>
-                      {m.name} · {m.pct}%
-                    </span>
+              {results.length > 0 && (
+                <div className="col gap-xs" style={{ marginBottom: 12 }}>
+                  {results.map((r, i) => (
+                    <button
+                      key={`${r.barcode ?? r.name}-${i}`}
+                      onClick={() => pick(i)}
+                      className="card notch-4"
+                      style={{
+                        padding: '10px 12px', textAlign: 'left', width: '100%', cursor: 'pointer',
+                        background: picked === i ? 'color-mix(in srgb, var(--brand-glow) 6%, transparent)' : 'var(--surface-1)',
+                        borderColor: picked === i ? 'var(--border-brand)' : 'var(--border-subtle)',
+                      }}
+                    >
+                      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                        <div className="col" style={{ minWidth: 0 }}>
+                          <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{r.name}</span>
+                          <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>
+                            {r.brand ?? '—'}{r.barcode ? ` · ${r.barcode}` : ''}
+                          </span>
+                        </div>
+                        <div className="row gap-sm" style={{ alignItems: 'center', flexShrink: 0 }}>
+                          <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
+                            {r.kcal ?? '—'} kcal
+                          </span>
+                          {r.nova != null && <NovaDot nova={r.nova} />}
+                        </div>
+                      </div>
+                    </button>
                   ))}
                 </div>
-              </div>
+              )}
 
-              <ToolChipRow tools={previewTools} />
+              {picked != null && results[picked] && (
+                <div className="card notch-4" style={{
+                  padding: 14, marginBottom: 12,
+                  background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)',
+                  borderColor: 'var(--border-brand)',
+                }}>
+                  <Eyebrow brand>Polcra kerül · /{results[picked].per}{results[picked].unit}</Eyebrow>
+                  <div className="card notch-4" style={{ padding: '8px 10px', margin: '10px 0' }}>
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Név</span>
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      aria-label="Tétel neve"
+                      style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 2, width: '100%' }}
+                    />
+                  </div>
+                  <div className="card notch-4" style={{ padding: '8px 10px', marginBottom: 10 }}>
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Kategória</span>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      aria-label="Kategória"
+                      style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 2, width: '100%', background: 'transparent' }}
+                    >
+                      {CONTRACT_CATEGORIES.map(c => (
+                        <option key={c} value={c}>{categoryMeta[c]?.label ?? c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="card notch-4 row" style={{ padding: 10, justifyContent: 'space-between', background: 'var(--surface-1)' }}>
+                    <StatCell label={`kcal / ${results[picked].per}${results[picked].unit}`} val={String(results[picked].kcal ?? '—')} sub="" color="var(--brand-glow)" />
+                    <StatCell label="P" val={(results[picked].proteinG ?? '—') + 'g'} sub="" color="var(--cat-physiology)" />
+                    <StatCell label="C" val={(results[picked].carbsG ?? '—') + 'g'} sub="" color="var(--warning)" />
+                    <StatCell label="F" val={(results[picked].fatG ?? '—') + 'g'} sub="" color="var(--cat-preference)" />
+                  </div>
+                </div>
+              )}
 
               <div className="row gap-sm">
                 <button className="cta-ghost notch-4 flex-1" onClick={() => setPhase('input')}>Vissza</button>
-                <button className="cta-primary notch-4 flex-1" onClick={close}>
-                  <Icon name="check" size={14} /> Polcra
+                <button
+                  className="cta-primary notch-4 flex-1"
+                  onClick={() => void save(close)}
+                  disabled={picked == null || saving}
+                >
+                  <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Polcra'}
                 </button>
               </div>
             </>
@@ -205,26 +247,5 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
         </>
       )}
     </Sheet>
-  )
-}
-
-function ScrapeStep({ label, done, active }: { label: string; done?: boolean; active?: boolean }) {
-  return (
-    <div className="row gap-sm" style={{ alignItems: 'center', width: '100%' }}>
-      <div style={{
-        width: 12, height: 12, borderRadius: '50%',
-        background: done ? 'var(--brand-glow)' : active ? 'transparent' : 'var(--surface-2)',
-        border: '1.5px solid ' + (done ? 'var(--brand-glow)' : active ? 'var(--brand-glow)' : 'var(--border-strong)'),
-        flexShrink: 0,
-        animation: active ? 'pulse 1.2s ease-in-out infinite' : 'none',
-      }} />
-      <span style={{
-        fontSize: 12,
-        color: done ? 'var(--text-primary)' : active ? 'var(--text-primary)' : 'var(--text-tertiary)',
-        flex: 1,
-      }}>{label}</span>
-      {done && <Icon name="check" size={10} color="var(--brand-glow)" />}
-      {active && <span className="label-mono brand" style={{ fontSize: 9 }}>…</span>}
-    </div>
   )
 }

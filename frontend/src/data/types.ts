@@ -218,6 +218,26 @@ export interface RecipeInput {
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
 export interface PantrySuggestion { name: string; source: PantrySourceKey; price: string; reason: string }
 
+// One OpenFoodFacts lookup hit (Fuel P6, mezo-bka) — per-100 basis draft the user confirms.
+export interface PantryLookupItem {
+  name: string
+  brand?: string | null
+  barcode?: string | null
+  per: number
+  unit: string
+  kcal?: number | null
+  proteinG?: number | null
+  carbsG?: number | null
+  fatG?: number | null
+  fiberG?: number | null
+  sugarG?: number | null
+  saltG?: number | null
+  saturatedFatG?: number | null
+  nova?: NovaGroup | null
+}
+// The confirmed import draft (name/category user-editable) → POST /api/pantry-import.
+export interface PantryImportInput extends PantryLookupItem { category?: string | null }
+
 // Unified pantry item shape — built by buildKamraItems (Task 28), consumed by KamraCard.
 // Merges scraped Ingredient (food) + SupplementStashItem (supplement/stim/med) into one card model.
 export type PantryItemKind = 'food' | 'supplement' | 'stim' | 'med'
