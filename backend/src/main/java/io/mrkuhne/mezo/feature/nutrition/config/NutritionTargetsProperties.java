@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.meal.config;
+package io.mrkuhne.mezo.feature.nutrition.config;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

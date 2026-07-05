@@ -55,16 +55,6 @@ paths:
         '204': { description: Deleted }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-  /api/recipe/{id}/logs:
-    get:
-      tags: [Recipe]
-      operationId: recipeLogs
-      summary: Recent meal logs that included this owned recipe (for the recipe detail RecipeLogsList)
-      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
-      responses:
-        '200': { description: Recent logs, content: { application/json: { schema: { $ref: '#/components/schemas/RecipeLogListResponse' } } } }
-        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     RecipeMacros:
@@ -150,20 +140,3 @@ components:
       required: [recipes]
       properties:
         recipes: { type: array, items: { $ref: '#/components/schemas/RecipeResponse' } }
-    RecipeLogResponse:
-      type: object
-      required: [mealId, slot, loggedAt, kcal, p, c, f]
-      properties:
-        mealId: { type: string, format: uuid }
-        slot: { type: string }
-        loggedAt: { type: string, format: date-time }
-        kcal: { type: number }
-        p: { type: number }
-        c: { type: number }
-        f: { type: number }
-        score: { type: number, nullable: true, description: 'The logged meal''s deterministic score 0..1 (mezo-yta); null for pre-scoring rows' }
-    RecipeLogListResponse:
-      type: object
-      required: [recentLogs]
-      properties:
-        recentLogs: { type: array, items: { $ref: '#/components/schemas/RecipeLogResponse' } }

@@ -1,12 +1,12 @@
-package io.mrkuhne.mezo.feature.meal.service;
+package io.mrkuhne.mezo.feature.nutrition.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
-import io.mrkuhne.mezo.feature.meal.config.MealScoringProperties;
-import io.mrkuhne.mezo.feature.meal.config.NutritionTargetsProperties;
-import io.mrkuhne.mezo.feature.meal.entity.MealBreakdownJson;
-import io.mrkuhne.mezo.feature.meal.service.MealScoringService.ScoredLine;
+import io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties;
+import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
+import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;

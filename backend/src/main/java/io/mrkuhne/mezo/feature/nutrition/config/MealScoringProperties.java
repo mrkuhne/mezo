@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.meal.config;
+package io.mrkuhne.mezo.feature.nutrition.config;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;

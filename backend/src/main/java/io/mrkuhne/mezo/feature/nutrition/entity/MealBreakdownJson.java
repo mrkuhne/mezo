@@ -1,4 +1,4 @@
-package io.mrkuhne.mezo.feature.meal.entity;
+package io.mrkuhne.mezo.feature.nutrition.entity;
 
 import java.math.BigDecimal;
 import java.util.List;

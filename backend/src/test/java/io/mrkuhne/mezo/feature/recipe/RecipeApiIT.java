@@ -83,8 +83,10 @@ class RecipeApiIT extends ApiIntegrationTest {
         assertThat(got.getMacros().getKcal()).isEqualByComparingTo("220");
         assertThat(got.getMacros().getP()).isEqualByComparingTo("46");
         assertThat(got.getMacros().getF()).isEqualByComparingTo("3");
-        // pending mezoFit + derived defaults
-        assertThat(got.getMezoFit().getScore()).isNull();
+        // deterministic read-time mezo-fit (mezo-yta): macro-carrying lines -> real 0..1 score;
+        // fitsFor stays deferred
+        assertThat(got.getMezoFit().getScore()).isNotNull();
+        assertThat(got.getMezoFit().getScore().doubleValue()).isBetween(0.0, 1.0);
         assertThat(got.getMezoFit().getFitsFor()).isEmpty();
         assertThat(got.getTimesLogged()).isEqualTo(0);
         assertThat(got.getLastLogged()).isEqualTo("—");

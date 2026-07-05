@@ -11,9 +11,13 @@ import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealItemRepository;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
+import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
+import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
 import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -24,7 +28,10 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -41,7 +48,8 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code factor = amount / snapshotPer}; {@code contribution.X = round(snapshot.X × factor)}
  * whole-number HALF_UP; {@code meal.macros = Σ line contributions}.
  *
- * <p>{@code breakdown} (the meal score envelope) stays NULL in v1 — pending-sparkle on the FE.
+ * <p>{@code score} + {@code breakdown} (the meal score envelope) are computed at write by the
+ * deterministic {@link MealScoringService} (mezo-yta) — pre-scoring rows stay NULL (FE sparkle).
  */
 @Service
 @RequiredArgsConstructor
@@ -54,21 +62,24 @@ public class MealService {
     private final RecipeMapper recipeMapper; // reused for the recipe whole-macro rollup
     private final MealMapper mapper;
     private final FuelDayService fuelDayService;
+    private final MealScoringService scoringService;
 
     @Transactional
     public MealResponse create(UUID userId, MealRequest req) {
         MealEntity meal = new MealEntity();
         meal.setCreatedBy(userId); // server-side ownership — never from the client
-        applyHeader(meal, req);
+        OffsetDateTime loggedAt = applyHeader(meal, req);
         rebuildItems(userId, meal, req.getItems());
+        applyScore(userId, meal, loggedAt);
         return mapper.toResponse(repository.save(meal)); // cascade=ALL persists the items
     }
 
     @Transactional
     public void update(UUID userId, UUID id, MealRequest req) {
         MealEntity meal = requireOwned(userId, id);
-        applyHeader(meal, req);
+        OffsetDateTime loggedAt = applyHeader(meal, req);
         rebuildItems(userId, meal, req.getItems()); // dirty-checked; flush on tx commit
+        applyScore(userId, meal, loggedAt); // re-scored like the snapshots are re-captured
     }
 
     @Transactional
@@ -102,6 +113,7 @@ public class MealService {
                 return RecipeLogResponse.builder()
                     .mealId(item.getMeal().getId())
                     .slot(item.getMeal().getSlot())
+                    .score(item.getMeal().getScore()) // null for pre-scoring rows (FE sparkle)
                     .loggedAt(item.getMeal().getLoggedAt().atOffset(ZoneOffset.UTC))
                     .kcal(scaled(item.getSnapshotKcal(), factor))
                     .p(scaled(item.getSnapshotProteinG(), factor))
@@ -122,15 +134,125 @@ public class MealService {
      * Header fields, with the server-side date write-path: {@code logged_at} defaults to now when
      * the request omits it, and {@code meal_date} is always derived from {@code logged_at}'s date
      * part (cf. CheckInService's server-side date handling). Both stored in UTC.
+     *
+     * @return the offset-bearing request instant — its LOCAL wall-clock time feeds the scoring
+     *     context (timing fit), which the UTC-converted {@code Instant} could not reproduce.
      */
-    private void applyHeader(MealEntity meal, MealRequest req) {
+    private OffsetDateTime applyHeader(MealEntity meal, MealRequest req) {
         OffsetDateTime loggedAt = req.getLoggedAt() == null
             ? OffsetDateTime.now(ZoneOffset.UTC) : req.getLoggedAt();
         meal.setLoggedAt(loggedAt.toInstant());
         meal.setMealDate(loggedAt.toLocalDate());
         meal.setSlot(req.getSlot());
         meal.setTitle(req.getTitle());
-        // breakdown stays NULL (Phase-3 score envelope).
+        return loggedAt;
+    }
+
+    /**
+     * Deterministic score at write (mezo-yta, ADR 0006): builds one {@link ScoredLine} per item —
+     * contribution via the SAME amount/snapshotPer formula as the mapper, nutrition-quality facts
+     * resolved from the LIVE sources (the envelope freezes them: it is the micro snapshot) — and
+     * sets {@code score} + {@code breakdown} atomically.
+     */
+    private void applyScore(UUID userId, MealEntity meal, OffsetDateTime loggedAt) {
+        List<ScoredLine> lines = meal.getItems().stream()
+            .map(item -> toScoredLine(userId, item))
+            .toList();
+        MealBreakdownJson breakdown =
+            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime());
+        meal.setBreakdown(breakdown);
+        meal.setScore(breakdown.value());
+    }
+
+    private ScoredLine toScoredLine(UUID userId, MealItemEntity item) {
+        BigDecimal per = item.getSnapshotPer() == null || item.getSnapshotPer().signum() == 0
+            ? BigDecimal.ONE : item.getSnapshotPer();
+        BigDecimal factor = item.getAmount().divide(per, 6, RoundingMode.HALF_UP);
+        Facts facts = "pantry".equals(item.getSource())
+            ? pantryFacts(userId, item.getPantryItemId(), factor)
+            : recipeFacts(userId, item.getRecipeId(), item.getAmount());
+        String amountLabel = item.getAmount().stripTrailingZeros().toPlainString() + item.getUnit();
+        return new ScoredLine(
+            item.getSnapshotName(), amountLabel,
+            scaled(item.getSnapshotKcal(), factor), scaled(item.getSnapshotProteinG(), factor),
+            scaled(item.getSnapshotCarbsG(), factor), scaled(item.getSnapshotFatG(), factor),
+            item.getSnapshotNova(),
+            facts.fiber(), facts.sugar(), facts.salt(), facts.satFat(), facts.present());
+    }
+
+    /** Nutrition-quality facts of one line, already scaled to the logged amount. */
+    private record Facts(BigDecimal fiber, BigDecimal sugar, BigDecimal salt, BigDecimal satFat,
+                         boolean present) {
+
+        static final Facts NONE = new Facts(null, null, null, null, false);
+    }
+
+    /** Pantry arm: the live item's per-basis facts × the line factor (missing/deleted → none). */
+    private Facts pantryFacts(UUID userId, UUID pantryItemId, BigDecimal factor) {
+        return pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(pantryItemId, userId)
+            .map(p -> {
+                if (p.getFiberG() == null && p.getSugarG() == null && p.getSaltG() == null
+                    && p.getSaturatedFatG() == null) {
+                    return Facts.NONE;
+                }
+                return new Facts(scaleFact(p.getFiberG(), factor), scaleFact(p.getSugarG(), factor),
+                    scaleFact(p.getSaltG(), factor), scaleFact(p.getSaturatedFatG(), factor), true);
+            })
+            .orElse(Facts.NONE);
+    }
+
+    /**
+     * Recipe arm: Σ over the recipe's ingredient lines against their LIVE pantry rows
+     * (fact × lineAmount/liveServing), ÷ recipe servings × logged adag. Ingredients whose pantry
+     * row is gone or fact-less simply don't contribute — coverage stays honest.
+     */
+    private Facts recipeFacts(UUID userId, UUID recipeId, BigDecimal servingsLogged) {
+        RecipeEntity recipe = recipeRepository
+            .findByIdAndCreatedByAndDeletedFalse(recipeId, userId).orElse(null);
+        if (recipe == null || recipe.getLines().isEmpty()) {
+            return Facts.NONE;
+        }
+        // ids come from the OWNED recipe's lines; @SQLRestriction filters soft-deleted rows
+        Map<UUID, PantryItemEntity> byId = pantryItemRepository
+            .findAllById(recipe.getLines().stream()
+                .map(RecipeIngredientEntity::getPantryItemId).toList())
+            .stream().collect(Collectors.toMap(PantryItemEntity::getId, Function.identity()));
+        BigDecimal fiber = BigDecimal.ZERO;
+        BigDecimal sugar = BigDecimal.ZERO;
+        BigDecimal salt = BigDecimal.ZERO;
+        BigDecimal satFat = BigDecimal.ZERO;
+        boolean any = false;
+        for (RecipeIngredientEntity line : recipe.getLines()) {
+            PantryItemEntity p = byId.get(line.getPantryItemId());
+            if (p == null || (p.getFiberG() == null && p.getSugarG() == null && p.getSaltG() == null
+                && p.getSaturatedFatG() == null)) {
+                continue;
+            }
+            any = true;
+            BigDecimal livePer = orDefault(p.getServingAmount(), BigDecimal.ONE);
+            BigDecimal factor = line.getAmount().divide(
+                livePer.signum() == 0 ? BigDecimal.ONE : livePer, 6, RoundingMode.HALF_UP);
+            fiber = addFact(fiber, p.getFiberG(), factor);
+            sugar = addFact(sugar, p.getSugarG(), factor);
+            salt = addFact(salt, p.getSaltG(), factor);
+            satFat = addFact(satFat, p.getSaturatedFatG(), factor);
+        }
+        if (!any) {
+            return Facts.NONE;
+        }
+        BigDecimal servings = BigDecimal.valueOf(
+            recipe.getServings() == null || recipe.getServings() < 1 ? 1 : recipe.getServings());
+        BigDecimal mult = servingsLogged.divide(servings, 6, RoundingMode.HALF_UP);
+        return new Facts(fiber.multiply(mult), sugar.multiply(mult), salt.multiply(mult),
+            satFat.multiply(mult), true);
+    }
+
+    private static BigDecimal scaleFact(BigDecimal v, BigDecimal factor) {
+        return v == null ? null : v.multiply(factor);
+    }
+
+    private static BigDecimal addFact(BigDecimal acc, BigDecimal v, BigDecimal factor) {
+        return v == null ? acc : acc.add(v.multiply(factor));
     }
 
     /** Full-replace the item collection from the request, in array order. */

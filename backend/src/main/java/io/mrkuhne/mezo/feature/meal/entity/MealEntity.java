@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.meal.entity;
 
+import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

@@ -696,23 +696,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/recipe/{id}/logs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Recent meal logs that included this owned recipe (for the recipe detail RecipeLogsList) */
-        get: operations["recipeLogs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/fuel/day/{date}": {
         parameters: {
             query?: never;
@@ -777,6 +760,23 @@ export interface paths {
         post?: never;
         /** Soft-delete an owned meal (and its items) */
         delete: operations["deleteMeal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/{id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent meal logs that included this owned recipe (recipe detail RecipeLogsList; data lives in meal_item, so the op is Meal-owned — resolves the meal↔recipe slice cycle, mezo-ah18.16) */
+        get: operations["recipeLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2197,22 +2197,6 @@ export interface components {
         RecipeListResponse: {
             recipes: components["schemas"]["RecipeResponse"][];
         };
-        RecipeLogResponse: {
-            /** Format: uuid */
-            mealId: string;
-            slot: string;
-            /** Format: date-time */
-            loggedAt: string;
-            kcal: number;
-            p: number;
-            c: number;
-            f: number;
-            /** @description The logged meal's deterministic score 0..1 (mezo-yta); null for pre-scoring rows */
-            score?: number | null;
-        };
-        RecipeLogListResponse: {
-            recentLogs: components["schemas"]["RecipeLogResponse"][];
-        };
         Macros: {
             kcal: number;
             p: number;
@@ -2365,6 +2349,22 @@ export interface components {
             /** Format: date */
             start: string;
             days: components["schemas"]["FuelDayRollup"][];
+        };
+        RecipeLogResponse: {
+            /** Format: uuid */
+            mealId: string;
+            slot: string;
+            /** Format: date-time */
+            loggedAt: string;
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+            /** @description The logged meal's deterministic score 0..1 (mezo-yta); null for pre-scoring rows */
+            score?: number | null;
+        };
+        RecipeLogListResponse: {
+            recentLogs: components["schemas"]["RecipeLogResponse"][];
         };
         WaterLogRequest: {
             /**
@@ -5085,46 +5085,6 @@ export interface operations {
             };
         };
     };
-    recipeLogs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Recent logs */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecipeLogListResponse"];
-                };
-            };
-            /** @description Missing/invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
     getFuelDay: {
         parameters: {
             query?: never;
@@ -5297,6 +5257,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    recipeLogs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent logs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeLogListResponse"];
+                };
             };
             /** @description Missing/invalid token */
             401: {

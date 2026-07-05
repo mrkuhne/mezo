@@ -2,10 +2,8 @@ package io.mrkuhne.mezo.feature.recipe.controller;
 
 import io.mrkuhne.mezo.api.controller.RecipeApi;
 import io.mrkuhne.mezo.api.dto.RecipeListResponse;
-import io.mrkuhne.mezo.api.dto.RecipeLogListResponse;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
-import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.UUID;
@@ -18,7 +16,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecipeController implements RecipeApi {
 
     private final RecipeService service;
-    private final MealService mealService; // recipe-logs data lives in meal_item (cross-feature read)
     private final CurrentUserId currentUserId;
 
     @Override
@@ -46,11 +43,6 @@ public class RecipeController implements RecipeApi {
         service.delete(currentUserId.get(), id);
     }
 
-    /** Cross-feature: the recipe's recent meal logs live in {@code meal_item}, served by MealService. */
-    @Override
-    public RecipeLogListResponse recipeLogs(UUID id) {
-        return RecipeLogListResponse.builder()
-            .recentLogs(mealService.recipeLogs(currentUserId.get(), id))
-            .build();
-    }
+    // GET /api/recipe/{id}/logs moved to the Meal tag/controller (data lives in meal_item) —
+    // this removed the only recipe->meal edge and resolved the frozen slice cycle (mezo-ah18.16).
 }

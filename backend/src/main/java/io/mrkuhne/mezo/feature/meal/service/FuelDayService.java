@@ -5,7 +5,7 @@ import io.mrkuhne.mezo.api.dto.FuelDayRollup;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
-import io.mrkuhne.mezo.feature.meal.config.NutritionTargetsProperties;
+import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import java.math.BigDecimal;

@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
+import io.mrkuhne.mezo.api.dto.MealBreakdown;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealItemResponse;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.MealScoreDimension;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
@@ -132,8 +134,19 @@ class MealApiIT extends ApiIntegrationTest {
         assertThat(created.getMacros().getKcal()).isEqualByComparingTo("330");
         assertThat(created.getMacros().getP()).isEqualByComparingTo("69");
         assertThat(created.getMacros().getF()).isEqualByComparingTo("5");
-        // meal score pending (NULL breakdown -> sparkle on the FE)
-        assertThat(created.getScore().getValue()).isNull();
+        // deterministic score at write (mezo-yta): scalar + 4-dim envelope; these plain foods carry
+        // no NOVA / nutrition facts -> micro + nova degrade honestly (weight 0), macro/context real
+        assertThat(created.getScore().getValue()).isNotNull();
+        assertThat(created.getScore().getValue().doubleValue()).isBetween(0.0, 1.0);
+        MealBreakdown breakdown = created.getScore().getBreakdown();
+        assertThat(breakdown).isNotNull();
+        assertThat(breakdown.getDimensions()).extracting(MealScoreDimension::getId)
+            .containsExactly("macro", "micro", "nova", "context");
+        assertThat(breakdown.getDimensions().get(1).getWeight()).isEqualByComparingTo("0");
+        assertThat(breakdown.getDimensions().get(2).getWeight()).isEqualByComparingTo("0");
+        assertThat(breakdown.getSummary()).isNull();   // P8 prose stays honest-empty
+        assertThat(breakdown.getImprove()).isEmpty();
+        assertThat(breakdown.getConfidence().doubleValue()).isLessThan(1.0);
 
         // GET /api/fuel/day/{date}: targets from config, consumed = sum of the day's meals
         FuelDayResponse day = getForBody(
@@ -145,6 +158,64 @@ class MealApiIT extends ApiIntegrationTest {
         assertThat(day.getConsumed().getKcal()).isEqualByComparingTo("330");
         assertThat(day.getConsumed().getP()).isEqualByComparingTo("69");
         assertThat(day.getMeals()).extracting(MealResponse::getId).contains(created.getId());
+    }
+
+    @Test
+    void testCreate_shouldScoreAllFourDimensions_whenSourcesCarryNovaAndFacts() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // NOVA-1 food WITH nutrition facts per 100 g (fiber/sugar/salt/satFat)
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.FOOD);
+        r.setName("Zabpehely");
+        r.setPer(new BigDecimal("100"));
+        r.setUnit("g");
+        r.setKcal(new BigDecimal("370"));
+        r.setProteinG(new BigDecimal("13"));
+        r.setCarbsG(new BigDecimal("59"));
+        r.setFatG(new BigDecimal("7"));
+        r.setNova(1);
+        r.setFiberG(new BigDecimal("10"));
+        r.setSugarG(new BigDecimal("1"));
+        r.setSaltG(new BigDecimal("0.1"));
+        r.setSaturatedFatG(new BigDecimal("1.2"));
+        UUID oats = postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class)
+            .getId();
+
+        MealResponse created = postForBody(
+            "/api/meal", mealReq(pantryItem(oats, "100")), auth, HttpStatus.CREATED, MealResponse.class);
+
+        MealBreakdown b = created.getScore().getBreakdown();
+        assertThat(b.getDimensions()).extracting(MealScoreDimension::getWeight)
+            .extracting(BigDecimal::doubleValue)
+            .containsExactly(0.30, 0.25, 0.25, 0.20); // full coverage -> no degrade
+        assertThat(b.getConfidence()).isEqualByComparingTo("1.00");
+        // micro rows frozen into the envelope: fiber 10 g on a 370 kcal breakfast -> over-allotment
+        MealScoreDimension micro = b.getDimensions().get(1);
+        assertThat(micro.getMicros()).hasSize(4);
+        assertThat(micro.getMicros().getFirst().getName()).isEqualTo("Rost");
+        assertThat(micro.getMicros().getFirst().getStatus()).isEqualTo("good");
+        // NOVA detail: single NOVA-1 line dominates
+        MealScoreDimension nova = b.getDimensions().get(2);
+        assertThat(nova.getNova().getDominant()).isEqualTo(1);
+        assertThat(nova.getScore()).isEqualByComparingTo("1.00");
+        // context rows present (timing 13:20 is outside the breakfast window -> penalized, not absent)
+        assertThat(b.getDimensions().get(3).getContext()).hasSize(3);
+        assertThat(b.getTools()).extracting(t -> t.getType()).contains("read", "compute");
+    }
+
+    @Test
+    void testRecipeLogs_shouldCarryMealScore_whenMealScored() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Túró", "110", "23", "0", "1.5");
+        RecipeResponse recipe = createRecipe(auth, food);
+        postForBody("/api/meal", mealReq(recipeItem(recipe.getId(), "1")), auth,
+            HttpStatus.CREATED, MealResponse.class);
+
+        String body = getForBody("/api/recipe/" + recipe.getId() + "/logs", auth,
+            HttpStatus.OK, String.class);
+
+        assertThat(body).contains("\"score\":"); // present…
+        assertThat(body).doesNotContain("\"score\":null"); // …and real for a freshly scored meal
     }
 
     @Test
