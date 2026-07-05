@@ -37,6 +37,22 @@ test('hides the protocol-meta row when there is no active protocol (real-mode gh
   expect(screen.queryByText(/Stack · v/)).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Replan' })).not.toBeInTheDocument()
 })
+test('hides the Replan CTA in real mode even with an active protocol — no fabricated scenarios (mezo-t16y.4)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/fuel/protocol`, () =>
+      HttpResponse.json({
+        active: { id: 'p1', version: 1, builtAt: '2026-07-05T06:00:00Z', status: 'active', confidence: 0.9, selectedPantryItemIds: [] },
+        history: [{ version: 1, builtAt: '2026-07-05T06:00:00Z' }],
+      }),
+    ),
+  )
+  renderView()
+  // The meta row renders for the real v1 protocol, but the Replan CTA stays hidden:
+  // useReplanScenarios is honest-empty in real mode (the replan engine is P8).
+  expect(await screen.findByText(/Stack · v1/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Replan' })).not.toBeInTheDocument()
+})
 test('opening a meal score sheet then closing it', async () => {
   renderView()
   await userEvent.click(screen.getAllByRole('button', { name: /AI/ })[0])

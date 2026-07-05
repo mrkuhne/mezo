@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
-import { useFuelDay, useFuelTimeline, useProtocol, useTodayScenario, useWaterActions } from '@/data/hooks'
+import { useFuelDay, useFuelTimeline, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
 import { slotKeyOfLabel } from '@/data/fuel/fuelConfig'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
@@ -22,6 +22,8 @@ export function FuelMaiPage() {
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
   const { logWater } = useWaterActions()
+  // Honest-empty in real mode (replan engine is P8) — no scenarios, no Replan CTA (mezo-t16y.4).
+  const { scenarios: replanScenarios } = useReplanScenarios()
 
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
   const [replanOpen, setReplanOpen] = useState(false)
@@ -130,14 +132,16 @@ export function FuelMaiPage() {
                   : protocol.itemCount + ' item · conf ' + (protocol.confidence * 100).toFixed(0) + '%'}
               </span>
             </div>
-            <button
-              type="button"
-              onClick={() => setReplanOpen(true)}
-              className="chip"
-              style={{ fontSize: 9, padding: '4px 8px', color: 'var(--brand-glow)', borderColor: 'var(--border-brand)' }}
-            >
-              <Icon name="tool" size={10} /> Replan
-            </button>
+            {replanScenarios.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setReplanOpen(true)}
+                className="chip"
+                style={{ fontSize: 9, padding: '4px 8px', color: 'var(--brand-glow)', borderColor: 'var(--border-brand)' }}
+              >
+                <Icon name="tool" size={10} /> Replan
+              </button>
+            )}
           </div>
         )}
         <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} />

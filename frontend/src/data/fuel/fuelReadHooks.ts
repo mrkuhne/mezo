@@ -5,8 +5,11 @@ import { isMockMode } from '@/data/_client/mode'
 // `@/data/fuel/fuelWeekHooks` (Fuel P4) — both became composed dual-mode hooks; the static
 // readers lived here. The two below stay mock-only until Fuel P8 (mezo-0h6w).
 
+// Mode-aware (X audit, mezo-t16y.4): mock serves the Phase-1 replan fixtures; real defers
+// them (the replan engine is Fuel P8) — honest-empty [] so a live user never sees fabricated
+// scenarios (FuelMaiPage hides the Replan CTA when the list is empty).
 export function useReplanScenarios() {
-  return { scenarios: replanScenarios }
+  return { scenarios: isMockMode() ? replanScenarios : [] }
 }
 
 // Mode-aware: mock serves the Phase-1 recommendation seed; real defers them (no backend

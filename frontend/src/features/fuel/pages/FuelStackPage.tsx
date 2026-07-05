@@ -53,7 +53,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 
 export function FuelStackPage() {
   const { stash } = useStack()
-  const { selectedIds: activeSelection } = useProtocol()
+  const { protocol, selectedIds: activeSelection } = useProtocol()
   const { logIntake, undoIntake } = useStackActions()
   const { applyProtocol } = useProtocolActions()
   const { recommendations } = useStackRecommendations()
@@ -103,7 +103,9 @@ export function FuelStackPage() {
         </Chip>
       </div>
 
-      {/* Context summary */}
+      {/* Context summary — mock-only demo context (weekInMeso null in real mode: the meso/reta/
+          load/sleep cells were Phase-1 fiction; P8 wires them live — X audit, mezo-t16y.4) */}
+      {weekInMeso != null && (
       <div style={{ padding: '0 24px 12px' }}>
         <div className="card notch-12" style={{ padding: 14 }}>
           <Eyebrow brand>Mit nézek most</Eyebrow>
@@ -126,6 +128,7 @@ export function FuelStackPage() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Mezo narrative intro */}
       <div style={{ padding: '0 24px 12px' }}>
@@ -144,7 +147,12 @@ export function FuelStackPage() {
             <Icon name="sparkle" size={12} color="var(--brand-glow)" />
             <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-primary)', flex: 1 }}>
               <SafeMarkdown
-                text={`Heti 5 gym + 4 vb = stacked load · Reta D3 stable · MAV-héten járunk. Pillanatnyilag ${selectedIds.length} aktív item a stack-edben — alul a generált timing + reasoning, közben javaslatok.`}
+                text={
+                  // The load/Reta/MAV prefix is demo prose — mock-only (weekInMeso is the demo-context
+                  // signal, null in real mode); the item count is real in both (X audit, mezo-t16y.4).
+                  (weekInMeso != null ? 'Heti 5 gym + 4 vb = stacked load · Reta D3 stable · MAV-héten járunk. ' : '')
+                  + `Pillanatnyilag ${selectedIds.length} aktív item a stack-edben — alul a generált timing + reasoning.`
+                }
               />
             </p>
           </div>
@@ -175,7 +183,11 @@ export function FuelStackPage() {
       <div style={{ padding: '16px 24px 8px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
           <Eyebrow>AI-generált timing · ma</Eyebrow>
-          <span className="label-mono brand" style={{ fontSize: 9 }}>conf 0.86</span>
+          {/* Real active protocol → its real confidence; v0 ghost → no fabricated precision (mezo-t16y.4).
+              Mock keeps the prototype literal via the seed protocol (v3, conf 0.86). */}
+          {protocol.version > 0 && (
+            <span className="label-mono brand" style={{ fontSize: 9 }}>conf {protocol.confidence.toFixed(2)}</span>
+          )}
         </div>
         <div className="col gap-sm">
           {built.slots.map((slot, i) => (

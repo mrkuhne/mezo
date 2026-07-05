@@ -18,9 +18,9 @@ related: [_platform-data-layer, _platform-auth-security, train, today, fuel]
 
 # Platform · API Contract & Backend Architecture — Feature Documentation
 
-> One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/data/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · goal · Train · **Fuel Pantry (Kamra)**; the durable backbone every backed feature flows through. Not a route/tab — it underlies all of them.
+> One-line: the contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`backend/`) + the frontend consumption seam (`frontend/src/data/*`, `frontend/src/data/hooks.ts`). **Status ✅ done as Phase-2 infrastructure** for auth · biometrics · goal · Train · Fuel (all sub-slices) · People · companion; the durable backbone every backed feature flows through — **Phase 2 closed 2026-07-05**. Not a route/tab — it underlies all of them.
 
-This is the platform doc: read it before, or alongside, any per-feature backend doc (auth, biometrics, goal, Train, Fuel). **Fuel's Pantry/Kamra sub-slice is now backed** (slice C, `mezo-9xu`) and **People is backed** (Slice E, `mezo-t16y.2`); the rest of Fuel + Insights are still 🔶 mock-only and will *adopt* this spine when they leave mock status; Phase-3 AI shipped separately (see `companion.md`).
+This is the platform doc: read it before, or alongside, any per-feature backend doc (auth, biometrics, goal, Train, Fuel). **Phase 2 is CLOSED (exit audit `mezo-t16y.4`, 2026-07-05):** every real-mode surface is backend-backed, composed from real reads, or an explicit honest state — Fuel (Pantry+Import/Recipes/Meal+Scoring/Medication/Stack/Water/Week), People, Today, Insights-Weekly all ride this spine; the deliberate leftovers (Replan/Stack-rec fixtures, briefing/memoir prose, predictions/experiments) are 🟣 proactive-epic / Fuel-P8 material; Phase-3 AI shipped separately (see `companion.md`).
 
 ---
 

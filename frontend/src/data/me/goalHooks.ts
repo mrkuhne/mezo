@@ -9,6 +9,7 @@ import {
   type FeasibilityPreviewResponse,
 } from '@/data/me/goalApi'
 import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } from '@/data/me/goalLinkApi'
+import { weightApi } from '@/data/me/biometricsApi'
 import { isMockMode } from '@/data/_client/mode'
 import { huMonthDay } from '@/shared/lib/dates'
 import {
@@ -74,7 +75,12 @@ function toLinkedMesocycles(timeline: GoalTimelineResponse): Record<string, Link
 export function useGoal() {
   const mock = isMockMode()
   const { data: weightLog = [] } = useQuery({
-    queryKey: ['weightLog'], // shares the cache with useWeight (same key); no queryFn — read-only
+    // Shares the ['weightLog'] cache with useWeight (same key + same fn → deduped). The old
+    // fn-less "read-only" subscription made TanStack v5 log a missing-queryFn error on every
+    // mount and left the list empty unless useWeight happened to be mounted too (X audit,
+    // mezo-t16y.4).
+    queryKey: ['weightLog'],
+    queryFn: weightApi.list,
     enabled: !mock,
   })
   const { data: goals, isPending: goalPending } = useQuery({

@@ -52,11 +52,12 @@ const activeMesoShortTitle =
 
 /**
  * Static context labels for the Stack view's "Mit nézek most" cell (meso week + short title).
- * These are the exact values the mock useProfile()/useGoal() produced for this card; reading the
- * seed consts directly decouples the Stack render from the real /api/goals + profile fetches
- * (mezo-4nu) — nothing on this page needs the live goal timeline. P4/P8 wire these live later.
+ * Mock: the exact values the mock useProfile()/useGoal() produced for this card (the mezo-4nu
+ * decouple). REAL MODE RETURNS NULLS (X audit, mezo-t16y.4): the seeds are Phase-1 fiction, so
+ * the whole context card hides until P8 wires live meso/reta/load/sleep context.
  */
-export function useStackContext(): { weekInMeso: number; mesoTitle: string } {
+export function useStackContext(): { weekInMeso: number | null; mesoTitle: string | null } {
+  if (!isMockMode()) return { weekInMeso: null, mesoTitle: null }
   return { weekInMeso: userSeed.weekInMeso, mesoTitle: activeMesoShortTitle }
 }
 
