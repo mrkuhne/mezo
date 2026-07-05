@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.RecipeLogListResponse;
 import io.mrkuhne.mezo.api.dto.WaterLogRequest;
 import io.mrkuhne.mezo.api.dto.WaterLogResponse;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
@@ -53,6 +54,17 @@ public class MealController implements MealApi {
     @Override
     public void deleteMeal(UUID id) {
         mealService.delete(currentUserId.get(), id);
+    }
+
+    /**
+     * {@code GET /api/recipe/{id}/logs} is Meal-owned (the data lives in {@code meal_item}) —
+     * moving it off the Recipe tag removed the only recipe→meal edge (slice cycle mezo-ah18.16).
+     */
+    @Override
+    public RecipeLogListResponse recipeLogs(UUID id) {
+        return RecipeLogListResponse.builder()
+            .recentLogs(mealService.recipeLogs(currentUserId.get(), id))
+            .build();
     }
 
     @Override

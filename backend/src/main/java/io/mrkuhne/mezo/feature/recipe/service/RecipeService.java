@@ -8,15 +8,22 @@ import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
 import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeIngredientRepository;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,6 +37,7 @@ public class RecipeService {
     private final PantryItemRepository pantryItemRepository;
     private final RecipeMapper mapper;
     private final RecipeIngredientRepository recipeIngredientRepository;
+    private final MealScoringService scoringService;
 
     @Transactional
     public RecipeResponse create(UUID userId, RecipeRequest req) {
@@ -37,23 +45,93 @@ public class RecipeService {
         recipe.setCreatedBy(userId); // server-side ownership — never from the client
         mapper.applyScalars(recipe, req);
         rebuildLines(userId, recipe, req.getIngredients());
-        return mapper.toResponse(repository.save(recipe)); // cascade=ALL persists the lines
+        RecipeEntity saved = repository.save(recipe); // cascade=ALL persists the lines
+        return withFit(saved, mapper.toResponse(saved), pantryByIdFor(List.of(saved)));
     }
 
     // Reads stay annotated by exception: the mapper walks the recipe's LAZY lines and
     // open-in-view is false, so an open session is required (spring_patterns.md).
     @Transactional(readOnly = true)
     public RecipeResponse get(UUID userId, UUID id) {
-        return mapper.toResponse(requireOwned(userId, id));
+        RecipeEntity recipe = requireOwned(userId, id);
+        return withFit(recipe, mapper.toResponse(recipe), pantryByIdFor(List.of(recipe)));
     }
 
     @Transactional(readOnly = true)
     public RecipeListResponse list(UUID userId) {
-        List<RecipeResponse> recipes = repository
-            .findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId).stream()
-            .map(mapper::toResponse)
+        List<RecipeEntity> entities =
+            repository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId);
+        Map<UUID, PantryItemEntity> pantryById = pantryByIdFor(entities); // ONE batch fetch
+        List<RecipeResponse> recipes = entities.stream()
+            .map(e -> withFit(e, mapper.toResponse(e), pantryById))
             .toList();
         return RecipeListResponse.builder().recipes(recipes).build();
+    }
+
+    /**
+     * Deterministic mezo-fit at READ time (mezo-yta, spec §2 D5): computed fresh on every read so
+     * ALL recipes light up retroactively and a pantry edit is reflected immediately — nothing is
+     * persisted ({@code recipe.fit_score} stays reserved for the P8 calibrated fit). Per-serving
+     * profile scored on macro+micro+NOVA (no logged time/slot → no context dimension).
+     */
+    private RecipeResponse withFit(RecipeEntity e, RecipeResponse resp,
+                                   Map<UUID, PantryItemEntity> pantryById) {
+        resp.getMezoFit().setScore(scoringService.recipeFit(fitLines(e, pantryById)));
+        return resp;
+    }
+
+    /** One batch pantry fetch for the fit pass; ids come from OWNED recipes' lines. */
+    private Map<UUID, PantryItemEntity> pantryByIdFor(Collection<RecipeEntity> recipes) {
+        List<UUID> ids = recipes.stream()
+            .flatMap(r -> r.getLines().stream().map(RecipeIngredientEntity::getPantryItemId))
+            .distinct()
+            .toList();
+        return ids.isEmpty() ? Map.of() : pantryItemRepository.findAllById(ids).stream()
+            .collect(Collectors.toMap(PantryItemEntity::getId, Function.identity()));
+    }
+
+    /**
+     * Per-serving {@link ScoredLine}s: macros from the frozen line snapshots (÷ servings, same
+     * formula as the mapper's contribution), NOVA + nutrition-quality facts from the LIVE pantry
+     * rows (a gone/fact-less source just lowers coverage — honest degrade, never fabricated).
+     */
+    private List<ScoredLine> fitLines(RecipeEntity e, Map<UUID, PantryItemEntity> pantryById) {
+        BigDecimal servings = BigDecimal.valueOf(
+            e.getServings() == null || e.getServings() < 1 ? 1 : e.getServings());
+        return e.getLines().stream().map(line -> {
+            BigDecimal per = line.getSnapshotPer() == null || line.getSnapshotPer().signum() == 0
+                ? BigDecimal.ONE : line.getSnapshotPer();
+            BigDecimal factor = line.getAmount()
+                .divide(per, 6, RoundingMode.HALF_UP)
+                .divide(servings, 6, RoundingMode.HALF_UP);
+            PantryItemEntity p = pantryById.get(line.getPantryItemId());
+            boolean hasFacts = p != null && (p.getFiberG() != null || p.getSugarG() != null
+                || p.getSaltG() != null || p.getSaturatedFatG() != null);
+            BigDecimal factFactor = p == null ? BigDecimal.ZERO
+                : line.getAmount().divide(
+                    p.getServingAmount() == null || p.getServingAmount().signum() == 0
+                        ? BigDecimal.ONE : p.getServingAmount(), 6, RoundingMode.HALF_UP)
+                    .divide(servings, 6, RoundingMode.HALF_UP);
+            return new ScoredLine(
+                line.getSnapshotName(),
+                line.getAmount().stripTrailingZeros().toPlainString() + line.getUnit(),
+                mul(line.getSnapshotKcal(), factor), mul(line.getSnapshotProteinG(), factor),
+                mul(line.getSnapshotCarbsG(), factor), mul(line.getSnapshotFatG(), factor),
+                p == null ? null : p.getNova(),
+                hasFacts ? mulOrNull(p.getFiberG(), factFactor) : null,
+                hasFacts ? mulOrNull(p.getSugarG(), factFactor) : null,
+                hasFacts ? mulOrNull(p.getSaltG(), factFactor) : null,
+                hasFacts ? mulOrNull(p.getSaturatedFatG(), factFactor) : null,
+                hasFacts);
+        }).toList();
+    }
+
+    private static BigDecimal mul(BigDecimal v, BigDecimal factor) {
+        return v == null ? BigDecimal.ZERO : v.multiply(factor);
+    }
+
+    private static BigDecimal mulOrNull(BigDecimal v, BigDecimal factor) {
+        return v == null ? null : v.multiply(factor);
     }
 
     /**

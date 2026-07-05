@@ -115,7 +115,9 @@ export function useWaterActions(date: string = localDateString()) {
 const RECIPE_LOGS_KEY = (id: string) => ['recipeLogs', id] as const
 
 /** Per-recipe logs feeding RecipeLogsList. Mock derives from the recipe seed's recentLogs; real
- *  queries GET /api/recipe/{id}/logs and fills a neutral score/delta (v1 logs are score-less). */
+ *  queries GET /api/recipe/{id}/logs — since mezo-yta each log carries the meal's real score
+ *  (null for pre-scoring rows → 0 → the component's pending sparkle); the baseline delta is
+ *  view-side (RecipeLogsList computes it from the recipe's mezoFit baseline). */
 export function useRecipeLogs(recipeId: string): { logs: RecipeLog[] } {
   const mock = isMockMode()
   const seed = () => mockRecipes.find(r => r.id === recipeId)?.recentLogs ?? []
@@ -124,8 +126,8 @@ export function useRecipeLogs(recipeId: string): { logs: RecipeLog[] } {
     queryFn: mock
       ? async () => seed()
       : async () => {
-          const res = await apiFetch<{ recentLogs: Omit<RecipeLog, 'score' | 'delta'>[] }>(`/api/recipe/${recipeId}/logs`)
-          return res.recentLogs.map(l => ({ ...l, score: 0, delta: 0 }))
+          const res = await apiFetch<{ recentLogs: (Omit<RecipeLog, 'score' | 'delta'> & { score?: number | null })[] }>(`/api/recipe/${recipeId}/logs`)
+          return res.recentLogs.map(l => ({ ...l, score: l.score ?? 0, delta: 0 }))
         },
     initialData: mock ? seed() : undefined,
     staleTime: mock ? Infinity : 0,

@@ -47,7 +47,7 @@ public interface RecipeMapper {
             .tags(e.getTags() == null ? List.of() : e.getTags())
             .starred(e.isStarred())
             .createdDate(e.getCreatedAt() == null ? "" : e.getCreatedAt().toString())
-            .novaDominant(e.getNovaDominant() == null ? null : new BigDecimal(e.getNovaDominant().intValue()))
+            .novaDominant(e.getNovaDominant() == null ? null : e.getNovaDominant().intValue()) // integer since mezo-2dy
             .macros(rollup(lines))
             .mezoFit(RecipeMezoFit.builder()
                 .score(e.getFitScore())                       // null -> pending sparkle on FE

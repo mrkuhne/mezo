@@ -105,8 +105,11 @@ class MealServiceIT extends AbstractIntegrationTest {
         });
         // meal rollup = the single item contribution
         assertThat(meal.getMacros().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(149));
-        // score is pending (NULL breakdown)
-        assertThat(meal.getScore().getValue()).isNull();
+        // deterministic score at write (mezo-yta): scalar present + 4-dim envelope
+        assertThat(meal.getScore().getValue()).isNotNull();
+        assertThat(meal.getScore().getValue().doubleValue()).isBetween(0.0, 1.0);
+        assertThat(meal.getScore().getBreakdown()).isNotNull();
+        assertThat(meal.getScore().getBreakdown().getDimensions()).hasSize(4);
     }
 
     @Test

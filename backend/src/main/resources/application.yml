@@ -266,6 +266,40 @@ mezo:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
       # with a computed value; until then it is config, never hardcoded in code.
       default-confidence: 0.86
+    scoring:
+      # Deterministic meal-score v0 (mezo-yta, ADR 0006) — 4-dimension weighted model.
+      # Binds onto MealScoringProperties; formulas in specs/2026-07-05-fuel-p7-meal-scoring-design.md §3.
+      weights:                    # must sum to 1.0 (validated at startup)
+        macro: 0.30
+        micro: 0.25
+        nova: 0.25
+        context: 0.20
+      nova:                       # quality score per NOVA class (1 unprocessed .. 4 ultra-processed)
+        group1: 1.0
+        group2: 0.85
+        group3: 0.55
+        group4: 0.20
+      # Macro dim: score = max(0, 1 - totalVariation(P/C/F kcal-shares vs mezo.nutrition targets) * slope)
+      macro-deviation-slope: 2.0
+      micro:                      # daily references; per-meal allotment scales by the meal's kcal-share
+        fiber-g: 38               # fiber TARGET (g/day) — more is better up to the allotment
+        sugar-limit-g: 78         # sugar LIMIT (g/day, ~10% of 3100 kcal)
+        salt-limit-g: 6           # salt LIMIT (g/day)
+        saturated-fat-limit-g: 34 # saturated-fat LIMIT (g/day, ~10% of kcal)
+      slot-shares:                # expected kcal-share of the day per meal slot
+        breakfast: 0.25
+        lunch: 0.35
+        dinner: 0.30
+        snack: 0.10
+      slot-windows:               # local-hour windows for the timing fit (snack always fits)
+        breakfast-from: 5
+        breakfast-to: 10
+        lunch-from: 11
+        lunch-to: 15
+        dinner-from: 17
+        dinner-to: 22
+      # Relative tolerance around the slot share within which the kcal-fit is perfect
+      slot-share-tolerance: 0.4
   progression:
     # Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp); Lv2=100, Lv3≈303, Lv5≈919.
     curve:

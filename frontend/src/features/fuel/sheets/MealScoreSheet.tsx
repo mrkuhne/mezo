@@ -41,22 +41,24 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
           {/* Score hero */}
           <ScoreHero meal={meal} scorePct={scorePct} confidence={b.confidence} />
 
-          {/* Mezo summary */}
-          <div className="card notch-4" style={{
-            padding: 12, marginTop: 14,
-            background: 'color-mix(in srgb, var(--brand-glow) 5%, transparent)',
-            borderColor: 'var(--border-brand)',
-          }}>
-            <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-              <Icon name="sparkle" size={12} color="var(--brand-glow)" />
-              <div className="col flex-1">
-                <Eyebrow brand>Mezo · olvasat</Eyebrow>
-                <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
-                  <SafeMarkdown text={b.summary} />
-                </p>
+          {/* Mezo summary — deterministic v0 ships summary:null (P8 prose), the card hides honestly */}
+          {b.summary && (
+            <div className="card notch-4" style={{
+              padding: 12, marginTop: 14,
+              background: 'color-mix(in srgb, var(--brand-glow) 5%, transparent)',
+              borderColor: 'var(--border-brand)',
+            }}>
+              <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
+                <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+                <div className="col flex-1">
+                  <Eyebrow brand>Mezo · olvasat</Eyebrow>
+                  <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
+                    <SafeMarkdown text={b.summary} />
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Section eyebrow */}
           <div className="row" style={{ justifyContent: 'space-between', margin: '20px 0 10px' }}>

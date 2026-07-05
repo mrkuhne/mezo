@@ -1,6 +1,10 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { MealInput, MealInputItem, FuelMeal, MealItemLine, MacroSet } from '@/data/types'
+import type {
+  MealInput, MealInputItem, FuelMeal, MealItemLine, MacroSet,
+  MealBreakdown, MealDimension, MicroStatus, ToolType,
+} from '@/data/types'
+import type { NovaGroup } from '@/data/nova'
 
 type MealRequest = components['schemas']['MealRequest']
 type MealItemRequest = components['schemas']['MealItemRequest']
@@ -9,6 +13,70 @@ type MealItemResponse = components['schemas']['MealItemResponse']
 type FuelDayResponse = components['schemas']['FuelDayResponse']
 type FuelWeekResponse = components['schemas']['FuelWeekResponse']
 type WaterLogRequest = components['schemas']['WaterLogRequest']
+type MealBreakdownResponse = components['schemas']['MealBreakdown']
+type MealScoreDimensionResponse = components['schemas']['MealScoreDimension']
+
+/** Presentation-only dimension colors — deliberately NOT stored in the jsonb envelope (spec D3);
+ *  constant per dimension id, matching the Phase-1 mock seeds. */
+const DIMENSION_COLOR: Record<MealDimension['id'], string> = {
+  macro: 'var(--brand-glow)',
+  micro: 'var(--cat-physiology)',
+  nova: 'var(--cat-tendency)',
+  context: 'var(--cat-preference)',
+}
+
+/** Contract dimension → the FE discriminated union. A DEGRADED dimension (weight 0, no per-kind
+ *  payload — zero input coverage on the backend) returns null and is dropped: the sheet shows
+ *  only the dimensions that were actually computable (honest absence, never an empty fake panel). */
+function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
+  const base = {
+    label: d.label,
+    weight: d.weight,
+    score: d.score,
+    color: DIMENSION_COLOR[d.id as MealDimension['id']],
+    detail: d.detail,
+  }
+  if (d.id === 'macro' && d.macro) {
+    return {
+      id: 'macro', ...base,
+      macroRatio: { p: d.macro.ratioP, c: d.macro.ratioC, f: d.macro.ratioF },
+      macroTargets: { p: d.macro.targetP, c: d.macro.targetC, f: d.macro.targetF },
+      kcalShareOfDay: d.macro.kcalShareOfDay,
+      notes: d.macro.notes ?? undefined,
+    }
+  }
+  if (d.id === 'micro' && d.micros && d.micros.length > 0) {
+    return {
+      id: 'micro', ...base,
+      micros: d.micros.map(m => ({ name: m.name, value: m.value, pct: m.pct, status: m.status as MicroStatus })),
+    }
+  }
+  if (d.id === 'nova' && d.nova) {
+    return {
+      id: 'nova', ...base,
+      nova: {
+        dominant: d.nova.dominant as NovaGroup,
+        stack: d.nova.stack.map(s => ({ nova: s.nova as NovaGroup, pct: s.pct, label: s.label })),
+        items: d.nova.items.map(i => ({ name: i.name, nova: i.nova as NovaGroup, warning: i.warning || undefined })),
+      },
+    }
+  }
+  if (d.id === 'context' && d.context && d.context.length > 0) {
+    return { id: 'context', ...base, context: d.context.map(c => ({ label: c.label, value: c.value })) }
+  }
+  return null
+}
+
+/** Contract envelope → FE MealBreakdown (colors injected; degraded dimensions dropped). */
+export function fromBreakdown(b: MealBreakdownResponse): MealBreakdown {
+  return {
+    confidence: b.confidence,
+    summary: b.summary ?? null,
+    dimensions: b.dimensions.map(fromDimension).filter((d): d is MealDimension => d !== null),
+    improve: b.improve.map(i => ({ text: i.text, impact: i.impact })),
+    tools: b.tools.map(t => ({ type: t.type as ToolType, name: t.name })),
+  }
+}
 
 /** What the composed useFuelDay needs from the server (targets/consumed/meals). */
 export interface FuelDayData {
@@ -47,13 +115,15 @@ export function toRequest(input: MealInput): MealRequest {
 }
 
 /** Contract response → domain FuelMeal. Re-keys each line's recipeId|pantryItemId → refId, lifts
- *  the macros rollup to flat kcal/p/c/f, and nulls the pending score (breakdown is NULL in v1). */
+ *  the macros rollup to flat kcal/p/c/f, and maps the deterministic score + breakdown envelope
+ *  (mezo-yta); pre-scoring rows carry null/undefined → the pending sparkle stays. */
 export function fromResponse(r: MealResponse): FuelMeal {
   return {
     id: r.id,
     slot: r.slot,
     title: r.title ?? '',
     score: r.score?.value ?? null,
+    breakdown: r.score?.breakdown ? fromBreakdown(r.score.breakdown) : undefined,
     kcal: r.macros.kcal,
     p: r.macros.p,
     c: r.macros.c,

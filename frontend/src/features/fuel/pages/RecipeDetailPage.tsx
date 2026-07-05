@@ -201,7 +201,8 @@ export function RecipeDetailPage() {
         <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
       </div>
 
-      {/* Mezo-fit · hamarosan */}
+      {/* Mezo-fit reasoning deferral — the NUMERIC fit is live (deterministic v0, mezo-yta);
+          only the prose/Reta-phase reasoning layer remains Phase-3 (P8). */}
       <div
         className="notch-12"
         style={{ margin: '16px 0', padding: '18px 16px', textAlign: 'center', background: 'rgba(20,184,166,0.05)', border: '1px dashed var(--border-brand)' }}
@@ -210,10 +211,11 @@ export function RecipeDetailPage() {
           <Icon name="sparkle" size={26} />
         </div>
         <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600, textTransform: 'uppercase', color: 'var(--brand-glow)', marginBottom: 6 }}>
-          Mezo-fit · hamarosan
+          Mezo-fit · indoklás hamarosan
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.55, maxWidth: 260, margin: '0 auto' }}>
-          A pontszám, a Reta-fázis-illeszkedés és a logolási előzmények a Mezo-agy bekapcsolásakor érkeznek (Phase-3).
+          A fit-pontszám már determinisztikus (makró + tápanyag + NOVA). A szöveges indoklás és a
+          Reta-fázis-illeszkedés a Mezo-agy bekapcsolásakor érkezik (Phase-3).
         </div>
       </div>
 

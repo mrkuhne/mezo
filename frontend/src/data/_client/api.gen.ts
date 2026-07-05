@@ -696,23 +696,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/recipe/{id}/logs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Recent meal logs that included this owned recipe (for the recipe detail RecipeLogsList) */
-        get: operations["recipeLogs"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/fuel/day/{date}": {
         parameters: {
             query?: never;
@@ -777,6 +760,23 @@ export interface paths {
         post?: never;
         /** Soft-delete an owned meal (and its items) */
         delete: operations["deleteMeal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/{id}/logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recent meal logs that included this owned recipe (recipe detail RecipeLogsList; data lives in meal_item, so the op is Meal-owned — resolves the meal↔recipe slice cycle, mezo-ah18.16) */
+        get: operations["recipeLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2185,6 +2185,7 @@ export interface components {
             tags: string[];
             starred: boolean;
             createdDate: string;
+            /** @description NOVA class 1..4 (converged with meal_item.nova — mezo-2dy) */
             novaDominant: number;
             macros: components["schemas"]["RecipeMacros"];
             mezoFit: components["schemas"]["RecipeMezoFit"];
@@ -2195,20 +2196,6 @@ export interface components {
         };
         RecipeListResponse: {
             recipes: components["schemas"]["RecipeResponse"][];
-        };
-        RecipeLogResponse: {
-            /** Format: uuid */
-            mealId: string;
-            slot: string;
-            /** Format: date-time */
-            loggedAt: string;
-            kcal: number;
-            p: number;
-            c: number;
-            f: number;
-        };
-        RecipeLogListResponse: {
-            recentLogs: components["schemas"]["RecipeLogResponse"][];
         };
         Macros: {
             kcal: number;
@@ -2225,9 +2212,83 @@ export interface components {
         };
         MealScore: {
             value?: number | null;
-            breakdown?: {
-                [key: string]: unknown;
-            } | null;
+            breakdown?: components["schemas"]["MealBreakdown"] | null;
+        };
+        /** @description Typed 4-dimension score envelope (deterministic v0, mezo-yta / ADR 0006). summary/improve are P8 prose — null/empty until then. */
+        MealBreakdown: {
+            /** @description Weighted total 0..1 — duplicates meal.score by design (ADR 0006) */
+            value: number;
+            /** @description Coverage-weighted numeric confidence 0..1 */
+            confidence: number;
+            summary?: string | null;
+            dimensions: components["schemas"]["MealScoreDimension"][];
+            improve: components["schemas"]["MealImproveRow"][];
+            tools: components["schemas"]["MealToolRow"][];
+        };
+        /** @description One weighted dimension; exactly one of macro/micros/nova/context is populated, matching id. */
+        MealScoreDimension: {
+            id: string;
+            label: string;
+            /** @description 0 when the dimension degraded (no input coverage) — total renormalizes */
+            weight: number;
+            score: number;
+            detail: string;
+            macro?: components["schemas"]["MealMacroDetail"] | null;
+            micros?: components["schemas"]["MealMicroRow"][] | null;
+            nova?: components["schemas"]["MealNovaDetail"] | null;
+            context?: components["schemas"]["MealContextRow"][] | null;
+        };
+        MealMacroDetail: {
+            /** @description Protein kcal-share of the meal, % */
+            ratioP: number;
+            ratioC: number;
+            ratioF: number;
+            /** @description Display string of the config target share */
+            targetP: string;
+            targetC: string;
+            targetF: string;
+            kcalShareOfDay: number;
+            /** @description P8 prose — null in v0 */
+            notes?: string | null;
+        };
+        MealMicroRow: {
+            name: string;
+            /** @description Display value, e.g. "9.5 g" */
+            value: string;
+            /** @description Fiber: % of the per-meal allotment reached; limits: % of the allotment used */
+            pct: number;
+            status: string;
+        };
+        MealNovaDetail: {
+            /** @description NOVA group 1..4 with the largest kcal share */
+            dominant: number;
+            stack: components["schemas"]["MealNovaStackRow"][];
+            items: components["schemas"]["MealNovaItemRow"][];
+        };
+        MealNovaStackRow: {
+            nova: number;
+            /** @description kcal share of this NOVA group, % */
+            pct: number;
+            /** @description Item names of the group joined, or "—" at 0% */
+            label: string;
+        };
+        MealNovaItemRow: {
+            name: string;
+            nova: number;
+            /** @description true for NOVA 4 (ultra-processed) lines */
+            warning: boolean;
+        };
+        MealContextRow: {
+            label: string;
+            value: string;
+        };
+        MealImproveRow: {
+            text: string;
+            impact: string;
+        };
+        MealToolRow: {
+            type: string;
+            name: string;
         };
         MealItemRequest: {
             source: string;
@@ -2288,6 +2349,22 @@ export interface components {
             /** Format: date */
             start: string;
             days: components["schemas"]["FuelDayRollup"][];
+        };
+        RecipeLogResponse: {
+            /** Format: uuid */
+            mealId: string;
+            slot: string;
+            /** Format: date-time */
+            loggedAt: string;
+            kcal: number;
+            p: number;
+            c: number;
+            f: number;
+            /** @description The logged meal's deterministic score 0..1 (mezo-yta); null for pre-scoring rows */
+            score?: number | null;
+        };
+        RecipeLogListResponse: {
+            recentLogs: components["schemas"]["RecipeLogResponse"][];
         };
         WaterLogRequest: {
             /**
@@ -5008,46 +5085,6 @@ export interface operations {
             };
         };
     };
-    recipeLogs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Recent logs */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecipeLogListResponse"];
-                };
-            };
-            /** @description Missing/invalid token */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description Not found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-        };
-    };
     getFuelDay: {
         parameters: {
             query?: never;
@@ -5220,6 +5257,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    recipeLogs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent logs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeLogListResponse"];
+                };
             };
             /** @description Missing/invalid token */
             401: {

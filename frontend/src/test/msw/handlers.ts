@@ -7,6 +7,10 @@ import { patterns as patternSeed } from '@/data/insights/insights'
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
 
+// Shared p-turo line macros (mezo-24j): the recipe and meal fixtures describe the SAME 200 g túró,
+// so they share one contribution source — Σ lines equals the declared 580/42/78/12 rollup in both.
+const P_TURO_CONTRIBUTION = { kcal: 320, p: 33, c: 36, f: 7 }
+
 // Recipe fixture (mezo-lns) mirroring the RecipeResponse contract — one breakfast recipe with
 // two pantry-item lines (computed name + contribution, lineOrder, nullable mezoFit.score).
 const recipeFixture = {
@@ -18,7 +22,7 @@ const recipeFixture = {
   timesLogged: 0, avgScore: 0, lastLogged: '—',
   ingredients: [
     { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null, lineOrder: 0, name: 'Zabpehely', contribution: { kcal: 260, p: 9, c: 42, f: 5 } },
-    { pantryItemId: 'p-turo', amount: 200, unit: 'g', note: null, lineOrder: 1, name: 'Túró', contribution: { kcal: 260, p: 36, c: 7, f: 10 } },
+    { pantryItemId: 'p-turo', amount: 200, unit: 'g', note: null, lineOrder: 1, name: 'Túró', contribution: P_TURO_CONTRIBUTION },
   ],
 }
 
@@ -32,7 +36,7 @@ const mealFixture = {
   score: { value: null, breakdown: null },
   items: [
     { source: 'pantry', recipeId: null, pantryItemId: 'p-zab', amount: 70, unit: 'g', lineOrder: 0, name: 'Zabpehely', nova: 1, contribution: { kcal: 260, p: 9, c: 42, f: 5 } },
-    { source: 'pantry', recipeId: null, pantryItemId: 'p-turo', amount: 200, unit: 'g', lineOrder: 1, name: 'Túró', nova: 3, contribution: { kcal: 320, p: 33, c: 36, f: 7 } },
+    { source: 'pantry', recipeId: null, pantryItemId: 'p-turo', amount: 200, unit: 'g', lineOrder: 1, name: 'Túró', nova: 3, contribution: P_TURO_CONTRIBUTION },
   ],
 }
 const fuelDayFixture = {
@@ -43,7 +47,7 @@ const fuelDayFixture = {
 }
 const recipeLogFixture = {
   recentLogs: [
-    { mealId: 'me1f3a0e2-0000-4000-8000-000000000001', slot: 'breakfast', loggedAt: '2026-06-24T09:15:00', kcal: 580, p: 42, c: 78, f: 12 },
+    { mealId: 'me1f3a0e2-0000-4000-8000-000000000001', slot: 'breakfast', loggedAt: '2026-06-24T09:15:00', kcal: 580, p: 42, c: 78, f: 12, score: null },
   ],
 }
 

@@ -6,7 +6,7 @@
 import type { RecipeLog } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 
-export function RecipeLogsList({ logs, baselineScore: _baselineScore }: { logs?: RecipeLog[]; baselineScore: number }) {
+export function RecipeLogsList({ logs, baselineScore }: { logs?: RecipeLog[]; baselineScore: number }) {
   if (!logs || logs.length === 0) {
     return (
       <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
@@ -19,7 +19,11 @@ export function RecipeLogsList({ logs, baselineScore: _baselineScore }: { logs?:
   }
   return (
     <div className="col gap-sm">
-      {logs.map((l, i) => (
+      {logs.map((l, i) => {
+        // delta vs the recipe's live mezo-fit baseline (mezo-yta); the seed's authored delta is
+        // the fallback for mock logs whose baseline is still the pending null → 0.
+        const delta = baselineScore > 0 && l.score ? l.score - baselineScore : l.delta
+        return (
         <div key={i} className="card notch-4" style={{ padding: '10px 12px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="col">
@@ -34,10 +38,10 @@ export function RecipeLogsList({ logs, baselineScore: _baselineScore }: { logs?:
                   </span>
                   <span className="label-mono" style={{
                     fontSize: 9,
-                    color: l.delta > 0 ? 'var(--brand-glow)' : l.delta < 0 ? 'var(--warning)' : 'var(--text-tertiary)',
+                    color: delta > 0 ? 'var(--brand-glow)' : delta < 0 ? 'var(--warning)' : 'var(--text-tertiary)',
                     marginTop: 2,
                   }}>
-                    {l.delta > 0 ? '+' : ''}{(l.delta * 100).toFixed(0)} vs baseline
+                    {delta > 0 ? '+' : ''}{(delta * 100).toFixed(0)} vs baseline
                   </span>
                 </>
               ) : (
@@ -54,7 +58,8 @@ export function RecipeLogsList({ logs, baselineScore: _baselineScore }: { logs?:
             <span style={{ color: 'var(--text-tertiary)' }}>F <span style={{ color: 'var(--text-primary)' }}>{l.f}</span></span>
           </div>
         </div>
-      ))}
+        )
+      })}
 
       <div className="card notch-4" style={{ padding: 10, background: 'var(--surface-1)', borderStyle: 'dashed', marginTop: 6 }}>
         <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>

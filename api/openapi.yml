@@ -1892,40 +1892,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/recipe/{id}/logs':
-    get:
-      tags:
-        - Recipe
-      operationId: recipeLogs
-      summary: >-
-        Recent meal logs that included this owned recipe (for the recipe detail
-        RecipeLogsList)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: Recent logs
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecipeLogListResponse'
-        '401':
-          description: Missing/invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '404':
-          description: Not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
   '/api/fuel/day/{date}':
     get:
       tags:
@@ -2070,6 +2036,41 @@ paths:
       responses:
         '204':
           description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/recipe/{id}/logs':
+    get:
+      tags:
+        - Meal
+      operationId: recipeLogs
+      summary: >-
+        Recent meal logs that included this owned recipe (recipe detail
+        RecipeLogsList; data lives in meal_item, so the op is Meal-owned —
+        resolves the meal↔recipe slice cycle, mezo-ah18.16)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Recent logs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecipeLogListResponse'
         '401':
           description: Missing/invalid token
           content:
@@ -5557,7 +5558,8 @@ components:
         createdDate:
           type: string
         novaDominant:
-          type: number
+          type: integer
+          description: NOVA class 1..4 (converged with meal_item.nova — mezo-2dy)
         macros:
           $ref: '#/components/schemas/RecipeMacros'
         mezoFit:
@@ -5581,42 +5583,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecipeResponse'
-    RecipeLogResponse:
-      type: object
-      required:
-        - mealId
-        - slot
-        - loggedAt
-        - kcal
-        - p
-        - c
-        - f
-      properties:
-        mealId:
-          type: string
-          format: uuid
-        slot:
-          type: string
-        loggedAt:
-          type: string
-          format: date-time
-        kcal:
-          type: number
-        p:
-          type: number
-        c:
-          type: number
-        f:
-          type: number
-    RecipeLogListResponse:
-      type: object
-      required:
-        - recentLogs
-      properties:
-        recentLogs:
-          type: array
-          items:
-            $ref: '#/components/schemas/RecipeLogResponse'
     Macros:
       type: object
       required:
@@ -5659,9 +5625,216 @@ components:
           type: number
           nullable: true
         breakdown:
-          type: object
+          allOf:
+            - $ref: '#/components/schemas/MealBreakdown'
           nullable: true
-          additionalProperties: true
+    MealBreakdown:
+      type: object
+      description: >-
+        Typed 4-dimension score envelope (deterministic v0, mezo-yta / ADR
+        0006). summary/improve are P8 prose — null/empty until then.
+      required:
+        - value
+        - confidence
+        - dimensions
+        - improve
+        - tools
+      properties:
+        value:
+          type: number
+          description: Weighted total 0..1 — duplicates meal.score by design (ADR 0006)
+        confidence:
+          type: number
+          description: Coverage-weighted numeric confidence 0..1
+        summary:
+          type: string
+          nullable: true
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealScoreDimension'
+        improve:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealImproveRow'
+        tools:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealToolRow'
+    MealScoreDimension:
+      type: object
+      description: >-
+        One weighted dimension; exactly one of macro/micros/nova/context is
+        populated, matching id.
+      required:
+        - id
+        - label
+        - weight
+        - score
+        - detail
+      properties:
+        id:
+          type: string
+          pattern: ^(macro|micro|nova|context)$
+        label:
+          type: string
+        weight:
+          type: number
+          description: >-
+            0 when the dimension degraded (no input coverage) — total
+            renormalizes
+        score:
+          type: number
+        detail:
+          type: string
+        macro:
+          allOf:
+            - $ref: '#/components/schemas/MealMacroDetail'
+          nullable: true
+        micros:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MealMicroRow'
+        nova:
+          allOf:
+            - $ref: '#/components/schemas/MealNovaDetail'
+          nullable: true
+        context:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/MealContextRow'
+    MealMacroDetail:
+      type: object
+      required:
+        - ratioP
+        - ratioC
+        - ratioF
+        - targetP
+        - targetC
+        - targetF
+        - kcalShareOfDay
+      properties:
+        ratioP:
+          type: number
+          description: 'Protein kcal-share of the meal, %'
+        ratioC:
+          type: number
+        ratioF:
+          type: number
+        targetP:
+          type: string
+          description: Display string of the config target share
+        targetC:
+          type: string
+        targetF:
+          type: string
+        kcalShareOfDay:
+          type: number
+        notes:
+          type: string
+          nullable: true
+          description: P8 prose — null in v0
+    MealMicroRow:
+      type: object
+      required:
+        - name
+        - value
+        - pct
+        - status
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+          description: 'Display value, e.g. "9.5 g"'
+        pct:
+          type: integer
+          description: >-
+            Fiber: % of the per-meal allotment reached; limits: % of the
+            allotment used
+        status:
+          type: string
+          pattern: ^(good|ok|low)$
+    MealNovaDetail:
+      type: object
+      required:
+        - dominant
+        - stack
+        - items
+      properties:
+        dominant:
+          type: integer
+          description: NOVA group 1..4 with the largest kcal share
+        stack:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealNovaStackRow'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealNovaItemRow'
+    MealNovaStackRow:
+      type: object
+      required:
+        - nova
+        - pct
+        - label
+      properties:
+        nova:
+          type: integer
+        pct:
+          type: integer
+          description: 'kcal share of this NOVA group, %'
+        label:
+          type: string
+          description: 'Item names of the group joined, or "—" at 0%'
+    MealNovaItemRow:
+      type: object
+      required:
+        - name
+        - nova
+        - warning
+      properties:
+        name:
+          type: string
+        nova:
+          type: integer
+        warning:
+          type: boolean
+          description: true for NOVA 4 (ultra-processed) lines
+    MealContextRow:
+      type: object
+      required:
+        - label
+        - value
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+    MealImproveRow:
+      type: object
+      required:
+        - text
+        - impact
+      properties:
+        text:
+          type: string
+        impact:
+          type: string
+    MealToolRow:
+      type: object
+      required:
+        - type
+        - name
+      properties:
+        type:
+          type: string
+          pattern: ^(read|compute|write)$
+        name:
+          type: string
     MealItemRequest:
       type: object
       required:
@@ -5819,6 +5992,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FuelDayRollup'
+    RecipeLogResponse:
+      type: object
+      required:
+        - mealId
+        - slot
+        - loggedAt
+        - kcal
+        - p
+        - c
+        - f
+      properties:
+        mealId:
+          type: string
+          format: uuid
+        slot:
+          type: string
+        loggedAt:
+          type: string
+          format: date-time
+        kcal:
+          type: number
+        p:
+          type: number
+        c:
+          type: number
+        f:
+          type: number
+        score:
+          type: number
+          nullable: true
+          description: >-
+            The logged meal's deterministic score 0..1 (mezo-yta); null for
+            pre-scoring rows
+    RecipeLogListResponse:
+      type: object
+      required:
+        - recentLogs
+      properties:
+        recentLogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeLogResponse'
     WaterLogRequest:
       type: object
       required:
