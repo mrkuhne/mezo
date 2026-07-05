@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
-import { INSIGHTS_TABS } from '@/features/insights/pages/tabs'
+import { visibleInsightsTabs } from '@/features/insights/pages/tabs'
 
 export function InsightsSubNav() {
   return (
@@ -9,7 +9,7 @@ export function InsightsSubNav() {
       aria-label="Insights alnavigáció"
       style={{ position: 'sticky', top: 0, background: 'var(--canvas)', zIndex: 5, paddingTop: 8 }}
     >
-      {INSIGHTS_TABS.map(({ to, label, end }) => (
+      {visibleInsightsTabs().map(({ to, label, end }) => (
         <NavLink
           key={to}
           to={to}

@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-07-04
+updated: 2026-07-05
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -45,15 +45,17 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 **Route:** `/insights` (`frontend/src/app/TabBar.tsx:10`, icon `insights`). Shell + 7 sub-tabs wired in `frontend/src/app/router.tsx:76-87` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
 
-| Sub-tab | Route | Label (verbatim) | View |
-|---|---|---|---|
-| patterns | `/insights` (index) | `Patterns` | `PatternsPage` |
-| weekly | `/insights/weekly` | `Weekly` | `WeeklyPage` |
-| memoir | `/insights/memoir` | `Memoir` | `MemoirPage` |
-| knowledge | `/insights/knowledge` | `Knowledge` | `KnowledgeListPage` |
-| chat | `/insights/chat` | `Chat` | `ChatPage` |
-| predictions | `/insights/predictions` | `Predictions` | `PredictionsPage` |
-| experiments | `/insights/experiments` | `Experiments` | `ExperimentsPage` |
+| Sub-tab | Route | Label (verbatim) | View | Real mode |
+|---|---|---|---|---|
+| patterns | `/insights` (index) | `Patterns` | `PatternsPage` | shown |
+| weekly | `/insights/weekly` | `Weekly` | `WeeklyPage` | shown |
+| memoir | `/insights/memoir` | `Memoir` | `MemoirPage` | **hidden** → ghost |
+| knowledge | `/insights/knowledge` | `Knowledge` | `KnowledgeListPage` | shown |
+| chat | `/insights/chat` | `Chat` | `ChatPage` | shown |
+| predictions | `/insights/predictions` | `Predictions` | `PredictionsPage` | **hidden** → ghost |
+| experiments | `/insights/experiments` | `Experiments` | `ExperimentsPage` | **hidden** → ghost |
+
+**Honest surface (mezo-t16y.1):** the three Phase-3+ demo tabs — Memoir, Predictions, Experiments — carry only hand-authored demo fiction, so **in real mode the sub-nav hides them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; `InsightsSubNav` maps that instead of `INSIGHTS_TABS`). The routes still exist, so a **direct URL** to a hidden page renders an honest **`PhaseTeaserCard`** ("hamarosan" eyebrow + one-line "a proaktív réteggel érkezik" copy) instead of the fiction — the page components early-return the teaser when `!isMockMode()`. Mock mode keeps all 7 tabs + full demo.
 
 The shell `InsightsSection` (`frontend/src/features/insights/pages/InsightsSection.tsx`) renders a `page-header` (`Eyebrow brand "Insights"` + `PageTitle` tracking the active tab's label, derived from `pathname.split('/')[2]`), a **decorative, handler-less** settings `chip` (`aria-label="Insights beállítások"`), the sticky `InsightsSubNav` (`aria-label="Insights alnavigáció"`), and an `<Outlet/>`.
 
@@ -79,7 +81,8 @@ PERSISTED `pattern.status`, no local decision state.
 ### 2.2 Weekly (`pages/WeeklyPage.tsx`)
 A big `score` `/100` with `delta` vs "hét 20", a bordered list of `weekly.items` (label · value · trend arrow `↗/↘/→`), then a "Mezo · heti tervjavaslat" card showing `weeklySuggestion` with inert **"Elfogad" / "Hangoljuk"** buttons.
 
-### 2.3 Memoir (`pages/MemoirPage.tsx`)
+### 2.3 Memoir (`pages/MemoirPage.tsx`) — **real-mode: honest ghost**
+Real mode early-returns a `PhaseTeaserCard text="A heti memoirt a társ írja majd — a proaktív réteggel érkezik."` (the guard sits AFTER `useInsights()`/`useState` to respect the rules of hooks). Mock mode renders the full demo:
 A literary weekly narrative. `memoir-card` with radial glow, bookmark eyebrow + `memoir.week`, display title, long `body` prose, an **Anchors** row rendering `RefTag` per `memoir.anchor` (`[kind] label`). Four reaction toggles (👍 Like / Love / Save / Dismiss) backed by a local `Record<ReactionKey, boolean>` — **local-only**. Below: an "Évforduló · 1 hónap" card (`anniversaryNote`) and a static "Memoir archive · 17 darab →" footer (inert).
 
 ### 2.4 Knowledge (`pages/KnowledgeListPage.tsx`) — **real dual-mode since companion V1.2**
@@ -96,10 +99,12 @@ after the corrective retry (`MessageResponse.degraded`) carries a subtle `nem el
 eyebrow next to the timestamp (tooltip; [`companion.md`](companion.md) §2) — mock mode never
 shows it.
 
-### 2.6 Predictions (`pages/PredictionsPage.tsx`)
+### 2.6 Predictions (`pages/PredictionsPage.tsx`) — **real-mode: honest ghost**
+Real mode early-returns a `PhaseTeaserCard text="A predikciókat a minta-motor adja majd — a proaktív réteggel érkezik."`. Mock mode renders the full demo:
 Header "Aktív predikciók" + hard-coded "`2 validated · 60-day acc 68%`". Each `Prediction` card: status chip (`✓ Validated` / `◐ Pending`), date, display title, confidence `bar-fill glow` + `NN%`, optional `basis` paragraph, and (when validated) an `actual` outcome line.
 
-### 2.7 Experiments (`pages/ExperimentsPage.tsx`)
+### 2.7 Experiments (`pages/ExperimentsPage.tsx`) — **real-mode: honest ghost**
+Real mode early-returns a `PhaseTeaserCard text="Az N=1 kísérletek a proaktív réteggel érkeznek."`. Mock mode renders the full demo:
 "N=1 kísérletek · {count}". Each `Experiment` card: status chip (active→"◐ Aktív"; completed+good→"✓ Megerősítve"; else "◯ Lezárva"), `day/total nap`, display title, `hypothesis`, a progress `bar-fill glow` = `day/total`, optional `outcome` line. Footer: inert **"+ Új kísérlet javasol Mezo"** button.
 
 ---
@@ -248,7 +253,8 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
 - **Data-layer:** `frontend/src/data/insights/insightsData.test.tsx` (3 patterns all ≥ floor; `p1` critique; weekly score / 4 items; memoir title + 3 anchors; `recentlyConfirmed`×3; 4 predictions w/ validated `actual`; active experiment; `patternCategoryColor('response')`). `frontend/src/data/insights/chatData.test.tsx` (3 msgs assistant→user→assistant; tool/ref shapes). *(Knowledge has no dedicated `data/` test.)*
 - **Views:** `pages/{PatternsPage,WeeklyPage,MemoirPage,KnowledgeListPage,ChatPage,PredictionsPage,ExperimentsPage}.test.tsx`, plus `components/PatternCard.test.tsx`.
 - **`ChatPage.test` gotcha** (documented in-file): `userEvent.type` deadlocks under `vi.useFakeTimers()`; the test uses `fireEvent.change` + `fireEvent.keyDown` and `vi.advanceTimersByTime(1300)` to exercise the 1200 ms canned-reply timer.
-- **Nav/shell:** `insights.nav.test.tsx` (lands on Patterns; title tracks the tab; Memoir/Chat navigation), `InsightsSubNav.test.tsx`; plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark.
+- **Nav/shell:** `insights.nav.test.tsx` (**split into `(real mode default)` + `(mock mode)` describes** — real: lands on Patterns, Weekly link works, Memoir hidden; mock: Memoir navigation renders the demo), `InsightsSubNav.test.tsx` (**mock describe = 7 tabs; real describe = 4 tabs, Phase-3 tabs hidden**); plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark.
+- **Ghost pages:** `MemoirPage.test.tsx` / `PredictionsPage.test.tsx` / `ExperimentsPage.test.tsx` each carry a `(mock mode)` describe (the original demo assertions, unchanged) + a `(real mode)` describe asserting the `hamarosan` ghost + verbatim teaser copy and the **absence** of the demo fiction. Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
 
 **Commands** (run from `frontend/`):
 ```bash
@@ -271,6 +277,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **`useKnowledge` is shared across Insights + Me tabs** (§5.1) — co-design any knowledge backend for both.
 - **Cross-domain pattern IDs** (`P2`/`P3`) are referenced as mock copy in Sleep/Fuel/Train/Goals — making them real requires a shared pattern-engine service with stable IDs (§5.4).
 - **Inert affordances:** the settings chip, "Memoir archive →", "+ Új kísérlet javasol Mezo", "Elfogad/Hangoljuk", "Elfogad/Hangoljuk", mic button — all handler-less.
+- **Honest surface (mezo-t16y.1):** rather than ship demo fiction in production, real mode **hides** Memoir/Predictions/Experiments from the sub-nav (`visibleInsightsTabs()`) and their pages render a `PhaseTeaserCard` ghost — a direct URL never shows fabricated content. Ghost guards sit AFTER the `useInsights()`/`useState` calls (rules of hooks). When Phase 3 gives these surfaces real data, drop the `PHASE3_TAB_IDS` entries + the per-page guards.
 
 ---
 
@@ -278,9 +285,10 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 **Feature (`frontend/src/features/insights/`):**
 - `InsightsSection.tsx` — shell (header + subnav + outlet)
-- `InsightsSubNav.tsx` — sticky 7-tab nav (`NavLink`)
-- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end)
-- `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 sub-tabs
+- `InsightsSubNav.tsx` — sticky nav (`NavLink`), maps `visibleInsightsTabs()` (7 in mock, 4 in real)
+- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end) + `visibleInsightsTabs()` (real-mode Phase-3 filter, `PHASE3_TAB_IDS`)
+- `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 sub-tabs (Memoir/Predictions/Experiments early-return the ghost in real mode)
+- `components/PhaseTeaserCard.tsx` — honest "hamarosan" ghost for hidden Phase-3 tabs (direct-URL guard)
 - `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject
 - `components/ChatMessage.tsx` — chat bubble + tool/ref rows
 - Tests: `pages/*.test.tsx`, `components/PatternCard.test.tsx`, `InsightsSubNav.test.tsx`, `insights.nav.test.tsx`

@@ -1,5 +1,7 @@
 import { cn } from '@/shared/lib/cn'
 import { useInsights } from '@/data/hooks'
+import { isMockMode } from '@/data/_client/mode'
+import { PhaseTeaserCard } from '@/features/insights/components/PhaseTeaserCard'
 import type { Experiment } from '@/data/types'
 
 function statusChipClass(e: Experiment): string {
@@ -15,6 +17,8 @@ function statusLabel(e: Experiment): string {
 
 export function ExperimentsPage() {
   const { experiments } = useInsights()
+
+  if (!isMockMode()) return <PhaseTeaserCard text="Az N=1 kísérletek a proaktív réteggel érkeznek." />
 
   return (
     <div className="col gap-md">

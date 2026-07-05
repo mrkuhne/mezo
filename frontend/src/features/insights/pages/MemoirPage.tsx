@@ -3,6 +3,8 @@ import { Icon } from '@/shared/ui/Icon'
 import { RefTag } from '@/shared/ui/RefTag'
 import { cn } from '@/shared/lib/cn'
 import { useInsights } from '@/data/hooks'
+import { isMockMode } from '@/data/_client/mode'
+import { PhaseTeaserCard } from '@/features/insights/components/PhaseTeaserCard'
 
 type ReactionKey = 'like' | 'love' | 'save' | 'dismiss'
 
@@ -15,6 +17,9 @@ export function MemoirPage() {
     dismiss: false,
   })
   const toggle = (k: ReactionKey) => setReactions((r) => ({ ...r, [k]: !r[k] }))
+
+  if (!isMockMode()) return <PhaseTeaserCard text="A heti memoirt a társ írja majd — a proaktív réteggel érkezik." />
+
 
   return (
     <div className="col gap-md">
