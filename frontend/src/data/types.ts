@@ -47,7 +47,7 @@ export interface ContextDimension extends MealDimensionBase { id: 'context'; con
 export type MealDimension = MacroDimension | MicroDimension | NovaDimension | ContextDimension
 export interface MealBreakdown {
   confidence: number
-  summary: string
+  summary: string | null // deterministic v0 ships null — the prose is P8 (mezo-yta)
   dimensions: MealDimension[]
   improve: { text: string; impact: string }[]
   tools: { type: ToolType; name: string }[]

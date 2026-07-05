@@ -49,9 +49,63 @@ describe('fromResponse', () => {
     const meal = fromResponse(mealResponse)
     expect(meal.id).toBe('m1')
     expect(meal.score).toBeNull()
+    expect(meal.breakdown).toBeUndefined() // pre-scoring row → pending sparkle stays
     expect(meal.kcal).toBe(840)
     expect(meal.mealItems[0]).toMatchObject({ source: 'recipe', refId: 'rec-1', name: 'Túrós zabkása', nova: 3, contribution: { kcal: 580, p: 42, c: 78, f: 12 } })
     expect(meal.mealItems[1]).toMatchObject({ source: 'pantry', refId: 'p-zab', amount: 70, unit: 'g' })
+  })
+
+  it('maps a scored breakdown to the FE union: colors injected, degraded dimensions dropped (mezo-yta)', () => {
+    const scored = {
+      ...mealResponse,
+      score: {
+        value: 0.87,
+        breakdown: {
+          value: 0.87, confidence: 0.93, summary: null,
+          dimensions: [
+            {
+              id: 'macro', label: 'Kcal & makró arány', weight: 0.3, score: 0.96, detail: 'P/C/F arány…',
+              macro: { ratioP: 27, ratioC: 47, ratioF: 26, targetP: '~27%', targetC: '~47%', targetF: '~26%', kcalShareOfDay: 27.1, notes: null },
+              micros: null, nova: null, context: null,
+            },
+            { // degraded micro: weight 0, no payload → must be DROPPED by the mapper
+              id: 'micro', label: 'Mikro–makro balance', weight: 0, score: 0, detail: 'Nincs tápanyag-adat.',
+              macro: null, micros: null, nova: null, context: null,
+            },
+            {
+              id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.25, score: 0.79, detail: 'Domináns NOVA 1…',
+              macro: null, micros: null, context: null,
+              nova: {
+                dominant: 1,
+                stack: [{ nova: 1, pct: 74, label: 'Zab' }, { nova: 2, pct: 0, label: '—' }, { nova: 3, pct: 0, label: '—' }, { nova: 4, pct: 26, label: 'Whey' }],
+                items: [{ name: 'Zab 70g', nova: 1, warning: false }, { name: 'Whey 1adag', nova: 4, warning: true }],
+              },
+            },
+            {
+              id: 'context', label: 'Időzítés & kontextus', weight: 0.2, score: 0.9, detail: 'Időzítés…',
+              macro: null, micros: null, nova: null,
+              context: [{ label: 'Időzítés', value: '07:30 · reggeli ablakban' }],
+            },
+          ],
+          improve: [], tools: [{ type: 'compute', name: 'macroFit(mezo.nutrition)' }],
+        },
+      },
+    }
+
+    const meal = fromResponse(scored)
+
+    expect(meal.score).toBe(0.87)
+    expect(meal.breakdown).toBeDefined()
+    expect(meal.breakdown!.summary).toBeNull()
+    expect(meal.breakdown!.dimensions.map(d => d.id)).toEqual(['macro', 'nova', 'context']) // degraded micro dropped
+    expect(meal.breakdown!.dimensions[0]).toMatchObject({
+      id: 'macro', color: 'var(--brand-glow)',
+      macroRatio: { p: 27, c: 47, f: 26 }, kcalShareOfDay: 27.1,
+    })
+    const nova = meal.breakdown!.dimensions[1]
+    expect(nova).toMatchObject({ id: 'nova', color: 'var(--cat-tendency)' })
+    expect(nova.id === 'nova' && nova.nova.items[1].warning).toBe(true)
+    expect(meal.breakdown!.tools[0]).toEqual({ type: 'compute', name: 'macroFit(mezo.nutrition)' })
   })
 })
 
