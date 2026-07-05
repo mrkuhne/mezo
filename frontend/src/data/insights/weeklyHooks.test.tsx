@@ -1,4 +1,11 @@
-import { prevMondayIso, weekEndIso, isoWeekNumber, inWeek, deriveWeekMetrics, deriveItems, deriveScore, trendOf, weightTrendOf } from '@/data/insights/weeklyHooks'
+import { renderHook, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/data/_client/api'
+import { makeHookWrapper } from '@/test/queryWrapper'
+import { prevMondayIso, weekEndIso, isoWeekNumber, inWeek, deriveWeekMetrics, deriveItems, deriveScore, trendOf, weightTrendOf, useWeekly } from '@/data/insights/weeklyHooks'
+import { mondayIso } from '@/data/fuel/fuelWeekHooks'
+import { weekly as mockWeekly, weeklySuggestion as mockSuggestion } from '@/data/insights/insights'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { SleepEntry } from '@/data/types'
 
@@ -73,4 +80,85 @@ test('deriveScore: mean of available sub-scores ×100; null when nothing is avai
   expect(deriveScore({ kcalFactor: 0.94, proteinHitDays: 4, sleepAvgH: 7.2, sleepQualityAvg: 7.5, trainDone: 3, trainPlanned: 5 })).toBe(71)
   expect(deriveScore({ kcalFactor: 0.6, proteinHitDays: null, sleepAvgH: null, sleepQualityAvg: null, trainDone: null, trainPlanned: null })).toBe(0)
   expect(deriveScore({ kcalFactor: null, proteinHitDays: null, sleepAvgH: null, sleepQualityAvg: null, trainDone: 2, trainPlanned: 0 })).toBeNull()
+})
+
+describe('useWeekly (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('returns the seed verbatim with the demo delta label', () => {
+    const { result } = renderHook(() => useWeekly(), { wrapper: makeHookWrapper() })
+    expect(result.current.weekly).toEqual(mockWeekly)
+    expect(result.current.deltaLabel).toBe('vs hét 20')
+    expect(result.current.weeklySuggestion).toBe(mockSuggestion)
+    expect(result.current.mode).toBe('mock')
+  })
+})
+
+describe('useWeekly (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('composes the current week vs the previous week from the real reads', async () => {
+    const start = mondayIso()
+    const iso = (offset: number) => {
+      const [y, m, d] = start.split('-').map(Number)
+      const dd = new Date(y, m - 1, d + offset)
+      return `${dd.getFullYear()}-${String(dd.getMonth() + 1).padStart(2, '0')}-${String(dd.getDate()).padStart(2, '0')}`
+    }
+    server.use(
+      http.get(`${API_BASE}/api/biometrics/sleep`, () =>
+        HttpResponse.json([
+          { date: iso(0), bedtime: '23:00', wakeup: '06:30', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 100, notes: null },
+          { date: iso(1), bedtime: '23:00', wakeup: '06:30', duration: 6.9, quality: 6, awakenings: 1, mealToSleep: 100, notes: null },
+          { date: iso(-7), bedtime: '23:00', wakeup: '06:30', duration: 8.0, quality: 9, awakenings: 0, mealToSleep: 100, notes: null },
+        ])),
+      http.get(`${API_BASE}/api/train/workouts`, ({ request }) => {
+        const from = new URL(request.url).searchParams.get('from')
+        return HttpResponse.json(from === start
+          ? [{ id: '11111111-0000-4000-8000-000000000001', date: iso(0), status: 'completed' }]
+          : [])
+      }),
+      http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+        HttpResponse.json([
+          { id: '22222222-0000-4000-8000-000000000001', sport: 'volleyball', date: iso(1), time: '19:00', duration: 90, rpe: 7 },
+          { id: '22222222-0000-4000-8000-000000000002', sport: 'volleyball', date: iso(-6), time: '19:00', duration: 90, rpe: 7 },
+        ])),
+      http.get(`${API_BASE}/api/biometrics/weight/trend`, () =>
+        HttpResponse.json({ latestTrendKg: 96.4, weeklyRateKgPerWeek: -0.32, last4wRateKgPerWeek: -0.4 })),
+    )
+    const { result } = renderHook(() => useWeekly(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.weekly.score).not.toBeNull())
+
+    expect(result.current.mode).toBe('live')
+    expect(result.current.deltaLabel).toBe('vs előző hét')
+    expect(result.current.weeklySuggestion).toBeNull()
+    const byLabel = Object.fromEntries(result.current.weekly.items.map((i) => [i.label, i]))
+    // default fuel-week MSW handler: 2 logged days, factor 2717.5/3100 → 88%, 1 protein hit
+    expect(byLabel['Kcal pacing'].value).toBe('88% target')
+    expect(byLabel['Fehérje-napok'].value).toBe('1/7')
+    expect(byLabel['Alvás átlag'].value).toBe('7.2h · minőség 7.0')
+    expect(byLabel['Súly trend']).toEqual({ label: 'Súly trend', value: '-0.32 kg/hét', trend: 'up' })
+    // done: 1 gym + 1 volleyball this week; planned from the default schedule handlers
+    expect(byLabel['Edzés'].value).toMatch(/^2\//)
+    expect(result.current.weekly.title).toMatch(/^Hét \d+ áttekintés · /)
+  })
+
+  test('returns the tanulom null-state (score null, em-dash rows) when nothing is logged', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/fuel/week/:start`, ({ params }) =>
+        HttpResponse.json({ start: String(params.start), days: [] })),
+      http.get(`${API_BASE}/api/biometrics/sleep`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/workouts`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/weight/trend`, () =>
+        HttpResponse.json({ latestTrendKg: 0, weeklyRateKgPerWeek: 0, last4wRateKgPerWeek: 0 })),
+    )
+    const { result } = renderHook(() => useWeekly(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.weekly.items.length).toBe(5))
+    expect(result.current.weekly.score).toBeNull()
+    expect(result.current.weekly.delta).toBeNull()
+  })
 })

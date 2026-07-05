@@ -7,6 +7,14 @@
 //   below), gated to the honest „tanulom" null-state when no sub-score has data — never a
 //   fabricated number. Design: docs/superpowers/specs/2026-07-05-insights-weekly-honest-design.md.
 
+import { useQuery } from '@tanstack/react-query'
+import { isMockMode } from '@/data/_client/mode'
+import { mealApi } from '@/data/fuel/mealApi'
+import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
+import { trainApi } from '@/data/train/trainApi'
+import { useSleep } from '@/data/me/sleepHooks'
+import { useWeight } from '@/data/me/weightHooks'
+import { weekly as mockWeekly, weeklySuggestion as mockWeeklySuggestion } from '@/data/insights/insights'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { SleepEntry, WeeklyItem, WeeklyTrend } from '@/data/types'
 
@@ -140,4 +148,81 @@ export function deriveScore(m: WeekMetrics): number | null {
   if (m.trainDone != null && m.trainPlanned != null && m.trainPlanned > 0) subs.push(Math.min(1, m.trainDone / m.trainPlanned))
   if (!subs.length) return null
   return Math.round((subs.reduce((a, b) => a + b, 0) / subs.length) * 100)
+}
+
+export interface WeeklyView {
+  weekly: { title: string; score: number | null; delta: number | null; items: WeeklyItem[] }
+  deltaLabel: string
+  /** Mock: the seed prose. Real: null — the card renders the honest placeholder (proactive epic). */
+  weeklySuggestion: string | null
+  mode: 'mock' | 'live'
+}
+
+/** Inert-in-mock query helper (the fuelWeekHooks idiom): real fetches, mock resolves null. */
+function useRealQuery<T>(key: readonly unknown[], fetcher: () => Promise<T>) {
+  const mock = isMockMode()
+  return useQuery({
+    queryKey: key,
+    queryFn: mock ? async () => null : fetcher,
+    initialData: mock ? null : undefined,
+    staleTime: mock ? Infinity : 0,
+  })
+}
+
+export function useWeekly(): WeeklyView {
+  const mock = isMockMode()
+  const start = mondayIso()
+  const prevStart = prevMondayIso(start)
+
+  // Fuel rollups share the F-P4 cache key/shape (['fuelWeek', start] ⇒ FuelWeekData).
+  const { data: curFuel } = useRealQuery(['fuelWeek', start], () => mealApi.getWeek(start))
+  const { data: prevFuel } = useRealQuery(['fuelWeek', prevStart], () => mealApi.getWeek(prevStart))
+  // Raw train reads under an own namespace — trainHooks' keys cache MAPPED domain shapes,
+  // sharing them would collide (key consolidation: mezo-ah18.10).
+  const { data: curWorkouts } = useRealQuery(['insightsWeekly', 'workouts', start], () => trainApi.listWorkouts(start, weekEndIso(start)))
+  const { data: prevWorkouts } = useRealQuery(['insightsWeekly', 'workouts', prevStart], () => trainApi.listWorkouts(prevStart, weekEndIso(prevStart)))
+  const { data: sportSessions } = useRealQuery(['insightsWeekly', 'sportSessions'], () => trainApi.sportSessions())
+  const { data: gymSlots } = useRealQuery(['insightsWeekly', 'gymSchedule'], () => trainApi.gymSchedule())
+  const { data: sportSlots } = useRealQuery(['insightsWeekly', 'sportSchedule'], () => trainApi.sportSchedule())
+  const { sleepLog } = useSleep()
+  const { weightTrends } = useWeight()
+
+  if (mock) {
+    return { weekly: mockWeekly, deltaLabel: 'vs hét 20', weeklySuggestion: mockWeeklySuggestion, mode: 'mock' }
+  }
+
+  const planned = gymSlots != null && sportSlots != null ? gymSlots.length + sportSlots.length : null
+  const doneOf = (workouts: { date: string }[] | null | undefined, weekStart: string) =>
+    workouts == null || sportSessions == null
+      ? null
+      : workouts.length + sportSessions.filter((s) => inWeek(s.date, weekStart)).length
+
+  const cur = deriveWeekMetrics({
+    fuelDays: curFuel?.days ?? [],
+    sleepEntries: sleepLog.filter((e) => inWeek(e.date, start)),
+    trainDone: doneOf(curWorkouts, start),
+    trainPlanned: planned,
+  })
+  const prev = deriveWeekMetrics({
+    fuelDays: prevFuel?.days ?? [],
+    sleepEntries: sleepLog.filter((e) => inWeek(e.date, prevStart)),
+    trainDone: doneOf(prevWorkouts, prevStart),
+    trainPlanned: planned,
+  })
+  // Real-mode EWMA rate; the useWeight ZERO_TRENDS load-window fallback renders a benign 0.00.
+  const weightRate = weightTrends.last7d.weeklyRate
+  const score = deriveScore(cur)
+  const prevScore = deriveScore(prev)
+
+  return {
+    weekly: {
+      title: `Hét ${isoWeekNumber(start)} áttekintés · ${deriveWeekTitle(start)}`,
+      score,
+      delta: score != null && prevScore != null ? score - prevScore : null,
+      items: deriveItems(cur, prev, weightRate),
+    },
+    deltaLabel: 'vs előző hét',
+    weeklySuggestion: null,
+    mode: 'live',
+  }
 }
