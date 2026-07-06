@@ -3094,6 +3094,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/proactive/memoir:
+    get:
+      tags:
+        - Proactive
+      operationId: getMemoir
+      summary: >-
+        The latest weekly memoir (lazily generated for the last completed week
+        when none exists yet)
+      responses:
+        '200':
+          description: The latest persisted (or just-generated) memoir
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoirResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: >-
+            No memoir possible — no narrative memory in the last completed week.
+            The FE renders its honest "készül" state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -7347,6 +7376,44 @@ components:
           description: >-
             Plain Hungarian plan-suggestion prose (smart tier; no markdown
             structure)
+        generatedAt:
+          type: string
+          format: date-time
+    MemoirAnchor:
+      type: object
+      required:
+        - kind
+        - label
+      properties:
+        kind:
+          type: string
+          description: >-
+            FE RefTag kind (Memory/Pattern/…) — code-collected, model-SELECTED,
+            never invented
+        label:
+          type: string
+    MemoirResponse:
+      type: object
+      required:
+        - weekStart
+        - title
+        - body
+        - anchors
+        - generatedAt
+      properties:
+        weekStart:
+          type: string
+          format: date
+        title:
+          type: string
+          description: Display title of the week's narrative
+        body:
+          type: string
+          description: The memoir prose (single narrative paragraph block)
+        anchors:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemoirAnchor'
         generatedAt:
           type: string
           format: date-time
