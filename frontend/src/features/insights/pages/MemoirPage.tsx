@@ -2,14 +2,12 @@ import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { RefTag } from '@/shared/ui/RefTag'
 import { cn } from '@/shared/lib/cn'
-import { useInsights } from '@/data/hooks'
-import { isMockMode } from '@/data/_client/mode'
-import { PhaseTeaserCard } from '@/features/insights/components/PhaseTeaserCard'
+import { useMemoir } from '@/data/hooks'
 
 type ReactionKey = 'like' | 'love' | 'save' | 'dismiss'
 
 export function MemoirPage() {
-  const { memoir, anniversaryNote } = useInsights()
+  const { memoir, anniversaryNote, mode } = useMemoir()
   const [reactions, setReactions] = useState<Record<ReactionKey, boolean>>({
     like: false,
     love: false,
@@ -18,7 +16,20 @@ export function MemoirPage() {
   })
   const toggle = (k: ReactionKey) => setReactions((r) => ({ ...r, [k]: !r[k] }))
 
-  if (!isMockMode()) return <PhaseTeaserCard text="A heti memoirt a társ írja majd — a proaktív réteggel érkezik." />
+  // Live mode with no generated memoir yet (404/loading/error) → honest placeholder, never
+  // the demo fiction. Mock always has the seed, so a null memoir only ever occurs in live mode.
+  if (memoir == null) {
+    return (
+      <div className="col gap-md">
+        <div className="card notch-12" style={{ padding: 16 }}>
+          <span className="eyebrow brand">Heti memoir</span>
+          <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
+            Az első memoir a hét zárásakor készül el.
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="col gap-md">
@@ -42,34 +53,40 @@ export function MemoirPage() {
           ))}
         </div>
 
-        <div className="row gap-sm mt-lg">
-          <button type="button" onClick={() => toggle('like')} className={cn('chip', reactions.like && 'brand')} style={{ padding: '8px 12px' }}>
-            👍 Like
-          </button>
-          <button type="button" onClick={() => toggle('love')} className={cn('chip', reactions.love && 'brand')} style={{ padding: '8px 12px' }}>
-            <Icon name="heart" size={12} color={reactions.love ? 'var(--brand-glow)' : undefined} /> Love
-          </button>
-          <button type="button" onClick={() => toggle('save')} className={cn('chip', reactions.save && 'brand')} style={{ padding: '8px 12px' }}>
-            <Icon name="bookmark" size={12} color={reactions.save ? 'var(--brand-glow)' : undefined} /> Save
-          </button>
-          <button type="button" onClick={() => toggle('dismiss')} className="chip" style={{ padding: '8px 12px', opacity: reactions.dismiss ? 0.5 : 1 }}>
-            <Icon name="x" size={12} /> Dismiss
-          </button>
-        </div>
+        {mode === 'mock' ? (
+          <div className="row gap-sm mt-lg">
+            <button type="button" onClick={() => toggle('like')} className={cn('chip', reactions.like && 'brand')} style={{ padding: '8px 12px' }}>
+              👍 Like
+            </button>
+            <button type="button" onClick={() => toggle('love')} className={cn('chip', reactions.love && 'brand')} style={{ padding: '8px 12px' }}>
+              <Icon name="heart" size={12} color={reactions.love ? 'var(--brand-glow)' : undefined} /> Love
+            </button>
+            <button type="button" onClick={() => toggle('save')} className={cn('chip', reactions.save && 'brand')} style={{ padding: '8px 12px' }}>
+              <Icon name="bookmark" size={12} color={reactions.save ? 'var(--brand-glow)' : undefined} /> Save
+            </button>
+            <button type="button" onClick={() => toggle('dismiss')} className="chip" style={{ padding: '8px 12px', opacity: reactions.dismiss ? 0.5 : 1 }}>
+              <Icon name="x" size={12} /> Dismiss
+            </button>
+          </div>
+        ) : null}
       </div>
 
-      <div className="card notch-12" style={{ padding: 16, borderColor: 'rgba(94, 234, 212, 0.3)', background: 'rgba(94, 234, 212, 0.03)' }}>
-        <div className="row gap-sm">
-          <Icon name="sparkle" size={14} color="var(--brand-glow)" />
-          <span className="eyebrow brand">Évforduló · 1 hónap</span>
+      {mode === 'mock' ? (
+        <div className="card notch-12" style={{ padding: 16, borderColor: 'rgba(94, 234, 212, 0.3)', background: 'rgba(94, 234, 212, 0.03)' }}>
+          <div className="row gap-sm">
+            <Icon name="sparkle" size={14} color="var(--brand-glow)" />
+            <span className="eyebrow brand">Évforduló · 1 hónap</span>
+          </div>
+          <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>{anniversaryNote}</p>
         </div>
-        <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>{anniversaryNote}</p>
-      </div>
+      ) : null}
 
-      <div className="row gap-sm" style={{ justifyContent: 'center', marginTop: 8 }}>
-        <span className="eyebrow text-tertiary">Memoir archive · 17 darab</span>
-        <span className="eyebrow brand">→</span>
-      </div>
+      {mode === 'mock' ? (
+        <div className="row gap-sm" style={{ justifyContent: 'center', marginTop: 8 }}>
+          <span className="eyebrow text-tertiary">Memoir archive · 17 darab</span>
+          <span className="eyebrow brand">→</span>
+        </div>
+      ) : null}
     </div>
   )
 }

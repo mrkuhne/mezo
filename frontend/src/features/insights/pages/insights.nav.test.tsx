@@ -20,13 +20,16 @@ describe('insights nav (real mode default)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('Insights opens on Patterns; Weekly link works; Memoir is hidden', async () => {
+  test('Insights opens on Patterns; Weekly link works; Memoir link works', async () => {
     renderApp('/insights')
     expect(screen.getByRole('heading', { level: 1, name: 'Patterns' })).toBeInTheDocument()
     expect(await screen.findByText(/Új minták ·/)).toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Memoir' })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('link', { name: 'Weekly' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Weekly' })).toBeInTheDocument()
+    // Memoir is un-ghosted at W2 — the link is visible and navigates to the honest placeholder.
+    await userEvent.click(screen.getByRole('link', { name: 'Memoir' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Memoir' })).toBeInTheDocument()
+    expect(await screen.findByText('Az első memoir a hét zárásakor készül el.')).toBeInTheDocument()
   })
 })
 
