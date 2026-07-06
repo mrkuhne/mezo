@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-07-03
+updated: 2026-07-06
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -277,7 +277,7 @@ COMPLETE (all 14 slices):**
 |---|---|---|
 | Backend (tables + contract + services + sync endpoint) | ✅ V0.2 | Behind `mezo.feature.companion.enabled`; switch off ⇒ the whole HTTP surface 404s. |
 | Context snapshot | ✅ V0.3 | `ContextSnapshotAssembler` in every chat turn's system prompt; LLM-free, `nincs adat` absences, `mezo.companion.snapshot.*` windows. |
-| LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile, + forced-failure sentinels since V0.4, + `[fake-tool:…]` scripted tool execution since V0.5). |
+| LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile, + forced-failure sentinels since V0.4, + `[fake-tool:…]` scripted tool execution since V0.5, + `[fake-briefing:…]` scripted briefing dispatched on `BRIEFING_MARKER_MIRROR` — a literal mirror of `BriefingGenerator.BRIEFING_MARKER`, not an import, to avoid a companion→proactive package cycle — since proactive B1.1). |
 | Streaming (SSE) | ✅ V0.4 | `POST .../message/stream` — `delta`/`done`/`error` events, two-transaction turn, hand-written controller (§9 Decision 11). |
 | Tool calling + audit | ✅ V0.5 | 8 read tools over existing services; `RecordingToolCallback` audit + per-turn cap; `tool_calls`/`refs` envelopes persisted; `mezo.companion.tools.*` tunables. |
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). **LIVE on k3s since 2026-07-04** — `GEMINI_API_KEY` rides the `mezo-app` SealedSecret, switch on; smoke-verified with a real context-aware Gemini answer. |

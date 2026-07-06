@@ -18,4 +18,5 @@ inputs:
   - inputFile: ../feature/fuel/fuel.yml
   - inputFile: ../feature/companion/companion.yml
   - inputFile: ../feature/people/people.yml
+  - inputFile: ../feature/proactive/proactive.yml
 output: ../openapi.yml

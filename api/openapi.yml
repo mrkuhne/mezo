@@ -69,6 +69,11 @@ tags:
       docs/features/_platform-api-backend.md §9.
   - name: People
     description: Inner-circle persons + mention logging (Emberek)
+  - name: Proactive
+    description: >-
+      Proactive layer — surfaces the companion speaks first on (mezo-h4wp). B1.1
+      ships the morning briefing read; cron + staleness arrive in B1.2,
+      weekly/heartbeat/prediction surfaces in later slices.
 paths:
   /api/auth/login:
     post:
@@ -3006,6 +3011,45 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Person missing or foreign (indistinguishable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/proactive/briefing:
+    get:
+      tags:
+        - Proactive
+      operationId: getBriefing
+      summary: >-
+        The generated morning briefing for one day (lazily generated when the
+        dawn cron has not produced it yet)
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: >-
+            The briefed day — the FE sends its LOCAL date (the check-in read
+            precedent); defaults to the server's today.
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The persisted (or just-generated) briefing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BriefingResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: >-
+            No briefing possible — no narrative memory (daily_summary) in the
+            configured past-days window. The FE renders its honest state (B1.2).
           content:
             application/json:
               schema:
@@ -7205,3 +7249,46 @@ components:
           type: string
         flagged:
           type: boolean
+    BriefingRef:
+      type: object
+      required:
+        - kind
+        - label
+      properties:
+        kind:
+          type: string
+          description: >-
+            FE RefTag kind
+            (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory)
+        label:
+          type: string
+    BriefingResponse:
+      type: object
+      required:
+        - date
+        - eyebrow
+        - body
+        - refs
+        - generatedAt
+      properties:
+        date:
+          type: string
+          format: date
+        eyebrow:
+          type: string
+          description: One-line header above the briefing prose
+        body:
+          type: array
+          items:
+            type: string
+          description: Briefing paragraphs — the FE maps each to a BriefingPara
+        refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/BriefingRef'
+          description: >-
+            Code-collected, model-SELECTED source references (never
+            model-invented)
+        generatedAt:
+          type: string
+          format: date-time

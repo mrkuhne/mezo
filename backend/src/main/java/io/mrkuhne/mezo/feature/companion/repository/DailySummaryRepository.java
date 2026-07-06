@@ -17,4 +17,8 @@ public interface DailySummaryRepository extends JpaRepository<DailySummaryEntity
 
     /** The weekly hypothesis pipeline's context window (V3.2) — the last 7 narratives. */
     List<DailySummaryEntity> findTop7ByCreatedByOrderBySummaryDateDesc(UUID createdBy);
+
+    /** The proactive briefing's past-narrative window (B1.1) — newest first. */
+    List<DailySummaryEntity> findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(
+            UUID createdBy, LocalDate from);
 }

@@ -1210,6 +1210,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/briefing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The generated morning briefing for one day (lazily generated when the dawn cron has not produced it yet) */
+        get: operations["getBriefing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2814,6 +2831,23 @@ export interface components {
             tiedToKind?: string;
             tiedToLabel?: string;
             flagged: boolean;
+        };
+        BriefingRef: {
+            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
+            kind: string;
+            label: string;
+        };
+        BriefingResponse: {
+            /** Format: date */
+            date: string;
+            /** @description One-line header above the briefing prose */
+            eyebrow: string;
+            /** @description Briefing paragraphs — the FE maps each to a BriefingPara */
+            body: string[];
+            /** @description Code-collected, model-SELECTED source references (never model-invented) */
+            refs: components["schemas"]["BriefingRef"][];
+            /** Format: date-time */
+            generatedAt: string;
         };
     };
     responses: never;
@@ -6539,6 +6573,47 @@ export interface operations {
                 };
             };
             /** @description Person missing or foreign (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getBriefing: {
+        parameters: {
+            query?: {
+                /** @description The briefed day — the FE sends its LOCAL date (the check-in read precedent); defaults to the server's today. */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The persisted (or just-generated) briefing */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BriefingResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No briefing possible — no narrative memory (daily_summary) in the configured past-days window. The FE renders its honest state (B1.2). */
             404: {
                 headers: {
                     [name: string]: unknown;
