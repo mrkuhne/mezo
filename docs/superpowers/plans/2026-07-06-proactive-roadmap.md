@@ -84,7 +84,7 @@ ownership isolation. **Living doc `docs/features/proactive.md` is born in this s
 lazy-path latency budget.
 **bd:** `mezo-h4wp.1`.
 
-### B1.2 — Briefing cron + hybrid freshness + FE swap
+### B1.2 — Briefing cron + hybrid freshness + FE swap ✅ (shipped 2026-07-06)
 
 **Goal:** the flagship goes live — the phone shows the companion's own morning words, zero demo copy.
 **Builds:** `BriefingJob` (early cron, `mezo.techcore.cron.briefing-job.enabled` +
