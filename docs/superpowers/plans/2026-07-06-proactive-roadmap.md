@@ -63,7 +63,7 @@ fake-port generators), dual-mode FE gates where hooks change, feature-doc update
 
 ## B — „megszólal reggel" (v1, the flagship)
 
-### B1.1 — Proactive skeleton + briefing spine
+### B1.1 — Proactive skeleton + briefing spine ✅ (shipped 2026-07-06)
 
 **Goal:** the layer exists and a briefing can be generated + read — the spine everything hangs on.
 **Builds:** `feature/proactive/` package born; `mezo.feature.proactive.enabled` switch +
