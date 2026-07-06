@@ -10,7 +10,7 @@ function trendColor(t: WeeklyTrend): string {
 }
 
 export function WeeklyPage() {
-  const { weekly, deltaLabel, weeklySuggestion } = useWeekly()
+  const { weekly, deltaLabel, weeklySuggestion, mode } = useWeekly()
 
   return (
     <div className="col gap-md">
@@ -63,10 +63,12 @@ export function WeeklyPage() {
         {weeklySuggestion != null ? (
           <>
             <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>{weeklySuggestion}</p>
-            <div className="row gap-sm mt-md">
-              <button type="button" className="cta-ghost notch-4" style={{ fontSize: 10 }}>Elfogad</button>
-              <button type="button" className="chip" style={{ fontSize: 9 }}>Hangoljuk</button>
-            </div>
+            {mode === 'mock' ? (
+              <div className="row gap-sm mt-md">
+                <button type="button" className="cta-ghost notch-4" style={{ fontSize: 10 }}>Elfogad</button>
+                <button type="button" className="chip" style={{ fontSize: 9 }}>Hangoljuk</button>
+              </div>
+            ) : null}
           </>
         ) : (
           <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
