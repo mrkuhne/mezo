@@ -79,6 +79,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern BRIEFING_SENTINEL =
             Pattern.compile("\\[fake-briefing:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER (feature/proactive) — a
+     *  LITERAL, not an import (package-cycle rule; drift fails WeeklySuggestionGeneratorIT loudly). */
+    public static final String WEEKLY_MARKER_MIRROR = "HETI-TERVJAVASLAT";
+
+    /** Scripted weekly prose (W1): {@code [fake-weekly:…]} planted via a check-in note. */
+    public static final Pattern WEEKLY_SENTINEL =
+            Pattern.compile("\\[fake-weekly:([^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -99,6 +107,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             // default = valid minimal JSON so the un-scripted happy path still persists a row
             return m.find() ? m.group(1)
                     : "{\"eyebrow\":\"Fake briefing\",\"body\":[\"FAKE-BRIEFING-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
+            Matcher m = WEEKLY_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "FAKE-HETI-TERVJAVASLAT";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);

@@ -16,4 +16,12 @@ class ProactiveApiSwitchOffIT extends ApiIntegrationTest {
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
+
+    @Test
+    void testGetWeeklySuggestion_shouldReturn404_whenProactiveSwitchedOff() {
+        String body = getForBody(
+                "/api/proactive/weekly-suggestion", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
 }
