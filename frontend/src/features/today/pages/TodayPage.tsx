@@ -18,7 +18,7 @@ export function TodayPage() {
   const scenario = useTodayScenario()
   const {
     today, user, workout, volleyballSessions,
-    workoutTime, prediction, volleyballNote, briefingDemo,
+    workoutTime, prediction, volleyballNote, briefing, briefingDemo,
   } = useToday()
   const { checkins, saveCheckIn } = useCheckins()
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
@@ -32,7 +32,7 @@ export function TodayPage() {
       <BrandRow />
       <RetaPhaseSection day={scenario.retaDay} />
       <DateMesoHeader today={today} user={user} />
-      <BriefingCard briefing={resolveBriefing(scenario.dayState)} demo={briefingDemo} />
+      <BriefingCard briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />
       <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
       {workout && (
         <WorkoutTeaser workout={workout} niggle={scenario.niggle} time={workoutTime} prediction={prediction} />

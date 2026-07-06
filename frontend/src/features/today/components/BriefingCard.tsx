@@ -19,9 +19,9 @@ export function BriefingCard({
           <Eyebrow brand>{briefing.eyebrow || 'Reggeli briefing'}</Eyebrow>
           {demo ? (
             <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Demo tartalom</span>
-          ) : (
-            <span className="label-mono" style={{ fontSize: 9 }}>Confidence {Math.round((briefing.confidence ?? 0) * 100)}%</span>
-          )}
+          ) : briefing.confidence != null ? (
+            <span className="label-mono" style={{ fontSize: 9 }}>Confidence {Math.round(briefing.confidence * 100)}%</span>
+          ) : null}
         </div>
         <div className="col gap-md mt-md briefing-body">
           {briefing.body.map((p, i) => (

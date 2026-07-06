@@ -1,5 +1,8 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 import { useToday } from '@/data/hooks'
 import { today, user, workout, workoutPrediction, volleyballNote } from '@/data/today/today'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -38,4 +41,22 @@ test('useToday (real) composes Train + the real date; demo copy is null', async 
   expect(result.current.user.mesoLabel).toBe('Hypertrophy 04 · Tavasz')
   expect(result.current.today.mesoPhase).toBe('MAV') // phaseCurve[currentWeek-1]
   await waitFor(() => expect(result.current.volleyballSessions).toHaveLength(5)) // sport-schedule fixture
+})
+
+test('useToday (real) serves the server briefing with briefingDemo=false when the GET succeeds', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/proactive/briefing`, () => HttpResponse.json({
+    date: '2026-07-06', eyebrow: 'Generált briefing', body: ['Szia!'],
+    refs: [], generatedAt: '2026-07-06T05:45:00Z',
+  })))
+  const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.briefing?.eyebrow).toBe('Generált briefing'))
+  expect(result.current.briefingDemo).toBe(false)
+})
+
+test('useToday (real) falls back to briefing=null + briefingDemo=true on the default 404', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.briefingDemo).toBe(true))
+  expect(result.current.briefing).toBeNull()
 })
