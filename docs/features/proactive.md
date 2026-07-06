@@ -9,25 +9,31 @@ key_files:
   - api/feature/proactive/proactive.yml
   - backend/src/main/resources/db/changelog/1.0.0/script/202607061100_mezo-h4wp.1_create_briefing.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
+  - backend/src/main/resources/db/changelog/1.0.0/script/202607071500_mezo-h4wp.4_create_memoir.sql
 related: [companion, today, insights, _platform-api-backend]
 ---
 
 # Proactive layer (briefing, weekly prose, heartbeat, predictions) — Feature Documentation
 
 > One-line: the Phase-4 layer where the companion **speaks first**. The **B stage is complete** and
-> the **W stage has begun — W1 (weeklySuggestion prose) is LIVE**. The morning briefing runs
-> end-to-end: a `feature/proactive` package (behind `mezo.feature.proactive.enabled`, dual-gated
-> with the companion switch) with a `briefing` table, a pure-code+one-LLM-call `BriefingGenerator`,
-> a dawn `BriefingJob` cron, sleep-triggered capped regeneration on the read path, and a
-> `GET /api/proactive/briefing` the **Today card now renders** — the companion's own morning words,
-> zero demo copy (the „Demo tartalom" label survives only as the honest fallback). **W1** adds a
-> second surface: a `weekly_suggestion` table + a **smart-tier** `WeeklySuggestionGenerator`, a
-> Monday-06:00 `WeeklySuggestionJob`, and a lazy `GET /api/proactive/weekly-suggestion` the
-> **Insights Weekly „heti tervjavaslat" card now renders** in real mode (404 = the FE's honest
-> placeholder). **Status: backend 🟢 B1.2 + 🟢 W1 · FE 🟢 B1.2 (Today card real) + 🟢 W1 (Weekly
-> card real, inert buttons hidden in live) — the v1 exit criterion is met and the weekly cadence has
-> started.** The four value stages (B briefing → W weekly prose → H heartbeat → P predictions) and
-> the 8-slice map live in the roadmap; this doc tracks **what exists now**.
+> the **W stage („ír rólam hetente") is now COMPLETE — W1 (weeklySuggestion prose) + W2 (weekly
+> Memoir) are both LIVE**. The morning briefing runs end-to-end: a `feature/proactive` package
+> (behind `mezo.feature.proactive.enabled`, dual-gated with the companion switch) with a `briefing`
+> table, a pure-code+one-LLM-call `BriefingGenerator`, a dawn `BriefingJob` cron, sleep-triggered
+> capped regeneration on the read path, and a `GET /api/proactive/briefing` the **Today card now
+> renders** — the companion's own morning words, zero demo copy (the „Demo tartalom" label survives
+> only as the honest fallback). **W1** adds a second surface: a `weekly_suggestion` table + a
+> **smart-tier** `WeeklySuggestionGenerator`, a Monday-06:00 `WeeklySuggestionJob`, and a lazy
+> `GET /api/proactive/weekly-suggestion` the **Insights Weekly „heti tervjavaslat" card now renders**
+> in real mode (404 = the FE's honest placeholder). **W2** adds a third surface: a `memoir` table
+> (title + body + typed-jsonb `anchors`) + a **smart-tier** `MemoirGenerator`, a **Sunday-19:00**
+> `MemoirJob`, and a lazy `GET /api/proactive/memoir` (latest row, else generate the LAST COMPLETED
+> week) the **Insights Memoir tab now un-ghosts** in real mode (404 = the FE's honest „készül"
+> state). **Status: backend 🟢 B1.2 + 🟢 W1 + 🟢 W2 · FE 🟢 B1.2 (Today card real) + 🟢 W1 (Weekly
+> card real, inert buttons hidden in live) + 🟢 W2 (Memoir tab real, demo extras mock-only) — the v1
+> exit criterion is met and the whole W stage has shipped.** The four value stages (B briefing → W
+> weekly prose → H heartbeat → P predictions) and the 8-slice map live in the roadmap; this doc
+> tracks **what exists now**.
 
 ## 1. Summary
 
@@ -37,7 +43,8 @@ predictions. It is built on the finished companion stack (V0.3 snapshot + V1.1 f
 summaries) in 8 slices (epic `mezo-h4wp`); **B1.1 (`mezo-h4wp.1`) shipped the briefing spine;
 B1.2 (`mezo-h4wp.2`) took it live — dawn cron, sleep-triggered freshness, and the Today FE swap;
 W1 (`mezo-h4wp.3`) opened the W stage — the smart-tier weekly plan-suggestion, live on the Insights
-Weekly card.**
+Weekly card; W2 (`mezo-h4wp.4`) closed the W stage — the smart-tier weekly Memoir, un-ghosting the
+Insights Memoir tab.**
 
 **B1.1 (`mezo-h4wp.1`) — skeleton + briefing spine:**
 
@@ -127,6 +134,50 @@ Weekly card.**
   in live mode** (false affordance — §9 decision k), mock keeps them + byte-parity. Details:
   [insights.md §2.2](insights.md).
 
+**W2 (`mezo-h4wp.4`) — weekly Memoir (the W stage closes):**
+
+- **A third owned table** — `memoir` (UUID PK, `created_by`, soft-delete; `week_start date` = the
+  **ISO Monday** the memoir is FOR, `title varchar(200)`, `body text` = the HU narrative prose,
+  `anchors jsonb` = a **typed jsonb envelope** `MemoirAnchorsEnvelope{List<Anchor(kind,label)>}`,
+  `generated_at`). A **partial** unique index (one LIVE memoir per user+week; soft-delete + reinsert
+  = regeneration, the `briefing`/`weekly_suggestion` precedent) — but W2 has **no regeneration path**
+  (weekly cadence, the W1 precedent).
+- **`MemoirGenerator`** — the same hybrid idiom at the smart tier, back to a **structured** output:
+  a **pure-code gather** composes **the week's own `daily_summary` narratives** (`[weekStart,
+  weekStart+6]` — the week ENDING, not the prior week) + the V1.1 facts block + the pattern list,
+  plus a **numbered anchor-candidate list** (one `Memory` candidate per included summary + one
+  `Pattern` candidate per pattern) → **ONE smart-tier `CompanionLlm.completeSmart` (Gemini Pro)
+  call** answering a **strict-JSON** contract `{title, body, anchorIndexes}` → defensive parse →
+  **bounds-checked, deduped index→anchor resolution** (the model SELECTS anchors by index, can never
+  invent one — the briefing ref rule). **Empty week OR unusable answer (null/blank title/body) ⇒ NO
+  row** (honest absence); existing row ⇒ returned untouched (idempotent, no LLM call). Gather = pure
+  code, prose = pure LLM (NFR-M-4) — the briefing structure at the weekly-suggestion tier.
+- **A Sunday-evening cron** — `MemoirJob` `@Scheduled` on `mezo.proactive.memoir.cron`
+  (**`0 0 19 * * SUN`** — Sunday 19:00 server zone, the old PRD journey 5.8) pre-generates the memoir
+  for the week **ENDING that Sunday** (its Monday = `previousOrSame(MONDAY)` of "now"). At 19:00 the
+  Mon–Sat summaries exist; Sunday's own summary is born at the next dawn and is accepted as absent
+  (§9 decision l). Gated on a THIRD switch `mezo.techcore.cron.memoir-job.enabled`
+  (`MEMOIR_JOB_SWITCH`) on top of the dual gate; idempotent, per-user failures isolated; **no
+  backfill**.
+- **A lazy read** — `GET /api/proactive/memoir` (**no parameters**): the **latest** persisted row
+  (`findFirstByCreatedByOrderByWeekStartDesc`), else lazy-generate the **LAST COMPLETED week**
+  (`previousOrSame(MONDAY).minusWeeks(1)`); `null` ⇒ **404 `RESOURCE_NOT_FOUND`** (no narrative
+  memory — the honest „készül" state the FE placeholder covers). Archive (older rows) is a later
+  slice.
+- **Fake sentinel** — `FakeCompanionLlm` gained a `[fake-memoir:{…}]` sentinel dispatched on a
+  **literal mirror** of `MEMOIR_MARKER` (`MEMOIR_MARKER_MIRROR = "HETI-MEMOIR-FELADAT"` — the
+  package-cycle rule, §9 gotcha a). **The sentinel rides a daily-summary NARRATIVE, not a check-in
+  note** — the memoir gather is a PAST-week composition with no snapshot, so the check-in channel
+  the briefing/weekly ITs use is unavailable here (§9 gotcha m).
+- **The FE swap (Insights Memoir tab un-ghosts)** — a new dual-mode `useMemoir()`
+  (`data/insights/memoirHooks.ts`, `['memoir']`) reads the GET in real mode (404→null); `memoir`
+  leaves `PHASE3_TAB_IDS` so the tab shows in real mode; `MemoirPage` drops its `PhaseTeaserCard`
+  guard and renders the real memoir card (title/body + `RefTag` anchors) with a client-derived week
+  label `Hét N · …`, else the honest null-state *"Az első memoir a hét zárásakor készül el."*. The
+  **reactions row + anniversary card + archive footer are MOCK-ONLY** (unpersisted interactivity =
+  false affordance, the W1 button precedent — §9 decision k). Mock keeps the full Phase-1 demo +
+  byte-parity. Details: [insights.md §2.3](insights.md).
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -138,14 +189,16 @@ Weekly card.**
 | Frontend (Today card swap) | 🟢 B1.2 | Today renders the generated briefing (real ref chips, no label); „Demo tartalom" survives only as the honest fallback. |
 | Weekly suggestion (table + generator + Monday cron + lazy read) | 🟢 W1 | `weekly_suggestion` table (ISO-Monday identity, partial unique); smart-tier `WeeklySuggestionGenerator` (gather = snapshot + facts + prior-week summaries + patterns → ONE `completeSmart` call, honest-null); Monday-06:00 `WeeklySuggestionJob` (three-switch, no backfill); `GET /api/proactive/weekly-suggestion` (lazy; 404 = empty prior week). |
 | Frontend (Insights Weekly card swap) | 🟢 W1 | `useWeekly().weeklySuggestion` real (404→null); the Weekly card renders the generated prose, else the honest placeholder; „Elfogad/Hangoljuk" hidden in live. |
-| Memoir / heartbeat / predictions | ⛔ later slices | W2/H/P stages — see the roadmap. |
+| Memoir (table + generator + Sunday cron + lazy read) | 🟢 W2 | `memoir` table (ISO-Monday identity, partial unique, typed-jsonb `anchors`); smart-tier `MemoirGenerator` (gather = the week's OWN summaries + facts + patterns + numbered anchor candidates → ONE `completeSmart` call, model-selected anchors, honest-null); Sunday-19:00 `MemoirJob` (three-switch, no backfill); `GET /api/proactive/memoir` (no params; latest row else lazy-generate the LAST COMPLETED week; 404 = empty week). |
+| Frontend (Insights Memoir tab un-ghost) | 🟢 W2 | `useMemoir()` real (404→null); `memoir` left `PHASE3_TAB_IDS`, `MemoirPage` guard dropped; renders the real memoir + derived week label, else the honest „készül" null-state; reactions/anniversary/archive mock-only. |
+| Heartbeat / predictions | ⛔ later slices | H/P stages — see the roadmap. |
 
-**Driver:** `mezo-h4wp.3` (W1, on `mezo-h4wp.1`'s spine; B1.2 = `mezo-h4wp.2`). **Design of record:**
+**Driver:** `mezo-h4wp.4` (W2, on `mezo-h4wp.1`'s spine; W1 = `mezo-h4wp.3`, B1.2 = `mezo-h4wp.2`). **Design of record:**
 [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
 (§2 hybrid generation, §3-§4 briefing data model, §5 weekly suggestion, §6 honest-numbers guardrails,
 §7 emptiness gate); slice map
 [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
-§B1.1–§B1.2 + §W1. Builds on the [companion](companion.md) stack (snapshot/facts/summaries/patterns).
+§B1.1–§B1.2 + §W1 + §W2. Builds on the [companion](companion.md) stack (snapshot/facts/summaries/patterns).
 
 ## 2. User-facing behavior
 
@@ -174,6 +227,19 @@ tervjavaslata hamarosan."* — never a fabricated plan. In **live mode the inert
 buttons are hidden** (they never did anything — false affordance); **mock mode** keeps the seed prose
 + both buttons (byte-parity). See [insights.md §2.2](insights.md) for the card in the context of the
 full Weekly review (the D′ score + item rows are unchanged).
+
+**Live since W2 — the Insights Memoir tab.** The Memoir sub-tab, a real-mode ghost until now, shows
+**the companion's own weekly story** — a short literary HU narrative about Daniel's week grounded in
+HIS finished-week daily summaries, HIS confirmed facts, and HIS detected patterns, with **real anchor
+chips** (the code-collected, model-selected `Memory`/`Pattern` refs) and a **client-derived week
+label** (`Hét N · …`). The Sunday-evening cron has usually already written the week's memoir; if not,
+the first GET generates the **last completed week** on the spot (lazy fallback). When there is no
+narrative memory yet (404) the tab shows the **honest null-state** *"Az első memoir a hét zárásakor
+készül el."* — never demo fiction. In **live mode the reaction toggles, the „Évforduló · 1 hónap"
+anniversary card, and the „Memoir archive · 17 darab" footer are hidden** (unpersisted interactivity /
+deferred surfaces = false affordance); **mock mode** keeps the full Phase-1 demo (seed memoir +
+reactions + anniversary + archive, byte-parity). See [insights.md §2.3](insights.md) for the tab in
+the context of the full Insights sub-nav (Memoir now shows as the 3rd of 5 real-mode tabs).
 
 ## 3. Architecture & data flow
 
@@ -301,26 +367,87 @@ suggestions, plain prose no markdown, invent-no-numbers, never suggest a retatru
 mirrors the briefing guardrails at the smart tier. The gather composes patterns via the companion
 `PatternRepository` (the V3.1/V3.2 Inbox rows) — a fourth companion read on top of the briefing's three.
 
+**The memoir read (W2 — latest row · lazy-generate the last completed week; NO staleness/regen):**
+
+```
+GET /api/proactive/memoir                               (NO parameters)
+  → ProactiveController.getMemoir()                      controller/ProactiveController.java  (implements ProactiveApi)
+      currentUserId.get()  (JWT subject → UUID)
+  → ProactiveMemoirService.getMemoir(userId)             service/ProactiveMemoirService.java:36  @Transactional
+      findFirstByCreatedByOrderByWeekStartDesc(userId)   the LATEST persisted memoir
+        .orElseGet(() -> generator.generate(userId,
+             now.with(previousOrSame(MONDAY)).minusWeeks(1)))   ── else lazily generate the LAST COMPLETED week
+      null ⇒ throw SystemRuntimeErrorException(RESOURCE_NOT_FOUND, 404)   (no narrative memory)
+      → mapper.toMemoirResponse(memoir)                  (anchors.anchors → List<MemoirAnchor>; Instant → UTC OffsetDateTime)
+```
+
+**The Sunday cron (W2 — `service/MemoirJob.java`):**
+
+```
+@Scheduled(cron = "${mezo.proactive.memoir.cron}")   0 0 19 * * SUN (Sunday 19:00 server zone); three-switch bean
+  weekStart = previousOrSame(MONDAY) of LocalDate.now()   (the week ENDING this Sunday — its Monday)
+  for each appUserRepository.findAll():
+     try  generator.generate(user.id, weekStart)          (that week only — no backfill)
+     catch → log.warn + continue                          (per-user isolation)
+  log.info "Memoir run for {weekStart}: {n} memoir(s) present"
+```
+
+Idempotent (an existing row is returned untouched, no LLM call). **No catch-up loop and no
+staleness/regeneration path** — a memoir is written once at Sunday dusk (or lazily on first open) and
+stands (§9 decision l, the W1 reasoning). NOTE the cron writes the week ENDING this Sunday, whereas
+the lazy GET fallback writes the LAST COMPLETED week (`.minusWeeks(1)`) — the cron is proactive at the
+week's close, the lazy path is a recovery for a user whose cron never ran (§9 decision n).
+
+**The memoir generator (`service/MemoirGenerator.java`):**
+
+```
+generate(userId, weekStart)                             MemoirGenerator.java:65  @Transactional
+  1. existing row? ⇒ return untouched                   (idempotent; NO LLM call)
+  2. gather(userId, weekStart)                           MemoirGenerator.java:95  PURE CODE, LLM-free
+       week = daily_summary with summaryDate in [weekStart, weekStart+6]   (the week ENDING)
+       week.isEmpty() ⇒ return null                      ── THE EMPTINESS GATE (§9 gotcha d)
+       payload = "A HÉT NAPJAI" the week's narratives (newest first)
+               + KnowledgeFactService.renderPromptBlock  (V1.1 top-N confirmed facts)
+               + "MINTÁK" pattern titles + status (omitted when none)
+               + "HORGONY-JELÖLTEK" numbered candidate list (index: [kind] label)
+       candidates = one Memory anchor per summary + one Pattern anchor per pattern
+  3. companionLlm.completeSmart(PROMPT, payload)          ── ONE SMART-tier call (MEMOIR_MARKER prompt, Gemini Pro)
+  4. parse(answer)                                        first-{ to last-} defensive JSON → ParsedMemoir
+       null / blank title / blank body ⇒ return null      ── unusable answer, NO row (§9 gotcha d)
+  5. resolveAnchors(anchorIndexes, candidates)            bounds-checked, order-preserving, deduped
+       (model SELECTS by index; out-of-range/dupes dropped — can never invent an anchor)
+  6. saveAndFlush MemoirEntity{title, body, anchors envelope, generatedAt=now truncated-to-µs}
+```
+
+The prompt (`MEMOIR_MARKER "HETI-MEMOIR-FELADAT"` + HU rules: short literary weekly memoir from the
+week's facts only, one concrete observation + one gentle remark, invent-no-numbers, never suggest a
+med-dose change) mirrors the briefing/weekly guardrails at the smart tier, and — like the briefing —
+carries a typed jsonb anchor envelope (unlike the weekly suggestion's flat prose). The gather reuses
+the same companion reads as the weekly generator (summaries + facts + patterns) but over the week's
+OWN window, not the prior week.
+
 **Switch-gating.** `ProactiveController`, `ProactiveBriefingService`, `ProactiveWeeklySuggestionService`,
-`BriefingGenerator`, `WeeklySuggestionGenerator` (and the mapper via the services) are all
+`ProactiveMemoirService`, `BriefingGenerator`, `WeeklySuggestionGenerator`, `MemoirGenerator` (and the
+mapper via the services) are all
 `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` — **both**
 must be `true`. Either off ⇒ no proactive beans ⇒ the whole `/api/proactive/*` surface 404s (there's
-no controller to route to). The two jobs (`BriefingJob`, `WeeklySuggestionJob`) each add a THIRD
-switch on top. The dual gate is structural, not a runtime check (§9 gotcha b).
+no controller to route to). The three jobs (`BriefingJob`, `WeeklySuggestionJob`, `MemoirJob`) each
+add a THIRD switch on top. The dual gate is structural, not a runtime check (§9 gotcha b).
 
-**Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` both `extend OwnedEntity` (soft-delete via
-`@SQLDelete`/`@SQLRestriction`); `created_by` is stamped from `CurrentUserId.get()` server-side, the
-finders (`findByCreatedByAndBriefingDate` / `findByCreatedByAndWeekStart`) are owner + soft-delete
-scoped. Standard auth spine ([`_platform-api-backend.md`](_platform-api-backend.md); the companion
-precedent).
+**Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` + `MemoirEntity` all `extend OwnedEntity`
+(soft-delete via `@SQLDelete`/`@SQLRestriction`); `created_by` is stamped from `CurrentUserId.get()`
+server-side, the finders (`findByCreatedByAndBriefingDate` / `findByCreatedByAndWeekStart` /
+`findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` for memoir) are owner +
+soft-delete scoped. Standard auth spine ([`_platform-api-backend.md`](_platform-api-backend.md); the
+companion precedent).
 
 ## 4. Data model & API
 
-### Backend tables (B1.1 + B1.2 + W1, 🟢)
+### Backend tables (B1.1 + B1.2 + W1 + W2, 🟢)
 
 Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h4wp.2_briefing_regen_count.sql`
-+ `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql` (all registered in
-`db/changelog/1.0.0/1.0.0_master.yml`):
++ `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql` + `202607071500_mezo-h4wp.4_create_memoir.sql`
+(all registered in `db/changelog/1.0.0/1.0.0_master.yml`):
 
 - **`briefing`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
   CASCADE`, `is_deleted boolean default false`, `created_at timestamptz default now()`,
@@ -340,6 +467,15 @@ Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h
   user+week; the `briefing` partial-unique precedent — a soft-deleted row could be regenerated, but
   W1 has no regen path). **No `content` envelope, no `regen_count`** — a weekly suggestion is flat
   prose written once (§9 decision i).
+- **`memoir`** (W2) — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
+  CASCADE`, `is_deleted boolean default false`, `created_at timestamptz default now()`, `week_start
+  date not null` (the **ISO Monday** the memoir is FOR), `title varchar(200) not null`, `body text
+  not null` (the HU narrative), `anchors jsonb not null` (the typed envelope), `generated_at
+  timestamptz not null`. Uniqueness is a **partial unique index**
+  `uq_memoir_created_by_week_start … where is_deleted = false` (one LIVE memoir per user+week; the
+  `briefing`/`weekly_suggestion` partial-unique precedent — a soft-deleted row could be regenerated,
+  but W2 has no regen path). **Has a jsonb envelope (like `briefing`) but no `regen_count`** — a
+  memoir is written once, structured but not staleness-refreshed (§9 decision l).
 
 ### Entities + envelope
 
@@ -356,6 +492,15 @@ collected candidates the model selected by index, never invented.
 generatedAt}` — **no jsonb** (the suggestion is plain prose, no structured refs; the FE maps
 `wire → string`).
 
+`MemoirEntity` (`entity/MemoirEntity.java`) `extends OwnedEntity`, UUID `@GeneratedValue` id,
+soft-deleted; `{LocalDate weekStart, String title (length 200), String body (text), Instant
+generatedAt}` + `anchors` mapped as a typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto
+`MemoirAnchorsEnvelope` (`entity/MemoirAnchorsEnvelope.java`) — a record `{List<Anchor> anchors}`
+with a nested `Anchor(String kind, String label)` (the `BriefingContentEnvelope`/`ProvenanceEnvelope`
+typed-jsonb precedent). `anchors` are code-collected candidates the model selected by index, never
+invented; `kind` is the FE `RefTag` vocabulary (`Memory`/`Pattern` in practice). The memoir is the
+briefing's structured-envelope shape at the weekly-suggestion smart tier.
+
 ### REST endpoints (contract-first — tag `Proactive` → `ProactiveApi`)
 
 Fragment `api/feature/proactive/proactive.yml`; `ProactiveController implements ProactiveApi`.
@@ -365,16 +510,20 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 |---|---|---|---|
 | `GET /api/proactive/briefing?date=` | `BriefingResponse` | 200 · 401 · 404 | `date` optional (FE sends its LOCAL date; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when no `daily_summary` in the past-days window (§9 gotcha d). |
 | `GET /api/proactive/weekly-suggestion?date=` | `WeeklySuggestionResponse` | 200 · 401 · 404 | `date` optional (any day of the wanted week; the week identity is its ISO Monday; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when the prior week has no `daily_summary` (§9 gotcha d) — the FE keeps its honest placeholder. |
+| `GET /api/proactive/memoir` | `MemoirResponse` | 200 · 401 · 404 | **No parameters.** The LATEST persisted memoir, else lazy-generate the LAST COMPLETED week (`previousOrSame(MONDAY).minusWeeks(1)`); **404 `RESOURCE_NOT_FOUND`** when that week has no `daily_summary` (§9 gotcha d) — the FE renders its honest „készül" state. Archive (older rows) is a later slice. |
 
 Schemas: `BriefingResponse{date, eyebrow, body[], refs[], generatedAt}` +
 `BriefingRef{kind, label}` — **no `confidence`, no `tone`** on the wire (§9 gotcha c). `refs[].kind`
 is the FE `RefTag` vocabulary (`WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|Memory`).
 `WeeklySuggestionResponse{weekStart, prose, generatedAt}` — plain prose, no structured fields.
+`MemoirResponse{weekStart, title, body, anchors[], generatedAt}` + `MemoirAnchor{kind, label}` —
+`anchors[].kind` is the same FE `RefTag` vocabulary (`Memory`/`Pattern` in practice), model-SELECTED
+from code-collected candidates, never invented.
 
 ### Configuration
 
 `config/ProactiveProperties.java` (`@Validated`, binds `mezo.proactive.*` — nested `briefing` +
-`weekly` records):
+`weekly` + `memoir` records):
 
 - **`briefing.past-days`** (`@Min(1) @Max(14)`, default **7**): how many finished days of narrative
   memory the briefing gather reads — and doubles as the **emptiness gate** (zero summaries ⇒ 404).
@@ -384,12 +533,14 @@ is the FE `RefTag` vocabulary (`WeightTrend|Goal|Workout|FuelDay|Medication|Slee
   sleep-triggered regenerations (`refreshIfStale`); 0 = never regenerate.
 - **`weekly.cron`** (`@NotBlank`, default **`0 0 6 * * MON`** — Monday 06:00 server zone): the
   `WeeklySuggestionJob` schedule; the suggestion is FOR the week that is starting (§9 decision j).
+- **`memoir.cron`** (`@NotBlank`, default **`0 0 19 * * SUN`** — Sunday 19:00 server zone): the
+  `MemoirJob` schedule; the memoir is FOR the week ENDING that Sunday (§9 decision l).
 
-Plus the two techcore job switches, each the THIRD `@ConditionalOnProperty` on its job bean (on top
+Plus the three techcore job switches, each the THIRD `@ConditionalOnProperty` on its job bean (on top
 of the companion+proactive dual gate; off ⇒ the cron bean does not exist, the lazy GET still serves):
-**`mezo.techcore.cron.briefing-job.enabled`** (`BRIEFING_JOB_SWITCH`) and
-**`mezo.techcore.cron.weekly-suggestion-job.enabled`** (`WEEKLY_SUGGESTION_JOB_SWITCH`), both default
-`true`.
+**`mezo.techcore.cron.briefing-job.enabled`** (`BRIEFING_JOB_SWITCH`),
+**`mezo.techcore.cron.weekly-suggestion-job.enabled`** (`WEEKLY_SUGGESTION_JOB_SWITCH`), and
+**`mezo.techcore.cron.memoir-job.enabled`** (`MEMOIR_JOB_SWITCH`), all default `true`.
 
 ## 5. Integrations
 
@@ -404,16 +555,20 @@ The briefing generator composes three companion capabilities directly:
 (V2.2 narratives), and the `CompanionLlm.complete(system, user)` port for the one prose call.
 **W1's `WeeklySuggestionGenerator` adds a fourth read** — `PatternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(…)`
 (the V3.1/V3.2 Inbox rows) — and calls the port's **`completeSmart`** variant (Pro tier) instead of
-`complete`. **Contract crossing the seam:** these read methods with explicit `userId` scoping;
-strictly one-way — no companion code imports proactive. This one-way rule is why the fake sentinels'
-markers are literal mirrors rather than imports (§9 gotcha a).
+`complete`. **W2's `MemoirGenerator` composes the same four reads** (summaries + facts + patterns +
+the `completeSmart` port) but over the week's OWN window `[weekStart, weekStart+6]` rather than the
+prior week — no new companion capability, just a different window. **Contract crossing the seam:**
+these read methods with explicit `userId` scoping; strictly one-way — no companion code imports
+proactive. This one-way rule is why the fake sentinels' markers are literal mirrors rather than
+imports (§9 gotcha a).
 
 ### 5.2 Proactive ↔ LLM provider (wired via companion, ADR 0008)
 All model access goes through the same `CompanionLlm` port — **cheap tier** (`complete`, one call per
-briefing) and **smart tier** (`completeSmart`, one call per weekly suggestion — the V3.2 Pro-tier
-routing). Real `GeminiCompanionLlm` / test `FakeCompanionLlm` (the `[fake-briefing:{…}]` +
-`[fake-weekly:…]` sentinels; the fake's `completeSmart` delegates to `complete`, so one dispatch
-covers both tiers). Provider detail is hidden by the port; proactive adds no new adapter.
+briefing) and **smart tier** (`completeSmart`, one call per weekly suggestion / one per memoir — the
+V3.2 Pro-tier routing). Real `GeminiCompanionLlm` / test `FakeCompanionLlm` (the `[fake-briefing:{…}]`
++ `[fake-weekly:…]` + `[fake-memoir:{…}]` sentinels; the fake's `completeSmart` delegates to
+`complete`, so one dispatch covers both tiers). Provider detail is hidden by the port; proactive adds
+no new adapter.
 
 ### 5.3 Proactive ↔ API contract & backend platform (wired)
 On the contract-first pipeline ([`_platform-api-backend.md`](_platform-api-backend.md)):
@@ -440,6 +595,18 @@ string | null` joins the D′ `WeeklyView`; the card renders the prose or the ho
 the „Elfogad/Hangoljuk" buttons are hidden when `mode !== 'mock'`. Mock mode: `useWeekly` returns the
 seed prose synchronously (the query is disabled) ⇒ byte-parity.
 
+### 5.6 Proactive → Insights Memoir FE (✅ W2 wired — dual-mode read)
+The Insights Memoir tab ([insights.md §2.3](insights.md)) is the consumer. `useMemoir()`
+(`data/insights/memoirHooks.ts`) fetches `GET /api/proactive/memoir` via `memoirApi.latest`
+(`data/insights/memoirApi.ts`, `toMemoir` wire→FE `Memoir` — the week label derives client-side from
+`weekStart` via `isoWeekNumber` + `deriveWeekTitle`, reused from `weeklyHooks`/`fuelWeekHooks`) in a
+`['memoir']` `useQuery` (`retry:false`, 404→null). Returns `{ memoir: Memoir | null; anniversaryNote:
+string | null; mode }`; real mode maps the server memoir (or null on 404/loading/error, note always
+null), mock returns the seed memoir + anniversaryNote synchronously (byte-parity). `MemoirPage`
+renders the memoir card or the honest null-state, with reactions/anniversary/archive gated behind
+`mode === 'mock'`. The FE `Memoir` type (`{week, title, body, anchors}`) is reused **unchanged** from
+Phase 1. `memoir` also leaves `PHASE3_TAB_IDS` (`tabs.ts`) so the tab is visible in real mode.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -459,12 +626,20 @@ curl -s "http://localhost:8090/api/proactive/weekly-suggestion?date=2026-07-06" 
   -H "Authorization: Bearer $TOKEN"
 # → { "weekStart":"2026-07-06", "prose":"Ezen a héten…", "generatedAt":… }
 # → 404 SystemMessageList when the prior week has no daily_summary (the FE's honest placeholder)
+
+curl -s "http://localhost:8090/api/proactive/memoir" \
+  -H "Authorization: Bearer $TOKEN"
+# → { "weekStart":"2026-06-29", "title":"…", "body":"…", "anchors":[{"kind":"Memory","label":"2026-07-01"}], "generatedAt":… }
+# → 404 SystemMessageList when the last completed week has no daily_summary (the FE's honest „készül" state)
 ```
 
 The weekly suggestion needs at least one `daily_summary` in the **prior** week; for a keyless local
 run plant a `[fake-weekly:…]` sentinel via a prior-week check-in note (the `WeeklySuggestionGeneratorIT`
-pattern). **FE consumers:** the Today card (B1.2, [today.md](today.md)) and the Insights Weekly card
-(W1, [insights.md](insights.md)) both read these endpoints dual-mode.
+pattern). The **memoir** needs a `daily_summary` inside the last completed week — and because its
+gather is a PAST-week composition with no snapshot, the `[fake-memoir:{…}]` sentinel is planted via a
+daily-summary NARRATIVE, not a check-in note (the `MemoirGeneratorIT` pattern — §9 gotcha m).
+**FE consumers:** the Today card (B1.2, [today.md](today.md)), the Insights Weekly card (W1) and the
+Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoints dual-mode.
 
 ## 7. How to extend it
 
@@ -480,10 +655,21 @@ pattern). **FE consumers:** the Today card (B1.2, [today.md](today.md)) and the 
   `WeeklySuggestionJob` (`@Scheduled`, three-switch, current-week-only, per-user isolation) and the
   real-only `useWeekly().weeklySuggestion` swap are the working templates for W2/H/P. It is the
   briefing template minus the jsonb envelope/refs and minus any staleness machinery.
-- **New proactive surface (W2/H/P):** add a sibling `*Generator` + table + `*.yml` fragment in
-  `feature/proactive/`, gated on the same dual switch. Smart-tier narratives (Memoir, predictions)
-  reuse W1's gather idiom (`CompanionLlm.completeSmart`); a plain-prose surface follows
-  `weekly_suggestion` (flat columns), a structured one follows `briefing` (typed jsonb envelope).
+- **W2 shipped (memoir generator + Sunday cron + FE un-ghost) — the structured smart-tier template:**
+  `MemoirGenerator` (pure-code `gather` over the week's OWN summaries + facts + patterns + numbered
+  anchor candidates, `completeSmart`, **strict-JSON `{title, body, anchorIndexes}` with
+  model-selected typed-jsonb anchors**, honest-null), `MemoirJob` (`@Scheduled`, three-switch,
+  that-week-only, per-user isolation) and the dual-mode `useMemoir` un-ghost (drop the
+  `PHASE3_TAB_IDS` entry + the page's `PhaseTeaserCard` guard) are the working templates for a
+  structured weekly narrative — it is the weekly-suggestion smart tier PLUS the briefing's jsonb
+  envelope. It is also the recipe for un-ghosting the remaining Insights tabs (predictions/experiments
+  in P): drop from `PHASE3_TAB_IDS`, remove the page guard, render real data + the honest null-state,
+  keep unpersisted extras mock-only.
+- **New proactive surface (H/P):** add a sibling `*Generator` + table + `*.yml` fragment in
+  `feature/proactive/`, gated on the same dual switch. Smart-tier narratives (predictions) reuse
+  W1/W2's gather idiom (`CompanionLlm.completeSmart`); a plain-prose surface follows
+  `weekly_suggestion` (flat columns), a structured one follows `briefing`/`memoir` (typed jsonb
+  envelope).
 - **Prompt / marker tuning:** the prompts are `BriefingGenerator.PROMPT` /
   `WeeklySuggestionGenerator.PROMPT` (keep each `*_MARKER` prefix + its `FakeCompanionLlm` literal
   mirror in sync — §9 gotcha a); briefing ref candidates are `SNAPSHOT_CANDIDATES` + the per-summary
@@ -493,8 +679,9 @@ pattern). **FE consumers:** the Today card (B1.2, [today.md](today.md)) and the 
 ## 8. Testing
 
 Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake LLM's
-`[fake-briefing:{…}]` + `[fake-weekly:…]` sentinels script deterministic answers. **38 tests across
-12 classes** — the B1.1 five, three B1.2 classes, plus the W1 additions:
+`[fake-briefing:{…}]` + `[fake-weekly:…]` + `[fake-memoir:{…}]` sentinels script deterministic
+answers. **53 tests across 16 classes** — the B1.1 five, three B1.2 classes, the W1 additions, plus
+the W2 additions:
 
 **B (briefing):**
 
@@ -504,11 +691,13 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
   exists; gather returns null on an empty window; generate persists the scripted envelope; generate
   returns the existing row without an LLM call; generate returns null on non-parseable JSON; generate
   drops out-of-range (hallucinated) ref indexes.
-- **`ProactiveApiIT` (6)** — HTTP briefing: lazy-generate + idempotent re-GET; `date` param honored for
+- **`ProactiveApiIT` (9)** — HTTP briefing: lazy-generate + idempotent re-GET; `date` param honored for
   a past date; 404 when no narrative memory; 401 without a token. **+ W1 weekly-suggestion (2):**
-  lazy-generate when the prior week has memory; 404 when no prior-week memory.
-- **`ProactiveApiSwitchOffIT` (2)** — `mezo.feature.proactive.enabled=false` ⇒ 404 for briefing **and**
-  weekly-suggestion (bean absence).
+  lazy-generate when the prior week has memory; 404 when no prior-week memory. **+ W2 memoir (3):**
+  returns the latest persisted row; lazily generates the last completed week (the fake's un-scripted
+  „Fake memoir" default); 404 when no memoir and no memory.
+- **`ProactiveApiSwitchOffIT` (3)** — `mezo.feature.proactive.enabled=false` ⇒ 404 for briefing,
+  weekly-suggestion **and** memoir (bean absence).
 - **`ProactiveApiCompanionOffIT` (1)** — `mezo.feature.companion.enabled=false` ⇒ 404 (dual gate).
 - **`BriefingJobIT` (3, B1.2)** — the dawn run generates today's briefing when the user has narrative
   memory; is idempotent when a briefing already exists; skips a user without memory and still serves
@@ -532,28 +721,53 @@ Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake L
 - **`WeeklySuggestionJobSwitchOffIT` (1)** — `mezo.techcore.cron.weekly-suggestion-job.enabled=false`
   ⇒ no `WeeklySuggestionJob` bean (the third switch).
 
+**W (memoir, W2):**
+
+- **`MemoirPersistenceIT` (3)** — the `anchors` jsonb-envelope round-trip; the partial-unique index
+  rejects a second LIVE row for the same week (`uq_memoir_created_by_week_start`); the latest-first
+  owner-scoped finder (`findFirstByCreatedByOrderByWeekStartDesc`) returns the newest own row.
+- **`MemoirGeneratorIT` (5)** — gather composes the week's summaries `[weekStart, weekStart+6]` + a
+  `Memory` candidate per summary + the `HORGONY-JELÖLTEK` block, and EXCLUDES the prior Sunday
+  (window boundary); gather returns null on an empty week; generate persists the scripted memoir (via
+  a `[fake-memoir:{…}]` sentinel planted in a daily-summary NARRATIVE — the gather has no snapshot, so
+  the check-in-note channel is unavailable; §9 gotcha m); generate returns the existing row without an
+  LLM call; generate returns null on non-parseable JSON.
+- **`MemoirJobIT` (2)** — the Sunday run generates the current week's memoir when the user has
+  narrative memory; is idempotent when a memoir already exists.
+- **`MemoirJobSwitchOffIT` (1)** — `mezo.techcore.cron.memoir-job.enabled=false` ⇒ no `MemoirJob`
+  bean (the third switch).
+
 **FE (Vitest + RTL):** `data/today/briefingHooks.test.tsx` (3) — wire→`Briefing` mapping (no
 confidence), 404→null, mock null without fetching; `features/today/components/BriefingCard.test.tsx`
 adds a generated-briefing-no-label case; `data/today/todayHooks.test.tsx` adds real-mode
 server-briefing (`briefingDemo=false`) + default-404 fallback (`briefingDemo=true`) cases. **W1:**
 `data/insights/weeklyHooks.test.tsx` (+2) — serves the generated prose when the GET succeeds; keeps
 `weeklySuggestion` null on the default 404; `features/insights/pages/WeeklyPage.test.tsx` (+1) —
-renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. MSW defaults: both
-`/api/proactive/briefing` and `/api/proactive/weekly-suggestion` return 404.
+renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. **W2:**
+`data/insights/memoirHooks.test.tsx` (3) — maps the server memoir with a derived `Hét N …` week label
+(anniversaryNote null, mode live); returns null memoir on the default 404; returns the seed +
+anniversaryNote without fetching in mock mode; `features/insights/pages/MemoirPage.test.tsx` gains a
+real-mode describe (renders the real memoir + anchors, no reactions/anniversary/archive; the 404 shows
+the honest „készül" placeholder, not demo fiction); `InsightsSubNav.test.tsx` + `insights.nav.test.tsx`
+flip Memoir from hidden to visible (5 real-mode tabs incl. Memoir). MSW defaults: `/api/proactive/briefing`,
+`/api/proactive/weekly-suggestion` **and** `/api/proactive/memoir` all return 404.
 
-Test infra: `support/populator/{BriefingPopulator,WeeklySuggestionPopulator}.java` (aggregate
-factories) + `briefing` and `weekly_suggestion` in the `ResetDatabase` TRUNCATE list. Full backend +
-FE gates green at W1 close (BE clean-test green, FE both modes).
+Test infra: `support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator}.java`
+(aggregate factories) + `briefing`, `weekly_suggestion` and `memoir` in the `ResetDatabase` TRUNCATE
+list. Full backend + FE gates green at W2 close (BE clean-test green, FE both modes).
 
 ## 9. Decisions, gotchas & deferred
 
-- **(a) Both generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The fake
-  dispatches on `BRIEFING_MARKER_MIRROR` (`"REGGELI-BRIEFING-FELADAT"`) and `WEEKLY_MARKER_MIRROR`
-  (`"HETI-TERVJAVASLAT"`), **copies** of `BriefingGenerator.BRIEFING_MARKER` /
-  `WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER`, NOT imports — a `companion` → `proactive`
-  import would create a package cycle that the frozen ArchUnit rule fails the build on. Each literal
-  pair must be edited together (both carry a comment pointing at the other; drift fails the generator
-  IT loudly).
+- **(a) All THREE generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
+  fake dispatches on `BRIEFING_MARKER_MIRROR` (`"REGGELI-BRIEFING-FELADAT"`), `WEEKLY_MARKER_MIRROR`
+  (`"HETI-TERVJAVASLAT"`) and `MEMOIR_MARKER_MIRROR` (`"HETI-MEMOIR-FELADAT"`), **copies** of
+  `BriefingGenerator.BRIEFING_MARKER` / `WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER` /
+  `MemoirGenerator.MEMOIR_MARKER`, NOT imports — a `companion` → `proactive` import would create a
+  package cycle that the frozen ArchUnit rule fails the build on. Each literal pair must be edited
+  together (both carry a comment pointing at the other; drift fails the generator IT loudly). The
+  markers are prefix-collision-checked (`FakeCompanionLlm` dispatches by `startsWith`): the nearest
+  neighbour of `HETI-MEMOIR-FELADAT` is `HETI-TERVJAVASLAT`, which diverges at char 6 — no false
+  dispatch.
 - **(b) Proactive beans condition on BOTH switches.** Every bean is
   `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` —
   proactive calls the `CompanionLlm` port, so it presupposes companion. Switch either off ⇒ no beans
@@ -608,40 +822,76 @@ FE gates green at W1 close (BE clean-test green, FE both modes).
   had handlers — accept/tune interactivity is deferred (spec §5). Rather than show dead buttons on a
   real generated suggestion, `WeeklyPage` renders them only when `mode === 'mock'`; live mode shows
   the prose alone. (`WeeklyPage.test.tsx` pins their absence in real mode.)
-- **Deferred to W2/H/P:** Memoir (W2), in-app heartbeat + Web Push (H), predictions + N=1 experiments
-  (P) — later slices, see the roadmap. W1 closed the first W-stage surface; the D′ score constants
-  (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to backend config in W1
-  (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
+- **(l) W2 memoir has NO staleness / regeneration path, and the Sunday-19:00 cron writes the week it
+  is ENDING — YAGNI + old-journey 5.8.** Like the weekly suggestion (§9 decision i), a memoir is
+  written once (at Sunday dusk, or lazily on first open) and stands — no `refreshIfStale`, no
+  `regen_count`, no cap. The cron is `0 0 19 * * SUN` (`mezo.proactive.memoir.cron`, the old PRD
+  journey 5.8), gathering the week ENDING that Sunday (its Monday = `previousOrSame(MONDAY)` of now).
+  Sunday evening (not Monday morning) so the memoir lands while the week is fresh; the trade-off is
+  that **Sunday's own `daily_summary` is not yet born** (it is written at the next dawn) — accepted:
+  the memoir covers Mon–Sat, one missing day out of seven, and re-running would need a regen path the
+  slice deliberately omits. Like the other crons it does **not** backfill.
+- **(m) The `[fake-memoir:{…}]` sentinel rides a daily-summary NARRATIVE, not a check-in note — the
+  memoir gather has no snapshot.** The briefing/weekly ITs plant their fake sentinel in a check-in
+  note that the `ContextSnapshotAssembler` echoes into the prompt. The memoir gather is a PAST-week
+  composition (summaries + facts + patterns) with **no snapshot**, so that channel is unavailable;
+  the memoir IT plants the sentinel in a `daily_summary` NARRATIVE instead (summaries are free text
+  and ARE in the gather). Flagged in the `MemoirGeneratorIT` Javadoc. This is the one structural
+  difference from the B/W1 fake-scripting pattern.
+- **(n) The Sunday cron writes the week ENDING this Sunday; the lazy GET writes the LAST COMPLETED
+  week — deliberately different windows.** `MemoirJob.run()` uses `previousOrSame(MONDAY)` of now (the
+  current week, ending this Sunday), because at Sunday 19:00 that week is what just closed. The lazy
+  GET fallback (`ProactiveMemoirService`) uses `previousOrSame(MONDAY).minusWeeks(1)` (the LAST
+  COMPLETED week), because a user opening the app mid-week whose cron never ran wants the most recent
+  FULLY finished week, not the in-progress one. Both are correct for their trigger; the GET always
+  returns the LATEST persisted row first, so once the cron has run the lazy path is a pure miss-recovery.
+- **(o) Memoir reactions + anniversary card + archive footer are MOCK-ONLY (false affordance).** The
+  four reaction toggles are backed by component-local `useState` and never persist; the „Évforduló ·
+  1 hónap" anniversary card and „Memoir archive · 17 darab" footer have no backend at all. Rather than
+  show dead affordances on a real generated memoir, `MemoirPage` renders all three only when `mode ===
+  'mock'` (the W1 „Elfogad/Hangoljuk" precedent, §9 decision k). **Follow-up filed:** persisted memoir
+  reactions as a companion signal (the controller files the bd issue at close-out); the anniversary
+  card + archive are a deferred epic (spec §1).
+- **Deferred to H/P:** in-app heartbeat + Web Push (H), predictions + N=1 experiments (P) — later
+  slices, see the roadmap. W2 closed the W stage (both weekly-prose surfaces live). The D′ score
+  constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to backend
+  config in W1/W2 (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
 
 ## 10. Key files
 
 **API contract**
-- `api/feature/proactive/proactive.yml` — 2 endpoints (briefing + weekly-suggestion) + 3 schemas
-  (`BriefingResponse`, `BriefingRef`, `WeeklySuggestionResponse`) (tag `Proactive` → `ProactiveApi`);
-  registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
+- `api/feature/proactive/proactive.yml` — 3 endpoints (briefing + weekly-suggestion + memoir) + 5
+  schemas (`BriefingResponse`, `BriefingRef`, `WeeklySuggestionResponse`, `MemoirResponse`,
+  `MemoirAnchor`) (tag `Proactive` → `ProactiveApi`); registered in `api/generate/merge.yml` → merged
+  `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
 **Backend — controller / services / mapper**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (both `getBriefing` + `getWeeklySuggestion`), JWT ownership, dual-switch-gated.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getBriefing` + `getWeeklySuggestion` + **`getMemoir`**), JWT ownership, dual-switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveBriefingService.java` — the briefing read path (persisted row · `refreshIfStale` · lazy-generate; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveWeeklySuggestionService.java` — **W1** the weekly read path (ISO-Monday week · persisted row or lazy-generate; null ⇒ 404).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveMemoirService.java` — **W2** the memoir read path (latest row · else lazy-generate the LAST COMPLETED week; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingJob.java` — **B1.2** dawn `@Scheduled` cron (today-only, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionJob.java` — **W1** Monday-06:00 `@Scheduled` cron (current-week only, per-user isolation, three-switch-gated).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirJob.java` — **W2** Sunday-19:00 `@Scheduled` cron (the week ending that Sunday, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingGenerator.java` — the spine: pure-code `gather` + one `CompanionLlm.complete` + strict-JSON parse + ref resolution; `BRIEFING_MARKER` + `PROMPT` + `SNAPSHOT_CANDIDATES`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toBriefingResponse` + `toWeeklySuggestionResponse`; Instant → UTC OffsetDateTime).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirGenerator.java` — **W2** pure-code `gather` (the week's OWN summaries + facts + patterns + numbered anchor candidates) + one `CompanionLlm.completeSmart` + strict-JSON `{title, body, anchorIndexes}` parse + `resolveAnchors` (bounds-checked, deduped, model-selected); `MEMOIR_MARKER` + `PROMPT` + the `MemoirGather` record.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toBriefingResponse` + `toWeeklySuggestionResponse` + **`toMemoirResponse`/`toMemoirAnchor`**, `anchors.anchors` unwrapped; Instant → UTC OffsetDateTime).
 
 **Backend — entity / repo / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{BriefingEntity,BriefingContentEnvelope}.java` — the owned entity + typed jsonb envelope (`Ref` nested).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/WeeklySuggestionEntity.java` — **W1** the owned entity (flat `weekStart`/`prose`/`generatedAt`, no jsonb).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{MemoirEntity,MemoirAnchorsEnvelope}.java` — **W2** the owned entity (`weekStart`/`title`/`body`/`generatedAt` + `anchors` typed jsonb) + the `MemoirAnchorsEnvelope{List<Anchor(kind,label)>}` record.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/BriefingRepository.java` — `findByCreatedByAndBriefingDate` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklySuggestionRepository.java` — **W1** `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.{past-days,cron,regen-cap-per-day}, weekly.cron}` (@Validated, nested records).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/MemoirRepository.java` — **W2** `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.{past-days,cron,regen-cap-per-day}, weekly.cron, memoir.cron}` (@Validated, nested records).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java` — **B1.2** `existsBy…DateGreaterThanEqualAndCreatedAtAfter` staleness probe (plain finder, no proactive dependency).
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + `BRIEFING_JOB_SWITCH` + `WEEKLY_SUGGESTION_JOB_SWITCH` (+ the companion `COMPANION_SWITCH` they pair with).
-- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{briefing.*, weekly.cron}` + `mezo.techcore.cron.{briefing-job,weekly-suggestion-job}.enabled`.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + `BRIEFING_JOB_SWITCH` + `WEEKLY_SUGGESTION_JOB_SWITCH` + **`MEMOIR_JOB_SWITCH`** (+ the companion `COMPANION_SWITCH` they pair with).
+- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{briefing.*, weekly.cron, memoir.cron}` + `mezo.techcore.cron.{briefing-job,weekly-suggestion-job,memoir-job}.enabled`.
 
 **Backend — LLM fake (companion side, additive)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — `BRIEFING_MARKER_MIRROR` + `[fake-briefing:{…}]` and `WEEKLY_MARKER_MIRROR` + `[fake-weekly:…]` sentinels (literals; §9 gotcha a).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — `BRIEFING_MARKER_MIRROR` + `[fake-briefing:{…}]`, `WEEKLY_MARKER_MIRROR` + `[fake-weekly:…]`, and **`MEMOIR_MARKER_MIRROR` + `[fake-memoir:{…}]`** sentinels (literals; §9 gotcha a) — the memoir default (no sentinel) returns `{"title":"Fake memoir",…}`.
 
 **Frontend — Today consumer (B1.2)**
 - `frontend/src/data/today/briefingApi.ts` — `briefingApi.get` + `toBriefing` (wire→`Briefing`, no confidence).
@@ -653,13 +903,19 @@ FE gates green at W1 close (BE clean-test green, FE both modes).
 - `frontend/src/data/insights/weeklyHooks.ts` — `useWeekly().weeklySuggestion` real-only `useQuery` (`['weeklySuggestion', start]`, `enabled:!mock`, `retry:false`, 404→null); the one bare `useQuery` in the file.
 - `frontend/src/features/insights/pages/WeeklyPage.tsx` — renders the prose or the honest placeholder; „Elfogad/Hangoljuk" hidden when `mode !== 'mock'` (§9 decision k).
 
+**Frontend — Insights Memoir consumer (W2)**
+- `frontend/src/data/insights/memoirApi.ts` — `memoirApi.latest()` + `toMemoir` (wire → FE `Memoir`; the `Hét N · …` week label derives client-side via `isoWeekNumber`/`deriveWeekTitle`).
+- `frontend/src/data/insights/memoirHooks.ts` — `useMemoir(): MemoirView` (`['memoir']`; mock = seed + anniversaryNote no-fetch, real GET or null on 404, note null); re-exported by `data/hooks.ts`.
+- `frontend/src/features/insights/pages/MemoirPage.tsx` — guard dropped; renders the real memoir card + anchors, else the honest „készül" null-state; reactions/anniversary/archive gated on `mode === 'mock'` (§9 decision o).
+- `frontend/src/features/insights/pages/tabs.ts` — `PHASE3_TAB_IDS = {predictions, experiments}` (memoir un-ghosted at W2).
+
 **Backend — migrations**
-- `backend/src/main/resources/db/changelog/1.0.0/script/{202607061100_mezo-h4wp.1_create_briefing,202607070900_mezo-h4wp.2_briefing_regen_count,202607071200_mezo-h4wp.3_create_weekly_suggestion}.sql` (all in `1.0.0_master.yml`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/{202607061100_mezo-h4wp.1_create_briefing,202607070900_mezo-h4wp.2_briefing_regen_count,202607071200_mezo-h4wp.3_create_weekly_suggestion,202607071500_mezo-h4wp.4_create_memoir}.sql` (all in `1.0.0_master.yml`).
 
 **Backend — tests**
-- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{BriefingPersistenceIT,BriefingGeneratorIT,ProactiveApiIT,ProactiveApiSwitchOffIT,ProactiveApiCompanionOffIT,BriefingJobIT,BriefingJobSwitchOffIT,BriefingFreshnessIT,WeeklySuggestionPersistenceIT,WeeklySuggestionGeneratorIT,WeeklySuggestionJobIT,WeeklySuggestionJobSwitchOffIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{BriefingPopulator,WeeklySuggestionPopulator}.java` + `support/ResetDatabase.java` (`briefing` + `weekly_suggestion` in the TRUNCATE list).
-- FE: `frontend/src/data/today/{briefingHooks.test.tsx,todayHooks.test.tsx}`, `frontend/src/features/today/components/BriefingCard.test.tsx`, `frontend/src/data/insights/weeklyHooks.test.tsx`, `frontend/src/features/insights/pages/WeeklyPage.test.tsx`, `frontend/src/test/msw/handlers.ts` (both proactive defaults 404).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{BriefingPersistenceIT,BriefingGeneratorIT,ProactiveApiIT,ProactiveApiSwitchOffIT,ProactiveApiCompanionOffIT,BriefingJobIT,BriefingJobSwitchOffIT,BriefingFreshnessIT,WeeklySuggestionPersistenceIT,WeeklySuggestionGeneratorIT,WeeklySuggestionJobIT,WeeklySuggestionJobSwitchOffIT,MemoirPersistenceIT,MemoirGeneratorIT,MemoirJobIT,MemoirJobSwitchOffIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator}.java` + `support/ResetDatabase.java` (`briefing` + `weekly_suggestion` + `memoir` in the TRUNCATE list).
+- FE: `frontend/src/data/today/{briefingHooks.test.tsx,todayHooks.test.tsx}`, `frontend/src/features/today/components/BriefingCard.test.tsx`, `frontend/src/data/insights/{weeklyHooks.test.tsx,memoirHooks.test.tsx}`, `frontend/src/features/insights/pages/{WeeklyPage.test.tsx,MemoirPage.test.tsx,InsightsSubNav.test.tsx,insights.nav.test.tsx}`, `frontend/src/test/msw/handlers.ts` (all three proactive defaults 404).
 
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)

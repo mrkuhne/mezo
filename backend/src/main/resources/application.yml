@@ -146,6 +146,10 @@ mezo:
       # off = the WeeklySuggestionJob bean does not exist
       weekly-suggestion-job:
         enabled: true
+      # W2 Sunday memoir generation (schedule: mezo.proactive.memoir.cron);
+      # off = the MemoirJob bean does not exist
+      memoir-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -307,6 +311,9 @@ mezo:
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
       cron: "0 0 6 * * MON"
+    memoir:
+      # W2 Sunday-evening memoir schedule (old journey 5.8) — the week ending that Sunday
+      cron: "0 0 19 * * SUN"
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

@@ -24,4 +24,12 @@ class ProactiveApiSwitchOffIT extends ApiIntegrationTest {
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
+
+    @Test
+    void testGetMemoir_shouldReturn404_whenProactiveSwitchedOff() {
+        String body = getForBody(
+                "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
 }

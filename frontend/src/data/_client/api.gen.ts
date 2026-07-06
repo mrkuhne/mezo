@@ -1244,6 +1244,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/memoir": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The latest weekly memoir (lazily generated for the last completed week when none exists yet) */
+        get: operations["getMemoir"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2871,6 +2888,22 @@ export interface components {
             weekStart: string;
             /** @description Plain Hungarian plan-suggestion prose (smart tier; no markdown structure) */
             prose: string;
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        MemoirAnchor: {
+            /** @description FE RefTag kind (Memory/Pattern/…) — code-collected, model-SELECTED, never invented */
+            kind: string;
+            label: string;
+        };
+        MemoirResponse: {
+            /** Format: date */
+            weekStart: string;
+            /** @description Display title of the week's narrative */
+            title: string;
+            /** @description The memoir prose (single narrative paragraph block) */
+            body: string;
+            anchors: components["schemas"]["MemoirAnchor"][];
             /** Format: date-time */
             generatedAt: string;
         };
@@ -6680,6 +6713,44 @@ export interface operations {
                 };
             };
             /** @description No suggestion possible — no narrative memory (daily_summary) in the prior week. The FE keeps its honest placeholder. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMemoir: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The latest persisted (or just-generated) memoir */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoirResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No memoir possible — no narrative memory in the last completed week. The FE renders its honest "készül" state. */
             404: {
                 headers: {
                     [name: string]: unknown;

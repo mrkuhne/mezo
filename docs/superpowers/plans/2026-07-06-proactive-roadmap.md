@@ -136,7 +136,28 @@ if cheap — `insights.md` §9 flags it — else file follow-up).
 **Open decisions:** cron day/time (Sunday evening vs Monday early); buttons inert vs hidden.
 **bd:** `mezo-h4wp.3`.
 
-### W2 — Memoir
+### W2 — Memoir ✅ (shipped 2026-07-06)
+
+**Shipped as built:** `memoir` table (ISO-Monday `week_start`, `title`/`body`, typed-jsonb `anchors`
+envelope `MemoirAnchorsEnvelope{List<Anchor(kind,label)>}`, partial unique) + smart-tier
+`MemoirGenerator` (pure-code gather = the week's OWN `daily_summary` narratives `[weekStart,
+weekStart+6]` + facts + patterns + numbered anchor candidates → ONE `CompanionLlm.completeSmart` call
+→ strict-JSON `{title, body, anchorIndexes}`, model-SELECTED bounds-checked/deduped anchors,
+honest-null on empty week / unusable answer) + `MemoirJob` (Sunday 19:00 `mezo.proactive.memoir.cron`,
+three-switch, the week ENDING that Sunday, idempotent, no backfill) + `ProactiveMemoirService` (latest
+row, else lazy-generate the LAST COMPLETED week `previousOrSame(MONDAY).minusWeeks(1)`) + lazy
+`GET /api/proactive/memoir` (NO params; 404 = the FE's honest „készül" state). FE: `useMemoir()` real
+(404→null), `memoir` left `PHASE3_TAB_IDS`, `MemoirPage` `PhaseTeaserCard` guard dropped, real memoir
++ derived `Hét N …` label + anchor RefTags, else the honest null-state; reactions + anniversary +
+archive **mock-only** (unpersisted = false affordance, the W1 button precedent). **In-slice decisions
+resolved:** cron = Sunday 19:00 (memoir for the week ending that Sunday — Sunday's own summary is born
+next dawn, accepted); lazy fallback = the LAST COMPLETED week (different window from the cron, by
+trigger); reactions **mock-only v1** (persisted reactions as a companion signal = a follow-up bd issue
+the controller files at close-out); anniversary card + archive footer mock-only (deferred epic); the
+`[fake-memoir:{…}]` sentinel rides a daily-summary NARRATIVE (the memoir gather has no snapshot, so the
+check-in-note channel is unavailable); marker `"HETI-MEMOIR-FELADAT"` prefix-collision-checked. **NO
+temp stub ever existed** (the W1 lesson — Task 1 shipped the real read). Docs: `docs/features/proactive.md`
+(§1-§10) + `docs/features/insights.md` (§1/§2.3/§3/§4/§9/§10). **bd:** `mezo-h4wp.4`.
 
 **Goal:** the companion writes the week's story — the first ghost tab un-ghosts.
 **Builds:** `memoir` table (week_start, title, body, anchors jsonb); Sunday smart-tier generator

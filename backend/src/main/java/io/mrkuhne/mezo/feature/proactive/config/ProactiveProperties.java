@@ -11,7 +11,10 @@ import org.springframework.validation.annotation.Validated;
 /** Proactive-layer tuning (mezo.proactive). B1.1: briefing gather window; B1.2 adds cron + regen. */
 @Validated
 @ConfigurationProperties(prefix = "mezo.proactive")
-public record ProactiveProperties(@NotNull @Valid Briefing briefing, @NotNull @Valid Weekly weekly) {
+public record ProactiveProperties(
+        @NotNull @Valid Briefing briefing,
+        @NotNull @Valid Weekly weekly,
+        @NotNull @Valid Memoir memoir) {
 
     public record Briefing(
         /** How many finished days of narrative memory (daily_summary) the gather reads;
@@ -26,6 +29,12 @@ public record ProactiveProperties(@NotNull @Valid Briefing briefing, @NotNull @V
     /** W1 weekly plan-suggestion generation. */
     public record Weekly(
         /** Monday-dawn schedule (server zone) — the suggestion is FOR the week just starting. */
+        @NotBlank String cron
+    ) {}
+
+    /** W2 Sunday-evening weekly memoir generation. */
+    public record Memoir(
+        /** Sunday-evening schedule (server zone) — the memoir is FOR the week ending that Sunday. */
         @NotBlank String cron
     ) {}
 }

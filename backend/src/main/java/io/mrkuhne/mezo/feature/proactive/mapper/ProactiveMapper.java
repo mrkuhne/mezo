@@ -2,9 +2,13 @@ package io.mrkuhne.mezo.feature.proactive.mapper;
 
 import io.mrkuhne.mezo.api.dto.BriefingRef;
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
+import io.mrkuhne.mezo.api.dto.MemoirAnchor;
+import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.proactive.entity.BriefingContentEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.BriefingEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.MemoirAnchorsEnvelope;
+import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -24,6 +28,11 @@ public interface ProactiveMapper {
     BriefingRef toBriefingRef(BriefingContentEnvelope.Ref ref);
 
     WeeklySuggestionResponse toWeeklySuggestionResponse(WeeklySuggestionEntity entity);
+
+    @Mapping(target = "anchors", source = "anchors.anchors")
+    MemoirResponse toMemoirResponse(MemoirEntity entity);
+
+    MemoirAnchor toMemoirAnchor(MemoirAnchorsEnvelope.Anchor anchor);
 
     default OffsetDateTime map(Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);

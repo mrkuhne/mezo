@@ -18,7 +18,7 @@ related: [_platform-data-layer, _platform-design-system, today, me, companion]
 
 # Insights — Feature Documentation
 
-> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (its „heti tervjavaslat" card now speaks too — the generated prose is live via **proactive W1 `mezo-h4wp.3`**); **Memoir/Predictions/Experiments** stay hand-authored demo and are **hidden in real mode** (honest ghost) — the designated **🟣 proactive-epic landing zone**. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. Lives under the **`/insights`** tab (4th in `TabBar`, between Fuel and Me).
+> One-line: the **pattern/companion "AI brain" surface** — where mezo reflects back what it has *learned* about the user (detected patterns, weekly review, memoir, knowledge base, chat, predictions, experiments). **Status: 🔶 mixed** — **Chat** (companion V0.4), **Patterns** (V3.1), **Knowledge** (V1.2) are ✅ real over the companion backend ([`companion.md`](companion.md)), and **Weekly** is ✅ real since **D′ (`mezo-t16y.1`)** by client-side composition (its „heti tervjavaslat" card now speaks too — the generated prose is live via **proactive W1 `mezo-h4wp.3`**); **Memoir** is ✅ real since **proactive W2 (`mezo-h4wp.4`)** — the tab un-ghosted, rendering the companion's generated weekly memoir (demo reactions/anniversary/archive stay mock-only); **Predictions/Experiments** stay hand-authored demo and remain **hidden in real mode** (honest ghost) — the last **🟣 proactive-epic landing zone**. **Phase-2 exit audit passed (mezo-t16y.4, 2026-07-05):** the sub-nav hiding + per-page `PhaseTeaserCard` guards re-verified; no fabricated Insights number reaches a live user. Lives under the **`/insights`** tab (4th in `TabBar`, between Fuel and Me).
 
 ---
 
@@ -31,7 +31,7 @@ Insights is the user-facing window onto mezo's N=1 self-model: it presents the b
 | Layer | Status | Notes |
 |---|---|---|
 | FE mock | ✅ done | 7 sub-tabs, all views + tests present |
-| FE real-mode | 🔶 Chat + Patterns + Knowledge + **Weekly** | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend; **Weekly** real since **D′ (`mezo-t16y.1`)** — `data/insights/weeklyHooks.ts` composes the review client-side from existing fuel/train/biometrics reads (no Insights backend); its „heti tervjavaslat" prose is live since **proactive W1 (`mezo-h4wp.3`)** off `GET /api/proactive/weekly-suggestion`. Memoir/Predictions/Experiments stay static demo modules (`insights.ts`) and are **hidden** in real mode (§2). |
+| FE real-mode | 🔶 Chat + Patterns + Knowledge + **Weekly** + **Memoir** | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend; **Weekly** real since **D′ (`mezo-t16y.1`)** — `data/insights/weeklyHooks.ts` composes the review client-side from existing fuel/train/biometrics reads (no Insights backend); its „heti tervjavaslat" prose is live since **proactive W1 (`mezo-h4wp.3`)** off `GET /api/proactive/weekly-suggestion`; **Memoir** real since **proactive W2 (`mezo-h4wp.4`)** — `data/insights/memoirHooks.ts` reads `GET /api/proactive/memoir` (404→null→honest „készül" state), demo reactions/anniversary/archive mock-only. Predictions/Experiments stay static demo modules (`insights.ts`) and remain **hidden** in real mode (§2). |
 | Backend (Java) | 🔶 companion only | `feature/companion` backs the chat (`ai_conversation`/`ai_message`); no `pattern`/`knowledge_fact` backend yet. |
 
 This is **intentional**. Insights is the Phase-3 "AI brain" surface; the single FE↔data boundary (`frontend/src/data/hooks.ts`) is pre-built so the real-mode swap is mechanical, exactly as already proven for biometrics/Train. There are **two distinct roadmap stages** the doc keeps separate:
@@ -50,13 +50,13 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 |---|---|---|---|---|
 | patterns | `/insights` (index) | `Patterns` | `PatternsPage` | shown |
 | weekly | `/insights/weekly` | `Weekly` | `WeeklyPage` | shown |
-| memoir | `/insights/memoir` | `Memoir` | `MemoirPage` | **hidden** → ghost |
+| memoir | `/insights/memoir` | `Memoir` | `MemoirPage` | **shown** → real (W2) |
 | knowledge | `/insights/knowledge` | `Knowledge` | `KnowledgeListPage` | shown |
 | chat | `/insights/chat` | `Chat` | `ChatPage` | shown |
 | predictions | `/insights/predictions` | `Predictions` | `PredictionsPage` | **hidden** → ghost |
 | experiments | `/insights/experiments` | `Experiments` | `ExperimentsPage` | **hidden** → ghost |
 
-**Honest surface (mezo-t16y.1):** the three Phase-3+ demo tabs — Memoir, Predictions, Experiments — carry only hand-authored demo fiction, so **in real mode the sub-nav hides them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; `InsightsSubNav` maps that instead of `INSIGHTS_TABS`). The routes still exist, so a **direct URL** to a hidden page renders an honest **`PhaseTeaserCard`** ("hamarosan" eyebrow + one-line "a proaktív réteggel érkezik" copy) instead of the fiction — the page components early-return the teaser when `!isMockMode()`. Mock mode keeps all 7 tabs + full demo.
+**Honest surface (mezo-t16y.1 · proactive W2):** the Phase-3+ demo tabs carried only hand-authored demo fiction, so **in real mode the sub-nav hid them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; `InsightsSubNav` maps that instead of `INSIGHTS_TABS`). **Since proactive W2 (`mezo-h4wp.4`) Memoir has real data and left `PHASE3_TAB_IDS`** — it now shows in real mode (5 tabs: Patterns/Weekly/Memoir/Knowledge/Chat). Only **Predictions + Experiments** remain in `PHASE3_TAB_IDS` (hidden in real mode). The routes still exist, so a **direct URL** to a still-hidden page renders an honest **`PhaseTeaserCard`** ("hamarosan" eyebrow + one-line "a proaktív réteggel érkezik" copy) instead of the fiction — the two remaining ghost pages early-return the teaser when `!isMockMode()`. Mock mode keeps all 7 tabs + full demo.
 
 The shell `InsightsSection` (`frontend/src/features/insights/pages/InsightsSection.tsx`) renders a `page-header` (`Eyebrow brand "Insights"` + `PageTitle` tracking the active tab's label, derived from `pathname.split('/')[2]`), a **decorative, handler-less** settings `chip` (`aria-label="Insights beállítások"`), the sticky `InsightsSubNav` (`aria-label="Insights alnavigáció"`), and an `<Outlet/>`.
 
@@ -85,9 +85,11 @@ A big `score` `/100` with a `delta` label, a bordered list of `weekly.items` (la
 - **Real:** the review is **composed client-side** from the user's own data (no Insights backend — see §3) with a **documented deterministic score** (§4 / the formula in `weeklyHooks.ts:146-154`). `deltaLabel` becomes `'vs előző hét'`; `title` date-derives (`Hét N áttekintés · …`). **Since proactive W1 (`mezo-h4wp.3`) the tervjavaslat card is LIVE:** `weeklySuggestion` fetches the generated plan prose from `GET /api/proactive/weekly-suggestion` (via `weeklySuggestionApi`, `['weeklySuggestion', start]`, `retry:false`); when present the card renders it, and the inert **"Elfogad" / "Hangoljuk"** buttons are **hidden** (`mode !== 'mock'`, `WeeklyPage.tsx:66-71` — false affordance). On the **404** (no prior-week narrative memory yet) `weeklySuggestion` is **null** → the card falls back to the honest placeholder *"A társ heti tervjavaslata hamarosan."* — the D′ null-path is now the **degraded** path, not the default. Details: [`proactive.md` §2/§5.5](proactive.md).
 - **Honest null-state:** when no sub-score has data the `score` is **null** and the page renders the patterns-precedent **„tanulom"** placeholder (*"még gyűjtöm az adatokat a heti értékeléshez"*, `WeeklyPage.tsx:27-35`) instead of a fabricated number; `delta` is likewise null when either week's score is missing. The **Súly trend** row is trend-only (goal-ward arrow) and is **excluded from the score**.
 
-### 2.3 Memoir (`pages/MemoirPage.tsx`) — **real-mode: honest ghost**
-Real mode early-returns a `PhaseTeaserCard text="A heti memoirt a társ írja majd — a proaktív réteggel érkezik."` (the guard sits AFTER `useInsights()`/`useState` to respect the rules of hooks). Mock mode renders the full demo:
-A literary weekly narrative. `memoir-card` with radial glow, bookmark eyebrow + `memoir.week`, display title, long `body` prose, an **Anchors** row rendering `RefTag` per `memoir.anchor` (`[kind] label`). Four reaction toggles (👍 Like / Love / Save / Dismiss) backed by a local `Record<ReactionKey, boolean>` — **local-only**. Below: an "Évforduló · 1 hónap" card (`anniversaryNote`) and a static "Memoir archive · 17 darab →" footer (inert).
+### 2.3 Memoir (`pages/MemoirPage.tsx`) — **REAL dual-mode since proactive W2 (`mezo-h4wp.4`)**
+The companion's literary weekly narrative. Reads `useMemoir()` (`data/insights/memoirHooks.ts`, exported via the `hooks.ts` barrel) → `{ memoir: Memoir | null; anniversaryNote: string | null; mode }`. The `PhaseTeaserCard` guard is **gone** — the page now renders on real data.
+- **The memoir card** (both modes when a memoir exists): `memoir-card` with radial glow, bookmark eyebrow + `Heti memoir · {memoir.week}`, display title, long `body` prose, and an **Anchors** row rendering `RefTag` per `memoir.anchors` (`[kind] label`). Real mode's `memoir.week` is a **client-derived label** `Hét N · …` (from the server `weekStart` via `isoWeekNumber`/`deriveWeekTitle`); the anchors are the code-collected, model-selected `Memory`/`Pattern` refs off `GET /api/proactive/memoir` (owned by the proactive layer — [`proactive.md` §2/§5.6](proactive.md)).
+- **Honest null-state (real mode):** on the **404** (no narrative memory in the last completed week) or while loading, `memoir` is **null** → the page renders an honest placeholder card (eyebrow `Heti memoir` + *"Az első memoir a hét zárásakor készül el."*), never demo fiction. Mock always has the seed, so a null memoir only ever occurs in live mode.
+- **Mock-only demo extras:** the four reaction toggles (👍 Like / Love / Save / Dismiss, local `Record<ReactionKey, boolean>` — unpersisted), the "Évforduló · 1 hónap" card (`anniversaryNote`), and the static "Memoir archive · 17 darab →" footer all wrap in `mode === 'mock' ? (…) : null` — **hidden in live mode** (unpersisted interactivity / no backend = false affordance; the Weekly „Elfogad/Hangoljuk" precedent). Persisted reactions are a filed follow-up; anniversary + archive are a deferred epic ([`proactive.md` §9 decision o](proactive.md)). Mock render is byte-identical to Phase 1.
 
 ### 2.4 Knowledge (`pages/KnowledgeListPage.tsx`) — **real dual-mode since companion V1.2**
 The L2 confirm surface of the companion's fact memory ([`companion.md`](companion.md) §4). Two sections:
@@ -126,7 +128,7 @@ View (PatternsPage, WeeklyPage, …)
 
 Contrast with a real-mode feature (e.g. `useWeight` in `weightHooks.ts` / `useSleep` in `hooks.ts:79`) which switches on `isMockMode()` between static `initialData` and a real `*Api` call over `apiFetch`. The Insights hooks have **none of that machinery** — no TanStack Query, no `initialData`, no mutation, no mode switch:
 
-- `useInsights()` (`data/insights/insightsHooks.ts`) → `{ patterns, recentlyConfirmed, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports. **Since D′ it no longer returns `weekly`/`weeklySuggestion`** — `WeeklyPage` was the only consumer and now reads the dedicated `useWeekly()` (below).
+- `useInsights()` (`data/insights/insightsHooks.ts`) → `{ patterns, recentlyConfirmed, memoir, anniversaryNote, predictions, experiments }` — direct static re-exports. **Since D′ it no longer returns `weekly`/`weeklySuggestion`** (moved to `useWeekly`), and **since W2 its `memoir`/`anniversaryNote` fields are no longer consumed** — `MemoirPage` moved to the dedicated dual-mode `useMemoir()` (below), the same split `useWeekly` did. The two live `useInsights` consumers left are `PredictionsPage` (`predictions`) + `ExperimentsPage` (`experiments`) — the two still-ghosted tabs; `memoir`/`anniversaryNote` survive as fields only because `memoirHooks` re-imports the seed straight from `insights.ts`.
 - `useKnowledge()` (`data/insights/knowledgeHooks.ts` since V1.2) → dual-mode `{ facts, candidates, edges, activeCount, degraded, mode }` (`['knowledge']` `useDualQuery`; real fetches `GET /api/companion/fact` + `.../fact/candidate`, `edges` real-mode `[]`; mock = seed). Actions: `useKnowledgeActions()` → `{ toggle, decide, pending }`.
 
 **Exception — Chat swapped at companion V0.4:** `useChat()` + `useChatActions()` moved to
@@ -153,7 +155,9 @@ WeeklyPage → useWeekly()  (data/insights/weeklyHooks.ts)
 
 The composition uses the `useRealQuery` idiom (the `fuelWeekHooks` pattern): mock resolves `null`, real fetches. Fuel rollups **share the F-P4 cache key** (`['fuelWeek', start]`); the raw train reads sit under an **own `['insightsWeekly',…]` namespace** so they don't collide with `trainHooks`' keys (which cache MAPPED domain shapes). The **`['weeklySuggestion', start]`** query (W1, proactive) is the one **bare `useQuery`** in the file — `enabled: !mock`, `retry: false`, 404→null — the rest are `useRealQuery`. **Known simplification:** `trainPlanned` uses the CURRENT gym+sport schedules for BOTH the current and previous week (no historical schedule read) — the schedule is treated as stable week-to-week (`weeklyHooks.ts:211`).
 
-The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir reactions) lives in **component-local `useState`** and evaporates on unmount; the knowledge Toggle + candidate decisions are REAL since V1.2. The single FE↔data boundary (`hooks.ts`) is intact — chat (V0.4), knowledge (V1.2), patterns (V3.1) and **weekly (D′, by composition)** all proved the swap; only Memoir/Predictions/Experiments remain static (and hidden in real mode), by design.
+**Exception — Memoir is REAL by a PROACTIVE BACKEND READ (W2, `mezo-h4wp.4`):** `useMemoir()` (`data/insights/memoirHooks.ts`, re-exported from the barrel) is a dual-mode `['memoir']` `useQuery` (`retry: false`): mock returns the `insights.ts` seed + `anniversaryNote` synchronously (`initialData`, `staleTime: Infinity`, no fetch), real fetches `GET /api/proactive/memoir` via `memoirApi.latest` (`memoirApi.ts`, `toMemoir` wire→FE `Memoir` with the client-derived `Hét N …` label), 404→null. Returns `{ memoir: Memoir | null; anniversaryNote: string | null; mode }` — the note is always null in live mode. Unlike Weekly (composed client-side) the memoir is a single proactive-owned backend read; the endpoint + generator live in [`proactive.md`](proactive.md).
+
+The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir reactions) lives in **component-local `useState`** and evaporates on unmount (in live mode the memoir reactions are hidden, not just ephemeral); the knowledge Toggle + candidate decisions are REAL since V1.2. The single FE↔data boundary (`hooks.ts`) is intact — chat (V0.4), knowledge (V1.2), patterns (V3.1), **weekly (D′, by composition)** and **memoir (W2, by a proactive read)** all proved the swap; only Predictions/Experiments remain static (and hidden in real mode), by design.
 
 ---
 
@@ -174,7 +178,7 @@ The remaining mock "interactivity" (pattern Confirm/Monitor/Reject, memoir react
 - `Pattern { id; category; categoryLabel; confidence; title; mechanism; evidence: string[]; critique; thinking? }` — 3 patterns `p1`–`p3` (`insights.ts`)
 - `MIN_PATTERN_CONFIDENCE = 0.65` and `patternCategoryColor()` (`insights.ts:10-14`)
 
-**Memoir** (`types.ts:375-381`): `MemoirAnchor { kind; label }`, `Memoir { week; title; body; anchors }` — single `memoir` + `anniversaryNote` string.
+**Memoir** (`types.ts:375-381`): `MemoirAnchor { kind; label }`, `Memoir { week; title; body; anchors }` — single `memoir` + `anniversaryNote` string. **Real mode (W2)** maps the same `Memoir` shape from the proactive `GET /api/proactive/memoir` (`MemoirResponse {weekStart, title, body, anchors[], generatedAt}` → `toMemoir`, the `week` label derived client-side); the FE type is reused **unchanged**, `anniversaryNote` stays a mock-only seed. Owned by the proactive layer, not Insights ([`proactive.md` §4](proactive.md); `api/feature/proactive/proactive.yml`).
 
 **Weekly** (`types.ts:406-408`): `WeeklyTrend = 'up'|'down'|'flat'`, `WeeklyItem { label; value; trend }`, `WeeklyReview { title; score; delta; items }` — mock `weekly` + `weeklySuggestion` seed. **Real mode (D′)** builds the same shape client-side in `useWeekly` (`weeklyHooks.ts`), returning `WeeklyView { weekly; deltaLabel; weeklySuggestion: string|null; mode }`. Since **W1** the `weeklySuggestion` field is the ONE part of `WeeklyView` that comes from a real backend read (the proactive `GET /api/proactive/weekly-suggestion` → `prose` string, 404→null); everything else stays client-composed.
 
@@ -230,16 +234,19 @@ Multiple features narrate an off-screen **"pattern engine"** that Insights surfa
 Import the three hooks from the boundary — **never** from `@/data/insights/insights` directly (except the stateless helpers below):
 
 ```ts
-import { useInsights, useKnowledge, useChat, useWeekly } from '@/data/hooks'
+import { useInsights, useKnowledge, useChat, useWeekly, useMemoir } from '@/data/hooks'
 
-const { patterns, recentlyConfirmed,
-        memoir, anniversaryNote, predictions, experiments } = useInsights()
+const { patterns, recentlyConfirmed, predictions, experiments } = useInsights()  // memoir/anniversaryNote fields dead since W2
 const { facts, edges, activeCount } = useKnowledge()
 const { initialChat } = useChat()
 
 // Weekly (D′) — dual-mode; score/delta may be null (render the „tanulom" null-state),
 // weeklySuggestion is null in real mode (render the honest placeholder).
 const { weekly, deltaLabel, weeklySuggestion } = useWeekly()
+
+// Memoir (W2) — dual-mode; memoir is null in real mode on 404 (render the honest „készül" state),
+// anniversaryNote is mock-only (always null in live mode).
+const { memoir, anniversaryNote, mode } = useMemoir()
 ```
 
 Two pure helpers may be imported straight from the data module (stateless constants/utils, not data): `MIN_PATTERN_CONFIDENCE` and `patternCategoryColor` from `@/data/insights/insights`; `factCategoryColor` and `FACT_CATEGORIES` from `@/data/insights/knowledge`.
@@ -278,11 +285,12 @@ The boundary is **engineered for this swap**: rewrite `useInsights`/`useKnowledg
 All tests are **frontend Vitest** (no backend tests exist). They assert **verbatim Hungarian copy + mock counts + local interactivity** — i.e. they pin the mock as a contract.
 
 - **Data-layer:** `frontend/src/data/insights/insightsData.test.tsx` (3 patterns all ≥ floor; `p1` critique; weekly score / 4 items; memoir title + 3 anchors; `recentlyConfirmed`×3; 4 predictions w/ validated `actual`; active experiment; `patternCategoryColor('response')`). `frontend/src/data/insights/chatData.test.tsx` (3 msgs assistant→user→assistant; tool/ref shapes). *(Knowledge has no dedicated `data/` test.)*
-- **Views:** `pages/{PatternsPage,WeeklyPage,MemoirPage,KnowledgeListPage,ChatPage,PredictionsPage,ExperimentsPage}.test.tsx`, plus `components/PatternCard.test.tsx`. `WeeklyPage.test.tsx` has real-mode describes for the „tanulom" null-state and, since **W1**, a case asserting the live suggestion prose renders **without** the inert „Elfogad/Hangoljuk" buttons.
+- **Views:** `pages/{PatternsPage,WeeklyPage,MemoirPage,KnowledgeListPage,ChatPage,PredictionsPage,ExperimentsPage}.test.tsx`, plus `components/PatternCard.test.tsx`. `WeeklyPage.test.tsx` has real-mode describes for the „tanulom" null-state and, since **W1**, a case asserting the live suggestion prose renders **without** the inert „Elfogad/Hangoljuk" buttons. `MemoirPage.test.tsx` gained a **`(real mode)` describe** (since **W2**): with an MSW memoir fixture it renders the real title/body/anchors and does NOT render reactions/anniversary/archive; on the default 404 it renders the honest „készül" placeholder, not the demo fiction — the `(mock mode)` describe is unchanged.
 - **Weekly hook (dual-mode):** `data/insights/weeklyHooks.test.tsx` — real-mode composition/null-state cases + (W1) `weeklySuggestion` served from the GET / kept null on the default 404 (MSW `/api/proactive/weekly-suggestion` defaults to 404).
+- **Memoir hook (dual-mode, W2):** `data/insights/memoirHooks.test.tsx` (3) — real mode maps the server memoir with a derived `Hét N …` week label (anniversaryNote null, mode live); returns null memoir on the default 404; mock returns the seed + anniversaryNote without fetching (MSW `/api/proactive/memoir` defaults to 404).
 - **`ChatPage.test` gotcha** (documented in-file): `userEvent.type` deadlocks under `vi.useFakeTimers()`; the test uses `fireEvent.change` + `fireEvent.keyDown` and `vi.advanceTimersByTime(1300)` to exercise the 1200 ms canned-reply timer.
-- **Nav/shell:** `insights.nav.test.tsx` (**split into `(real mode default)` + `(mock mode)` describes** — real: lands on Patterns, Weekly link works, Memoir hidden; mock: Memoir navigation renders the demo), `InsightsSubNav.test.tsx` (**mock describe = 7 tabs; real describe = 4 tabs, Phase-3 tabs hidden**); plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark.
-- **Ghost pages:** `MemoirPage.test.tsx` / `PredictionsPage.test.tsx` / `ExperimentsPage.test.tsx` each carry a `(mock mode)` describe (the original demo assertions, unchanged) + a `(real mode)` describe asserting the `hamarosan` ghost + verbatim teaser copy and the **absence** of the demo fiction. Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
+- **Nav/shell:** `insights.nav.test.tsx` (**split into `(real mode default)` + `(mock mode)` describes** — real: lands on Patterns, Weekly link works, **Memoir link works** (since W2, was "Memoir hidden"); mock: Memoir navigation renders the demo), `InsightsSubNav.test.tsx` (**mock describe = 7 tabs; real describe = 5 tabs since W2** — only Predictions/Experiments hidden); plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark.
+- **Ghost pages (Predictions/Experiments only since W2):** `PredictionsPage.test.tsx` / `ExperimentsPage.test.tsx` each carry a `(mock mode)` describe (the original demo assertions, unchanged) + a `(real mode)` describe asserting the `hamarosan` ghost + verbatim teaser copy and the **absence** of the demo fiction. `MemoirPage.test.tsx` no longer asserts a ghost — its real-mode describe now asserts the real memoir / honest null-state (above). Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
 
 **Commands** (run from `frontend/`):
 ```bash
@@ -298,15 +306,15 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 - **Mock-only, intentionally** — Insights is the Phase-3 brain surface; the FE↔data boundary (`hooks.ts`) is pre-built for a mechanical real-mode swap, matching biometrics/Train.
 - **Two roadmap stages, do not conflate:** (a) Phase-2 Insights work is now **D′** (deterministic Weekly + honest surface, `mezo-t16y.1` — the old seed-only Slice D was dropped as superseded on 2026-07-04); (b) Phase-3 = the actual AI (Spring AI/pgvector/RAG) — ✅ shipped (`mezo-fnnq`, see `companion.md`).
-- **All interactivity is local/ephemeral:** pattern Confirm/Monitor/Reject, knowledge Toggle, memoir reactions, chat send — none persist. These are the **validation/feedback loops to wire to the backend** in Phase 3.
+- **All interactivity is local/ephemeral:** pattern Confirm/Monitor/Reject, knowledge Toggle, memoir reactions, chat send — none persist. Knowledge Toggle + candidate decisions + pattern decisions are REAL since V1.2/V3.1; **memoir reactions are now hidden entirely in live mode (W2)** rather than shown-but-ephemeral (false affordance). The rest are the **validation/feedback loops to wire to the backend**.
 - **Chat is fully faked:** `setTimeout` + keyword branch on `"fáradt"`; `"Gemini 3.1 Pro"`, `"23 facts active"`, `"L4 aktív"`, `"60-day acc 68%"` are **hard-coded strings**, not derived. The named tool calls are illustrative, not real endpoints.
 - **Two overlapping "insight" types:** rich `Pattern` (Insights tab) vs lightweight `TrendInsight` (`InsightCard`, embedded in Goals/Sleep, `types.ts:157-158`). And **two category enums** that overlap but differ: `PatternCategory` (`physiology|trigger|response`) vs `FactCategory` (`physiology|preference|trigger|tendency|goal_state`). Phase 3 must decide whether to unify.
 - **`MIN_PATTERN_CONFIDENCE = 0.65`** is a hard-coded FE constant — should become backend config (`configuration_conventions.md`) when the engine is real.
 - **Weekly's REVIEW is real by CLIENT-SIDE composition, its SUGGESTION by the proactive backend (D′ `mezo-t16y.1` + W1 `mezo-h4wp.3`):** `useWeekly` composes the review (score + items) from existing fuel/train/biometrics reads — cheaper than an Insights backend and honest (real numbers or the „tanulom" null-state, never fabricated). The **score formula is deterministic + documented** (§4); its constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) are FE `const`s to **promote to backend config** — same trajectory as `MIN_PATTERN_CONFIDENCE`. **W1 did NOT promote them** (kept them FE consts to stay in scope; a small follow-up bd issue owns the promotion — the proactive epic files it). **Known simplification:** both weeks use the CURRENT schedules for `trainPlanned` (no historical schedule read, §3). **`weeklySuggestion` is now LIVE in real mode (W1)** — the generated plan prose from `GET /api/proactive/weekly-suggestion` (404→null→the honest placeholder); it is no longer the honest-null-only path. The review composition still adds only one Train op (`listWorkouts`, §4) and no Insights endpoint/table; the suggestion endpoint is proactive-owned ([`proactive.md`](proactive.md)).
 - **`useKnowledge` is shared across Insights + Me tabs** (§5.1) — co-design any knowledge backend for both.
 - **Cross-domain pattern IDs** (`P2`/`P3`) are referenced as mock copy in Sleep/Fuel/Train/Goals — making them real requires a shared pattern-engine service with stable IDs (§5.4).
-- **Inert affordances:** the settings chip, "Memoir archive →", "+ Új kísérlet javasol Mezo", the Weekly "Elfogad/Hangoljuk" pair (still handler-less — but since **W1** these are **hidden in live mode** `mode !== 'mock'`, shown only over the mock seed prose; false-affordance rule), mic button — all handler-less.
-- **Honest surface (mezo-t16y.1):** rather than ship demo fiction in production, real mode **hides** Memoir/Predictions/Experiments from the sub-nav (`visibleInsightsTabs()`) and their pages render a `PhaseTeaserCard` ghost — a direct URL never shows fabricated content. Ghost guards sit AFTER the `useInsights()`/`useState` calls (rules of hooks). When Phase 3 gives these surfaces real data, drop the `PHASE3_TAB_IDS` entries + the per-page guards.
+- **Inert affordances:** the settings chip, "+ Új kísérlet javasol Mezo", the Weekly "Elfogad/Hangoljuk" pair and the **Memoir reactions + "Memoir archive →" footer + anniversary card** (all still handler-less/unpersisted — but since **W1/W2** they are **hidden in live mode** `mode !== 'mock'`, shown only over the mock seed; false-affordance rule), mic button — all handler-less.
+- **Honest surface (mezo-t16y.1 · W2):** rather than ship demo fiction in production, real mode **hides** the still-ghosted tabs from the sub-nav (`visibleInsightsTabs()`) and their pages render a `PhaseTeaserCard` ghost — a direct URL never shows fabricated content. **Since proactive W2, Memoir has real data and left `PHASE3_TAB_IDS`** — only Predictions/Experiments remain hidden. Ghost guards sit AFTER the `useInsights()`/`useState` calls (rules of hooks). When P (predictions/experiments) ships real data, drop the last two `PHASE3_TAB_IDS` entries + the per-page guards — Memoir is the worked example (drop the entry, remove the guard, render real + honest null-state, keep unpersisted extras mock-only).
 
 ---
 
@@ -314,9 +322,9 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 **Feature (`frontend/src/features/insights/`):**
 - `InsightsSection.tsx` — shell (header + subnav + outlet)
-- `InsightsSubNav.tsx` — sticky nav (`NavLink`), maps `visibleInsightsTabs()` (7 in mock, 4 in real)
-- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end) + `visibleInsightsTabs()` (real-mode Phase-3 filter, `PHASE3_TAB_IDS`)
-- `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 sub-tabs (Memoir/Predictions/Experiments early-return the ghost in real mode)
+- `InsightsSubNav.tsx` — sticky nav (`NavLink`), maps `visibleInsightsTabs()` (7 in mock, **5 in real** since W2)
+- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end) + `visibleInsightsTabs()` (real-mode Phase-3 filter, `PHASE3_TAB_IDS = {predictions, experiments}` — memoir left at W2)
+- `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 sub-tabs (MemoirPage real since W2 with an honest null-state; only Predictions/Experiments early-return the ghost in real mode)
 - `components/PhaseTeaserCard.tsx` — honest "hamarosan" ghost for hidden Phase-3 tabs (direct-URL guard)
 - `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject
 - `components/ChatMessage.tsx` — chat bubble + tool/ref rows
@@ -328,8 +336,10 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `chat.ts` — `initialChat`
 - `weeklyHooks.ts` — **`useWeekly` (D′ + W1)**: dual-mode client-side composition + the pure rollup fns (`deriveWeekMetrics`/`deriveItems`/`deriveScore`/`trendOf`) + score constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`); the `weeklySuggestion` real branch fetches the proactive GET (W1)
 - `weeklySuggestionApi.ts` — **W1** `weeklySuggestionApi.get(date)` → proactive `GET /api/proactive/weekly-suggestion` (wire → `prose` string, 404→null)
-- `insightsHooks.ts` — `useInsights` (no longer returns `weekly`/`weeklySuggestion` since D′)
-- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`** (the boundary / Phase-3 swap point)
+- `memoirHooks.ts` — **`useMemoir` (W2)**: dual-mode `['memoir']` read (mock seed no-fetch / real `GET /api/proactive/memoir`, 404→null); returns `{ memoir, anniversaryNote, mode }`
+- `memoirApi.ts` — **W2** `memoirApi.latest()` → proactive `GET /api/proactive/memoir` (wire → FE `Memoir` via `toMemoir`, `Hét N …` week label derived client-side)
+- `insightsHooks.ts` — `useInsights` (no longer returns `weekly`/`weeklySuggestion` since D′; its `memoir`/`anniversaryNote` fields no longer consumed since W2 — only `predictions`/`experiments` are live)
+- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`** (the boundary / Phase-3 swap point)
 - `types.ts:349-418` — all Insights/Knowledge/Chat types
 - Tests: `insightsData.test.tsx`, `chatData.test.tsx`
 
@@ -348,4 +358,4 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `docs/milestones/roadmap.md:12-13` (Slice D remaining; Phase-3 AI brain)
 - House standards: `docs/references/{api_contract_conventions,liquibase_conventions,java_package_structure,spring_patterns,error_handling,configuration_conventions,testing_standards,integration_test_framework}.md`
 
-**Confirmed absent (Phase-3 gap):** no `api/feature/insights|knowledge|chat`, no `backend/**` Java for any Insights domain, no Liquibase changeset. **Weekly (D′) has a real-mode hook path but no Insights backend** — it composes over other features' contracts (Fuel/Train/biometrics) client-side.
+**Confirmed absent (Phase-3 gap):** no `api/feature/insights|knowledge|chat`, no `backend/**` Java for any Insights domain, no Liquibase changeset. **Weekly (D′) has a real-mode hook path but no Insights backend** — it composes over other features' contracts (Fuel/Train/biometrics) client-side. **Memoir (W2) has a real-mode hook path over a PROACTIVE-owned backend** (`GET /api/proactive/memoir` — not an Insights endpoint; the `memoir` table + generator live in `feature/proactive`, see [`proactive.md`](proactive.md)).

@@ -3,11 +3,13 @@ package io.mrkuhne.mezo.feature.proactive;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
+import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -20,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 class ProactiveApiIT extends ApiIntegrationTest {
 
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
+    @Autowired private MemoirPopulator memoirPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -88,6 +91,41 @@ class ProactiveApiIT extends ApiIntegrationTest {
     void testGetWeeklySuggestion_shouldReturn404_whenNoPriorWeekMemory() {
         String body = getForBody(
                 "/api/proactive/weekly-suggestion", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testGetMemoir_shouldReturnLatestPersistedRow_whenOneExists() {
+        LocalDate monday = LocalDate.now().with(
+                java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        memoirPopulator.memoir(ownerId(), monday.minusWeeks(1));
+
+        MemoirResponse memoir = getForBody(
+                "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.OK, MemoirResponse.class);
+
+        assertThat(memoir.getTitle()).isEqualTo("Teszt memoir");
+        assertThat(memoir.getAnchors()).hasSize(1);
+    }
+
+    @Test
+    void testGetMemoir_shouldLazilyGenerateLastCompletedWeek_whenNoneExists() {
+        LocalDate lastWeek = LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+                .minusWeeks(1);
+        dailySummaryPopulator.summary(ownerId(), lastWeek.plusDays(1), "Múlt heti nap.");
+
+        MemoirResponse memoir = getForBody(
+                "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.OK, MemoirResponse.class);
+
+        assertThat(memoir.getWeekStart()).isEqualTo(lastWeek);
+        assertThat(memoir.getTitle()).isEqualTo("Fake memoir");   // the un-scripted fake default
+    }
+
+    @Test
+    void testGetMemoir_shouldReturn404_whenNoMemoirAndNoMemory() {
+        String body = getForBody(
+                "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
