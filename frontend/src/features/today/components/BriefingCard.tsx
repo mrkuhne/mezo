@@ -20,7 +20,7 @@ export function BriefingCard({
           {demo ? (
             <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Demo tartalom</span>
           ) : (
-            <span className="label-mono" style={{ fontSize: 9 }}>Confidence {Math.round(briefing.confidence * 100)}%</span>
+            <span className="label-mono" style={{ fontSize: 9 }}>Confidence {Math.round((briefing.confidence ?? 0) * 100)}%</span>
           )}
         </div>
         <div className="col gap-md mt-md briefing-body">

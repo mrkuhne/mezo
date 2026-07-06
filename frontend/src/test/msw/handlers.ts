@@ -165,6 +165,11 @@ export const handlers = [
 
   http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),
 
+  // Proactive briefing (B1.2) — default: honest 404 "no generated briefing yet", so Today
+  // tests keep rendering the labelled static fallback. Tests with a real briefing override
+  // with server.use(http.get(..., () => HttpResponse.json(fixture))).
+  http.get(`${API_BASE}/api/proactive/briefing`, () => new HttpResponse(null, { status: 404 })),
+
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
   http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
 
