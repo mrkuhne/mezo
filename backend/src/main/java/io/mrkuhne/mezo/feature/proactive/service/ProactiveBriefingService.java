@@ -54,8 +54,10 @@ public class ProactiveBriefingService {
     /**
      * B1.2 staleness rule (decided in-slice): a sleep_log with date >= day-1 created after
      * generated_at means the sleep-first input (FR-2.1.1) was missing from the prose —
-     * soft-delete + regenerate, carrying regen_count + 1, capped per day. A failed
-     * regeneration falls back to the still-live old row (never a blank morning).
+     * soft-delete + regenerate, carrying regen_count + 1, capped per day. If regeneration
+     * fails, {@link #getBriefing} throws a 404 that rolls its @Transactional back, undoing the
+     * delete+flush — the old row is restored intact and the next request retries; only this
+     * request serves 404 (never a permanently blank morning).
      */
     private BriefingEntity refreshIfStale(UUID userId, LocalDate day, BriefingEntity existing) {
         int cap = properties.briefing().regenCapPerDay();
@@ -73,9 +75,9 @@ public class ProactiveBriefingService {
         briefingRepository.flush();            // free the partial-unique slot BEFORE the insert
         BriefingEntity fresh = briefingGenerator.generate(userId, day);
         if (fresh == null) {
-            // regeneration failed (LLM answer unusable) — resurrect nothing; the old row is
-            // gone but generate() also returned null only for unusable answers with the SAME
-            // gather that produced the old row. Serve honest absence for this request.
+            // regeneration failed (LLM answer unusable) — return null so getBriefing throws 404.
+            // That 404 rolls the whole @Transactional back, undoing the delete+flush above: the
+            // old row is restored intact and the next request retries. Only this request 404s.
             return null;
         }
         fresh.setRegenCount(nextCount);

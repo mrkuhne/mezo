@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
 import io.mrkuhne.mezo.feature.proactive.entity.BriefingEntity;
@@ -8,9 +9,11 @@ import io.mrkuhne.mezo.feature.proactive.repository.BriefingRepository;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveBriefingService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.BriefingPopulator;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -36,6 +39,7 @@ class BriefingFreshnessIT extends AbstractIntegrationTest {
     @Autowired private BriefingPopulator briefingPopulator;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private UserPopulator userPopulator;
 
     @Test
@@ -82,5 +86,18 @@ class BriefingFreshnessIT extends AbstractIntegrationTest {
         BriefingEntity live = briefingRepository.findByCreatedByAndBriefingDate(user, DAY).orElseThrow();
         assertThat(live.getId()).isEqualTo(capped.getId());
         assertThat(live.getRegenCount()).isEqualTo(2);
+    }
+
+    @Test
+    void testGetBriefing_shouldServe404AndPreserveOldRow_whenRegenerationFails() {
+        UUID user = userPopulator.createUser("fresh-fail@test.local").getId();
+        dailySummaryPopulator.summary(user, DAY.minusDays(1), "Tegnap séta volt.");
+        BriefingEntity stale = briefingPopulator.briefing(user, DAY);
+        sleepLogPopulator.createSleepLog(user, DAY, new java.math.BigDecimal("7.4"), 4);
+        // script an UNPARSEABLE briefing answer via a check-in note sentinel -> generate() returns null
+        checkInPopulator.createCheckIn(user, DAY, "06:30", 4, 2, "[fake-briefing:{\"eyebrow\":}]");
+
+        assertThatThrownBy(() -> briefingService.getBriefing(user, DAY))
+                .isInstanceOf(SystemRuntimeErrorException.class);
     }
 }
