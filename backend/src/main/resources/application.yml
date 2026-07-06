@@ -120,6 +120,10 @@ mezo:
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
     companion:
       enabled: true
+    # Proactive layer (mezo-h4wp) — generated briefing (B1.1+). Presupposes the companion
+    # switch: proactive beans condition on BOTH (they call the CompanionLlm port).
+    proactive:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -283,6 +287,11 @@ mezo:
       max-retries: 1
       # Prescription-med terms the clinical check guards (accent-folded match; dose-CHANGE verbs only)
       rx-terms: [retatrutid, reta, tirzepatid, mounjaro, szemaglutid, ozempic, wegovy]
+  proactive:
+    briefing:
+      # How many finished days of narrative memory (daily_summary) the briefing gather reads;
+      # doubles as the emptiness gate: zero summaries in the window -> no briefing (honest 404)
+      past-days: 7
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

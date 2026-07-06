@@ -70,6 +70,15 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern REVISE_SENTINEL =
             Pattern.compile("\\[fake-revise:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of BriefingGenerator.BRIEFING_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
+     *  Drift is caught loudly by BriefingGeneratorIT (echo answer -> parse fails -> null row). */
+    public static final String BRIEFING_MARKER_MIRROR = "REGGELI-BRIEFING-FELADAT";
+
+    /** Scripted briefing (B1.1): {@code [fake-briefing:{…}]} planted via a check-in note. */
+    public static final Pattern BRIEFING_SENTINEL =
+            Pattern.compile("\\[fake-briefing:(\\{.*?\\})]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -84,6 +93,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         }
         if (systemPrompt.startsWith(DailySummaryService.SUMMARY_MARKER)) {
             return summaryAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(BRIEFING_MARKER_MIRROR)) {
+            Matcher m = BRIEFING_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Fake briefing\",\"body\":[\"FAKE-BRIEFING-NARRATÍVA\"],\"refIndexes\":[]}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);
