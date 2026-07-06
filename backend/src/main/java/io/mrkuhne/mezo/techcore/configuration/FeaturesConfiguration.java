@@ -41,4 +41,7 @@ public class FeaturesConfiguration {
 
     /** B1.2 dawn briefing pre-generation job — techcore cron zone (schedule: mezo.proactive.briefing.cron). */
     public static final String BRIEFING_JOB_SWITCH = "mezo.techcore.cron.briefing-job.enabled";
+
+    /** W1 Monday weekly-suggestion job — techcore cron zone (schedule: mezo.proactive.weekly.cron). */
+    public static final String WEEKLY_SUGGESTION_JOB_SWITCH = "mezo.techcore.cron.weekly-suggestion-job.enabled";
 }

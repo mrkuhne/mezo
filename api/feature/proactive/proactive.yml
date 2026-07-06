@@ -38,6 +38,33 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/weekly-suggestion:
+    get:
+      tags: [Proactive]
+      operationId: getWeeklySuggestion
+      summary: The companion's generated plan suggestion for the week containing the given day (lazily generated when the Monday cron has not produced it yet)
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: Any day of the wanted week (the FE sends its LOCAL date); defaults to the server's today. The week identity is the ISO Monday.
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: The persisted (or just-generated) weekly suggestion
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WeeklySuggestionResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No suggestion possible — no narrative memory (daily_summary) in the prior week. The FE keeps its honest placeholder.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     BriefingRef:
@@ -65,4 +92,13 @@ components:
           type: array
           items: { $ref: '#/components/schemas/BriefingRef' }
           description: Code-collected, model-SELECTED source references (never model-invented)
+        generatedAt: { type: string, format: date-time }
+    WeeklySuggestionResponse:
+      type: object
+      required: [weekStart, prose, generatedAt]
+      properties:
+        weekStart: { type: string, format: date }
+        prose:
+          type: string
+          description: Plain Hungarian plan-suggestion prose (smart tier; no markdown structure)
         generatedAt: { type: string, format: date-time }

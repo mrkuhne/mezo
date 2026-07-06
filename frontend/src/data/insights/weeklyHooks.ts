@@ -8,7 +8,10 @@
 //   fabricated number. Design: docs/superpowers/specs/2026-07-05-insights-weekly-honest-design.md.
 
 import { useQuery } from '@tanstack/react-query'
+import { ApiError } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
+import { localDateString } from '@/shared/lib/dates'
+import { weeklySuggestionApi } from '@/data/insights/weeklySuggestionApi'
 import { mealApi } from '@/data/fuel/mealApi'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { trainApi } from '@/data/train/trainApi'
@@ -153,7 +156,7 @@ export function deriveScore(m: WeekMetrics): number | null {
 export interface WeeklyView {
   weekly: { title: string; score: number | null; delta: number | null; items: WeeklyItem[] }
   deltaLabel: string
-  /** Mock: the seed prose. Real: null — the card renders the honest placeholder (proactive epic). */
+  /** Mock: the seed prose. Real: the generated tervjavaslat prose, or null (404) — the card renders the honest placeholder. */
   weeklySuggestion: string | null
   mode: 'mock' | 'live'
 }
@@ -186,6 +189,20 @@ export function useWeekly(): WeeklyView {
   const { data: sportSlots } = useRealQuery(['insightsWeekly', 'sportSchedule'], () => trainApi.sportSchedule())
   const { sleepLog } = useSleep()
   const { weightTrends } = useWeight()
+  // Proactive weekly tervjavaslat (W1) — real-only; 404 = no narrative memory yet ⇒ honest placeholder.
+  const suggestionQ = useQuery<string | null>({
+    queryKey: ['weeklySuggestion', start],
+    queryFn: async () => {
+      try {
+        return await weeklySuggestionApi.get(localDateString())
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 404) return null
+        throw e
+      }
+    },
+    enabled: !mock,
+    retry: false,
+  })
 
   if (mock) {
     return { weekly: mockWeekly, deltaLabel: 'vs hét 20', weeklySuggestion: mockWeeklySuggestion, mode: 'mock' }
@@ -224,7 +241,7 @@ export function useWeekly(): WeeklyView {
       items: deriveItems(cur, prev, weightRate),
     },
     deltaLabel: 'vs előző hét',
-    weeklySuggestion: null,
+    weeklySuggestion: suggestionQ.data ?? null,
     mode: 'live',
   }
 }

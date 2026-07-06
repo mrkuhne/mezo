@@ -161,4 +161,19 @@ describe('useWeekly (real mode)', () => {
     expect(result.current.weekly.score).toBeNull()
     expect(result.current.weekly.delta).toBeNull()
   })
+
+  it('serves the generated weeklySuggestion prose when the GET succeeds', async () => {
+    server.use(http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => HttpResponse.json({
+      weekStart: '2026-07-06', prose: 'Fókuszálj az alvásra ezen a héten.',
+      generatedAt: '2026-07-06T06:00:00Z',
+    })))
+    const { result } = renderHook(() => useWeekly(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.weeklySuggestion).toBe('Fókuszálj az alvásra ezen a héten.'))
+  })
+
+  it('keeps weeklySuggestion null on the default 404 (honest placeholder)', async () => {
+    const { result } = renderHook(() => useWeekly(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.mode).toBe('live'))
+    expect(result.current.weeklySuggestion).toBeNull()
+  })
 })

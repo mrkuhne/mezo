@@ -8,21 +8,26 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
   - api/feature/proactive/proactive.yml
   - backend/src/main/resources/db/changelog/1.0.0/script/202607061100_mezo-h4wp.1_create_briefing.sql
+  - backend/src/main/resources/db/changelog/1.0.0/script/202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
 related: [companion, today, insights, _platform-api-backend]
 ---
 
 # Proactive layer (briefing, weekly prose, heartbeat, predictions) — Feature Documentation
 
-> One-line: the Phase-4 layer where the companion **speaks first**. The **B stage is complete** —
-> the morning briefing is LIVE end-to-end: a `feature/proactive` package (behind
-> `mezo.feature.proactive.enabled`, dual-gated with the companion switch) with a `briefing` table,
-> a pure-code+one-LLM-call `BriefingGenerator`, a dawn `BriefingJob` cron, sleep-triggered capped
-> regeneration on the read path, and a `GET /api/proactive/briefing` the **Today card now renders**
-> — the companion's own morning words, zero demo copy (the „Demo tartalom" label survives only as
-> the honest fallback). **Status: backend 🟢 B1.2 (table + generator + dawn cron + hybrid freshness
-> + lazy read) · FE 🟢 B1.2 (Today card real, honest fallback) — the v1 exit criterion is met.**
-> The four value stages (B briefing → W weekly prose → H heartbeat → P predictions) and the 8-slice
-> map live in the roadmap; this doc tracks **what exists now**.
+> One-line: the Phase-4 layer where the companion **speaks first**. The **B stage is complete** and
+> the **W stage has begun — W1 (weeklySuggestion prose) is LIVE**. The morning briefing runs
+> end-to-end: a `feature/proactive` package (behind `mezo.feature.proactive.enabled`, dual-gated
+> with the companion switch) with a `briefing` table, a pure-code+one-LLM-call `BriefingGenerator`,
+> a dawn `BriefingJob` cron, sleep-triggered capped regeneration on the read path, and a
+> `GET /api/proactive/briefing` the **Today card now renders** — the companion's own morning words,
+> zero demo copy (the „Demo tartalom" label survives only as the honest fallback). **W1** adds a
+> second surface: a `weekly_suggestion` table + a **smart-tier** `WeeklySuggestionGenerator`, a
+> Monday-06:00 `WeeklySuggestionJob`, and a lazy `GET /api/proactive/weekly-suggestion` the
+> **Insights Weekly „heti tervjavaslat" card now renders** in real mode (404 = the FE's honest
+> placeholder). **Status: backend 🟢 B1.2 + 🟢 W1 · FE 🟢 B1.2 (Today card real) + 🟢 W1 (Weekly
+> card real, inert buttons hidden in live) — the v1 exit criterion is met and the weekly cadence has
+> started.** The four value stages (B briefing → W weekly prose → H heartbeat → P predictions) and
+> the 8-slice map live in the roadmap; this doc tracks **what exists now**.
 
 ## 1. Summary
 
@@ -30,7 +35,9 @@ The **proactive** layer is Phase-4: instead of answering when asked (the [compan
 chat), mezo starts the conversation — a morning briefing, a weekly memoir, an in-app heartbeat,
 predictions. It is built on the finished companion stack (V0.3 snapshot + V1.1 facts + V2.2 daily
 summaries) in 8 slices (epic `mezo-h4wp`); **B1.1 (`mezo-h4wp.1`) shipped the briefing spine;
-B1.2 (`mezo-h4wp.2`) took it live — dawn cron, sleep-triggered freshness, and the Today FE swap.**
+B1.2 (`mezo-h4wp.2`) took it live — dawn cron, sleep-triggered freshness, and the Today FE swap;
+W1 (`mezo-h4wp.3`) opened the W stage — the smart-tier weekly plan-suggestion, live on the Insights
+Weekly card.**
 
 **B1.1 (`mezo-h4wp.1`) — skeleton + briefing spine:**
 
@@ -85,6 +92,41 @@ B1.2 (`mezo-h4wp.2`) took it live — dawn cron, sleep-triggered freshness, and 
   synchronously ⇒ byte-identical Phase-1 fallback (§9 decision h). The FE `Briefing.confidence` went
   **optional** (server briefings carry none — the fabricated-number rule; §9 gotcha c).
 
+**W1 (`mezo-h4wp.3`) — weekly plan-suggestion prose (the W stage opens):**
+
+- **A second owned table** — `weekly_suggestion` (UUID PK, `created_by`, soft-delete; `week_start
+  date` = the **ISO Monday** the suggestion is FOR, `prose text` = plain HU, `generated_at`). A
+  **partial** unique index (one LIVE suggestion per user+week; soft-delete + reinsert = regeneration,
+  the `briefing` precedent) — but W1 has **no regeneration path** (weekly cadence, §9 decision i).
+- **`WeeklySuggestionGenerator`** — the same hybrid idiom, one tier up: a **pure-code gather**
+  composes the V0.3 `ContextSnapshotAssembler` (current state) + V1.1 facts block + **the prior
+  week's `daily_summary` narratives (strictly BEFORE `week_start`)** + the confirmed/monitored
+  pattern list → **ONE smart-tier `CompanionLlm.completeSmart` (Gemini Pro) call** → plain HU prose
+  (3-5 sentences, 2-3 actionable suggestions, invent-no-numbers, never suggest a med-dose change),
+  `strip()`ped and persisted. **Empty prior week OR blank answer ⇒ NO row** (honest absence);
+  existing row ⇒ returned untouched (idempotent, no LLM call). Gather = pure code, prose = pure LLM
+  (NFR-M-4) — the briefing split at the smart tier.
+- **A Monday-dawn cron** — `WeeklySuggestionJob` `@Scheduled` on `mezo.proactive.weekly.cron`
+  (**`0 0 6 * * MON`** — Monday 06:00 server zone) pre-generates the **CURRENT** week's suggestion
+  per user (gathered from the just-finished previous week — §9 decision j). Gated on a THIRD switch
+  `mezo.techcore.cron.weekly-suggestion-job.enabled` (`WEEKLY_SUGGESTION_JOB_SWITCH`) on top of the
+  dual gate; idempotent, per-user failures isolated; **no backfill** (a past week's suggestion is
+  never read — the lazy GET is the miss-recovery).
+- **A lazy read** — `GET /api/proactive/weekly-suggestion?date=` (contract fragment
+  `proactive.yml`): the week = `previousOrSame(MONDAY)` of `date ?? today`; persisted row or
+  lazy-generate; `null` ⇒ **404 `RESOURCE_NOT_FOUND`** (no prior-week narrative memory — the honest
+  empty state the FE placeholder covers).
+- **Fake sentinel** — `FakeCompanionLlm` gained a `[fake-weekly:…]` sentinel dispatched on a
+  **literal mirror** of `WEEKLY_SUGGESTION_MARKER` (`WEEKLY_MARKER_MIRROR` — the package-cycle rule,
+  §9 gotcha a); the fake's `completeSmart` default delegates to `complete`, so the marker dispatch
+  covers the smart-tier IT path (real smart routing = the V3.2-proven `GeminiCompanionLlm.completeSmart`).
+- **The FE swap (Insights Weekly card real)** — `useWeekly().weeklySuggestion`
+  (`data/insights/weeklyHooks.ts`) fetches the GET in real mode (`['weeklySuggestion', start]`,
+  404→null); the Weekly card renders the generated prose when present, else the D′ honest placeholder
+  *"A társ heti tervjavaslata hamarosan."*; the inert **„Elfogad / Hangoljuk"** buttons are **hidden
+  in live mode** (false affordance — §9 decision k), mock keeps them + byte-parity. Details:
+  [insights.md §2.2](insights.md).
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -94,13 +136,16 @@ B1.2 (`mezo-h4wp.2`) took it live — dawn cron, sleep-triggered freshness, and 
 | Cron (dawn pre-generation) | 🟢 B1.2 | `BriefingJob` 05:45, today-only per user (NO backfill — the lazy GET is the miss-recovery), failures isolated; third switch `briefing-job.enabled`. |
 | Read-path freshness (sleep-triggered regen) | 🟢 B1.2 | `refreshIfStale`: late `sleep_log` (`date >= day-1`, after `generated_at`) ⇒ soft-delete + regenerate, `regen_count` cap 2/day; failed regen ⇒ 404 + rollback restores the old row. |
 | Frontend (Today card swap) | 🟢 B1.2 | Today renders the generated briefing (real ref chips, no label); „Demo tartalom" survives only as the honest fallback. |
-| Weekly prose / heartbeat / predictions | ⛔ later slices | W/H/P stages — see the roadmap. |
+| Weekly suggestion (table + generator + Monday cron + lazy read) | 🟢 W1 | `weekly_suggestion` table (ISO-Monday identity, partial unique); smart-tier `WeeklySuggestionGenerator` (gather = snapshot + facts + prior-week summaries + patterns → ONE `completeSmart` call, honest-null); Monday-06:00 `WeeklySuggestionJob` (three-switch, no backfill); `GET /api/proactive/weekly-suggestion` (lazy; 404 = empty prior week). |
+| Frontend (Insights Weekly card swap) | 🟢 W1 | `useWeekly().weeklySuggestion` real (404→null); the Weekly card renders the generated prose, else the honest placeholder; „Elfogad/Hangoljuk" hidden in live. |
+| Memoir / heartbeat / predictions | ⛔ later slices | W2/H/P stages — see the roadmap. |
 
-**Driver:** `mezo-h4wp.2` (B1.2, on `mezo-h4wp.1`'s spine). **Design of record:**
+**Driver:** `mezo-h4wp.3` (W1, on `mezo-h4wp.1`'s spine; B1.2 = `mezo-h4wp.2`). **Design of record:**
 [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
-(§2 hybrid generation, §3-§4 briefing data model, §6 honest-numbers guardrails, §7 emptiness gate);
-slice map [`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
-§B1.1–§B1.2. Builds on the [companion](companion.md) stack (snapshot/facts/summaries).
+(§2 hybrid generation, §3-§4 briefing data model, §5 weekly suggestion, §6 honest-numbers guardrails,
+§7 emptiness gate); slice map
+[`docs/superpowers/plans/2026-07-06-proactive-roadmap.md`](../superpowers/plans/2026-07-06-proactive-roadmap.md)
+§B1.1–§B1.2 + §W1. Builds on the [companion](companion.md) stack (snapshot/facts/summaries/patterns).
 
 ## 2. User-facing behavior
 
@@ -118,6 +163,17 @@ card falls back to the **static Phase-1 demo copy behind the „Demo tartalom" l
 always this static card (byte-parity with Phase-1). The label is now the exception, not the rule.
 
 See [today.md §2](today.md) for the card in the context of the full Today screen.
+
+**Live since W1 — the Insights Weekly „Mezo · heti tervjavaslat" card.** On the Insights → Weekly
+sub-tab the plan-suggestion card now shows **the companion's own generated prose** for the week that
+is starting — 2-3 concrete, actionable suggestions grounded in the just-finished previous week's
+narrative memory, HIS confirmed facts, and HIS detected patterns. The Monday cron has usually already
+written it; if not, the first GET of the week generates it on the spot (lazy fallback). When there is
+no prior-week narrative memory yet (404) the card keeps the **honest placeholder** *"A társ heti
+tervjavaslata hamarosan."* — never a fabricated plan. In **live mode the inert „Elfogad / Hangoljuk"
+buttons are hidden** (they never did anything — false affordance); **mock mode** keeps the seed prose
++ both buttons (byte-parity). See [insights.md §2.2](insights.md) for the card in the context of the
+full Weekly review (the D′ score + item rows are unchanged).
 
 ## 3. Architecture & data flow
 
@@ -195,23 +251,76 @@ split (NFR-M-4). The prompt (`BRIEFING_MARKER` + HU rules: lead with poor sleep,
 close with 2-3 focus points, invent-no-numbers, never suggest med-dose changes) mirrors the
 companion clinical/honest-number guardrails.
 
-**Switch-gating.** `ProactiveController`, `ProactiveBriefingService`, `BriefingGenerator` (and the
-mapper via the services) are all `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH},
-havingValue = "true")` — **both** must be `true`. Either off ⇒ no proactive beans ⇒ the whole
-`/api/proactive/*` surface 404s (there's no controller to route to). The dual gate is structural,
-not a runtime check (§9 gotcha b).
+**The weekly-suggestion read (W1 — persisted row · lazy generate; NO staleness/regen):**
 
-**Ownership.** `BriefingEntity extends OwnedEntity` (soft-delete via `@SQLDelete`/`@SQLRestriction`);
-`created_by` is stamped from `CurrentUserId.get()` server-side, the finder is
-`findByCreatedByAndBriefingDate` (owner + soft-delete scoped). Standard auth spine
-([`_platform-api-backend.md`](_platform-api-backend.md); the companion precedent).
+```
+GET /api/proactive/weekly-suggestion?date=YYYY-MM-DD    (date optional)
+  → ProactiveController.getWeeklySuggestion(date)         controller/ProactiveController.java  (implements ProactiveApi)
+      currentUserId.get()  (JWT subject → UUID)
+  → ProactiveWeeklySuggestionService.getWeeklySuggestion(userId, date)   service:34  @Transactional
+      weekStart = previousOrSame(MONDAY) of (date != null ? date : LocalDate.now())   (ISO-Monday week identity)
+      findByCreatedByAndWeekStart(userId, weekStart)
+        .orElseGet(() -> generator.generate(userId, weekStart))          persisted row, else lazy-generate
+      null ⇒ throw SystemRuntimeErrorException(RESOURCE_NOT_FOUND, 404)   (no prior-week narrative memory)
+      → mapper.toWeeklySuggestionResponse(suggestion)                     (Instant → UTC OffsetDateTime)
+```
+
+**The Monday cron (W1 — `service/WeeklySuggestionJob.java`):**
+
+```
+@Scheduled(cron = "${mezo.proactive.weekly.cron}")   0 0 6 * * MON (Monday 06:00 server zone); three-switch bean
+  weekStart = previousOrSame(MONDAY) of LocalDate.now()   (the CURRENT week — its Monday IS today)
+  for each appUserRepository.findAll():
+     try  generator.generate(user.id, weekStart)          (current week only — no backfill)
+     catch → log.warn + continue                          (per-user isolation)
+```
+
+Idempotent (an existing row is returned untouched, no LLM call). **No catch-up loop and no
+staleness/regeneration path at all** — a weekly suggestion is written once at Monday dawn (or lazily
+on first open) and stands for the week (§9 decision i/j).
+
+**The weekly generator (`service/WeeklySuggestionGenerator.java`):**
+
+```
+generate(userId, weekStart)                             WeeklySuggestionGenerator.java:59  @Transactional
+  1. existing row? ⇒ return untouched                   (idempotent; NO LLM call)
+  2. gather(userId, weekStart)                           WeeklySuggestionGenerator.java:84  PURE CODE, LLM-free
+       priorWeek = daily_summary with summaryDate in [weekStart-7, weekStart)   (STRICTLY before week_start)
+       priorWeek.isEmpty() ⇒ return null                 ── THE EMPTINESS GATE (§9 gotcha d)
+       payload = ContextSnapshotAssembler.render(now)     (V0.3 current state — six HU blocks)
+               + KnowledgeFactService.renderPromptBlock   (V1.1 top-N confirmed facts)
+               + "ELŐZŐ HÉT NAPJAI" prior-week narratives (newest first)
+               + "MINTÁK" confirmed/monitored pattern titles + status (omitted when none)
+  3. companionLlm.completeSmart(PROMPT, payload)          ── ONE SMART-tier call (WEEKLY_SUGGESTION_MARKER prompt, Gemini Pro)
+  4. prose null / blank ⇒ return null                     ── unusable answer, NO row (§9 gotcha d)
+  5. saveAndFlush WeeklySuggestionEntity{prose=strip(), generatedAt=now truncated-to-µs}
+```
+
+The prompt (`WEEKLY_SUGGESTION_MARKER "HETI-TERVJAVASLAT"` + HU rules: 3-5 sentences, 2-3 actionable
+suggestions, plain prose no markdown, invent-no-numbers, never suggest a retatrutid/med-dose change)
+mirrors the briefing guardrails at the smart tier. The gather composes patterns via the companion
+`PatternRepository` (the V3.1/V3.2 Inbox rows) — a fourth companion read on top of the briefing's three.
+
+**Switch-gating.** `ProactiveController`, `ProactiveBriefingService`, `ProactiveWeeklySuggestionService`,
+`BriefingGenerator`, `WeeklySuggestionGenerator` (and the mapper via the services) are all
+`@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` — **both**
+must be `true`. Either off ⇒ no proactive beans ⇒ the whole `/api/proactive/*` surface 404s (there's
+no controller to route to). The two jobs (`BriefingJob`, `WeeklySuggestionJob`) each add a THIRD
+switch on top. The dual gate is structural, not a runtime check (§9 gotcha b).
+
+**Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` both `extend OwnedEntity` (soft-delete via
+`@SQLDelete`/`@SQLRestriction`); `created_by` is stamped from `CurrentUserId.get()` server-side, the
+finders (`findByCreatedByAndBriefingDate` / `findByCreatedByAndWeekStart`) are owner + soft-delete
+scoped. Standard auth spine ([`_platform-api-backend.md`](_platform-api-backend.md); the companion
+precedent).
 
 ## 4. Data model & API
 
-### Backend table (B1.1 + B1.2, 🟢)
+### Backend tables (B1.1 + B1.2 + W1, 🟢)
 
 Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h4wp.2_briefing_regen_count.sql`
-(both registered in `db/changelog/1.0.0/1.0.0_master.yml`):
++ `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql` (all registered in
+`db/changelog/1.0.0/1.0.0_master.yml`):
 
 - **`briefing`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
   CASCADE`, `is_deleted boolean default false`, `created_at timestamptz default now()`,
@@ -223,8 +332,16 @@ Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h
   `uq_briefing_created_by_briefing_date … where is_deleted = false` (one LIVE briefing per user+day;
   a soft-deleted row doesn't block regeneration — the staleness path soft-deletes + reinserts,
   carrying `regen_count + 1`) which doubles as the lookup index.
+- **`weekly_suggestion`** (W1) — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id)
+  ON DELETE CASCADE`, `is_deleted boolean default false`, `created_at timestamptz default now()`,
+  `week_start date not null` (the **ISO Monday** the suggestion is FOR), `prose text not null` (plain
+  HU), `generated_at timestamptz not null`. Uniqueness is a **partial unique index**
+  `uq_weekly_suggestion_created_by_week_start … where is_deleted = false` (one LIVE suggestion per
+  user+week; the `briefing` partial-unique precedent — a soft-deleted row could be regenerated, but
+  W1 has no regen path). **No `content` envelope, no `regen_count`** — a weekly suggestion is flat
+  prose written once (§9 decision i).
 
-### Entity + envelope
+### Entities + envelope
 
 `BriefingEntity` (`entity/BriefingEntity.java`) `extends OwnedEntity`, UUID `@GeneratedValue` id,
 soft-deleted; `content` maps as a typed jsonb via `@JdbcTypeCode(SqlTypes.JSON)` onto
@@ -234,53 +351,69 @@ label)` (ADR 0006 / `ProvenanceEnvelope` typed-jsonb precedent). The envelope **
 mirrors the FE Briefing shape MINUS `confidence` and `tone`** (§9 gotcha c). `refs` are code-
 collected candidates the model selected by index, never invented.
 
-### REST endpoint (contract-first — tag `Proactive` → `ProactiveApi`)
+`WeeklySuggestionEntity` (`entity/WeeklySuggestionEntity.java`) `extends OwnedEntity`, UUID
+`@GeneratedValue` id, soft-deleted; three flat columns `{LocalDate weekStart, String prose, Instant
+generatedAt}` — **no jsonb** (the suggestion is plain prose, no structured refs; the FE maps
+`wire → string`).
+
+### REST endpoints (contract-first — tag `Proactive` → `ProactiveApi`)
 
 Fragment `api/feature/proactive/proactive.yml`; `ProactiveController implements ProactiveApi`.
-Every non-2xx returns `SystemMessageList`. The path is protected (401 without a token).
+Every non-2xx returns `SystemMessageList`. The paths are protected (401 without a token).
 
 | Method + path | Returns | Status | Notes |
 |---|---|---|---|
 | `GET /api/proactive/briefing?date=` | `BriefingResponse` | 200 · 401 · 404 | `date` optional (FE sends its LOCAL date; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when no `daily_summary` in the past-days window (§9 gotcha d). |
+| `GET /api/proactive/weekly-suggestion?date=` | `WeeklySuggestionResponse` | 200 · 401 · 404 | `date` optional (any day of the wanted week; the week identity is its ISO Monday; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when the prior week has no `daily_summary` (§9 gotcha d) — the FE keeps its honest placeholder. |
 
 Schemas: `BriefingResponse{date, eyebrow, body[], refs[], generatedAt}` +
 `BriefingRef{kind, label}` — **no `confidence`, no `tone`** on the wire (§9 gotcha c). `refs[].kind`
 is the FE `RefTag` vocabulary (`WeightTrend|Goal|Workout|FuelDay|Medication|Sleep|Memory`).
+`WeeklySuggestionResponse{weekStart, prose, generatedAt}` — plain prose, no structured fields.
 
 ### Configuration
 
-`config/ProactiveProperties.java` (`@Validated`, binds `mezo.proactive.briefing.*`):
+`config/ProactiveProperties.java` (`@Validated`, binds `mezo.proactive.*` — nested `briefing` +
+`weekly` records):
 
-- **`past-days`** (`@Min(1) @Max(14)`, default **7**): how many finished days of narrative memory the
-  gather reads — and doubles as the **emptiness gate** (zero summaries in the window ⇒ no briefing ⇒ 404).
-- **`cron`** (`@NotBlank`, default `0 45 5 * * *`): the dawn `BriefingJob` schedule (server zone), before
-  the typical wake.
-- **`regen-cap-per-day`** (`@Min(0) @Max(5)`, default **2**): the per-user+day ceiling on
+- **`briefing.past-days`** (`@Min(1) @Max(14)`, default **7**): how many finished days of narrative
+  memory the briefing gather reads — and doubles as the **emptiness gate** (zero summaries ⇒ 404).
+- **`briefing.cron`** (`@NotBlank`, default `0 45 5 * * *`): the dawn `BriefingJob` schedule (server
+  zone), before the typical wake.
+- **`briefing.regen-cap-per-day`** (`@Min(0) @Max(5)`, default **2**): the per-user+day ceiling on
   sleep-triggered regenerations (`refreshIfStale`); 0 = never regenerate.
+- **`weekly.cron`** (`@NotBlank`, default **`0 0 6 * * MON`** — Monday 06:00 server zone): the
+  `WeeklySuggestionJob` schedule; the suggestion is FOR the week that is starting (§9 decision j).
 
-Plus the techcore job switch **`mezo.techcore.cron.briefing-job.enabled`** (`FeaturesConfiguration.BRIEFING_JOB_SWITCH`,
-default `true`) — the third `@ConditionalOnProperty` on the `BriefingJob` bean, on top of the
-companion+proactive dual gate; off ⇒ the cron bean does not exist (the lazy GET still serves).
+Plus the two techcore job switches, each the THIRD `@ConditionalOnProperty` on its job bean (on top
+of the companion+proactive dual gate; off ⇒ the cron bean does not exist, the lazy GET still serves):
+**`mezo.techcore.cron.briefing-job.enabled`** (`BRIEFING_JOB_SWITCH`) and
+**`mezo.techcore.cron.weekly-suggestion-job.enabled`** (`WEEKLY_SUGGESTION_JOB_SWITCH`), both default
+`true`.
 
 ## 5. Integrations
 
 Proactive is a **Phase-4 domain that reads from companion + the other features, never the reverse**
 (the roadmap coupling rule; the frozen ArchUnit cycle rule guards it).
 
-### 5.1 Proactive → Companion (✅ B1.1 wired — read-only, one-way)
-The generator composes three companion capabilities directly:
+### 5.1 Proactive → Companion (✅ B1.1 + W1 wired — read-only, one-way)
+The briefing generator composes three companion capabilities directly:
 `ContextSnapshotAssembler.render(userId, date)` (V0.3 today-block),
 `KnowledgeFactService.renderPromptBlock(userId)` (V1.1 top-N facts),
 `DailySummaryRepository.findByCreatedByAndSummaryDateGreaterThanEqualOrderBySummaryDateDesc(…)`
 (V2.2 narratives), and the `CompanionLlm.complete(system, user)` port for the one prose call.
-**Contract crossing the seam:** these read methods with explicit `userId` scoping; strictly one-way
-— no companion code imports proactive. This one-way rule is why the fake sentinel's marker is a
-literal mirror rather than an import (§9 gotcha a).
+**W1's `WeeklySuggestionGenerator` adds a fourth read** — `PatternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(…)`
+(the V3.1/V3.2 Inbox rows) — and calls the port's **`completeSmart`** variant (Pro tier) instead of
+`complete`. **Contract crossing the seam:** these read methods with explicit `userId` scoping;
+strictly one-way — no companion code imports proactive. This one-way rule is why the fake sentinels'
+markers are literal mirrors rather than imports (§9 gotcha a).
 
 ### 5.2 Proactive ↔ LLM provider (wired via companion, ADR 0008)
-All model access goes through the same `CompanionLlm` port (cheap tier — one `complete` call per
-briefing). Real `GeminiCompanionLlm` / test `FakeCompanionLlm` (the `[fake-briefing:{…}]`
-sentinel). Provider detail is hidden by the port; proactive adds no new adapter.
+All model access goes through the same `CompanionLlm` port — **cheap tier** (`complete`, one call per
+briefing) and **smart tier** (`completeSmart`, one call per weekly suggestion — the V3.2 Pro-tier
+routing). Real `GeminiCompanionLlm` / test `FakeCompanionLlm` (the `[fake-briefing:{…}]` +
+`[fake-weekly:…]` sentinels; the fake's `completeSmart` delegates to `complete`, so one dispatch
+covers both tiers). Provider detail is hidden by the port; proactive adds no new adapter.
 
 ### 5.3 Proactive ↔ API contract & backend platform (wired)
 On the contract-first pipeline ([`_platform-api-backend.md`](_platform-api-backend.md)):
@@ -297,6 +430,16 @@ Mock mode: `useBriefing` returns null synchronously (no fetch) ⇒ the static fa
 The seam type is the FE `Briefing` **minus** `confidence`/`tone` (the wire omits both — §9 gotcha c;
 `Briefing.confidence` is now optional to model that).
 
+### 5.5 Proactive → Insights Weekly FE (✅ W1 wired — real-only read)
+The Insights Weekly „Mezo · heti tervjavaslat" card ([insights.md §2.2](insights.md)) is the
+consumer. `useWeekly()` (`data/insights/weeklyHooks.ts`) fetches `GET /api/proactive/weekly-suggestion?date=<local>`
+via `weeklySuggestionApi.get` (`data/insights/weeklySuggestionApi.ts`, `wire → w.prose` string) in a
+real-only `useQuery` (`['weeklySuggestion', start]`, `enabled: !mock`, `retry: false`, 404→null) —
+the one bare `useQuery` in that otherwise-`useRealQuery` file (commented as such). `weeklySuggestion:
+string | null` joins the D′ `WeeklyView`; the card renders the prose or the honest placeholder, and
+the „Elfogad/Hangoljuk" buttons are hidden when `mode !== 'mock'`. Mock mode: `useWeekly` returns the
+seed prose synchronously (the query is disabled) ⇒ byte-parity.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -311,9 +454,17 @@ curl -s "http://localhost:8090/api/proactive/briefing?date=2026-07-06" \
   -H "Authorization: Bearer $TOKEN"
 # → { "date":"2026-07-06", "eyebrow":"…", "body":["…"], "refs":[{"kind":"Sleep","label":"regeneráció"}], "generatedAt":… }
 # → 404 SystemMessageList when there is no daily_summary in the window (honest empty state)
+
+curl -s "http://localhost:8090/api/proactive/weekly-suggestion?date=2026-07-06" \
+  -H "Authorization: Bearer $TOKEN"
+# → { "weekStart":"2026-07-06", "prose":"Ezen a héten…", "generatedAt":… }
+# → 404 SystemMessageList when the prior week has no daily_summary (the FE's honest placeholder)
 ```
 
-There is no FE consumer yet — B1.2 wires the Today card.
+The weekly suggestion needs at least one `daily_summary` in the **prior** week; for a keyless local
+run plant a `[fake-weekly:…]` sentinel via a prior-week check-in note (the `WeeklySuggestionGeneratorIT`
+pattern). **FE consumers:** the Today card (B1.2, [today.md](today.md)) and the Insights Weekly card
+(W1, [insights.md](insights.md)) both read these endpoints dual-mode.
 
 ## 7. How to extend it
 
@@ -324,19 +475,28 @@ There is no FE consumer yet — B1.2 wires the Today card.
   trigger beyond sleep (more `existsBy…` probes in `refreshIfStale`) or raise `regen-cap-per-day`.
   **To move the cron:** `mezo.proactive.briefing.cron` (never add a catch-up loop — a past morning is
   never read; §9 decision f).
-- **New proactive surface (W/H/P):** add a sibling `*Generator` + table + `*.yml` fragment in
-  `feature/proactive/`, gated on the same dual switch. Weekly prose (W) reuses the same gather idiom
-  at the smart tier (`CompanionLlm.completeSmart`).
-- **Prompt / ref-candidate tuning:** the prompt is `BriefingGenerator.PROMPT` (keep the
-  `BRIEFING_MARKER` prefix + its `FakeCompanionLlm` literal mirror in sync — §9 gotcha a); ref
-  candidates are `SNAPSHOT_CANDIDATES` + the per-summary `Memory` refs in `gather`.
+- **W1 shipped (weekly generator + Monday cron + FE swap) — the smart-tier template:** `WeeklySuggestionGenerator`
+  (pure-code `gather` at the smart tier, `completeSmart`, plain-prose output, honest-null),
+  `WeeklySuggestionJob` (`@Scheduled`, three-switch, current-week-only, per-user isolation) and the
+  real-only `useWeekly().weeklySuggestion` swap are the working templates for W2/H/P. It is the
+  briefing template minus the jsonb envelope/refs and minus any staleness machinery.
+- **New proactive surface (W2/H/P):** add a sibling `*Generator` + table + `*.yml` fragment in
+  `feature/proactive/`, gated on the same dual switch. Smart-tier narratives (Memoir, predictions)
+  reuse W1's gather idiom (`CompanionLlm.completeSmart`); a plain-prose surface follows
+  `weekly_suggestion` (flat columns), a structured one follows `briefing` (typed jsonb envelope).
+- **Prompt / marker tuning:** the prompts are `BriefingGenerator.PROMPT` /
+  `WeeklySuggestionGenerator.PROMPT` (keep each `*_MARKER` prefix + its `FakeCompanionLlm` literal
+  mirror in sync — §9 gotcha a); briefing ref candidates are `SNAPSHOT_CANDIDATES` + the per-summary
+  `Memory` refs in `gather` (the weekly suggestion carries no refs).
 - **Never add `confidence`/`tone`** back to the envelope without a real computed source (§9 gotcha c).
 
 ## 8. Testing
 
 Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake LLM's
-`[fake-briefing:{…}]` sentinel scripts deterministic answers. **24 tests across 8 classes** — the
-B1.1 five plus three B1.2 classes:
+`[fake-briefing:{…}]` + `[fake-weekly:…]` sentinels script deterministic answers. **38 tests across
+12 classes** — the B1.1 five, three B1.2 classes, plus the W1 additions:
+
+**B (briefing):**
 
 - **`BriefingPersistenceIT` (4)** — envelope jsonb round-trip; the partial-unique index rejects a
   second LIVE row for the same day; soft-delete allows regeneration; owner-scoped finder isolation.
@@ -344,9 +504,11 @@ B1.1 five plus three B1.2 classes:
   exists; gather returns null on an empty window; generate persists the scripted envelope; generate
   returns the existing row without an LLM call; generate returns null on non-parseable JSON; generate
   drops out-of-range (hallucinated) ref indexes.
-- **`ProactiveApiIT` (4)** — HTTP: lazy-generate + idempotent re-GET; `date` param honored for a past
-  date; 404 when no narrative memory; 401 without a token.
-- **`ProactiveApiSwitchOffIT` (1)** — `mezo.feature.proactive.enabled=false` ⇒ 404 (bean absence).
+- **`ProactiveApiIT` (6)** — HTTP briefing: lazy-generate + idempotent re-GET; `date` param honored for
+  a past date; 404 when no narrative memory; 401 without a token. **+ W1 weekly-suggestion (2):**
+  lazy-generate when the prior week has memory; 404 when no prior-week memory.
+- **`ProactiveApiSwitchOffIT` (2)** — `mezo.feature.proactive.enabled=false` ⇒ 404 for briefing **and**
+  weekly-suggestion (bean absence).
 - **`ProactiveApiCompanionOffIT` (1)** — `mezo.feature.companion.enabled=false` ⇒ 404 (dual gate).
 - **`BriefingJobIT` (3, B1.2)** — the dawn run generates today's briefing when the user has narrative
   memory; is idempotent when a briefing already exists; skips a user without memory and still serves
@@ -357,23 +519,41 @@ B1.1 five plus three B1.2 classes:
   generation; serves the existing row when no late input; stops regenerating once the cap is reached;
   serves 404 **and preserves the old row** when regeneration fails (the rollback path).
 
+**W (weekly suggestion, W1):**
+
+- **`WeeklySuggestionPersistenceIT` (3)** — save/reload round-trip; the partial-unique index rejects a
+  second LIVE row for the same week; owner-scoped finder isolation.
+- **`WeeklySuggestionGeneratorIT` (5)** — gather composes prior-week summaries + facts + snapshot when
+  data exists; gather returns null when the prior week is empty; generate persists the scripted prose
+  (via the `[fake-weekly:…]` sentinel — exercising the smart-tier dispatch); generate returns the
+  existing row without an LLM call; generate returns null on a blank answer.
+- **`WeeklySuggestionJobIT` (2)** — the Monday run generates the current week's suggestion when the
+  prior week has memory; is idempotent when a suggestion already exists.
+- **`WeeklySuggestionJobSwitchOffIT` (1)** — `mezo.techcore.cron.weekly-suggestion-job.enabled=false`
+  ⇒ no `WeeklySuggestionJob` bean (the third switch).
+
 **FE (Vitest + RTL):** `data/today/briefingHooks.test.tsx` (3) — wire→`Briefing` mapping (no
 confidence), 404→null, mock null without fetching; `features/today/components/BriefingCard.test.tsx`
 adds a generated-briefing-no-label case; `data/today/todayHooks.test.tsx` adds real-mode
-server-briefing (`briefingDemo=false`) + default-404 fallback (`briefingDemo=true`) cases; MSW default
-`/api/proactive/briefing` handler returns 404.
+server-briefing (`briefingDemo=false`) + default-404 fallback (`briefingDemo=true`) cases. **W1:**
+`data/insights/weeklyHooks.test.tsx` (+2) — serves the generated prose when the GET succeeds; keeps
+`weeklySuggestion` null on the default 404; `features/insights/pages/WeeklyPage.test.tsx` (+1) —
+renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. MSW defaults: both
+`/api/proactive/briefing` and `/api/proactive/weekly-suggestion` return 404.
 
-Test infra: `support/populator/BriefingPopulator.java` (the aggregate factory) + `briefing` in the
-`ResetDatabase` TRUNCATE list. Full backend + FE gates green at B1.2 close (BE clean-test green, FE
-both modes).
+Test infra: `support/populator/{BriefingPopulator,WeeklySuggestionPopulator}.java` (aggregate
+factories) + `briefing` and `weekly_suggestion` in the `ResetDatabase` TRUNCATE list. Full backend +
+FE gates green at W1 close (BE clean-test green, FE both modes).
 
 ## 9. Decisions, gotchas & deferred
 
-- **(a) `BRIEFING_MARKER` is literal-mirrored in `FakeCompanionLlm` — keep in sync.** The fake
-  dispatches on `BRIEFING_MARKER_MIRROR` (`"REGGELI-BRIEFING-FELADAT"`), a **copy** of
-  `BriefingGenerator.BRIEFING_MARKER`, NOT an import — a `companion` → `proactive` import would
-  create a package cycle that the frozen ArchUnit rule fails the build on. The two literals must be
-  edited together (both carry a comment pointing at the other).
+- **(a) Both generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The fake
+  dispatches on `BRIEFING_MARKER_MIRROR` (`"REGGELI-BRIEFING-FELADAT"`) and `WEEKLY_MARKER_MIRROR`
+  (`"HETI-TERVJAVASLAT"`), **copies** of `BriefingGenerator.BRIEFING_MARKER` /
+  `WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER`, NOT imports — a `companion` → `proactive`
+  import would create a package cycle that the frozen ArchUnit rule fails the build on. Each literal
+  pair must be edited together (both carry a comment pointing at the other; drift fails the generator
+  IT loudly).
 - **(b) Proactive beans condition on BOTH switches.** Every bean is
   `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` —
   proactive calls the `CompanionLlm` port, so it presupposes companion. Switch either off ⇒ no beans
@@ -383,11 +563,12 @@ both modes).
   `confidence`/`tone`, but the envelope and `BriefingResponse` omit both: an LLM's self-reported
   confidence is a **fabricated number** (the honest-numbers rule, spec §6), and `tone` is dead FE
   data with no source. Don't reintroduce either without a real computed value.
-- **(d) Empty summary window ⇒ 404 by design.** No `daily_summary` in the `past-days` window (or an
-  unusable LLM answer — null/blank eyebrow/empty body) ⇒ `generate` returns null ⇒ the service
-  throws 404. A briefing with no narrative memory to ground it would be fabricated; the honest state
-  is "no briefing yet". This is the v1 emptiness gate (spec §7) — **B1.2 may loosen it** (e.g. a
-  first-day briefing from the snapshot alone).
+- **(d) Empty summary window ⇒ 404 by design (both surfaces).** No `daily_summary` in the briefing's
+  `past-days` window / the weekly suggestion's **prior week** (or an unusable LLM answer — briefing:
+  null/blank eyebrow/empty body; weekly: null/blank prose) ⇒ `generate` returns null ⇒ the service
+  throws 404. A generation with no narrative memory to ground it would be fabricated; the honest state
+  is "nothing yet" (the FE renders the placeholder). The briefing v1 emptiness gate (spec §7) — **B1.2
+  may loosen it** (e.g. a first-day briefing from the snapshot alone).
 - **(e) Staleness is sleep-only in v1, windowed `date >= day-1`, capped 2/day.** The only key input
   that triggers a regeneration is a `sleep_log` (FR-2.1.1 — the briefing leads with the night); the
   window is `date >= day-1` so a log entered just after midnight for "last night" still counts, and
@@ -413,45 +594,72 @@ both modes).
   a generated briefing is rendered verbatim. `Briefing.confidence` went **optional** in `types.ts` so
   the server shape (no confidence) is a valid `Briefing` — the card shows „Demo tartalom" in demo mode,
   a Confidence % only if a real confidence is ever set, else nothing (§9 gotcha c / the honest-numbers rule).
-- **Deferred to W/H/P:** weekly prose + Memoir (W), in-app heartbeat + Web Push (H), predictions +
-  N=1 experiments (P) — later slices, see the roadmap. B1.2 closed the B stage (v1 exit criterion).
+- **(i) W1 has NO weekly staleness / regeneration path — YAGNI.** Unlike the briefing (which sleep
+  can invalidate mid-day, §9 decision e), a weekly suggestion is written once at Monday dawn (or
+  lazily on first open) and stands for the whole week. There is no `refreshIfStale`, no `regen_count`,
+  no cap — the weekly cadence makes intra-week regeneration pointless. The `weekly_suggestion` partial
+  unique still supports soft-delete + reinsert should a future slice want it, but nothing triggers it.
+- **(j) The weekly cron is Monday 06:00, for the week just starting.** `mezo.proactive.weekly.cron`
+  = `0 0 6 * * MON`; the job gathers from the **finished previous week's** `daily_summary` narratives
+  and writes the suggestion FOR the current week (whose Monday is today). Monday-morning (not Sunday
+  night) so the whole previous week is already summarized when it runs. Like the briefing cron it does
+  **not** backfill — a past week's suggestion is never read (§9 decision f, same reasoning).
+- **(k) The „Elfogad / Hangoljuk" buttons are hidden in live mode (false affordance).** They never
+  had handlers — accept/tune interactivity is deferred (spec §5). Rather than show dead buttons on a
+  real generated suggestion, `WeeklyPage` renders them only when `mode === 'mock'`; live mode shows
+  the prose alone. (`WeeklyPage.test.tsx` pins their absence in real mode.)
+- **Deferred to W2/H/P:** Memoir (W2), in-app heartbeat + Web Push (H), predictions + N=1 experiments
+  (P) — later slices, see the roadmap. W1 closed the first W-stage surface; the D′ score constants
+  (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to backend config in W1
+  (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
 
 ## 10. Key files
 
 **API contract**
-- `api/feature/proactive/proactive.yml` — 1 endpoint + 2 schemas (tag `Proactive` → `ProactiveApi`);
+- `api/feature/proactive/proactive.yml` — 2 endpoints (briefing + weekly-suggestion) + 3 schemas
+  (`BriefingResponse`, `BriefingRef`, `WeeklySuggestionResponse`) (tag `Proactive` → `ProactiveApi`);
   registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
 **Backend — controller / services / mapper**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi`, JWT ownership, dual-switch-gated.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveBriefingService.java` — the read path (persisted row · `refreshIfStale` · lazy-generate; null ⇒ 404).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (both `getBriefing` + `getWeeklySuggestion`), JWT ownership, dual-switch-gated.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveBriefingService.java` — the briefing read path (persisted row · `refreshIfStale` · lazy-generate; null ⇒ 404).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveWeeklySuggestionService.java` — **W1** the weekly read path (ISO-Monday week · persisted row or lazy-generate; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingJob.java` — **B1.2** dawn `@Scheduled` cron (today-only, per-user isolation, three-switch-gated).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionJob.java` — **W1** Monday-06:00 `@Scheduled` cron (current-week only, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingGenerator.java` — the spine: pure-code `gather` + one `CompanionLlm.complete` + strict-JSON parse + ref resolution; `BRIEFING_MARKER` + `PROMPT` + `SNAPSHOT_CANDIDATES`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (Instant → UTC OffsetDateTime).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toBriefingResponse` + `toWeeklySuggestionResponse`; Instant → UTC OffsetDateTime).
 
 **Backend — entity / repo / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{BriefingEntity,BriefingContentEnvelope}.java` — the owned entity + typed jsonb envelope (`Ref` nested).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/WeeklySuggestionEntity.java` — **W1** the owned entity (flat `weekStart`/`prose`/`generatedAt`, no jsonb).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/BriefingRepository.java` — `findByCreatedByAndBriefingDate` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.briefing.{past-days, cron, regen-cap-per-day}` (@Validated).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklySuggestionRepository.java` — **W1** `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.{past-days,cron,regen-cap-per-day}, weekly.cron}` (@Validated, nested records).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java` — **B1.2** `existsBy…DateGreaterThanEqualAndCreatedAtAfter` staleness probe (plain finder, no proactive dependency).
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + `BRIEFING_JOB_SWITCH` (+ the companion `COMPANION_SWITCH` they pair with).
-- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.briefing.{past-days,cron,regen-cap-per-day}` + `mezo.techcore.cron.briefing-job.enabled`.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + `BRIEFING_JOB_SWITCH` + `WEEKLY_SUGGESTION_JOB_SWITCH` (+ the companion `COMPANION_SWITCH` they pair with).
+- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{briefing.*, weekly.cron}` + `mezo.techcore.cron.{briefing-job,weekly-suggestion-job}.enabled`.
 
 **Backend — LLM fake (companion side, additive)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — `BRIEFING_MARKER_MIRROR` (literal) + `[fake-briefing:{…}]` sentinel (§9 gotcha a).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — `BRIEFING_MARKER_MIRROR` + `[fake-briefing:{…}]` and `WEEKLY_MARKER_MIRROR` + `[fake-weekly:…]` sentinels (literals; §9 gotcha a).
 
 **Frontend — Today consumer (B1.2)**
 - `frontend/src/data/today/briefingApi.ts` — `briefingApi.get` + `toBriefing` (wire→`Briefing`, no confidence).
 - `frontend/src/data/today/briefingHooks.ts` — `useBriefing()` (dual-mode; mock null no-fetch, real GET or null on 404); re-exported by `data/hooks.ts`.
 - `frontend/src/data/today/todayHooks.ts` — `useToday` composes `useBriefing` (`briefing`, `briefingDemo`); `frontend/src/features/today/{pages/TodayPage.tsx,components/BriefingCard.tsx}` — render + three-state label; `frontend/src/data/types.ts` — `Briefing.confidence?` optional.
 
+**Frontend — Insights Weekly consumer (W1)**
+- `frontend/src/data/insights/weeklySuggestionApi.ts` — `weeklySuggestionApi.get(date)` (wire → `w.prose` string).
+- `frontend/src/data/insights/weeklyHooks.ts` — `useWeekly().weeklySuggestion` real-only `useQuery` (`['weeklySuggestion', start]`, `enabled:!mock`, `retry:false`, 404→null); the one bare `useQuery` in the file.
+- `frontend/src/features/insights/pages/WeeklyPage.tsx` — renders the prose or the honest placeholder; „Elfogad/Hangoljuk" hidden when `mode !== 'mock'` (§9 decision k).
+
 **Backend — migrations**
-- `backend/src/main/resources/db/changelog/1.0.0/script/202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h4wp.2_briefing_regen_count.sql` (both in `1.0.0_master.yml`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/{202607061100_mezo-h4wp.1_create_briefing,202607070900_mezo-h4wp.2_briefing_regen_count,202607071200_mezo-h4wp.3_create_weekly_suggestion}.sql` (all in `1.0.0_master.yml`).
 
 **Backend — tests**
-- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{BriefingPersistenceIT,BriefingGeneratorIT,ProactiveApiIT,ProactiveApiSwitchOffIT,ProactiveApiCompanionOffIT,BriefingJobIT,BriefingJobSwitchOffIT,BriefingFreshnessIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/support/populator/BriefingPopulator.java` + `support/ResetDatabase.java` (`briefing` in the TRUNCATE list).
-- FE: `frontend/src/data/today/{briefingHooks.test.tsx,todayHooks.test.tsx}`, `frontend/src/features/today/components/BriefingCard.test.tsx`, `frontend/src/test/msw/handlers.ts` (default 404).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{BriefingPersistenceIT,BriefingGeneratorIT,ProactiveApiIT,ProactiveApiSwitchOffIT,ProactiveApiCompanionOffIT,BriefingJobIT,BriefingJobSwitchOffIT,BriefingFreshnessIT,WeeklySuggestionPersistenceIT,WeeklySuggestionGeneratorIT,WeeklySuggestionJobIT,WeeklySuggestionJobSwitchOffIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{BriefingPopulator,WeeklySuggestionPopulator}.java` + `support/ResetDatabase.java` (`briefing` + `weekly_suggestion` in the TRUNCATE list).
+- FE: `frontend/src/data/today/{briefingHooks.test.tsx,todayHooks.test.tsx}`, `frontend/src/features/today/components/BriefingCard.test.tsx`, `frontend/src/data/insights/weeklyHooks.test.tsx`, `frontend/src/features/insights/pages/WeeklyPage.test.tsx`, `frontend/src/test/msw/handlers.ts` (both proactive defaults 404).
 
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)

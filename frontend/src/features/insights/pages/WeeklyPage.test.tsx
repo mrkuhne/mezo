@@ -53,4 +53,14 @@ describe('WeeklyPage (real mode)', () => {
     expect(await screen.findByText('tanulom')).toBeInTheDocument()
     expect(screen.queryByText('/100')).not.toBeInTheDocument()
   })
+
+  it('renders the live suggestion prose WITHOUT the inert Elfogad/Hangoljuk buttons', async () => {
+    server.use(http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => HttpResponse.json({
+      weekStart: '2026-07-06', prose: 'Élő heti javaslat.', generatedAt: '2026-07-06T06:00:00Z',
+    })))
+    renderPage()
+    expect(await screen.findByText('Élő heti javaslat.')).toBeInTheDocument()
+    expect(screen.queryByText('Elfogad')).not.toBeInTheDocument()
+    expect(screen.queryByText('Hangoljuk')).not.toBeInTheDocument()
+  })
 })

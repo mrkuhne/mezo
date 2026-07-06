@@ -142,6 +142,10 @@ mezo:
       # off = the BriefingJob bean does not exist
       briefing-job:
         enabled: true
+      # W1 Monday weekly-suggestion pre-generation (schedule: mezo.proactive.weekly.cron);
+      # off = the WeeklySuggestionJob bean does not exist
+      weekly-suggestion-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -300,6 +304,9 @@ mezo:
       cron: "0 45 5 * * *"
       # Max staleness regenerations per user+day (a late sleep-log triggers at most this many)
       regen-cap-per-day: 2
+    weekly:
+      # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
+      cron: "0 0 6 * * MON"
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

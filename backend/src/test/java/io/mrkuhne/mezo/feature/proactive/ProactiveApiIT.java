@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.proactive;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
+import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -68,5 +69,26 @@ class ProactiveApiIT extends ApiIntegrationTest {
     @Test
     void testGetBriefing_shouldReturn401_whenNoToken() {
         getForBody("/api/proactive/briefing", null, HttpStatus.UNAUTHORIZED, String.class);
+    }
+
+    @Test
+    void testGetWeeklySuggestion_shouldLazilyGenerate_whenPriorWeekHasMemory() {
+        LocalDate weekStart = LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        dailySummaryPopulator.summary(ownerId(), weekStart.minusDays(2), "Előző héten edzés volt.");
+
+        WeeklySuggestionResponse suggestion = getForBody(
+                "/api/proactive/weekly-suggestion", ownerAuthHeaders(), HttpStatus.OK, WeeklySuggestionResponse.class);
+
+        assertThat(suggestion.getWeekStart()).isEqualTo(weekStart);
+        assertThat(suggestion.getProse()).isNotBlank();
+    }
+
+    @Test
+    void testGetWeeklySuggestion_shouldReturn404_whenNoPriorWeekMemory() {
+        String body = getForBody(
+                "/api/proactive/weekly-suggestion", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
 }
