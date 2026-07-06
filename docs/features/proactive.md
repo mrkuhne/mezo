@@ -115,7 +115,8 @@ generate(userId, date)                                  BriefingGenerator.java:8
        null / blank eyebrow / empty body ⇒ return null   ── unusable answer, NO row (§9 gotcha d)
   5. resolveRefs(refIndexes, candidates)                 bounds-checked, order-preserving, deduped
        (model SELECTS by index; out-of-range/dupes dropped — can never invent a ref)
-  6. saveAndFlush BriefingEntity{content envelope, generatedAt=now}
+  6. saveAndFlush BriefingEntity{content envelope, generatedAt=now truncated-to-µs}
+       (µs truncation matches Postgres timestamptz precision — keeps the B1.2 idempotence assert stable)
 ```
 
 Gather = pure code (IT-asserted LLM-free), prose = pure LLM — the companion V2.2 summary-generator

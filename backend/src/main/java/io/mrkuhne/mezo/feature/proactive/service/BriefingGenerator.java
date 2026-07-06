@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.proactive.repository.BriefingRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -108,7 +109,7 @@ public class BriefingGenerator {
         briefing.setBriefingDate(date);
         briefing.setContent(new BriefingContentEnvelope(
                 parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), gather.candidates())));
-        briefing.setGeneratedAt(Instant.now());
+        briefing.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return briefingRepository.saveAndFlush(briefing);
     }
 
