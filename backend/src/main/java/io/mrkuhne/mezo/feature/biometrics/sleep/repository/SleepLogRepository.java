@@ -15,4 +15,8 @@ public interface SleepLogRepository extends OwnedRepository<SleepLogEntity> {
     /** Last-N-days window for the companion get_sleep tool (V0.5) — plain finder, no companion dependency. */
     List<SleepLogEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
             UUID createdBy, LocalDate from);
+
+    /** B1.2 briefing staleness probe — did a (last-)night sleep row arrive after generation? */
+    boolean existsByCreatedByAndDeletedFalseAndDateGreaterThanEqualAndCreatedAtAfter(
+            UUID createdBy, LocalDate from, java.time.Instant after);
 }
