@@ -138,6 +138,10 @@ mezo:
       # off = the HypothesisJob bean does not exist
       hypothesis-job:
         enabled: true
+      # B1.2 dawn briefing pre-generation (schedule: mezo.proactive.briefing.cron);
+      # off = the BriefingJob bean does not exist
+      briefing-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -292,6 +296,10 @@ mezo:
       # How many finished days of narrative memory (daily_summary) the briefing gather reads;
       # doubles as the emptiness gate: zero summaries in the window -> no briefing (honest 404)
       past-days: 7
+      # Dawn pre-generation schedule (server zone) — before the typical wake (B1.2)
+      cron: "0 45 5 * * *"
+      # Max staleness regenerations per user+day (a late sleep-log triggers at most this many)
+      regen-cap-per-day: 2
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
