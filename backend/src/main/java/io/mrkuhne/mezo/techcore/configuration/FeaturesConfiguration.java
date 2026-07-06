@@ -44,4 +44,7 @@ public class FeaturesConfiguration {
 
     /** W1 Monday weekly-suggestion job — techcore cron zone (schedule: mezo.proactive.weekly.cron). */
     public static final String WEEKLY_SUGGESTION_JOB_SWITCH = "mezo.techcore.cron.weekly-suggestion-job.enabled";
+
+    /** W2 Sunday memoir job — techcore cron zone (schedule: mezo.proactive.memoir.cron). */
+    public static final String MEMOIR_JOB_SWITCH = "mezo.techcore.cron.memoir-job.enabled";
 }

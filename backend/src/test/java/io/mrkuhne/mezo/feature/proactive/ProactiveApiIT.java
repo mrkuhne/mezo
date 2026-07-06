@@ -109,6 +109,20 @@ class ProactiveApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testGetMemoir_shouldLazilyGenerateLastCompletedWeek_whenNoneExists() {
+        LocalDate lastWeek = LocalDate.now()
+                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+                .minusWeeks(1);
+        dailySummaryPopulator.summary(ownerId(), lastWeek.plusDays(1), "Múlt heti nap.");
+
+        MemoirResponse memoir = getForBody(
+                "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.OK, MemoirResponse.class);
+
+        assertThat(memoir.getWeekStart()).isEqualTo(lastWeek);
+        assertThat(memoir.getTitle()).isEqualTo("Fake memoir");   // the un-scripted fake default
+    }
+
+    @Test
     void testGetMemoir_shouldReturn404_whenNoMemoirAndNoMemory() {
         String body = getForBody(
                 "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);

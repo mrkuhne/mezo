@@ -7,6 +7,9 @@ import io.mrkuhne.mezo.feature.proactive.repository.MemoirRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -14,7 +17,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** The memoir read path: the latest persisted row; honest 404 otherwise (lazy fallback: W2 Task 2). */
+/**
+ * The memoir read path: the latest persisted row; else lazily generate the LAST COMPLETED week
+ * (the ISO-Monday of the previous week). Still-empty (no narrative memory) ⇒ honest 404.
+ */
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(
@@ -23,12 +29,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProactiveMemoirService {
 
     private final MemoirRepository memoirRepository;
+    private final MemoirGenerator generator;
     private final ProactiveMapper mapper;
 
     @Transactional
     public MemoirResponse getMemoir(UUID userId) {
         MemoirEntity memoir = memoirRepository
-                .findFirstByCreatedByOrderByWeekStartDesc(userId).orElse(null);
+                .findFirstByCreatedByOrderByWeekStartDesc(userId)
+                .orElseGet(() -> generator.generate(userId, LocalDate.now()
+                        .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1)));
         if (memoir == null) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
