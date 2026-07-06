@@ -30,6 +30,7 @@ import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
+import io.mrkuhne.mezo.support.populator.WeeklySuggestionPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +58,7 @@ import org.springframework.context.annotation.Import;
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
     DailySummaryPopulator.class, PatternPopulator.class, BriefingPopulator.class,
+    WeeklySuggestionPopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     CheckInPopulator.class,

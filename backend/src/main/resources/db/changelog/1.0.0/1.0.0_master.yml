@@ -272,3 +272,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607070900_mezo-h4wp.2_briefing_regen_count.sql
+  - changeSet:
+      id: "1.0.0:202607071200_mezo-h4wp.3_create_weekly_suggestion"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607071200_mezo-h4wp.3_create_weekly_suggestion.sql

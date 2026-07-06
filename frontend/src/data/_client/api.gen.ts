@@ -1227,6 +1227,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/weekly-suggestion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The companion's generated plan suggestion for the week containing the given day (lazily generated when the Monday cron has not produced it yet) */
+        get: operations["getWeeklySuggestion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2846,6 +2863,14 @@ export interface components {
             body: string[];
             /** @description Code-collected, model-SELECTED source references (never model-invented) */
             refs: components["schemas"]["BriefingRef"][];
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        WeeklySuggestionResponse: {
+            /** Format: date */
+            weekStart: string;
+            /** @description Plain Hungarian plan-suggestion prose (smart tier; no markdown structure) */
+            prose: string;
             /** Format: date-time */
             generatedAt: string;
         };
@@ -6614,6 +6639,47 @@ export interface operations {
                 };
             };
             /** @description No briefing possible — no narrative memory (daily_summary) in the configured past-days window. The FE renders its honest state (B1.2). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWeeklySuggestion: {
+        parameters: {
+            query?: {
+                /** @description Any day of the wanted week (the FE sends its LOCAL date); defaults to the server's today. The week identity is the ISO Monday. */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The persisted (or just-generated) weekly suggestion */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklySuggestionResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No suggestion possible — no narrative memory (daily_summary) in the prior week. The FE keeps its honest placeholder. */
             404: {
                 headers: {
                     [name: string]: unknown;
