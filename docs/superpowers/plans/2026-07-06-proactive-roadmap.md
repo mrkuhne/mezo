@@ -107,7 +107,21 @@ static vs trimmed honest card); cron time (before typical wake).
 
 ## W — „ír rólam hetente"
 
-### W1 — weeklySuggestion prose
+### W1 — weeklySuggestion prose ✅ (shipped 2026-07-06)
+
+**Shipped as built:** `weekly_suggestion` table (ISO-Monday `week_start`, partial unique) +
+smart-tier `WeeklySuggestionGenerator` (pure-code gather = V0.3 snapshot + facts + the prior week's
+`daily_summary` narratives strictly before `week_start` + the pattern list → ONE
+`CompanionLlm.completeSmart` call → plain HU prose, honest-null on empty prior week/blank answer) +
+`WeeklySuggestionJob` (Monday 06:00, `mezo.proactive.weekly.cron`, three-switch, current-week only,
+idempotent, no backfill) + lazy `GET /api/proactive/weekly-suggestion?date=` (404 = the FE's honest
+placeholder). FE: `useWeekly().weeklySuggestion` real (404→null) — the D′ null-path became the
+degraded path — and the inert „Elfogad/Hangoljuk" buttons hidden in live mode. **In-slice decisions
+resolved:** cron = Monday 06:00 (suggestion FOR the starting week, gathered from the finished
+previous week); buttons **hidden** (not just inert) in live; **NO** weekly staleness/regen (weekly
+cadence, YAGNI); D′ score-constants promotion **deferred** to a follow-up bd issue (not in-slice).
+Docs: `docs/features/proactive.md` (§1-§10) + `docs/features/insights.md` (§2.2/§4/§9). **bd:**
+`mezo-h4wp.3`.
 
 **Goal:** the Weekly page's "Mezo · heti tervjavaslat" card stops being a placeholder.
 **Builds:** `weekly_suggestion` table; weekly smart-tier generator over the week's
