@@ -230,9 +230,11 @@ Parallel-friendly: E and T are independent of the Fuel track; suggested value or
   can be filed any time after P7).
 - **Companion epic (`mezo-fnnq`, ✅)** — supersedes old Slice D; D′/T consume its real
   patterns surface read-only.
-- **Proactive-layer epic (next, unmapped)** — briefing/heartbeat/memoir/AnchorMode/crisis; owns every
-  prose/LLM item this roadmap marks ⛔. Map it companion-style (spec + slice roadmap) when Phase 2
-  closes — it reuses snapshot (V0.3), facts (v1), summaries (V2.2), patterns (v3).
+- **Proactive-layer epic (`mezo-h4wp`, ✅ MAPPED 2026-07-06)** — owns every prose/LLM item this
+  roadmap marks ⛔. Spec: [`../specs/2026-07-06-proactive-layer-design.md`](../specs/2026-07-06-proactive-layer-design.md);
+  slice roadmap: [`2026-07-06-proactive-roadmap.md`](2026-07-06-proactive-roadmap.md) (B briefing →
+  W weekly prose → H heartbeat/push → P predictions/N=1; AnchorMode/crisis/real-signals deferred to
+  a later epic). It reuses snapshot (V0.3), facts (v1), summaries (V2.2), patterns (v3).
 - **Design spec of record for Phase 2:** `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`
   (architecture + conventions unchanged); this roadmap re-scopes only its §5 slice map (D→D′, +T).
 
