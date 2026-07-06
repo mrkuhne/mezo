@@ -9,7 +9,7 @@ export type CheckinState = 'done' | 'now' | 'skipped' | 'pending'
 export interface CheckinSlot { time: string; state: CheckinState; values: CheckinValues | null; note: string | null; savedAt?: string }
 export interface BriefingRef { kind: string; id?: string; label: string }
 export interface BriefingPara { type: 'p'; text: string }
-export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence: number; tone?: string }
+export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }
 export interface WorkoutExercise { id: string; name: string; sets: number; targetReps: string; targetRIR: number; type: string; muscle: string }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
 export interface Workout { title: string; tag: string; durationEst: number; exercises: WorkoutExercise[]; niggleWarning: NiggleWarning }

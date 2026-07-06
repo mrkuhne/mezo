@@ -72,6 +72,11 @@ spec:
                   key: GEMINI_API_KEY
             - name: MEZO_FEATURE_COMPANION_ENABLED
               value: "true"
+            # Phase-4 proactive layer LIVE (B1.2, mezo-h4wp.2): the generated morning
+            # briefing + dawn BriefingJob (05:45). Explicit switch (the companion
+            # precedent) rather than relying on the application.yml default.
+            - name: MEZO_FEATURE_PROACTIVE_ENABLED
+              value: "true"
           # startupProbe gives Spring Boot + Liquibase time to come up before
           # liveness/readiness start judging it. /actuator/health is exposed.
           startupProbe:

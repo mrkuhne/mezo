@@ -38,4 +38,7 @@ public class FeaturesConfiguration {
      *  Every proactive bean conditions on BOTH this AND COMPANION_SWITCH (the generators call the
      *  CompanionLlm port, whose beans only exist when the companion is on). */
     public static final String PROACTIVE_SWITCH = "mezo.feature.proactive.enabled";
+
+    /** B1.2 dawn briefing pre-generation job — techcore cron zone (schedule: mezo.proactive.briefing.cron). */
+    public static final String BRIEFING_JOB_SWITCH = "mezo.techcore.cron.briefing-job.enabled";
 }

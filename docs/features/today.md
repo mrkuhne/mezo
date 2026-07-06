@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-07-04
+updated: 2026-07-06
 tags: [today, biometrics, frontend, data-layer]
 key_files:
   - frontend/src/features/today
@@ -15,7 +15,7 @@ related: [_platform-data-layer, _platform-design-system, me, insights, train]
 
 # Today — Feature Documentation
 
-> The daily home / morning-briefing screen at route `/today` (tab "Ma"), the PWA's default landing page. **Status: 🟢/🔶 mixed** — since **Slice T** (`mezo-t16y.3`, 2026-07-04) every section is real in real mode (deterministic composition over existing real reads) or an explicit honest state; the one deliberate exception is the **briefing prose**, which stays static demo copy behind an honest „Demo tartalom" label until the proactive epic ships the generated briefing.
+> The daily home / morning-briefing screen at route `/today` (tab "Ma"), the PWA's default landing page. **Status: 🟢/🔶 mixed** — since **Slice T** (`mezo-t16y.3`, 2026-07-04) every section is real in real mode (deterministic composition over existing real reads) or an explicit honest state. Since **proactive B1.2** (`mezo-h4wp.2`, 2026-07-06) even the **briefing prose** is real: the card renders the companion's own generated morning words when present ([proactive.md](proactive.md)), and the static „Demo tartalom" card survives only as the **honest fallback** (loading / 404 / switch off).
 
 ## 1. Summary
 
@@ -23,14 +23,15 @@ related: [_platform-data-layer, _platform-design-system, me, insights, train]
 
 Status per layer:
 - **FE mock:** ✅ complete — all sections render synchronously from static data; URL-driven scenarios (`?day=`, `?niggle=`, `?vulnerable=`, `?retaDay=`); the demo copy (prediction line, "Stacked day" AI note) renders only in mock mode.
-- **FE real:** ✅ **Slice T** (`mezo-t16y.3`) — deterministic composition over EXISTING real reads, zero new backend: header from the real date + active meso, workout teaser from Train's today session (hidden on rest days), volleyball from the real sport schedule, quick-stats from sleep/weight (HRV cell dropped — no source), check-in strip **reads** today's server rows, insights teaser from the real patterns inbox (hidden when none/degraded), fuel preview real since P5, reta phase real since mezo-d94. The **briefing prose stays static** with a „Demo tartalom" label in real mode (generated briefing = proactive epic).
-- **Backend:** ✅ check-in (`feature/biometrics/checkin`) only. It lives **inside the biometrics feature** server-side (alongside weight/sleep), not a "today" package. Briefing generation/predictions remain 🟣 proactive-epic (Spring AI + RAG).
+- **FE real:** ✅ **Slice T** (`mezo-t16y.3`) — deterministic composition over EXISTING real reads, zero new backend: header from the real date + active meso, workout teaser from Train's today session (hidden on rest days), volleyball from the real sport schedule, quick-stats from sleep/weight (HRV cell dropped — no source), check-in strip **reads** today's server rows, insights teaser from the real patterns inbox (hidden when none/degraded), fuel preview real since P5, reta phase real since mezo-d94. Since **proactive B1.2** (`mezo-h4wp.2`) the **briefing prose is real too** (`useBriefing` → `useToday`): the generated card when present, the „Demo tartalom" static card only as the honest fallback.
+- **Backend:** ✅ check-in (`feature/biometrics/checkin`) only. It lives **inside the biometrics feature** server-side (alongside weight/sleep), not a "today" package. The generated briefing is served by the `feature/proactive` package ([proactive.md](proactive.md)) — Today READS it via `useBriefing`, there is no "today" briefing backend; predictions remain 🟣 proactive-epic (P stage).
 
 Driving design: [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](../superpowers/specs/2026-06-03-mezo-today-design.md) (Phase-1) and the honest-completion slice [`specs/2026-07-04-today-honest-completion-design.md`](../superpowers/specs/2026-07-04-today-honest-completion-design.md) + [`plans/2026-07-04-today-honest-completion.md`](../superpowers/plans/2026-07-04-today-honest-completion.md). No dedicated ADR exists for Today.
 
 ## 2. User-facing behavior
 
 - **Open the app →** lands on `/today` (index route redirects there; `router.tsx:46`). Mock data renders synchronously, no spinner.
+- **Reggeli briefing card:** in real mode it renders the companion's **generated** morning prose + real reference chips when a server briefing exists (no label); when there is none yet — loading, no narrative memory (404), or the companion/proactive switch is off — it falls back to the **static demo card behind the „Demo tartalom" label**. Mock mode always shows the static card. Behavior detail in [proactive.md §2](proactive.md).
 - **Scenario deep-links** (no production UI — URL search params only, parsed by `useTodayScenario`):
   - `?day=good|medium|rough` (default `medium`). `rough` → AnchorMode full-screen replaces the normal stack.
   - `?niggle=on|off` (default `on`) → toggles the amber niggle banner inside the workout teaser.
@@ -49,11 +50,15 @@ TodayPage.tsx (composition root)
   ├─ useTodayScenario()    todayHooks.ts   — URL params (+ real-mode retaDay from useMedication().cycle) → TodayScenario
   ├─ useToday()            todayHooks.ts   — { today, user, briefing, briefingDemo, workout, workoutTime,
   │                                           prediction, volleyballSessions, volleyballNote, fuelToday }
+  │     briefing = useBriefing() (composed); briefingDemo = serverBriefing == null
   │     mock: statics · real: useTrain() → today session (workout, null=rest day), active meso (header
   │     chips), gym slot time, sport schedule sessions; real date labels; prediction/volleyballNote = null
   ├─ useCheckins()         checkinHooks.ts — real READ (['checkins', date] → listForDay) overlaid on the 4
   │                                           canonical slots + local optimistic layer + save mutation
-  ├─ resolveBriefing(ds)   todayHooks.ts   — briefing ⊕ briefingVariants[ds] (static both modes)
+  ├─ useBriefing()         briefingHooks.ts — real GET /api/proactive/briefing?date=<local> → Briefing|null
+  │                                           (404/switch-off/loading → null); mock: null synchronously (no fetch)
+  ├─ resolveBriefing(ds)   todayHooks.ts   — the FALLBACK card: briefing ⊕ briefingVariants[ds] (static both
+  │                                           modes) — used at TodayPage:35 only when useToday().briefing is null
   ├─ useFuelPreview()      todayHooks.ts   — slices the dual-mode useFuelTimeline() plan
   ├─ useQuickStats()       todayHooks.ts   — mock: 3 static cells · real: useSleep()+useWeight() derived,
   │                                           NO HRV cell (rendered inside QuickStatsRow)
@@ -69,8 +74,9 @@ Check-in real path (read + write since Slice T):
 
 Key behavioral facts (the Today hooks live in `data/today/todayHooks.ts` + `data/today/checkinHooks.ts`, re-exported by the `hooks.ts` barrel):
 - `useTodayScenario`: `dayState` falls back to `'medium'` for anything other than `good`/`rough`; `anchorMode = dayState === 'rough'`. The `retaDay` base derives from `useMedication().cycle.retaDay` in real mode (falling back to `today.retaDay` when 0), `today.retaDay` in mock mode, with the `?retaDay=` URL override on top (mezo-d94). The URL demo params **survive in real mode by design** (documented dev affordance). **Called in three places** — `TodayPage`, `AppLayout` (warm canvas), and `FuelPlanPage`/`FuelMaiPage` — so both `anchorMode` consumers must derive it identically, and every consumer issues a `['medication']` query (tests need a `QueryClientProvider`).
-- `useToday` (real): header = full-HU weekday (`huWeekdayFull`) + `huMonthDay(localDateString())`; `workoutType`/`workout` = `useTrain().workout` (today's planned session, `null` on rest days → `TodayPage` hides the teaser); `user.weekInMeso` = `activeMeso.currentWeek`, `today.mesoPhase` = `phaseCurve[currentWeek-1]`, `user.mesoLabel` = `activeMeso.title` (no meso → empty → `DateMesoHeader` hides the chips); `dayInWeek` = ISO weekday (Mon=1); `workoutTime` = today's gym slot from `gymSchedule.weeklyTimes`; `volleyballSessions` = `sport.schedule.volleyball.sessions` (real `today:true` derived from the weekday); `briefingDemo: true`; `prediction`/`volleyballNote` = `null` (demo copy lives in `data/today/today.ts`, mock-only). The identity statics inside `user` (name/handle/…) are not rendered by Today — the `useProfile` decision belongs to Slice E.
-- `resolveBriefing`: `briefingVariants.medium` is `null`, so `medium` returns the base `briefing`; `good`/`rough` spread their `Partial<Briefing>` over the base.
+- `useToday` (real): header = full-HU weekday (`huWeekdayFull`) + `huMonthDay(localDateString())`; `workoutType`/`workout` = `useTrain().workout` (today's planned session, `null` on rest days → `TodayPage` hides the teaser); `user.weekInMeso` = `activeMeso.currentWeek`, `today.mesoPhase` = `phaseCurve[currentWeek-1]`, `user.mesoLabel` = `activeMeso.title` (no meso → empty → `DateMesoHeader` hides the chips); `dayInWeek` = ISO weekday (Mon=1); `workoutTime` = today's gym slot from `gymSchedule.weeklyTimes`; `volleyballSessions` = `sport.schedule.volleyball.sessions` (real `today:true` derived from the weekday); **`briefing` = `useBriefing()`** (the generated server briefing or `null`), **`briefingDemo = serverBriefing == null`** (so demo=false only when a real briefing is present, proactive B1.2 — mezo-h4wp.2); `prediction`/`volleyballNote` = `null` (demo copy lives in `data/today/today.ts`, mock-only). The identity statics inside `user` (name/handle/…) are not rendered by Today — the `useProfile` decision belongs to Slice E.
+- `useBriefing` (`data/today/briefingHooks.ts`): real mode `useQuery(['briefing', localDateString()])` → `briefingApi.get` (`GET /api/proactive/briefing?date=`), 404→`null`, `retry:false`; mock mode returns `null` synchronously via `initialData` (no fetch, no loading frame → byte-parity with the pre-B1.2 fallback). Composed into `useToday`, re-exported by the `data/hooks.ts` barrel.
+- `resolveBriefing`: the **static fallback only** — `TodayPage:35` renders `useToday().briefing ?? resolveBriefing(scenario.dayState)`, so `resolveBriefing` (and `briefingVariants`) shape the card ONLY when no server briefing exists. `briefingVariants.medium` is `null`, so `medium` returns the base `briefing`; `good`/`rough` spread their `Partial<Briefing>` over the base. A generated briefing is rendered verbatim (variants never apply to it).
 - `useCheckins`: base slots = mock seed (mock) | `buildDaySlots(serverRows, now)` (real — exported for tests); a `Record<idx, Partial<CheckinSlot>>` optimistic layer sits on top in both modes; `saveCheckIn` sets the layer and in real mode POSTs (`date = localDateString()` local-tz, `slotTime`, `state` defaulting `'done'`, dims, note), then invalidates `['checkins', date]`. Write errors surface via the global mutation-cache toast + `console.error`.
 - `useFuelPreview`: **composes `useFuelTimeline()`** (Fuel P5, mezo-9ys) — finds the `now` slot in that plan, returns 3 visible slots from there plus the next incomplete `nextStack`. Dual-mode via the composed timeline, so Today's preview and the Fuel "Mai" view never diverge.
 - `useQuickStats` (real): sleep = `sleepLog` last entry duration + delta vs the previous night; weight = `weightLog` last value + delta vs the previous entry; missing data → `—` value with empty delta; **the HRV cell does not exist in real mode** (no data source — strip philosophy).
@@ -82,7 +88,7 @@ Key behavioral facts (the Today hooks live in `data/today/todayHooks.ts` + `data
 - `DayState = 'good'|'medium'|'rough'` (:6)
 - `CheckinValues { energy, stress, body, mental }` (:7); `CheckinState = 'done'|'now'|'skipped'|'pending'` (:8)
 - `CheckinSlot { time, state, values|null, note|null, savedAt? }` (:9)
-- `Briefing { eyebrow, body: BriefingPara[], refs: BriefingRef[], confidence, tone? }` (:10–12) — note `tone?` is **dead data** (set, never read; see §9).
+- `Briefing { eyebrow, body: BriefingPara[], refs: BriefingRef[], confidence?, tone? }` (:12) — `confidence?` went **optional** at proactive B1.2 (server briefings carry none — the fabricated-number rule); `tone?` is **dead data** (set, never read; see §9).
 - `Workout { title, tag, durationEst, exercises: WorkoutExercise[], niggleWarning }` (:13–15)
 - `VolleyballSession { day, time, duration, court, intensity, role, today?, flex? }` (:16)
 - `TodayMeta`, `UserMeta` (:80–81), `TodayScenario { dayState, retaDay, niggle, vulnerable, anchorMode }` (:91)
@@ -202,7 +208,8 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 - **Local-date correctness:** the day read + `saveCheckIn` use `localDateString()` (`Intl en-CA`, local tz) — deliberately not UTC slicing, so evening entries don't shift to the next day. See `shared/lib/dates.ts`.
 - **Scenario duplication:** `useTodayScenario` is called in both `TodayPage` and `AppLayout`; both must derive `anchorMode` consistently for the warm canvas and the content to match.
 - **Known console noise (pre-existing, `mezo-edrv`):** `useGoal`'s queryFn-less `['weightLog']` read-only query floods the console with TanStack errors on every Today load (mounted via `useFuelTimeline`); present before Slice T on the baseline too.
-- **Deferred / proactive-epic:** generated briefing prose (the „Demo tartalom" card), real predictions (`prediction` stays null), real niggle/vulnerable sources, AnchorMode triggered by real signals, HRV (needs a data source first), QuickInputSheet re-mount.
+- **Generated briefing shipped (proactive B1.2, `mezo-h4wp.2`).** The briefing card is now real in real mode (`useBriefing` → `useToday`, `briefing: Briefing | null`, fallback at `TodayPage:35`); the „Demo tartalom" static card is only the honest fallback (loading / 404 / switch off) and the mock-mode card. `resolveBriefing` + `briefingVariants` shape ONLY that fallback, never a generated briefing. `Briefing.confidence` went optional to model the server shape. Full behavior + backend in [proactive.md](proactive.md).
+- **Deferred / proactive-epic:** real predictions (`prediction` stays null), real niggle/vulnerable sources, AnchorMode triggered by real signals, HRV (needs a data source first), QuickInputSheet re-mount.
 
 ## 10. Key files
 
@@ -212,7 +219,7 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 - `components/`: `BrandRow.tsx`, `RetaPhaseSection.tsx`, `DateMesoHeader.tsx`, `BriefingCard.tsx`, `WorkoutTeaser.tsx`, `VolleyballCard.tsx`, `VulnerabilityCard.tsx`, `FuelTimelinePreview.tsx`, `QuickStatsRow.tsx`, `InsightsTeaser.tsx`.
 
 **Frontend — data & lib:**
-- `frontend/src/data/today/todayHooks.ts` (+ `todayHooks.test.tsx`) — `useTodayScenario`, `resolveBriefing`, `useToday`, `useFuelPreview`, `useQuickStats`, `useInsightsTeaser`; `checkinHooks.ts` (+ test, incl. `buildDaySlots`) — `useCheckins`; all re-exported by the `data/hooks.ts` barrel.
+- `frontend/src/data/today/todayHooks.ts` (+ `todayHooks.test.tsx`) — `useTodayScenario`, `resolveBriefing`, `useToday`, `useFuelPreview`, `useQuickStats`, `useInsightsTeaser`; `checkinHooks.ts` (+ test, incl. `buildDaySlots`) — `useCheckins`; `briefingHooks.ts` (+ test) — `useBriefing` (proactive B1.2) + `briefingApi.ts` (`toBriefing` wire→`Briefing`); all re-exported by the `data/hooks.ts` barrel.
 - `frontend/src/data/today/today.ts` (incl. `workoutPrediction`, `volleyballNote`), `checkins.ts`, `kindMeta.ts`, `types.ts` (`TodayMeta`/`UserMeta`/`WorkoutPrediction`/`QuickStatItem`/`InsightsTeaserItem`), `fuel.ts` (`fuelToday`).
 - `frontend/src/data/me/biometricsApi.ts` (`checkinApi`), `data/_client/mode.ts`, `shared/lib/dates.ts`, `data/_client/api.ts` (`apiFetch`/`setToken`), `shared/lib/safeMarkdown.tsx`.
 - `frontend/src/shared/ui/RetaPhaseBar.tsx`, `QuickStat.tsx` — shared primitives.

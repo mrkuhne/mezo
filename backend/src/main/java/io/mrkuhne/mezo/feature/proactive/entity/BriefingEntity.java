@@ -50,4 +50,9 @@ public class BriefingEntity extends OwnedEntity {
     @NotNull
     @Column(name = "generated_at", nullable = false)
     private Instant generatedAt;
+
+    /** How many times this day's briefing has been regenerated (staleness path, B1.2) —
+     *  a fresh row carries its predecessor's count + 1; the GET path caps on it. */
+    @Column(name = "regen_count", nullable = false)
+    private int regenCount;
 }
