@@ -3192,6 +3192,106 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/proactive/experiment:
+    get:
+      tags:
+        - Proactive
+      operationId: getExperiments
+      summary: 'All live N=1 experiments (proposed/active/completed), newest first (P2)'
+      description: >-
+        Returns the user's live experiments (dismissed excluded). An empty array
+        is the honest empty state (never a 404). Lazily proposes when the user
+        has none and has confirmed patterns.
+      responses:
+        '200':
+          description: All live experiments (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExperimentResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/proactive/experiment/propose:
+    post:
+      tags:
+        - Proactive
+      operationId: proposeExperiments
+      summary: On-demand experiment proposal ("+ Új kísérlet javasol Mezo") (P2)
+      description: >-
+        Generates up to the open-cap of experiment proposals from confirmed
+        patterns. A no-op (empty array) when the cap is already met or there are
+        no confirmed patterns.
+      responses:
+        '200':
+          description: The freshly proposed experiments (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ExperimentResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/experiment/{id}/decision':
+    post:
+      tags:
+        - Proactive
+      operationId: decideExperiment
+      summary: L2 accept/dismiss a proposed experiment (P2)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExperimentDecisionRequest'
+      responses:
+        '200':
+          description: The experiment with its new status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Experiment not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The experiment is not in the proposed state (already decided)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -7566,6 +7666,62 @@ components:
           description: >-
             Code-formatted outcome text once the validation job closed the
             window
+        generatedAt:
+          type: string
+          format: date-time
+    ExperimentDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          pattern: ^(accept|dismiss)$
+    ExperimentResponse:
+      type: object
+      required:
+        - id
+        - title
+        - hypothesis
+        - status
+        - metricKey
+        - expectedDirection
+        - totalDays
+        - generatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        hypothesis:
+          type: string
+        status:
+          type: string
+          description: proposed | active | completed | dismissed
+        metricKey:
+          type: string
+        expectedDirection:
+          type: string
+          description: up | down | stable
+        startDate:
+          type: string
+          format: date
+          nullable: true
+          description: Null until accepted (proposed rows have no start)
+        totalDays:
+          type: integer
+          description: The experiment window length in days
+        outcome:
+          type: string
+          nullable: true
+          description: Code-formatted outcome once the window closed
+        outcomeGood:
+          type: boolean
+          nullable: true
+          description: >-
+            true/false once evaluated; null = completed but inconclusive (no
+            data)
         generatedAt:
           type: string
           format: date-time
