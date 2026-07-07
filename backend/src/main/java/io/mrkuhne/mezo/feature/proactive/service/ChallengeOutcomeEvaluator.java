@@ -49,12 +49,20 @@ public class ChallengeOutcomeEvaluator {
         Optional<WorkoutSessionEntity> instance = workoutSessionRepository
             .findFirstByCreatedByAndTemplateSessionIdAndDateOrderByCreatedAtDesc(
                 c.getCreatedBy(), c.getTemplateSessionId(), c.getWorkoutDate());
+        // Completion gate: an in-progress instance today ("not yet done", spec §5) must be left
+        // untouched — otherwise a mid-workout GET/refetch would resolve it against PARTIAL sets and
+        // the sticky miss would block a later real PR. Only resolve when the instance is completed
+        // OR the workout day is already over.
+        boolean instanceDone = instance.map(w -> "completed".equals(w.getStatus())).orElse(false);
+        boolean dayPassed = c.getWorkoutDate().isBefore(today);
+        if (!instanceDone && !dayPassed) {
+            return false; // in-progress today OR not started — leave accepted, do not resolve
+        }
         List<ExerciseSetEntity> logged = instance
             .map(w -> exerciseSetRepository
                 .findByCreatedByAndWorkoutSessionIdAndExerciseIdOrderBySetIndexAsc(c.getCreatedBy(), w.getId(), c.getExerciseId())
                 .stream().filter(s -> !s.isSkipped() && s.getReps() != null).toList())
             .orElse(List.of());
-        boolean dayPassed = c.getWorkoutDate().isBefore(today);
         if (logged.isEmpty()) {
             if (!dayPassed) { return false; }                        // today, not logged yet — leave accepted
             c.setStatus(ChallengeEntity.STATUS_INCONCLUSIVE);

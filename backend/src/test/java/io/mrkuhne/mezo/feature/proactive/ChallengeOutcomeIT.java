@@ -202,6 +202,44 @@ class ChallengeOutcomeIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testEvaluate_shouldStayAccepted_whenTodaysInstanceStillActiveWithPartialSets() {
+        UUID user = userPopulator.createUser("chl-today-active@test.local").getId();
+        Plan plan = plantTemplate(user);
+        // Mid-workout: today's instance is still 'active' and carries a PARTIAL set that would MISS
+        // the 80kg×8 target (60kg×5). A GET fired now must NOT resolve to a sticky miss.
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(user, plan.template(), TODAY, "active");
+        ChallengeEntity c = challengePopulator.challengePr(
+            user, plan.templateSessionId(), TODAY, plan.exerciseId(), ChallengeEntity.STATUS_ACCEPTED, "80.00", 8);
+        trainPopulator.createLoggedSet(user, plan.exerciseId(), instance.getId(), 0, "60.00", 5, 3);
+
+        boolean transitioned = evaluator.evaluate(c, TODAY);
+
+        assertThat(transitioned).isFalse();
+        ChallengeEntity r = reload(c);
+        assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_ACCEPTED);
+        assertThat(r.getOutcomeGood()).isNull();
+    }
+
+    @Test
+    void testEvaluate_shouldHit_whenTodaysInstanceCompletedWithHittingSet() {
+        UUID user = userPopulator.createUser("chl-today-done@test.local").getId();
+        Plan plan = plantTemplate(user);
+        // Completion unlocks same-day resolution: today's instance is 'completed' and a set clears
+        // the 80kg×8 target (85kg×10) → hit even though the workout is today.
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(user, plan.template(), TODAY, "completed");
+        ChallengeEntity c = challengePopulator.challengePr(
+            user, plan.templateSessionId(), TODAY, plan.exerciseId(), ChallengeEntity.STATUS_ACCEPTED, "80.00", 8);
+        trainPopulator.createLoggedSet(user, plan.exerciseId(), instance.getId(), 0, "85.00", 10, 1);
+
+        boolean transitioned = evaluator.evaluate(c, TODAY);
+
+        assertThat(transitioned).isTrue();
+        ChallengeEntity r = reload(c);
+        assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_HIT);
+        assertThat(r.getOutcomeGood()).isTrue();
+    }
+
+    @Test
     void testEvaluateDue_shouldResolveAllAcceptedRows_whenBackstopRuns() {
         UUID user = userPopulator.createUser("chl-due@test.local").getId();
         Plan plan = plantTemplate(user);
