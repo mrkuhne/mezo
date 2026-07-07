@@ -179,6 +179,10 @@ export const handlers = [
   // Proactive heartbeat (H1) — default: honest 404, the Today CompanionNoteCard stays absent.
   http.get(`${API_BASE}/api/proactive/heartbeat`, () => new HttpResponse(null, { status: 404 })),
 
+  // Proactive prediction (P1) — default: honest empty ARRAY (list endpoint, never 404); the
+  // PredictionsPage renders its "still learning" null-state.
+  http.get(`${API_BASE}/api/proactive/prediction`, () => HttpResponse.json([])),
+
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
   http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
 

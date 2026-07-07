@@ -36,7 +36,7 @@ public class ResetDatabase {
     public void resetExceptMasterData() {
         // TRUNCATE CASCADE handles FK dependencies between owned domain tables.
         entityManager.createNativeQuery(
-            "TRUNCATE TABLE heartbeat_note, memoir, weekly_suggestion, briefing, pattern, daily_summary, memory_embedding, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, pantry_import, pantry_item, weight_log, sleep_log, check_in, "
+            "TRUNCATE TABLE prediction, heartbeat_note, memoir, weekly_suggestion, briefing, pattern, daily_summary, memory_embedding, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, pantry_import, pantry_item, weight_log, sleep_log, check_in, "
                 + "exercise_feedback, exercise_set, exercise, workout_session, muscle_group_volume_log, mesocycle, "
                 + "gym_schedule_slot, sport_schedule_slot, sport_session, run_session_log, running_block, "
                 + "skill_progress, level_up_event, perk_unlock, "

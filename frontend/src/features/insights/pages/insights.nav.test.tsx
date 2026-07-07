@@ -30,6 +30,12 @@ describe('insights nav (real mode default)', () => {
     await userEvent.click(screen.getByRole('link', { name: 'Memoir' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Memoir' })).toBeInTheDocument()
     expect(await screen.findByText('Az első memoir a hét zárásakor készül el.')).toBeInTheDocument()
+    // Predictions is un-ghosted at P1 — visible and navigates to the honest still-learning state.
+    await userEvent.click(screen.getByRole('link', { name: 'Predictions' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Predictions' })).toBeInTheDocument()
+    expect(
+      await screen.findByText('Az első predikciók a megerősített mintákból készülnek — a minta-motor még tanul.'),
+    ).toBeInTheDocument()
   })
 })
 

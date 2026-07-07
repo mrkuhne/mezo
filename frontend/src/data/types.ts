@@ -505,11 +505,12 @@ export interface Memoir {
   anchors: MemoirAnchor[]
 }
 
-export type PredictionStatus = 'pending' | 'validated'
+export type PredictionStatus = 'pending' | 'validated' | 'missed'
 export interface Prediction {
   id: string
   title: string
-  confidence: number
+  /** null = the engine is still learning („tanulom") — never a fabricated number (proactive P1). */
+  confidence: number | null
   status: PredictionStatus
   date: string
   basis?: string

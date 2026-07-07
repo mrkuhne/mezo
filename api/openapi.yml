@@ -3166,6 +3166,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/proactive/prediction:
+    get:
+      tags:
+        - Proactive
+      operationId: getPredictions
+      summary: Pattern-grounded weekly predictions with validation state (P1)
+      description: >-
+        All live predictions, newest window first. Lazily generates the CURRENT
+        week's batch when that week has no rows yet (needs CONFIRMED patterns —
+        the grounding gate). An empty array is the honest empty state (never
+        fabricated forecasts).
+      responses:
+        '200':
+          description: All live predictions (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PredictionResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -7483,6 +7509,63 @@ components:
         content:
           type: string
           description: 'The generated HU note (plain prose, cheap tier)'
+        generatedAt:
+          type: string
+          format: date-time
+    PredictionResponse:
+      type: object
+      required:
+        - id
+        - title
+        - basis
+        - metricKey
+        - expectedDirection
+        - validFrom
+        - validTo
+        - status
+        - generatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          description: 'The forecast statement (HU prose, model-written)'
+        basis:
+          type: string
+          description: >-
+            Why — grounded in the selected pattern + context (model-written
+            prose)
+        confidence:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            COPIED from the grounding pattern's stats; null = the FE renders
+            „tanulom" (never model-invented)
+        metricKey:
+          type: string
+          description: >-
+            weight_trend | sleep_avg | training_volume (the deterministic v1
+            catalog)
+        expectedDirection:
+          type: string
+          description: up | down | stable (model-SELECTED from the enum)
+        validFrom:
+          type: string
+          format: date
+        validTo:
+          type: string
+          format: date
+        status:
+          type: string
+          description: pending | validated | missed
+        actual:
+          type: string
+          nullable: true
+          description: >-
+            Code-formatted outcome text once the validation job closed the
+            window
         generatedAt:
           type: string
           format: date-time

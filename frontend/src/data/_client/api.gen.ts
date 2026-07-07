@@ -1281,6 +1281,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/prediction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pattern-grounded weekly predictions with validation state (P1)
+         * @description All live predictions, newest window first. Lazily generates the CURRENT week's batch when that week has no rows yet (needs CONFIRMED patterns — the grounding gate). An empty array is the honest empty state (never fabricated forecasts).
+         */
+        get: operations["getPredictions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2936,6 +2956,33 @@ export interface components {
             kind: string;
             /** @description The generated HU note (plain prose, cheap tier) */
             content: string;
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        PredictionResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description The forecast statement (HU prose, model-written) */
+            title: string;
+            /** @description Why — grounded in the selected pattern + context (model-written prose) */
+            basis: string;
+            /**
+             * Format: double
+             * @description COPIED from the grounding pattern's stats; null = the FE renders „tanulom" (never model-invented)
+             */
+            confidence?: number | null;
+            /** @description weight_trend | sleep_avg | training_volume (the deterministic v1 catalog) */
+            metricKey: string;
+            /** @description up | down | stable (model-SELECTED from the enum) */
+            expectedDirection: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string;
+            /** @description pending | validated | missed */
+            status: string;
+            /** @description Code-formatted outcome text once the validation job closed the window */
+            actual?: string | null;
             /** Format: date-time */
             generatedAt: string;
         };
@@ -6825,6 +6872,35 @@ export interface operations {
             };
             /** @description No note for the day (honest absence). The Today card simply stays absent. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getPredictions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All live predictions (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

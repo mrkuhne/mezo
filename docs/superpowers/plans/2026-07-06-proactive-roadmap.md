@@ -223,7 +223,29 @@ subscriptions.
 
 ## P — „előre lát"
 
-### P1 — Predictions + validation
+### P1 — Predictions + validation ✅ (shipped 2026-07-07)
+
+**Shipped as built:** `prediction` table (non-unique `week_start` idempotence probe, nullable
+`confidence`, CHECK-pinned `expected_direction`/`status`, code-set `valid_from`/`valid_to`) +
+**smart-tier** `PredictionGenerator` (gather = V0.3 snapshot + facts + numbered CONFIRMED-pattern
+candidates + a fixed 3-key metric catalog → ONE `completeSmart`, strict-JSON `{predictions:[{title,
+basis, patternIndex, metricKey, expectedDirection}]}`, **code-set windows**, **pattern-copied
+confidence** — null = „tanulom", never invented — catalog/enum validation drops unvalidatable rows,
+`max-per-week` cap, empty-list on zero confirmed patterns) + **deterministic**
+`PredictionValidationService` (window avg/count vs the prior 7 days, epsilon-banded direction,
+no-data ⇒ stays pending — LLM-free) + `PredictionJob` two crons (`runWeekly` Mon 06:30 + `runValidation`
+daily 06:15, one third switch `prediction-job.enabled`) + list `GET /api/proactive/prediction` (lazy
+current-week; **`200 []` = honest empty, never 404**). FE: `usePredictions()` dual-mode (list;
+`[]`→still-learning null-state) + `PredictionsPage` un-ghost („tanulom" on null confidence, `✗ Missed`
+state, accuracy header derived from closed rows; mock keeps the Phase-1 literal), `predictions` left
+`PHASE3_TAB_IDS` (only Experiments hidden now). **In-slice decisions resolved:** metric catalog =
+3 deterministic keys (`weight_trend`/`sleep_avg`/`training_volume`, epsilon-banded); window = the
+generation week, closed by the daily run, no-data ⇒ pending; grounding gate = CONFIRMED patterns only;
+confidence COPIED from the pattern (statistical ⇒ null); list read returns `[]` not 404. Deviations
+from the spec §3 row: added `week_start` (idempotence) + `expected_direction` (the machine-checkable
+claim). The `[fake-prediction:{…}]` sentinel is GREEDY (nested payload). Docs: `docs/features/proactive.md`
+(§1-§10) + `docs/features/insights.md` (§1/§2/§2.6/§3/§8/§9/§10). Plan:
+[`2026-07-07-proactive-p1-predictions.md`](2026-07-07-proactive-p1-predictions.md). **bd:** `mezo-h4wp.7`.
 
 **Goal:** the Predictions tab stops being fiction — pattern-grounded forecasts that get judged
 against reality.

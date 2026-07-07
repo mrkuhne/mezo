@@ -1,10 +1,12 @@
 package io.mrkuhne.mezo.feature.proactive.config;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.math.BigDecimal;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -15,7 +17,8 @@ public record ProactiveProperties(
         @NotNull @Valid Briefing briefing,
         @NotNull @Valid Weekly weekly,
         @NotNull @Valid Memoir memoir,
-        @NotNull @Valid Heartbeat heartbeat) {
+        @NotNull @Valid Heartbeat heartbeat,
+        @NotNull @Valid Prediction prediction) {
 
     public record Briefing(
         /** How many finished days of narrative memory (daily_summary) the gather reads;
@@ -47,5 +50,19 @@ public record ProactiveProperties(
         @NotBlank String middayCron,
         /** Evening closing schedule (server zone). */
         @NotBlank String eveningCron
+    ) {}
+
+    /** P1 weekly prediction generation + daily deterministic window-close validation. */
+    public record Prediction(
+        /** Monday-morning generation schedule (server zone), after the weekly suggestion. */
+        @NotBlank String cron,
+        /** Daily validation schedule (server zone) — closes windows with valid_to < today. */
+        @NotBlank String validationCron,
+        /** Cap on persisted predictions per generation week. */
+        @Min(1) @Max(10) int maxPerWeek,
+        /** Stable-band epsilon for the weight_trend verdict (kg). */
+        @NotNull @DecimalMin("0.0") BigDecimal weightEpsilonKg,
+        /** Stable-band epsilon for the sleep_avg verdict (hours). */
+        @NotNull @DecimalMin("0.0") BigDecimal sleepEpsilonH
     ) {}
 }

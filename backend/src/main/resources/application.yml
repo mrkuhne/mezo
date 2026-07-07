@@ -154,6 +154,10 @@ mezo:
       # off = the HeartbeatJob bean does not exist (the lazy GET still serves)
       heartbeat-job:
         enabled: true
+      # P1 weekly generation + daily validation (schedules: mezo.proactive.prediction.*);
+      # off = the PredictionJob bean does not exist (the lazy GET still serves)
+      prediction-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -323,6 +327,14 @@ mezo:
       # SAME expressions (CronExpression), so the schedule lives in exactly one place
       midday-cron: "0 30 12 * * *"
       evening-cron: "0 30 20 * * *"
+    prediction:
+      # P1 Monday-morning generation (after the weekly suggestion) + daily window-close validation
+      cron: "0 30 6 * * MON"
+      validation-cron: "0 15 6 * * *"
+      max-per-week: 3
+      # epsilon bands for the deterministic direction verdicts (stable inside ±epsilon)
+      weight-epsilon-kg: 0.1
+      sleep-epsilon-h: 0.25
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

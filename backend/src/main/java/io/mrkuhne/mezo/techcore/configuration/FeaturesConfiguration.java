@@ -50,4 +50,7 @@ public class FeaturesConfiguration {
 
     /** H1 heartbeat window crons — techcore cron zone (schedules: mezo.proactive.heartbeat.*). */
     public static final String HEARTBEAT_JOB_SWITCH = "mezo.techcore.cron.heartbeat-job.enabled";
+
+    /** P1 prediction generation + validation crons — techcore cron zone (schedules: mezo.proactive.prediction.*). */
+    public static final String PREDICTION_JOB_SWITCH = "mezo.techcore.cron.prediction-job.enabled";
 }
