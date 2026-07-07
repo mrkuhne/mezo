@@ -43,22 +43,26 @@ export function ChallengeCard({
   const typeColor = TYPE_COLOR[c.type] ?? 'var(--brand-primary)'
   const resolved = c.status != null && (RESOLVED as ReadonlyArray<string>).includes(c.status)
   const outcome = resolved ? OUTCOME[c.status as 'hit' | 'miss' | 'inconclusive'] : null
+  // Reward skin (brand gradient + brand border + radial glow) is a celebratory look — reserve it
+  // for a live accepted challenge. Once resolved (hit/miss/inconclusive), the outcome chip + line
+  // carry the meaning; a resolved card (incl. a miss) must NOT wear the reward skin.
+  const rewardSkin = accepted && !resolved
 
   return (
     <div
       className="card notch-12"
       style={{
         padding: 16,
-        background: accepted
+        background: rewardSkin
           ? 'linear-gradient(180deg, color-mix(in srgb, var(--brand-glow) 6%, transparent) 0%, var(--surface-1) 100%)'
           : 'var(--surface-1)',
-        borderColor: accepted ? 'var(--border-brand)' : 'var(--border-subtle)',
+        borderColor: rewardSkin ? 'var(--border-brand)' : 'var(--border-subtle)',
         position: 'relative',
         overflow: 'hidden',
         transition: 'all 0.3s ease',
       }}
     >
-      {accepted && (
+      {rewardSkin && (
         <div
           style={{
             position: 'absolute',
