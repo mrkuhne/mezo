@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.support.populator.LearnedFactPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.HeartbeatNotePopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
+import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
@@ -61,6 +62,7 @@ import org.springframework.context.annotation.Import;
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
     DailySummaryPopulator.class, PatternPopulator.class, BriefingPopulator.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class, HeartbeatNotePopulator.class,
+    PredictionPopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     CheckInPopulator.class,
