@@ -136,7 +136,8 @@ class TrainContractIT extends ApiIntegrationTest {
         trainPopulator.createExercise(owner, day.getId(), "Régi", 0);
 
         List<GymExerciseInput> body = List.of(
-            GymExerciseInput.builder().name("Friss gyakorlat").sets(3).targetReps("8-10").targetRIR(1)
+            GymExerciseInput.builder().name("Friss gyakorlat").warmupSets(2).workingSets(3)
+                .repMin(8).repMax(10).targetRIR(1)
                 .type(GymExerciseInput.TypeEnum.COMPOUND).build());
         MesoDay updated = putForBody(
             "/api/train/mesocycles/" + meso.getId() + "/days/" + day.getId() + "/exercises",
@@ -170,8 +171,8 @@ class TrainContractIT extends ApiIntegrationTest {
                 MesocycleCreateRequest.PhaseCurveEnum.MEV,
                 MesocycleCreateRequest.PhaseCurveEnum.MAV))
             .days(List.of(MesoDayInput.builder().day("Hét").type("Upper")
-                .exercises(List.of(GymExerciseInput.builder().name("Bench Press").sets(4)
-                    .targetReps("6-8").targetRIR(2)
+                .exercises(List.of(GymExerciseInput.builder().name("Bench Press").warmupSets(2)
+                    .workingSets(4).repMin(6).repMax(8).targetRIR(2)
                     .type(GymExerciseInput.TypeEnum.COMPOUND).build()))
                 .build()))
             .build();

@@ -135,6 +135,22 @@ public class TrainPopulator {
         return workoutSessionRepository.saveAndFlush(s);
     }
 
+    /** An active mesocycle — high-level scenario builder for the prescribed-sets round-trip. */
+    public MesocycleEntity createActiveMeso(UUID createdBy) {
+        return createMesocycle(createdBy, "P1 meso", "active");
+    }
+
+    /** A template day (templateSessionId null) hanging off a meso — logSet's exercise chain root. */
+    public WorkoutSessionEntity createTemplateDay(UUID createdBy, UUID mesocycleId, String dayLabel) {
+        return createWorkoutSession(createdBy, mesocycleId, dayLabel, "gym", 0, "active");
+    }
+
+    /** Start an active instance from a template day (copies the day fields, links templateSessionId). */
+    public WorkoutSessionEntity startInstance(UUID createdBy, UUID templateDayId) {
+        WorkoutSessionEntity template = workoutSessionRepository.findById(templateDayId).orElseThrow();
+        return createWorkoutInstance(createdBy, template, LocalDate.now(), "active");
+    }
+
     public ExerciseEntity createExercise(UUID createdBy, UUID workoutSessionId, String name,
         int orderIndex) {
         ExerciseEntity e = new ExerciseEntity();
@@ -142,11 +158,31 @@ public class TrainPopulator {
         e.setWorkoutSessionId(workoutSessionId);
         e.setName(name);
         e.setMuscle("hát");
-        e.setSets(3);
-        e.setTargetReps("8-10");
+        e.setWarmupSets(2);
+        e.setWorkingSets(3);
+        e.setRepMin(6);
+        e.setRepMax(8);
         e.setTargetRir(1);
         e.setType("compound");
         e.setOrderIndex(orderIndex);
+        return exerciseRepository.saveAndFlush(e);
+    }
+
+    /** Recipe-shaped exercise with explicit muscle/type (P1 prescribed-sets round-trip tests). */
+    public ExerciseEntity createExercise(UUID createdBy, UUID workoutSessionId, String name,
+        String muscle, String type) {
+        ExerciseEntity e = new ExerciseEntity();
+        e.setCreatedBy(createdBy);
+        e.setWorkoutSessionId(workoutSessionId);
+        e.setName(name);
+        e.setMuscle(muscle);
+        e.setWarmupSets(2);
+        e.setWorkingSets(3);
+        e.setRepMin(6);
+        e.setRepMax(8);
+        e.setTargetRir(1);
+        e.setType(type);
+        e.setOrderIndex(0);
         return exerciseRepository.saveAndFlush(e);
     }
 
@@ -158,8 +194,10 @@ public class TrainPopulator {
         e.setWorkoutSessionId(workoutSessionId);
         e.setName(name);
         e.setMuscle(muscle);
-        e.setSets(3);
-        e.setTargetReps("8-10");
+        e.setWarmupSets(2);
+        e.setWorkingSets(3);
+        e.setRepMin(6);
+        e.setRepMax(8);
         e.setTargetRir(1);
         e.setType(type);
         e.setCatalogId(catalogId);

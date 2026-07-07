@@ -50,7 +50,8 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
         UUID dayId = meso.getDays().get(0).getId();
 
         GymExerciseInput input = GymExerciseInput.builder()
-            .name("Hip Thrust").muscle("glute").sets(3).targetReps("8-12").targetRIR(1)
+            .name("Hip Thrust").muscle("glute").warmupSets(2).workingSets(3).repMin(8).repMax(12)
+            .targetRIR(1)
             .type(GymExerciseInput.TypeEnum.COMPOUND).catalogId(catalogId)
             .build();
         MesoDay day = putForBody(
@@ -68,7 +69,8 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
         UUID dayId = meso.getDays().get(0).getId();
 
         GymExerciseInput input = GymExerciseInput.builder()
-            .name("Ghost Exercise").muscle("glute").sets(3).targetReps("8-12").targetRIR(1)
+            .name("Ghost Exercise").muscle("glute").warmupSets(2).workingSets(3).repMin(8).repMax(12)
+            .targetRIR(1)
             .type(GymExerciseInput.TypeEnum.COMPOUND).catalogId(UUID.randomUUID())
             .build();
         String body = putForBody(
@@ -86,7 +88,8 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
         UUID dayId = meso.getDays().get(0).getId();
 
         GymExerciseInput input = GymExerciseInput.builder()
-            .name("Box Jump").muscle("quad").sets(3).targetReps("5").targetRIR(2)
+            .name("Box Jump").muscle("quad").warmupSets(2).workingSets(3).repMin(5).repMax(5)
+            .targetRIR(2)
             .type(GymExerciseInput.TypeEnum.PLYO).catalogId(catalogId)
             .build();
         MesoDay day = putForBody(

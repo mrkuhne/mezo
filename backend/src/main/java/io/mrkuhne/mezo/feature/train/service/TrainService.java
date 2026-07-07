@@ -219,9 +219,12 @@ public class TrainService {
         e.setWorkoutSessionId(workoutSessionId);
         e.setName(in.getName());
         e.setMuscle(in.getMuscle() != null ? in.getMuscle() : "");
-        e.setSets(in.getSets());
-        e.setTargetReps(in.getTargetReps());
+        e.setWarmupSets(in.getWarmupSets());
+        e.setWorkingSets(in.getWorkingSets());
+        e.setRepMin(in.getRepMin());
+        e.setRepMax(in.getRepMax());
         e.setTargetRir(in.getTargetRIR());
+        e.setAnchorWeightKg(in.getAnchorWeightKg());
         e.setType(in.getType().getValue());
         e.setWarning(in.getWarning());
         e.setCatalogId(in.getCatalogId());

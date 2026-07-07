@@ -61,11 +61,14 @@ public interface TrainMapper {
 
     GymScheduleSlotResponse toGymSlotResponse(GymScheduleSlotEntity entity);
 
+    @Mapping(target = "kind", expression = "java(ExerciseSetResponse.KindEnum.fromValue(entity.getKind()))")
     ExerciseSetResponse toSetResponse(ExerciseSetEntity entity);
 
     @Mapping(target = "targetRIR", source = "targetRir")
     @Mapping(target = "type", expression = "java(TodayExercise.TypeEnum.fromValue(entity.getType()))")
     @Mapping(target = "lastWeek", ignore = true)
+    @Mapping(target = "prescribedSets", ignore = true)
+    @Mapping(target = "rationale", ignore = true)
     TodayExercise toTodayExercise(ExerciseEntity entity);
 
     @Mapping(target = "status", expression = "java(WorkoutSummaryResponse.StatusEnum.fromValue(entity.getStatus()))")

@@ -206,11 +206,11 @@ class TrainServiceIT extends AbstractIntegrationTest {
             .days(List.of(
                 MesoDayInput.builder().day("Hét").type("Upper").muscle("chest+back")
                     .exercises(List.of(
-                        GymExerciseInput.builder().name("Bench Press").muscle("chest").sets(4)
-                            .targetReps("6-8").targetRIR(2)
+                        GymExerciseInput.builder().name("Bench Press").muscle("chest").warmupSets(2)
+                            .workingSets(4).repMin(6).repMax(8).targetRIR(2)
                             .type(GymExerciseInput.TypeEnum.COMPOUND).build(),
-                        GymExerciseInput.builder().name("Chest Supported Row").muscle("back-mid").sets(3)
-                            .targetReps("8-10").targetRIR(1)
+                        GymExerciseInput.builder().name("Chest Supported Row").muscle("back-mid")
+                            .warmupSets(2).workingSets(3).repMin(8).repMax(10).targetRIR(1)
                             .type(GymExerciseInput.TypeEnum.COMPOUND).build()))
                     .build(),
                 MesoDayInput.builder().day("Kedd").type("Rest").build()))
@@ -352,12 +352,12 @@ class TrainServiceIT extends AbstractIntegrationTest {
         trainPopulator.createExercise(user, day.getId(), "Régi B", 1);
 
         MesoDay updated = trainService.replaceDayExercises(user, meso.getId(), day.getId(), List.of(
-            GymExerciseInput.builder().name("Új 1").sets(3).targetReps("8-10").targetRIR(1)
-                .type(GymExerciseInput.TypeEnum.COMPOUND).build(),
-            GymExerciseInput.builder().name("Új 2").sets(3).targetReps("10-12").targetRIR(2)
-                .type(GymExerciseInput.TypeEnum.ISOLATION).build(),
-            GymExerciseInput.builder().name("Új 3").sets(2).targetReps("12-15").targetRIR(1)
-                .type(GymExerciseInput.TypeEnum.ISOLATION).build()));
+            GymExerciseInput.builder().name("Új 1").warmupSets(2).workingSets(3).repMin(8).repMax(10)
+                .targetRIR(1).type(GymExerciseInput.TypeEnum.COMPOUND).build(),
+            GymExerciseInput.builder().name("Új 2").warmupSets(2).workingSets(3).repMin(10).repMax(12)
+                .targetRIR(2).type(GymExerciseInput.TypeEnum.ISOLATION).build(),
+            GymExerciseInput.builder().name("Új 3").warmupSets(2).workingSets(2).repMin(12).repMax(15)
+                .targetRIR(1).type(GymExerciseInput.TypeEnum.ISOLATION).build()));
         entityManager.flush();
         entityManager.clear();
 

@@ -213,6 +213,7 @@ public class WorkoutService {
         set.setRir(req.getRir());
         set.setSide(req.getSide());
         set.setNote(req.getNote());
+        set.setKind(req.getKind() != null ? req.getKind() : "working");
         set.setDoneAt(Instant.now());
         return mapper.toSetResponse(exerciseSetRepository.save(set));
     }
