@@ -19,7 +19,8 @@ public record ProactiveProperties(
         @NotNull @Valid Memoir memoir,
         @NotNull @Valid Heartbeat heartbeat,
         @NotNull @Valid Prediction prediction,
-        @NotNull @Valid Experiment experiment) {
+        @NotNull @Valid Experiment experiment,
+        @NotNull @Valid Challenge challenge) {
 
     public record Briefing(
         /** How many finished days of narrative memory (daily_summary) the gather reads;
@@ -79,5 +80,13 @@ public record ProactiveProperties(
         @Min(1) @Max(60) int minDays,
         /** Maximum experiment window length (days). */
         @Min(1) @Max(60) int maxDays
+    ) {}
+
+    /** Workout challenges — daily outcome-eval backstop + per-workout proposal cap. */
+    public record Challenge(
+        /** Daily outcome-evaluation schedule (server zone) — resolves accepted challenges whose day passed. */
+        @NotBlank String outcomeCron,
+        /** Cap on challenges proposed per workout session/day. */
+        @Min(1) @Max(6) int maxPerWorkout
     ) {}
 }

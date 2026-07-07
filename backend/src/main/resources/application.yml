@@ -162,6 +162,10 @@ mezo:
       # off = the ExperimentJob bean does not exist (the lazy propose on GET still serves)
       experiment-job:
         enabled: true
+      # Workout challenges daily outcome backstop (schedule: mezo.proactive.challenge.outcome-cron);
+      # off = the ChallengeJob bean does not exist (the write-path still serves)
+      challenge-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -346,6 +350,10 @@ mezo:
       max-open: 3
       min-days: 3
       max-days: 28
+    challenge:
+      # Daily outcome backstop (after the experiment outcome run)
+      outcome-cron: "0 25 6 * * *"
+      max-per-workout: 3
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

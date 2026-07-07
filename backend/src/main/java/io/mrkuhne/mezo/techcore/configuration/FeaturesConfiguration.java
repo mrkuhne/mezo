@@ -56,4 +56,7 @@ public class FeaturesConfiguration {
 
     /** P2 experiment proposal + outcome crons — techcore cron zone (schedules: mezo.proactive.experiment.*). */
     public static final String EXPERIMENT_JOB_SWITCH = "mezo.techcore.cron.experiment-job.enabled";
+
+    /** Workout challenges daily outcome-eval cron — techcore cron zone (schedule: mezo.proactive.challenge.outcome-cron). */
+    public static final String CHALLENGE_JOB_SWITCH = "mezo.techcore.cron.challenge-job.enabled";
 }
