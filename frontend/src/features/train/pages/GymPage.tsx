@@ -56,7 +56,7 @@ export function GymPage() {
 
   const days = activeMeso.days ?? []
   const gymDays = days.filter((d) => d.exerciseCount > 0)
-  const totalSets = gymDays.reduce((acc, d) => acc + d.exercises.reduce((b, e) => b + e.sets, 0), 0)
+  const totalSets = gymDays.reduce((acc, d) => acc + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
 
   // Current phase for the active week (Week 3 ⇒ phaseCurve[2] ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]

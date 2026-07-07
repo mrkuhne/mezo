@@ -8,8 +8,8 @@ const WORKOUT: WorkoutPlan = {
   tag: '',
   durationEst: 60,
   exercises: [
-    { id: 'ex0', name: 'Chest Supported Row', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound', muscle: 'back-mid', lastWeek: null },
-    { id: 'ex1', name: 'Lat Pulldown · Pronated', sets: 3, targetReps: '10-12', targetRIR: 2, type: 'compound', muscle: 'lats', lastWeek: null },
+    { id: 'ex0', name: 'Chest Supported Row', warmupSets: 1, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, anchorWeightKg: null, sets: 4, prescribedSets: null, rationale: null, type: 'compound', muscle: 'back-mid', lastWeek: null },
+    { id: 'ex1', name: 'Lat Pulldown · Pronated', warmupSets: 1, workingSets: 2, repMin: 10, repMax: 12, targetRIR: 2, anchorWeightKg: null, sets: 3, prescribedSets: null, rationale: null, type: 'compound', muscle: 'lats', lastWeek: null },
   ],
   challenges: [],
 }

@@ -20,7 +20,7 @@ interface GymDaySheetProps {
 
 export function GymDaySheet({ day, onClose }: GymDaySheetProps) {
   const navigate = useNavigate()
-  const totalSets = day.exercises.reduce((acc, e) => acc + e.sets, 0)
+  const totalSets = day.exercises.reduce((acc, e) => acc + e.workingSets, 0)
   const canStart = Boolean(day.current)
 
   return (

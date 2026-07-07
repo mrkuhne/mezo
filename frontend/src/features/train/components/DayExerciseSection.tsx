@@ -6,7 +6,7 @@
 // note + an (inert) "Edzéssé alakít" chip.
 // Ported from prototype mesocycles.jsx DayExerciseSection.
 // ============================================================
-import type { MesoDay } from '@/data/types'
+import type { GymExercise, MesoDay } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
 import { ExerciseEditRow } from '@/features/train/components/ExerciseEditRow'
@@ -17,13 +17,14 @@ interface DayExerciseSectionProps {
   onToggle: () => void
   onAdd: () => void
   onRemoveExercise: (exId: string) => void
+  onChangeExercise: (exId: string, patch: Partial<GymExercise>) => void
   onReorderExercises: (ids: string[]) => void
 }
 
-export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExercise, onReorderExercises }: DayExerciseSectionProps) {
+export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExercise, onChangeExercise, onReorderExercises }: DayExerciseSectionProps) {
   const exercises = day.exercises ?? []
   const isTraining = exercises.length > 0
-  const totalSets = exercises.reduce((a, e) => a + e.sets, 0)
+  const totalSets = exercises.reduce((a, e) => a + e.workingSets, 0)
 
   return (
     <div
@@ -102,7 +103,13 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
           <SortableList
             items={exercises.map((e) => ({ ...e, label: e.name }))}
             onReorder={onReorderExercises}
-            renderItem={(e) => <ExerciseEditRow ex={e} onRemove={() => onRemoveExercise(e.id)} />}
+            renderItem={(e) => (
+              <ExerciseEditRow
+                ex={e}
+                onRemove={() => onRemoveExercise(e.id)}
+                onChange={(patch) => onChangeExercise(e.id, patch)}
+              />
+            )}
           />
 
           {/* Add-exercise CTA */}

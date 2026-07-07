@@ -112,8 +112,10 @@ export function MesocyclePlannerPage() {
         muscleAccent: d.muscleAccent || undefined,
         note: d.note,
         exercises: d.exercises.map((e) => ({
-          name: e.name, muscle: e.muscle, sets: e.sets, targetReps: e.targetReps,
-          targetRIR: e.targetRIR, type: e.type, warning: e.warning, catalogId: e.catalogId,
+          name: e.name, muscle: e.muscle,
+          warmupSets: e.warmupSets, workingSets: e.workingSets,
+          repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
+          anchorWeightKg: e.anchorWeightKg, type: e.type, warning: e.warning, catalogId: e.catalogId,
         })),
       })),
     }
@@ -747,7 +749,7 @@ function Step3Program({
   }
 
   const totalExercises = program.reduce((a, d) => a + (d.exerciseCount || 0), 0)
-  const totalSets = program.reduce((a, d) => a + d.exercises.reduce((b, e) => b + e.sets, 0), 0)
+  const totalSets = program.reduce((a, d) => a + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
 
   const removeExercise = (dayName: string, exId: string) => {
     setProgram((prev) =>
@@ -787,7 +789,7 @@ function Step3Program({
           ...d.exercises,
           {
             id: `${item.id}-${Date.now()}`, name: item.name, muscle: item.muscle, type: item.type,
-            sets: 3, targetReps: '8-12', targetRIR: 1,
+            warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0,
             ...(item.catalogId ? { catalogId: item.catalogId } : {}),
           },
         ]

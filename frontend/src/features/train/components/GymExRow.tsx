@@ -2,7 +2,8 @@
 // Mezo · GymExRow — one exercise line inside the GymDaySheet.
 // Left accent border keys off exercise kind (compound = brand glow,
 // isolation = preference). Shows index / Antonio name / type · muscle,
-// optional amber warning banner, and sets×reps + RIR on the right.
+// optional amber warning banner, and the recipe summary (warmup+working /
+// rep-range · RIR) on the right.
 // Ported from prototype train-views.jsx GymExRow.
 // ============================================================
 import { Icon } from '@/shared/ui/Icon'
@@ -46,9 +47,9 @@ export function GymExRow({ ex, idx }: GymExRowProps) {
         </div>
         <div className="col" style={{ alignItems: 'flex-end', flexShrink: 0 }}>
           <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: typeColor, lineHeight: 1 }}>
-            {ex.sets}×{ex.targetReps}
+            {ex.warmupSets}+{ex.workingSets}
           </span>
-          <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>RIR {ex.targetRIR}</span>
+          <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>{ex.repMin}-{ex.repMax} · RIR {ex.targetRIR}</span>
         </div>
       </div>
     </div>

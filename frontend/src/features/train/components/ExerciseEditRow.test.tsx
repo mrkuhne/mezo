@@ -1,0 +1,23 @@
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { expect, it, vi } from 'vitest'
+import { ExerciseEditRow } from '@/features/train/components/ExerciseEditRow'
+import type { GymExercise } from '@/data/types'
+
+const ex: GymExercise = {
+  id: 'e1', name: 'Fekvenyomás', muscle: 'chest', type: 'compound',
+  warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0,
+}
+
+it('shows the recipe summary line', () => {
+  render(<ExerciseEditRow ex={ex} onRemove={() => {}} onChange={() => {}} />)
+  expect(screen.getByText(/2 bem · 3 work · 6-8 · RIR 0/)).toBeInTheDocument()
+})
+
+it('opens the editor and fires onChange with a recipe patch when a stepper is used', async () => {
+  const onChange = vi.fn()
+  render(<ExerciseEditRow ex={ex} onRemove={() => {}} onChange={onChange} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Szerkesztő' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Working növelése' }))
+  expect(onChange).toHaveBeenCalledWith({ workingSets: 4 })
+})

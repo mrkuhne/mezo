@@ -25,7 +25,7 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onReorder
   // Type-based: an empty (not yet filled) training day is still a training day,
   // it must keep the add-exercise affordance instead of rendering as "off".
   const isTraining = day.type !== 'Rest' && day.type !== 'Volleyball'
-  const setCount = day.exercises.reduce((a, e) => a + e.sets, 0)
+  const setCount = day.exercises.reduce((a, e) => a + e.workingSets, 0)
 
   return (
     <div

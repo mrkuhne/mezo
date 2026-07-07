@@ -272,14 +272,17 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
     const isLight = d.type.includes('light')
     let exercises: GymExercise[] = exercisesForDay(baseType, niggle).map((seed, i) => {
       const s = scheme[seed.type]
-      const sets = isLight ? Math.max(2, s.sets - 1) : s.sets
+      const workingSets = isLight ? Math.max(2, s.sets - 1) : s.sets
+      const [repMin, repMax] = s.reps.split('-').map(Number)
       const ex: GymExercise = {
         id: `gen-${d.day}-${i}`,
         name: seed.name,
         muscle: seed.muscle,
         type: seed.type,
-        sets,
-        targetReps: s.reps,
+        warmupSets: 2,
+        workingSets,
+        repMin,
+        repMax,
         targetRIR: isLight ? s.rir + 1 : s.rir,
       }
       if (seed.warning) ex.warning = seed.warning

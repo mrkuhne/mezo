@@ -19,7 +19,7 @@ export function PlannerExerciseRow({ ex, onRemove }: { ex: GymExercise; onRemove
               {ex.muscle}
             </span>
             <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--brand-glow)' }}>
-              {ex.sets} × {ex.targetReps} · RIR {ex.targetRIR}
+              {ex.warmupSets} bem · {ex.workingSets} work · {ex.repMin}-{ex.repMax} · RIR {ex.targetRIR}
             </span>
           </div>
           {ex.warning && (
