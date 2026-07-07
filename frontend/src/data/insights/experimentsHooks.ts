@@ -40,7 +40,7 @@ export function useExperimentActions() {
   const mock = isMockMode()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: EXPERIMENTS_KEY })
 
-  const decision = useMutation({
+  const decisionMutation = useMutation({
     mutationFn: async ({ id, decision }: { id: string; decision: 'accept' | 'dismiss' }) => {
       if (mock) return
       await experimentsApi.decide(id, decision)
@@ -48,7 +48,7 @@ export function useExperimentActions() {
     onSuccess: mock ? undefined : invalidate,
   })
 
-  const proposal = useMutation({
+  const proposalMutation = useMutation({
     mutationFn: async () => {
       if (mock) return
       await experimentsApi.propose()
@@ -57,8 +57,8 @@ export function useExperimentActions() {
   })
 
   return {
-    decide: (id: string, decision: 'accept' | 'dismiss') => decision.mutate({ id, decision }),
-    propose: () => proposal.mutate(),
-    pending: decision.isPending || proposal.isPending,
+    decide: (id: string, decision: 'accept' | 'dismiss') => decisionMutation.mutate({ id, decision }),
+    propose: () => proposalMutation.mutate(),
+    pending: decisionMutation.isPending || proposalMutation.isPending,
   }
 }

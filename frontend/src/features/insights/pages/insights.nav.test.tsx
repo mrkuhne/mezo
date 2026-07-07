@@ -36,6 +36,12 @@ describe('insights nav (real mode default)', () => {
     expect(
       await screen.findByText('Az első predikciók a megerősített mintákból készülnek — a minta-motor még tanul.'),
     ).toBeInTheDocument()
+    // Experiments is un-ghosted at P2 — the last ghost; visible and navigates to its null-state.
+    await userEvent.click(screen.getByRole('link', { name: 'Experiments' }))
+    expect(screen.getByRole('heading', { level: 1, name: 'Experiments' })).toBeInTheDocument()
+    expect(
+      await screen.findByText('Az első N=1 kísérletet a megerősített mintákból javasolja Mezo.'),
+    ).toBeInTheDocument()
   })
 })
 
