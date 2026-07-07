@@ -58,8 +58,10 @@ create table challenge (
     template_session_id uuid         not null,  -- the planned session (template day) this is for
     workout_date       date          not null,  -- the day it applies to (scopes a weekly template)
     exercise_id        uuid          not null,  -- the TEMPLATE exercise the challenge targets
+    exercise_name      varchar(120)  not null,  -- denormalized at generation (card render, no join)
     type               varchar(10)   not null,  -- PR | Depth | Volume  (CHECK)
     status             varchar(12)   not null default 'proposed', -- proposed|accepted|dismissed|hit|miss|inconclusive (CHECK)
+    risk               varchar(4)    not null default 'low',  -- low | mid  (CHECK) — qualitative, not a fabricated number
     title              varchar(120)  not null,
     why                text          not null,
     glory              varchar(200)  not null,
