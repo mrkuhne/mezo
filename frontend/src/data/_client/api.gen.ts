@@ -1512,16 +1512,16 @@ export interface components {
             id: string;
             name: string;
             muscle: string;
-            sets: number;
-            targetReps: string;
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
             targetRIR: number;
+            anchorWeightKg?: number | null;
             /** @enum {string} */
             type: "compound" | "isolation" | "plyo";
             warning?: string;
-            /**
-             * Format: uuid
-             * @description Optional reference to the exercise_catalog row this exercise was picked from
-             */
+            /** Format: uuid */
             catalogId?: string;
         };
         MesocycleCreateRequest: {
@@ -1551,9 +1551,12 @@ export interface components {
         GymExerciseInput: {
             name: string;
             muscle?: string;
-            sets: number;
-            targetReps: string;
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
             targetRIR: number;
+            anchorWeightKg?: number | null;
             /** @enum {string} */
             type: "compound" | "isolation" | "plyo";
             warning?: string;
@@ -1630,15 +1633,29 @@ export interface components {
             id: string;
             name: string;
             muscle: string;
-            sets: number;
-            targetReps: string;
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
             targetRIR: number;
+            anchorWeightKg?: number | null;
             /** @enum {string} */
             type: "compound" | "isolation" | "plyo";
             warning?: string;
             /** @description durable per-exercise note */
             note?: string | null;
             lastWeek?: components["schemas"]["LastWeekRef"];
+            /** @description Per-set targets computed by the Hypertrophy Drive engine; null when the mezo.feature.hypertrophy-drive switch is off. */
+            prescribedSets?: components["schemas"]["PrescribedSet"][] | null;
+            /** @description Short HU explanation of the recommendation (e.g. "Múlt hét 8 × 77.5 kg → +2.5 kg") */
+            rationale?: string | null;
+        };
+        PrescribedSet: {
+            /** @enum {string} */
+            kind: "warmup" | "working";
+            targetWeightKg?: number | null;
+            targetReps: number;
+            targetRIR?: number | null;
         };
         /** @description Top set of the previous completed instance of the same template day */
         LastWeekRef: {
@@ -1721,6 +1738,8 @@ export interface components {
              * @default false
              */
             skipped: boolean;
+            /** @enum {string} */
+            kind?: "warmup" | "working";
         };
         WorkoutStartRequest: {
             /** Format: uuid */
@@ -1735,6 +1754,8 @@ export interface components {
             rir: number;
             side?: string;
             note?: string;
+            /** @description warmup|working — defaults to working server-side when omitted */
+            kind?: string;
         };
         WorkoutSkipRequest: {
             /** Format: uuid */

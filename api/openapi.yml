@@ -3675,8 +3675,10 @@ components:
         - id
         - name
         - muscle
-        - sets
-        - targetReps
+        - warmupSets
+        - workingSets
+        - repMin
+        - repMax
         - targetRIR
         - type
       properties:
@@ -3687,12 +3689,19 @@ components:
           type: string
         muscle:
           type: string
-        sets:
+        warmupSets:
           type: integer
-        targetReps:
-          type: string
+        workingSets:
+          type: integer
+        repMin:
+          type: integer
+        repMax:
+          type: integer
         targetRIR:
           type: integer
+        anchorWeightKg:
+          type: number
+          nullable: true
         type:
           type: string
           enum:
@@ -3704,9 +3713,6 @@ components:
         catalogId:
           type: string
           format: uuid
-          description: >-
-            Optional reference to the exercise_catalog row this exercise was
-            picked from
     MesocycleCreateRequest:
       type: object
       required:
@@ -3786,8 +3792,10 @@ components:
       type: object
       required:
         - name
-        - sets
-        - targetReps
+        - warmupSets
+        - workingSets
+        - repMin
+        - repMax
         - targetRIR
         - type
       properties:
@@ -3796,17 +3804,31 @@ components:
           minLength: 1
         muscle:
           type: string
-        sets:
+        warmupSets:
+          type: integer
+          minimum: 0
+          maximum: 10
+        workingSets:
           type: integer
           minimum: 1
-          maximum: 20
-        targetReps:
-          type: string
-          minLength: 1
+          maximum: 10
+        repMin:
+          type: integer
+          minimum: 1
+          maximum: 100
+        repMax:
+          type: integer
+          minimum: 1
+          maximum: 100
         targetRIR:
           type: integer
           minimum: 0
           maximum: 5
+        anchorWeightKg:
+          type: number
+          minimum: 0
+          maximum: 999
+          nullable: true
         type:
           type: string
           enum:
@@ -3984,8 +4006,10 @@ components:
         - id
         - name
         - muscle
-        - sets
-        - targetReps
+        - warmupSets
+        - workingSets
+        - repMin
+        - repMax
         - targetRIR
         - type
       properties:
@@ -3996,12 +4020,19 @@ components:
           type: string
         muscle:
           type: string
-        sets:
+        warmupSets:
           type: integer
-        targetReps:
-          type: string
+        workingSets:
+          type: integer
+        repMin:
+          type: integer
+        repMax:
+          type: integer
         targetRIR:
           type: integer
+        anchorWeightKg:
+          type: number
+          nullable: true
         type:
           type: string
           enum:
@@ -4017,6 +4048,39 @@ components:
           description: durable per-exercise note
         lastWeek:
           $ref: '#/components/schemas/LastWeekRef'
+        prescribedSets:
+          type: array
+          nullable: true
+          description: >-
+            Per-set targets computed by the Hypertrophy Drive engine; null when
+            the mezo.feature.hypertrophy-drive switch is off.
+          items:
+            $ref: '#/components/schemas/PrescribedSet'
+        rationale:
+          type: string
+          nullable: true
+          description: >-
+            Short HU explanation of the recommendation (e.g. "Múlt hét 8 × 77.5
+            kg → +2.5 kg")
+    PrescribedSet:
+      type: object
+      required:
+        - kind
+        - targetReps
+      properties:
+        kind:
+          type: string
+          enum:
+            - warmup
+            - working
+        targetWeightKg:
+          type: number
+          nullable: true
+        targetReps:
+          type: integer
+        targetRIR:
+          type: integer
+          nullable: true
     LastWeekRef:
       type: object
       description: Top set of the previous completed instance of the same template day
@@ -4213,6 +4277,11 @@ components:
           type: boolean
           default: false
           description: true for a whole-exercise skip marker row (no perf data)
+        kind:
+          type: string
+          enum:
+            - warmup
+            - working
     WorkoutStartRequest:
       type: object
       required:
@@ -4255,6 +4324,10 @@ components:
         note:
           type: string
           maxLength: 500
+        kind:
+          type: string
+          pattern: ^(warmup|working)$
+          description: warmup|working — defaults to working server-side when omitted
     WorkoutSkipRequest:
       type: object
       required:
