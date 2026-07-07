@@ -264,10 +264,21 @@ export const handlers = [
       dayLabel: 'Csü',
       title: 'Pull Day',
       durationEst: 78,
+      // Prescribed-sets contract shape (recipe + engine targets) — mirrors the mock
+      // `workout` fixture so real-mode renders real prescribed data, not NaN/undefined.
       exercises: [
         {
           id: 'c1f3a0e2-0000-4000-8000-000000000002', name: 'Chest Supported Row',
-          muscle: 'back-mid', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound',
+          muscle: 'back-mid', type: 'compound',
+          warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, anchorWeightKg: null,
+          rationale: 'Múlt hét 9 × 102.5 kg → +2.5 kg',
+          prescribedSets: [
+            { kind: 'warmup', targetWeightKg: 52.5, targetReps: 10, targetRIR: null },
+            { kind: 'warmup', targetWeightKg: 77.5, targetReps: 5, targetRIR: null },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+          ],
           lastWeek: { weightKg: 102.5, reps: 9, rir: 2 },
         },
       ],

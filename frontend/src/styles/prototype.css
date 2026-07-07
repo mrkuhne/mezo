@@ -655,6 +655,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .set-dot.done { background: var(--brand-glow); border-color: var(--brand-glow); }
 .set-dot.extra { border: 1px dashed var(--brand-glow); box-sizing: border-box; }
+.set-dot.warm { border-color: color-mix(in srgb, var(--warning) 40%, transparent); background: color-mix(in srgb, var(--warning) 8%, transparent); }
+.set-dot.warm.done { background: var(--warning); border-color: var(--warning); }
 .set-dot.active {
   border-color: var(--brand-glow);
   box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.2);
