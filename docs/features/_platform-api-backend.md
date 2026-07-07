@@ -390,3 +390,4 @@ the omitted-`takenAt` service fallback stays deliberately UTC (asserted as such)
 **Cross-link to existing docs**
 - Phase-2 design: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md`; Train write/clean-slate: `2026-06-11-train-write-clean-slate-design.md`; running slice: `2026-06-14-train-running-slice-design.md`; goal-system G1: `2026-06-18-goal-system-design.md`; plans under `docs/superpowers/plans/`
 - ADR: `docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md`; roadmap: `docs/milestones/roadmap.md`; infra: `docs/infrastructure/`
+

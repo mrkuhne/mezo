@@ -282,3 +282,4 @@ pnpm build                      # tsc -b && vite build
 - `frontend/.env.example` — `VITE_API_URL`, `VITE_OWNER_EMAIL/PASSWORD`, `VITE_USE_MOCK`.
 
 **Related docs (link, don't duplicate):** `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (the foundational decision — §1 invariant, §3 FE integration, §5 slice map); `docs/superpowers/specs/2026-06-14-train-running-slice-design.md` (cleanest hook-wiring reference); `docs/references/api_contract_conventions.md` (contract-first FE↔BE type flow); `docs/references/error_handling.md` (the `SystemMessage` contract `apiFetch` mirrors); `docs/milestones/roadmap.md` (Phase-2 slice status — Slices C/D/E remaining).
+

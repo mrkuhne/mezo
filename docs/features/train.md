@@ -318,3 +318,4 @@ Both modes and both layers must stay green.
 - BE: `*IT.java` (service + contract) + `support/populator/{TrainPopulator,RunningPopulator}.java`
 
 **Related docs** — specs/plans in `docs/superpowers/specs|plans/` (dated `2026-06-10`…`2026-06-14`); house standards in `docs/references/*.md`.
+

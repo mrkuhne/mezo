@@ -360,3 +360,4 @@ cd frontend && pnpm parity                      # Playwright parity screenshots
 - Spec: [`docs/superpowers/specs/2026-06-08-me-domain-sheets-design.md`](../superpowers/specs/2026-06-08-me-domain-sheets-design.md); goal-system G1: [`docs/superpowers/specs/2026-06-18-goal-system-design.md`](../superpowers/specs/2026-06-18-goal-system-design.md); Phase-2: [`docs/superpowers/specs/2026-06-10-phase2-backend-design.md`](../superpowers/specs/2026-06-10-phase2-backend-design.md)
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `java_package_structure`, `error_handling`, `configuration_conventions`)
 - Roadmap: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
+

@@ -8,7 +8,6 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
   - api/feature/proactive/proactive.yml
   - backend/src/main/resources/db/changelog/1.0.0/script/202607061100_mezo-h4wp.1_create_briefing.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071500_mezo-h4wp.4_create_memoir.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071800_mezo-h4wp.5_create_heartbeat_note.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
