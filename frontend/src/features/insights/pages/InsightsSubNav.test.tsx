@@ -27,14 +27,12 @@ describe('InsightsSubNav (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('shows Memoir (un-ghosted at W2) and hides only Predictions/Experiments', () => {
+  test('shows Memoir + Predictions (un-ghosted) and hides only Experiments', () => {
     renderAt('/insights')
-    for (const label of ['Patterns', 'Weekly', 'Memoir', 'Knowledge', 'Chat']) {
+    for (const label of ['Patterns', 'Weekly', 'Memoir', 'Knowledge', 'Chat', 'Predictions']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
     }
-    for (const label of ['Predictions', 'Experiments']) {
-      expect(screen.queryByRole('link', { name: label })).not.toBeInTheDocument()
-    }
+    expect(screen.queryByRole('link', { name: 'Experiments' })).not.toBeInTheDocument()
   })
 
   test('Patterns (index) is active only on exact /insights', () => {
