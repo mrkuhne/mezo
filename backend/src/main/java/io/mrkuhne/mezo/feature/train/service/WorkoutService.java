@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -55,7 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkoutService {
 
     /** DayOfWeek (MONDAY..SUNDAY) → the HU day labels the frontend's DAY_ORDER uses. */
-    static final List<String> HU_DAY_LABELS =
+    public static final List<String> HU_DAY_LABELS =
         List.of("Hét", "Kedd", "Sze", "Csü", "Pén", "Szo", "Vas");
 
     private final MesocycleRepository mesocycleRepository;
@@ -70,6 +71,11 @@ public class WorkoutService {
     private final ProgressionService progressionService;
     private final LevelUpResultMapper levelUpResultMapper;
     private final ObjectProvider<ProgressionGate> progressionGate;
+    // Hypertrophy Drive (P1): the recommendation engine + its feature gate. The gate bean exists ONLY
+    // when mezo.feature.hypertrophy-drive.enabled=true, so an absent provider ⇔ switch off (mirrors
+    // progressionGate); off ⇒ getToday attaches no prescribedSets and the FE falls back to the logger.
+    private final SetRecommendationService setRecommendationService;
+    private final ObjectProvider<HypertrophyDriveGate> hypertrophyGate;
 
     public WorkoutTodayResponse getToday(UUID createdBy) {
         WorkoutTodayResponse empty = new WorkoutTodayResponse();
@@ -111,6 +117,11 @@ public class WorkoutService {
             .exercises(exercises.stream().map(e -> {
                 TodayExercise t = mapper.toTodayExercise(e);
                 t.setLastWeek(lastWeek.get(e.getId()));
+                if (hypertrophyGate.getIfAvailable() != null) {
+                    Prescription p = setRecommendationService.prescribe(createdBy, e, day.getId());
+                    t.setPrescribedSets(p.sets());
+                    t.setRationale(p.rationale());
+                }
                 return t;
             }).toList())
             .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
