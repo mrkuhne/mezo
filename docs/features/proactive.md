@@ -343,6 +343,8 @@ an L2 accept/dismiss write path, un-ghosting the last Insights tab.**
 | Frontend (Insights Predictions tab un-ghost) | 🟢 P1 | `usePredictions()` real (list, `[]` on error); `predictions` left `PHASE3_TAB_IDS`, `PredictionsPage` ghost dropped; renders real cards („tanulom" on null confidence, `✗ Missed` state, accuracy header derived from closed rows), else the honest „still learning" null-state; mock keeps the Phase-1 seed + literal header. |
 | Experiments (table + proposal + outcome + write path + two-cron job) | 🟢 P2 | `experiment` table (proposed/active/completed/dismissed lifecycle, nullable start_date/outcome_good); smart-tier `ExperimentProposalGenerator` (cap-gated, CONFIRMED-pattern-grounded); deterministic `ExperimentOutcomeService` (shared `MetricWindowEvaluator`); **write path** `POST …/decision` (L2, 409 on non-proposed) + `POST …/propose`; list `GET` (lazy propose, `[]` = honest); `ExperimentJob` two crons (weekly propose + daily outcome, three-switch). |
 | Frontend (Insights Experiments tab un-ghost) | 🟢 P2 | `useExperiments()` + `useExperimentActions()` (mutation accept/dismiss/propose); `experiments` left `PHASE3_TAB_IDS` (now EMPTY — all 7 tabs real); `ExperimentsPage` renders proposed (Elfogadom/Elvetem) / active (progress) / completed (outcome) rows + a real propose CTA, else the honest null-state. |
+| Workout challenges (table + generator + set-level evaluator + write path + outcome cron) | 🟢 HBWI | `challenge` table (proposed→accepted/dismissed→hit/miss/inconclusive, nullable confidence, structured targets); lazy-on-prep `ChallengeGenerator`; deterministic set-level `ChallengeOutcomeEvaluator` (NEW, not `MetricWindowEvaluator`); `GET …/challenge?templateSessionId=&date=` (lazy generate + lazy resolve, `[]` = honest) + `POST …/challenge/{id}/decision`; `ChallengeJob` outcome-cron backstop (three-switch). |
+| Frontend (ActiveWorkoutPage challenge surface) | 🟢 HBWI | `useChallenges()`/`useChallengeActions()` (`data/train/challengeHooks.ts`); `ActiveWorkoutPage` prep feeds the live list into `ChallengesCarousel`, accepted map + `decide()` from server status in live (local toggle in mock, byte-parity); `ChallengeCard` honest states — „tanulom" on null confidence, tools hidden in live, `hit/miss/inconclusive` outcome chip + line with the accept/skip row hidden. |
 | **Epic status** | ✅ COMPLETE | All 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push deferred** (pure delivery infra — see the roadmap). Every prose/forecast Insights + Today surface is honest and real. |
 
 **Driver:** `mezo-h4wp.4` (W2, on `mezo-h4wp.1`'s spine; W1 = `mezo-h4wp.3`, B1.2 = `mezo-h4wp.2`). **Design of record:**
@@ -423,6 +425,20 @@ there's no data). The **„+ Új kísérlet javasol Mezo"** button now really pr
 bounded by the open-cap). When there are no experiments yet the tab shows the **honest still-learning
 null-state** — never demo fiction. In **mock mode** the tab keeps the Phase-1 seed (active + completed
 cards, the inert propose CTA). See [insights.md §2.7](insights.md).
+
+**Live since HBWI — the pre-workout challenge carousel (`ActiveWorkoutPage`, `/train/session` prep).**
+The companion **proposes per-exercise micro-challenges** (PR/Depth/Volume) on the prep screen before
+„Kezdjük el". Each `ChallengeCard` (`features/train/components/ChallengeCard.tsx`) is honest: confidence
+reads **„tanulom"** on null (no fabricated %), the **tool-transparency chips are gone** (live sends no
+`tools` — the W1/W2 false-affordance lesson), and **„Vállaljuk" is a real L2 decision** — it `POST`s
+accept/dismiss (`useChallengeActions.decide`) and the accepted state derives from the server `status`
+(`accepted | hit | miss`). Once the workout is decided the card shows the **outcome chip + line** and
+**hides the accept/skip row**: `hit → ✓ Megerősítve` (success), `miss → ◯ Nem igazolódott` (muted, no
+red/no-penalty tone), `inconclusive → ◌ Nem értékelhető` (tertiary) — the same wording as the
+Experiments tab. The carousel renders **honest absence** (`null`, no rail) when the live list is empty.
+In **mock mode** the Phase-1 seed is byte-preserved: `conf 72%`, the tool chips, and a **local** accept
+toggle (no backend). Data via `useChallenges`/`useChallengeActions` (`data/train/challengeHooks.ts`,
+unified so `challenges` drives both modes). See [train.md §Active workout](train.md).
 
 ## 3. Architecture & data flow
 
