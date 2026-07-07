@@ -752,15 +752,18 @@ function ActiveWorkoutSession({
                   <div style={{ width: 1, height: 32, background: 'var(--border-subtle)' }} />
                   <LastWeekStat label="RIR" val={current.lastWeek.rir} />
                 </div>
-                <div
-                  className="row mt-md gap-sm"
-                  style={{ alignItems: 'center', paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}
-                >
-                  <Icon name="sparkle" size={11} color="var(--brand-glow)" />
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                    {current.rationale ?? `RIR ${current.lastWeek?.rir ?? ''} — súly tartás vagy +1 rep`}
-                  </span>
-                </div>
+              </div>
+            )}
+
+            {/* Engine rationale — rendered whenever the engine returns one, INDEPENDENT
+                of lastWeek: a first-ever workout (no lastWeek) still surfaces its
+                rationale (e.g. "Kezdő súly (anchor)" / "Első alkalom — add meg a súlyt"). */}
+            {current.rationale && (
+              <div className="row mt-lg gap-sm" style={{ alignItems: 'center' }}>
+                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  {current.rationale}
+                </span>
               </div>
             )}
 

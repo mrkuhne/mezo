@@ -507,6 +507,30 @@ test('real mode: the logging panel pre-fills from the prescribed target (not las
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:52.5'))
 })
 
+test('real mode: a first-ever workout (no lastWeek) still shows the engine rationale', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          lastWeek: null, // first-ever workout: no Múlt hét comparison
+          rationale: 'Kezdő súly (anchor)',
+        },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  // The Múlt hét block is absent (no lastWeek) but the rationale still renders.
+  expect(await screen.findByText('Kezdő súly (anchor)')).toBeInTheDocument()
+  expect(screen.queryByText(/Múlt hét/)).not.toBeInTheDocument()
+})
+
 test('real mode: a plyo set hides the kg stepper and logs weightKg 0 (reps-only)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []

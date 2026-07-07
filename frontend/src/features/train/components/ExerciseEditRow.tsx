@@ -78,7 +78,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
               onChange={(v) => onChange({ warmupSets: v })} />
             <RecipeStepper label="Working" value={ex.workingSets} min={1} max={10}
               onChange={(v) => onChange({ workingSets: v })} />
-            <RecipeStepper label="Rep min" value={ex.repMin} min={1} max={100}
+            <RecipeStepper label="Rep min" value={ex.repMin} min={1} max={ex.repMax}
               onChange={(v) => onChange({ repMin: v })} />
             <RecipeStepper label="Rep max" value={ex.repMax} min={ex.repMin} max={100}
               onChange={(v) => onChange({ repMax: v })} />
@@ -91,7 +91,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
   )
 }
 
-// A labelled −/value/+ tile (reuses the EditorChip visual) wired to onChange.
+// A labelled −/value/+ tile wired to onChange.
 // Clamps to [min, max] so the parent never receives an out-of-range recipe value.
 function RecipeStepper({ label, value, min, max, onChange }: {
   label: string; value: number; min: number; max: number; onChange: (v: number) => void
