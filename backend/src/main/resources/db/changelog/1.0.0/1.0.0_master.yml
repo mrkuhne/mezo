@@ -300,3 +300,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607071900_mezo-h4wp.7_create_prediction.sql
+  - changeSet:
+      id: "1.0.0:202607072000_mezo-h4wp.8_create_experiment"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607072000_mezo-h4wp.8_create_experiment.sql

@@ -158,6 +158,10 @@ mezo:
       # off = the PredictionJob bean does not exist (the lazy GET still serves)
       prediction-job:
         enabled: true
+      # P2 weekly proposal + daily outcome evaluation (schedules: mezo.proactive.experiment.*);
+      # off = the ExperimentJob bean does not exist (the lazy propose on GET still serves)
+      experiment-job:
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -335,6 +339,13 @@ mezo:
       # epsilon bands for the deterministic direction verdicts (stable inside ±epsilon)
       weight-epsilon-kg: 0.1
       sleep-epsilon-h: 0.25
+    experiment:
+      # P2 weekly proposal (Monday, after the prediction batch) + daily outcome evaluation
+      propose-cron: "0 45 6 * * MON"
+      outcome-cron: "0 20 6 * * *"
+      max-open: 3
+      min-days: 3
+      max-days: 28
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this

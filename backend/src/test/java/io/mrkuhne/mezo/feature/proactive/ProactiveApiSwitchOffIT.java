@@ -48,4 +48,22 @@ class ProactiveApiSwitchOffIT extends ApiIntegrationTest {
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
+
+    @Test
+    void testGetExperiments_shouldReturn404_whenProactiveSwitchedOff() {
+        String body = getForBody(
+                "/api/proactive/experiment", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testDecideExperiment_shouldReturn404_whenProactiveSwitchedOff() {
+        String body = postForBody(
+                "/api/proactive/experiment/" + java.util.UUID.randomUUID() + "/decision",
+                new io.mrkuhne.mezo.api.dto.ExperimentDecisionRequest().decision("accept"),
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
 }
