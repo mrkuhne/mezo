@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Deep Current v2")
 type: feature-platform
 status: done
-updated: 2026-07-01
+updated: 2026-07-07
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -222,7 +222,7 @@ For XSS-safe inline copy with `**bold**` markers, use `SafeMarkdown` from `@/sha
 **Add a UI primitive (recipe):**
 
 1. Create `frontend/src/shared/ui/<Name>.tsx` — a thin component, `cn()` for classes, minimal props, `var(--…)` tokens only (no stray hex/`rgba()`).
-2. If it needs new structural CSS, add a class to `frontend/src/styles/prototype.css` (keep the 8pt scale, mono for labels/numbers, Antonio for display, `notch-*` for corners). A few **feature-specific component-state classes** also live here alongside the shared vocabulary — e.g. the active-workout `.set-dot{,.done,.active,.extra}` dots (`.set-dot.extra` = the dashed "extra set" marker, F4/add-set) — that's fine for small stateful variants tightly coupled to one screen.
+2. If it needs new structural CSS, add a class to `frontend/src/styles/prototype.css` (keep the 8pt scale, mono for labels/numbers, Antonio for display, `notch-*` for corners). A few **feature-specific component-state classes** also live here alongside the shared vocabulary — e.g. the active-workout `.set-dot{,.done,.active,.extra,.warm}` dots (`.set-dot.extra` = the dashed "extra set" marker, F4/add-set; `.set-dot.warm{,.done}` = the amber warm-up-set marker, `--warning`-tinted, Hypertrophy Drive `mezo-dhdr`) — that's fine for small stateful variants tightly coupled to one screen.
 3. If it introduces a color, add it as a `:root` var **and** its `:root[data-theme="light"]` override — don't hardcode.
 4. Add a colocated render test `<Name>.test.tsx` (Vitest + RTL — assert classes/structure/aria; mirror the existing files).
 5. (Optional) expose it to Tailwind by adding a `--color-…: var(--…)` line to `index.css @theme inline`.
