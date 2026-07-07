@@ -52,8 +52,48 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
 
         Prescription p = svc.prescribe(owner, ex, day.getId());
 
+        // base==null suppresses warmups → exactly the 3 working sets (warmupSets=2 dropped)
+        assertThat(p.sets()).hasSize(3);
         assertThat(p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING))
             .allSatisfy(s -> assertThat(s.getTargetWeightKg()).isNull());
+    }
+
+    @Test
+    void testPrescribe_shouldExcludeSkippedWorkingSet_fromReference() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        // a heavier SKIPPED working row (100kg) must not become the reference; only the valid 80×8 counts
+        train.completedInstanceWithSets(owner, day.getId(), ex.getId(), sets -> {
+            var skipped = train.set("working", BigDecimal.valueOf(100), 8, 0);
+            skipped.setSkipped(true);
+            sets.add(skipped);
+            sets.add(train.set("working", BigDecimal.valueOf(80), 8, 0));
+        });
+
+        Prescription p = svc.prescribe(owner, ex, day.getId());
+        var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
+        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
+    }
+
+    @Test
+    void testPrescribe_shouldExcludeNullRepsWorkingSet_fromReference() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        // a heavier working row with null reps (unlogged) must not become the reference; only 80×8 counts
+        train.completedInstanceWithSets(owner, day.getId(), ex.getId(), sets -> {
+            var nullReps = train.set("working", BigDecimal.valueOf(100), 8, 0);
+            nullReps.setReps(null);
+            sets.add(nullReps);
+            sets.add(train.set("working", BigDecimal.valueOf(80), 8, 0));
+        });
+
+        Prescription p = svc.prescribe(owner, ex, day.getId());
+        var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
+        assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
     }
 
     @Test
