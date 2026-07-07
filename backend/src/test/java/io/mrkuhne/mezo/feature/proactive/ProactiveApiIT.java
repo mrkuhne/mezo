@@ -3,12 +3,15 @@ package io.mrkuhne.mezo.feature.proactive;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
+import io.mrkuhne.mezo.api.dto.HeartbeatNoteResponse;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.HeartbeatNotePopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -23,6 +26,7 @@ class ProactiveApiIT extends ApiIntegrationTest {
 
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private MemoirPopulator memoirPopulator;
+    @Autowired private HeartbeatNotePopulator heartbeatNotePopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -128,5 +132,37 @@ class ProactiveApiIT extends ApiIntegrationTest {
                 "/api/proactive/memoir", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testGetHeartbeat_shouldReturnLatestNote_whenPersisted() {
+        // two windows persisted for today — the newest (evening) wins; the lazy path is a no-op
+        heartbeatNotePopulator.note(ownerId(), LocalDate.now(), HeartbeatNoteEntity.WINDOW_MIDDAY);
+        heartbeatNotePopulator.note(ownerId(), LocalDate.now(), HeartbeatNoteEntity.WINDOW_EVENING);
+
+        HeartbeatNoteResponse note = getForBody(
+                "/api/proactive/heartbeat", ownerAuthHeaders(), HttpStatus.OK, HeartbeatNoteResponse.class);
+
+        assertThat(note.getWindow()).isEqualTo(HeartbeatNoteEntity.WINDOW_EVENING);
+        assertThat(note.getKind()).isEqualTo(HeartbeatNoteEntity.KIND_CLOSING);
+        assertThat(note.getContent()).isNotBlank();
+        assertThat(note.getDate()).isEqualTo(LocalDate.now());
+    }
+
+    @Test
+    void testGetHeartbeat_shouldReturn404_whenPastDateHasNoNote() {
+        // a past date never lazy-generates — honest absence even with narrative memory present
+        dailySummaryPopulator.summary(ownerId(), LocalDate.now().minusDays(2), "Volt nap.");
+
+        String body = getForBody(
+                "/api/proactive/heartbeat?date=" + LocalDate.now().minusDays(1),
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testGetHeartbeat_shouldReturn401_whenNoToken() {
+        getForBody("/api/proactive/heartbeat", null, HttpStatus.UNAUTHORIZED, String.class);
     }
 }

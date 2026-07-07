@@ -94,6 +94,13 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MEMOIR_SENTINEL =
             Pattern.compile("\\[fake-memoir:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of HeartbeatGenerator.HEARTBEAT_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT";
+
+    /** Scripted heartbeat prose (H1): {@code [fake-heartbeat:…]} planted via a check-in note. */
+    public static final Pattern HEARTBEAT_SENTINEL =
+            Pattern.compile("\\[fake-heartbeat:([^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -123,6 +130,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher m = MEMOIR_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1)
                     : "{\"title\":\"Fake memoir\",\"body\":\"FAKE-MEMOIR-NARRATÍVA\",\"anchorIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(HEARTBEAT_MARKER_MIRROR)) {
+            Matcher m = HEARTBEAT_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "FAKE-NAPKOZBENI-JEGYZET";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);

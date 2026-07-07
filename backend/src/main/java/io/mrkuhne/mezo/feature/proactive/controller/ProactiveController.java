@@ -2,9 +2,11 @@ package io.mrkuhne.mezo.feature.proactive.controller;
 
 import io.mrkuhne.mezo.api.controller.ProactiveApi;
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
+import io.mrkuhne.mezo.api.dto.HeartbeatNoteResponse;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveBriefingService;
+import io.mrkuhne.mezo.feature.proactive.service.ProactiveHeartbeatService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveMemoirService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveWeeklySuggestionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -24,6 +26,7 @@ public class ProactiveController implements ProactiveApi {
     private final ProactiveBriefingService briefingService;
     private final ProactiveWeeklySuggestionService weeklySuggestionService;
     private final ProactiveMemoirService memoirService;
+    private final ProactiveHeartbeatService heartbeatService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -39,5 +42,10 @@ public class ProactiveController implements ProactiveApi {
     @Override
     public MemoirResponse getMemoir() {
         return memoirService.getMemoir(currentUserId.get());
+    }
+
+    @Override
+    public HeartbeatNoteResponse getHeartbeat(LocalDate date) {
+        return heartbeatService.getHeartbeat(currentUserId.get(), date);
     }
 }

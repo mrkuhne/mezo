@@ -47,4 +47,7 @@ public class FeaturesConfiguration {
 
     /** W2 Sunday memoir job — techcore cron zone (schedule: mezo.proactive.memoir.cron). */
     public static final String MEMOIR_JOB_SWITCH = "mezo.techcore.cron.memoir-job.enabled";
+
+    /** H1 heartbeat window crons — techcore cron zone (schedules: mezo.proactive.heartbeat.*). */
+    public static final String HEARTBEAT_JOB_SWITCH = "mezo.techcore.cron.heartbeat-job.enabled";
 }

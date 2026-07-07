@@ -14,7 +14,8 @@ import org.springframework.validation.annotation.Validated;
 public record ProactiveProperties(
         @NotNull @Valid Briefing briefing,
         @NotNull @Valid Weekly weekly,
-        @NotNull @Valid Memoir memoir) {
+        @NotNull @Valid Memoir memoir,
+        @NotNull @Valid Heartbeat heartbeat) {
 
     public record Briefing(
         /** How many finished days of narrative memory (daily_summary) the gather reads;
@@ -36,5 +37,15 @@ public record ProactiveProperties(
     public record Memoir(
         /** Sunday-evening schedule (server zone) — the memoir is FOR the week ending that Sunday. */
         @NotBlank String cron
+    ) {}
+
+    /** H1 in-day heartbeat notes — the two v1 windows (§9 decision p). The lazy GET derives the
+     *  window fire-times from these SAME crons (CronExpression), so there is no duplicated
+     *  time config (§9 decision r). */
+    public record Heartbeat(
+        /** Midday nudge schedule (server zone). */
+        @NotBlank String middayCron,
+        /** Evening closing schedule (server zone). */
+        @NotBlank String eveningCron
     ) {}
 }
