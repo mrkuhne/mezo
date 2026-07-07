@@ -176,7 +176,23 @@ catch up.
 
 ## H — „napközben is jelen van"
 
-### H1 — In-app heartbeat
+### H1 — In-app heartbeat ✅ (shipped 2026-07-07)
+
+**Shipped as built:** `heartbeat_note` table (user+day+`window_key` partial unique; `window_key` NOT
+`window` — reserved word; kind `nudge`/`closing` CHECK-pinned) + **cheap-tier** `HeartbeatGenerator`
+(gather = snapshot + facts + latest daily summary + today's-briefing `MAI BRIEFING (ne ismételd)`
+dedupe block + `ABLAK:` window instruction → ONE `complete` call, honest-null on empty narrative
+memory / blank answer) + `HeartbeatJob` (TWO `@Scheduled` methods: `midday-cron` 12:30 nudge +
+`evening-cron` 20:30 closing, ONE third switch `heartbeat-job.enabled`, today-only, no backfill) +
+lazy `GET /api/proactive/heartbeat?date=` (day's latest note; for TODAY the latest already-elapsed
+window generates on a miss — fire-times derived from the SAME crons via Spring `CronExpression`;
+past dates never generate). FE: `useCompanionNote()` dual-mode (mock always null — Phase-1 parity)
++ **`CompanionNoteCard`** on Today under the check-in strip; honest absence = no card. **In-slice
+decisions resolved:** two explicit config windows (no dynamic list — YAGNI); briefing dedupe =
+prompt-level block; NO staleness/regen; emptiness gate reuses `briefing.past-days`; component named
+`CompanionNoteCard` (the check-in strip owns the "Heartbeat" copy). Docs:
+`docs/features/proactive.md` (§1-§10) + `docs/features/today.md` (§2/§3/§10). Plan:
+[`2026-07-07-proactive-h1-heartbeat.md`](2026-07-07-proactive-h1-heartbeat.md). **bd:** `mezo-h4wp.5`.
 
 **Goal:** the companion is present during the day, not only at dawn — in-app first.
 **Builds:** `heartbeat_note` table (date, window, kind `nudge`/`closing`, content);

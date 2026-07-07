@@ -2,7 +2,7 @@
 title: Platform · Data Layer & Dual-Mode
 type: feature-platform
 status: done
-updated: 2026-07-06
+updated: 2026-07-07
 tags: [platform, data-layer, frontend]
 key_files:
   - frontend/src/data/hooks.ts

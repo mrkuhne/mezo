@@ -86,6 +86,40 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/heartbeat:
+    get:
+      tags: [Proactive]
+      operationId: getHeartbeat
+      summary: The day's latest heartbeat note (napközbeni jelenlét, H1)
+      description: >-
+        Returns the latest persisted heartbeat note for the given day (evening closing beats
+        midday nudge by generation time). For TODAY the latest already-elapsed window
+        lazy-generates when missing (the miss-recovery); past dates never generate. 404 =
+        honest absence (no elapsed window yet, no narrative memory, or generation failed).
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: >-
+            The noted day — the FE sends its LOCAL date (the briefing precedent); defaults to
+            the server's today.
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: The day's latest heartbeat note
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HeartbeatNoteResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No note for the day (honest absence). The Today card simply stays absent.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     BriefingRef:
@@ -146,4 +180,19 @@ components:
         anchors:
           type: array
           items: { $ref: '#/components/schemas/MemoirAnchor' }
+        generatedAt: { type: string, format: date-time }
+    HeartbeatNoteResponse:
+      type: object
+      required: [date, window, kind, content, generatedAt]
+      properties:
+        date: { type: string, format: date }
+        window:
+          type: string
+          description: Window key (midday | evening) — the config window the note was written for
+        kind:
+          type: string
+          description: nudge (midday) | closing (evening)
+        content:
+          type: string
+          description: The generated HU note (plain prose, cheap tier)
         generatedAt: { type: string, format: date-time }

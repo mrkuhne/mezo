@@ -10,6 +10,8 @@ export interface CheckinSlot { time: string; state: CheckinState; values: Checki
 export interface BriefingRef { kind: string; id?: string; label: string }
 export interface BriefingPara { type: 'p'; text: string }
 export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: BriefingRef[]; confidence?: number; tone?: string }
+/** Proactive H1 in-day note — the CompanionNoteCard's data (mock mode has none; honest absence). */
+export interface CompanionNote { window: string; kind: 'nudge' | 'closing'; text: string }
 export interface WorkoutExercise { id: string; name: string; sets: number; targetReps: string; targetRIR: number; type: string; muscle: string }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
 export interface Workout { title: string; tag: string; durationEst: number; exercises: WorkoutExercise[]; niggleWarning: NiggleWarning }

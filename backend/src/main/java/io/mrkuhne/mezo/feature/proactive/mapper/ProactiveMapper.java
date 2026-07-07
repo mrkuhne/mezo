@@ -2,11 +2,13 @@ package io.mrkuhne.mezo.feature.proactive.mapper;
 
 import io.mrkuhne.mezo.api.dto.BriefingRef;
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
+import io.mrkuhne.mezo.api.dto.HeartbeatNoteResponse;
 import io.mrkuhne.mezo.api.dto.MemoirAnchor;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.proactive.entity.BriefingContentEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.BriefingEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirAnchorsEnvelope;
 import io.mrkuhne.mezo.feature.proactive.entity.MemoirEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
@@ -33,6 +35,10 @@ public interface ProactiveMapper {
     MemoirResponse toMemoirResponse(MemoirEntity entity);
 
     MemoirAnchor toMemoirAnchor(MemoirAnchorsEnvelope.Anchor anchor);
+
+    @Mapping(target = "date", source = "noteDate")
+    @Mapping(target = "window", source = "windowKey")
+    HeartbeatNoteResponse toHeartbeatResponse(HeartbeatNoteEntity entity);
 
     default OffsetDateTime map(Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
