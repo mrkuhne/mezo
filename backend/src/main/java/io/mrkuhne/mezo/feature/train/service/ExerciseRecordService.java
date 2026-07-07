@@ -46,7 +46,8 @@ public class ExerciseRecordService {
     private final ExerciseCatalogRepository exerciseCatalogRepository;
 
     public List<ExerciseRecordResponse> list(UUID createdBy) {
-        List<ExerciseSetEntity> sets = exerciseSetRepository.findByCreatedByAndRepsNotNull(createdBy);
+        List<ExerciseSetEntity> sets = exerciseSetRepository
+            .findByCreatedByAndRepsNotNullAndKind(createdBy, "working");
         if (sets.isEmpty()) {
             return List.of();
         }

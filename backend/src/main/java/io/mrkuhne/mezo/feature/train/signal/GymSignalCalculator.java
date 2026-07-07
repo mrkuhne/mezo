@@ -46,8 +46,8 @@ public class GymSignalCalculator {
         int bodyweightRepCount = 0;
 
         for (ExerciseSetEntity s : sets) {
-            if (s.isSkipped() || s.getReps() == null) {
-                continue; // skip markers + no-rep rows carry no work
+            if (s.isSkipped() || s.getReps() == null || !"working".equals(s.getKind())) {
+                continue; // skip markers + no-rep rows + warmups carry no progression work
             }
             workSetCount++;
             if (s.getWeightKg() == null) {

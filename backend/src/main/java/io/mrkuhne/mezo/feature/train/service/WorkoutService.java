@@ -160,7 +160,8 @@ public class WorkoutService {
                 createdBy, templateSessionId, "completed")
             .map(prev -> exerciseSetRepository
                 .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, prev.getId()).stream()
-                .filter(s -> s.getWeightKg() != null && s.getReps() != null && s.getRir() != null)
+                .filter(s -> "working".equals(s.getKind())
+                    && s.getWeightKg() != null && s.getReps() != null && s.getRir() != null)
                 .collect(Collectors.toMap(ExerciseSetEntity::getExerciseId, this::toLastWeekRef,
                     (a, b) -> b.getWeightKg().compareTo(a.getWeightKg()) > 0 ? b : a)))
             .orElse(Map.of());
