@@ -226,6 +226,78 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/challenge:
+    get:
+      tags: [Proactive]
+      operationId: getChallenges
+      summary: Live workout challenges for a planned session on a day (proposed/accepted/hit/miss/inconclusive) (Challenges)
+      description: >-
+        Returns the session/day's live challenges (dismissed excluded). Lazily generates when none
+        exist and date == today; lazily evaluates accepted ones once the instance is done. An empty
+        array is the honest empty state (never a 404).
+      parameters:
+        - name: templateSessionId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: The session/day's live challenges (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ChallengeResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/challenge/{id}/decision:
+    post:
+      tags: [Proactive]
+      operationId: decideChallenge
+      summary: L2 accept/dismiss a proposed workout challenge (Challenges)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChallengeDecisionRequest' }
+      responses:
+        '200':
+          description: The challenge with its new status
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChallengeResponse' }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Challenge not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: The challenge is not in the proposed state (already decided)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     BriefingRef:
@@ -369,4 +441,45 @@ components:
           type: boolean
           nullable: true
           description: true/false once evaluated; null = completed but inconclusive (no data)
+        generatedAt: { type: string, format: date-time }
+    ChallengeDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, pattern: '^(accept|dismiss)$' }
+    ChallengeRef:
+      type: object
+      required: [kind, label]
+      properties:
+        kind: { type: string }
+        label: { type: string }
+    ChallengeResponse:
+      type: object
+      required: [id, exerciseId, exercise, type, typeLabel, status, target, risk, why, glory, refs, generatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        exerciseId: { type: string, format: uuid }
+        exercise: { type: string, description: The target exercise's name }
+        type: { type: string, description: 'PR | Depth | Volume' }
+        typeLabel: { type: string, description: HU display label derived from type }
+        status: { type: string, description: 'proposed | accepted | dismissed | hit | miss | inconclusive' }
+        target: { type: string, description: Code-derived display string of the structured target }
+        confidence:
+          type: number
+          nullable: true
+          description: Pattern-copied; null = "tanulom" (never fabricated)
+        risk: { type: string, description: 'low | mid' }
+        why: { type: string }
+        glory: { type: string }
+        refs:
+          type: array
+          items: { $ref: '#/components/schemas/ChallengeRef' }
+        outcome:
+          type: string
+          nullable: true
+          description: Code-formatted outcome once the workout is evaluated
+        outcomeGood:
+          type: boolean
+          nullable: true
+          description: true/false once evaluated; null = inconclusive (no logged sets)
         generatedAt: { type: string, format: date-time }
