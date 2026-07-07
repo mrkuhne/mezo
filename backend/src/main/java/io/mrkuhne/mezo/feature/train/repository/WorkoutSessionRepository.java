@@ -24,6 +24,14 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
         UUID createdBy, UUID templateSessionId, String status);
 
     /**
+     * The owner's latest INSTANCE (templateSessionId set) of a given template session on a given
+     * day — the challenge gather step's anchor for "did this session happen today". Status-agnostic;
+     * newest wins on {@code createdAt} when a day carries more than one instance of the template.
+     */
+    Optional<WorkoutSessionEntity> findFirstByCreatedByAndTemplateSessionIdAndDateOrderByCreatedAtDesc(
+        UUID createdBy, UUID templateSessionId, LocalDate date);
+
+    /**
      * Distinct dates of the owner's gym workout INSTANCES (templateSessionId not null) within
      * [from, to] that carry at least one logged set — the "gym done that day" signal driving the
      * Mai done-state. Status-agnostic on purpose (any logged set counts, finished or not).
