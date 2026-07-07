@@ -2,6 +2,8 @@ package io.mrkuhne.mezo.feature.proactive.controller;
 
 import io.mrkuhne.mezo.api.controller.ProactiveApi;
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
+import io.mrkuhne.mezo.api.dto.ChallengeDecisionRequest;
+import io.mrkuhne.mezo.api.dto.ChallengeResponse;
 import io.mrkuhne.mezo.api.dto.ExperimentDecisionRequest;
 import io.mrkuhne.mezo.api.dto.ExperimentResponse;
 import io.mrkuhne.mezo.api.dto.HeartbeatNoteResponse;
@@ -76,5 +78,18 @@ public class ProactiveController implements ProactiveApi {
     @Override
     public ExperimentResponse decideExperiment(UUID id, ExperimentDecisionRequest request) {
         return experimentService.decide(currentUserId.get(), id, request);
+    }
+
+    // TODO(mezo-hbwi Task 6): temporary stubs so the contract (Task 1) compiles while the
+    // challenge write path is built incrementally (Tasks 2-5). Task 6 replaces these with
+    // ProactiveChallengeService.getChallenges/decide wiring.
+    @Override
+    public List<ChallengeResponse> getChallenges(UUID templateSessionId, LocalDate date) {
+        throw new UnsupportedOperationException("challenge write path not yet wired (mezo-hbwi Task 6)");
+    }
+
+    @Override
+    public ChallengeResponse decideChallenge(UUID id, ChallengeDecisionRequest request) {
+        throw new UnsupportedOperationException("challenge write path not yet wired (mezo-hbwi Task 6)");
     }
 }
