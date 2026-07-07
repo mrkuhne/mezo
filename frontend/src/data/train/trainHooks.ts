@@ -45,15 +45,29 @@ import type {
 
 // /today -> the Phase-1 WorkoutPlan shape. AI extras (challenges, niggleWarning)
 // are Phase 3 — empty/absent in real mode. `tag` is display-derived elsewhere.
-function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): WorkoutPlan | null {
+export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): WorkoutPlan | null {
   if (!r?.templateSessionId || !r.exercises?.length) return null
   return {
     title: r.title ?? '',
     tag: '',
     durationEst: r.durationEst ?? 0,
     exercises: r.exercises.map((e) => ({
-      id: e.id, name: e.name, muscle: e.muscle, sets: e.sets,
-      targetReps: e.targetReps, targetRIR: e.targetRIR, type: e.type,
+      id: e.id, name: e.name, muscle: e.muscle,
+      warmupSets: e.warmupSets, workingSets: e.workingSets,
+      repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
+      anchorWeightKg: e.anchorWeightKg ?? null,
+      type: e.type,
+      sets: e.warmupSets + e.workingSets,
+      // Normalize the contract's optional targetWeightKg/targetRIR to the domain's
+      // required `number | null` (the engine always emits both; null-coalesce is a no-op).
+      prescribedSets:
+        e.prescribedSets?.map((p) => ({
+          kind: p.kind,
+          targetWeightKg: p.targetWeightKg ?? null,
+          targetReps: p.targetReps,
+          targetRIR: p.targetRIR ?? null,
+        })) ?? null,
+      rationale: e.rationale ?? null,
       note: e.note ?? null,
       lastWeek: e.lastWeek
         ? { weight: Number(e.lastWeek.weightKg), reps: e.lastWeek.reps, rir: e.lastWeek.rir }

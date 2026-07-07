@@ -3,6 +3,8 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { QueryClient } from '@tanstack/react-query'
 import { useTrain } from '@/data/hooks'
+import { toWorkoutPlan } from '@/data/train/trainHooks'
+import type { WorkoutTodayResponse } from '@/data/train/trainApi'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -168,6 +170,21 @@ test('useTrain (real mode) maps /today into the WorkoutPlan shape with lastWeek 
     templateSessionId: 'a1f3a0e2-0000-4000-8000-000000000010',
     openWorkout: null,
   })
+})
+
+test('toWorkoutPlan maps prescribedSets and recipe fields from the today response', () => {
+  const plan = toWorkoutPlan({
+    templateSessionId: 't1', title: 'Pull', durationEst: 60,
+    exercises: [{
+      id: 'e1', name: 'Row', muscle: 'back-mid', type: 'compound',
+      warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0, anchorWeightKg: null,
+      prescribedSets: [{ kind: 'working', targetWeightKg: 80, targetReps: 8, targetRIR: 0 }],
+      rationale: 'x',
+    }],
+  } as unknown as WorkoutTodayResponse)
+  expect(plan?.exercises[0].sets).toBe(5)
+  expect(plan?.exercises[0].prescribedSets).toHaveLength(1)
+  expect(plan?.exercises[0].rationale).toBe('x')
 })
 
 test('useTrain (real mode) derives the gym weekly schedule from the active meso days', async () => {
