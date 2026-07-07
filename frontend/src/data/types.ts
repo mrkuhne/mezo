@@ -634,6 +634,7 @@ export interface LoggedWorkoutExercise {
 }
 export interface ChallengeRef { kind: string; label: string }
 export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo'
+export type ChallengeStatus = 'proposed' | 'accepted' | 'dismissed' | 'hit' | 'miss' | 'inconclusive'
 export interface Challenge {
   id: string
   type: ChallengeType
@@ -641,12 +642,15 @@ export interface Challenge {
   exerciseId: string
   exercise?: string
   target: string
-  confidence: number
+  confidence?: number | null   // null → "tanulom"
   risk: 'low' | 'mid'
   why: string
   refs: ChallengeRef[]
-  tools: Tool[]
+  tools?: Tool[]               // mock-only; absent in live
   glory: string
+  status?: ChallengeStatus     // absent in the Phase-1 mock seed (treated as proposed)
+  outcome?: string
+  outcomeGood?: boolean
 }
 export interface WorkoutPlan {
   title: string

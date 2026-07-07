@@ -76,7 +76,7 @@ export function ChallengeCard({
               {c.typeLabel}
             </span>
             <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-              conf {(c.confidence * 100).toFixed(0)}%
+              conf {c.confidence == null ? 'tanulom' : `${(c.confidence * 100).toFixed(0)}%`}
             </span>
             <span
               className="label-mono"
@@ -129,7 +129,7 @@ export function ChallengeCard({
 
         {/* Tool transparency */}
         <div className="row gap-xs flex-wrap mt-sm">
-          {c.tools.map((t, i) => (
+          {c.tools?.map((t, i) => (
             <ToolChip key={i} {...t} />
           ))}
         </div>
