@@ -50,4 +50,7 @@ public class FeaturesConfiguration {
 
     /** H1 heartbeat window crons — techcore cron zone (schedules: mezo.proactive.heartbeat.*). */
     public static final String HEARTBEAT_JOB_SWITCH = "mezo.techcore.cron.heartbeat-job.enabled";
+
+    /** Hypertrophy Drive — pre-populated prescribed sets + dynamic weight/rep recommendation. */
+    public static final String HYPERTROPHY_DRIVE_SWITCH = "mezo.feature.hypertrophy-drive.enabled";
 }
