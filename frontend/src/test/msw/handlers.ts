@@ -183,6 +183,27 @@ export const handlers = [
   // PredictionsPage renders its "still learning" null-state.
   http.get(`${API_BASE}/api/proactive/prediction`, () => HttpResponse.json([])),
 
+  // Proactive experiment (P2) — default: honest empty ARRAY (list endpoint, never 404); the
+  // ExperimentsPage renders its "still learning" null-state. Tests override with server.use(...).
+  http.get(`${API_BASE}/api/proactive/experiment`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/proactive/experiment/propose`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/proactive/experiment/:id/decision`, async ({ params, request }) => {
+    const body = (await request.json()) as { decision: 'accept' | 'dismiss' }
+    return HttpResponse.json({
+      id: params.id,
+      title: 'Teszt kísérlet',
+      hypothesis: 'Teszt hipotézis.',
+      status: body.decision === 'accept' ? 'active' : 'dismissed',
+      metricKey: 'sleep_avg',
+      expectedDirection: 'up',
+      startDate: body.decision === 'accept' ? '2026-07-07' : null,
+      totalDays: 7,
+      outcome: null,
+      outcomeGood: null,
+      generatedAt: '2026-07-07T06:45:00Z',
+    })
+  }),
+
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
   http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
 

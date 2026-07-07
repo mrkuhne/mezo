@@ -1301,6 +1301,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/experiment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All live N=1 experiments (proposed/active/completed), newest first (P2)
+         * @description Returns the user's live experiments (dismissed excluded). An empty array is the honest empty state (never a 404). Lazily proposes when the user has none and has confirmed patterns.
+         */
+        get: operations["getExperiments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/experiment/propose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * On-demand experiment proposal ("+ Új kísérlet javasol Mezo") (P2)
+         * @description Generates up to the open-cap of experiment proposals from confirmed patterns. A no-op (empty array) when the cap is already met or there are no confirmed patterns.
+         */
+        post: operations["proposeExperiments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/experiment/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** L2 accept/dismiss a proposed experiment (P2) */
+        post: operations["decideExperiment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2983,6 +3040,33 @@ export interface components {
             status: string;
             /** @description Code-formatted outcome text once the validation job closed the window */
             actual?: string | null;
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        ExperimentDecisionRequest: {
+            decision: string;
+        };
+        ExperimentResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            hypothesis: string;
+            /** @description proposed | active | completed | dismissed */
+            status: string;
+            metricKey: string;
+            /** @description up | down | stable */
+            expectedDirection: string;
+            /**
+             * Format: date
+             * @description Null until accepted (proposed rows have no start)
+             */
+            startDate?: string | null;
+            /** @description The experiment window length in days */
+            totalDays: number;
+            /** @description Code-formatted outcome once the window closed */
+            outcome?: string | null;
+            /** @description true/false once evaluated; null = completed but inconclusive (no data) */
+            outcomeGood?: boolean | null;
             /** Format: date-time */
             generatedAt: string;
         };
@@ -6901,6 +6985,126 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getExperiments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All live experiments (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    proposeExperiments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The freshly proposed experiments (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decideExperiment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperimentDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The experiment with its new status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Experiment not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The experiment is not in the proposed state (already decided) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

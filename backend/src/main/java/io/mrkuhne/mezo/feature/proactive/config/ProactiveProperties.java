@@ -18,7 +18,8 @@ public record ProactiveProperties(
         @NotNull @Valid Weekly weekly,
         @NotNull @Valid Memoir memoir,
         @NotNull @Valid Heartbeat heartbeat,
-        @NotNull @Valid Prediction prediction) {
+        @NotNull @Valid Prediction prediction,
+        @NotNull @Valid Experiment experiment) {
 
     public record Briefing(
         /** How many finished days of narrative memory (daily_summary) the gather reads;
@@ -64,5 +65,19 @@ public record ProactiveProperties(
         @NotNull @DecimalMin("0.0") BigDecimal weightEpsilonKg,
         /** Stable-band epsilon for the sleep_avg verdict (hours). */
         @NotNull @DecimalMin("0.0") BigDecimal sleepEpsilonH
+    ) {}
+
+    /** P2 N=1 experiment proposal + daily deterministic outcome evaluation. */
+    public record Experiment(
+        /** Weekly proposal schedule (server zone), after the prediction batch. */
+        @NotBlank String proposeCron,
+        /** Daily outcome-evaluation schedule (server zone) — closes windows past their end. */
+        @NotBlank String outcomeCron,
+        /** Cap on OPEN experiments (proposed + active) per user — bounds the propose trigger. */
+        @Min(1) @Max(10) int maxOpen,
+        /** Minimum experiment window length (days) — also the default when the model omits it. */
+        @Min(1) @Max(60) int minDays,
+        /** Maximum experiment window length (days). */
+        @Min(1) @Max(60) int maxDays
     ) {}
 }

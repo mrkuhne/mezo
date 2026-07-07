@@ -1,7 +1,7 @@
 ---
-title: Proactive layer (briefing, weekly prose, heartbeat, predictions)
+title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments)
 type: feature-domain
-status: in-progress
+status: complete
 updated: 2026-07-07
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
@@ -12,6 +12,7 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071500_mezo-h4wp.4_create_memoir.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071800_mezo-h4wp.5_create_heartbeat_note.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
+  - backend/src/main/resources/db/changelog/1.0.0/script/202607072000_mezo-h4wp.8_create_experiment.sql
 related: [companion, today, insights, _platform-api-backend]
 ---
 
@@ -46,6 +47,14 @@ related: [companion, today, insights, _platform-api-backend]
 > with the briefing the IDENT-3 in-app rhythm (≥3 touches/day) is delivered and the first Insights
 > forecast surface is honest.** The four value stages (B briefing → W weekly prose → H heartbeat →
 > P predictions) and the 8-slice map live in the roadmap; this doc tracks **what exists now**.
+>
+> **P2** closes the P stage AND the whole epic („előre lát" complete): an `experiment` table
+> (proposed → active → completed | dismissed lifecycle) + a **smart-tier** `ExperimentProposalGenerator`,
+> a **write path** (`POST /api/proactive/experiment/{id}/decision` L2 accept/dismiss + `POST …/propose`),
+> a deterministic `ExperimentOutcomeService` (reusing the shared `MetricWindowEvaluator`), and a
+> two-cron `ExperimentJob` — the Insights **Experiments tab un-ghosts** (the LAST `PHASE3_TAB_IDS`
+> ghost). **The proactive epic (`mezo-h4wp`, all 8 slices B1.1→B1.2→W1→W2→H1→P1→P2, plus H2 Web Push
+> deferred) is COMPLETE** — every prose/forecast Insights surface is honest and real.
 
 ## 1. Summary
 
@@ -58,7 +67,8 @@ W1 (`mezo-h4wp.3`) opened the W stage — the smart-tier weekly plan-suggestion,
 Weekly card; W2 (`mezo-h4wp.4`) closed the W stage — the smart-tier weekly Memoir, un-ghosting the
 Insights Memoir tab; H1 (`mezo-h4wp.5`) opened the H stage — the cheap-tier in-day heartbeat notes
 on a new Today card; P1 (`mezo-h4wp.7`) opened the P stage — pattern-grounded predictions with
-deterministic validation, un-ghosting the Insights Predictions tab.**
+deterministic validation; P2 (`mezo-h4wp.8`) closed the P stage AND the epic — N=1 experiments with
+an L2 accept/dismiss write path, un-ghosting the last Insights tab.**
 
 **B1.1 (`mezo-h4wp.1`) — skeleton + briefing spine:**
 
@@ -272,6 +282,47 @@ deterministic validation, un-ghosting the Insights Predictions tab.**
   closed) — the mock keeps its Phase-1 literal `2 validated · 60-day acc 68%`; an empty live list ⇒
   the honest „still learning" null-state. Details: [insights.md §2.4](insights.md).
 
+**P2 (`mezo-h4wp.8`) — N=1 experiments (the P stage + the epic close):**
+
+- **A sixth owned table** — `experiment` (UUID PK, `created_by`, soft-delete; `title varchar(200)`,
+  `hypothesis text`, `status varchar(10)` = `proposed`/`active`/`completed`/`dismissed` (CHECK +
+  entity `@Pattern`), `metric_key`/`expected_direction` (the shared catalog), **`start_date date`
+  NULLABLE** (null until accepted), `total_days int`, `outcome text` NULLABLE, **`outcome_good
+  boolean` NULLABLE** (null = completed-but-inconclusive), `generated_at`). A plain
+  `idx_experiment_created_by_status` (not unique — several live rows).
+- **`ExperimentProposalGenerator`** — the PredictionGenerator idiom: pure-code gather (snapshot +
+  facts + numbered CONFIRMED-pattern candidates + the metric catalog) → **ONE smart-tier
+  `completeSmart`** → strict-JSON `{experiments:[{title, hypothesis, patternIndex, metricKey,
+  expectedDirection, totalDays}]}` → per row catalog/enum validation (invalid ⇒ dropped) +
+  `clampDays` to `[min-days, max-days]`. **Bounded by the OPEN cap** (`max-open` proposed+active) —
+  a no-op when the cap is met (§9 decision y); zero CONFIRMED patterns ⇒ no proposals.
+- **`ExperimentOutcomeService`** — deterministic, LLM-free: for each `active` experiment whose window
+  closed (`start_date + total_days <= today`), the shared **`MetricWindowEvaluator`** compares the
+  experiment window `[start, start+total-1]` vs the equally-long baseline before start → `completed`
+  with a code-formatted `outcome`; direction match ⇒ `outcome_good=true` else `false`; **no data ⇒
+  `outcome_good=null`** (honest "Nem értékelhető", §9 decision aa).
+- **The write path (L2)** — `POST /api/proactive/experiment/{id}/decision {decision: accept|dismiss}`
+  (the companion `PatternService.decide` idiom): fetch-owned-or-404 → **proposed-state guard (409
+  `PROACTIVE_EXPERIMENT_NOT_PROPOSED`)** → `accept` sets `active` + `start_date=today`, `dismiss` sets
+  `dismissed`. Plus **`POST /api/proactive/experiment/propose`** — the on-demand propose the "+ Új
+  kísérlet javasol Mezo" button fires (now REAL in live mode).
+- **A list read** — `GET /api/proactive/experiment`: proposed+active+completed rows (dismissed
+  excluded), newest first; lazily proposes when the user has none; `200 []` = honest empty (never
+  404, the P1 precedent).
+- **Two crons** — `ExperimentJob` (`runPropose` weekly Mon 06:45 + `runOutcome` daily 06:20), one
+  third switch `mezo.techcore.cron.experiment-job.enabled` (`EXPERIMENT_JOB_SWITCH`).
+- **Fake sentinel** — `[fake-experiment:{…}]` (GREEDY) dispatched on `EXPERIMENT_MARKER_MIRROR =
+  "N1-KISERLET-FELADAT"` (§9 gotcha a).
+- **Shared evaluator (DRY)** — the metric-window comparison was **extracted from
+  `PredictionValidationService` into `MetricWindowEvaluator`**; P1 validation and P2 outcome now share
+  one implementation (the P1 ITs guard the refactor — §9 the MetricWindowEvaluator note).
+- **The FE surface (Insights Experiments un-ghosts — the last ghost)** — `useExperiments()` (list,
+  `[]`→null-state) + `useExperimentActions()` (`useMutation` accept/dismiss/propose, invalidates the
+  list). `ExperimentsPage` drops its ghost; renders proposed rows with **Elfogadom/Elvetem** buttons,
+  active rows with a day counter + progress, completed rows with the outcome (good/not-good/
+  inconclusive chips), and the propose CTA (real in live). `experiments` leaves `PHASE3_TAB_IDS`
+  (now EMPTY). Details: [insights.md §2.7](insights.md).
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -289,7 +340,9 @@ deterministic validation, un-ghosting the Insights Predictions tab.**
 | Frontend (Today CompanionNoteCard) | 🟢 H1 | `useCompanionNote()` real (404→null, mock always null — Phase-1 parity); `TodayPage` renders `CompanionNoteCard` after the check-in strip only when a note exists (honest absence = no card). |
 | Predictions (table + generator + validation + weekly/daily job + list read) | 🟢 P1 | `prediction` table (week_start idempotence probe, nullable confidence, CHECK-pinned direction/status); smart-tier `PredictionGenerator` (gather = snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog → ONE `completeSmart`, code-set windows, pattern-copied confidence, honest-empty); deterministic `PredictionValidationService` (window-vs-prior-7-days, no-data ⇒ stays pending); `PredictionJob` two crons (Mon 06:30 generate + daily 06:15 validate, three-switch); `GET /api/proactive/prediction` (list; lazy current-week; `[]` = honest empty, never 404). |
 | Frontend (Insights Predictions tab un-ghost) | 🟢 P1 | `usePredictions()` real (list, `[]` on error); `predictions` left `PHASE3_TAB_IDS`, `PredictionsPage` ghost dropped; renders real cards („tanulom" on null confidence, `✗ Missed` state, accuracy header derived from closed rows), else the honest „still learning" null-state; mock keeps the Phase-1 seed + literal header. |
-| Experiments | ⛔ later slice | P2 — see the roadmap. |
+| Experiments (table + proposal + outcome + write path + two-cron job) | 🟢 P2 | `experiment` table (proposed/active/completed/dismissed lifecycle, nullable start_date/outcome_good); smart-tier `ExperimentProposalGenerator` (cap-gated, CONFIRMED-pattern-grounded); deterministic `ExperimentOutcomeService` (shared `MetricWindowEvaluator`); **write path** `POST …/decision` (L2, 409 on non-proposed) + `POST …/propose`; list `GET` (lazy propose, `[]` = honest); `ExperimentJob` two crons (weekly propose + daily outcome, three-switch). |
+| Frontend (Insights Experiments tab un-ghost) | 🟢 P2 | `useExperiments()` + `useExperimentActions()` (mutation accept/dismiss/propose); `experiments` left `PHASE3_TAB_IDS` (now EMPTY — all 7 tabs real); `ExperimentsPage` renders proposed (Elfogadom/Elvetem) / active (progress) / completed (outcome) rows + a real propose CTA, else the honest null-state. |
+| **Epic status** | ✅ COMPLETE | All 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push deferred** (pure delivery infra — see the roadmap). Every prose/forecast Insights + Today surface is honest and real. |
 
 **Driver:** `mezo-h4wp.4` (W2, on `mezo-h4wp.1`'s spine; W1 = `mezo-h4wp.3`, B1.2 = `mezo-h4wp.2`). **Design of record:**
 [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
@@ -359,6 +412,16 @@ validation run judges each closed window against reality (deterministically, whe
 When there are no confirmed patterns yet the tab shows the **honest still-learning null-state** — never
 demo fiction. In **mock mode** the tab keeps the Phase-1 seed + the literal accuracy header. See
 [insights.md §2.4](insights.md).
+
+**Live since P2 — the Insights Experiments tab.** The last real-mode ghost un-ghosts: the companion
+**proposes N=1 experiments** on Daniel's own data (grounded in his CONFIRMED patterns), each a
+`◇ Javaslat` card with **Elfogadom / Elvetem** buttons. Accepting starts the experiment (`◐ Aktív`,
+a day counter + progress bar over its window); at the window's close the daily cron writes the
+deterministic outcome — `✓ Megerősítve`, `◯ Nem igazolódott`, or `◌ Nem értékelhető` (honest, when
+there's no data). The **„+ Új kísérlet javasol Mezo"** button now really proposes (a `POST …/propose`,
+bounded by the open-cap). When there are no experiments yet the tab shows the **honest still-learning
+null-state** — never demo fiction. In **mock mode** the tab keeps the Phase-1 seed (active + completed
+cards, the inert propose CTA). See [insights.md §2.7](insights.md).
 
 ## 3. Architecture & data flow
 
@@ -600,17 +663,51 @@ for each pending row with `valid_to < today`, `evaluate` the metric over `[valid
 preceding 7 days (weight/sleep avg with epsilon bands; training-volume count); direction match ⇒
 `validated`, else `missed`, with a code-formatted `actual`; no data ⇒ stays pending.
 
+**The experiment write + read path (P2):**
+
+```
+GET /api/proactive/experiment                          (NO parameters)
+  → ProactiveController.getExperiments()                controller/ProactiveController.java
+  → ProactiveExperimentService.getExperiments(userId)   service/ProactiveExperimentService.java  @Transactional
+      if no OPEN (proposed|active) rows: generator.propose(userId)   (lazy first proposal; empty = honest)
+      findByCreatedByAndStatusInOrderByGeneratedAtDesc([proposed,active,completed]).map(toExperimentResponse)
+      → List<ExperimentResponse>   (dismissed excluded; `[]` = honest, never 404)
+
+POST /api/proactive/experiment/{id}/decision  {decision: accept|dismiss}
+  → decideExperiment(id, request) → ProactiveExperimentService.decide(userId, id, request)
+      findByIdAndCreatedByAndDeletedFalse → orElseThrow(404 PROACTIVE_EXPERIMENT_NOT_FOUND)
+      status != proposed ⇒ throw 409 PROACTIVE_EXPERIMENT_NOT_PROPOSED
+      accept ⇒ status=active + start_date=today ; dismiss ⇒ status=dismissed ; else 400
+      → mapper.toExperimentResponse(saveAndFlush)
+
+POST /api/proactive/experiment/propose
+  → proposeExperiments() → generator.propose(userId).map(toExperimentResponse)   (cap-gated; `[]` when met)
+```
+
+**The two crons (P2 — `service/ExperimentJob.java`):** `runPropose` (`experiment.propose-cron`, Mon
+06:45) loops users → `generator.propose`; `runOutcome` (`experiment.outcome-cron`, daily 06:20) loops
+users → `outcomeService.evaluateClosed`; three-switch bean.
+
+**The proposal generator (`service/ExperimentProposalGenerator.java`):** the PredictionGenerator idiom
+— open-cap check → `gather` (CONFIRMED patterns → null gate) → ONE `completeSmart` → strict-JSON parse
+→ per row catalog/enum validation + `clampDays` → persisted `proposed` rows.
+
+**The outcome eval (`service/ExperimentOutcomeService.java`, LLM-free):** each active window-closed
+row → the shared `MetricWindowEvaluator` over `[start, start+total-1]` vs the equal baseline before
+start → `completed` + `outcome`/`outcome_good` (null = inconclusive).
+
 **Switch-gating.** `ProactiveController`, `ProactiveBriefingService`, `ProactiveWeeklySuggestionService`,
-`ProactiveMemoirService`, `ProactiveHeartbeatService`, `ProactivePredictionService`, `BriefingGenerator`,
-`WeeklySuggestionGenerator`, `MemoirGenerator`, `HeartbeatGenerator`, `PredictionGenerator`,
-`PredictionValidationService` (and the mapper via the services) are all
+`ProactiveMemoirService`, `ProactiveHeartbeatService`, `ProactivePredictionService`,
+`ProactiveExperimentService`, `BriefingGenerator`, `WeeklySuggestionGenerator`, `MemoirGenerator`,
+`HeartbeatGenerator`, `PredictionGenerator`, `PredictionValidationService`, `MetricWindowEvaluator`,
+`ExperimentProposalGenerator`, `ExperimentOutcomeService` (and the mapper via the services) are all
 `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` — **both**
 must be `true`. Either off ⇒ no proactive beans ⇒ the whole `/api/proactive/*` surface 404s (there's
-no controller to route to). The five jobs (`BriefingJob`, `WeeklySuggestionJob`, `MemoirJob`,
-`HeartbeatJob`, `PredictionJob`) each add a THIRD switch on top. The dual gate is structural, not a
-runtime check (§9 gotcha b).
+no controller to route to). The six jobs (`BriefingJob`, `WeeklySuggestionJob`, `MemoirJob`,
+`HeartbeatJob`, `PredictionJob`, `ExperimentJob`) each add a THIRD switch on top. The dual gate is
+structural, not a runtime check (§9 gotcha b).
 
-**Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` + `MemoirEntity` + `HeartbeatNoteEntity` + `PredictionEntity` all `extend OwnedEntity`
+**Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` + `MemoirEntity` + `HeartbeatNoteEntity` + `PredictionEntity` + `ExperimentEntity` all `extend OwnedEntity`
 (soft-delete via `@SQLDelete`/`@SQLRestriction`); `created_by` is stamped from `CurrentUserId.get()`
 server-side, the finders (`findByCreatedByAndBriefingDate` / `findByCreatedByAndWeekStart` /
 `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` for memoir) are owner +
@@ -619,11 +716,12 @@ companion precedent).
 
 ## 4. Data model & API
 
-### Backend tables (B1.1 + B1.2 + W1 + W2 + H1 + P1, 🟢)
+### Backend tables (B1.1 + B1.2 + W1 + W2 + H1 + P1 + P2, 🟢)
 
 Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h4wp.2_briefing_regen_count.sql`
 + `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql` + `202607071500_mezo-h4wp.4_create_memoir.sql`
 + `202607071800_mezo-h4wp.5_create_heartbeat_note.sql` + `202607071900_mezo-h4wp.7_create_prediction.sql`
++ `202607072000_mezo-h4wp.8_create_experiment.sql`
 (all registered in `db/changelog/1.0.0/1.0.0_master.yml`):
 
 - **`briefing`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
@@ -671,6 +769,13 @@ Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h
   varchar(10) not null default 'pending'` (CHECK `pending|validated|missed`), `actual text`,
   `generated_at timestamptz not null`. **No partial-unique** (multiple live rows per week is the
   point); the daily validation job mutates `status`/`actual` in place.
+- **`experiment`** (P2) — `id uuid pk`, `created_by uuid fk→app_user(id) ON DELETE CASCADE`,
+  `is_deleted`/`created_at`, `title varchar(200)`, `hypothesis text`, `status varchar(10) not null
+  default 'proposed'` (CHECK `proposed|active|completed|dismissed` + entity `@Pattern` — the guard
+  fires at bean-validation before the DB CHECK, the PatternEntity template), `metric_key varchar(40)`,
+  `expected_direction varchar(8)` (CHECK `up|down|stable`), **`start_date date` NULLABLE** (null until
+  accepted), `total_days int`, `outcome text` NULLABLE, **`outcome_good boolean` NULLABLE** (null =
+  completed-but-inconclusive), `generated_at`. `idx_experiment_created_by_status` (plain, NOT unique).
 
 ### Entities + envelope
 
@@ -707,7 +812,15 @@ soft-deleted; flat columns `{LocalDate weekStart, String title, String basis, Bi
 (nullable, precision 4 scale 3), String metricKey, String expectedDirection, LocalDate validFrom,
 LocalDate validTo, String status, String actual (nullable), Instant generatedAt}` — no jsonb. Carries
 the status/direction/metric vocabulary constants (`STATUS_PENDING`/`VALIDATED`/`MISSED`,
-`DIRECTION_UP`/`DOWN`/`STABLE`, `METRIC_WEIGHT_TREND`/`SLEEP_AVG`/`TRAINING_VOLUME`).
+`DIRECTION_UP`/`DOWN`/`STABLE`, `METRIC_WEIGHT_TREND`/`SLEEP_AVG`/`TRAINING_VOLUME`) — the metric +
+direction constants are SHARED (P2's experiment + the `MetricWindowEvaluator` reference them).
+
+`ExperimentEntity` (`entity/ExperimentEntity.java`) `extends OwnedEntity`, UUID `@GeneratedValue` id,
+soft-deleted; flat columns `{String title, String hypothesis, String status (@Pattern), String
+metricKey, String expectedDirection (@Pattern), LocalDate startDate (nullable), Integer totalDays,
+String outcome (nullable), Boolean outcomeGood (nullable), Instant generatedAt}` — no jsonb. Carries
+the lifecycle constants (`STATUS_PROPOSED`/`ACTIVE`/`COMPLETED`/`DISMISSED`); reuses `PredictionEntity`'s
+metric/direction constants.
 
 ### REST endpoints (contract-first — tag `Proactive` → `ProactiveApi`)
 
@@ -721,6 +834,9 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `GET /api/proactive/memoir` | `MemoirResponse` | 200 · 401 · 404 | **No parameters.** The LATEST persisted memoir, else lazy-generate the LAST COMPLETED week (`previousOrSame(MONDAY).minusWeeks(1)`); **404 `RESOURCE_NOT_FOUND`** when that week has no `daily_summary` (§9 gotcha d) — the FE renders its honest „készül" state. Archive (older rows) is a later slice. |
 | `GET /api/proactive/heartbeat?date=` | `HeartbeatNoteResponse` | 200 · 401 · 404 | `date` optional (FE sends its LOCAL date; defaults to server today). The day's LATEST note; for TODAY the latest already-elapsed window lazy-generates when missing (§9 decision r); past dates never generate. **404 `RESOURCE_NOT_FOUND`** = honest absence — the Today card simply stays absent. |
 | `GET /api/proactive/prediction` | `PredictionResponse[]` | 200 · 401 | **No parameters.** ALL live predictions, newest window first; lazily generates the CURRENT week when it has no rows (needs CONFIRMED patterns). **`200 []` is the honest empty state — NEVER a 404** (a list endpoint). |
+| `GET /api/proactive/experiment` | `ExperimentResponse[]` | 200 · 401 | **No parameters.** Live experiments (proposed/active/completed, dismissed excluded), newest first; lazily proposes when the user has none. **`200 []` = honest empty, never 404.** |
+| `POST /api/proactive/experiment/{id}/decision` | `ExperimentResponse` | 200 · 400 · 401 · 404 · 409 | **L2 accept/dismiss** (`{decision: accept\|dismiss}`). `accept` ⇒ active + start_date=today; `dismiss` ⇒ dismissed. 404 = not-found/foreign; **409 `PROACTIVE_EXPERIMENT_NOT_PROPOSED`** = already decided; 400 = invalid decision value. |
+| `POST /api/proactive/experiment/propose` | `ExperimentResponse[]` | 200 · 401 | On-demand proposal (the "+ Új kísérlet javasol Mezo" button). Up to the open-cap; `[]` when the cap is met / no confirmed patterns. |
 
 Schemas: `BriefingResponse{date, eyebrow, body[], refs[], generatedAt}` +
 `BriefingRef{kind, label}` — **no `confidence`, no `tone`** on the wire (§9 gotcha c). `refs[].kind`
@@ -735,11 +851,15 @@ wire maps from the entity's `windowKey`.
 status, actual?, generatedAt}` — `confidence` nullable on the wire (the FE renders „tanulom" on null;
 the `BigDecimal → Double` mapper default); the FE derives its `date` window label + accuracy header
 client-side.
+`ExperimentResponse{id, title, hypothesis, status, metricKey, expectedDirection, startDate?, totalDays,
+outcome?, outcomeGood?, generatedAt}` + `ExperimentDecisionRequest{decision}` — `startDate`/`outcome`/
+`outcomeGood` nullable on the wire; the FE derives the `day` counter client-side and maps
+`outcomeGood: null → undefined`.
 
 ### Configuration
 
 `config/ProactiveProperties.java` (`@Validated`, binds `mezo.proactive.*` — nested `briefing` +
-`weekly` + `memoir` + `heartbeat` + `prediction` records):
+`weekly` + `memoir` + `heartbeat` + `prediction` + `experiment` records):
 
 - **`briefing.past-days`** (`@Min(1) @Max(14)`, default **7**): how many finished days of narrative
   memory the briefing gather reads — and doubles as the **emptiness gate** (zero summaries ⇒ 404).
@@ -759,15 +879,20 @@ client-side.
   **3**) + **`prediction.weight-epsilon-kg`** (`@DecimalMin("0.0")`, default **0.1**) +
   **`prediction.sleep-epsilon-h`** (default **0.25**): the P1 generation/validation schedules, the
   per-week cap, and the stable-band epsilons for the deterministic direction verdicts (§9 decisions t/u).
+  **The epsilons are reused by `MetricWindowEvaluator` for P2 outcomes too.**
+- **`experiment.propose-cron`** (`@NotBlank`, default **`0 45 6 * * MON`**) + **`experiment.outcome-cron`**
+  (`@NotBlank`, default **`0 20 6 * * *`**) + **`experiment.max-open`** (`@Min(1) @Max(10)`, default **3**)
+  + **`experiment.min-days`**/**`max-days`** (`@Min(1) @Max(60)`, defaults **3**/**28**): the P2 proposal/
+  outcome schedules, the OPEN-experiment cap, and the clamp bounds for the model-proposed window (§9
+  decisions y/z).
 
-Plus the five techcore job switches, each the THIRD `@ConditionalOnProperty` on its job bean (on top
+Plus the six techcore job switches, each the THIRD `@ConditionalOnProperty` on its job bean (on top
 of the companion+proactive dual gate; off ⇒ the cron bean does not exist, the lazy GET still serves):
-**`mezo.techcore.cron.briefing-job.enabled`** (`BRIEFING_JOB_SWITCH`),
-**`mezo.techcore.cron.weekly-suggestion-job.enabled`** (`WEEKLY_SUGGESTION_JOB_SWITCH`),
-**`mezo.techcore.cron.memoir-job.enabled`** (`MEMOIR_JOB_SWITCH`),
-**`mezo.techcore.cron.heartbeat-job.enabled`** (`HEARTBEAT_JOB_SWITCH` — one switch for BOTH
-windows), and **`mezo.techcore.cron.prediction-job.enabled`** (`PREDICTION_JOB_SWITCH` — one switch
-for BOTH the weekly generation and the daily validation), all default `true`.
+**`briefing-job`** (`BRIEFING_JOB_SWITCH`), **`weekly-suggestion-job`** (`WEEKLY_SUGGESTION_JOB_SWITCH`),
+**`memoir-job`** (`MEMOIR_JOB_SWITCH`), **`heartbeat-job`** (`HEARTBEAT_JOB_SWITCH` — one switch for
+BOTH windows), **`prediction-job`** (`PREDICTION_JOB_SWITCH` — generation + validation), and
+**`experiment-job`** (`EXPERIMENT_JOB_SWITCH` — propose + outcome), all `mezo.techcore.cron.*.enabled`,
+default `true`.
 
 ## 5. Integrations
 
@@ -788,9 +913,11 @@ prior week — no new companion capability, just a different window. **H1's `Hea
 reuses the briefing's three reads (snapshot + facts + summaries) via the CHEAP-tier `complete` —
 plus one proactive-internal read (`BriefingRepository`, the dedupe block). **P1's `PredictionGenerator`**
 reads snapshot + facts + **CONFIRMED patterns only** (`findByCreatedByAndStatusAndDeletedFalse…`, the
-grounding gate) via `completeSmart`; **P1's `PredictionValidationService`** additionally reads
+grounding gate) via `completeSmart`; **P1's validation + P2's outcome** read
 `WeightLogRepository` / `SleepLogRepository` / `WorkoutSessionRepository.findDoneInstanceDates`
-(biometrics + train, read-only) — the first proactive reach beyond companion, still strictly one-way.
+(biometrics + train, read-only) via the shared **`MetricWindowEvaluator`** — the proactive reach
+beyond companion, still strictly one-way. **P2's `ExperimentProposalGenerator`** reads CONFIRMED
+patterns + snapshot + facts via `completeSmart` (the P1 pattern-grounding gate).
 **Contract crossing the seam:** these read methods with explicit `userId` scoping; strictly one-way — no companion code imports
 proactive. This one-way rule is why the fake sentinels' markers are literal mirrors rather than
 imports (§9 gotcha a).
@@ -858,6 +985,18 @@ renders the real cards or the honest still-learning null-state; `predictions` al
 (`tabs.ts`) so the tab is visible in real mode. The FE `Prediction` type gained a **nullable
 `confidence`** and the `missed` status (both honest-state additions).
 
+### 5.9 Proactive → Insights Experiments FE (✅ P2 wired — dual-mode read + write)
+The Insights Experiments tab ([insights.md §2.7](insights.md)) is the consumer, and the FIRST
+proactive surface with a WRITE. `useExperiments()` (`data/insights/experimentsHooks.ts`,
+`['experiments']`) fetches `GET /api/proactive/experiment` via `experimentsApi.list` (`experimentsApi.ts`,
+`toExperiment` wire→FE — the `day` counter derives client-side, `outcomeGood: null → undefined`) in
+real mode (`[]` on error), mock returns the seed. `useExperimentActions()` mirrors the companion
+`usePatternActions` `useMutation`+`invalidateQueries` idiom: `decide(id, 'accept'|'dismiss')` POSTs the
+decision, `propose()` POSTs the on-demand proposal, both invalidate `['experiments']` (no-ops in mock).
+`ExperimentsPage` renders the real cards + L2 buttons or the honest null-state; `experiments` leaves
+`PHASE3_TAB_IDS` — **now EMPTY, so all seven Insights tabs are real**. The FE `Experiment` type gained
+the `proposed`/`dismissed` statuses.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -898,6 +1037,20 @@ curl -s "http://localhost:8090/api/proactive/prediction" \
 
 The prediction generator needs at least one CONFIRMED `pattern`; for a keyless local run plant a
 `[fake-prediction:{…}]` sentinel via a check-in note (the `PredictionGeneratorIT` pattern).
+
+```bash
+curl -s "http://localhost:8090/api/proactive/experiment" -H "Authorization: Bearer $TOKEN"
+# → [ { "id":"…","title":"…","hypothesis":"…","status":"proposed","metricKey":"sleep_avg",
+#       "expectedDirection":"up","startDate":null,"totalDays":7,"outcome":null,"outcomeGood":null,… } ]
+# → [] (200) when there are no confirmed patterns (honest empty — NOT a 404)
+
+curl -s -X POST "http://localhost:8090/api/proactive/experiment/$ID/decision" \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"decision":"accept"}'
+# → { …, "status":"active", "startDate":"2026-07-07", … }  (409 if the row is not proposed)
+```
+
+The experiment proposal, like predictions, needs a CONFIRMED pattern; the `[fake-experiment:{…}]`
+sentinel is planted via a check-in note (the `ExperimentProposalGeneratorIT` pattern).
 
 The weekly suggestion needs at least one `daily_summary` in the **prior** week; for a keyless local
 run plant a `[fake-weekly:…]` sentinel via a prior-week check-in note (the `WeeklySuggestionGeneratorIT`
@@ -948,25 +1101,35 @@ Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoin
   (the spec §5.2 shape). **To extend the metric catalog:** add a `METRIC_*` constant + a `case` in
   `PredictionValidationService.evaluate` + widen the generator's `VALID_METRICS` (the model only
   selects from the catalog it's shown).
-- **New proactive surface (P2):** add a sibling `*Generator` + table + `*.yml` fragment in
-  `feature/proactive/`, gated on the same dual switch. Smart-tier narratives reuse W1/W2/P1's gather
-  idiom (`CompanionLlm.completeSmart`); a plain-prose surface follows `weekly_suggestion` (flat
-  columns), a structured one follows `briefing`/`memoir` (typed jsonb envelope).
+- **P2 shipped (experiment domain + write path + un-ghost) — the epic-closing template.** The
+  `MetricWindowEvaluator` (shared by P1 validation + P2 outcome) is the pattern for any future
+  deterministic metric verdict; `ExperimentProposalGenerator` mirrors `PredictionGenerator`; the
+  **write path** (`ProactiveExperimentService.decide` — fetch-owned-or-404 → state-guard 409 →
+  mutate, the companion `PatternService` idiom) is the template for any future proactive L2 surface.
+  **The `PHASE3_TAB_IDS` set is now empty** — every Insights tab is real.
+- **The proactive epic is COMPLETE (all 8 slices).** The only deferred item is **H2 Web Push** (pure
+  delivery infra — VAPID SealedSecret on k3s + `push_subscription` + the SW push handler; the content
+  it would deliver, the heartbeat/briefing, already exists). New proactive surfaces belong to the
+  deferred-signals epic (spec §1: vulnerable/niggle sources, crisis/drift, opportunity scanner,
+  anniversaries) — map it companion-style when picked up. Any new surface: add a sibling `*Generator`
+  + table + `*.yml` fragment in `feature/proactive/`, gated on the same dual switch; smart-tier
+  narratives reuse the gather idiom, a plain-prose surface follows `weekly_suggestion`, a structured
+  one follows `briefing`/`memoir`, a deterministic-verdict one reuses `MetricWindowEvaluator`.
 - **Prompt / marker tuning:** the prompts are `BriefingGenerator.PROMPT` /
   `WeeklySuggestionGenerator.PROMPT` / `MemoirGenerator.PROMPT` / `HeartbeatGenerator.PROMPT` /
-  `PredictionGenerator.PROMPT` (keep each `*_MARKER` prefix + its `FakeCompanionLlm` literal mirror
-  in sync — §9 gotcha a); briefing ref candidates are `SNAPSHOT_CANDIDATES` + the per-summary
-  `Memory` refs in `gather` (the weekly suggestion and the heartbeat carry no refs; the prediction
-  carries pattern candidates but resolves them to CONFIDENCE, not refs).
+  `PredictionGenerator.PROMPT` / `ExperimentProposalGenerator.PROMPT` (keep each `*_MARKER` prefix +
+  its `FakeCompanionLlm` literal mirror in sync — §9 gotcha a); briefing ref candidates are
+  `SNAPSHOT_CANDIDATES` + the per-summary `Memory` refs in `gather` (the weekly suggestion and the
+  heartbeat carry no refs; the prediction/experiment carry pattern candidates — the prediction
+  resolves them to CONFIDENCE, the experiment only uses them for grounding).
 - **Never add `confidence`/`tone`** back to the envelope without a real computed source (§9 gotcha c).
 
 ## 8. Testing
 
 Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake LLM's
 `[fake-briefing:{…}]` + `[fake-weekly:…]` + `[fake-memoir:{…}]` + `[fake-heartbeat:…]` +
-`[fake-prediction:{…}]` sentinels script deterministic answers. **85 tests across 26 classes** — the
-B1.1 five, three B1.2 classes, the W1 additions, the W2 additions, the H1 additions, plus the P1
-additions:
+`[fake-prediction:{…}]` + `[fake-experiment:{…}]` sentinels script deterministic answers. **~103
+tests across 31 classes** — the B/W/H/P1 classes plus the P2 additions:
 
 **B (briefing):**
 
@@ -1057,6 +1220,27 @@ additions:
   wire; `200 []` when no rows and no confirmed patterns (honest empty, never 404); 401 without a
   token. **`ProactiveApiSwitchOffIT` (+1)** — prediction 404 when proactive off (bean absence).
 
+**P (experiments, P2):**
+
+- **`ExperimentPersistenceIT` (3)** — round-trip a proposed row (null startDate/outcomeGood); the
+  entity `@Pattern` rejects a bad status (`ConstraintViolationException`, before the DB CHECK); the
+  live finder excludes dismissed + scopes to owner.
+- **`ExperimentProposalGeneratorIT` (5)** — gather composes snapshot + candidates + catalog with a
+  CONFIRMED pattern; null with only a proposed pattern (grounding gate); propose persists a scripted
+  row with `clampDays` (90→28) via a `[fake-experiment:{…}]` check-in note; a no-op when the open cap
+  (3 active) is met; unparseable ⇒ empty.
+- **`ExperimentOutcomeIT` (4)** — a sleep-up experiment whose window closed + sleep rose → completed,
+  outcomeGood true, "Beigazolódott"; wrong direction → false, "Nem igazolódott"; no data → null,
+  "Nem értékelhető"; a still-open window untouched.
+- **`ExperimentJobIT` (2)** — the propose run creates a row for a confirmed-pattern user; the outcome
+  run completes a due experiment. **`ExperimentJobSwitchOffIT` (1)** — the third switch ⇒ no bean.
+- **`ProactiveApiExperimentIT` (8)** — list `[]` without patterns; lazy-propose with a confirmed
+  pattern; accept → active (startDate set) then re-decide → **409**; dismiss → drops from the list;
+  404 on a random id; 400 on an invalid decision; propose persists; 401 without a token.
+  **`ProactiveApiSwitchOffIT` (+2)** — experiment list + decision 404 when proactive off.
+- **`PredictionValidationIT` (4, unchanged)** — re-run against the extracted `MetricWindowEvaluator`
+  to prove the refactor is behavior-identical.
+
 **FE (Vitest + RTL):** `data/today/briefingHooks.test.tsx` (3) — wire→`Briefing` mapping (no
 confidence), 404→null, mock null without fetching; `features/today/components/BriefingCard.test.tsx`
 adds a generated-briefing-no-label case; `data/today/todayHooks.test.tsx` adds real-mode
@@ -1077,33 +1261,36 @@ default 404; mock null without fetching (byte-parity);
 derived window label; `[]` on the default empty array; mock seed without fetching;
 `features/insights/pages/PredictionsPage.test.tsx` gains a real-mode describe (real cards + „tanulom"
 on null confidence + derived accuracy header, no `hamarosan`; empty array → the honest null-state);
-`InsightsSubNav.test.tsx` + `insights.nav.test.tsx` flip Predictions from hidden to visible. MSW
-defaults: `/api/proactive/briefing`, `/api/proactive/weekly-suggestion`, `/api/proactive/memoir`,
-`/api/proactive/heartbeat` return 404, and **`/api/proactive/prediction` returns `200 []`** (a list
-endpoint's honest default is an empty array, not a 404).
+`InsightsSubNav.test.tsx` + `insights.nav.test.tsx` flip Predictions from hidden to visible. **P2:**
+`data/insights/experimentsHooks.test.tsx` (3) — maps a proposed wire row (day 0, outcomeGood
+undefined); `[]` on the default; mock seed without fetching;
+`features/insights/pages/ExperimentsPage.test.tsx` gains a real-mode describe (a proposed row +
+Elfogadom/Elvetem, clicking Elfogadom POSTs the decision; the empty-array null-state);
+`InsightsSubNav.test.tsx` + `insights.nav.test.tsx` flip Experiments from hidden to visible (**all 7
+tabs now**). MSW defaults: `/api/proactive/{briefing,weekly-suggestion,memoir,heartbeat}` return 404,
+`/api/proactive/prediction` and **`/api/proactive/experiment` return `200 []`**, plus default
+`POST …/experiment/{propose,{id}/decision}` handlers (list endpoints' honest default is an empty array).
 
-Test infra: `support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator,HeartbeatNotePopulator,PredictionPopulator}.java`
+Test infra: `support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator,HeartbeatNotePopulator,PredictionPopulator,ExperimentPopulator}.java`
 (aggregate factories, all in the `AbstractIntegrationTest` `@Import` list) + `briefing`,
-`weekly_suggestion`, `memoir`, `heartbeat_note` and `prediction` in the `ResetDatabase` TRUNCATE list.
-Full backend + FE gates green at P1 close (BE clean-test green, FE both modes + build).
+`weekly_suggestion`, `memoir`, `heartbeat_note`, `prediction` and `experiment` in the `ResetDatabase`
+TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, FE both modes + build).
 
 ## 9. Decisions, gotchas & deferred
 
-- **(a) All FIVE generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
+- **(a) All SIX generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
   fake dispatches on `BRIEFING_MARKER_MIRROR` (`"REGGELI-BRIEFING-FELADAT"`), `WEEKLY_MARKER_MIRROR`
   (`"HETI-TERVJAVASLAT"`), `MEMOIR_MARKER_MIRROR` (`"HETI-MEMOIR-FELADAT"`), `HEARTBEAT_MARKER_MIRROR`
-  (`"NAPKOZBENI-JEGYZET-FELADAT"`) and `PREDICTION_MARKER_MIRROR` (`"HETI-PREDIKCIO-FELADAT"`),
-  **copies** of `BriefingGenerator.BRIEFING_MARKER` / `WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER` /
-  `MemoirGenerator.MEMOIR_MARKER` / `HeartbeatGenerator.HEARTBEAT_MARKER` /
-  `PredictionGenerator.PREDICTION_MARKER`, NOT imports — a `companion` → `proactive` import would
-  create a package cycle that the frozen ArchUnit rule fails the build on. Each literal pair must be
-  edited together (both carry a comment pointing at the other; drift fails the generator IT loudly).
-  The markers are prefix-collision-checked (`FakeCompanionLlm` dispatches by `startsWith`): the three
-  `HETI-*` markers (`TERVJAVASLAT`/`MEMOIR-FELADAT`/`PREDIKCIO-FELADAT`) all diverge by char 6, and
-  `NAPKOZBENI-*` shares no prefix with any. **The prediction sentinel regex is GREEDY**
-  (`\[fake-prediction:(\{.*\})]`) unlike the memoir's non-greedy one — the prediction payload
-  `{"predictions":[{…}]}` nests objects, so a non-greedy match would stop at the FIRST inner `}` and
-  truncate the JSON.
+  (`"NAPKOZBENI-JEGYZET-FELADAT"`), `PREDICTION_MARKER_MIRROR` (`"HETI-PREDIKCIO-FELADAT"`) and
+  `EXPERIMENT_MARKER_MIRROR` (`"N1-KISERLET-FELADAT"`), **copies** of the six generators' `*_MARKER`
+  constants, NOT imports — a `companion` → `proactive` import would create a package cycle that the
+  frozen ArchUnit rule fails the build on. Each literal pair must be edited together (both carry a
+  comment pointing at the other; drift fails the generator IT loudly). The markers are
+  prefix-collision-checked (`FakeCompanionLlm` dispatches by `startsWith`): the three `HETI-*` markers
+  all diverge by char 6, and `NAPKOZBENI-*`/`N1-*` share no prefix with any. **The prediction AND
+  experiment sentinel regexes are GREEDY** (`\[fake-…:(\{.*\})]`) unlike the memoir's non-greedy one —
+  both payloads (`{"predictions":[{…}]}` / `{"experiments":[{…}]}`) nest objects, so a non-greedy
+  match would stop at the FIRST inner `}` and truncate the JSON.
 - **(b) Proactive beans condition on BOTH switches.** Every bean is
   `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` —
   proactive calls the `CompanionLlm` port, so it presupposes companion. Switch either off ⇒ no beans
@@ -1231,61 +1418,93 @@ Full backend + FE gates green at P1 close (BE clean-test green, FE both modes + 
   caught 404. The lazy path generates the CURRENT week on an empty-week GET (the weekly-suggestion
   idiom); once the Monday cron has run it is a pure miss-recovery. The FE derives the accuracy header
   from CLOSED rows only (absent when none closed) — never the mock's hard-coded literal in live mode.
-- **Deferred to H2/P2:** Web Push delivery (H2 — VAPID + `push_subscription` + SW handler), N=1
-  experiments (P2 — the `proposed`/`active`/`completed` lifecycle + L2 accept) — later slices, see
-  the roadmap. P1 delivers the first honest Insights forecast surface; the Experiments tab is the
-  last remaining `PHASE3_TAB_IDS` ghost. The D′ score constants
-  (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to backend config in
-  W1/W2 (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
+- **(x) Propose trigger = BOTH cron + button.** A weekly `ExperimentJob.runPropose` (Mon 06:45) AND
+  the "+ Új kísérlet javasol Mezo" button (`POST …/propose`) — the button is REAL in live mode (the
+  W1/W2 false-affordance lesson, inverted: rather than hide a dead button, wire it). Mock keeps it
+  inert (the seed has no propose backend).
+- **(y) Propose cap on OPEN experiments.** `propose` is a no-op when the user already has `max-open`
+  (default 3) `proposed`+`active` rows — bounds both the cron and the button so the tab never floods.
+  The grounding gate is the same as predictions: zero CONFIRMED patterns ⇒ no proposals.
+- **(z) Lifecycle + the write-path guards.** `proposed` →(accept)→ `active` (start_date=today) |
+  →(dismiss)→ `dismissed`; `active` →(outcome cron)→ `completed`. `decide` fetches owned-or-404, then
+  **guards the proposed state — re-deciding a non-proposed row is a 409** (`PROACTIVE_EXPERIMENT_NOT_PROPOSED`);
+  an invalid decision value is a 400. `dismissed` rows are excluded from the list read (gone from the
+  UI, status preserved). `total_days` is model-proposed, clamped to `[min-days, max-days]`.
+- **(aa) Outcome eval + the nullable `outcome_good`.** The daily run evaluates `active` windows that
+  have closed (`start + total <= today`) via the shared `MetricWindowEvaluator` (experiment window vs
+  the equal baseline before start). A direction match ⇒ `outcome_good=true` else `false`; **no data
+  in a compare window ⇒ `completed` with `outcome_good=null`** (honest "Nem értékelhető" — a boolean
+  column made nullable precisely to represent an inconclusive-but-terminal experiment). The FE maps
+  null → undefined and renders three distinct chips.
+- **(bb) `MetricWindowEvaluator` is the DRY seam between P1 and P2.** The weight/sleep/training
+  window-vs-baseline comparison (avg/count, epsilon-banded direction, code-formatted text) was
+  **extracted from `PredictionValidationService` into `MetricWindowEvaluator`** — P1 validation
+  (baseline = the 7 days before the window) and P2 outcome (baseline = the equal span before start)
+  both call `evaluate(userId, metricKey, winFrom, winTo, baseFrom, baseTo)`, differing only in the
+  bounds they pass. The extraction is behavior-preserving; `PredictionValidationIT` re-runs green
+  against it (the regression guard). The epsilon config still lives under `mezo.proactive.prediction.*`.
+- **Epic complete — only H2 Web Push deferred.** All eight slices shipped
+  (B1.1→B1.2→W1→W2→H1→P1→P2). **H2 (Web Push)** stays deferred — pure delivery infra (VAPID
+  SealedSecret on k3s, `push_subscription`, the SW push handler); the content it would push (heartbeat,
+  briefing-ready) already exists, so it can slide indefinitely. `PHASE3_TAB_IDS` is now empty. The
+  D′ score constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to
+  backend config (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
 
 ## 10. Key files
 
 **API contract**
-- `api/feature/proactive/proactive.yml` — 5 endpoints (briefing + weekly-suggestion + memoir +
-  heartbeat + prediction) + 7 schemas (`BriefingResponse`, `BriefingRef`, `WeeklySuggestionResponse`,
-  `MemoirResponse`, `MemoirAnchor`, `HeartbeatNoteResponse`, `PredictionResponse`) (tag `Proactive` →
-  `ProactiveApi`); registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` +
-  `io.mrkuhne.mezo.api.*`.
+- `api/feature/proactive/proactive.yml` — 8 endpoints (briefing + weekly-suggestion + memoir +
+  heartbeat + prediction + experiment list/propose/decide) + 9 schemas (…+ `ExperimentResponse`,
+  `ExperimentDecisionRequest`) (tag `Proactive` → `ProactiveApi`); registered in `api/generate/merge.yml`
+  → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 
 **Backend — controller / services / mapper**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getBriefing` + `getWeeklySuggestion` + `getMemoir` + `getHeartbeat` + **`getPredictions`**), JWT ownership, dual-switch-gated.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (…+ `getPredictions` + **`getExperiments`/`proposeExperiments`/`decideExperiment`**), JWT ownership, dual-switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveBriefingService.java` — the briefing read path (persisted row · `refreshIfStale` · lazy-generate; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveWeeklySuggestionService.java` — **W1** the weekly read path (ISO-Monday week · persisted row or lazy-generate; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveMemoirService.java` — **W2** the memoir read path (latest row · else lazy-generate the LAST COMPLETED week; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveHeartbeatService.java` — **H1** the heartbeat read path (day's latest note · lazy latest-elapsed-window via `CronExpression`; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactivePredictionService.java` — **P1** the prediction list read path (all live rows · lazy current-week; `[]` = honest, never 404).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveExperimentService.java` — **P2** the experiment read + WRITE path (list · lazy propose · `decide` with the 404/409 guards · `propose`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingJob.java` — **B1.2** dawn `@Scheduled` cron (today-only, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionJob.java` — **W1** Monday-06:00 `@Scheduled` cron (current-week only, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirJob.java` — **W2** Sunday-19:00 `@Scheduled` cron (the week ending that Sunday, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/HeartbeatJob.java` — **H1** two `@Scheduled` window crons (midday nudge + evening closing, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionJob.java` — **P1** two `@Scheduled` crons (Mon-06:30 `runWeekly` generate + daily-06:15 `runValidation`, per-user isolation, three-switch-gated).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionValidationService.java` — **P1** pure-code deterministic window-close validation (metric-vs-prior-7-days, no-data ⇒ pending).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionValidationService.java` — **P1** deterministic window-close validation, now delegating to `MetricWindowEvaluator`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MetricWindowEvaluator.java` — **P1+P2 SHARED** pure-code metric window-vs-baseline verdict (weight/sleep/training, epsilon-banded, code-formatted; no-data ⇒ null).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentJob.java` — **P2** two `@Scheduled` crons (Mon-06:45 `runPropose` + daily-06:20 `runOutcome`, per-user isolation, three-switch-gated).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentOutcomeService.java` — **P2** deterministic outcome eval (active window-closed → completed via `MetricWindowEvaluator`; null = inconclusive).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingGenerator.java` — the spine: pure-code `gather` + one `CompanionLlm.complete` + strict-JSON parse + ref resolution; `BRIEFING_MARKER` + `PROMPT` + `SNAPSHOT_CANDIDATES`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirGenerator.java` — **W2** pure-code `gather` (the week's OWN summaries + facts + patterns + numbered anchor candidates) + one `CompanionLlm.completeSmart` + strict-JSON `{title, body, anchorIndexes}` parse + `resolveAnchors` (bounds-checked, deduped, model-selected); `MEMOIR_MARKER` + `PROMPT` + the `MemoirGather` record.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/HeartbeatGenerator.java` — **H1** pure-code `gather` (snapshot + facts + latest summary + `MAI BRIEFING` dedupe block + `ABLAK:` instruction) + one **cheap-tier** `CompanionLlm.complete` + flat prose; `HEARTBEAT_MARKER` + `PROMPT`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/PredictionGenerator.java` — **P1** pure-code `gather` (snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog) + one `CompanionLlm.completeSmart` + strict-JSON `{predictions:[…]}` parse + code-set windows + `resolveConfidence` (pattern-copied, null-safe) + catalog/enum validation + `max-per-week` cap; `PREDICTION_MARKER` + `PROMPT` + `VALID_METRICS`/`VALID_DIRECTIONS`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toBriefingResponse` + `toWeeklySuggestionResponse` + `toMemoirResponse`/`toMemoirAnchor` + `toHeartbeatResponse` (`noteDate`→`date`, `windowKey`→`window`) + **`toPredictionResponse`** (direct field map); Instant → UTC OffsetDateTime, **BigDecimal → Double** default methods).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentProposalGenerator.java` — **P2** pure-code `gather` (snapshot + facts + CONFIRMED-pattern candidates + catalog) + one `completeSmart` + strict-JSON `{experiments:[…]}` parse + `clampDays` + catalog/enum validation + open-cap gate; `EXPERIMENT_MARKER` + `PROMPT`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (…+ `toPredictionResponse` + **`toExperimentResponse`** (direct field map); Instant → UTC OffsetDateTime, BigDecimal → Double default methods).
 
 **Backend — entity / repo / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{BriefingEntity,BriefingContentEnvelope}.java` — the owned entity + typed jsonb envelope (`Ref` nested).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/WeeklySuggestionEntity.java` — **W1** the owned entity (flat `weekStart`/`prose`/`generatedAt`, no jsonb).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{MemoirEntity,MemoirAnchorsEnvelope}.java` — **W2** the owned entity (`weekStart`/`title`/`body`/`generatedAt` + `anchors` typed jsonb) + the `MemoirAnchorsEnvelope{List<Anchor(kind,label)>}` record.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/HeartbeatNoteEntity.java` — **H1** the owned entity (flat `noteDate`/`windowKey`/`kind`/`content`/`generatedAt`) + the window/kind constants.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/PredictionEntity.java` — **P1** the owned entity (flat `weekStart`/`title`/`basis`/`confidence?`/`metricKey`/`expectedDirection`/`validFrom`/`validTo`/`status`/`actual?`/`generatedAt`) + the status/direction/metric constants.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/PredictionEntity.java` — **P1** the owned entity (flat `weekStart`/`title`/`basis`/`confidence?`/`metricKey`/`expectedDirection`/`validFrom`/`validTo`/`status`/`actual?`/`generatedAt`) + the status/direction/metric constants (metric+direction SHARED).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/ExperimentEntity.java` — **P2** the owned entity (flat `title`/`hypothesis`/`status`(@Pattern)/`metricKey`/`expectedDirection`(@Pattern)/`startDate?`/`totalDays`/`outcome?`/`outcomeGood?`/`generatedAt`) + the lifecycle constants.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/BriefingRepository.java` — `findByCreatedByAndBriefingDate` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklySuggestionRepository.java` — **W1** `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/MemoirRepository.java` — **W2** `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/HeartbeatNoteRepository.java` — **H1** `findByCreatedByAndNoteDateAndWindowKey` + `findFirstByCreatedByAndNoteDateOrderByGeneratedAtDesc` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/PredictionRepository.java` — **P1** `existsByCreatedByAndWeekStart` + `findByCreatedByOrderByValidFromDescGeneratedAtDesc` + `findByCreatedByAndStatusAndValidToBefore` (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/ExperimentRepository.java` — **P2** `findByIdAndCreatedByAndDeletedFalse` + `findByCreatedByAndStatusInOrderByGeneratedAtDesc` + `findByCreatedByAndStatusOrderByGeneratedAtDesc` + `countByCreatedByAndStatusIn` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/weight/repository/WeightLogRepository.java` — **P1** added `findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc` (the validation window read; sleep already had the sibling).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.{past-days,cron,regen-cap-per-day}, weekly.cron, memoir.cron, heartbeat.{midday-cron,evening-cron}, prediction.{cron,validation-cron,max-per-week,weight-epsilon-kg,sleep-epsilon-h}}` (@Validated, nested records).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.*, weekly.cron, memoir.cron, heartbeat.*, prediction.*, experiment.{propose-cron,outcome-cron,max-open,min-days,max-days}}` (@Validated, nested records).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java` — **B1.2** `existsBy…DateGreaterThanEqualAndCreatedAtAfter` staleness probe (plain finder, no proactive dependency).
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + `BRIEFING_JOB_SWITCH` + `WEEKLY_SUGGESTION_JOB_SWITCH` + `MEMOIR_JOB_SWITCH` + `HEARTBEAT_JOB_SWITCH` + **`PREDICTION_JOB_SWITCH`** (+ the companion `COMPANION_SWITCH` they pair with).
-- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{briefing.*, weekly.cron, memoir.cron, heartbeat.*, prediction.*}` + `mezo.techcore.cron.{briefing-job,weekly-suggestion-job,memoir-job,heartbeat-job,prediction-job}.enabled`.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + the six job switches (`BRIEFING`/`WEEKLY_SUGGESTION`/`MEMOIR`/`HEARTBEAT`/`PREDICTION`/**`EXPERIMENT`**`_JOB_SWITCH`) (+ the companion `COMPANION_SWITCH` they pair with).
+- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{…, experiment.*}` + `mezo.techcore.cron.{…,experiment-job}.enabled`.
+- `backend/src/main/resources/messages.properties` — **P2** `PROACTIVE_EXPERIMENT_NOT_FOUND` (404) + `PROACTIVE_EXPERIMENT_NOT_PROPOSED` (409).
 
 **Backend — LLM fake (companion side, additive)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — `BRIEFING_MARKER_MIRROR` + `[fake-briefing:{…}]`, `WEEKLY_MARKER_MIRROR` + `[fake-weekly:…]`, `MEMOIR_MARKER_MIRROR` + `[fake-memoir:{…}]`, `HEARTBEAT_MARKER_MIRROR` + `[fake-heartbeat:…]`, and **`PREDICTION_MARKER_MIRROR` + `[fake-prediction:{…}]`** (GREEDY regex) sentinels (literals; §9 gotcha a) — the prediction default returns one valid `{"predictions":[{…}]}` row.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — the six mirrors + sentinels (briefing/weekly/memoir/heartbeat/prediction + **`EXPERIMENT_MARKER_MIRROR` + `[fake-experiment:{…}]`** GREEDY) (literals; §9 gotcha a) — the experiment default returns one valid `{"experiments":[{…}]}` proposal.
 
 **Frontend — Today consumer (B1.2)**
 - `frontend/src/data/today/briefingApi.ts` — `briefingApi.get` + `toBriefing` (wire→`Briefing`, no confidence).
@@ -1297,6 +1516,13 @@ Full backend + FE gates green at P1 close (BE clean-test green, FE both modes + 
 - `frontend/src/data/today/heartbeatHooks.ts` — `useCompanionNote()` (dual-mode; mock null no-fetch, real GET or null on 404); re-exported by `data/hooks.ts`.
 - `frontend/src/features/today/components/CompanionNoteCard.tsx` — the in-day note card (nudge/closing eyebrow copy); rendered by `TodayPage.tsx` after the check-in strip only when a note exists.
 - `frontend/src/data/types.ts` — the `CompanionNote` interface.
+
+**Frontend — Insights Experiments consumer (P2)**
+- `frontend/src/data/insights/experimentsApi.ts` — `experimentsApi.{list,decide,propose}` + `toExperiment` (wire→FE; `day` derived client-side, `outcomeGood: null→undefined`).
+- `frontend/src/data/insights/experimentsHooks.ts` — `useExperiments()` (list; `[]`→null-state) + `useExperimentActions()` (`useMutation` decide/propose + `invalidateQueries(['experiments'])`); both re-exported by `data/hooks.ts`.
+- `frontend/src/features/insights/pages/ExperimentsPage.tsx` — ghost dropped; proposed (Elfogadom/Elvetem) / active (progress) / completed (outcome chips) rows + a real propose CTA, else the honest null-state.
+- `frontend/src/features/insights/pages/tabs.ts` — `PHASE3_TAB_IDS` now **EMPTY** (Experiments un-ghosted at P2 — all 7 tabs real).
+- `frontend/src/data/types.ts` — `ExperimentStatus` gained `proposed`/`dismissed`; `Experiment.outcomeGood?` documents the inconclusive case.
 
 **Frontend — Insights Predictions consumer (P1)**
 - `frontend/src/data/insights/predictionsApi.ts` — `predictionsApi.list()` + `toPrediction` (wire→FE `Prediction`; `confidence ?? null`; the window label + accuracy header derive client-side via `Intl` HU short-month).
@@ -1317,12 +1543,12 @@ Full backend + FE gates green at P1 close (BE clean-test green, FE both modes + 
 - `frontend/src/features/insights/pages/tabs.ts` — `PHASE3_TAB_IDS = {predictions, experiments}` (memoir un-ghosted at W2).
 
 **Backend — migrations**
-- `backend/src/main/resources/db/changelog/1.0.0/script/{202607061100_mezo-h4wp.1_create_briefing,202607070900_mezo-h4wp.2_briefing_regen_count,202607071200_mezo-h4wp.3_create_weekly_suggestion,202607071500_mezo-h4wp.4_create_memoir,202607071800_mezo-h4wp.5_create_heartbeat_note,202607071900_mezo-h4wp.7_create_prediction}.sql` (all in `1.0.0_master.yml`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/{…,202607071900_mezo-h4wp.7_create_prediction,202607072000_mezo-h4wp.8_create_experiment}.sql` (all in `1.0.0_master.yml`).
 
 **Backend — tests**
-- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{BriefingPersistenceIT,BriefingGeneratorIT,ProactiveApiIT,ProactiveApiSwitchOffIT,ProactiveApiCompanionOffIT,BriefingJobIT,BriefingJobSwitchOffIT,BriefingFreshnessIT,WeeklySuggestionPersistenceIT,WeeklySuggestionGeneratorIT,WeeklySuggestionJobIT,WeeklySuggestionJobSwitchOffIT,MemoirPersistenceIT,MemoirGeneratorIT,MemoirJobIT,MemoirJobSwitchOffIT,HeartbeatPersistenceIT,HeartbeatGeneratorIT,HeartbeatJobIT,HeartbeatJobSwitchOffIT,HeartbeatLazyIT,PredictionPersistenceIT,PredictionGeneratorIT,PredictionValidationIT,PredictionJobIT,PredictionJobSwitchOffIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator,HeartbeatNotePopulator,PredictionPopulator}.java` + `support/ResetDatabase.java` (`briefing` + `weekly_suggestion` + `memoir` + `heartbeat_note` + `prediction` in the TRUNCATE list).
-- FE: `frontend/src/data/today/{briefingHooks.test.tsx,heartbeatHooks.test.tsx,todayHooks.test.tsx}`, `frontend/src/features/today/components/{BriefingCard.test.tsx,CompanionNoteCard.test.tsx}`, `frontend/src/data/insights/{weeklyHooks.test.tsx,memoirHooks.test.tsx,predictionsHooks.test.tsx}`, `frontend/src/features/insights/pages/{WeeklyPage.test.tsx,MemoirPage.test.tsx,PredictionsPage.test.tsx,InsightsSubNav.test.tsx,insights.nav.test.tsx}`, `frontend/src/test/msw/handlers.ts` (four proactive defaults 404 + prediction `200 []`).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{…P1 classes…,ExperimentPersistenceIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ExperimentJobIT,ExperimentJobSwitchOffIT,ProactiveApiExperimentIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{…,PredictionPopulator,ExperimentPopulator}.java` + `support/ResetDatabase.java` (`…prediction, experiment` in the TRUNCATE list).
+- FE: `…P1 tests…`, `frontend/src/data/insights/experimentsHooks.test.tsx`, `frontend/src/features/insights/pages/{ExperimentsPage.test.tsx,InsightsSubNav.test.tsx,insights.nav.test.tsx}`, `frontend/src/test/msw/handlers.ts` (four defaults 404 + prediction/experiment `200 []` + experiment POST handlers).
 
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)

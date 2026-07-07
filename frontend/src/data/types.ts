@@ -517,7 +517,7 @@ export interface Prediction {
   actual?: string
 }
 
-export type ExperimentStatus = 'active' | 'completed'
+export type ExperimentStatus = 'proposed' | 'active' | 'completed' | 'dismissed'
 export interface Experiment {
   id: string
   title: string
@@ -526,6 +526,7 @@ export interface Experiment {
   total: number
   hypothesis: string
   outcome?: string
+  /** true/false once evaluated; undefined = proposed/active, or completed-but-inconclusive (proactive P2). */
   outcomeGood?: boolean
 }
 

@@ -53,4 +53,7 @@ public class FeaturesConfiguration {
 
     /** P1 prediction generation + validation crons — techcore cron zone (schedules: mezo.proactive.prediction.*). */
     public static final String PREDICTION_JOB_SWITCH = "mezo.techcore.cron.prediction-job.enabled";
+
+    /** P2 experiment proposal + outcome crons — techcore cron zone (schedules: mezo.proactive.experiment.*). */
+    public static final String EXPERIMENT_JOB_SWITCH = "mezo.techcore.cron.experiment-job.enabled";
 }
