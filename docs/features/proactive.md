@@ -2,7 +2,7 @@
 title: Proactive layer (briefing, weekly prose, heartbeat, predictions)
 type: feature-domain
 status: in-progress
-updated: 2026-07-06
+updated: 2026-07-07
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -10,6 +10,7 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202607061100_mezo-h4wp.1_create_briefing.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071200_mezo-h4wp.3_create_weekly_suggestion.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071500_mezo-h4wp.4_create_memoir.sql
+  - backend/src/main/resources/db/changelog/1.0.0/script/202607071800_mezo-h4wp.5_create_heartbeat_note.sql
 related: [companion, today, insights, _platform-api-backend]
 ---
 
@@ -29,11 +30,16 @@ related: [companion, today, insights, _platform-api-backend]
 > (title + body + typed-jsonb `anchors`) + a **smart-tier** `MemoirGenerator`, a **Sunday-19:00**
 > `MemoirJob`, and a lazy `GET /api/proactive/memoir` (latest row, else generate the LAST COMPLETED
 > week) the **Insights Memoir tab now un-ghosts** in real mode (404 = the FE's honest „készül"
-> state). **Status: backend 🟢 B1.2 + 🟢 W1 + 🟢 W2 · FE 🟢 B1.2 (Today card real) + 🟢 W1 (Weekly
-> card real, inert buttons hidden in live) + 🟢 W2 (Memoir tab real, demo extras mock-only) — the v1
-> exit criterion is met and the whole W stage has shipped.** The four value stages (B briefing → W
-> weekly prose → H heartbeat → P predictions) and the 8-slice map live in the roadmap; this doc
-> tracks **what exists now**.
+> state). **H1** opens the H stage („napközben is jelen van"): a `heartbeat_note` table (user+day+
+> window identity) + a **cheap-tier** `HeartbeatGenerator`, a two-window `HeartbeatJob` (midday
+> 12:30 nudge + evening 20:30 closing, config crons), and a lazy `GET /api/proactive/heartbeat`
+> that generates the **latest already-elapsed window** of today on a miss — the **Today page gains
+> a `CompanionNoteCard`** (honest absence: no card). **Status: backend 🟢 B1.2 + 🟢 W1 + 🟢 W2 +
+> 🟢 H1 · FE 🟢 B1.2 (Today card real) + 🟢 W1 (Weekly card real, inert buttons hidden in live) +
+> 🟢 W2 (Memoir tab real, demo extras mock-only) + 🟢 H1 (CompanionNoteCard on Today) — with the
+> briefing the IDENT-3 in-app rhythm (≥3 touches/day) is delivered.** The four value stages (B
+> briefing → W weekly prose → H heartbeat → P predictions) and the 8-slice map live in the roadmap;
+> this doc tracks **what exists now**.
 
 ## 1. Summary
 
@@ -44,7 +50,8 @@ summaries) in 8 slices (epic `mezo-h4wp`); **B1.1 (`mezo-h4wp.1`) shipped the br
 B1.2 (`mezo-h4wp.2`) took it live — dawn cron, sleep-triggered freshness, and the Today FE swap;
 W1 (`mezo-h4wp.3`) opened the W stage — the smart-tier weekly plan-suggestion, live on the Insights
 Weekly card; W2 (`mezo-h4wp.4`) closed the W stage — the smart-tier weekly Memoir, un-ghosting the
-Insights Memoir tab.**
+Insights Memoir tab; H1 (`mezo-h4wp.5`) opened the H stage — the cheap-tier in-day heartbeat notes
+on a new Today card.**
 
 **B1.1 (`mezo-h4wp.1`) — skeleton + briefing spine:**
 
@@ -178,6 +185,38 @@ Insights Memoir tab.**
   false affordance, the W1 button precedent — §9 decision k). Mock keeps the full Phase-1 demo +
   byte-parity. Details: [insights.md §2.3](insights.md).
 
+**H1 (`mezo-h4wp.5`) — in-app heartbeat (the H stage opens):**
+
+- **A fourth owned table** — `heartbeat_note` (UUID PK, `created_by`, soft-delete; `note_date date`,
+  **`window_key varchar(16)`** = `midday`/`evening` (NOT `window` — reserved word), `kind
+  varchar(16)` = `nudge`/`closing`, `content text`, `generated_at`). A **partial** unique index
+  (one LIVE note per user+day+window); DB CHECKs pin both vocabularies. **No regeneration path**
+  (a note is written once — the W1/W2 YAGNI reasoning at window cadence, §9 decision r).
+- **`HeartbeatGenerator`** — the weekly-suggestion prose idiom at the **CHEAP tier**: a pure-code
+  gather composes the V0.3 snapshot (today's actual state: fuel progress, training, check-ins) +
+  V1.1 facts + the latest `daily_summary` + **today's persisted briefing body under a `MAI BRIEFING
+  (ne ismételd):` block** (overlap-dedupe, §9 decision q) + the window instruction (`ABLAK: dél
+  (nudge)` / `este (closing)`) → **ONE `CompanionLlm.complete` call** (Flash — the tier policy) →
+  flat HU prose. **Emptiness gate:** zero `daily_summary` in the shared `briefing.past-days` window
+  ⇒ NO row (§9 decision s); blank answer ⇒ NO row; existing row ⇒ returned untouched (idempotent).
+- **A two-window cron** — `HeartbeatJob` with **two `@Scheduled` methods** on
+  `mezo.proactive.heartbeat.midday-cron` (12:30, nudge) and `evening-cron` (20:30, closing), gated
+  on a THIRD switch `mezo.techcore.cron.heartbeat-job.enabled` (`HEARTBEAT_JOB_SWITCH`); today-only,
+  idempotent, per-user failures isolated, **no backfill** (a past window is never read).
+- **A lazy read** — `GET /api/proactive/heartbeat?date=`: the day's **latest** persisted note
+  (evening beats midday by `generated_at`); for **TODAY** the latest **already-elapsed** window
+  lazy-generates when missing — the window fire-times are derived from the SAME cron expressions
+  via Spring `CronExpression` (no duplicated time config, §9 decision r); past dates never
+  generate. `null` ⇒ **404 `RESOURCE_NOT_FOUND`** (honest absence).
+- **Fake sentinel** — `FakeCompanionLlm` gained `[fake-heartbeat:…]` (bare string) dispatched on
+  `HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT"` (literal mirror, §9 gotcha a); planted
+  via a **check-in note** (the gather renders the snapshot, so the briefing/weekly channel works).
+- **The FE surface (Today CompanionNoteCard)** — a new dual-mode `useCompanionNote()`
+  (`data/today/heartbeatHooks.ts`, `['heartbeat', date]`, 404→null, mock always null);
+  `TodayPage` renders **`CompanionNoteCard`** (deliberately NOT named `Heartbeat*` — the check-in
+  strip owns that copy) after the check-in strip, **only when a note exists** — honest absence is
+  simply no card; mock mode = Phase-1 byte-parity (never a card).
+
 **Status per layer:**
 
 | Layer | State | Notes |
@@ -191,7 +230,9 @@ Insights Memoir tab.**
 | Frontend (Insights Weekly card swap) | 🟢 W1 | `useWeekly().weeklySuggestion` real (404→null); the Weekly card renders the generated prose, else the honest placeholder; „Elfogad/Hangoljuk" hidden in live. |
 | Memoir (table + generator + Sunday cron + lazy read) | 🟢 W2 | `memoir` table (ISO-Monday identity, partial unique, typed-jsonb `anchors`); smart-tier `MemoirGenerator` (gather = the week's OWN summaries + facts + patterns + numbered anchor candidates → ONE `completeSmart` call, model-selected anchors, honest-null); Sunday-19:00 `MemoirJob` (three-switch, no backfill); `GET /api/proactive/memoir` (no params; latest row else lazy-generate the LAST COMPLETED week; 404 = empty week). |
 | Frontend (Insights Memoir tab un-ghost) | 🟢 W2 | `useMemoir()` real (404→null); `memoir` left `PHASE3_TAB_IDS`, `MemoirPage` guard dropped; renders the real memoir + derived week label, else the honest „készül" null-state; reactions/anniversary/archive mock-only. |
-| Heartbeat / predictions | ⛔ later slices | H/P stages — see the roadmap. |
+| Heartbeat (table + generator + window crons + lazy read) | 🟢 H1 | `heartbeat_note` table (user+day+`window_key` partial unique, `kind` nudge/closing); **cheap-tier** `HeartbeatGenerator` (gather = snapshot + facts + latest summary + today's-briefing dedupe block + window instruction → ONE `complete` call, honest-null); `HeartbeatJob` two `@Scheduled` windows (midday/evening crons, three-switch, no backfill); `GET /api/proactive/heartbeat` (lazy latest-elapsed-window for TODAY only; 404 = honest absence). |
+| Frontend (Today CompanionNoteCard) | 🟢 H1 | `useCompanionNote()` real (404→null, mock always null — Phase-1 parity); `TodayPage` renders `CompanionNoteCard` after the check-in strip only when a note exists (honest absence = no card). |
+| Predictions / experiments | ⛔ later slices | P stage — see the roadmap. |
 
 **Driver:** `mezo-h4wp.4` (W2, on `mezo-h4wp.1`'s spine; W1 = `mezo-h4wp.3`, B1.2 = `mezo-h4wp.2`). **Design of record:**
 [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
@@ -240,6 +281,15 @@ anniversary card, and the „Memoir archive · 17 darab" footer are hidden** (un
 deferred surfaces = false affordance); **mock mode** keeps the full Phase-1 demo (seed memoir +
 reactions + anniversary + archive, byte-parity). See [insights.md §2.3](insights.md) for the tab in
 the context of the full Insights sub-nav (Memoir now shows as the 3rd of 5 real-mode tabs).
+
+**Live since H1 — the Today companion-note card.** During the day a new card appears under the
+check-in strip: at midday a short **nudge** for the rest of the day, in the evening a **closing**
+observation — 2-3 sentences grounded in the day's actual state (fuel progress, training, check-ins),
+explicitly instructed not to repeat the morning briefing. The window crons usually pre-write it; if
+one was missed, the first GET of the day generates the latest elapsed window on the spot. **Honest
+absence:** before the first window, with no narrative memory, or on failure there is simply **no
+card** (never placeholder fiction); mock mode never shows one (Phase-1 byte-parity). See
+[today.md §2](today.md).
 
 ## 3. Architecture & data flow
 
@@ -426,15 +476,42 @@ carries a typed jsonb anchor envelope (unlike the weekly suggestion's flat prose
 the same companion reads as the weekly generator (summaries + facts + patterns) but over the week's
 OWN window, not the prior week.
 
+**The heartbeat read (H1 — latest note · lazy latest-elapsed-window; NO staleness/regen):**
+
+```
+GET /api/proactive/heartbeat?date=YYYY-MM-DD           (date optional)
+  → ProactiveController.getHeartbeat(date)              controller/ProactiveController.java  (implements ProactiveApi)
+  → ProactiveHeartbeatService.getHeartbeat(userId, date)   service/ProactiveHeartbeatService.java:47  @Transactional
+      day = date != null ? date : LocalDate.now()
+      if day == today:
+        latestElapsedWindow(day)                        CronExpression.parse(midday/evening cron).next(day start)
+          — windows whose fire-time ≤ now, take the latest; missing note ⇒ generator.generate(userId, day, key)
+      findFirstByCreatedByAndNoteDateOrderByGeneratedAtDesc(userId, day)   the day's newest note
+      null ⇒ throw SystemRuntimeErrorException(RESOURCE_NOT_FOUND, 404)    (honest absence)
+      → mapper.toHeartbeatResponse(note)                (noteDate→date, windowKey→window)
+```
+
+**The window crons (H1 — `service/HeartbeatJob.java`):** two `@Scheduled` methods (`runMidday` on
+`mezo.proactive.heartbeat.midday-cron`, `runEvening` on `evening-cron`), each looping
+`appUserRepository.findAll()` with per-user try/catch — the MemoirJob idiom; three-switch bean;
+idempotent; today-only, no backfill.
+
+**The heartbeat generator (`service/HeartbeatGenerator.java`):** `generate(userId, day, windowKey)`
+— existing row ⇒ untouched; `gather` (PURE CODE: snapshot + facts + latest summary + briefing
+dedupe block + `ABLAK:` instruction; empty past-days summary window ⇒ null) → ONE **cheap-tier**
+`companionLlm.complete(PROMPT, payload)` (`HEARTBEAT_MARKER`) → blank ⇒ null, else persisted
+`HeartbeatNoteEntity` (kind derived from the window: evening→closing, else nudge).
+
 **Switch-gating.** `ProactiveController`, `ProactiveBriefingService`, `ProactiveWeeklySuggestionService`,
-`ProactiveMemoirService`, `BriefingGenerator`, `WeeklySuggestionGenerator`, `MemoirGenerator` (and the
-mapper via the services) are all
+`ProactiveMemoirService`, `ProactiveHeartbeatService`, `BriefingGenerator`, `WeeklySuggestionGenerator`,
+`MemoirGenerator`, `HeartbeatGenerator` (and the mapper via the services) are all
 `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` — **both**
 must be `true`. Either off ⇒ no proactive beans ⇒ the whole `/api/proactive/*` surface 404s (there's
-no controller to route to). The three jobs (`BriefingJob`, `WeeklySuggestionJob`, `MemoirJob`) each
-add a THIRD switch on top. The dual gate is structural, not a runtime check (§9 gotcha b).
+no controller to route to). The four jobs (`BriefingJob`, `WeeklySuggestionJob`, `MemoirJob`,
+`HeartbeatJob`) each add a THIRD switch on top. The dual gate is structural, not a runtime check
+(§9 gotcha b).
 
-**Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` + `MemoirEntity` all `extend OwnedEntity`
+**Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` + `MemoirEntity` + `HeartbeatNoteEntity` all `extend OwnedEntity`
 (soft-delete via `@SQLDelete`/`@SQLRestriction`); `created_by` is stamped from `CurrentUserId.get()`
 server-side, the finders (`findByCreatedByAndBriefingDate` / `findByCreatedByAndWeekStart` /
 `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` for memoir) are owner +
@@ -443,10 +520,11 @@ companion precedent).
 
 ## 4. Data model & API
 
-### Backend tables (B1.1 + B1.2 + W1 + W2, 🟢)
+### Backend tables (B1.1 + B1.2 + W1 + W2 + H1, 🟢)
 
 Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h4wp.2_briefing_regen_count.sql`
 + `202607071200_mezo-h4wp.3_create_weekly_suggestion.sql` + `202607071500_mezo-h4wp.4_create_memoir.sql`
++ `202607071800_mezo-h4wp.5_create_heartbeat_note.sql`
 (all registered in `db/changelog/1.0.0/1.0.0_master.yml`):
 
 - **`briefing`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
@@ -476,6 +554,15 @@ Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h
   `briefing`/`weekly_suggestion` partial-unique precedent — a soft-deleted row could be regenerated,
   but W2 has no regen path). **Has a jsonb envelope (like `briefing`) but no `regen_count`** — a
   memoir is written once, structured but not staleness-refreshed (§9 decision l).
+- **`heartbeat_note`** (H1) — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id)
+  ON DELETE CASCADE`, `is_deleted boolean default false`, `created_at timestamptz default now()`,
+  `note_date date not null`, `window_key varchar(16) not null` (**`midday`/`evening`** — the column
+  is NOT named `window`, a reserved word; DB CHECK pins the vocabulary), `kind varchar(16) not null`
+  (`nudge`/`closing`, CHECK-pinned), `content text not null` (plain HU prose), `generated_at
+  timestamptz not null`. Uniqueness is a **partial unique index**
+  `uq_heartbeat_note_created_by_note_date_window_key … where is_deleted = false` (one LIVE note per
+  user+day+window). **Flat prose like `weekly_suggestion`, no envelope, no `regen_count`** — a note
+  is written once per window (§9 decision r).
 
 ### Entities + envelope
 
@@ -501,6 +588,12 @@ typed-jsonb precedent). `anchors` are code-collected candidates the model select
 invented; `kind` is the FE `RefTag` vocabulary (`Memory`/`Pattern` in practice). The memoir is the
 briefing's structured-envelope shape at the weekly-suggestion smart tier.
 
+`HeartbeatNoteEntity` (`entity/HeartbeatNoteEntity.java`) `extends OwnedEntity`, UUID
+`@GeneratedValue` id, soft-deleted; flat columns `{LocalDate noteDate, String windowKey, String
+kind, String content, Instant generatedAt}` — **no jsonb** (plain prose, the `weekly_suggestion`
+shape). Carries the window/kind vocabulary constants (`WINDOW_MIDDAY`/`WINDOW_EVENING`/
+`KIND_NUDGE`/`KIND_CLOSING`).
+
 ### REST endpoints (contract-first — tag `Proactive` → `ProactiveApi`)
 
 Fragment `api/feature/proactive/proactive.yml`; `ProactiveController implements ProactiveApi`.
@@ -511,6 +604,7 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `GET /api/proactive/briefing?date=` | `BriefingResponse` | 200 · 401 · 404 | `date` optional (FE sends its LOCAL date; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when no `daily_summary` in the past-days window (§9 gotcha d). |
 | `GET /api/proactive/weekly-suggestion?date=` | `WeeklySuggestionResponse` | 200 · 401 · 404 | `date` optional (any day of the wanted week; the week identity is its ISO Monday; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when the prior week has no `daily_summary` (§9 gotcha d) — the FE keeps its honest placeholder. |
 | `GET /api/proactive/memoir` | `MemoirResponse` | 200 · 401 · 404 | **No parameters.** The LATEST persisted memoir, else lazy-generate the LAST COMPLETED week (`previousOrSame(MONDAY).minusWeeks(1)`); **404 `RESOURCE_NOT_FOUND`** when that week has no `daily_summary` (§9 gotcha d) — the FE renders its honest „készül" state. Archive (older rows) is a later slice. |
+| `GET /api/proactive/heartbeat?date=` | `HeartbeatNoteResponse` | 200 · 401 · 404 | `date` optional (FE sends its LOCAL date; defaults to server today). The day's LATEST note; for TODAY the latest already-elapsed window lazy-generates when missing (§9 decision r); past dates never generate. **404 `RESOURCE_NOT_FOUND`** = honest absence — the Today card simply stays absent. |
 
 Schemas: `BriefingResponse{date, eyebrow, body[], refs[], generatedAt}` +
 `BriefingRef{kind, label}` — **no `confidence`, no `tone`** on the wire (§9 gotcha c). `refs[].kind`
@@ -519,11 +613,13 @@ is the FE `RefTag` vocabulary (`WeightTrend|Goal|Workout|FuelDay|Medication|Slee
 `MemoirResponse{weekStart, title, body, anchors[], generatedAt}` + `MemoirAnchor{kind, label}` —
 `anchors[].kind` is the same FE `RefTag` vocabulary (`Memory`/`Pattern` in practice), model-SELECTED
 from code-collected candidates, never invented.
+`HeartbeatNoteResponse{date, window, kind, content, generatedAt}` — flat prose; `window` on the
+wire maps from the entity's `windowKey`.
 
 ### Configuration
 
 `config/ProactiveProperties.java` (`@Validated`, binds `mezo.proactive.*` — nested `briefing` +
-`weekly` + `memoir` records):
+`weekly` + `memoir` + `heartbeat` records):
 
 - **`briefing.past-days`** (`@Min(1) @Max(14)`, default **7**): how many finished days of narrative
   memory the briefing gather reads — and doubles as the **emptiness gate** (zero summaries ⇒ 404).
@@ -535,12 +631,17 @@ from code-collected candidates, never invented.
   `WeeklySuggestionJob` schedule; the suggestion is FOR the week that is starting (§9 decision j).
 - **`memoir.cron`** (`@NotBlank`, default **`0 0 19 * * SUN`** — Sunday 19:00 server zone): the
   `MemoirJob` schedule; the memoir is FOR the week ENDING that Sunday (§9 decision l).
+- **`heartbeat.midday-cron`** (`@NotBlank`, default **`0 30 12 * * *`**) + **`heartbeat.evening-cron`**
+  (`@NotBlank`, default **`0 30 20 * * *`**): the two H1 window schedules (§9 decision p). The lazy
+  GET derives the window fire-times from these SAME expressions — one source of truth (§9 decision r).
 
-Plus the three techcore job switches, each the THIRD `@ConditionalOnProperty` on its job bean (on top
+Plus the four techcore job switches, each the THIRD `@ConditionalOnProperty` on its job bean (on top
 of the companion+proactive dual gate; off ⇒ the cron bean does not exist, the lazy GET still serves):
 **`mezo.techcore.cron.briefing-job.enabled`** (`BRIEFING_JOB_SWITCH`),
-**`mezo.techcore.cron.weekly-suggestion-job.enabled`** (`WEEKLY_SUGGESTION_JOB_SWITCH`), and
-**`mezo.techcore.cron.memoir-job.enabled`** (`MEMOIR_JOB_SWITCH`), all default `true`.
+**`mezo.techcore.cron.weekly-suggestion-job.enabled`** (`WEEKLY_SUGGESTION_JOB_SWITCH`),
+**`mezo.techcore.cron.memoir-job.enabled`** (`MEMOIR_JOB_SWITCH`), and
+**`mezo.techcore.cron.heartbeat-job.enabled`** (`HEARTBEAT_JOB_SWITCH` — one switch for BOTH
+windows), all default `true`.
 
 ## 5. Integrations
 
@@ -557,7 +658,9 @@ The briefing generator composes three companion capabilities directly:
 (the V3.1/V3.2 Inbox rows) — and calls the port's **`completeSmart`** variant (Pro tier) instead of
 `complete`. **W2's `MemoirGenerator` composes the same four reads** (summaries + facts + patterns +
 the `completeSmart` port) but over the week's OWN window `[weekStart, weekStart+6]` rather than the
-prior week — no new companion capability, just a different window. **Contract crossing the seam:**
+prior week — no new companion capability, just a different window. **H1's `HeartbeatGenerator`**
+reuses the briefing's three reads (snapshot + facts + summaries) via the CHEAP-tier `complete` —
+plus one proactive-internal read (`BriefingRepository`, the dedupe block). **Contract crossing the seam:**
 these read methods with explicit `userId` scoping; strictly one-way — no companion code imports
 proactive. This one-way rule is why the fake sentinels' markers are literal mirrors rather than
 imports (§9 gotcha a).
@@ -607,6 +710,14 @@ renders the memoir card or the honest null-state, with reactions/anniversary/arc
 `mode === 'mock'`. The FE `Memoir` type (`{week, title, body, anchors}`) is reused **unchanged** from
 Phase 1. `memoir` also leaves `PHASE3_TAB_IDS` (`tabs.ts`) so the tab is visible in real mode.
 
+### 5.7 Proactive → Today FE, companion note (✅ H1 wired — dual-mode read)
+The Today `CompanionNoteCard` is the consumer. `useCompanionNote()` (`data/today/heartbeatHooks.ts`,
+`['heartbeat', date]`) reads `GET /api/proactive/heartbeat?date=<local>` via `heartbeatApi.get`
+(`data/today/heartbeatApi.ts`, wire→FE `CompanionNote{window, kind, text}`), 404→null, `retry:false`;
+mock mode returns null synchronously (no fetch — the Phase-1 Today has no such card, byte-parity).
+`TodayPage.tsx` calls the hook directly (not through `useToday` — the card is independent of the
+composed Today payload) and renders the card after the check-in strip only when the note exists.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -631,6 +742,11 @@ curl -s "http://localhost:8090/api/proactive/memoir" \
   -H "Authorization: Bearer $TOKEN"
 # → { "weekStart":"2026-06-29", "title":"…", "body":"…", "anchors":[{"kind":"Memory","label":"2026-07-01"}], "generatedAt":… }
 # → 404 SystemMessageList when the last completed week has no daily_summary (the FE's honest „készül" state)
+
+curl -s "http://localhost:8090/api/proactive/heartbeat" \
+  -H "Authorization: Bearer $TOKEN"
+# → { "date":"2026-07-07", "window":"midday", "kind":"nudge", "content":"…", "generatedAt":… }
+# → 404 SystemMessageList before the first window / without narrative memory (honest absence — no card)
 ```
 
 The weekly suggestion needs at least one `daily_summary` in the **prior** week; for a keyless local
@@ -665,23 +781,31 @@ Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoin
   envelope. It is also the recipe for un-ghosting the remaining Insights tabs (predictions/experiments
   in P): drop from `PHASE3_TAB_IDS`, remove the page guard, render real data + the honest null-state,
   keep unpersisted extras mock-only.
-- **New proactive surface (H/P):** add a sibling `*Generator` + table + `*.yml` fragment in
+- **H1 shipped (heartbeat generator + two window crons + Today card) — the cheap-tier in-day
+  template:** `HeartbeatGenerator` (snapshot-grounded gather + briefing dedupe + window
+  instruction, `complete`, flat prose, honest-null), `HeartbeatJob` (two `@Scheduled` methods on
+  config crons under ONE switch) and the `CronExpression`-derived lazy-elapsed-window read
+  (`ProactiveHeartbeatService.latestElapsedWindow`) are the template for any future intra-day
+  surface. **To add a window:** extend the `Heartbeat` properties record + a third `@Scheduled`
+  method + the service's window list (and widen the DB CHECK on `window_key`).
+- **New proactive surface (P):** add a sibling `*Generator` + table + `*.yml` fragment in
   `feature/proactive/`, gated on the same dual switch. Smart-tier narratives (predictions) reuse
   W1/W2's gather idiom (`CompanionLlm.completeSmart`); a plain-prose surface follows
   `weekly_suggestion` (flat columns), a structured one follows `briefing`/`memoir` (typed jsonb
   envelope).
 - **Prompt / marker tuning:** the prompts are `BriefingGenerator.PROMPT` /
-  `WeeklySuggestionGenerator.PROMPT` (keep each `*_MARKER` prefix + its `FakeCompanionLlm` literal
-  mirror in sync — §9 gotcha a); briefing ref candidates are `SNAPSHOT_CANDIDATES` + the per-summary
-  `Memory` refs in `gather` (the weekly suggestion carries no refs).
+  `WeeklySuggestionGenerator.PROMPT` / `MemoirGenerator.PROMPT` / `HeartbeatGenerator.PROMPT` (keep
+  each `*_MARKER` prefix + its `FakeCompanionLlm` literal mirror in sync — §9 gotcha a); briefing
+  ref candidates are `SNAPSHOT_CANDIDATES` + the per-summary `Memory` refs in `gather` (the weekly
+  suggestion and the heartbeat carry no refs).
 - **Never add `confidence`/`tone`** back to the envelope without a real computed source (§9 gotcha c).
 
 ## 8. Testing
 
 Integration-first, over the fixed `mezo_test` DB (or Testcontainers); the fake LLM's
-`[fake-briefing:{…}]` + `[fake-weekly:…]` + `[fake-memoir:{…}]` sentinels script deterministic
-answers. **53 tests across 16 classes** — the B1.1 five, three B1.2 classes, the W1 additions, plus
-the W2 additions:
+`[fake-briefing:{…}]` + `[fake-weekly:…]` + `[fake-memoir:{…}]` + `[fake-heartbeat:…]` sentinels
+script deterministic answers. **67 tests across 21 classes** — the B1.1 five, three B1.2 classes,
+the W1 additions, the W2 additions, plus the H1 additions:
 
 **B (briefing):**
 
@@ -737,6 +861,23 @@ the W2 additions:
 - **`MemoirJobSwitchOffIT` (1)** — `mezo.techcore.cron.memoir-job.enabled=false` ⇒ no `MemoirJob`
   bean (the third switch).
 
+**H (heartbeat, H1):**
+
+- **`HeartbeatPersistenceIT` (3)** — round-trip; the partial-unique index rejects a second LIVE row
+  for the same (user, day, window) but allows another window the same day; the latest-first
+  owner-scoped finder returns the own newest note.
+- **`HeartbeatGeneratorIT` (5)** — gather composes snapshot + latest summary + the `MAI BRIEFING`
+  dedupe block + the `ABLAK:` instruction; gather returns null without narrative memory; generate
+  persists the scripted note (via a `[fake-heartbeat:…]` check-in-note sentinel — the gather HAS a
+  snapshot, unlike the memoir §9 gotcha m) with the window-derived kind; generate is idempotent;
+  generate returns null on a blank answer.
+- **`HeartbeatJobIT` (2)** — the midday run writes a nudge for a user with memory; the evening run
+  is idempotent. **`HeartbeatJobSwitchOffIT` (1)** — the third switch ⇒ no `HeartbeatJob` bean.
+- **`HeartbeatLazyIT` (2)** — with midnight-override crons the GET lazy-generates the LATEST
+  elapsed window (evening) for today; 404 without memory. **`ProactiveApiIT` (+3)** — persisted
+  latest note wins (evening beats midday); a PAST date never lazy-generates (404 despite memory);
+  401 without a token. **`ProactiveApiSwitchOffIT` (+1)** — heartbeat 404 when proactive off.
+
 **FE (Vitest + RTL):** `data/today/briefingHooks.test.tsx` (3) — wire→`Briefing` mapping (no
 confidence), 404→null, mock null without fetching; `features/today/components/BriefingCard.test.tsx`
 adds a generated-briefing-no-label case; `data/today/todayHooks.test.tsx` adds real-mode
@@ -749,25 +890,31 @@ renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. **W2:**
 anniversaryNote without fetching in mock mode; `features/insights/pages/MemoirPage.test.tsx` gains a
 real-mode describe (renders the real memoir + anchors, no reactions/anniversary/archive; the 404 shows
 the honest „készül" placeholder, not demo fiction); `InsightsSubNav.test.tsx` + `insights.nav.test.tsx`
-flip Memoir from hidden to visible (5 real-mode tabs incl. Memoir). MSW defaults: `/api/proactive/briefing`,
-`/api/proactive/weekly-suggestion` **and** `/api/proactive/memoir` all return 404.
+flip Memoir from hidden to visible (5 real-mode tabs incl. Memoir). **H1:**
+`data/today/heartbeatHooks.test.tsx` (3) — maps the wire note to `CompanionNote`; null on the
+default 404; mock null without fetching (byte-parity);
+`features/today/components/CompanionNoteCard.test.tsx` (2) — nudge/closing eyebrow copy. MSW
+defaults: `/api/proactive/briefing`, `/api/proactive/weekly-suggestion`, `/api/proactive/memoir`
+**and** `/api/proactive/heartbeat` all return 404.
 
-Test infra: `support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator}.java`
-(aggregate factories) + `briefing`, `weekly_suggestion` and `memoir` in the `ResetDatabase` TRUNCATE
-list. Full backend + FE gates green at W2 close (BE clean-test green, FE both modes).
+Test infra: `support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator,HeartbeatNotePopulator}.java`
+(aggregate factories, all in the `AbstractIntegrationTest` `@Import` list) + `briefing`,
+`weekly_suggestion`, `memoir` and `heartbeat_note` in the `ResetDatabase` TRUNCATE list. Full
+backend + FE gates green at H1 close (BE clean-test green, FE both modes).
 
 ## 9. Decisions, gotchas & deferred
 
-- **(a) All THREE generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
+- **(a) All FOUR generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
   fake dispatches on `BRIEFING_MARKER_MIRROR` (`"REGGELI-BRIEFING-FELADAT"`), `WEEKLY_MARKER_MIRROR`
-  (`"HETI-TERVJAVASLAT"`) and `MEMOIR_MARKER_MIRROR` (`"HETI-MEMOIR-FELADAT"`), **copies** of
+  (`"HETI-TERVJAVASLAT"`), `MEMOIR_MARKER_MIRROR` (`"HETI-MEMOIR-FELADAT"`) and
+  `HEARTBEAT_MARKER_MIRROR` (`"NAPKOZBENI-JEGYZET-FELADAT"`), **copies** of
   `BriefingGenerator.BRIEFING_MARKER` / `WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER` /
-  `MemoirGenerator.MEMOIR_MARKER`, NOT imports — a `companion` → `proactive` import would create a
-  package cycle that the frozen ArchUnit rule fails the build on. Each literal pair must be edited
-  together (both carry a comment pointing at the other; drift fails the generator IT loudly). The
-  markers are prefix-collision-checked (`FakeCompanionLlm` dispatches by `startsWith`): the nearest
-  neighbour of `HETI-MEMOIR-FELADAT` is `HETI-TERVJAVASLAT`, which diverges at char 6 — no false
-  dispatch.
+  `MemoirGenerator.MEMOIR_MARKER` / `HeartbeatGenerator.HEARTBEAT_MARKER`, NOT imports — a
+  `companion` → `proactive` import would create a package cycle that the frozen ArchUnit rule fails
+  the build on. Each literal pair must be edited together (both carry a comment pointing at the
+  other; drift fails the generator IT loudly). The markers are prefix-collision-checked
+  (`FakeCompanionLlm` dispatches by `startsWith`): the nearest neighbours are the two `HETI-*`
+  markers, which diverge at char 6 — no false dispatch; `NAPKOZBENI-*` shares no prefix with any.
 - **(b) Proactive beans condition on BOTH switches.** Every bean is
   `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` —
   proactive calls the `CompanionLlm` port, so it presupposes companion. Switch either off ⇒ no beans
@@ -852,51 +999,82 @@ list. Full backend + FE gates green at W2 close (BE clean-test green, FE both mo
   'mock'` (the W1 „Elfogad/Hangoljuk" precedent, §9 decision k). **Follow-up filed:** persisted memoir
   reactions as a companion signal (the controller files the bd issue at close-out); the anniversary
   card + archive are a deferred epic (spec §1).
-- **Deferred to H/P:** in-app heartbeat + Web Push (H), predictions + N=1 experiments (P) — later
-  slices, see the roadmap. W2 closed the W stage (both weekly-prose surfaces live). The D′ score
-  constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to backend
-  config in W1/W2 (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
+- **(p) Two heartbeat windows v1 — explicit config records, not a dynamic list.** `midday` (kind
+  `nudge`, `0 30 12 * * *`) + `evening` (kind `closing`, `0 30 20 * * *`) under
+  `mezo.proactive.heartbeat.*`. The roadmap's "config window list" is satisfied by two named crons —
+  a dynamic window list would need programmatic scheduling for zero current benefit (YAGNI); adding
+  a third window is a §7 recipe.
+- **(q) Briefing overlap-dedupe is prompt-level.** The gather injects today's persisted briefing
+  body under `MAI BRIEFING (ne ismételd):` and the prompt forbids repeating it — deterministic,
+  zero infra. If today has no briefing the block is simply absent.
+- **(r) The lazy path derives window fire-times from the SAME job crons (`CronExpression`), only
+  for TODAY, only the LATEST elapsed window; no staleness/regen.** One source of truth for the
+  schedule; a past date never lazy-generates (a heartbeat is grounded in the day's live state —
+  generating yesterday's "midday" note today would be fiction); a missed window is simply absent
+  once the next window's note exists (the GET serves the day's newest). No `refreshIfStale`, no
+  cap — the next window is hours away (the W1/W2 YAGNI reasoning at intra-day cadence).
+- **(s) The heartbeat emptiness gate reuses `briefing.past-days`.** One knob answers "does the
+  companion have narrative memory of Daniel yet" for both daily surfaces; a heartbeat with zero
+  `daily_summary` grounding would be generic filler (the honest-absence rule). The snapshot itself
+  always renders (`nincs adat` absences), so the gate must come from the summaries.
+- **Deferred to H2/P:** Web Push delivery (H2 — VAPID + `push_subscription` + SW handler),
+  predictions + N=1 experiments (P) — later slices, see the roadmap. H1 delivers the IDENT-3 rhythm
+  in-app only. The D′ score constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were
+  **not** promoted to backend config in W1/W2 (still FE consts — a small follow-up bd issue, see
+  [insights.md §9](insights.md)).
 
 ## 10. Key files
 
 **API contract**
-- `api/feature/proactive/proactive.yml` — 3 endpoints (briefing + weekly-suggestion + memoir) + 5
-  schemas (`BriefingResponse`, `BriefingRef`, `WeeklySuggestionResponse`, `MemoirResponse`,
-  `MemoirAnchor`) (tag `Proactive` → `ProactiveApi`); registered in `api/generate/merge.yml` → merged
-  `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
+- `api/feature/proactive/proactive.yml` — 4 endpoints (briefing + weekly-suggestion + memoir +
+  heartbeat) + 6 schemas (`BriefingResponse`, `BriefingRef`, `WeeklySuggestionResponse`,
+  `MemoirResponse`, `MemoirAnchor`, `HeartbeatNoteResponse`) (tag `Proactive` → `ProactiveApi`);
+  registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` +
+  `io.mrkuhne.mezo.api.*`.
 
 **Backend — controller / services / mapper**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getBriefing` + `getWeeklySuggestion` + **`getMemoir`**), JWT ownership, dual-switch-gated.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `implements ProactiveApi` (`getBriefing` + `getWeeklySuggestion` + `getMemoir` + **`getHeartbeat`**), JWT ownership, dual-switch-gated.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveBriefingService.java` — the briefing read path (persisted row · `refreshIfStale` · lazy-generate; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveWeeklySuggestionService.java` — **W1** the weekly read path (ISO-Monday week · persisted row or lazy-generate; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveMemoirService.java` — **W2** the memoir read path (latest row · else lazy-generate the LAST COMPLETED week; null ⇒ 404).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveHeartbeatService.java` — **H1** the heartbeat read path (day's latest note · lazy latest-elapsed-window via `CronExpression`; null ⇒ 404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingJob.java` — **B1.2** dawn `@Scheduled` cron (today-only, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionJob.java` — **W1** Monday-06:00 `@Scheduled` cron (current-week only, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirJob.java` — **W2** Sunday-19:00 `@Scheduled` cron (the week ending that Sunday, per-user isolation, three-switch-gated).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/HeartbeatJob.java` — **H1** two `@Scheduled` window crons (midday nudge + evening closing, per-user isolation, three-switch-gated).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingGenerator.java` — the spine: pure-code `gather` + one `CompanionLlm.complete` + strict-JSON parse + ref resolution; `BRIEFING_MARKER` + `PROMPT` + `SNAPSHOT_CANDIDATES`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/MemoirGenerator.java` — **W2** pure-code `gather` (the week's OWN summaries + facts + patterns + numbered anchor candidates) + one `CompanionLlm.completeSmart` + strict-JSON `{title, body, anchorIndexes}` parse + `resolveAnchors` (bounds-checked, deduped, model-selected); `MEMOIR_MARKER` + `PROMPT` + the `MemoirGather` record.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toBriefingResponse` + `toWeeklySuggestionResponse` + **`toMemoirResponse`/`toMemoirAnchor`**, `anchors.anchors` unwrapped; Instant → UTC OffsetDateTime).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/HeartbeatGenerator.java` — **H1** pure-code `gather` (snapshot + facts + latest summary + `MAI BRIEFING` dedupe block + `ABLAK:` instruction) + one **cheap-tier** `CompanionLlm.complete` + flat prose; `HEARTBEAT_MARKER` + `PROMPT`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/mapper/ProactiveMapper.java` — entity → generated `api.dto` (`toBriefingResponse` + `toWeeklySuggestionResponse` + `toMemoirResponse`/`toMemoirAnchor` + **`toHeartbeatResponse`** (`noteDate`→`date`, `windowKey`→`window`); Instant → UTC OffsetDateTime).
 
 **Backend — entity / repo / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{BriefingEntity,BriefingContentEnvelope}.java` — the owned entity + typed jsonb envelope (`Ref` nested).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/WeeklySuggestionEntity.java` — **W1** the owned entity (flat `weekStart`/`prose`/`generatedAt`, no jsonb).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/{MemoirEntity,MemoirAnchorsEnvelope}.java` — **W2** the owned entity (`weekStart`/`title`/`body`/`generatedAt` + `anchors` typed jsonb) + the `MemoirAnchorsEnvelope{List<Anchor(kind,label)>}` record.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/HeartbeatNoteEntity.java` — **H1** the owned entity (flat `noteDate`/`windowKey`/`kind`/`content`/`generatedAt`) + the window/kind constants.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/BriefingRepository.java` — `findByCreatedByAndBriefingDate` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/WeeklySuggestionRepository.java` — **W1** `findByCreatedByAndWeekStart` (owner + soft-delete scoped).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/MemoirRepository.java` — **W2** `findByCreatedByAndWeekStart` + `findFirstByCreatedByOrderByWeekStartDesc` (owner + soft-delete scoped).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.{past-days,cron,regen-cap-per-day}, weekly.cron, memoir.cron}` (@Validated, nested records).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/repository/HeartbeatNoteRepository.java` — **H1** `findByCreatedByAndNoteDateAndWindowKey` + `findFirstByCreatedByAndNoteDateOrderByGeneratedAtDesc` (owner + soft-delete scoped).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/config/ProactiveProperties.java` — `mezo.proactive.{briefing.{past-days,cron,regen-cap-per-day}, weekly.cron, memoir.cron, heartbeat.{midday-cron,evening-cron}}` (@Validated, nested records).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/repository/SleepLogRepository.java` — **B1.2** `existsBy…DateGreaterThanEqualAndCreatedAtAfter` staleness probe (plain finder, no proactive dependency).
-- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + `BRIEFING_JOB_SWITCH` + `WEEKLY_SUGGESTION_JOB_SWITCH` + **`MEMOIR_JOB_SWITCH`** (+ the companion `COMPANION_SWITCH` they pair with).
-- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{briefing.*, weekly.cron, memoir.cron}` + `mezo.techcore.cron.{briefing-job,weekly-suggestion-job,memoir-job}.enabled`.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `PROACTIVE_SWITCH` + `BRIEFING_JOB_SWITCH` + `WEEKLY_SUGGESTION_JOB_SWITCH` + `MEMOIR_JOB_SWITCH` + **`HEARTBEAT_JOB_SWITCH`** (+ the companion `COMPANION_SWITCH` they pair with).
+- `backend/src/main/resources/application.yml` — `mezo.feature.proactive.enabled` + `mezo.proactive.{briefing.*, weekly.cron, memoir.cron, heartbeat.*}` + `mezo.techcore.cron.{briefing-job,weekly-suggestion-job,memoir-job,heartbeat-job}.enabled`.
 
 **Backend — LLM fake (companion side, additive)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — `BRIEFING_MARKER_MIRROR` + `[fake-briefing:{…}]`, `WEEKLY_MARKER_MIRROR` + `[fake-weekly:…]`, and **`MEMOIR_MARKER_MIRROR` + `[fake-memoir:{…}]`** sentinels (literals; §9 gotcha a) — the memoir default (no sentinel) returns `{"title":"Fake memoir",…}`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — `BRIEFING_MARKER_MIRROR` + `[fake-briefing:{…}]`, `WEEKLY_MARKER_MIRROR` + `[fake-weekly:…]`, `MEMOIR_MARKER_MIRROR` + `[fake-memoir:{…}]`, and **`HEARTBEAT_MARKER_MIRROR` + `[fake-heartbeat:…]`** sentinels (literals; §9 gotcha a) — the memoir default (no sentinel) returns `{"title":"Fake memoir",…}`, the heartbeat default `"FAKE-NAPKOZBENI-JEGYZET"`.
 
 **Frontend — Today consumer (B1.2)**
 - `frontend/src/data/today/briefingApi.ts` — `briefingApi.get` + `toBriefing` (wire→`Briefing`, no confidence).
 - `frontend/src/data/today/briefingHooks.ts` — `useBriefing()` (dual-mode; mock null no-fetch, real GET or null on 404); re-exported by `data/hooks.ts`.
 - `frontend/src/data/today/todayHooks.ts` — `useToday` composes `useBriefing` (`briefing`, `briefingDemo`); `frontend/src/features/today/{pages/TodayPage.tsx,components/BriefingCard.tsx}` — render + three-state label; `frontend/src/data/types.ts` — `Briefing.confidence?` optional.
+
+**Frontend — Today companion-note consumer (H1)**
+- `frontend/src/data/today/heartbeatApi.ts` — `heartbeatApi.get(date)` + `toCompanionNote` (wire→`CompanionNote{window, kind, text}`).
+- `frontend/src/data/today/heartbeatHooks.ts` — `useCompanionNote()` (dual-mode; mock null no-fetch, real GET or null on 404); re-exported by `data/hooks.ts`.
+- `frontend/src/features/today/components/CompanionNoteCard.tsx` — the in-day note card (nudge/closing eyebrow copy); rendered by `TodayPage.tsx` after the check-in strip only when a note exists.
+- `frontend/src/data/types.ts` — the `CompanionNote` interface.
 
 **Frontend — Insights Weekly consumer (W1)**
 - `frontend/src/data/insights/weeklySuggestionApi.ts` — `weeklySuggestionApi.get(date)` (wire → `w.prose` string).
@@ -910,12 +1088,12 @@ list. Full backend + FE gates green at W2 close (BE clean-test green, FE both mo
 - `frontend/src/features/insights/pages/tabs.ts` — `PHASE3_TAB_IDS = {predictions, experiments}` (memoir un-ghosted at W2).
 
 **Backend — migrations**
-- `backend/src/main/resources/db/changelog/1.0.0/script/{202607061100_mezo-h4wp.1_create_briefing,202607070900_mezo-h4wp.2_briefing_regen_count,202607071200_mezo-h4wp.3_create_weekly_suggestion,202607071500_mezo-h4wp.4_create_memoir}.sql` (all in `1.0.0_master.yml`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/{202607061100_mezo-h4wp.1_create_briefing,202607070900_mezo-h4wp.2_briefing_regen_count,202607071200_mezo-h4wp.3_create_weekly_suggestion,202607071500_mezo-h4wp.4_create_memoir,202607071800_mezo-h4wp.5_create_heartbeat_note}.sql` (all in `1.0.0_master.yml`).
 
 **Backend — tests**
-- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{BriefingPersistenceIT,BriefingGeneratorIT,ProactiveApiIT,ProactiveApiSwitchOffIT,ProactiveApiCompanionOffIT,BriefingJobIT,BriefingJobSwitchOffIT,BriefingFreshnessIT,WeeklySuggestionPersistenceIT,WeeklySuggestionGeneratorIT,WeeklySuggestionJobIT,WeeklySuggestionJobSwitchOffIT,MemoirPersistenceIT,MemoirGeneratorIT,MemoirJobIT,MemoirJobSwitchOffIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator}.java` + `support/ResetDatabase.java` (`briefing` + `weekly_suggestion` + `memoir` in the TRUNCATE list).
-- FE: `frontend/src/data/today/{briefingHooks.test.tsx,todayHooks.test.tsx}`, `frontend/src/features/today/components/BriefingCard.test.tsx`, `frontend/src/data/insights/{weeklyHooks.test.tsx,memoirHooks.test.tsx}`, `frontend/src/features/insights/pages/{WeeklyPage.test.tsx,MemoirPage.test.tsx,InsightsSubNav.test.tsx,insights.nav.test.tsx}`, `frontend/src/test/msw/handlers.ts` (all three proactive defaults 404).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{BriefingPersistenceIT,BriefingGeneratorIT,ProactiveApiIT,ProactiveApiSwitchOffIT,ProactiveApiCompanionOffIT,BriefingJobIT,BriefingJobSwitchOffIT,BriefingFreshnessIT,WeeklySuggestionPersistenceIT,WeeklySuggestionGeneratorIT,WeeklySuggestionJobIT,WeeklySuggestionJobSwitchOffIT,MemoirPersistenceIT,MemoirGeneratorIT,MemoirJobIT,MemoirJobSwitchOffIT,HeartbeatPersistenceIT,HeartbeatGeneratorIT,HeartbeatJobIT,HeartbeatJobSwitchOffIT,HeartbeatLazyIT}.java`
+- `backend/src/test/java/io/mrkuhne/mezo/support/populator/{BriefingPopulator,WeeklySuggestionPopulator,MemoirPopulator,HeartbeatNotePopulator}.java` + `support/ResetDatabase.java` (`briefing` + `weekly_suggestion` + `memoir` + `heartbeat_note` in the TRUNCATE list).
+- FE: `frontend/src/data/today/{briefingHooks.test.tsx,heartbeatHooks.test.tsx,todayHooks.test.tsx}`, `frontend/src/features/today/components/{BriefingCard.test.tsx,CompanionNoteCard.test.tsx}`, `frontend/src/data/insights/{weeklyHooks.test.tsx,memoirHooks.test.tsx}`, `frontend/src/features/insights/pages/{WeeklyPage.test.tsx,MemoirPage.test.tsx,InsightsSubNav.test.tsx,insights.nav.test.tsx}`, `frontend/src/test/msw/handlers.ts` (all four proactive defaults 404).
 
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)

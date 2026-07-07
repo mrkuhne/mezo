@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-07-06
+updated: 2026-07-07
 tags: [today, biometrics, frontend, data-layer]
 key_files:
   - frontend/src/features/today
@@ -32,6 +32,7 @@ Driving design: [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](../su
 
 - **Open the app →** lands on `/today` (index route redirects there; `router.tsx:46`). Mock data renders synchronously, no spinner.
 - **Reggeli briefing card:** in real mode it renders the companion's **generated** morning prose + real reference chips when a server briefing exists (no label); when there is none yet — loading, no narrative memory (404), or the companion/proactive switch is off — it falls back to the **static demo card behind the „Demo tartalom" label**. Mock mode always shows the static card. Behavior detail in [proactive.md §2](proactive.md).
+- **Companion note card (H1, real mode only):** under the check-in strip a `CompanionNoteCard` shows the companion's **in-day note** — a midday nudge („Mezo · napközbeni jegyzet") or an evening closing („Mezo · napzárás") — when `useCompanionNote()` has one. **Honest absence:** before the first window, without narrative memory, or on 404 there is simply **no card**; mock mode never shows one (Phase-1 byte-parity). Detail in [proactive.md §2](proactive.md).
 - **Scenario deep-links** (no production UI — URL search params only, parsed by `useTodayScenario`):
   - `?day=good|medium|rough` (default `medium`). `rough` → AnchorMode full-screen replaces the normal stack.
   - `?niggle=on|off` (default `on`) → toggles the amber niggle banner inside the workout teaser.
@@ -57,6 +58,8 @@ TodayPage.tsx (composition root)
   │                                           canonical slots + local optimistic layer + save mutation
   ├─ useBriefing()         briefingHooks.ts — real GET /api/proactive/briefing?date=<local> → Briefing|null
   │                                           (404/switch-off/loading → null); mock: null synchronously (no fetch)
+  ├─ useCompanionNote()    heartbeatHooks.ts — real GET /api/proactive/heartbeat?date=<local> → CompanionNote|null
+  │                                           (H1; 404/loading → null ⇒ NO card); mock: null synchronously
   ├─ resolveBriefing(ds)   todayHooks.ts   — the FALLBACK card: briefing ⊕ briefingVariants[ds] (static both
   │                                           modes) — used at TodayPage:35 only when useToday().briefing is null
   ├─ useFuelPreview()      todayHooks.ts   — slices the dual-mode useFuelTimeline() plan
@@ -216,7 +219,7 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 **Frontend — screen + components** (`frontend/src/features/today/`):
 - `TodayPage.tsx` — composition root, AnchorMode branch, `CheckInSheet` wiring.
 - `CheckInStrip.tsx` / `CheckInSheet.tsx` (incl. `CHECKIN_DIMS`, `CheckInObservation`) / `AnchorModeView.tsx` — heartbeat strip, wizard sheet, recovery view.
-- `components/`: `BrandRow.tsx`, `RetaPhaseSection.tsx`, `DateMesoHeader.tsx`, `BriefingCard.tsx`, `WorkoutTeaser.tsx`, `VolleyballCard.tsx`, `VulnerabilityCard.tsx`, `FuelTimelinePreview.tsx`, `QuickStatsRow.tsx`, `InsightsTeaser.tsx`.
+- `components/`: `BrandRow.tsx`, `RetaPhaseSection.tsx`, `DateMesoHeader.tsx`, `BriefingCard.tsx`, `CompanionNoteCard.tsx` (H1 — the in-day heartbeat note; data from `data/today/heartbeatHooks.ts`, see [proactive.md](proactive.md)), `WorkoutTeaser.tsx`, `VolleyballCard.tsx`, `VulnerabilityCard.tsx`, `FuelTimelinePreview.tsx`, `QuickStatsRow.tsx`, `InsightsTeaser.tsx`.
 
 **Frontend — data & lib:**
 - `frontend/src/data/today/todayHooks.ts` (+ `todayHooks.test.tsx`) — `useTodayScenario`, `resolveBriefing`, `useToday`, `useFuelPreview`, `useQuickStats`, `useInsightsTeaser`; `checkinHooks.ts` (+ test, incl. `buildDaySlots`) — `useCheckins`; `briefingHooks.ts` (+ test) — `useBriefing` (proactive B1.2) + `briefingApi.ts` (`toBriefing` wire→`Briefing`); all re-exported by the `data/hooks.ts` barrel.
