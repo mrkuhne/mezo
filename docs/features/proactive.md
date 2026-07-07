@@ -13,7 +13,8 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071800_mezo-h4wp.5_create_heartbeat_note.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072000_mezo-h4wp.8_create_experiment.sql
-related: [companion, today, insights, _platform-api-backend]
+  - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
+related: [companion, today, insights, train, _platform-api-backend]
 ---
 
 # Proactive layer (briefing, weekly prose, heartbeat, predictions) — Feature Documentation
@@ -684,6 +685,39 @@ POST /api/proactive/experiment/propose
   → proposeExperiments() → generator.propose(userId).map(toExperimentResponse)   (cap-gated; `[]` when met)
 ```
 
+**The workout-challenge write + read path (`mezo-hbwi`):** a per-exercise PR/Depth/Volume micro-challenge
+keyed on `(created_by, template_session_id, workout_date)`; L2 accept/dismiss; deterministic set-level
+outcome (`hit | miss | inconclusive`). Same decide idiom as experiments (fetch-owned-or-404 → proposed
+guard 409 → mutate → saveAndFlush).
+
+```
+GET /api/proactive/challenge?templateSessionId={uuid}&date={date}
+  → ProactiveController.getChallenges()                 controller/ProactiveController.java
+  → ProactiveChallengeService.getChallenges(userId, templateSessionId, date)   service/ProactiveChallengeService.java  @Transactional
+      rows = findByCreatedByAndTemplateSessionIdAndWorkoutDateOrderByGeneratedAtAsc(...)
+      if rows empty AND date == today: rows = ChallengeGenerator.generate(...)   (lazy first proposal)
+      for each accepted row: ChallengeOutcomeEvaluator.evaluate(row, today)      (lazy resolve when instance done)
+      → rows filter(status != dismissed).map(toChallengeResponse)   (`[]` = honest, never 404)
+
+POST /api/proactive/challenge/{id}/decision  {decision: accept|dismiss}
+  → decideChallenge(id, request) → ProactiveChallengeService.decide(userId, id, request)
+      findByIdAndCreatedBy → orElseThrow(404 PROACTIVE_CHALLENGE_NOT_FOUND)
+      status != proposed ⇒ throw 409 PROACTIVE_CHALLENGE_NOT_PROPOSED
+      accept ⇒ status=accepted ; dismiss ⇒ status=dismissed ; else 400 VALIDATION_INVALID_VALUE(decision)
+      → mapper.toChallengeResponse(saveAndFlush)
+```
+
+**The challenge outcome backstop (`service/ChallengeJob.java`):** single cron `runOutcome`
+(`challenge.outcome-cron`, daily 06:25) loops users → `ChallengeOutcomeEvaluator.evaluateDue` (resolves
+every accepted challenge whose day passed — catches ones the lazy GET never re-opened); three-switch bean
+(`CHALLENGE_JOB_SWITCH = mezo.techcore.cron.challenge-job.enabled`).
+
+**The challenge mapper (`mapper/ProactiveMapper.toChallengeResponse` + `mapper/ChallengeDisplay`):**
+`exerciseName`→`exercise`, `refs.refs()`→`List<ChallengeRef>`, and derived `typeLabel`/`target` via
+`@Mapping(expression=…)` into `ChallengeDisplay` **static** helpers. The helpers live OUT of the
+`@Mapper` interface on purpose: a `String→String` default method there would be auto-selected by MapStruct
+as an implicit converter for EVERY String property (corrupting the sibling responses) — §9 gotcha.
+
 **The two crons (P2 — `service/ExperimentJob.java`):** `runPropose` (`experiment.propose-cron`, Mon
 06:45) loops users → `generator.propose`; `runOutcome` (`experiment.outcome-cron`, daily 06:20) loops
 users → `outcomeService.evaluateClosed`; three-switch bean.
@@ -700,11 +734,12 @@ start → `completed` + `outcome`/`outcome_good` (null = inconclusive).
 `ProactiveMemoirService`, `ProactiveHeartbeatService`, `ProactivePredictionService`,
 `ProactiveExperimentService`, `BriefingGenerator`, `WeeklySuggestionGenerator`, `MemoirGenerator`,
 `HeartbeatGenerator`, `PredictionGenerator`, `PredictionValidationService`, `MetricWindowEvaluator`,
-`ExperimentProposalGenerator`, `ExperimentOutcomeService` (and the mapper via the services) are all
+`ExperimentProposalGenerator`, `ExperimentOutcomeService`, `ProactiveChallengeService`,
+`ChallengeGenerator`, `ChallengeOutcomeEvaluator` (and the mapper via the services) are all
 `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` — **both**
 must be `true`. Either off ⇒ no proactive beans ⇒ the whole `/api/proactive/*` surface 404s (there's
-no controller to route to). The six jobs (`BriefingJob`, `WeeklySuggestionJob`, `MemoirJob`,
-`HeartbeatJob`, `PredictionJob`, `ExperimentJob`) each add a THIRD switch on top. The dual gate is
+no controller to route to). The seven jobs (`BriefingJob`, `WeeklySuggestionJob`, `MemoirJob`,
+`HeartbeatJob`, `PredictionJob`, `ExperimentJob`, `ChallengeJob`) each add a THIRD switch on top. The dual gate is
 structural, not a runtime check (§9 gotcha b).
 
 **Ownership.** `BriefingEntity` + `WeeklySuggestionEntity` + `MemoirEntity` + `HeartbeatNoteEntity` + `PredictionEntity` + `ExperimentEntity` all `extend OwnedEntity`
