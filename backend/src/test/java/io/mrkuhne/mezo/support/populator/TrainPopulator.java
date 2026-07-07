@@ -23,9 +23,11 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
 
@@ -180,7 +182,7 @@ public class TrainPopulator {
         e.setWorkingSets(3);
         e.setRepMin(6);
         e.setRepMax(8);
-        e.setTargetRir(1);
+        e.setTargetRir(0);
         e.setType(type);
         e.setOrderIndex(0);
         return exerciseRepository.saveAndFlush(e);
@@ -274,6 +276,57 @@ public class TrainPopulator {
         set.setReps(reps);
         set.setRir(rir);
         return exerciseSetRepository.saveAndFlush(set);
+    }
+
+    /** Persist an exercise (e.g. after mutating anchor/targetRir on a factory-returned entity). */
+    public ExerciseEntity save(ExerciseEntity exercise) {
+        return exerciseRepository.saveAndFlush(exercise);
+    }
+
+    /**
+     * A detached set carrying only kind + performance (weight/reps/rir) — the building block for
+     * {@link #completedInstanceWithSets}, which fills in owner/exercise/instance/index before saving.
+     */
+    public ExerciseSetEntity set(String kind, BigDecimal weightKg, int reps, int rir) {
+        ExerciseSetEntity s = new ExerciseSetEntity();
+        s.setKind(kind);
+        s.setWeightKg(weightKg);
+        s.setReps(reps);
+        s.setRir(rir);
+        return s;
+    }
+
+    /**
+     * A completed instance of {@code templateDayId} carrying one working set — the double-progression
+     * reference the recommendation engine reads back.
+     */
+    public WorkoutSessionEntity completedInstanceWithWorkingSet(UUID createdBy, UUID templateDayId,
+        UUID exerciseId, BigDecimal weightKg, int reps, int rir) {
+        return completedInstanceWithSets(createdBy, templateDayId, exerciseId,
+            sets -> sets.add(set("working", weightKg, reps, rir)));
+    }
+
+    /**
+     * A completed instance of {@code templateDayId} with caller-built sets. The {@code builder} adds
+     * {@link #set} rows (kind/weight/reps/rir); each is persisted against this instance and exercise
+     * with an incrementing {@code setIndex} and {@code doneAt = now}.
+     */
+    public WorkoutSessionEntity completedInstanceWithSets(UUID createdBy, UUID templateDayId,
+        UUID exerciseId, Consumer<List<ExerciseSetEntity>> builder) {
+        WorkoutSessionEntity template = workoutSessionRepository.findById(templateDayId).orElseThrow();
+        WorkoutSessionEntity instance = createWorkoutInstance(createdBy, template, LocalDate.now(), "completed");
+        List<ExerciseSetEntity> sets = new ArrayList<>();
+        builder.accept(sets);
+        int setIndex = 0;
+        for (ExerciseSetEntity s : sets) {
+            s.setCreatedBy(createdBy);
+            s.setExerciseId(exerciseId);
+            s.setWorkoutSessionId(instance.getId());
+            s.setSetIndex(setIndex++);
+            s.setDoneAt(Instant.now());
+            exerciseSetRepository.saveAndFlush(s);
+        }
+        return instance;
     }
 
     public ExerciseFeedbackEntity createFeedback(UUID createdBy, UUID workoutSessionId, UUID exerciseId) {
