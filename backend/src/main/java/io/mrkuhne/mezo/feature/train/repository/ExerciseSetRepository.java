@@ -18,6 +18,13 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, 
     List<ExerciseSetEntity> findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(
         UUID createdBy, UUID workoutSessionId);
 
+    /**
+     * The owner's logged sets of one exercise inside one workout instance, in set order — the
+     * set-level challenge outcome evaluator's input (compare the instance's actuals against a target).
+     */
+    List<ExerciseSetEntity> findByCreatedByAndWorkoutSessionIdAndExerciseIdOrderBySetIndexAsc(
+        UUID createdBy, UUID workoutSessionId, UUID exerciseId);
+
     /** Every logged (reps present) set of the owner — record aggregation input. */
     List<ExerciseSetEntity> findByCreatedByAndRepsNotNull(UUID createdBy);
 }

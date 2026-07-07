@@ -293,3 +293,4 @@ cd frontend && VITE_USE_MOCK=true pnpm test    # mock mode
 **Infra / secrets:** `k8s/backend/deployment.yaml`, `k8s/backend/sealedsecret.yaml`, `k8s/backend/secret.example.yaml`, `k8s/README.md`, `docs/infrastructure/deployment-k3s-argocd.md`, `docs/infrastructure/runbook.md`.
 
 **Design source:** `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (auth/ownership; Slice A; ownership-isolation testing; open questions).
+

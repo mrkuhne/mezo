@@ -1384,3 +1384,4 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - ADR: [`docs/decisions/0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `java_package_structure`, `error_handling`)
+

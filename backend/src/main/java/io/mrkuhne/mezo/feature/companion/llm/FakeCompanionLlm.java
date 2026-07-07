@@ -118,6 +118,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern EXPERIMENT_SENTINEL =
             Pattern.compile("\\[fake-experiment:(\\{.*\\})]", Pattern.DOTALL);
 
+    /** Mirror of ChallengeGenerator.CHALLENGE_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String CHALLENGE_MARKER_MIRROR = "EDZES-KIHIVAS-FELADAT";
+
+    /** Scripted challenges JSON: {@code [fake-challenge:{…}]} planted via a check-in note.
+     *  GREEDY like predictions/experiments — the payload {@code {"challenges":[{…}]}} nests objects. */
+    public static final Pattern CHALLENGE_SENTINEL =
+            Pattern.compile("\\[fake-challenge:(\\{.*\\})]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -167,6 +175,14 @@ public class FakeCompanionLlm implements CompanionLlm {
                     : "{\"experiments\":[{\"title\":\"Fake kísérlet\",\"hypothesis\":\"FAKE-HIPOTÉZIS\","
                             + "\"patternIndex\":0,\"metricKey\":\"sleep_avg\","
                             + "\"expectedDirection\":\"up\",\"totalDays\":7}]}";
+        }
+        if (systemPrompt.startsWith(CHALLENGE_MARKER_MIRROR)) {
+            Matcher m = CHALLENGE_SENTINEL.matcher(userMessage);
+            // default = one valid minimal PR proposal so the un-scripted happy path still persists
+            return m.find() ? m.group(1)
+                    : "{\"challenges\":[{\"exerciseIndex\":0,\"type\":\"PR\",\"targetWeightKg\":107.5,"
+                            + "\"targetReps\":8,\"risk\":\"low\",\"why\":\"FAKE-INDOK\",\"glory\":\"FAKE-DICS\","
+                            + "\"refIndexes\":[0],\"patternIndex\":0}]}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);
