@@ -32,7 +32,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     @Test
     void testRun_shouldLoadCuratedCatalog_whenContextStarts() {
         // The loader is profile-independent and already ran at context startup.
-        assertThat(repository.count()).isEqualTo(110);
+        assertThat(repository.count()).isEqualTo(112);
         ExerciseCatalogEntity row = repository.findBySlug("chest-supported-row").orElseThrow();
         assertThat(row.getName()).isEqualTo("Chest Supported Row");
         assertThat(row.getMuscle()).isEqualTo("back-mid");
@@ -45,7 +45,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     void testRun_shouldContainPlyoBlock_whenLoaded() {
         List<ExerciseCatalogEntity> plyo = repository.findAll().stream()
             .filter(e -> "plyo".equals(e.getType())).toList();
-        assertThat(plyo).hasSize(12);
+        assertThat(plyo).hasSize(14);
         assertThat(plyo).extracting(ExerciseCatalogEntity::getSlug)
             .contains("box-jump", "depth-jump", "approach-jump");
     }
@@ -54,7 +54,7 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     void testRun_shouldBeIdempotent_whenRunTwice() {
         loader.run();
         loader.run();
-        assertThat(repository.count()).isEqualTo(110);
+        assertThat(repository.count()).isEqualTo(112);
     }
 
     @Test

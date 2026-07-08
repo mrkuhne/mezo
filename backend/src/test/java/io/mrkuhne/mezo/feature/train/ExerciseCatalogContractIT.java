@@ -32,7 +32,7 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
     void testGetExerciseCatalog_shouldReturnCuratedItemsSorted_whenAuthenticated() {
         List<ExerciseCatalogItem> items =
             getForList("/api/train/exercises", ownerAuthHeaders(), HttpStatus.OK, ExerciseCatalogItem.class);
-        assertThat(items).hasSize(110);
+        assertThat(items).hasSize(112);
         assertThat(items).isSortedAccordingTo(
             Comparator.comparing(ExerciseCatalogItem::getMuscle).thenComparing(ExerciseCatalogItem::getName));
         assertThat(items).anySatisfy(i -> {
