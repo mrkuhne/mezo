@@ -16,6 +16,12 @@ public interface ExerciseCatalogRepository extends JpaRepository<ExerciseCatalog
 
     List<ExerciseCatalogEntity> findAllByOrderByMuscleAscNameAsc();
 
-    /** Slug-prefix count for generating a unique slug on user-authored rows. */
-    long countBySlugStartingWith(String slugPrefix);
+    /**
+     * Exact-slug existence against the PHYSICAL table — native so it bypasses the entity's
+     * {@code @SQLRestriction} soft-delete filter and still sees slugs occupied by soft-deleted rows
+     * (which continue to hold the {@code UNIQUE(slug)} constraint). Drives unique-slug generation.
+     */
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT count(*) FROM exercise_catalog WHERE slug = :slug", nativeQuery = true)
+    long countAllBySlugIncludingDeleted(@org.springframework.data.repository.query.Param("slug") String slug);
 }

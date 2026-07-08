@@ -96,7 +96,12 @@ public class ExerciseCatalogService {
         if (base.isBlank()) {
             base = "exercise";
         }
-        long n = repository.countBySlugStartingWith(base);
-        return n == 0 ? base : base + "-" + (n + 1);
+        String candidate = base;
+        int n = 1;
+        while (repository.countAllBySlugIncludingDeleted(candidate) > 0) {
+            n++;
+            candidate = base + "-" + n;
+        }
+        return candidate;
     }
 }
