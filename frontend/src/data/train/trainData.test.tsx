@@ -41,8 +41,9 @@ test('sport: volleyball schedule, recent sessions with jumpCount, crossLoad', ()
 
 test('exercise library + planner presets + label maps', () => {
   expect(exerciseLibrary.length).toBeGreaterThanOrEqual(15)
-  expect(GOAL_PRESETS).toHaveLength(5)
+  expect(GOAL_PRESETS.length).toBeGreaterThanOrEqual(6)
   expect(GOAL_PRESETS[0].id).toBe('hypertrophy')
+  expect(GOAL_PRESETS.some((g) => g.id === 'erohipertrofia')).toBe(true)
   expect(SPLITS.length).toBeGreaterThanOrEqual(5)
   expect(MUSCLE_LABELS.chest).toBe('Mell')
   expect(DAY_LABELS.Csü).toBe('Csütörtök')

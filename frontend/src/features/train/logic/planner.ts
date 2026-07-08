@@ -45,7 +45,12 @@ export const SCHEMES: Record<string, GoalScheme> = {
   'cut-prep': { compound: { reps: '10-12', rir: 2, sets: 3 }, isolation: { reps: '12-15', rir: 1, sets: 3 } },
   recovery: { compound: { reps: '10-12', rir: 2, sets: 3 }, isolation: { reps: '12-15', rir: 2, sets: 2 } },
   sport: { compound: { reps: '6-8', rir: 2, sets: 4 }, isolation: { reps: '10-12', rir: 1, sets: 3 } },
+  erohipertrofia: { compound: { reps: '6-8', rir: 0, sets: 3 }, isolation: { reps: '8-10', rir: 0, sets: 2 } },
 }
+
+// Plyometric seeds are prescribed weightless by the P3 engine: fixed low-rep,
+// no warm-up, no scheme lookup (plyo isn't a GoalScheme key).
+const PLYO_SCHEME = { reps: 5, sets: 3 }
 
 // --- HU month helpers (meso-planner.jsx:883-902) ---
 const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
@@ -93,15 +98,54 @@ interface DayTemplate {
 interface ExerciseSeed {
   name: string
   muscle: string
-  // The generator only deals set/rep schemes to compound/isolation work — plyo
-  // exercises enter a day via the picker, never via generateProgram.
-  type: Exclude<ExerciseKind, 'plyo'>
+  // compound/isolation seeds get a set/rep scheme from SCHEMES; a plyo seed is
+  // emitted weightless (PLYO_SCHEME) by trainingDay — it leads the lower days of
+  // the Láb+Plyo / Felső split.
+  type: ExerciseKind
   warning?: string
 }
 
-function exercisesForDay(baseType: string, niggle: Niggle): ExerciseSeed[] {
+function exercisesForDay(dayType: string, niggle: Niggle): ExerciseSeed[] {
   const isShoulder = niggle === 'shoulder'
-  switch (baseType) {
+  switch (dayType) {
+    // Láb+Plyo / Felső split (erohipertrofia goal): the A/B suffix selects
+    // distinct lists; the lower days LEAD with a weightless plyo seed.
+    case 'Láb+Plyo A':
+      return [
+        { name: 'Box Jump', muscle: 'quad', type: 'plyo' },
+        { name: 'Barbell Squat', muscle: 'quad', type: 'compound' },
+        { name: 'Romanian Deadlift', muscle: 'ham', type: 'compound' },
+        { name: 'Leg Press', muscle: 'quad', type: 'compound' },
+        { name: 'Leg Curl', muscle: 'ham', type: 'isolation' },
+        { name: 'Standing Calf Raise', muscle: 'calf', type: 'isolation' },
+      ]
+    case 'Láb+Plyo B':
+      return [
+        { name: 'Depth Jump', muscle: 'quad', type: 'plyo' },
+        { name: 'Hip Thrust', muscle: 'glute', type: 'compound' },
+        { name: 'Romanian Deadlift', muscle: 'ham', type: 'compound' },
+        { name: 'Leg Press', muscle: 'quad', type: 'compound' },
+        { name: 'Seated Leg Curl', muscle: 'ham', type: 'isolation' },
+        { name: 'Standing Calf Raise', muscle: 'calf', type: 'isolation' },
+      ]
+    case 'Felső A':
+      return [
+        { name: 'Barbell Bench Press', muscle: 'chest', type: 'compound' },
+        { name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound' },
+        { name: 'Overhead Press', muscle: 'shoulder', type: 'compound', ...(isShoulder ? { warning: 'Cable variánssal helyettesítve' } : {}) },
+        { name: 'Lat Pulldown · Pronated', muscle: 'lats', type: 'compound', ...(isShoulder ? { warning: 'Pronated grif · csukló-kíméletes' } : {}) },
+        { name: 'Hammer Curl', muscle: 'biceps', type: 'isolation' },
+        { name: 'Tricep Pushdown', muscle: 'triceps', type: 'isolation' },
+      ]
+    case 'Felső B':
+      return [
+        { name: 'Weighted Pull-Up', muscle: 'lats', type: 'compound' },
+        { name: 'Incline DB Press', muscle: 'chest', type: 'compound' },
+        { name: 'Lateral Raise', muscle: 'shoulder', type: 'isolation' },
+        { name: 'Seal Row', muscle: 'back-mid', type: 'compound' },
+        { name: 'Incline Curl', muscle: 'biceps', type: 'isolation' },
+        { name: 'Overhead Tricep Ext', muscle: 'triceps', type: 'isolation' },
+      ]
     case 'Pull':
       return [
         { name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound' },
@@ -195,6 +239,15 @@ const SPLIT_TEMPLATES: Record<string, DayTemplate[]> = {
     { day: 'Szo', type: 'Volleyball', muscle: 'sport' },
     { day: 'Vas', type: 'Rest', muscle: '' },
   ],
+  'Láb+Plyo / Felső': [
+    { day: 'Hét', type: 'Láb+Plyo A', muscle: 'quad+ham+glute+calf' },
+    { day: 'Kedd', type: 'Felső A', muscle: 'back+chest+shoulder+arms' },
+    { day: 'Sze', type: 'Rest', muscle: '' },
+    { day: 'Csü', type: 'Láb+Plyo B', muscle: 'quad+ham+glute+calf' },
+    { day: 'Pén', type: 'Felső B', muscle: 'back+chest+shoulder+arms' },
+    { day: 'Szo', type: 'Rest', muscle: '' },
+    { day: 'Vas', type: 'Rest', muscle: '' },
+  ],
   Custom: [
     { day: 'Hét', type: 'Body A', muscle: 'custom' },
     { day: 'Kedd', type: 'Rest', muscle: '' },
@@ -206,7 +259,10 @@ const SPLIT_TEMPLATES: Record<string, DayTemplate[]> = {
   ],
 }
 
-const BASE_TYPES = ['Pull', 'Push', 'Legs', 'Upper', 'Lower', 'Full'] as const
+// Prefix-matched (BASE_TYPES.find(t => d.type.startsWith(t))) to map a day type
+// to its exercise-list family. Longer 'Láb+Plyo' precedes 'Felső' defensively so
+// the A/B suffix is recognised before any shorter prefix could collide.
+const BASE_TYPES = ['Pull', 'Push', 'Legs', 'Upper', 'Lower', 'Full', 'Láb+Plyo', 'Felső'] as const
 
 const isTrainingType = (t: string) => t !== 'Rest' && t !== 'Volleyball'
 
@@ -270,7 +326,24 @@ export function generateProgram({ goal, split, days, weekdays, niggle }: Generat
     }
     const baseType = BASE_TYPES.find((t) => d.type.startsWith(t)) ?? 'Pull'
     const isLight = d.type.includes('light')
-    let exercises: GymExercise[] = exercisesForDay(baseType, niggle).map((seed, i) => {
+    // Láb+Plyo / Felső days carry an A/B suffix that selects distinct lists — pass
+    // the full day type; other splits key off the resolved base type.
+    const seedKey = baseType === 'Láb+Plyo' || baseType === 'Felső' ? d.type : baseType
+    let exercises: GymExercise[] = exercisesForDay(seedKey, niggle).map((seed, i) => {
+      // Plyo seeds are prescribed weightless: no warm-up, fixed low-rep, RIR 0.
+      if (seed.type === 'plyo') {
+        return {
+          id: `gen-${d.day}-${i}`,
+          name: seed.name,
+          muscle: seed.muscle,
+          type: seed.type,
+          warmupSets: 0,
+          workingSets: PLYO_SCHEME.sets,
+          repMin: PLYO_SCHEME.reps,
+          repMax: PLYO_SCHEME.reps,
+          targetRIR: 0,
+        }
+      }
       const s = scheme[seed.type]
       const workingSets = isLight ? Math.max(2, s.sets - 1) : s.sets
       const [repMin, repMax] = s.reps.split('-').map(Number)

@@ -533,11 +533,13 @@ export const GOAL_PRESETS: GoalPreset[] = [
   { id: 'cut-prep', label: 'Pre-cut prep', sub: 'Karbantartás · zsírvesztés előtt', defaultWeeks: 3, split: 'Full body', days: 4, style: 'Maintenance', phaseTemplate: ['MAV', 'MAV', 'MAV'], color: 'var(--warning)', icon: 'fuel', description: 'Volumen-tartás · izom-megőrzés · deficit nélkül' },
   { id: 'recovery', label: 'Recovery', sub: 'Niggle után · újraépítés', defaultWeeks: 4, split: 'Custom', days: 3, style: 'Rehab', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV'], color: 'var(--anchor-accent, var(--cat-preference))', icon: 'anchor', description: 'Isoláció-fokú · alacsony fatigue · niggle-aware substitúció' },
   { id: 'sport', label: 'Sport-specific', sub: 'Volleyball-driven blokk', defaultWeeks: 5, split: 'Upper / Lower / Sport', days: 5, style: 'Conjugate', phaseTemplate: ['MEV', 'MAV', 'MAV', 'MRV', 'Deload'], color: 'var(--cat-tendency)', icon: 'today', description: 'Vertikális teljesítmény · vállstabilitás · plyo-integráció' },
+  { id: 'erohipertrofia', label: 'Erő-Hipertrófia', sub: '6-8 rep · failure', defaultWeeks: 6, split: 'Láb+Plyo / Felső', days: 4, style: 'RP', phaseTemplate: ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'], color: 'var(--brand-glow)', icon: 'train', description: 'Kevés gyakorlat · 6-8 rep RIR 0 · plyo-vezérelt láb + felső' },
 ]
 export const SPLITS: SplitOption[] = [
   { label: 'Pull / Push / Legs', days: [4, 5, 6], best: 'hypertrophy' },
   { label: 'Upper / Lower', days: [3, 4], best: 'strength' },
   { label: 'Full body', days: [3, 4, 5], best: 'cut-prep' },
   { label: 'Upper / Lower / Sport', days: [4, 5], best: 'sport' },
+  { label: 'Láb+Plyo / Felső', days: [4], best: 'erohipertrofia' },
   { label: 'Custom split', days: [3, 4, 5, 6], best: null },
 ]
