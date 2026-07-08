@@ -86,6 +86,26 @@ const medicationDayFixture = {
   ],
 }
 
+// Proactive challenge (P7) wire factory — a minimal ChallengeResponse; tests override fields.
+const challengeWire = (overrides: Record<string, unknown> = {}) => ({
+  id: 'ch-1',
+  exerciseId: 'ex-1',
+  exercise: 'Chest Supported Row',
+  type: 'PR',
+  typeLabel: 'PR-attempt',
+  status: 'proposed',
+  target: '107.5 kg × 8',
+  confidence: null,
+  risk: 'low',
+  why: 'Teszt indoklás.',
+  glory: 'Új csúcs',
+  refs: [{ kind: 'PR', label: 'Chest Row 105.8 · Márc 4' }],
+  outcome: null,
+  outcomeGood: null,
+  generatedAt: '2026-07-07T06:45:00Z',
+  ...overrides,
+})
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
 
@@ -178,6 +198,41 @@ export const handlers = [
 
   // Proactive heartbeat (H1) — default: honest 404, the Today CompanionNoteCard stays absent.
   http.get(`${API_BASE}/api/proactive/heartbeat`, () => new HttpResponse(null, { status: 404 })),
+
+  // Proactive prediction (P1) — default: honest empty ARRAY (list endpoint, never 404); the
+  // PredictionsPage renders its "still learning" null-state.
+  http.get(`${API_BASE}/api/proactive/prediction`, () => HttpResponse.json([])),
+
+  // Proactive experiment (P2) — default: honest empty ARRAY (list endpoint, never 404); the
+  // ExperimentsPage renders its "still learning" null-state. Tests override with server.use(...).
+  http.get(`${API_BASE}/api/proactive/experiment`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/proactive/experiment/propose`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/proactive/experiment/:id/decision`, async ({ params, request }) => {
+    const body = (await request.json()) as { decision: 'accept' | 'dismiss' }
+    return HttpResponse.json({
+      id: params.id,
+      title: 'Teszt kísérlet',
+      hypothesis: 'Teszt hipotézis.',
+      status: body.decision === 'accept' ? 'active' : 'dismissed',
+      metricKey: 'sleep_avg',
+      expectedDirection: 'up',
+      startDate: body.decision === 'accept' ? '2026-07-07' : null,
+      totalDays: 7,
+      outcome: null,
+      outcomeGood: null,
+      generatedAt: '2026-07-07T06:45:00Z',
+    })
+  }),
+
+  // Proactive challenge (P7) — default: honest empty ARRAY (list endpoint, never 404); the
+  // ActiveWorkout surface renders its empty state. Tests override with server.use(...).
+  http.get(`${API_BASE}/api/proactive/challenge`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/proactive/challenge/:id/decision`, async ({ params, request }) => {
+    const { decision } = (await request.json()) as { decision: 'accept' | 'dismiss' }
+    return HttpResponse.json(
+      challengeWire({ id: params.id, status: decision === 'accept' ? 'accepted' : 'dismissed' }),
+    )
+  }),
 
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
   http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),

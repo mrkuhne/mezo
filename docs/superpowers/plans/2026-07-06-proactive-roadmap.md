@@ -223,7 +223,29 @@ subscriptions.
 
 ## P — „előre lát"
 
-### P1 — Predictions + validation
+### P1 — Predictions + validation ✅ (shipped 2026-07-07)
+
+**Shipped as built:** `prediction` table (non-unique `week_start` idempotence probe, nullable
+`confidence`, CHECK-pinned `expected_direction`/`status`, code-set `valid_from`/`valid_to`) +
+**smart-tier** `PredictionGenerator` (gather = V0.3 snapshot + facts + numbered CONFIRMED-pattern
+candidates + a fixed 3-key metric catalog → ONE `completeSmart`, strict-JSON `{predictions:[{title,
+basis, patternIndex, metricKey, expectedDirection}]}`, **code-set windows**, **pattern-copied
+confidence** — null = „tanulom", never invented — catalog/enum validation drops unvalidatable rows,
+`max-per-week` cap, empty-list on zero confirmed patterns) + **deterministic**
+`PredictionValidationService` (window avg/count vs the prior 7 days, epsilon-banded direction,
+no-data ⇒ stays pending — LLM-free) + `PredictionJob` two crons (`runWeekly` Mon 06:30 + `runValidation`
+daily 06:15, one third switch `prediction-job.enabled`) + list `GET /api/proactive/prediction` (lazy
+current-week; **`200 []` = honest empty, never 404**). FE: `usePredictions()` dual-mode (list;
+`[]`→still-learning null-state) + `PredictionsPage` un-ghost („tanulom" on null confidence, `✗ Missed`
+state, accuracy header derived from closed rows; mock keeps the Phase-1 literal), `predictions` left
+`PHASE3_TAB_IDS` (only Experiments hidden now). **In-slice decisions resolved:** metric catalog =
+3 deterministic keys (`weight_trend`/`sleep_avg`/`training_volume`, epsilon-banded); window = the
+generation week, closed by the daily run, no-data ⇒ pending; grounding gate = CONFIRMED patterns only;
+confidence COPIED from the pattern (statistical ⇒ null); list read returns `[]` not 404. Deviations
+from the spec §3 row: added `week_start` (idempotence) + `expected_direction` (the machine-checkable
+claim). The `[fake-prediction:{…}]` sentinel is GREEDY (nested payload). Docs: `docs/features/proactive.md`
+(§1-§10) + `docs/features/insights.md` (§1/§2/§2.6/§3/§8/§9/§10). Plan:
+[`2026-07-07-proactive-p1-predictions.md`](2026-07-07-proactive-p1-predictions.md). **bd:** `mezo-h4wp.7`.
 
 **Goal:** the Predictions tab stops being fiction — pattern-grounded forecasts that get judged
 against reality.
@@ -240,7 +262,27 @@ goes honest (derived or absent).
 (deterministic vs L2 ask).
 **bd:** `mezo-h4wp.7`.
 
-### P2 — N=1 experiments
+### P2 — N=1 experiments ✅ (shipped 2026-07-07 — the epic closes)
+
+**Shipped as built:** `experiment` table (proposed→active→completed \| dismissed lifecycle, nullable
+`start_date`/`outcome_good`, `@Pattern`+CHECK guards) + **smart-tier** `ExperimentProposalGenerator`
+(the PredictionGenerator idiom — CONFIRMED-pattern-grounded, open-cap-gated, `clampDays` to
+`[min,max]`) + **deterministic** `ExperimentOutcomeService` (reusing the NEW shared
+`MetricWindowEvaluator` extracted from `PredictionValidationService`) + a **WRITE path**:
+`POST /api/proactive/experiment/{id}/decision` (L2 accept→active/dismiss, fetch-owned-or-404 → **409**
+on non-proposed → mutate, the companion `PatternService.decide` idiom) + `POST …/propose` (the "+ Új
+kísérlet javasol Mezo" button, now REAL) + list `GET` (lazy propose, `200 []` = honest, never 404) +
+`ExperimentJob` two crons (`runPropose` Mon 06:45 + `runOutcome` daily 06:20, one third switch). FE:
+`useExperiments()` + `useExperimentActions()` (the pattern-decision `useMutation`+`invalidateQueries`
+idiom) + `ExperimentsPage` un-ghost (proposed→Elfogadom/Elvetem, active→progress, completed→outcome
+chips; real propose CTA), `experiments` left `PHASE3_TAB_IDS` (**now EMPTY — all 7 tabs real**).
+**In-slice decisions resolved:** propose trigger = cron + button; open-cap (3) bounds both; lifecycle
+guards (409 on re-decide); outcome_good nullable (inconclusive = no data); dismissed excluded from the
+list; `MetricWindowEvaluator` DRY-shared with P1 (P1 ITs guard the refactor). The `[fake-experiment:{…}]`
+sentinel is GREEDY. Docs: `docs/features/proactive.md` (§1-§10, status→**complete**) +
+`docs/features/insights.md` (all 7 tabs real). Plan:
+[`2026-07-07-proactive-p2-experiments.md`](2026-07-07-proactive-p2-experiments.md). **bd:** `mezo-h4wp.8`.
+**This slice closes the proactive epic — only H2 (Web Push) remains deferred.**
 
 **Goal:** the companion proposes experiments on Daniel's own data; he accepts with one tap; the
 system tracks and evaluates.

@@ -51,6 +51,15 @@ public class FeaturesConfiguration {
     /** H1 heartbeat window crons — techcore cron zone (schedules: mezo.proactive.heartbeat.*). */
     public static final String HEARTBEAT_JOB_SWITCH = "mezo.techcore.cron.heartbeat-job.enabled";
 
+    /** P1 prediction generation + validation crons — techcore cron zone (schedules: mezo.proactive.prediction.*). */
+    public static final String PREDICTION_JOB_SWITCH = "mezo.techcore.cron.prediction-job.enabled";
+
+    /** P2 experiment proposal + outcome crons — techcore cron zone (schedules: mezo.proactive.experiment.*). */
+    public static final String EXPERIMENT_JOB_SWITCH = "mezo.techcore.cron.experiment-job.enabled";
+
+    /** Workout challenges daily outcome-eval cron — techcore cron zone (schedule: mezo.proactive.challenge.outcome-cron). */
+    public static final String CHALLENGE_JOB_SWITCH = "mezo.techcore.cron.challenge-job.enabled";
+
     /** Hypertrophy Drive — pre-populated prescribed sets + dynamic weight/rep recommendation. */
     public static final String HYPERTROPHY_DRIVE_SWITCH = "mezo.feature.hypertrophy-drive.enabled";
 }

@@ -5,15 +5,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.BriefingResponse;
 import io.mrkuhne.mezo.api.dto.HeartbeatNoteResponse;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
+import io.mrkuhne.mezo.api.dto.PredictionResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.HeartbeatNotePopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
+import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +31,7 @@ class ProactiveApiIT extends ApiIntegrationTest {
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private MemoirPopulator memoirPopulator;
     @Autowired private HeartbeatNotePopulator heartbeatNotePopulator;
+    @Autowired private PredictionPopulator predictionPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -164,5 +169,38 @@ class ProactiveApiIT extends ApiIntegrationTest {
     @Test
     void testGetHeartbeat_shouldReturn401_whenNoToken() {
         getForBody("/api/proactive/heartbeat", null, HttpStatus.UNAUTHORIZED, String.class);
+    }
+
+    @Test
+    void testGetPredictions_shouldReturnRowsNewestWindowFirst_whenPersisted() {
+        LocalDate monday = LocalDate.now().with(
+                java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        // current-week row present ⇒ no lazy attempt; plus an older validated row
+        predictionPopulator.prediction(ownerId(), monday.minusWeeks(1),
+                PredictionEntity.METRIC_WEIGHT_TREND, PredictionEntity.DIRECTION_DOWN,
+                PredictionEntity.STATUS_VALIDATED);
+        predictionPopulator.prediction(ownerId(), monday,
+                PredictionEntity.METRIC_SLEEP_AVG, PredictionEntity.DIRECTION_UP,
+                PredictionEntity.STATUS_PENDING);
+
+        List<PredictionResponse> predictions = getForList(
+                "/api/proactive/prediction", ownerAuthHeaders(), HttpStatus.OK, PredictionResponse.class);
+
+        assertThat(predictions).hasSize(2);
+        assertThat(predictions.getFirst().getValidFrom()).isEqualTo(monday);
+        assertThat(predictions.getFirst().getConfidence()).isNull();   // „tanulom" — null on the wire
+    }
+
+    @Test
+    void testGetPredictions_shouldReturnEmptyArray_whenNoRowsAndNoConfirmedPatterns() {
+        List<PredictionResponse> predictions = getForList(
+                "/api/proactive/prediction", ownerAuthHeaders(), HttpStatus.OK, PredictionResponse.class);
+
+        assertThat(predictions).isEmpty();   // honest empty state — never a 404
+    }
+
+    @Test
+    void testGetPredictions_shouldReturn401_whenNoToken() {
+        getForBody("/api/proactive/prediction", null, HttpStatus.UNAUTHORIZED, String.class);
     }
 }

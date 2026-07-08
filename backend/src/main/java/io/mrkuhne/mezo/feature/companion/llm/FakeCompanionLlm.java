@@ -101,6 +101,31 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern HEARTBEAT_SENTINEL =
             Pattern.compile("\\[fake-heartbeat:([^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of PredictionGenerator.PREDICTION_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String PREDICTION_MARKER_MIRROR = "HETI-PREDIKCIO-FELADAT";
+
+    /** Scripted predictions JSON (P1): {@code [fake-prediction:{…}]} planted via a check-in note.
+     *  GREEDY (unlike memoir) — the payload {@code {"predictions":[{…}]}} nests objects, so the
+     *  match must run to the LAST brace, not the first. */
+    public static final Pattern PREDICTION_SENTINEL =
+            Pattern.compile("\\[fake-prediction:(\\{.*\\})]", Pattern.DOTALL);
+
+    /** Mirror of ExperimentProposalGenerator.EXPERIMENT_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String EXPERIMENT_MARKER_MIRROR = "N1-KISERLET-FELADAT";
+
+    /** Scripted experiments JSON (P2): {@code [fake-experiment:{…}]} planted via a check-in note.
+     *  GREEDY like predictions — the payload {@code {"experiments":[{…}]}} nests objects. */
+    public static final Pattern EXPERIMENT_SENTINEL =
+            Pattern.compile("\\[fake-experiment:(\\{.*\\})]", Pattern.DOTALL);
+
+    /** Mirror of ChallengeGenerator.CHALLENGE_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String CHALLENGE_MARKER_MIRROR = "EDZES-KIHIVAS-FELADAT";
+
+    /** Scripted challenges JSON: {@code [fake-challenge:{…}]} planted via a check-in note.
+     *  GREEDY like predictions/experiments — the payload {@code {"challenges":[{…}]}} nests objects. */
+    public static final Pattern CHALLENGE_SENTINEL =
+            Pattern.compile("\\[fake-challenge:(\\{.*\\})]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -134,6 +159,30 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(HEARTBEAT_MARKER_MIRROR)) {
             Matcher m = HEARTBEAT_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "FAKE-NAPKOZBENI-JEGYZET";
+        }
+        if (systemPrompt.startsWith(PREDICTION_MARKER_MIRROR)) {
+            Matcher m = PREDICTION_SENTINEL.matcher(userMessage);
+            // default = one valid minimal row so the un-scripted happy path still persists
+            return m.find() ? m.group(1)
+                    : "{\"predictions\":[{\"title\":\"Fake predikció\",\"basis\":\"FAKE-ALAP\","
+                            + "\"patternIndex\":0,\"metricKey\":\"weight_trend\","
+                            + "\"expectedDirection\":\"down\"}]}";
+        }
+        if (systemPrompt.startsWith(EXPERIMENT_MARKER_MIRROR)) {
+            Matcher m = EXPERIMENT_SENTINEL.matcher(userMessage);
+            // default = one valid minimal proposal so the un-scripted happy path still persists
+            return m.find() ? m.group(1)
+                    : "{\"experiments\":[{\"title\":\"Fake kísérlet\",\"hypothesis\":\"FAKE-HIPOTÉZIS\","
+                            + "\"patternIndex\":0,\"metricKey\":\"sleep_avg\","
+                            + "\"expectedDirection\":\"up\",\"totalDays\":7}]}";
+        }
+        if (systemPrompt.startsWith(CHALLENGE_MARKER_MIRROR)) {
+            Matcher m = CHALLENGE_SENTINEL.matcher(userMessage);
+            // default = one valid minimal PR proposal so the un-scripted happy path still persists
+            return m.find() ? m.group(1)
+                    : "{\"challenges\":[{\"exerciseIndex\":0,\"type\":\"PR\",\"targetWeightKg\":107.5,"
+                            + "\"targetReps\":8,\"risk\":\"low\",\"why\":\"FAKE-INDOK\",\"glory\":\"FAKE-DICS\","
+                            + "\"refIndexes\":[0],\"patternIndex\":0}]}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);

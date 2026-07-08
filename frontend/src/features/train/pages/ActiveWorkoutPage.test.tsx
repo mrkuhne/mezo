@@ -43,6 +43,15 @@ test('prep screen shows the workout title, challenges carousel and the start CTA
   expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
 })
 
+// Byte-parity guard: the Phase-1 mock seed still renders its fabricated confidence
+// (0.72 → "conf 72%") + the tool-transparency chips exactly as before the live wiring.
+test('mock mode: the seed challenge renders conf 72% and its tool chips (byte parity)', () => {
+  setup()
+  expect(screen.getByText('conf 72%')).toBeInTheDocument()
+  expect(screen.getByText('get_pr_history(ex=chest_row)')).toBeInTheDocument()
+  expect(screen.queryByText('tanulom')).not.toBeInTheDocument()
+})
+
 test('prep screen flags the active niggle pre-flight', () => {
   setup()
   expect(screen.getByText('Jobb váll · aktív niggle')).toBeInTheDocument()
@@ -661,4 +670,75 @@ describe('ActiveWorkoutPage (mock mode)', () => {
     setup()
     expect(screen.queryByRole('status')).toBeNull()
   })
+})
+
+// --- real-mode challenges: honest confidence/tools + live L2 accept + outcome states ---
+
+// One live proactive challenge for the session/day. `overrides` shape a proposed
+// vs. resolved (hit) row. Live never sends `tools` (fabricated-transparency rule).
+function challengeWire(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'chal-1',
+    exerciseId: 'e-1',
+    exercise: 'Chest Supported Row',
+    type: 'PR',
+    typeLabel: 'PR-attempt',
+    status: 'proposed',
+    target: '107.5 kg × 8',
+    confidence: null,
+    risk: 'low',
+    why: 'A múlt heti RIR 2 + a stabil 102.5-ös ablak alapján megpróbálható.',
+    glory: 'Új csúcs',
+    refs: [{ kind: 'PR', label: 'Chest Row 105.8 · Márc 4' }],
+    generatedAt: '2026-07-07T08:00:00Z',
+    ...overrides,
+  }
+}
+
+function useChallengeHandlers(rows: Record<string, unknown>[], calls: string[]) {
+  useRealHandlers(REAL_TODAY, calls)
+  server.use(
+    http.get(`${API_BASE}/api/proactive/challenge`, () => HttpResponse.json(rows)),
+    http.post(`${API_BASE}/api/proactive/challenge/:id/decision`, async ({ params, request }) => {
+      const body = (await request.json()) as { decision: string }
+      calls.push(`decide:${params.id}:${body.decision}`)
+      return HttpResponse.json(challengeWire({ id: String(params.id), status: 'accepted' }))
+    }),
+  )
+}
+
+test('real mode: a proposed challenge with null confidence renders "tanulom" and NO tool chips', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useChallengeHandlers([challengeWire()], calls)
+  setup()
+  // prep screen — the carousel shows the live challenge
+  expect(await screen.findByText('conf tanulom')).toBeInTheDocument()
+  expect(screen.queryByText(/get_pr_history/)).not.toBeInTheDocument() // live sends no tools
+  expect(screen.getByText('Vállaljuk')).toBeInTheDocument()
+})
+
+test('real mode: clicking "Vállaljuk" POSTs an accept decision for the challenge', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useChallengeHandlers([challengeWire()], calls)
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText('Vállaljuk'))
+  await waitFor(() => expect(calls).toContain('decide:chal-1:accept'))
+})
+
+test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + outcome, no action row', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useChallengeHandlers(
+    [challengeWire({ status: 'hit', outcome: '110 kg × 8 — cél igazolva (+2.5 kg)', outcomeGood: true })],
+    calls,
+  )
+  setup()
+  expect(await screen.findByText('✓ Megerősítve')).toBeInTheDocument()
+  expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
+  // the workout is decided → the accept/skip row is hidden
+  expect(screen.queryByText('Vállaljuk')).not.toBeInTheDocument()
+  expect(screen.queryByText('Elfogadva')).not.toBeInTheDocument()
 })

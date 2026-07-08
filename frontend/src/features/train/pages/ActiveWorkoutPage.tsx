@@ -10,7 +10,8 @@
 // ============================================================
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
-import { useTrain } from '@/data/hooks'
+import { useChallengeActions, useChallenges, useTrain } from '@/data/hooks'
+import { localDateString } from '@/shared/lib/dates'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
@@ -207,13 +208,33 @@ function ActiveWorkoutSession({
     // Reset only on set-index / exercise transitions — NOT on extra-set or note changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.id, session.setIdx])
-  const acceptedMap: Record<string, boolean> = Object.fromEntries(
-    acceptedChallenges.map((id) => [id, true]),
-  )
-  const toggleChallenge = (id: string) =>
-    setAcceptedChallenges((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    )
+  // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
+  // and the live session/day list (or honest []) in real. Accept/dismiss is a
+  // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
+  // in live (status-derived accepted map + decide()).
+  const localToday = localDateString()
+  const templateSessionId = todaySession?.templateSessionId ?? null
+  const { challenges, mode: challengeMode } = useChallenges(templateSessionId, localToday)
+  const { decide } = useChallengeActions(templateSessionId, localToday)
+  const isMock = challengeMode === 'mock'
+
+  const acceptedMap: Record<string, boolean> = isMock
+    ? Object.fromEntries(acceptedChallenges.map((id) => [id, true]))
+    : Object.fromEntries(
+        challenges.map((c) => [
+          c.id,
+          c.status === 'accepted' || c.status === 'hit' || c.status === 'miss',
+        ]),
+      )
+  const toggleChallenge = (id: string) => {
+    if (isMock) {
+      setAcceptedChallenges((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+      )
+    } else {
+      decide(id, acceptedMap[id] ? 'dismiss' : 'accept')
+    }
+  }
 
   // Mock mode has no todaySession — "Kezdjük el" keeps the Phase-1 local behavior.
   const beginWorkout = () => {
@@ -388,7 +409,7 @@ function ActiveWorkoutSession({
 
         {/* Mai kihívások — companion proposes, user approves */}
         <ChallengesCarousel
-          challenges={W.challenges}
+          challenges={challenges}
           accepted={acceptedMap}
           onToggle={toggleChallenge}
         />
@@ -423,7 +444,7 @@ function ActiveWorkoutSession({
           </div>
           <div className="col gap-sm">
             {W.exercises.map((e, i) => {
-              const exChallenge = W.challenges.find(
+              const exChallenge = challenges.find(
                 (c) => c.exerciseId === e.id && acceptedMap[c.id],
               )
               return (
@@ -500,7 +521,7 @@ function ActiveWorkoutSession({
   // ---------- ACTIVE ----------
   const totalSets = W.exercises.reduce((a, e) => a + effectiveSetCount(session, e.id), 0)
   const doneSets = Object.values(session.logged).reduce((a, arr) => a + arr.length, 0)
-  const activeChallenge = W.challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
+  const activeChallenge = challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
   const exHistory = session.logged[current.id] ?? []
   const currentSetCount = effectiveSetCount(session, current.id)
   const plannedCount = session.planned[current.id] ?? currentSetCount

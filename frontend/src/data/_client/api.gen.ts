@@ -1317,6 +1317,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/prediction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pattern-grounded weekly predictions with validation state (P1)
+         * @description All live predictions, newest window first. Lazily generates the CURRENT week's batch when that week has no rows yet (needs CONFIRMED patterns — the grounding gate). An empty array is the honest empty state (never fabricated forecasts).
+         */
+        get: operations["getPredictions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/experiment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * All live N=1 experiments (proposed/active/completed), newest first (P2)
+         * @description Returns the user's live experiments (dismissed excluded). An empty array is the honest empty state (never a 404). Lazily proposes when the user has none and has confirmed patterns.
+         */
+        get: operations["getExperiments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/experiment/propose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * On-demand experiment proposal ("+ Új kísérlet javasol Mezo") (P2)
+         * @description Generates up to the open-cap of experiment proposals from confirmed patterns. A no-op (empty array) when the cap is already met or there are no confirmed patterns.
+         */
+        post: operations["proposeExperiments"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/experiment/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** L2 accept/dismiss a proposed experiment (P2) */
+        post: operations["decideExperiment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live workout challenges for a planned session on a day (proposed/accepted/hit/miss/inconclusive) (Challenges)
+         * @description Returns the session/day's live challenges (dismissed excluded). Lazily generates when none exist and date == today; lazily evaluates accepted ones once the instance is done. An empty array is the honest empty state (never a 404).
+         */
+        get: operations["getChallenges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/challenge/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** L2 accept/dismiss a proposed workout challenge (Challenges) */
+        post: operations["decideChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3014,6 +3128,96 @@ export interface components {
             kind: string;
             /** @description The generated HU note (plain prose, cheap tier) */
             content: string;
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        PredictionResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @description The forecast statement (HU prose, model-written) */
+            title: string;
+            /** @description Why — grounded in the selected pattern + context (model-written prose) */
+            basis: string;
+            /**
+             * Format: double
+             * @description COPIED from the grounding pattern's stats; null = the FE renders „tanulom" (never model-invented)
+             */
+            confidence?: number | null;
+            /** @description weight_trend | sleep_avg | training_volume (the deterministic v1 catalog) */
+            metricKey: string;
+            /** @description up | down | stable (model-SELECTED from the enum) */
+            expectedDirection: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string;
+            /** @description pending | validated | missed */
+            status: string;
+            /** @description Code-formatted outcome text once the validation job closed the window */
+            actual?: string | null;
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        ExperimentDecisionRequest: {
+            decision: string;
+        };
+        ExperimentResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            hypothesis: string;
+            /** @description proposed | active | completed | dismissed */
+            status: string;
+            metricKey: string;
+            /** @description up | down | stable */
+            expectedDirection: string;
+            /**
+             * Format: date
+             * @description Null until accepted (proposed rows have no start)
+             */
+            startDate?: string | null;
+            /** @description The experiment window length in days */
+            totalDays: number;
+            /** @description Code-formatted outcome once the window closed */
+            outcome?: string | null;
+            /** @description true/false once evaluated; null = completed but inconclusive (no data) */
+            outcomeGood?: boolean | null;
+            /** Format: date-time */
+            generatedAt: string;
+        };
+        ChallengeDecisionRequest: {
+            decision: string;
+        };
+        ChallengeRef: {
+            kind: string;
+            label: string;
+        };
+        ChallengeResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            exerciseId: string;
+            /** @description The target exercise's name */
+            exercise: string;
+            /** @description PR | Depth | Volume */
+            type: string;
+            /** @description HU display label derived from type */
+            typeLabel: string;
+            /** @description proposed | accepted | dismissed | hit | miss | inconclusive */
+            status: string;
+            /** @description Code-derived display string of the structured target */
+            target: string;
+            /** @description Pattern-copied; null = "tanulom" (never fabricated) */
+            confidence?: number | null;
+            /** @description low | mid */
+            risk: string;
+            why: string;
+            glory: string;
+            refs: components["schemas"]["ChallengeRef"][];
+            /** @description Code-formatted outcome once the workout is evaluated */
+            outcome?: string | null;
+            /** @description true/false once evaluated; null = inconclusive (no logged sets) */
+            outcomeGood?: boolean | null;
             /** Format: date-time */
             generatedAt: string;
         };
@@ -7107,6 +7311,249 @@ export interface operations {
             };
             /** @description No note for the day (honest absence). The Today card simply stays absent. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getPredictions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All live predictions (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getExperiments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description All live experiments (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    proposeExperiments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The freshly proposed experiments (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decideExperiment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExperimentDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The experiment with its new status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Experiment not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The experiment is not in the proposed state (already decided) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getChallenges: {
+        parameters: {
+            query: {
+                templateSessionId: string;
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The session/day's live challenges (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decideChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChallengeDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The challenge with its new status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Challenge not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The challenge is not in the proposed state (already decided) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

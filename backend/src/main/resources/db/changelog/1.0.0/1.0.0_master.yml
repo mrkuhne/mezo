@@ -294,12 +294,33 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202607071800_mezo-h4wp.5_create_heartbeat_note.sql
   - changeSet:
+      id: "1.0.0:202607071900_mezo-h4wp.7_create_prediction"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607071900_mezo-h4wp.7_create_prediction.sql
+  - changeSet:
       id: "1.0.0:202607072000_mezo-dhdr_prescribed_sets"
       author: daniel.kuhne
       changes:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607072000_mezo-dhdr_prescribed_sets.sql
+  - changeSet:
+      id: "1.0.0:202607072000_mezo-h4wp.8_create_experiment"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607072000_mezo-h4wp.8_create_experiment.sql
+  - changeSet:
+      id: "1.0.0:202607072100_mezo-hbwi_create_challenge"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607072100_mezo-hbwi_create_challenge.sql
   - changeSet:
       id: "1.0.0:202607082000_mezo-52zg_catalog_write"
       author: daniel.kuhne
