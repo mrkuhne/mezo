@@ -171,6 +171,42 @@ export interface paths {
         /** Curated exercise catalog (master data), muscle then name ascending */
         get: operations["getExerciseCatalog"];
         put?: never;
+        /** Create a user-authored catalog exercise */
+        post: operations["createExercise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/exercises/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update a user-authored exercise (master rows → 409) */
+        put: operations["updateExercise"];
+        post?: never;
+        /** Soft-delete a user-authored exercise (master rows → 409) */
+        delete: operations["deleteExercise"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/exercises/{id}/video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set/clear the demo video on any catalog exercise (master or user) */
+        put: operations["setExerciseVideo"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1523,6 +1559,8 @@ export interface components {
             warning?: string;
             /** Format: uuid */
             catalogId?: string;
+            /** @description Effective YouTube demo URL resolved from the linked catalog row (null when none) */
+            videoUrl?: string | null;
         };
         MesocycleCreateRequest: {
             title: string;
@@ -1573,6 +1611,23 @@ export interface components {
             type: "compound" | "isolation" | "plyo";
             stim: number;
             fatigue: number;
+            videoUrl?: string | null;
+            /** @description true when created_by == the current user (user-authored row) */
+            editable: boolean;
+        };
+        CatalogExerciseCreateRequest: {
+            name: string;
+            /** @enum {string} */
+            muscle: "back-mid" | "lats" | "chest" | "shoulder" | "rear-delt" | "biceps" | "triceps" | "quad" | "ham" | "glute" | "calf" | "core" | "traps";
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            stim: number;
+            fatigue: number;
+            videoUrl?: string | null;
+        };
+        CatalogVideoRequest: {
+            /** @description A YouTube watch/short URL, or null to clear the demo */
+            videoUrl?: string | null;
         };
         /** @description One logged set as a record reference; weightKg absent on bodyweight sets */
         RecordSetRef: {
@@ -1642,6 +1697,8 @@ export interface components {
             /** @enum {string} */
             type: "compound" | "isolation" | "plyo";
             warning?: string;
+            /** @description Effective YouTube demo URL resolved from the linked catalog row (null when none) */
+            videoUrl?: string | null;
             /** @description durable per-exercise note */
             note?: string | null;
             lastWeek?: components["schemas"]["LastWeekRef"];
@@ -3480,6 +3537,210 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogExerciseCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created exercise */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseCatalogItem"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogExerciseCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated exercise */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseCatalogItem"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Master row is read-only */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteExercise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Master row is read-only */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setExerciseVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseCatalogItem"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
