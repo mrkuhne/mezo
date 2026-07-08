@@ -24,9 +24,10 @@ bd close <id>         # Complete work
 
 ## Git Workflow
 
-- One bd issue + one `feat/<topic>` branch per change; merge locally into `main` with `--no-ff`, then delete the branch (single dev, no PRs).
+- One bd issue + one `feat/<topic>` branch per change. Flow: `git push` the branch → open a **self-PR** → wait for **CI green** → merge **locally with `--no-ff`** → `git push` main (the PR auto-closes when its commits land on main) → delete the branch. Single dev, but the PR exists purely as the **CI trigger + pre-merge green light**, not for review.
+- **Why the self-PR (the CI gate):** the 16 GB dev machine can't run the heavy backend integration suite locally (SpringBoot + Testcontainers OOM-dies under swap thrash). CI (`ci.yml`: full backend IT suite + FE both modes + lint + contract-drift, on a clean `ubuntu-latest`) is the **authoritative full-suite gate**; locally run only the **focused** tests for what you changed. Details + local recipes: [`docs/infrastructure/local-dev-testing.md`](docs/infrastructure/local-dev-testing.md).
 - Conventional commit subjects carrying the driving bd id: `feat(api): ... (mezo-ej0)`.
-- `git pull --rebase` on main **before** merging the feature branch — rebasing after the merge flattens the `--no-ff` merge commit.
+- `git pull --rebase` on main **before** merging the feature branch — rebasing *after* the merge flattens the `--no-ff` merge commit; push directly after merging.
 
 ## Session Completion
 
