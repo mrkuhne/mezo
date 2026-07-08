@@ -70,6 +70,7 @@ export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): Worko
         })) ?? null,
       rationale: e.rationale ?? null,
       note: e.note ?? null,
+      videoUrl: e.videoUrl ?? null,
       lastWeek: e.lastWeek
         ? { weight: Number(e.lastWeek.weightKg), reps: e.lastWeek.reps, rir: e.lastWeek.rir }
         : null,

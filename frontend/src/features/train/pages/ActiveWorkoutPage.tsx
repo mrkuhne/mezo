@@ -34,6 +34,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CompactStepper } from '@/features/train/components/CompactStepper'
+import { VideoDemo } from '@/features/train/components/VideoDemo'
 import { LastWeekStat } from '@/features/train/components/LastWeekStat'
 import { PRToast, type PRState } from '@/features/train/components/PRToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
@@ -709,6 +710,13 @@ function ActiveWorkoutSession({
             <div style={{ marginTop: 10 }}>
               <Display size="lg">{current.name}</Display>
             </div>
+
+            {/* Inline demo video (catalog-resolved) — renders nothing when no url */}
+            {current.videoUrl && (
+              <div className="mt-sm">
+                <VideoDemo url={current.videoUrl} />
+              </div>
+            )}
 
             {/* Durable per-exercise note pill (F4) — always visible while a note exists */}
             {effectiveNote && (

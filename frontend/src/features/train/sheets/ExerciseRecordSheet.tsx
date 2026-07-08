@@ -10,6 +10,7 @@ import { huMonthDay } from '@/shared/lib/dates'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
+import { VideoDemo } from '@/features/train/components/VideoDemo'
 
 // 102.5 -> "102.5", 100.0 -> "100"
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
@@ -38,10 +39,11 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 interface ExerciseRecordSheetProps {
   record: ExerciseRecordResponse
+  videoUrl?: string | null
   onClose: () => void
 }
 
-export function ExerciseRecordSheet({ record, onClose }: ExerciseRecordSheetProps) {
+export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecordSheetProps) {
   const r = record
   const maxRecent = Math.max(...r.recentTopSets.map((s) => s.weightKg ?? s.reps), 1)
 
@@ -86,6 +88,13 @@ export function ExerciseRecordSheet({ record, onClose }: ExerciseRecordSheetProp
               {r.bestSet ? huMonthDay(r.bestSet.date) : `${r.sessionCount} alkalom alatt`}
             </span>
           </div>
+
+          {/* Inline demo video (catalog-resolved) — renders nothing when no url */}
+          {videoUrl && (
+            <div style={{ marginBottom: 12 }}>
+              <VideoDemo url={videoUrl} />
+            </div>
+          )}
 
           {/* 2×2 stat grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>

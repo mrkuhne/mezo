@@ -181,7 +181,17 @@ export function ExercisesPage() {
         )}
       </div>
 
-      {openRecord && <ExerciseRecordSheet record={openRecord} onClose={() => setOpenRecord(null)} />}
+      {openRecord && (
+        <ExerciseRecordSheet
+          record={openRecord}
+          videoUrl={
+            openRecord.catalogId
+              ? exerciseLibrary.find((e) => e.catalogId === openRecord.catalogId)?.videoUrl ?? null
+              : null
+          }
+          onClose={() => setOpenRecord(null)}
+        />
+      )}
     </>
   )
 }
