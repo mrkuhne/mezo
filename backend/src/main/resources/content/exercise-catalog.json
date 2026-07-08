@@ -108,5 +108,7 @@
   { "slug": "lateral-bound", "name": "Lateral Bound", "muscle": "glute", "type": "plyo", "stim": 0.58, "fatigue": 0.45 },
   { "slug": "jump-squat", "name": "Jump Squat", "muscle": "quad", "type": "plyo", "stim": 0.64, "fatigue": 0.50 },
   { "slug": "trap-bar-jump", "name": "Trap-Bar Jump", "muscle": "quad", "type": "plyo", "stim": 0.66, "fatigue": 0.55 },
-  { "slug": "approach-jump", "name": "Approach Jump", "muscle": "quad", "type": "plyo", "stim": 0.60, "fatigue": 0.40 }
+  { "slug": "approach-jump", "name": "Approach Jump", "muscle": "quad", "type": "plyo", "stim": 0.60, "fatigue": 0.40 },
+  { "slug": "db-jump-squat", "name": "DB Jump Squat", "muscle": "quad", "type": "plyo", "stim": 0.62, "fatigue": 0.45 },
+  { "slug": "single-leg-plate-hop", "name": "Single-Leg Plate Hop", "muscle": "calf", "type": "plyo", "stim": 0.52, "fatigue": 0.30 }
 ]
