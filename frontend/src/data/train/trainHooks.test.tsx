@@ -3,8 +3,8 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { QueryClient } from '@tanstack/react-query'
 import { useTrain } from '@/data/hooks'
-import { toWorkoutPlan } from '@/data/train/trainHooks'
-import type { WorkoutTodayResponse } from '@/data/train/trainApi'
+import { toLibraryItem, toWorkoutPlan } from '@/data/train/trainHooks'
+import type { ExerciseCatalogItem, WorkoutTodayResponse } from '@/data/train/trainApi'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -381,4 +381,79 @@ test('useTrain (real mode) saveSportSchedule PUTs the full slot list', async () 
   result.current.saveSportSchedule([{ dayOfWeek: 0, time: '18:15', durationMin: 90, kind: 'training' }])
   await waitFor(() => expect(put).toHaveLength(1))
   expect(put[0]).toEqual([{ dayOfWeek: 0, time: '18:15', durationMin: 90, kind: 'training' }])
+})
+
+// ---- catalog authoring block: toLibraryItem mapping + write mutations (mezo-52zg) ----
+
+test('toLibraryItem maps videoUrl and editable from the catalog row', () => {
+  const item = toLibraryItem({
+    id: 'f1e3a0e2-0000-4000-8000-000000000099', slug: 'db-row', name: 'DB Row',
+    muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5,
+    videoUrl: 'https://youtu.be/abc123', editable: true,
+  } satisfies ExerciseCatalogItem)
+  expect(item).toMatchObject({
+    id: 'f1e3a0e2-0000-4000-8000-000000000099',
+    catalogId: 'f1e3a0e2-0000-4000-8000-000000000099',
+    videoUrl: 'https://youtu.be/abc123',
+    editable: true,
+  })
+})
+
+test('toLibraryItem null-coalesces an absent videoUrl to null', () => {
+  const item = toLibraryItem({
+    id: 'f1e3a0e2-0000-4000-8000-0000000000aa', slug: 'lat-raise', name: 'Lateral Raise',
+    muscle: 'shoulder', type: 'isolation', stim: 0.7, fatigue: 0.2, editable: false,
+  } satisfies ExerciseCatalogItem)
+  expect(item.videoUrl).toBeNull()
+  expect(item.editable).toBe(false)
+})
+
+test('useTrain (real mode) catalog write mutations hit create/update/delete/video endpoints', async () => {
+  const calls: string[] = []
+  const bodies: unknown[] = []
+  server.use(
+    http.post(`${API_BASE}/api/train/exercises`, async ({ request }) => {
+      bodies.push(await request.json())
+      calls.push('create')
+      return HttpResponse.json(
+        { id: 'new-1', slug: 'db-row', name: 'DB Row', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5, editable: true },
+        { status: 201 },
+      )
+    }),
+    http.put(`${API_BASE}/api/train/exercises/:id`, async ({ params, request }) => {
+      bodies.push(await request.json())
+      calls.push(`update:${params.id}`)
+      return HttpResponse.json({ id: String(params.id), slug: 'db-row', name: 'DB Row v2', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5, editable: true })
+    }),
+    http.delete(`${API_BASE}/api/train/exercises/:id`, ({ params }) => {
+      calls.push(`delete:${params.id}`)
+      return new HttpResponse(null, { status: 204 })
+    }),
+    http.put(`${API_BASE}/api/train/exercises/:id/video`, async ({ params, request }) => {
+      bodies.push(await request.json())
+      calls.push(`video:${params.id}`)
+      return HttpResponse.json({ id: String(params.id), slug: 'db-row', name: 'DB Row', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5, videoUrl: 'https://youtu.be/xyz', editable: true })
+    }),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  result.current.createCatalogExercise({ name: 'DB Row', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5 })
+  result.current.updateCatalogExercise('ex-9', { name: 'DB Row v2', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5 })
+  result.current.deleteCatalogExercise('ex-9')
+  result.current.setExerciseVideo('ex-9', 'https://youtu.be/xyz')
+  await waitFor(() =>
+    expect(calls).toEqual(expect.arrayContaining(['create', 'update:ex-9', 'delete:ex-9', 'video:ex-9'])),
+  )
+  expect(bodies).toContainEqual({ videoUrl: 'https://youtu.be/xyz' })
+})
+
+test('useTrain (mock mode) catalog write mutations resolve without any network call', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true') // override the file-level real-mode stub
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  const onSuccess = vi.fn()
+  // No MSW override registered: a real request would fail via onUnhandledRequest —
+  // resolving onSuccess proves the mock branch no-ops.
+  result.current.setExerciseVideo('exl-1', 'https://youtu.be/new', { onSuccess })
+  await waitFor(() => expect(onSuccess).toHaveBeenCalled())
+  // Mock library keeps the Phase-1 static video/editable metadata unchanged.
+  expect(result.current.exerciseLibrary[0]).toMatchObject({ videoUrl: 'https://youtu.be/GZTvxN5fPBc', editable: false })
 })

@@ -697,6 +697,8 @@ export interface Sport {
 export interface ExerciseLibraryItem {
   id: string; name: string; muscle: string; type: ExerciseKind; stim: number; fatigue: number
   catalogId?: string  // set when the item comes from the backend catalog (real mode)
+  videoUrl?: string | null  // YouTube demo URL; null/absent when no demo is set
+  editable?: boolean  // true for user-authored catalog rows (created_by == current user)
 }
 
 export interface GoalPreset {

@@ -503,7 +503,7 @@ export const sport: Sport = {
 
 // --- exercise library (data.js:538-560) — all 21 items verbatim ---
 export const exerciseLibrary: ExerciseLibraryItem[] = [
-  { id: 'exl-1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55 },
+  { id: 'exl-1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, videoUrl: 'https://youtu.be/GZTvxN5fPBc', editable: false },
   { id: 'exl-2', name: 'Lat Pulldown · Pronated', muscle: 'lats', type: 'compound', stim: 0.84, fatigue: 0.4 },
   { id: 'exl-3', name: 'Lat Pulldown · Neutral', muscle: 'lats', type: 'compound', stim: 0.82, fatigue: 0.4 },
   { id: 'exl-4', name: 'T-Bar Row', muscle: 'back-mid', type: 'compound', stim: 0.88, fatigue: 0.65 },
