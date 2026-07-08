@@ -300,3 +300,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607072000_mezo-dhdr_prescribed_sets.sql
+  - changeSet:
+      id: "1.0.0:202607082000_mezo-52zg_catalog_write"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607082000_mezo-52zg_catalog_write.sql

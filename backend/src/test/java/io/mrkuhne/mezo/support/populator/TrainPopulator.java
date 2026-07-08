@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.support.populator;
 
+import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
@@ -41,6 +43,7 @@ import org.springframework.boot.test.context.TestComponent;
 public class TrainPopulator {
 
     private final MesocycleRepository mesocycleRepository;
+    private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
@@ -49,6 +52,19 @@ public class TrainPopulator {
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportSessionRepository sportSessionRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
+
+    /** A user-authored catalog exercise (created_by set) for catalog-write tests. */
+    public ExerciseCatalogEntity createUserCatalogExercise(UUID createdBy, String name, String muscle, String type) {
+        ExerciseCatalogEntity e = new ExerciseCatalogEntity();
+        e.setCreatedBy(createdBy);
+        e.setSlug(name.toLowerCase().replaceAll("[^a-z0-9]+", "-") + "-" + java.util.UUID.randomUUID());
+        e.setName(name);
+        e.setMuscle(muscle);
+        e.setType(type);
+        e.setStim(new java.math.BigDecimal("0.60"));
+        e.setFatigue(new java.math.BigDecimal("0.30"));
+        return exerciseCatalogRepository.saveAndFlush(e);
+    }
 
     public MesocycleEntity createMesocycle(UUID createdBy, String title, String status) {
         MesocycleEntity m = new MesocycleEntity();

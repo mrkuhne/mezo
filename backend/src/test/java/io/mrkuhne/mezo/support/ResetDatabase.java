@@ -19,8 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p><b>Growth rule:</b> every new owned domain table (Slice B+) MUST be added to the
  * TRUNCATE list here in the same change that creates it.
  *
- * <p><b>exercise_catalog is master data</b> (content, no created_by) — it must NOT join the
- * TRUNCATE list; the startup ExerciseCatalogLoader owns it.
+ * <p><b>exercise_catalog is a hybrid table</b> (since mezo-52zg): master rows (created_by null)
+ * are loader-owned and must NOT join the TRUNCATE list; only the user-authored rows
+ * (created_by set) are deleted here so the startup ExerciseCatalogLoader's content survives.
  */
 @TestComponent
 @RequiredArgsConstructor
@@ -51,5 +52,7 @@ public class ResetDatabase {
         entityManager.createNativeQuery("DELETE FROM app_user WHERE email <> :ownerEmail")
             .setParameter("ownerEmail", ownerProperties.ownerEmail())
             .executeUpdate();
+        // User-authored catalog rows go; master content (created_by null) survives for the loader.
+        entityManager.createNativeQuery("DELETE FROM exercise_catalog WHERE created_by IS NOT NULL").executeUpdate();
     }
 }
