@@ -15,4 +15,7 @@ public interface ExerciseCatalogRepository extends JpaRepository<ExerciseCatalog
     Optional<ExerciseCatalogEntity> findBySlug(String slug);
 
     List<ExerciseCatalogEntity> findAllByOrderByMuscleAscNameAsc();
+
+    /** Slug-prefix count for generating a unique slug on user-authored rows. */
+    long countBySlugStartingWith(String slugPrefix);
 }

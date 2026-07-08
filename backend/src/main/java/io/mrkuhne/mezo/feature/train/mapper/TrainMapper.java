@@ -50,6 +50,7 @@ public interface TrainMapper {
     GymExercise toGymExercise(ExerciseEntity entity);
 
     @Mapping(target = "type", expression = "java(ExerciseCatalogItem.TypeEnum.fromValue(entity.getType()))")
+    @Mapping(target = "editable", ignore = true)
     ExerciseCatalogItem toCatalogItem(ExerciseCatalogEntity entity);
 
     @Mapping(target = "duration", source = "durationMin")
