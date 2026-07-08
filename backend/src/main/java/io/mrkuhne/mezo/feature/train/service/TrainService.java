@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.api.dto.MesoDayInput;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
+import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -75,11 +77,13 @@ public class TrainService {
             ? Map.of()
             : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, sessionIds)
                 .stream().collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
+        Map<UUID, String> videoByCatalog = videosByCatalog(
+            exercisesBySession.values().stream().flatMap(List::stream).toList());
 
         Map<UUID, List<MesoDay>> daysByMeso = sessions.stream()
             .filter(s -> s.getMesocycleId() != null)
             .collect(Collectors.groupingBy(WorkoutSessionEntity::getMesocycleId, LinkedHashMap::new,
-                Collectors.mapping(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of())),
+                Collectors.mapping(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), videoByCatalog),
                     Collectors.toList())));
 
         return mesos.stream().map(m -> {
@@ -188,7 +192,8 @@ public class TrainService {
         for (int i = 0; i < inputs.size(); i++) {
             fresh.add(toExerciseEntity(createdBy, dayId, inputs.get(i), i));
         }
-        return toDay(day, exerciseRepository.saveAll(fresh));
+        List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
+        return toDay(day, saved, videosByCatalog(saved));
     }
 
     /** Single-active invariant: archives every currently active meso of the owner. */
@@ -246,8 +251,10 @@ public class TrainService {
             ? Map.of()
             : exerciseRepository.findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, sessionIds)
                 .stream().collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
+        Map<UUID, String> videoByCatalog = videosByCatalog(
+            exercisesBySession.values().stream().flatMap(List::stream).toList());
         List<MesoDay> days = sessions.stream()
-            .map(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()))).toList();
+            .map(s -> toDay(s, exercisesBySession.getOrDefault(s.getId(), List.of()), videoByCatalog)).toList();
         if (!volume.isEmpty()) {
             r.setVolumePerMuscle(volume);
         }
@@ -257,17 +264,40 @@ public class TrainService {
         return r;
     }
 
-    private MesoDay toDay(WorkoutSessionEntity s, List<ExerciseEntity> exercises) {
+    private MesoDay toDay(WorkoutSessionEntity s, List<ExerciseEntity> exercises,
+        Map<UUID, String> videoByCatalog) {
         return MesoDay.builder()
             .id(s.getId())
             .day(s.getDayLabel())
             .type(s.getType())
             .muscle(s.getMuscle())
             .exerciseCount(exercises.size())
-            .exercises(exercises.stream().map(mapper::toGymExercise).toList())
+            .exercises(exercises.stream().map(e -> {
+                GymExercise g = mapper.toGymExercise(e);
+                if (e.getCatalogId() != null) {
+                    g.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
+                }
+                return g;
+            }).toList())
             .note(s.getNote())
             .current("active".equals(s.getStatus()) ? Boolean.TRUE : null)
             .muscleAccent(s.isMuscleAccent() ? Boolean.TRUE : null)
             .build();
+    }
+
+    /**
+     * Demo-video lookup {@code catalog_id → video_url} for the given exercises, resolved in ONE
+     * batched catalog fetch (never per-exercise). Rows with no linked catalog or no video are
+     * simply absent from the map. Shared by every {@link #toDay} caller.
+     */
+    private Map<UUID, String> videosByCatalog(List<ExerciseEntity> exercises) {
+        List<UUID> catalogIds = exercises.stream()
+            .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList();
+        if (catalogIds.isEmpty()) {
+            return Map.of();
+        }
+        return exerciseCatalogRepository.findByIdIn(catalogIds).stream()
+            .filter(c -> c.getVideoUrl() != null)
+            .collect(Collectors.toMap(ExerciseCatalogEntity::getId, ExerciseCatalogEntity::getVideoUrl));
     }
 }

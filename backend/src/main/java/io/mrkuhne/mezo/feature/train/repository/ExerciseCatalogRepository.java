@@ -16,6 +16,9 @@ public interface ExerciseCatalogRepository extends JpaRepository<ExerciseCatalog
 
     List<ExerciseCatalogEntity> findAllByOrderByMuscleAscNameAsc();
 
+    /** Batch-load catalog rows by id — backs the {@code catalog_id → video_url} video resolution. */
+    List<ExerciseCatalogEntity> findByIdIn(java.util.Collection<UUID> ids);
+
     /**
      * Exact-slug existence against the PHYSICAL table — native so it bypasses the entity's
      * {@code @SQLRestriction} soft-delete filter and still sees slugs occupied by soft-deleted rows
