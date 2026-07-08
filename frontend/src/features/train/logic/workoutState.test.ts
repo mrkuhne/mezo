@@ -2,9 +2,13 @@
 import { describe, expect, test } from 'vitest'
 import { makeSession, completeSet, effectiveSetCount, currentExerciseId, advance, addExtraSet, skipExercise, seedFromOpen } from '@/features/train/logic/workoutState'
 
+// warmupSets:0 keeps planned == the old `sets` count; `sets` is retained only for
+// the test loops below (makeSession reads warmupSets/workingSets/prescribedSets).
 const EX = [
-  { id: 'a', sets: 2 }, { id: 'b', sets: 3 }, { id: 'c', sets: 2 },
-] as { id: string; sets: number }[]
+  { id: 'a', warmupSets: 0, workingSets: 2, prescribedSets: null, sets: 2 },
+  { id: 'b', warmupSets: 0, workingSets: 3, prescribedSets: null, sets: 3 },
+  { id: 'c', warmupSets: 0, workingSets: 2, prescribedSets: null, sets: 2 },
+]
 
 describe('workoutState', () => {
 

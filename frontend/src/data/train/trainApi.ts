@@ -13,6 +13,7 @@ export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
 export type SetLogRequest = components['schemas']['SetLogRequest']
 export type WorkoutSkipRequest = components['schemas']['WorkoutSkipRequest']
 export type ExerciseSetResponse = components['schemas']['ExerciseSetResponse']
+export type PrescribedSet = components['schemas']['PrescribedSet']
 export type WorkoutFeedbackInput = components['schemas']['WorkoutFeedbackInput']
 export type SportSessionCreateRequest = components['schemas']['SportSessionCreateRequest']
 export type SportScheduleSlotInput = components['schemas']['SportScheduleSlotInput']
@@ -20,6 +21,8 @@ export type SportScheduleSlotResponse = components['schemas']['SportScheduleSlot
 export type GymScheduleSlotInput = components['schemas']['GymScheduleSlotInput']
 export type GymScheduleSlotResponse = components['schemas']['GymScheduleSlotResponse']
 export type ExerciseCatalogItem = components['schemas']['ExerciseCatalogItem']
+export type CatalogExerciseCreateRequest = components['schemas']['CatalogExerciseCreateRequest']
+export type CatalogVideoRequest = components['schemas']['CatalogVideoRequest']
 export type ExerciseRecordResponse = components['schemas']['ExerciseRecordResponse']
 export type ExerciseNoteRequest = components['schemas']['ExerciseNoteRequest']
 export type LevelUpResult = components['schemas']['LevelUpResult']
@@ -80,6 +83,16 @@ export const trainApi = {
     apiFetch<GymScheduleSlotResponse[]>('/api/train/gym-schedule', { method: 'PUT', body: JSON.stringify(body) }),
   exerciseCatalog: (): Promise<ExerciseCatalogItem[]> =>
     apiFetch<ExerciseCatalogItem[]>('/api/train/exercises'),
+  createExercise: (body: CatalogExerciseCreateRequest): Promise<ExerciseCatalogItem> =>
+    apiFetch<ExerciseCatalogItem>('/api/train/exercises', { method: 'POST', body: JSON.stringify(body) }),
+  updateExercise: (id: string, body: CatalogExerciseCreateRequest): Promise<ExerciseCatalogItem> =>
+    apiFetch<ExerciseCatalogItem>(`/api/train/exercises/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteExercise: (id: string): Promise<void> =>
+    apiFetch<void>(`/api/train/exercises/${id}`, { method: 'DELETE' }),
+  setExerciseVideo: (id: string, videoUrl: string | null): Promise<ExerciseCatalogItem> =>
+    apiFetch<ExerciseCatalogItem>(`/api/train/exercises/${id}/video`, {
+      method: 'PUT', body: JSON.stringify({ videoUrl } satisfies CatalogVideoRequest),
+    }),
   exerciseRecords: (): Promise<ExerciseRecordResponse[]> =>
     apiFetch<ExerciseRecordResponse[]>('/api/train/exercise-records'),
   saveExerciseNote: (exerciseId: string, note: string): Promise<void> =>

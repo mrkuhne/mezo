@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.train.controller;
 
 import io.mrkuhne.mezo.api.controller.TrainApi;
+import io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest;
+import io.mrkuhne.mezo.api.dto.CatalogVideoRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
@@ -61,7 +63,27 @@ public class TrainController implements TrainApi {
 
     @Override
     public List<ExerciseCatalogItem> getExerciseCatalog() {
-        return exerciseCatalogService.list();
+        return exerciseCatalogService.list(currentUserId.get());
+    }
+
+    @Override
+    public ExerciseCatalogItem createExercise(CatalogExerciseCreateRequest catalogExerciseCreateRequest) {
+        return exerciseCatalogService.create(currentUserId.get(), catalogExerciseCreateRequest);
+    }
+
+    @Override
+    public ExerciseCatalogItem updateExercise(UUID id, CatalogExerciseCreateRequest catalogExerciseCreateRequest) {
+        return exerciseCatalogService.update(currentUserId.get(), id, catalogExerciseCreateRequest);
+    }
+
+    @Override
+    public void deleteExercise(UUID id) {
+        exerciseCatalogService.delete(currentUserId.get(), id);
+    }
+
+    @Override
+    public ExerciseCatalogItem setExerciseVideo(UUID id, CatalogVideoRequest catalogVideoRequest) {
+        return exerciseCatalogService.setVideo(currentUserId.get(), id, catalogVideoRequest.getVideoUrl());
     }
 
     @Override

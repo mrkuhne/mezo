@@ -112,6 +112,9 @@ mezo:
     # Gamified progression engine (post-workout level-up + XP). No matchIfMissing — declared explicitly.
     progression:
       enabled: true
+    # Hypertrophy Drive — pre-populated prescribed sets + dynamic recommendation on GET /workouts/today.
+    hypertrophy-drive:
+      enabled: true
     # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
     # the import feed + suggestions in GET /api/pantry stay on regardless.
     pantry-import:
@@ -426,6 +429,16 @@ mezo:
     # Radar aggregation (fixed axis grouping in v1; only the Erő muscle blend is tunable).
     radar:
       strength-muscle-blend: 0.5   # Erő = max_strength*(1-w) + muscle-level-mean*w
+  hypertrophy:
+    plate-step: 2.5           # kg rounding granularity for computed weights
+    default-increment: 2.5    # fallback load step when a type has no explicit increment
+    increment:
+      compound: 5.0           # compound lifts progress in 5 kg jumps
+      isolation: 2.5          # isolation lifts in 2.5 kg jumps
+    default-warmup-sets: 2
+    warmup-ramp:
+      - { pct: 0.50, reps-factor: 1.0 }   # 50% × repMax
+      - { pct: 0.75, reps-factor: 0.5 }   # 75% × ⌈repMax/2⌉
 management:
   endpoints:
     web:

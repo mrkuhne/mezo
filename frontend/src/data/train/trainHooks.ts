@@ -4,6 +4,7 @@ import { isMockMode } from '@/data/_client/mode'
 import { huMonthDay, huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import {
   trainApi,
+  type CatalogExerciseCreateRequest,
   type ExerciseCatalogItem,
   type ExerciseRecordResponse,
   type GymExerciseInput,
@@ -45,16 +46,31 @@ import type {
 
 // /today -> the Phase-1 WorkoutPlan shape. AI extras (challenges, niggleWarning)
 // are Phase 3 — empty/absent in real mode. `tag` is display-derived elsewhere.
-function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): WorkoutPlan | null {
+export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): WorkoutPlan | null {
   if (!r?.templateSessionId || !r.exercises?.length) return null
   return {
     title: r.title ?? '',
     tag: '',
     durationEst: r.durationEst ?? 0,
     exercises: r.exercises.map((e) => ({
-      id: e.id, name: e.name, muscle: e.muscle, sets: e.sets,
-      targetReps: e.targetReps, targetRIR: e.targetRIR, type: e.type,
+      id: e.id, name: e.name, muscle: e.muscle,
+      warmupSets: e.warmupSets, workingSets: e.workingSets,
+      repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
+      anchorWeightKg: e.anchorWeightKg ?? null,
+      type: e.type,
+      sets: e.warmupSets + e.workingSets,
+      // Normalize the contract's optional targetWeightKg/targetRIR to the domain's
+      // required `number | null` (the engine always emits both; null-coalesce is a no-op).
+      prescribedSets:
+        e.prescribedSets?.map((p) => ({
+          kind: p.kind,
+          targetWeightKg: p.targetWeightKg ?? null,
+          targetReps: p.targetReps,
+          targetRIR: p.targetRIR ?? null,
+        })) ?? null,
+      rationale: e.rationale ?? null,
       note: e.note ?? null,
+      videoUrl: e.videoUrl ?? null,
       lastWeek: e.lastWeek
         ? { weight: Number(e.lastWeek.weightKg), reps: e.lastWeek.reps, rir: e.lastWeek.rir }
         : null,
@@ -137,8 +153,12 @@ function toGymSlots(slots: GymScheduleSlotResponse[]): GymScheduleSlot[] {
 
 // Catalog row -> the Phase-1 library shape; `id` doubles as the catalog uuid and
 // `catalogId` flags "came from the backend catalog" (mock statics never set it).
-function toLibraryItem(r: ExerciseCatalogItem): ExerciseLibraryItem {
-  return { id: r.id, catalogId: r.id, name: r.name, muscle: r.muscle, type: r.type, stim: r.stim, fatigue: r.fatigue }
+// `videoUrl`/`editable` carry the authoring metadata (video demo + user-authored flag).
+export function toLibraryItem(r: ExerciseCatalogItem): ExerciseLibraryItem {
+  return {
+    id: r.id, catalogId: r.id, name: r.name, muscle: r.muscle, type: r.type, stim: r.stim, fatigue: r.fatigue,
+    videoUrl: r.videoUrl ?? null, editable: r.editable,
+  }
 }
 
 function isoWeekNumber(d: Date): number {
@@ -183,7 +203,7 @@ function deriveSportWeek(rs: SportSessionResponse[]): SportWeek | null {
   }
 }
 
-type MutateOpts = { onSuccess?: () => void }
+type MutateOpts = { onSuccess?: () => void; onError?: () => void }
 
 // Real mode has no static fallback (T0 "tiszta lap"): an empty backend must
 // surface as null, not silently render Phase-1 demo data. `sport.sessions`
@@ -224,6 +244,10 @@ type TrainData = {
   logSportSession: (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
   saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
+  createCatalogExercise: (req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
+  updateCatalogExercise: (id: string, req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
+  deleteCatalogExercise: (id: string, opts?: MutateOpts) => void
+  setExerciseVideo: (id: string, videoUrl: string | null, opts?: MutateOpts) => void
   mesoMutationPending: boolean
 }
 
@@ -400,6 +424,35 @@ export function useTrain(): TrainData {
     onSuccess: () => { if (!mock) qc.invalidateQueries({ queryKey: ['train', 'gymSchedule'] }) },
   })
 
+  // Catalog authoring mutations (mezo-52zg): mock no-ops (Phase-1 statics stay
+  // read-only); real persists then refetches the catalog so the new/edited/deleted
+  // row (and its video) surfaces in the library list.
+  const invalidateCatalog = () => {
+    if (!mock) qc.invalidateQueries({ queryKey: ['train', 'exerciseCatalog'] })
+  }
+  const createExerciseMutation = useMutation({
+    mutationFn: mock
+      ? async (_req: CatalogExerciseCreateRequest) => undefined
+      : (req: CatalogExerciseCreateRequest) => trainApi.createExercise(req),
+    onSuccess: invalidateCatalog,
+  })
+  const updateExerciseMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { id: string; req: CatalogExerciseCreateRequest }) => undefined
+      : (args: { id: string; req: CatalogExerciseCreateRequest }) => trainApi.updateExercise(args.id, args.req),
+    onSuccess: invalidateCatalog,
+  })
+  const deleteExerciseMutation = useMutation({
+    mutationFn: mock ? async (_id: string) => undefined : (id: string) => trainApi.deleteExercise(id),
+    onSuccess: invalidateCatalog,
+  })
+  const setExerciseVideoMutation = useMutation({
+    mutationFn: mock
+      ? async (_args: { id: string; videoUrl: string | null }) => undefined
+      : (args: { id: string; videoUrl: string | null }) => trainApi.setExerciseVideo(args.id, args.videoUrl),
+    onSuccess: invalidateCatalog,
+  })
+
   const createMesocycle = useCallback(
     (req: MesocycleCreateRequest, opts?: MutateOpts) => createMutation.mutate(req, opts),
     [createMutation],
@@ -458,6 +511,22 @@ export function useTrain(): TrainData {
     (slots: GymScheduleSlotInput[], opts?: MutateOpts) => gymScheduleMutation.mutate(slots, opts),
     [gymScheduleMutation],
   )
+  const createCatalogExercise = useCallback(
+    (req: CatalogExerciseCreateRequest, opts?: MutateOpts) => createExerciseMutation.mutate(req, opts),
+    [createExerciseMutation],
+  )
+  const updateCatalogExercise = useCallback(
+    (id: string, req: CatalogExerciseCreateRequest, opts?: MutateOpts) => updateExerciseMutation.mutate({ id, req }, opts),
+    [updateExerciseMutation],
+  )
+  const deleteCatalogExercise = useCallback(
+    (id: string, opts?: MutateOpts) => deleteExerciseMutation.mutate(id, opts),
+    [deleteExerciseMutation],
+  )
+  const setExerciseVideo = useCallback(
+    (id: string, videoUrl: string | null, opts?: MutateOpts) => setExerciseVideoMutation.mutate({ id, videoUrl }, opts),
+    [setExerciseVideoMutation],
+  )
 
   const mesos = mesoData ?? []
   const realActiveMeso = mesos.find(m => m.status === 'active') ?? null
@@ -498,6 +567,10 @@ export function useTrain(): TrainData {
     logSportSession,
     saveSportSchedule,
     saveGymSchedule,
+    createCatalogExercise,
+    updateCatalogExercise,
+    deleteCatalogExercise,
+    setExerciseVideo,
     mesoMutationPending: createMutation.isPending || activateMutation.isPending || closeMutation.isPending,
   }
 }

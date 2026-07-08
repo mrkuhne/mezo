@@ -15,4 +15,16 @@ public interface ExerciseCatalogRepository extends JpaRepository<ExerciseCatalog
     Optional<ExerciseCatalogEntity> findBySlug(String slug);
 
     List<ExerciseCatalogEntity> findAllByOrderByMuscleAscNameAsc();
+
+    /** Batch-load catalog rows by id — backs the {@code catalog_id → video_url} video resolution. */
+    List<ExerciseCatalogEntity> findByIdIn(java.util.Collection<UUID> ids);
+
+    /**
+     * Exact-slug existence against the PHYSICAL table — native so it bypasses the entity's
+     * {@code @SQLRestriction} soft-delete filter and still sees slugs occupied by soft-deleted rows
+     * (which continue to hold the {@code UNIQUE(slug)} constraint). Drives unique-slug generation.
+     */
+    @org.springframework.data.jpa.repository.Query(
+        value = "SELECT count(*) FROM exercise_catalog WHERE slug = :slug", nativeQuery = true)
+    long countAllBySlugIncludingDeleted(@org.springframework.data.repository.query.Param("slug") String slug);
 }

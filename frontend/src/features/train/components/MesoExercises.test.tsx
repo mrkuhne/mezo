@@ -70,8 +70,8 @@ test('adding an exercise persists the day list in real mode (PUT with day id)', 
           split: 'PPL', style: 'RP', phaseCurve: ['MEV'],
           days: [{
             id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 1, current: true,
-            exercises: [{ id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4,
-              targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+            exercises: [{ id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2,
+              workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' }],
           }],
         },
       ]),
@@ -116,8 +116,8 @@ test('reordering a day exercise via ▲ persists the new order (PUT) in real mod
       split: 'PPL', style: 'RP', phaseCurve: ['MEV'],
       days: [{ id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 2, current: true,
         exercises: [
-          { id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' },
-          { id: 'e-2', name: 'Lat Pulldown', muscle: 'back', sets: 3, targetReps: '10-12', targetRIR: 1, type: 'compound' },
+          { id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'e-2', name: 'Lat Pulldown', muscle: 'back', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'compound' },
         ] }],
     }])),
     http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, async ({ request }) => {

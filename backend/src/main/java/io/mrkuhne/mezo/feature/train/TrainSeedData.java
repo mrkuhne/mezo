@@ -363,13 +363,30 @@ public class TrainSeedData implements CommandLineRunner {
         e.setWorkoutSessionId(session.getId());
         e.setName(name);
         e.setMuscle(muscle);
-        e.setSets(sets);
-        e.setTargetReps(targetReps);
+        e.setWarmupSets(2);
+        e.setWorkingSets(sets);
+        int[] range = parseRepRange(targetReps);
+        e.setRepMin(range[0]);
+        e.setRepMax(range[1]);
         e.setTargetRir(targetRir);
         e.setType(type);
         e.setWarning(warning);
         e.setOrderIndex(orderIndex);
         exerciseRepository.save(e);
+    }
+
+    /**
+     * Parse a legacy {@code target_reps} display string into a {min, max} rep range: "a-b" → {a, b},
+     * a single "a" (incl. "12 / oldal") → {a, a}. Falls back to {8, 12} when no digits are present.
+     */
+    private static int[] parseRepRange(String targetReps) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+").matcher(targetReps);
+        if (!m.find()) {
+            return new int[] {8, 12};
+        }
+        int min = Integer.parseInt(m.group());
+        int max = m.find() ? Integer.parseInt(m.group()) : min;
+        return new int[] {min, max};
     }
 
     private void sport(UUID by, String date, String time, int durationMin, int setsPlayed,

@@ -6,6 +6,7 @@
 // no side effects, no mutation — they always return a new Session.
 // Later slices import these names verbatim.
 // ============================================================
+import type { PrescribedSet } from '@/data/types'
 
 export interface LoggedSet {
   weight: number
@@ -26,14 +27,36 @@ export interface Session {
   skipped: string[]
   /** Planned set count per exerciseId (immutable baseline). */
   planned: Record<string, number>
+  /** Per-exercise prescribed targets (warmup then working), aligned to setIndex. */
+  prescribed: Record<string, PrescribedSet[]>
+}
+
+/**
+ * The shape makeSession/seedFromOpen consume: the recipe (warmup + working set
+ * counts) plus the aligned prescribed targets. Matches LoggedWorkoutExercise.
+ */
+export interface SessionExerciseInput {
+  id: string
+  warmupSets: number
+  workingSets: number
+  prescribedSets: PrescribedSet[] | null
 }
 
 /** Build a fresh session from the planned exercise list. */
-export function makeSession(exercises: { id: string; sets: number }[]): Session {
+export function makeSession(exercises: SessionExerciseInput[]): Session {
   const order = exercises.map((e) => e.id)
   const planned: Record<string, number> = {}
-  for (const e of exercises) planned[e.id] = e.sets
-  return { order, setIdx: 0, logged: {}, extra: {}, skipped: [], planned }
+  const prescribed: Record<string, PrescribedSet[]> = {}
+  for (const e of exercises) {
+    planned[e.id] = e.warmupSets + e.workingSets
+    prescribed[e.id] = e.prescribedSets ?? []
+  }
+  return { order, setIdx: 0, logged: {}, extra: {}, skipped: [], planned, prescribed }
+}
+
+/** The prescribed target for a given set index of an exercise (null past the plan / no prescription). */
+export function prescribedAt(s: Session, id: string, idx: number): PrescribedSet | null {
+  return s.prescribed[id]?.[idx] ?? null
 }
 
 /** Planned sets + any extra sets added for this exercise. */
@@ -103,7 +126,7 @@ interface PersistedSet {
  * `session.skipped` instead of `logged` so a resume lands past it.
  */
 export function seedFromOpen(
-  exercises: { id: string; sets: number }[],
+  exercises: SessionExerciseInput[],
   open: { sets: PersistedSet[] },
 ): Session {
   const base = makeSession(exercises)

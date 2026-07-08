@@ -16,7 +16,7 @@ interface GymDayCardProps {
 export function GymDayCard({ day, onOpen }: GymDayCardProps) {
   const isRest = day.exerciseCount === 0
   const isToday = Boolean(day.current)
-  const setsCount = day.exercises.reduce((acc, e) => acc + e.sets, 0)
+  const setsCount = day.exercises.reduce((acc, e) => acc + e.workingSets, 0)
   const compoundCount = day.exercises.filter((e) => e.type === 'compound').length
 
   return (

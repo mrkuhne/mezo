@@ -40,7 +40,8 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
 
     /** One catalog row as authored in content/exercise-catalog.json. */
     public record CatalogJsonItem(
-        String slug, String name, String muscle, String type, BigDecimal stim, BigDecimal fatigue) {}
+        String slug, String name, String muscle, String type, BigDecimal stim, BigDecimal fatigue,
+        String videoUrl) {}
 
     // Same self-invocation note as TrainSeedData: startup enters via run(String...), the IT
     // calls run() through the proxy — both overloads carry @Transactional.
@@ -79,6 +80,10 @@ public class ExerciseCatalogLoader implements CommandLineRunner {
             e.setType(item.type());
             e.setStim(item.stim());
             e.setFatigue(item.fatigue());
+            // Seed a JSON demo only when provided AND the row has none — never clobber a user video.
+            if (item.videoUrl() != null && e.getVideoUrl() == null) {
+                e.setVideoUrl(item.videoUrl());
+            }
             repository.save(e);
         }
     }

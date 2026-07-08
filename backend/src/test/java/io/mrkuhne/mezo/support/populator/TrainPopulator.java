@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.support.populator;
 
+import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
@@ -23,9 +25,11 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
 
@@ -39,6 +43,7 @@ import org.springframework.boot.test.context.TestComponent;
 public class TrainPopulator {
 
     private final MesocycleRepository mesocycleRepository;
+    private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final MuscleGroupVolumeLogRepository volumeLogRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
@@ -47,6 +52,19 @@ public class TrainPopulator {
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportSessionRepository sportSessionRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
+
+    /** A user-authored catalog exercise (created_by set) for catalog-write tests. */
+    public ExerciseCatalogEntity createUserCatalogExercise(UUID createdBy, String name, String muscle, String type) {
+        ExerciseCatalogEntity e = new ExerciseCatalogEntity();
+        e.setCreatedBy(createdBy);
+        e.setSlug(name.toLowerCase().replaceAll("[^a-z0-9]+", "-") + "-" + java.util.UUID.randomUUID());
+        e.setName(name);
+        e.setMuscle(muscle);
+        e.setType(type);
+        e.setStim(new java.math.BigDecimal("0.60"));
+        e.setFatigue(new java.math.BigDecimal("0.30"));
+        return exerciseCatalogRepository.saveAndFlush(e);
+    }
 
     public MesocycleEntity createMesocycle(UUID createdBy, String title, String status) {
         MesocycleEntity m = new MesocycleEntity();
@@ -135,6 +153,22 @@ public class TrainPopulator {
         return workoutSessionRepository.saveAndFlush(s);
     }
 
+    /** An active mesocycle — high-level scenario builder for the prescribed-sets round-trip. */
+    public MesocycleEntity createActiveMeso(UUID createdBy) {
+        return createMesocycle(createdBy, "P1 meso", "active");
+    }
+
+    /** A template day (templateSessionId null) hanging off a meso — logSet's exercise chain root. */
+    public WorkoutSessionEntity createTemplateDay(UUID createdBy, UUID mesocycleId, String dayLabel) {
+        return createWorkoutSession(createdBy, mesocycleId, dayLabel, "gym", 0, "active");
+    }
+
+    /** Start an active instance from a template day (copies the day fields, links templateSessionId). */
+    public WorkoutSessionEntity startInstance(UUID createdBy, UUID templateDayId) {
+        WorkoutSessionEntity template = workoutSessionRepository.findById(templateDayId).orElseThrow();
+        return createWorkoutInstance(createdBy, template, LocalDate.now(), "active");
+    }
+
     public ExerciseEntity createExercise(UUID createdBy, UUID workoutSessionId, String name,
         int orderIndex) {
         ExerciseEntity e = new ExerciseEntity();
@@ -142,11 +176,31 @@ public class TrainPopulator {
         e.setWorkoutSessionId(workoutSessionId);
         e.setName(name);
         e.setMuscle("hát");
-        e.setSets(3);
-        e.setTargetReps("8-10");
+        e.setWarmupSets(2);
+        e.setWorkingSets(3);
+        e.setRepMin(6);
+        e.setRepMax(8);
         e.setTargetRir(1);
         e.setType("compound");
         e.setOrderIndex(orderIndex);
+        return exerciseRepository.saveAndFlush(e);
+    }
+
+    /** Recipe-shaped exercise with explicit muscle/type (P1 prescribed-sets round-trip tests). */
+    public ExerciseEntity createExercise(UUID createdBy, UUID workoutSessionId, String name,
+        String muscle, String type) {
+        ExerciseEntity e = new ExerciseEntity();
+        e.setCreatedBy(createdBy);
+        e.setWorkoutSessionId(workoutSessionId);
+        e.setName(name);
+        e.setMuscle(muscle);
+        e.setWarmupSets(2);
+        e.setWorkingSets(3);
+        e.setRepMin(6);
+        e.setRepMax(8);
+        e.setTargetRir(0);
+        e.setType(type);
+        e.setOrderIndex(0);
         return exerciseRepository.saveAndFlush(e);
     }
 
@@ -158,8 +212,10 @@ public class TrainPopulator {
         e.setWorkoutSessionId(workoutSessionId);
         e.setName(name);
         e.setMuscle(muscle);
-        e.setSets(3);
-        e.setTargetReps("8-10");
+        e.setWarmupSets(2);
+        e.setWorkingSets(3);
+        e.setRepMin(6);
+        e.setRepMax(8);
         e.setTargetRir(1);
         e.setType(type);
         e.setCatalogId(catalogId);
@@ -236,6 +292,57 @@ public class TrainPopulator {
         set.setReps(reps);
         set.setRir(rir);
         return exerciseSetRepository.saveAndFlush(set);
+    }
+
+    /** Persist an exercise (e.g. after mutating anchor/targetRir on a factory-returned entity). */
+    public ExerciseEntity save(ExerciseEntity exercise) {
+        return exerciseRepository.saveAndFlush(exercise);
+    }
+
+    /**
+     * A detached set carrying only kind + performance (weight/reps/rir) — the building block for
+     * {@link #completedInstanceWithSets}, which fills in owner/exercise/instance/index before saving.
+     */
+    public ExerciseSetEntity set(String kind, BigDecimal weightKg, int reps, int rir) {
+        ExerciseSetEntity s = new ExerciseSetEntity();
+        s.setKind(kind);
+        s.setWeightKg(weightKg);
+        s.setReps(reps);
+        s.setRir(rir);
+        return s;
+    }
+
+    /**
+     * A completed instance of {@code templateDayId} carrying one working set — the double-progression
+     * reference the recommendation engine reads back.
+     */
+    public WorkoutSessionEntity completedInstanceWithWorkingSet(UUID createdBy, UUID templateDayId,
+        UUID exerciseId, BigDecimal weightKg, int reps, int rir) {
+        return completedInstanceWithSets(createdBy, templateDayId, exerciseId,
+            sets -> sets.add(set("working", weightKg, reps, rir)));
+    }
+
+    /**
+     * A completed instance of {@code templateDayId} with caller-built sets. The {@code builder} adds
+     * {@link #set} rows (kind/weight/reps/rir); each is persisted against this instance and exercise
+     * with an incrementing {@code setIndex} and {@code doneAt = now}.
+     */
+    public WorkoutSessionEntity completedInstanceWithSets(UUID createdBy, UUID templateDayId,
+        UUID exerciseId, Consumer<List<ExerciseSetEntity>> builder) {
+        WorkoutSessionEntity template = workoutSessionRepository.findById(templateDayId).orElseThrow();
+        WorkoutSessionEntity instance = createWorkoutInstance(createdBy, template, LocalDate.now(), "completed");
+        List<ExerciseSetEntity> sets = new ArrayList<>();
+        builder.accept(sets);
+        int setIndex = 0;
+        for (ExerciseSetEntity s : sets) {
+            s.setCreatedBy(createdBy);
+            s.setExerciseId(exerciseId);
+            s.setWorkoutSessionId(instance.getId());
+            s.setSetIndex(setIndex++);
+            s.setDoneAt(Instant.now());
+            exerciseSetRepository.saveAndFlush(s);
+        }
+        return instance;
     }
 
     public ExerciseFeedbackEntity createFeedback(UUID createdBy, UUID workoutSessionId, UUID exerciseId) {

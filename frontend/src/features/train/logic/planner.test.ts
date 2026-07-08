@@ -59,6 +59,21 @@ describe('generateProgram', () => {
     const overhead = program.flatMap((d) => d.exercises).find((e) => e.name === 'Overhead Press')
     expect(overhead?.warning).toBeUndefined()
   })
+
+  test('generates the Láb+Plyo/Felső split with a weightless plyo lead and 6-8/RIR0 working sets', () => {
+    const days = generateProgram({
+      goal: GOAL_PRESETS.find((g) => g.id === 'erohipertrofia')!,
+      split: 'Láb+Plyo / Felső', days: 4,
+    })
+    const lower = days.find((d) => d.type.startsWith('Láb+Plyo A'))!
+    const plyo = lower.exercises[0]
+    expect(plyo.type).toBe('plyo')
+    expect(plyo.warmupSets).toBe(0)
+    const squat = lower.exercises.find((e) => e.name === 'Barbell Squat')!
+    expect([squat.repMin, squat.repMax]).toEqual([6, 8])
+    expect(squat.targetRIR).toBe(0)
+    expect(lower.exercises.length).toBeGreaterThanOrEqual(6)
+  })
 })
 
 describe('defaultWeekdays', () => {

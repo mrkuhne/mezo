@@ -34,6 +34,8 @@ export type IconName =
   | 'sun'
   | 'moon'
   | 'voice-wave'
+  | 'pencil'
+  | 'trash'
 
 export function Icon({
   name,
@@ -287,6 +289,25 @@ export function Icon({
           <line x1="13" y1="5" x2="13" y2="19" />
           <line x1="17" y1="8" x2="17" y2="16" />
           <line x1="21" y1="11" x2="21" y2="13" />
+        </svg>
+      )
+    case 'pencil':
+      // Edit / author affordance
+      return (
+        <svg {...props}>
+          <path d="M4 20 L4 16 L15 5 L19 9 L8 20 Z" />
+          <line x1="13" y1="7" x2="17" y2="11" />
+        </svg>
+      )
+    case 'trash':
+      // Delete affordance
+      return (
+        <svg {...props}>
+          <path d="M5 7 L19 7" />
+          <path d="M9 7 L9 5 L15 5 L15 7" />
+          <path d="M6.5 7 L7.5 20 L16.5 20 L17.5 7" />
+          <line x1="10" y1="10.5" x2="10" y2="16.5" />
+          <line x1="14" y1="10.5" x2="14" y2="16.5" />
         </svg>
       )
     default:

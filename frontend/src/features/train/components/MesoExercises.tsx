@@ -24,15 +24,13 @@ function seedDays(days: MesoDay[]): MesoDay[] {
   return days.map((d) => ({ ...d, exercises: d.exercises.map((e) => ({ ...e })) }))
 }
 
-// Sensible defaults when promoting a library pick into a planned set scheme.
+// Sensible recipe defaults when promoting a library pick into a planned exercise.
 function libraryToGymExercise(item: ExerciseLibraryItem): MesoDay['exercises'][number] {
   return {
     id: `${item.id}-${Date.now()}`,
     name: item.name,
     muscle: item.muscle,
-    sets: 3,
-    targetReps: '8-12',
-    targetRIR: 1,
+    warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0,
     type: item.type,
     ...(item.catalogId ? { catalogId: item.catalogId } : {}),
   }
@@ -48,8 +46,10 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
   const persistDay = (day: MesoDay | undefined) => {
     if (!day?.id) return
     saveDayExercises(meso.id, day.id, day.exercises.map((e) => ({
-      name: e.name, muscle: e.muscle, sets: e.sets, targetReps: e.targetReps,
-      targetRIR: e.targetRIR, type: e.type, warning: e.warning, catalogId: e.catalogId,
+      name: e.name, muscle: e.muscle,
+      warmupSets: e.warmupSets, workingSets: e.workingSets,
+      repMin: e.repMin, repMax: e.repMax, targetRIR: e.targetRIR,
+      anchorWeightKg: e.anchorWeightKg, type: e.type, warning: e.warning, catalogId: e.catalogId,
     })))
   }
   // The day (by `day` key) whose picker is open, or null when closed.
@@ -71,7 +71,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
 
   const totalExercises = days.reduce((a, d) => a + d.exercises.length, 0)
   const trainingDays = days.filter((d) => d.exercises.length > 0).length
-  const totalSets = days.reduce((a, d) => a + d.exercises.reduce((b, e) => b + e.sets, 0), 0)
+  const totalSets = days.reduce((a, d) => a + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
 
   const introBody =
     `**${totalExercises} gyakorlat · ${trainingDays} edzésnap.** ` +
@@ -82,6 +82,18 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
       if (d.day !== dayKey) return d
       const exercises = d.exercises.filter((e) => e.id !== exId)
       return { ...d, exercises, exerciseCount: exercises.length }
+    })
+    setDays(next)
+    persistDay(next.find((d) => d.day === dayKey))
+  }
+
+  // Applies a recipe patch (warmup/working/rep-range/RIR) to one exercise and
+  // fires the same full-list PUT as add/remove. Mock fixtures (no day id) stay local.
+  const updateExercise = (dayKey: string, exId: string, patch: Partial<MesoDay['exercises'][number]>) => {
+    const next = days.map((d) => {
+      if (d.day !== dayKey) return d
+      const exercises = d.exercises.map((e) => (e.id === exId ? { ...e, ...patch } : e))
+      return { ...d, exercises }
     })
     setDays(next)
     persistDay(next.find((d) => d.day === dayKey))
@@ -137,6 +149,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
               onToggle={() => setExpandedDay((cur) => (cur === d.day ? null : d.day))}
               onAdd={() => setPickerDay(d.day)}
               onRemoveExercise={(exId) => removeExercise(d.day, exId)}
+              onChangeExercise={(exId, patch) => updateExercise(d.day, exId, patch)}
               onReorderExercises={(ids) => reorderExercises(d.day, ids)}
             />
           ))}

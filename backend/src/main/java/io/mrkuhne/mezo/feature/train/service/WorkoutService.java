@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -55,7 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class WorkoutService {
 
     /** DayOfWeek (MONDAY..SUNDAY) → the HU day labels the frontend's DAY_ORDER uses. */
-    static final List<String> HU_DAY_LABELS =
+    public static final List<String> HU_DAY_LABELS =
         List.of("Hét", "Kedd", "Sze", "Csü", "Pén", "Szo", "Vas");
 
     private final MesocycleRepository mesocycleRepository;
@@ -63,6 +64,7 @@ public class WorkoutService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
+    private final CatalogVideoResolver catalogVideoResolver;
     private final TrainMapper mapper;
     // Progression collaborators (T6): the gym finish awards XP behind the feature switch. The gate
     // bean exists ONLY when mezo.feature.progression.enabled=true, so an absent provider ⇔ switch off.
@@ -70,6 +72,11 @@ public class WorkoutService {
     private final ProgressionService progressionService;
     private final LevelUpResultMapper levelUpResultMapper;
     private final ObjectProvider<ProgressionGate> progressionGate;
+    // Hypertrophy Drive (P1): the recommendation engine + its feature gate. The gate bean exists ONLY
+    // when mezo.feature.hypertrophy-drive.enabled=true, so an absent provider ⇔ switch off (mirrors
+    // progressionGate); off ⇒ getToday attaches no prescribedSets and the FE falls back to the logger.
+    private final SetRecommendationService setRecommendationService;
+    private final ObjectProvider<HypertrophyDriveGate> hypertrophyGate;
 
     public WorkoutTodayResponse getToday(UUID createdBy) {
         WorkoutTodayResponse empty = new WorkoutTodayResponse();
@@ -99,6 +106,10 @@ public class WorkoutService {
             return empty; // rest day
         }
         Map<UUID, LastWeekRef> lastWeek = lastWeekRefs(createdBy, day.getId());
+        // Demo videos: one batched catalog fetch for the day's linked exercises (catalog_id →
+        // video_url), never per-exercise. Map keyed by catalog id; nulls filtered out.
+        Map<UUID, String> videoByCatalog = catalogVideoResolver.resolve(exercises.stream()
+            .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList());
         WorkoutSessionEntity open = workoutSessionRepository
             .findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
                 createdBy, day.getId(), "active")
@@ -111,6 +122,14 @@ public class WorkoutService {
             .exercises(exercises.stream().map(e -> {
                 TodayExercise t = mapper.toTodayExercise(e);
                 t.setLastWeek(lastWeek.get(e.getId()));
+                if (e.getCatalogId() != null) {
+                    t.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
+                }
+                if (hypertrophyGate.getIfAvailable() != null) {
+                    Prescription p = setRecommendationService.prescribe(createdBy, e, day.getId());
+                    t.setPrescribedSets(p.sets());
+                    t.setRationale(p.rationale());
+                }
                 return t;
             }).toList())
             .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
@@ -149,7 +168,8 @@ public class WorkoutService {
                 createdBy, templateSessionId, "completed")
             .map(prev -> exerciseSetRepository
                 .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, prev.getId()).stream()
-                .filter(s -> s.getWeightKg() != null && s.getReps() != null && s.getRir() != null)
+                .filter(s -> "working".equals(s.getKind())
+                    && s.getWeightKg() != null && s.getReps() != null && s.getRir() != null)
                 .collect(Collectors.toMap(ExerciseSetEntity::getExerciseId, this::toLastWeekRef,
                     (a, b) -> b.getWeightKg().compareTo(a.getWeightKg()) > 0 ? b : a)))
             .orElse(Map.of());
@@ -213,6 +233,7 @@ public class WorkoutService {
         set.setRir(req.getRir());
         set.setSide(req.getSide());
         set.setNote(req.getNote());
+        set.setKind(req.getKind() != null ? req.getKind() : "working");
         set.setDoneAt(Instant.now());
         return mapper.toSetResponse(exerciseSetRepository.save(set));
     }

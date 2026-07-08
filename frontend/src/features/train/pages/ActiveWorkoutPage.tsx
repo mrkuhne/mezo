@@ -23,6 +23,7 @@ import {
   currentExerciseId,
   effectiveSetCount,
   makeSession,
+  prescribedAt,
   seedFromOpen,
   skipExercise as skipExerciseModel,
 } from '@/features/train/logic/workoutState'
@@ -33,8 +34,8 @@ import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Sheet } from '@/shared/ui/Sheet'
-import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { CompactStepper } from '@/features/train/components/CompactStepper'
+import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
 import { LastWeekStat } from '@/features/train/components/LastWeekStat'
 import { PRToast, type PRState } from '@/features/train/components/PRToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
@@ -108,9 +109,10 @@ interface SessionProps {
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
 }
 
-// First-ever workout has no last week: prefill from the exercise targets instead.
+// First-ever workout has no last week (and no engine prescription): prefill from
+// the exercise's rep target (bottom of the range) instead.
 function prefill(e: LoggedWorkoutExercise): LastWeekSet {
-  return e.lastWeek ?? { weight: 0, reps: parseInt(e.targetReps, 10) || 10, rir: e.targetRIR }
+  return e.lastWeek ?? { weight: 0, reps: e.repMin || 10, rir: e.targetRIR }
 }
 
 function ActiveWorkoutSession({
@@ -176,9 +178,36 @@ function ActiveWorkoutSession({
   // model's derived current exercise. Drives the active card, dots, history & PR.
   const current = feedbackEx ?? W.exercises.find((e) => e.id === currentExerciseId(session)) ?? W.exercises[0]
   const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
+  // The engine's prescribed target for the current set (warmup then working, aligned
+  // to setIdx). Null on a first-ever workout / no-engine day → the panel falls back
+  // to lastWeek. Drives the pre-fill effect below, the kind chip and the set-dots.
+  const curTarget = prescribedAt(session, current.id, session.setIdx)
+  // Plyo / bodyweight sets carry no load: hide the kg stepper and log weightKg 0.
+  const weightless = current.type === 'plyo' || (curTarget != null && curTarget.targetWeightKg == null)
   // Effective note for the on-screen exercise: a just-saved local override wins,
   // else the backend/mock note, else empty (drives the pill + the editor prefill).
   const effectiveNote = localNotes[current.id] ?? current.note ?? ''
+
+  // Pre-fill the logging panel for the current set from the prescribed target
+  // (weight/reps/RIR). Re-runs on every set advance and exercise change; with no
+  // prescription it falls back to the lastWeek-based prefill so first-session /
+  // no-engine days keep their prior behavior. This is the single prefill source —
+  // the feedback/skip advance handlers no longer set the inputs by hand.
+  useEffect(() => {
+    const t = prescribedAt(session, current.id, session.setIdx)
+    if (t) {
+      setWeight(t.targetWeightKg ?? 0)
+      setReps(t.targetReps)
+      setRir(t.targetRIR ?? 0)
+    } else {
+      const p = prefill(current)
+      setWeight(p.weight)
+      setReps(p.reps)
+      setRir(p.rir)
+    }
+    // Reset only on set-index / exercise transitions — NOT on extra-set or note changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [current.id, session.setIdx])
   // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
   // and the live session/day list (or honest []) in real. Accept/dismiss is a
   // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
@@ -229,7 +258,10 @@ function ActiveWorkoutSession({
     setSession(next)
     if (workoutId) {
       logSet(workoutId, {
-        exerciseId: finishing.id, setIndex: wasSetIdx, weightKg: weight, reps, rir,
+        exerciseId: finishing.id, setIndex: wasSetIdx,
+        // Plyo / bodyweight sets carry no load.
+        weightKg: weightless ? 0 : weight, reps, rir,
+        kind: prescribedAt(session, finishing.id, wasSetIdx)?.kind ?? 'working',
         ...(side ? { side } : {}), ...(note.trim() ? { note: note.trim() } : {}),
       })
     }
@@ -285,13 +317,9 @@ function ActiveWorkoutSession({
       (e) => session.skipped.includes(e.id) || (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id),
     )
     if (!allDone) {
-      const advanced = advance(session)
-      setSession(advanced)
-      const nextEx = W.exercises.find((e) => e.id === currentExerciseId(advanced)) ?? W.exercises[0]
-      const p = prefill(nextEx)
-      setWeight(p.weight)
-      setReps(p.reps)
-      setRir(p.rir)
+      // The prefill effect (keyed on the derived current exercise) resets the
+      // logging inputs once the advanced session re-renders.
+      setSession(advance(session))
     } else {
       finishAndCelebrate()
       setPhase('complete')
@@ -313,13 +341,8 @@ function ActiveWorkoutSession({
       setSession(afterSkip)
       setPhase('complete')
     } else {
-      const advanced = advance(afterSkip)
-      setSession(advanced)
-      const nextEx = W.exercises.find((e) => e.id === currentExerciseId(advanced)) ?? W.exercises[0]
-      const p = prefill(nextEx)
-      setWeight(p.weight)
-      setReps(p.reps)
-      setRir(p.rir)
+      // The prefill effect resets the inputs from the next exercise's target.
+      setSession(advance(afterSkip))
     }
   }
 
@@ -455,7 +478,7 @@ function ActiveWorkoutSession({
                       )}
                     </div>
                     <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>
-                      {e.sets} × {e.targetReps}
+                      {e.sets} × {e.repMin}-{e.repMax}
                     </span>
                   </div>
                   <div className="row mt-sm gap-sm" style={{ paddingLeft: exChallenge ? 6 : 0 }}>
@@ -532,10 +555,14 @@ function ActiveWorkoutSession({
     const exercises: GymExerciseInput[] = day.exercises.map((e) => ({
       name: e.name,
       muscle: e.muscle,
-      sets: e.id === exerciseId ? e.sets + 1 : e.sets,
-      targetReps: e.targetReps,
+      warmupSets: e.warmupSets,
+      // The extra set is a working set — bump the working count for this exercise only.
+      workingSets: e.id === exerciseId ? e.workingSets + 1 : e.workingSets,
+      repMin: e.repMin,
+      repMax: e.repMax,
       targetRIR: e.targetRIR,
       type: e.type,
+      ...(e.anchorWeightKg != null ? { anchorWeightKg: e.anchorWeightKg } : {}),
       ...(e.warning ? { warning: e.warning } : {}),
       ...(e.catalogId ? { catalogId: e.catalogId } : {}),
     }))
@@ -698,12 +725,20 @@ function ActiveWorkoutSession({
                 {current.type === 'compound' ? 'Compound' : 'Isolation'} · Set {session.setIdx + 1}/{currentSetCount}
               </span>
               <span className="chip brand" style={{ fontSize: 9, padding: '3px 8px' }}>
-                Cél · {current.targetReps} @ RIR {current.targetRIR}
+                {curTarget?.kind === 'warmup' ? 'Bemelegítő' : `Cél · ${current.repMin}-${current.repMax} @ RIR ${current.targetRIR}`}
               </span>
             </div>
             <div style={{ marginTop: 10 }}>
               <Display size="lg">{current.name}</Display>
             </div>
+
+            {/* Inline demo video (catalog-resolved) — the wrapper renders only when a real
+                YouTube id is extractable, so a stored non-YouTube url leaves no empty gap. */}
+            {current.videoUrl && youTubeId(current.videoUrl) && (
+              <div className="mt-sm">
+                <VideoDemo url={current.videoUrl} />
+              </div>
+            )}
 
             {/* Durable per-exercise note pill (F4) — always visible while a note exists */}
             {effectiveNote && (
@@ -747,19 +782,18 @@ function ActiveWorkoutSession({
                   <div style={{ width: 1, height: 32, background: 'var(--border-subtle)' }} />
                   <LastWeekStat label="RIR" val={current.lastWeek.rir} />
                 </div>
-                <div
-                  className="row mt-md gap-sm"
-                  style={{ alignItems: 'center', paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}
-                >
-                  <Icon name="sparkle" size={11} color="var(--brand-glow)" />
-                  <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                    {current.lastWeek.rir >= 2 ? (
-                      <SafeMarkdown text={`RIR ${current.lastWeek.rir} maradt — **+2.5–5 kg** ma logikus`} />
-                    ) : (
-                      `RIR ${current.lastWeek.rir} — közel a limithez, súly tartás vagy +1 rep`
-                    )}
-                  </span>
-                </div>
+              </div>
+            )}
+
+            {/* Engine rationale — rendered whenever the engine returns one, INDEPENDENT
+                of lastWeek: a first-ever workout (no lastWeek) still surfaces its
+                rationale (e.g. "Kezdő súly (anchor)" / "Első alkalom — add meg a súlyt"). */}
+            {current.rationale && (
+              <div className="row mt-lg gap-sm" style={{ alignItems: 'center' }}>
+                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  {current.rationale}
+                </span>
               </div>
             )}
 
@@ -768,10 +802,12 @@ function ActiveWorkoutSession({
               <div className="set-dots">
                 {Array.from({ length: currentSetCount }, (_, i) => {
                   const isExtra = i >= plannedCount
+                  const isWarm = prescribedAt(session, current.id, i)?.kind === 'warmup'
                   return (
                     <div
                       key={i}
-                      className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '') + (isExtra ? ' extra' : '')}
+                      className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '')
+                        + (isExtra ? ' extra' : '') + (isWarm ? ' warm' : '')}
                     />
                   )
                 })}
@@ -852,7 +888,10 @@ function ActiveWorkoutSession({
         <div style={{ padding: '12px 24px 0' }}>
           <div className="card notch-8" style={{ padding: 10 }}>
             <div className="row gap-sm">
-              <CompactStepper label="kg" value={weight} step={2.5} onChange={setWeight} primary min={0} max={999} />
+              {/* Plyo / bodyweight → reps-only (no load to log). */}
+              {!weightless && (
+                <CompactStepper label="kg" value={weight} step={2.5} onChange={setWeight} primary min={0} max={999} />
+              )}
               <CompactStepper label="reps" value={reps} step={1} onChange={setReps} integer min={1} max={100} />
             </div>
 

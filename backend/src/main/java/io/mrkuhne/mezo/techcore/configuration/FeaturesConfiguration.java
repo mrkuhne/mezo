@@ -59,4 +59,7 @@ public class FeaturesConfiguration {
 
     /** Workout challenges daily outcome-eval cron — techcore cron zone (schedule: mezo.proactive.challenge.outcome-cron). */
     public static final String CHALLENGE_JOB_SWITCH = "mezo.techcore.cron.challenge-job.enabled";
+
+    /** Hypertrophy Drive — pre-populated prescribed sets + dynamic weight/rep recommendation. */
+    public static final String HYPERTROPHY_DRIVE_SWITCH = "mezo.feature.hypertrophy-drive.enabled";
 }

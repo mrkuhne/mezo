@@ -67,6 +67,10 @@ public class ExerciseSetEntity extends OwnedEntity {
     @Column(nullable = false)
     private boolean skipped = false;
 
+    @NotNull
+    @Column(nullable = false)
+    private String kind = "working"; // warmup|working (DB CHECK)
+
     @Column(name = "done_at")
     private Instant doneAt;
 }

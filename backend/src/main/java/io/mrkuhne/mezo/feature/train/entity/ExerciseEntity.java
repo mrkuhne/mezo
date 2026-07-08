@@ -46,16 +46,28 @@ public class ExerciseEntity extends OwnedEntity {
     private String muscle = "";
 
     @NotNull
-    @Column(nullable = false)
-    private Integer sets;
+    @Column(name = "warmup_sets", nullable = false)
+    private Integer warmupSets = 0;
 
     @NotNull
-    @Column(name = "target_reps", nullable = false)
-    private String targetReps;
+    @Column(name = "working_sets", nullable = false)
+    private Integer workingSets;
+
+    @NotNull
+    @Column(name = "rep_min", nullable = false)
+    private Integer repMin;
+
+    @NotNull
+    @Column(name = "rep_max", nullable = false)
+    private Integer repMax;
 
     @NotNull
     @Column(name = "target_rir", nullable = false)
     private Integer targetRir;
+
+    /** Optional first-session seed weight (kg); null → engine leaves the first working set blank. */
+    @Column(name = "anchor_weight_kg", precision = 6, scale = 2)
+    private java.math.BigDecimal anchorWeightKg;
 
     @NotNull
     @Column(nullable = false)

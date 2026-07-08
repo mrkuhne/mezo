@@ -16,6 +16,7 @@ import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
+import { VideoDemo } from '@/features/train/components/VideoDemo'
 
 interface ExercisePickerSheetProps {
   onClose: () => void
@@ -96,45 +97,48 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
           {/* List */}
           <div className="col gap-sm">
             {filtered.map((e) => (
-              <button
-                key={e.id}
-                onClick={() => {
-                  onPick(e)
-                  close()
-                }}
-                className="card notch-4 row"
-                style={{ padding: 12, alignItems: 'center', textAlign: 'left' }}
-              >
-                <div className="col flex-1">
-                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{e.name}</span>
-                  <div className="row gap-sm mt-xs">
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                      {MUSCLE_LABELS[e.muscle] ?? e.muscle}
-                    </span>
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                      · {e.type}
-                    </span>
+              <div key={e.id} className="col gap-sm">
+                <button
+                  onClick={() => {
+                    onPick(e)
+                    close()
+                  }}
+                  className="card notch-4 row"
+                  style={{ padding: 12, alignItems: 'center', textAlign: 'left', width: '100%' }}
+                >
+                  <div className="col flex-1">
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{e.name}</span>
+                    <div className="row gap-sm mt-xs">
+                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                        {MUSCLE_LABELS[e.muscle] ?? e.muscle}
+                      </span>
+                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                        · {e.type}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="col" style={{ alignItems: 'flex-end', marginRight: 12 }}>
-                  <span className="label-mono" style={{ fontSize: 8, color: 'var(--brand-glow)' }}>
-                    STIM
-                  </span>
-                  <div className="row gap-xs mt-xs">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <div
-                        key={n}
-                        style={{
-                          width: 4,
-                          height: 8,
-                          background: n / 5 <= e.stim ? 'var(--brand-glow)' : 'var(--surface-2)',
-                        }}
-                      />
-                    ))}
+                  <div className="col" style={{ alignItems: 'flex-end', marginRight: 12 }}>
+                    <span className="label-mono" style={{ fontSize: 8, color: 'var(--brand-glow)' }}>
+                      STIM
+                    </span>
+                    <div className="row gap-xs mt-xs">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <div
+                          key={n}
+                          style={{
+                            width: 4,
+                            height: 8,
+                            background: n / 5 <= e.stim ? 'var(--brand-glow)' : 'var(--surface-2)',
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <Icon name="plus" size={16} color="var(--brand-glow)" />
-              </button>
+                  <Icon name="plus" size={16} color="var(--brand-glow)" />
+                </button>
+                {/* Inline demo video — sibling of the row button so its toggle never triggers onPick */}
+                <VideoDemo url={e.videoUrl} />
+              </div>
             ))}
           </div>
 

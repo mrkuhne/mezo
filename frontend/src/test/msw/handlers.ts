@@ -319,10 +319,21 @@ export const handlers = [
       dayLabel: 'Csü',
       title: 'Pull Day',
       durationEst: 78,
+      // Prescribed-sets contract shape (recipe + engine targets) — mirrors the mock
+      // `workout` fixture so real-mode renders real prescribed data, not NaN/undefined.
       exercises: [
         {
           id: 'c1f3a0e2-0000-4000-8000-000000000002', name: 'Chest Supported Row',
-          muscle: 'back-mid', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound',
+          muscle: 'back-mid', type: 'compound',
+          warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, anchorWeightKg: null,
+          rationale: 'Múlt hét 9 × 102.5 kg → +2.5 kg',
+          prescribedSets: [
+            { kind: 'warmup', targetWeightKg: 52.5, targetReps: 10, targetRIR: null },
+            { kind: 'warmup', targetWeightKg: 77.5, targetReps: 5, targetRIR: null },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+          ],
           lastWeek: { weightKg: 102.5, reps: 9, rir: 2 },
         },
       ],
@@ -375,7 +386,7 @@ export const handlers = [
   // Hip Thrust must stay: the real-mode MesoExercises test picks it from the sheet.
   http.get(`${API_BASE}/api/train/exercises`, () =>
     HttpResponse.json([
-      { id: 'f1e3a0e2-0000-4000-8000-000000000070', slug: 'chest-supported-row', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55 },
+      { id: 'f1e3a0e2-0000-4000-8000-000000000070', slug: 'chest-supported-row', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, editable: true, videoUrl: 'https://youtu.be/GZTvxN5fPBc' },
       { id: 'f1e3a0e2-0000-4000-8000-000000000071', slug: 'hip-thrust', name: 'Hip Thrust', muscle: 'glute', type: 'compound', stim: 0.86, fatigue: 0.55 },
       { id: 'f1e3a0e2-0000-4000-8000-000000000072', slug: 'box-jump', name: 'Box Jump', muscle: 'quad', type: 'plyo', stim: 0.6, fatigue: 0.35 },
       { id: 'f1e3a0e2-0000-4000-8000-000000000073', slug: 'lateral-raise', name: 'Lateral Raise', muscle: 'shoulder', type: 'isolation', stim: 0.72, fatigue: 0.2 },
@@ -383,6 +394,23 @@ export const handlers = [
       { id: 'f1e3a0e2-0000-4000-8000-000000000075', slug: 'cable-crunch', name: 'Cable Crunch', muscle: 'core', type: 'isolation', stim: 0.72, fatigue: 0.2 },
     ]),
   ),
+  // Writable catalog mutations — author (POST), edit (PUT), delete, set video.
+  http.post(`${API_BASE}/api/train/exercises`, async ({ request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json(
+      { id: 'f1e3a0e2-0000-4000-8000-0000000000ff', slug: 'authored', editable: true, ...body },
+      { status: 201 },
+    )
+  }),
+  http.put(`${API_BASE}/api/train/exercises/:id`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ id: params.id, slug: 'authored', editable: true, ...body })
+  }),
+  http.delete(`${API_BASE}/api/train/exercises/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.put(`${API_BASE}/api/train/exercises/:id/video`, async ({ params, request }) => {
+    const body = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({ id: params.id, slug: 'authored', editable: true, ...body })
+  }),
   // Exercise records fixture — one full weighted record + one bodyweight (plyo) record.
   http.get(`${API_BASE}/api/train/exercise-records`, () =>
     HttpResponse.json([

@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Deep Current v2")
 type: feature-platform
 status: done
-updated: 2026-07-01
+updated: 2026-07-08
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -142,7 +142,7 @@ The design system is consumed by **every** feature; the seams are the imports fr
 | **App shell ↔ Today** | `AppLayout.tsx` _consumes_ `useTodayScenario()` (`@/data/hooks`); the crossing type is `TodayScenario.anchorMode: boolean`. When `true` on `/today`, `PhoneFrame` _exposes_ the `--anchor-*` skin (`.phone-screen.anchor`). |
 | **Shell ↔ QuickInput** | `QuickInputSheet` (`@/features/quickinput`) is a `Sheet` consumer whose only trigger — the global mic `Fab` — was removed. The component is preserved but **currently has no mount point**; re-wiring it needs a new trigger in `AppLayout` (or elsewhere) that renders it as a `Sheet`. |
 | **Theme ↔ Me** | `SettingsSheet.tsx` (Me) _consumes_ `useTheme()` and drives the global `data-theme`. The `Toggle` primitive + `sun`/`moon` `Icon`s are the UI. Crossing type: `Theme = 'dark' \| 'light'`. |
-| **Icon set ↔ TabBar / every view** | The `IconName` union (`Icon.tsx:7`) is the contract. `TabBar.TABS` maps tab ids → `IconName` (`today/train/fuel/insights/me` — `TabBar.tsx:7–11`). Adding a glyph = extend the `IconName` union **and** add a `case` in `Icon.tsx`. |
+| **Icon set ↔ TabBar / every view** | The `IconName` union (`Icon.tsx:7`) is the contract. `TabBar.TABS` maps tab ids → `IconName` (`today/train/fuel/insights/me` — `TabBar.tsx:7–11`). Adding a glyph = extend the `IconName` union **and** add a `case` in `Icon.tsx`. Recent additions: `pencil` + `trash` (edit/delete affordances, for the Train catalog-authoring sheet — `mezo-52zg`). |
 | **ToolChip ↔ AI-surfacing views** | `Tool { type: 'read' \| 'compute' \| 'write'; name; args? }` (exported from `ToolChip.tsx`) is the cross-feature type, consumed by Train cross-load, Fuel, and Insights to show the AI's tool calls. Mock today; real in Phase 3. |
 | **NovaDot / SourceBadge ↔ Fuel** | _Consume_ `NovaGroup`/`NovaMeta` (`data/nova.ts`) and `PantrySourceKey`/`PantrySourceMeta` (`data/pantrySources.ts`) — the Fuel domain's food-provenance vocabulary. |
 | **ScoreRing / MacroRow ↔ Fuel** | `ScoreHero`, `MacroHero`, `RecipeDetailSheet` _consume_ them for meal scores/macros (`{ pct, label }` and `{ macros, per? }`). |
@@ -222,7 +222,7 @@ For XSS-safe inline copy with `**bold**` markers, use `SafeMarkdown` from `@/sha
 **Add a UI primitive (recipe):**
 
 1. Create `frontend/src/shared/ui/<Name>.tsx` — a thin component, `cn()` for classes, minimal props, `var(--…)` tokens only (no stray hex/`rgba()`).
-2. If it needs new structural CSS, add a class to `frontend/src/styles/prototype.css` (keep the 8pt scale, mono for labels/numbers, Antonio for display, `notch-*` for corners). A few **feature-specific component-state classes** also live here alongside the shared vocabulary — e.g. the active-workout `.set-dot{,.done,.active,.extra}` dots (`.set-dot.extra` = the dashed "extra set" marker, F4/add-set) — that's fine for small stateful variants tightly coupled to one screen.
+2. If it needs new structural CSS, add a class to `frontend/src/styles/prototype.css` (keep the 8pt scale, mono for labels/numbers, Antonio for display, `notch-*` for corners). A few **feature-specific component-state classes** also live here alongside the shared vocabulary — e.g. the active-workout `.set-dot{,.done,.active,.extra,.warm}` dots (`.set-dot.extra` = the dashed "extra set" marker, F4/add-set; `.set-dot.warm{,.done}` = the amber warm-up-set marker, `--warning`-tinted, Hypertrophy Drive `mezo-dhdr`) — that's fine for small stateful variants tightly coupled to one screen.
 3. If it introduces a color, add it as a `:root` var **and** its `:root[data-theme="light"]` override — don't hardcode.
 4. Add a colocated render test `<Name>.test.tsx` (Vitest + RTL — assert classes/structure/aria; mirror the existing files).
 5. (Optional) expose it to Tailwind by adding a `--color-…: var(--…)` line to `index.css @theme inline`.

@@ -558,13 +558,22 @@ export type MesoPhase = 'MEV' | 'MAV' | 'MRV' | 'Deload'
 export type MesoStatus = 'active' | 'planned' | 'archived'
 export type ExerciseKind = 'compound' | 'isolation' | 'plyo'
 
+export interface PrescribedSet {
+  kind: 'warmup' | 'working'
+  targetWeightKg: number | null
+  targetReps: number
+  targetRIR: number | null
+}
 export interface GymExercise {
   id: string
   name: string
   muscle: string
-  sets: number
-  targetReps: string
+  warmupSets: number
+  workingSets: number
+  repMin: number
+  repMax: number
   targetRIR: number
+  anchorWeightKg?: number | null
   type: ExerciseKind
   warning?: string
   catalogId?: string  // exercise_catalog row when picked from the API catalog (real mode)
@@ -624,13 +633,20 @@ export interface LastWeekSet { weight: number; reps: number; rir: number }
 export interface LoggedWorkoutExercise {
   id: string
   name: string
-  sets: number
-  targetReps: string
+  warmupSets: number
+  workingSets: number
+  repMin: number
+  repMax: number
   targetRIR: number
+  anchorWeightKg: number | null
   type: ExerciseKind
   muscle: string
+  sets: number // derived total (warmupSets + workingSets) — drives workoutState set count
+  prescribedSets: PrescribedSet[] | null
+  rationale: string | null
   lastWeek: LastWeekSet | null // null on the first-ever workout (no previous completed instance)
   note?: string | null // durable per-exercise note (F4); absent in Phase-1 statics
+  videoUrl?: string | null // demo video (catalog-resolved); absent in Phase-1 statics
 }
 export interface ChallengeRef { kind: string; label: string }
 export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo'
@@ -688,6 +704,8 @@ export interface Sport {
 export interface ExerciseLibraryItem {
   id: string; name: string; muscle: string; type: ExerciseKind; stim: number; fatigue: number
   catalogId?: string  // set when the item comes from the backend catalog (real mode)
+  videoUrl?: string | null  // YouTube demo URL; null/absent when no demo is set
+  editable?: boolean  // true for user-authored catalog rows (created_by == current user)
 }
 
 export interface GoalPreset {

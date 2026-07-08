@@ -26,6 +26,16 @@ function setup() {
   )
 }
 
+// Set counts now vary per exercise (warmup + working sets), so a fixed loop is
+// fragile. Click "Set kész" until the exercise's debrief CTA appears (always the
+// last set); returns before re-clicking so the button behind the modal is untouched.
+async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>) {
+  for (let i = 0; i < 12; i++) {
+    await user.click(screen.getByText('Set kész'))
+    if (screen.queryByText(/Mentés · tovább|Edzés vége →/)) return
+  }
+}
+
 test('prep screen shows the workout title, challenges carousel and the start CTA', () => {
   setup()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
@@ -65,16 +75,45 @@ test('completing a set advances the set counter', async () => {
   expect(screen.getByText(/Set 2\//)).toBeInTheDocument()
 })
 
+test('mock mode: the logging panel pre-fills the current set from the prescribed target', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1: warmups are sets 1-2 (52.5×10, 77.5×5), working sets are 105×10.
+  expect(await screen.findByLabelText('kg')).toHaveValue('52.5') // first warmup target
+  expect(screen.getByLabelText('reps')).toHaveValue('10')
+})
+
+test('mock mode: the current-set chip reads "Bemelegítő" on a warmup set', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(screen.getByText('Bemelegítő')).toBeInTheDocument() // ex1 set 1 is a warmup
+})
+
+test('mock mode: renders the rationale line instead of the static hint', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(await screen.findByText(/→ \+2\.5 kg/)).toBeInTheDocument() // ex1.rationale
+})
+
+test('mock mode: warmup set-dots carry the .warm class', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(document.querySelectorAll('.set-dot.warm')).toHaveLength(2) // ex1 has 2 warmup sets
+})
+
 test('logging a PR-weight third set on the first exercise fires the PR toast', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // 4 sets on ex0; bump weight to 105 then complete sets 1, 2, 3.
-  const plus = screen.getByLabelText('kg növelése')
-  await user.click(plus) // 102.5 -> 105
-  await user.click(screen.getByText('Set kész')) // set 1
-  await user.click(screen.getByText('Set kész')) // set 2
-  await user.click(screen.getByText('Set kész')) // set 3 -> PR
+  // ex1: 2 warmups, then the working sets are prescribed at 105 kg. Set 3 (the first
+  // working set) auto-prefills to 105 → clears the PR threshold vs lastWeek 102.5.
+  await user.click(screen.getByText('Set kész')) // warmup 1
+  await user.click(screen.getByText('Set kész')) // warmup 2
+  await user.click(screen.getByText('Set kész')) // working set (setIndex 2) -> PR
   expect(screen.getByText('Personal Record')).toBeInTheDocument()
   expect(screen.getByText('+2.5 kg')).toBeInTheDocument()
 })
@@ -98,24 +137,24 @@ test('reordering remaining exercises changes which exercise comes next', async (
   await user.click(screen.getByText('Áthelyezés')) // reorder sub-view (remaining = ex2..ex5)
   await user.click(screen.getByRole('button', { name: 'Cable Pull-Around feljebb' })) // ex3 up → next becomes ex3
   await user.keyboard('{Escape}') // close the sheet
-  // complete Chest Supported Row's 4 sets, then advance through the debrief
-  for (let i = 0; i < 4; i++) await user.click(screen.getByText('Set kész'))
+  // complete Chest Supported Row's sets, then advance through the debrief
+  await completeExerciseSets(user)
   await user.click(await screen.findByText('Mentés · tovább')) // debrief advance (non-last)
   // the next active exercise is now Cable Pull-Around (was Lat Pulldown before the reorder)
   expect(await screen.findByText('Cable Pull-Around')).toBeInTheDocument()
 })
 
-test('＋ Szett adds an extra set: dots grow 4→5 with a dashed extra dot and the header reads /5', async () => {
+test('＋ Szett adds an extra set: dots grow 5→6 with a dashed extra dot and the header reads /6', async () => {
   const user = userEvent.setup()
   setup()
-  await user.click(screen.getByText(/Kezdjük el/))          // active, current = Chest Supported Row (4 planned sets)
-  expect(screen.getByText(/Set 1\/4/)).toBeInTheDocument()
+  await user.click(screen.getByText(/Kezdjük el/))          // active, current = Chest Supported Row (5 planned sets: 2 warmup + 3 working)
+  expect(screen.getByText(/Set 1\/5/)).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('＋ Szett'))             // adds one extra set; sheet closes
-  expect(screen.getByText(/Set 1\/5/)).toBeInTheDocument()
+  expect(screen.getByText(/Set 1\/6/)).toBeInTheDocument()
   const dots = document.querySelectorAll('.set-dot')
-  expect(dots).toHaveLength(5)
-  expect(document.querySelectorAll('.set-dot.extra')).toHaveLength(1) // only the 5th is extra
+  expect(dots).toHaveLength(6)
+  expect(document.querySelectorAll('.set-dot.extra')).toHaveLength(1) // only the 6th is extra
 })
 
 test('⋯ Kihagyás advances to the next exercise without opening the debrief', async () => {
@@ -139,10 +178,10 @@ test('a skipped exercise is marked "kihagyva" in the recap', async () => {
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Kihagyás'))
   expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
-  // Drive the remaining 4 exercises to completion (each: log all 3 sets, then
+  // Drive the remaining 4 exercises to completion (each: log every set, then
   // resolve the debrief). The last debrief CTA reads "Edzés vége →" and finishes.
   for (let ex = 0; ex < 4; ex++) {
-    for (let s = 0; s < 3; s++) await user.click(screen.getByText('Set kész'))
+    await completeExerciseSets(user)
     const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
     await user.click(cta) // close() runs the Sheet slide-down, then onResolve advances
     if (ex < 3) await screen.findByText(/Set 1\/\d/) // wait for the next exercise's panel
@@ -161,7 +200,7 @@ test('shows the level-up overlay on finish, then reveals the recap on Tovább (m
   await user.click(screen.getByText('Kihagyás'))
   await screen.findByText('Lat Pulldown · Pronated')
   for (let ex = 0; ex < 4; ex++) {
-    for (let s = 0; s < 3; s++) await user.click(screen.getByText('Set kész'))
+    await completeExerciseSets(user)
     const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
     await user.click(cta)
     if (ex < 3) await screen.findByText(/Set 1\/\d/)
@@ -229,15 +268,21 @@ const REAL_MESO = {
   startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6, currentWeek: 2,
   split: 'Pull / Push · 2×/hét', style: 'RP · 6 hét', phaseCurve: ['MEV', 'MAV'],
 }
+type PrescribedSetFixture = { kind: string; targetWeightKg: number | null; targetReps: number; targetRIR: number | null }
 type RealExercise = {
-  id: string; name: string; muscle: string; sets: number; targetReps: string
+  id: string; name: string; muscle: string
+  warmupSets: number; workingSets: number; repMin: number; repMax: number
   targetRIR: number; type: string; note?: string | null
-  lastWeek: { weightKg: number; reps: number; rir: number }
+  anchorWeightKg?: number | null; rationale?: string | null
+  prescribedSets?: PrescribedSetFixture[] | null
+  lastWeek: { weightKg: number; reps: number; rir: number } | null
 }
+// Recipe-shaped /today exercise (warmupSets+workingSets = the old `sets`); prescribedSets
+// omitted → toWorkoutPlan sets it null → the panel falls back to the lastWeek prefill.
 const REAL_TODAY = {
   templateSessionId: 'd-1', dayLabel: 'Ma', title: 'Pull Day', durationEst: 60,
   exercises: [
-    { id: 'e-1', name: 'Chest Supported Row', muscle: 'back', sets: 2, targetReps: '8-10', targetRIR: 1, type: 'compound', lastWeek: { weightKg: 102.5, reps: 9, rir: 2 } },
+    { id: 'e-1', name: 'Chest Supported Row', muscle: 'back', warmupSets: 0, workingSets: 2, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', lastWeek: { weightKg: 102.5, reps: 9, rir: 2 } },
   ] as RealExercise[],
   openWorkout: null as unknown,
 }
@@ -346,7 +391,7 @@ test('real mode: the last set debrief persists feedback and finish fires', async
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useRealHandlers(
-    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], sets: 1 }] },
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], workingSets: 1 }] },
     calls,
   )
   const user = userEvent.setup()
@@ -364,7 +409,7 @@ test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts w
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useRealHandlers(
-    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], sets: 1 }] },
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], workingSets: 1 }] },
     calls,
   )
   const user = userEvent.setup()
@@ -390,7 +435,7 @@ test('real mode: ⋯ Kihagyás POSTs the skip for the current exercise', async (
       ...REAL_TODAY,
       exercises: [
         REAL_TODAY.exercises[0],
-        { id: 'e-2', name: 'Lat Pulldown · Pronated', muscle: 'lats', sets: 2, targetReps: '10-12', targetRIR: 2, type: 'compound', lastWeek: { weightKg: 72, reps: 11, rir: 2 } },
+        { id: 'e-2', name: 'Lat Pulldown · Pronated', muscle: 'lats', warmupSets: 0, workingSets: 2, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound', lastWeek: { weightKg: 72, reps: 11, rir: 2 } },
       ],
     },
     calls,
@@ -436,6 +481,93 @@ test('real mode: editing + saving a note PUTs it for the current exercise', asyn
   expect(pill).toHaveTextContent('Tartsd a könyököt')
 })
 
+test('real mode: the logging panel pre-fills from the prescribed target (not lastWeek)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10,
+          rationale: 'Múlt hét 9 × 102.5 kg → +2.5 kg',
+          prescribedSets: [
+            { kind: 'warmup', targetWeightKg: 52.5, targetReps: 10, targetRIR: null },
+            { kind: 'warmup', targetWeightKg: 77.5, targetReps: 5, targetRIR: null },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
+          ],
+        },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  // first warmup target = 52.5 kg × 10 (engine prescription, NOT lastWeek 102.5)
+  expect(await screen.findByLabelText('kg')).toHaveValue('52.5')
+  expect(screen.getByLabelText('reps')).toHaveValue('10')
+  expect(screen.getByText(/→ \+2\.5 kg/)).toBeInTheDocument() // rationale on the active card
+  // the logged set carries the prescribed warmup weight, not lastWeek
+  await user.click(screen.getByText('Set kész'))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:52.5'))
+})
+
+test('real mode: a first-ever workout (no lastWeek) still shows the engine rationale', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          lastWeek: null, // first-ever workout: no Múlt hét comparison
+          rationale: 'Kezdő súly (anchor)',
+        },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  // The Múlt hét block is absent (no lastWeek) but the rationale still renders.
+  expect(await screen.findByText('Kezdő súly (anchor)')).toBeInTheDocument()
+  expect(screen.queryByText(/Múlt hét/)).not.toBeInTheDocument()
+})
+
+test('real mode: a plyo set hides the kg stepper and logs weightKg 0 (reps-only)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          id: 'e-plyo', name: 'Box Jump', muscle: 'quad', type: 'plyo',
+          warmupSets: 0, workingSets: 1, repMin: 5, repMax: 5, targetRIR: 2,
+          lastWeek: null,
+          prescribedSets: [{ kind: 'working', targetWeightKg: null, targetReps: 5, targetRIR: 2 }],
+        },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  expect(screen.getByText('Box Jump')).toBeInTheDocument()
+  expect(screen.queryByLabelText('kg')).not.toBeInTheDocument() // no load to log
+  expect(screen.getByLabelText('reps')).toHaveValue('5')
+  await user.click(screen.getByText('Set kész'))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-plyo:0:0')) // weightKg 0
+})
+
 // --- F2 add-set: optional "Minden hétre" template write (reuses the day-exercises PUT) ---
 
 const TEMPLATE_MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
@@ -443,7 +575,7 @@ const TEMPLATE_DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
 
 // A meso whose template day CONTAINS the workout's current exercise (id 'e-1'),
 // so the screen can resolve the day from the current exercise and bump its set count.
-function useTemplateWriteHandlers(puts: { url: string; body: { name: string; sets: number }[] }[]) {
+function useTemplateWriteHandlers(puts: { url: string; body: { name: string; workingSets: number }[] }[]) {
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () =>
       HttpResponse.json([
@@ -455,7 +587,7 @@ function useTemplateWriteHandlers(puts: { url: string; body: { name: string; set
             {
               id: TEMPLATE_DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 1, current: true,
               exercises: [
-                { id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' },
+                { id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
               ],
             },
           ],
@@ -467,7 +599,7 @@ function useTemplateWriteHandlers(puts: { url: string; body: { name: string; set
       HttpResponse.json({
         templateSessionId: 'd-1', dayLabel: 'Ma', title: 'Pull Day', durationEst: 60,
         exercises: [
-          { id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound', lastWeek: { weightKg: 102.5, reps: 9, rir: 2 } },
+          { id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', lastWeek: { weightKg: 102.5, reps: 9, rir: 2 } },
         ],
         openWorkout: null,
       }),
@@ -477,15 +609,15 @@ function useTemplateWriteHandlers(puts: { url: string; body: { name: string; set
       return HttpResponse.json({ id: 'w-1', templateSessionId: body.templateSessionId, date: '2026-06-12', status: 'active', sets: [] }, { status: 201 })
     }),
     http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, async ({ request, params }) => {
-      puts.push({ url: `${params.id}/${params.dayId}`, body: (await request.json()) as { name: string; sets: number }[] })
+      puts.push({ url: `${params.id}/${params.dayId}`, body: (await request.json()) as { name: string; workingSets: number }[] })
       return HttpResponse.json({ id: params.dayId, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 1, exercises: [] })
     }),
   )
 }
 
-test('real mode: add-set "Minden hétre" PUTs the day with the current exercise sets bumped by 1', async () => {
+test('real mode: add-set "Minden hétre" PUTs the day with the current exercise working sets bumped by 1', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
-  const puts: { url: string; body: { name: string; sets: number }[] }[] = []
+  const puts: { url: string; body: { name: string; workingSets: number }[] }[] = []
   useTemplateWriteHandlers(puts)
   const user = userEvent.setup()
   setup()
@@ -495,12 +627,12 @@ test('real mode: add-set "Minden hétre" PUTs the day with the current exercise 
   await user.click(await screen.findByText('Minden hétre'))
   await waitFor(() => expect(puts).toHaveLength(1))
   expect(puts[0].url).toBe(`${TEMPLATE_MESO_ID}/${TEMPLATE_DAY_ID}`)
-  expect(puts[0].body.find((e) => e.name === 'Chest Supported Row')?.sets).toBe(5) // 4 -> 5
+  expect(puts[0].body.find((e) => e.name === 'Chest Supported Row')?.workingSets).toBe(5) // working 4 -> 5
 })
 
 test('real mode: add-set "Csak ma" fires no template PUT', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
-  const puts: { url: string; body: { name: string; sets: number }[] }[] = []
+  const puts: { url: string; body: { name: string; workingSets: number }[] }[] = []
   useTemplateWriteHandlers(puts)
   const user = userEvent.setup()
   setup()

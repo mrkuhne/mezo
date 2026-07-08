@@ -27,4 +27,7 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, 
 
     /** Every logged (reps present) set of the owner — record aggregation input. */
     List<ExerciseSetEntity> findByCreatedByAndRepsNotNull(UUID createdBy);
+
+    /** Working sets only (record aggregation input — warmups excluded). */
+    List<ExerciseSetEntity> findByCreatedByAndRepsNotNullAndKind(UUID createdBy, String kind);
 }
