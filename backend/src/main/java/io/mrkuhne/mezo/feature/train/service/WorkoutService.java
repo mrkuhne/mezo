@@ -20,9 +20,7 @@ import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
-import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
-import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
@@ -66,7 +64,7 @@ public class WorkoutService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseSetRepository exerciseSetRepository;
     private final ExerciseFeedbackRepository exerciseFeedbackRepository;
-    private final ExerciseCatalogRepository exerciseCatalogRepository;
+    private final CatalogVideoResolver catalogVideoResolver;
     private final TrainMapper mapper;
     // Progression collaborators (T6): the gym finish awards XP behind the feature switch. The gate
     // bean exists ONLY when mezo.feature.progression.enabled=true, so an absent provider ⇔ switch off.
@@ -110,12 +108,8 @@ public class WorkoutService {
         Map<UUID, LastWeekRef> lastWeek = lastWeekRefs(createdBy, day.getId());
         // Demo videos: one batched catalog fetch for the day's linked exercises (catalog_id →
         // video_url), never per-exercise. Map keyed by catalog id; nulls filtered out.
-        List<UUID> catalogIds = exercises.stream()
-            .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList();
-        Map<UUID, String> videoByCatalog = catalogIds.isEmpty() ? Map.of()
-            : exerciseCatalogRepository.findByIdIn(catalogIds).stream()
-                .filter(c -> c.getVideoUrl() != null)
-                .collect(Collectors.toMap(ExerciseCatalogEntity::getId, ExerciseCatalogEntity::getVideoUrl));
+        Map<UUID, String> videoByCatalog = catalogVideoResolver.resolve(exercises.stream()
+            .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList());
         WorkoutSessionEntity open = workoutSessionRepository
             .findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
                 createdBy, day.getId(), "active")

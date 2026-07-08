@@ -31,8 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 class CatalogVideoResolutionIT extends AbstractIntegrationTest {
 
-    private static final String BENCH_VIDEO = "https://youtu.be/demo-bench";
-    private static final String SQUAT_VIDEO = "https://youtu.be/demo-squat";
+    private static final String BENCH_VIDEO = "https://youtu.be/dQw4w9WgXcQ";
+    private static final String SQUAT_VIDEO = "https://youtu.be/9bZkp7q19f0";
 
     @Autowired WorkoutService workoutService;
     @Autowired TrainService trainService;

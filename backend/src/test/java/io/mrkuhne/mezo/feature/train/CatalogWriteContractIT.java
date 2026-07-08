@@ -57,15 +57,43 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
         HttpHeaders auth = ownerAuthHeaders();
         ExerciseCatalogItem boxJump = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)
             .stream().filter(e -> "box-jump".equals(e.getSlug())).findFirst().orElseThrow();
-        CatalogVideoRequest vidReq = CatalogVideoRequest.builder().videoUrl("https://youtu.be/abc").build();
+        CatalogVideoRequest vidReq = CatalogVideoRequest.builder().videoUrl("https://youtu.be/dQw4w9WgXcQ").build();
         ExerciseCatalogItem out = putForBody(
             "/api/train/exercises/" + boxJump.getId() + "/video", vidReq, auth, HttpStatus.OK, ExerciseCatalogItem.class);
-        assertThat(out.getVideoUrl()).isEqualTo("https://youtu.be/abc");
+        assertThat(out.getVideoUrl()).isEqualTo("https://youtu.be/dQw4w9WgXcQ");
         assertThat(out.getEditable()).isFalse(); // master stays non-editable
 
         // box-jump is a master row ResetDatabase never cleans — clear the video so no cross-test residue.
         CatalogVideoRequest clear = CatalogVideoRequest.builder().videoUrl(null).build();
         putForBody("/api/train/exercises/" + boxJump.getId() + "/video", clear, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+    }
+
+    @Test
+    void testUpdateExercise_shouldClearVideo_whenVideoUrlNull() {
+        HttpHeaders auth = ownerAuthHeaders();
+        CatalogExerciseCreateRequest withVideo = CatalogExerciseCreateRequest.builder()
+            .name("Video Move").muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
+            .type(CatalogExerciseCreateRequest.TypeEnum.PLYO)
+            .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4))
+            .videoUrl("https://youtu.be/dQw4w9WgXcQ").build();
+        ExerciseCatalogItem created = postForBody(
+            "/api/train/exercises", withVideo, auth, HttpStatus.CREATED, ExerciseCatalogItem.class);
+        assertThat(created.getVideoUrl()).isEqualTo("https://youtu.be/dQw4w9WgXcQ");
+
+        // Clearing the field (null) on edit must actually remove the demo (was silently kept).
+        CatalogExerciseCreateRequest cleared = CatalogExerciseCreateRequest.builder()
+            .name("Video Move").muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
+            .type(CatalogExerciseCreateRequest.TypeEnum.PLYO)
+            .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4))
+            .videoUrl(null).build();
+        ExerciseCatalogItem updated = putForBody(
+            "/api/train/exercises/" + created.getId(), cleared, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(updated.getVideoUrl()).isNull();
+
+        // Refetch confirms the cleared value persisted, not just the returned DTO.
+        ExerciseCatalogItem refetched = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)
+            .stream().filter(e -> created.getId().equals(e.getId())).findFirst().orElseThrow();
+        assertThat(refetched.getVideoUrl()).isNull();
     }
 
     @Test

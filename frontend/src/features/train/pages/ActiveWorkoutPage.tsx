@@ -34,7 +34,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Sheet } from '@/shared/ui/Sheet'
 import { CompactStepper } from '@/features/train/components/CompactStepper'
-import { VideoDemo } from '@/features/train/components/VideoDemo'
+import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
 import { LastWeekStat } from '@/features/train/components/LastWeekStat'
 import { PRToast, type PRState } from '@/features/train/components/PRToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
@@ -711,8 +711,9 @@ function ActiveWorkoutSession({
               <Display size="lg">{current.name}</Display>
             </div>
 
-            {/* Inline demo video (catalog-resolved) — renders nothing when no url */}
-            {current.videoUrl && (
+            {/* Inline demo video (catalog-resolved) — the wrapper renders only when a real
+                YouTube id is extractable, so a stored non-YouTube url leaves no empty gap. */}
+            {current.videoUrl && youTubeId(current.videoUrl) && (
               <div className="mt-sm">
                 <VideoDemo url={current.videoUrl} />
               </div>

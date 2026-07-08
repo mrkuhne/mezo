@@ -8,7 +8,6 @@ import io.mrkuhne.mezo.api.dto.MesocycleResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
-import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -54,6 +53,7 @@ public class TrainService {
     private final ExerciseRepository exerciseRepository;
     private final ExerciseCatalogRepository exerciseCatalogRepository;
     private final SportSessionRepository sportSessionRepository;
+    private final CatalogVideoResolver catalogVideoResolver;
     private final TrainMapper mapper;
 
     public List<MesocycleResponse> listMesocycles(UUID createdBy) {
@@ -286,18 +286,12 @@ public class TrainService {
     }
 
     /**
-     * Demo-video lookup {@code catalog_id → video_url} for the given exercises, resolved in ONE
-     * batched catalog fetch (never per-exercise). Rows with no linked catalog or no video are
-     * simply absent from the map. Shared by every {@link #toDay} caller.
+     * Demo-video lookup {@code catalog_id → video_url} for the given exercises. Maps the exercises to
+     * their catalog ids and delegates the single batched fetch to {@link CatalogVideoResolver}; rows
+     * with no linked catalog or no video are simply absent. Shared by every {@link #toDay} caller.
      */
     private Map<UUID, String> videosByCatalog(List<ExerciseEntity> exercises) {
-        List<UUID> catalogIds = exercises.stream()
-            .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList();
-        if (catalogIds.isEmpty()) {
-            return Map.of();
-        }
-        return exerciseCatalogRepository.findByIdIn(catalogIds).stream()
-            .filter(c -> c.getVideoUrl() != null)
-            .collect(Collectors.toMap(ExerciseCatalogEntity::getId, ExerciseCatalogEntity::getVideoUrl));
+        return catalogVideoResolver.resolve(exercises.stream()
+            .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList());
     }
 }

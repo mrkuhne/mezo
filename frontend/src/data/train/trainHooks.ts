@@ -203,7 +203,7 @@ function deriveSportWeek(rs: SportSessionResponse[]): SportWeek | null {
   }
 }
 
-type MutateOpts = { onSuccess?: () => void }
+type MutateOpts = { onSuccess?: () => void; onError?: () => void }
 
 // Real mode has no static fallback (T0 "tiszta lap"): an empty backend must
 // surface as null, not silently render Phase-1 demo data. `sport.sessions`

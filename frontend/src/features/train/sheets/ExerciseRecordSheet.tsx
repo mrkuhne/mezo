@@ -10,7 +10,7 @@ import { huMonthDay } from '@/shared/lib/dates'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { VideoDemo } from '@/features/train/components/VideoDemo'
+import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
 
 // 102.5 -> "102.5", 100.0 -> "100"
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
@@ -89,8 +89,9 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
             </span>
           </div>
 
-          {/* Inline demo video (catalog-resolved) — renders nothing when no url */}
-          {videoUrl && (
+          {/* Inline demo video (catalog-resolved) — the wrapper renders only when a real
+              YouTube id is extractable, so a stored non-YouTube url leaves no empty gap. */}
+          {videoUrl && youTubeId(videoUrl) && (
             <div style={{ marginBottom: 12 }}>
               <VideoDemo url={videoUrl} />
             </div>

@@ -4089,6 +4089,8 @@ components:
         videoUrl:
           type: string
           nullable: true
+          pattern: >-
+            ^https?://(www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?$
     CatalogVideoRequest:
       type: object
       properties:
@@ -4096,6 +4098,8 @@ components:
           type: string
           nullable: true
           description: 'A YouTube watch/short URL, or null to clear the demo'
+          pattern: >-
+            ^https?://(www\.|m\.)?(youtube(-nocookie)?\.com/(watch\?v=|shorts/|embed/|live/)|youtu\.be/)[A-Za-z0-9_-]{11}([&?/#].*)?$
     RecordSetRef:
       type: object
       description: One logged set as a record reference; weightKg absent on bodyweight sets

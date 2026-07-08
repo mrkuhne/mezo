@@ -94,9 +94,11 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
       videoUrl: videoUrl.trim() || null,
     } satisfies CatalogExerciseCreateRequest
     setSaving(true)
-    // Defer the animated close until the mutation lands (mock resolves synchronously).
-    if (isEdit) updateCatalogExercise(edit.catalogId ?? edit.id, body, { onSuccess: close })
-    else createCatalogExercise(body, { onSuccess: close })
+    // Defer the animated close until the mutation lands (mock resolves synchronously). onError
+    // re-enables the CTA so a real-mode failure (e.g. contract rejection) doesn't leave Mentés
+    // permanently disabled.
+    if (isEdit) updateCatalogExercise(edit.catalogId ?? edit.id, body, { onSuccess: close, onError: () => setSaving(false) })
+    else createCatalogExercise(body, { onSuccess: close, onError: () => setSaving(false) })
   }
 
   return (

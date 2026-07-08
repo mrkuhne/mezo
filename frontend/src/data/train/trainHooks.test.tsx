@@ -389,12 +389,12 @@ test('toLibraryItem maps videoUrl and editable from the catalog row', () => {
   const item = toLibraryItem({
     id: 'f1e3a0e2-0000-4000-8000-000000000099', slug: 'db-row', name: 'DB Row',
     muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5,
-    videoUrl: 'https://youtu.be/abc123', editable: true,
+    videoUrl: 'https://youtu.be/dQw4w9WgXcQ', editable: true,
   } satisfies ExerciseCatalogItem)
   expect(item).toMatchObject({
     id: 'f1e3a0e2-0000-4000-8000-000000000099',
     catalogId: 'f1e3a0e2-0000-4000-8000-000000000099',
-    videoUrl: 'https://youtu.be/abc123',
+    videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
     editable: true,
   })
 })
@@ -432,18 +432,18 @@ test('useTrain (real mode) catalog write mutations hit create/update/delete/vide
     http.put(`${API_BASE}/api/train/exercises/:id/video`, async ({ params, request }) => {
       bodies.push(await request.json())
       calls.push(`video:${params.id}`)
-      return HttpResponse.json({ id: String(params.id), slug: 'db-row', name: 'DB Row', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5, videoUrl: 'https://youtu.be/xyz', editable: true })
+      return HttpResponse.json({ id: String(params.id), slug: 'db-row', name: 'DB Row', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5, videoUrl: 'https://youtu.be/dQw4w9WgXcQ', editable: true })
     }),
   )
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
   result.current.createCatalogExercise({ name: 'DB Row', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5 })
   result.current.updateCatalogExercise('ex-9', { name: 'DB Row v2', muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5 })
   result.current.deleteCatalogExercise('ex-9')
-  result.current.setExerciseVideo('ex-9', 'https://youtu.be/xyz')
+  result.current.setExerciseVideo('ex-9', 'https://youtu.be/dQw4w9WgXcQ')
   await waitFor(() =>
     expect(calls).toEqual(expect.arrayContaining(['create', 'update:ex-9', 'delete:ex-9', 'video:ex-9'])),
   )
-  expect(bodies).toContainEqual({ videoUrl: 'https://youtu.be/xyz' })
+  expect(bodies).toContainEqual({ videoUrl: 'https://youtu.be/dQw4w9WgXcQ' })
 })
 
 test('useTrain (mock mode) catalog write mutations resolve without any network call', async () => {
@@ -452,7 +452,7 @@ test('useTrain (mock mode) catalog write mutations resolve without any network c
   const onSuccess = vi.fn()
   // No MSW override registered: a real request would fail via onUnhandledRequest —
   // resolving onSuccess proves the mock branch no-ops.
-  result.current.setExerciseVideo('exl-1', 'https://youtu.be/new', { onSuccess })
+  result.current.setExerciseVideo('exl-1', 'https://youtu.be/dQw4w9WgXcQ', { onSuccess })
   await waitFor(() => expect(onSuccess).toHaveBeenCalled())
   // Mock library keeps the Phase-1 static video/editable metadata unchanged.
   expect(result.current.exerciseLibrary[0]).toMatchObject({ videoUrl: 'https://youtu.be/GZTvxN5fPBc', editable: false })

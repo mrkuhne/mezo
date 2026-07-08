@@ -28,7 +28,7 @@ test('create mode builds the request and calls createCatalogExercise', async () 
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(createCatalogExercise).toHaveBeenCalledWith(
     { name: 'DB Row', muscle: 'lats', type: 'isolation', stim: 0.75, fatigue: 0.3, videoUrl: null },
-    { onSuccess: expect.any(Function) },
+    { onSuccess: expect.any(Function), onError: expect.any(Function) },
   )
   expect(updateCatalogExercise).not.toHaveBeenCalled()
 })
@@ -36,9 +36,9 @@ test('create mode builds the request and calls createCatalogExercise', async () 
 test('a video URL is trimmed into the request', async () => {
   render(<CatalogExerciseSheet onClose={vi.fn()} />)
   await userEvent.type(screen.getByLabelText('Név'), 'Cable Fly')
-  await userEvent.type(screen.getByLabelText('Videó URL'), '  https://youtu.be/abc  ')
+  await userEvent.type(screen.getByLabelText('Videó URL'), '  https://youtu.be/dQw4w9WgXcQ  ')
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-  expect(createCatalogExercise.mock.calls[0][0].videoUrl).toBe('https://youtu.be/abc')
+  expect(createCatalogExercise.mock.calls[0][0].videoUrl).toBe('https://youtu.be/dQw4w9WgXcQ')
 })
 
 test('Mentés is disabled while the name is blank', async () => {
@@ -51,16 +51,16 @@ test('Mentés is disabled while the name is blank', async () => {
 test('edit mode seeds the fields and calls updateCatalogExercise with the id', async () => {
   const edit: ExerciseLibraryItem = {
     id: 'cat-1', catalogId: 'cat-1', name: 'Cable Fly', muscle: 'chest', type: 'isolation',
-    stim: 0.74, fatigue: 0.25, videoUrl: 'https://youtu.be/x', editable: true,
+    stim: 0.74, fatigue: 0.25, videoUrl: 'https://youtu.be/dQw4w9WgXcQ', editable: true,
   }
   render(<CatalogExerciseSheet onClose={vi.fn()} edit={edit} />)
   expect(screen.getByLabelText('Név')).toHaveValue('Cable Fly')
-  expect(screen.getByLabelText('Videó URL')).toHaveValue('https://youtu.be/x')
+  expect(screen.getByLabelText('Videó URL')).toHaveValue('https://youtu.be/dQw4w9WgXcQ')
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(updateCatalogExercise).toHaveBeenCalledWith(
     'cat-1',
-    { name: 'Cable Fly', muscle: 'chest', type: 'isolation', stim: 0.74, fatigue: 0.25, videoUrl: 'https://youtu.be/x' },
-    { onSuccess: expect.any(Function) },
+    { name: 'Cable Fly', muscle: 'chest', type: 'isolation', stim: 0.74, fatigue: 0.25, videoUrl: 'https://youtu.be/dQw4w9WgXcQ' },
+    { onSuccess: expect.any(Function), onError: expect.any(Function) },
   )
   expect(createCatalogExercise).not.toHaveBeenCalled()
 })

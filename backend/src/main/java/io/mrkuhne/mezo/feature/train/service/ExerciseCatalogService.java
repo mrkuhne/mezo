@@ -47,6 +47,9 @@ public class ExerciseCatalogService {
     public ExerciseCatalogItem update(UUID currentUser, UUID id, CatalogExerciseCreateRequest req) {
         ExerciseCatalogEntity e = ownedOrThrow(currentUser, id);
         apply(e, req);
+        // UPDATE sets videoUrl unconditionally so clearing the field (null) actually removes the
+        // demo. CREATE keeps apply()'s set-only-when-present semantics (a fresh row defaults to null).
+        e.setVideoUrl(req.getVideoUrl());
         return withEditable(repository.save(e), currentUser);
     }
 

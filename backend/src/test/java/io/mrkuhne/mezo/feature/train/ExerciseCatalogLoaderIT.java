@@ -82,11 +82,11 @@ class ExerciseCatalogLoaderIT extends AbstractIntegrationTest {
     @Test
     void testLoader_shouldPreserveUserVideo_whenReRun() {
         var master = repository.findBySlug("box-jump").orElseThrow();
-        master.setVideoUrl("https://youtu.be/USER_SET");
+        master.setVideoUrl("https://youtu.be/dQw4w9WgXcQ");
         repository.saveAndFlush(master);
         loader.run(); // re-run against the drifted DB
         assertThat(repository.findBySlug("box-jump").orElseThrow().getVideoUrl())
-            .isEqualTo("https://youtu.be/USER_SET");
+            .isEqualTo("https://youtu.be/dQw4w9WgXcQ");
     }
 
     @Test
