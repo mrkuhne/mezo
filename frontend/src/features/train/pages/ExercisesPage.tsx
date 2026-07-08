@@ -19,9 +19,25 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { ExerciseRecordSheet } from '@/features/train/sheets/ExerciseRecordSheet'
+import { CatalogExerciseSheet } from '@/features/train/sheets/CatalogExerciseSheet'
 import ExercisesSkeleton from '@/features/train/pages/ExercisesSkeleton'
 
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
+
+// Edit/delete affordances for a user-authored (editable) catalog row — rendered
+// beneath the record/ghost row so the row's own tap target stays intact.
+function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+  return (
+    <div className="row gap-xs" style={{ justifyContent: 'flex-end' }}>
+      <button className="chip notch-4" aria-label="Gyakorlat szerkesztése" onClick={onEdit} style={{ padding: '4px 8px' }}>
+        <Icon name="pencil" size={12} />
+      </button>
+      <button className="chip notch-4" aria-label="Gyakorlat törlése" onClick={onDelete} style={{ padding: '4px 8px' }}>
+        <Icon name="trash" size={12} color="var(--warning)" />
+      </button>
+    </div>
+  )
+}
 
 function RecordRow({ record, rank, onOpen }: {
   record: ExerciseRecordResponse; rank: number | null; onOpen: () => void
@@ -84,10 +100,12 @@ function GhostRow({ item }: { item: ExerciseLibraryItem }) {
 }
 
 export function ExercisesPage() {
-  const { exerciseRecords, exerciseLibrary, exercisesPending } = useTrain()
+  const { exerciseRecords, exerciseLibrary, exercisesPending, deleteCatalogExercise } = useTrain()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [openRecord, setOpenRecord] = useState<ExerciseRecordResponse | null>(null)
+  // null = closed · {} = author a new exercise · { edit } = edit an owned row.
+  const [catalog, setCatalog] = useState<{ edit?: ExerciseLibraryItem } | null>(null)
 
   // Real-mode loading: show the layout-aware skeleton until the catalog + records
   // queries resolve (exercisesPending), before the records ghost-state branch. After
@@ -120,6 +138,9 @@ export function ExercisesPage() {
           <Eyebrow brand>Train · Gyakorlatok</Eyebrow>
           <PageTitle>Gyakorlatok</PageTitle>
         </div>
+        <button className="chip notch-4 brand" onClick={() => setCatalog({})} style={{ padding: '8px 12px' }}>
+          <Icon name="plus" size={12} /> Új gyakorlat
+        </button>
       </div>
 
       <div style={{ padding: '0 24px 8px' }}>
@@ -161,16 +182,30 @@ export function ExercisesPage() {
           <GhostState lines={3} message="Az első logolt edzés után itt nőnek a rekordjaid — keresni már most tudsz a katalógusban." />
         ) : (
           <div className="col gap-sm">
-            {records.map((r, i) => (
-              <RecordRow
-                key={r.catalogId ?? r.name}
-                record={r}
-                rank={searching ? null : i + 1}
-                onOpen={() => setOpenRecord(r)}
-              />
-            ))}
+            {records.map((r, i) => {
+              const lib = r.catalogId ? exerciseLibrary.find((e) => e.catalogId === r.catalogId) : undefined
+              return (
+                <div key={r.catalogId ?? r.name} className="col gap-xs">
+                  <RecordRow record={r} rank={searching ? null : i + 1} onOpen={() => setOpenRecord(r)} />
+                  {lib?.editable && (
+                    <RowActions
+                      onEdit={() => setCatalog({ edit: lib })}
+                      onDelete={() => deleteCatalogExercise(lib.catalogId ?? lib.id)}
+                    />
+                  )}
+                </div>
+              )
+            })}
             {ghosts.map((g) => (
-              <GhostRow key={g.id} item={g} />
+              <div key={g.id} className="col gap-xs">
+                <GhostRow item={g} />
+                {g.editable && (
+                  <RowActions
+                    onEdit={() => setCatalog({ edit: g })}
+                    onDelete={() => deleteCatalogExercise(g.catalogId ?? g.id)}
+                  />
+                )}
+              </div>
             ))}
             {searching && records.length + ghosts.length === 0 && (
               <p className="text-tertiary" style={{ fontSize: 12, textAlign: 'center', padding: 20 }}>
@@ -191,6 +226,10 @@ export function ExercisesPage() {
           }
           onClose={() => setOpenRecord(null)}
         />
+      )}
+
+      {catalog && (
+        <CatalogExerciseSheet edit={catalog.edit} onClose={() => setCatalog(null)} />
       )}
     </>
   )

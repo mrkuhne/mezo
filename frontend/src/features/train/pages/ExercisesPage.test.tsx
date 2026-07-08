@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
@@ -66,6 +66,47 @@ test('empty records show the ghost state while the catalog search stays usable',
 
 // Loading skeleton (mezo-f2z) — real mode shows the ExercisesSkeleton (role="status")
 // while the catalog/records queries are unresolved (exercisesPending); mock seeds → none.
+// Writable catalog (mezo-52zg) — the header authoring button + edit/delete
+// affordances on user-authored (editable) rows. The MSW catalog fixture marks
+// Chest Supported Row editable with a videoUrl, and it also has a record, so it
+// renders as a record row in the default (unsearched) view.
+test('the header + Új gyakorlat button opens the create sheet', async () => {
+  renderView()
+  await screen.findByText('Top gyakorlatok · rekordjaid')
+  await userEvent.click(screen.getByRole('button', { name: /Új gyakorlat/ }))
+  expect(await screen.findByText('Gyakorlat · Katalógus')).toBeInTheDocument()
+  expect(screen.getByLabelText('Név')).toHaveValue('')
+})
+
+test('an editable record row exposes edit + delete affordances', async () => {
+  renderView()
+  await screen.findByRole('button', { name: /Chest Supported Row/ })
+  expect(screen.getByRole('button', { name: 'Gyakorlat szerkesztése' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Gyakorlat törlése' })).toBeInTheDocument()
+})
+
+test('editing an owned row opens the sheet seeded with its name', async () => {
+  renderView()
+  await screen.findByRole('button', { name: /Chest Supported Row/ })
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat szerkesztése' }))
+  expect(await screen.findByText('Gyakorlat szerkesztése')).toBeInTheDocument()
+  expect(screen.getByLabelText('Név')).toHaveValue('Chest Supported Row')
+})
+
+test('deleting an owned row issues the delete request', async () => {
+  let deleted = ''
+  server.use(
+    http.delete(`${API_BASE}/api/train/exercises/:id`, ({ params }) => {
+      deleted = String(params.id)
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  renderView()
+  await screen.findByRole('button', { name: /Chest Supported Row/ })
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat törlése' }))
+  await waitFor(() => expect(deleted).toBe('f1e3a0e2-0000-4000-8000-000000000070'))
+})
+
 describe('ExercisesPage (real mode, pending)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
