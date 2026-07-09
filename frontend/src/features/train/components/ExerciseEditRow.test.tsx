@@ -33,3 +33,25 @@ it('clamps Rep min to repMax so it can never exceed the current Rep max', async 
   expect(onChange).not.toHaveBeenCalledWith({ repMin: 9 })
   expect(onChange).toHaveBeenCalledWith({ repMin: 8 })
 })
+
+it('anchor weight (mezo-anm4): starts at "auto" and sets a starting weight on +', async () => {
+  const onChange = vi.fn()
+  render(<ExerciseEditRow ex={ex} onRemove={() => {}} onChange={onChange} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Szerkesztő' }))
+  expect(screen.getByText('auto')).toBeInTheDocument() // no anchor yet → engine decides
+  await userEvent.click(screen.getByRole('button', { name: 'Kiinduló súly növelése' }))
+  expect(onChange).toHaveBeenCalledWith({ anchorWeightKg: 20 }) // "+" from auto seeds 20 kg
+})
+
+it('anchor weight: decrementing below one step clears back to "auto" (null)', async () => {
+  const onChange = vi.fn()
+  render(<ExerciseEditRow ex={{ ...ex, anchorWeightKg: 2.5 }} onRemove={() => {}} onChange={onChange} />)
+  await userEvent.click(screen.getByRole('button', { name: 'Szerkesztő' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Kiinduló súly csökkentése' }))
+  expect(onChange).toHaveBeenCalledWith({ anchorWeightKg: null })
+})
+
+it('shows the anchor weight in the recipe summary when set', () => {
+  render(<ExerciseEditRow ex={{ ...ex, anchorWeightKg: 42.5 }} onRemove={() => {}} onChange={() => {}} />)
+  expect(screen.getByText(/RIR 0 · 42.5 kg/)).toBeInTheDocument()
+})

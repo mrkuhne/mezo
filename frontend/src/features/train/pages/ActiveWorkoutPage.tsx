@@ -182,8 +182,12 @@ function ActiveWorkoutSession({
   // to setIdx). Null on a first-ever workout / no-engine day → the panel falls back
   // to lastWeek. Drives the pre-fill effect below, the kind chip and the set-dots.
   const curTarget = prescribedAt(session, current.id, session.setIdx)
-  // Plyo / bodyweight sets carry no load: hide the kg stepper and log weightKg 0.
-  const weightless = current.type === 'plyo' || (curTarget != null && curTarget.targetWeightKg == null)
+  // Only genuinely load-less exercises (plyo) hide the kg stepper. A null target
+  // weight ALSO happens on a first-ever workout (no history, no anchor) — there the
+  // user must still enter a starting weight, so we must NOT hide the stepper then.
+  const weightless = current.type === 'plyo'
+  // Warmups come first in the prescribed list; used to label rows (B1.. vs working 1..).
+  const warmupCount = (session.prescribed[current.id] ?? []).filter((p) => p.kind === 'warmup').length
   // Effective note for the on-screen exercise: a just-saved local override wins,
   // else the backend/mock note, else empty (drives the pill + the editor prefill).
   const effectiveNote = localNotes[current.id] ?? current.note ?? ''
@@ -522,9 +526,7 @@ function ActiveWorkoutSession({
   const totalSets = W.exercises.reduce((a, e) => a + effectiveSetCount(session, e.id), 0)
   const doneSets = Object.values(session.logged).reduce((a, arr) => a + arr.length, 0)
   const activeChallenge = challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
-  const exHistory = session.logged[current.id] ?? []
   const currentSetCount = effectiveSetCount(session, current.id)
-  const plannedCount = session.planned[current.id] ?? currentSetCount
 
   // Reorderable segment for the ⋯ action sheet: the done + current exercises
   // stay FIXED; only the FUTURE exercises (after the current one in session.order)
@@ -797,199 +799,168 @@ function ActiveWorkoutSession({
               </div>
             )}
 
-            {/* Set dots */}
-            <div className="row mt-lg" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-              <div className="set-dots">
-                {Array.from({ length: currentSetCount }, (_, i) => {
-                  const isExtra = i >= plannedCount
-                  const isWarm = prescribedAt(session, current.id, i)?.kind === 'warmup'
-                  return (
-                    <div
-                      key={i}
-                      className={'set-dot' + (i < session.setIdx ? ' done' : i === session.setIdx ? ' active' : '')
-                        + (isExtra ? ' extra' : '') + (isWarm ? ' warm' : '')}
-                    />
-                  )
-                })}
-              </div>
-              <span className="label-mono" style={{ fontSize: 10 }}>
-                {session.setIdx}/{currentSetCount} done
-              </span>
-            </div>
+            {/* Prescribed sets render as a full list below the card (spec §6). */}
+          </div>
+        </div>
 
-            {/* Completed sets history */}
-            {exHistory.length > 0 && (
-              <div className="col gap-xs mt-md" style={{ paddingTop: 12, borderTop: '1px solid var(--border-subtle)' }}>
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginBottom: 4 }}>
-                  Mai szetek
-                </span>
-                {exHistory.map((s, i) => {
-                  const delta = current.lastWeek ? s.weight - current.lastWeek.weight : 0
-                  const isPR = currentIdx === 0 && s.weight >= PR_DEMO_THRESHOLD_KG
-                  return (
-                    <div
-                      key={i}
-                      className="row"
-                      style={{
-                        padding: '8px 10px',
-                        background: isPR ? BRAND_TINT_6 : 'var(--surface-2)',
-                        borderLeft: '2px solid ' + (isPR ? 'var(--brand-glow)' : 'var(--border-strong)'),
-                        alignItems: 'center',
-                      }}
-                    >
-                      <span
-                        className="label-mono"
-                        style={{ fontSize: 9, color: isPR ? 'var(--brand-glow)' : 'var(--text-tertiary)', width: 38 }}
-                      >
-                        {isPR && '★ '}#{i + 1}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: 'var(--ff-display)',
-                          fontSize: 15,
-                          fontWeight: 600,
-                          color: 'var(--text-primary)',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {s.weight}
-                        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 2 }}>
-                          kg
-                        </span>
-                      </span>
-                      <span
-                        style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', margin: '0 10px' }}
-                      >
-                        ×
-                      </span>
-                      <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)' }}>
-                        {s.reps}
-                      </span>
+        {/* Prescribed set list (spec §6): ALL sets up front — warmups (amber) then
+            working (teal), each pre-filled to its target; the current set expands to
+            the logging panel, done sets show the logged actuals. Replaces the old
+            set-dots + one-at-a-time single panel. */}
+        <div style={{ padding: '6px 24px 20px' }}>
+          <div className="col gap-sm">
+            {Array.from({ length: currentSetCount }, (_, i) => {
+              const t = prescribedAt(session, current.id, i)
+              const warm = t?.kind === 'warmup'
+              const setLabel = warm ? `B${i + 1}` : `${i - warmupCount + 1}`
+              const kindLabel = warm ? 'Bemel.' : 'Working'
+              const accent = warm ? 'var(--warning)' : 'var(--brand-glow)'
+              const actual = session.logged[current.id]?.[i]
+              const isDone = i < session.setIdx
+              const isCurrent = i === session.setIdx
+
+              if (isCurrent) {
+                const rowWeightless = current.type === 'plyo'
+                return (
+                  <div
+                    key={i}
+                    className="card notch-8"
+                    style={{ padding: 0, border: '1px solid var(--brand-glow)', borderLeft: '2px solid var(--brand-glow)', background: BRAND_TINT_6 }}
+                  >
+                    <div className="row gap-sm" style={{ padding: '10px 12px 2px', alignItems: 'center' }}>
+                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 20 }}>{setLabel}</span>
+                      <span className="chip" style={{ fontSize: 8, padding: '2px 6px', color: accent, borderColor: accent }}>{kindLabel}</span>
                       <span style={{ flex: 1 }} />
-                      <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {s.rir}</span>
-                      {delta !== 0 && (
-                        <span
-                          className="label-mono"
-                          style={{ fontSize: 9, color: delta > 0 ? 'var(--brand-glow)' : 'var(--text-tertiary)', marginLeft: 8 }}
-                        >
-                          {delta > 0 ? '+' : ''}
-                          {delta}kg
-                        </span>
-                      )}
+                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>Soron</span>
                     </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Compact logging panel */}
-        <div style={{ padding: '12px 24px 0' }}>
-          <div className="card notch-8" style={{ padding: 10 }}>
-            <div className="row gap-sm">
-              {/* Plyo / bodyweight → reps-only (no load to log). */}
-              {!weightless && (
-                <CompactStepper label="kg" value={weight} step={2.5} onChange={setWeight} primary min={0} max={999} />
-              )}
-              <CompactStepper label="reps" value={reps} step={1} onChange={setReps} integer min={1} max={100} />
-            </div>
-
-            {/* RIR + Side row */}
-            <div className="row gap-sm" style={{ marginTop: 8, alignItems: 'stretch' }}>
-              <div className="flex-1" style={{ background: 'var(--surface-2)', padding: '5px 8px' }}>
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <span className="label-mono" style={{ fontSize: 8 }}>RIR</span>
-                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)' }}>
-                    reps in reserve
-                  </span>
-                </div>
-                <div className="row gap-xs">
-                  {[0, 1, 2, 3].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      aria-pressed={rir === n}
-                      aria-label={`RIR ${n}`}
-                      onClick={() => setRir(n)}
-                      style={{
-                        flex: 1,
-                        padding: '6px 0',
-                        background: rir === n ? BRAND_TINT_12 : 'var(--surface-1)',
-                        border: '1px solid ' + (rir === n ? 'var(--brand-glow)' : 'var(--border-subtle)'),
-                        color: rir === n ? 'var(--brand-glow)' : 'var(--text-secondary)',
-                        fontFamily: 'var(--ff-display)',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        clipPath: 'polygon(2px 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%, 0 2px)',
-                      }}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {current.type === 'isolation' && (
-                <div style={{ background: 'var(--surface-2)', padding: '5px 8px', flexShrink: 0 }}>
-                  <div className="label-mono" style={{ fontSize: 8, marginBottom: 4 }}>Side</div>
-                  <div className="row gap-xs">
-                    {(['L', 'B', 'R'] as const).map((s) => (
+                    <div style={{ padding: '4px 10px 12px' }}>
+                      <div className="row gap-sm">
+                        {/* Only genuinely load-less (plyo) sets hide the kg stepper — a
+                            first-workout null recommendation still needs manual entry. */}
+                        {!rowWeightless && (
+                          <CompactStepper label="kg" value={weight} step={2.5} onChange={setWeight} primary min={0} max={999} />
+                        )}
+                        <CompactStepper label="reps" value={reps} step={1} onChange={setReps} integer min={1} max={100} />
+                      </div>
+                      <div className="row gap-sm" style={{ marginTop: 8, alignItems: 'stretch' }}>
+                        <div className="flex-1" style={{ background: 'var(--surface-2)', padding: '5px 8px' }}>
+                          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <span className="label-mono" style={{ fontSize: 8 }}>RIR</span>
+                            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)' }}>reps in reserve</span>
+                          </div>
+                          <div className="row gap-xs">
+                            {[0, 1, 2, 3].map((n) => (
+                              <button
+                                key={n}
+                                type="button"
+                                aria-pressed={rir === n}
+                                aria-label={`RIR ${n}`}
+                                onClick={() => setRir(n)}
+                                style={{
+                                  flex: 1,
+                                  padding: '6px 0',
+                                  background: rir === n ? BRAND_TINT_12 : 'var(--surface-1)',
+                                  border: '1px solid ' + (rir === n ? 'var(--brand-glow)' : 'var(--border-subtle)'),
+                                  color: rir === n ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                                  fontFamily: 'var(--ff-display)',
+                                  fontSize: 14,
+                                  fontWeight: 600,
+                                  clipPath: 'polygon(2px 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%, 0 2px)',
+                                }}
+                              >
+                                {n}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {current.type === 'isolation' && (
+                          <div style={{ background: 'var(--surface-2)', padding: '5px 8px', flexShrink: 0 }}>
+                            <div className="label-mono" style={{ fontSize: 8, marginBottom: 4 }}>Side</div>
+                            <div className="row gap-xs">
+                              {(['L', 'B', 'R'] as const).map((s) => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  aria-pressed={side === s}
+                                  className={'chip' + (side === s ? ' brand' : '')}
+                                  style={{ fontSize: 9, padding: '5px 8px' }}
+                                  onClick={() => setSide(side === s ? null : s)}
+                                >
+                                  {s}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {/* Tool row — Note is live (T2); 90s timer + Voice stay inert (Phase 3) */}
+                      <div className="row gap-xs" style={{ marginTop: 8 }}>
+                        <button type="button" className="chip flex-1" style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}>
+                          <Icon name="today" size={11} /> 90s
+                        </button>
+                        <button
+                          type="button"
+                          className={'chip flex-1' + (noteOpen ? ' brand' : '')}
+                          style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}
+                          onClick={() => setNoteOpen(!noteOpen)}
+                        >
+                          <Icon name="tool" size={11} /> Note
+                        </button>
+                        <button type="button" className="chip flex-1" style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}>
+                          <Icon name="mic" size={11} /> Voice
+                        </button>
+                      </div>
+                      {noteOpen && (
+                        <input
+                          aria-label="Szet megjegyzés"
+                          value={note}
+                          onChange={(e) => setNote(e.target.value)}
+                          placeholder="Megjegyzés a következő szethez"
+                          style={{ width: '100%', fontSize: 13, padding: '10px 12px', marginTop: 8, background: 'var(--surface-2)' }}
+                        />
+                      )}
                       <button
-                        key={s}
-                        type="button"
-                        aria-pressed={side === s}
-                        className={'chip' + (side === s ? ' brand' : '')}
-                        style={{ fontSize: 9, padding: '5px 8px' }}
-                        onClick={() => setSide(side === s ? null : s)}
+                        className="cta-primary notch-8"
+                        onClick={completeSet}
+                        style={{ width: '100%', marginTop: 9, padding: '14px 20px', fontSize: 15 }}
                       >
-                        {s}
+                        <Icon name="check" size={16} /> Set kész
                       </button>
-                    ))}
+                    </div>
                   </div>
+                )
+              }
+
+              // Done or upcoming — a compact pre-filled row (actual if logged, else target).
+              const w = isDone ? actual?.weight : t?.targetWeightKg
+              const r = isDone ? actual?.reps : t?.targetReps
+              const rr = isDone ? actual?.rir : t?.targetRIR
+              return (
+                <div
+                  key={i}
+                  className="row gap-sm"
+                  style={{ padding: '10px 12px', alignItems: 'center', background: 'var(--surface-2)', borderLeft: '2px solid ' + accent, opacity: isDone ? 0.5 : 1 }}
+                >
+                  <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 20 }}>{setLabel}</span>
+                  <span className="chip" style={{ fontSize: 8, padding: '2px 6px', color: accent, borderColor: accent }}>{kindLabel}</span>
+                  <span
+                    style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)', whiteSpace: 'nowrap', marginLeft: 4 }}
+                  >
+                    {w == null ? '—' : w}
+                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)', margin: '0 1px 0 2px' }}>kg</span>
+                    <span style={{ color: 'var(--text-tertiary)', margin: '0 6px', fontWeight: 400 }}>×</span>
+                    {r ?? '—'}
+                  </span>
+                  <span style={{ flex: 1 }} />
+                  {isDone ? (
+                    <Icon name="check" size={13} color="var(--brand-glow)" />
+                  ) : (
+                    <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>
+                  )}
                 </div>
-              )}
-            </div>
+              )
+            })}
           </div>
-        </div>
-
-        {/* Tool row — Note is live (T2); 90s timer + Voice stay inert (Phase 3) */}
-        <div style={{ padding: '8px 24px 0' }}>
-          <div className="row gap-xs">
-            <button type="button" className="chip flex-1" style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}>
-              <Icon name="today" size={11} /> 90s
-            </button>
-            <button
-              type="button"
-              className={'chip flex-1' + (noteOpen ? ' brand' : '')}
-              style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}
-              onClick={() => setNoteOpen(!noteOpen)}
-            >
-              <Icon name="tool" size={11} /> Note
-            </button>
-            <button type="button" className="chip flex-1" style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}>
-              <Icon name="mic" size={11} /> Voice
-            </button>
-          </div>
-        </div>
-
-        {/* Set note — sent with the next "Set kész", then cleared */}
-        {noteOpen && (
-          <div style={{ padding: '8px 24px 0' }}>
-            <input
-              aria-label="Szet megjegyzés"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Megjegyzés a következő szethez"
-              style={{ width: '100%', fontSize: 13, padding: '10px 12px', background: 'var(--surface-2)' }}
-            />
-          </div>
-        )}
-
-        {/* CTA */}
-        <div style={{ padding: '12px 24px 20px' }}>
-          <button className="cta-primary notch-8" onClick={completeSet} style={{ padding: '14px 20px', fontSize: 15 }}>
-            <Icon name="check" size={16} /> Set kész
-          </button>
         </div>
       </div>
     </>

@@ -34,6 +34,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
               </span>
               <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--brand-glow)' }}>
                 {ex.warmupSets} bem · {ex.workingSets} work · {ex.repMin}-{ex.repMax} · RIR {ex.targetRIR}
+                {ex.anchorWeightKg != null ? ` · ${ex.anchorWeightKg} kg` : ' · auto'}
               </span>
             </div>
             {ex.warning && (
@@ -84,6 +85,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
               onChange={(v) => onChange({ repMax: v })} />
             <RecipeStepper label="RIR" value={ex.targetRIR} min={0} max={5}
               onChange={(v) => onChange({ targetRIR: v })} />
+            <AnchorStepper value={ex.anchorWeightKg} onChange={(v) => onChange({ anchorWeightKg: v })} />
           </div>
         </div>
       )}
@@ -106,6 +108,41 @@ function RecipeStepper({ label, value, min, max, onChange }: {
           <button type="button" aria-label={`${label} csökkentése`} onClick={() => onChange(clamp(value - 1))}
             style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>−</button>
           <button type="button" aria-label={`${label} növelése`} onClick={() => onChange(clamp(value + 1))}
+            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>+</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// The optional STARTING weight (anchor) — nullable, 2.5 kg steps, "auto" when unset.
+// The recommendation engine uses it as the first-workout base (SetRecommendationService),
+// so it seeds the pre-filled weight before any history exists. Decrementing below one
+// step returns to "auto" (let the engine decide); "+" from auto starts at a sensible 20 kg.
+function AnchorStepper({ value, onChange }: {
+  value: number | null | undefined; onChange: (v: number | null) => void
+}) {
+  const STEP = 2.5
+  const START = 20
+  const round = (n: number) => Math.round(n * 100) / 100
+  const isAuto = value == null
+  const dec = () => {
+    if (isAuto) return
+    const next = round(value - STEP)
+    onChange(next < STEP ? null : next)
+  }
+  const inc = () => onChange(isAuto ? START : Math.min(999, round(value + STEP)))
+  return (
+    <div style={{ flex: '1 1 30%', minWidth: 88, background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', padding: '6px 10px' }}>
+      <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>Kiinduló kg</span>
+      <div className="row" style={{ justifyContent: 'space-between', marginTop: 5 }}>
+        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600, color: isAuto ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>
+          {isAuto ? 'auto' : value}
+        </span>
+        <div className="row gap-xs">
+          <button type="button" aria-label="Kiinduló súly csökkentése" onClick={dec}
+            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>−</button>
+          <button type="button" aria-label="Kiinduló súly növelése" onClick={inc}
             style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>+</button>
         </div>
       </div>
