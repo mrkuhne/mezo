@@ -98,11 +98,12 @@ test('mock mode: renders the rationale line instead of the static hint', async (
   expect(await screen.findByText(/→ \+2\.5 kg/)).toBeInTheDocument() // ex1.rationale
 })
 
-test('mock mode: warmup set-dots carry the .warm class', async () => {
+test('mock mode: warmup sets render up-front as amber "Bemel." rows (spec §6)', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  expect(document.querySelectorAll('.set-dot.warm')).toHaveLength(2) // ex1 has 2 warmup sets
+  // The prescribed set list shows ALL sets up front; ex1's 2 warmups are 2 amber rows.
+  expect(screen.getAllByText('Bemel.')).toHaveLength(2)
 })
 
 test('logging a PR-weight third set on the first exercise fires the PR toast', async () => {
@@ -144,17 +145,17 @@ test('reordering remaining exercises changes which exercise comes next', async (
   expect(await screen.findByText('Cable Pull-Around')).toBeInTheDocument()
 })
 
-test('＋ Szett adds an extra set: dots grow 5→6 with a dashed extra dot and the header reads /6', async () => {
+test('＋ Szett adds an extra set: the prescribed set list grows 5→6 and the header reads /6', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))          // active, current = Chest Supported Row (5 planned sets: 2 warmup + 3 working)
   expect(screen.getByText(/Set 1\/5/)).toBeInTheDocument()
+  expect(screen.getAllByText('Working')).toHaveLength(3)    // 3 planned working rows
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('＋ Szett'))             // adds one extra set; sheet closes
   expect(screen.getByText(/Set 1\/6/)).toBeInTheDocument()
-  const dots = document.querySelectorAll('.set-dot')
-  expect(dots).toHaveLength(6)
-  expect(document.querySelectorAll('.set-dot.extra')).toHaveLength(1) // only the 6th is extra
+  expect(screen.getAllByText('Working')).toHaveLength(4)    // the extra shows as a 4th working row
+  expect(screen.getAllByText('Bemel.')).toHaveLength(2)     // warmups unchanged
 })
 
 test('⋯ Kihagyás advances to the next exercise without opening the debrief', async () => {
