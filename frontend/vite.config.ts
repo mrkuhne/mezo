@@ -16,8 +16,8 @@ export default defineConfig({
         name: 'Mezo',
         short_name: 'Mezo',
         description: 'Holistic AI performance & health companion',
-        theme_color: '#0A0F14',
-        background_color: '#050709',
+        theme_color: '#F4F6F8',
+        background_color: '#DDE2E8',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
