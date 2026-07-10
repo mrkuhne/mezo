@@ -49,7 +49,7 @@ function byBasis(v: number, basis: ServingBasis, servings: number) {
 
 function MacroHeroCell({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
   return (
-    <div className="notch-8" style={{ textAlign: 'center', padding: '10px 2px', background: 'rgba(255,255,255,0.025)' }}>
+    <div className="notch-8" style={{ textAlign: 'center', padding: '10px 2px', background: 'var(--surface-glass)' }}>
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1, color: accent ? 'var(--success)' : 'var(--text-primary)' }}>{value}</div>
       <div className="label-mono" style={{ fontSize: 8, letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginTop: 5 }}>{label}</div>
     </div>

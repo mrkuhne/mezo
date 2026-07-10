@@ -32,7 +32,7 @@ export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?
         <div className="row gap-sm">
           <span
             className="chip"
-            style={{ fontSize: 9, padding: '3px 8px', color: catColor, borderColor: `${catColor}59`, background: 'rgba(255,255,255,0.02)' }}
+            style={{ fontSize: 9, padding: '3px 8px', color: catColor, borderColor: `${catColor}59`, background: 'var(--surface-glass)' }}
           >
             {pattern.categoryLabel}
           </span>
