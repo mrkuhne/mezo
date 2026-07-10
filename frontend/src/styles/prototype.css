@@ -76,6 +76,13 @@
 
   /* Page (bezel/letterbox) background */
   --page-bg: #050709;
+
+  /* Card elevation — light lifts cards off the canvas; dark stays flat.
+     drop-shadow (not box-shadow): the notch clip-path would clip a box-shadow. */
+  --card-elevation: none;
+  --card-border: var(--border-subtle);
+  /* Desktop bezel (letterbox) radial gradient center stop */
+  --page-glow: #0c1218;
 }
 
 /* ===== Light theme overrides ===== */
@@ -132,6 +139,11 @@
 
   /* Page background */
   --page-bg: #DDE2E8;
+
+  /* Card elevation (approved variant A) */
+  --card-elevation: drop-shadow(0 1px 2px rgba(10, 15, 20, 0.06)) drop-shadow(0 4px 10px rgba(10, 15, 20, 0.07));
+  --card-border: rgba(15, 23, 35, 0.10);
+  --page-glow: #E8EDF2;
 }
 
 /* Notched chamfer clip-paths */
@@ -169,7 +181,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .app-root {
   position: fixed; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  background: radial-gradient(ellipse at center, #0c1218 0%, #050709 70%);
+  background: radial-gradient(ellipse at center, var(--page-glow) 0%, var(--page-bg) 70%);
 }
 
 /* ============== iPhone 17 Pro Max frame ============== */
@@ -415,7 +427,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* Cards / surfaces */
 .card {
   background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--card-border);
+  filter: var(--card-elevation);
 }
 .card.glass {
   background: var(--surface-glass);
