@@ -26,6 +26,13 @@
   --text-quaternary: #4B5563;
   --text-inverse: #0A0F14;
 
+  /* Text over permanently-dark media bands (recipe hero/list image placeholders
+     are intentionally dark in BOTH themes) — stays light in both themes, so it is
+     defined once here and never overridden in the light block. Values mirror the
+     dark-theme text tones so dark mode is pixel-identical. */
+  --text-on-media: #ECECF1;
+  --text-on-media-dim: #9CA3AF;
+
   /* Semantic */
   --success: #34D399;
   --warning: #F59E0B;

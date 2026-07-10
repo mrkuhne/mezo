@@ -126,10 +126,10 @@ export function RecipeDetailPage() {
           {recipe.starred && <Icon name="bookmark" size={13} color="var(--warning)" />}
         </div>
         <RecipeFitBadge score={recipe.mezoFit.score} size="hero" />
-        <div style={{ position: 'absolute', left: 14, right: 14, bottom: 30, zIndex: 3, fontFamily: 'var(--ff-display)', fontSize: 28, fontWeight: 600, textTransform: 'uppercase', lineHeight: 0.98, color: 'var(--text-primary)' }}>
+        <div style={{ position: 'absolute', left: 14, right: 14, bottom: 30, zIndex: 3, fontFamily: 'var(--ff-display)', fontSize: 28, fontWeight: 600, textTransform: 'uppercase', lineHeight: 0.98, color: 'var(--text-on-media)' }}>
           {recipe.name}
         </div>
-        <div style={{ position: 'absolute', left: 14, bottom: 12, zIndex: 3, fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--text-secondary)' }}>
+        <div style={{ position: 'absolute', left: 14, bottom: 12, zIndex: 3, fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--text-on-media-dim)' }}>
           {recipe.servings} adag · {totalMins} perc · létrehozva {recipe.createdDate}
         </div>
       </div>
