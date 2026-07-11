@@ -12,6 +12,7 @@ import { QuickStatsRow } from '@/features/today/components/QuickStatsRow'
 import { InsightsTeaser } from '@/features/today/components/InsightsTeaser'
 import { CheckInStrip } from '@/features/today/components/CheckInStrip'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
+import { DailyQuestsCard } from '@/features/today/components/DailyQuestsCard'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { AnchorModeView } from '@/features/today/pages/AnchorModeView'
 
@@ -37,6 +38,7 @@ export function TodayPage() {
       <BriefingCard briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />
       <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
       {companionNote && <CompanionNoteCard note={companionNote} />}
+      <DailyQuestsCard />
       {workout && (
         <WorkoutTeaser workout={workout} niggle={scenario.niggle} time={workoutTime} prediction={prediction} />
       )}

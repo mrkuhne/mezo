@@ -22,6 +22,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +52,12 @@ public class QuestService {
     public QuestDayResponse getDay(UUID userId, LocalDate date) {
         List<DailyQuestEntity> rows = repository.findByCreatedByAndQuestDateOrderBySlotAsc(userId, date);
         if (rows.isEmpty() && date.equals(LocalDate.now())) {
-            rows = selector.generate(userId, date); // lazy first offer, today only
+            try {
+                rows = selector.generate(userId, date); // lazy first offer, today only
+            } catch (DataIntegrityViolationException e) {
+                // lost the race against the morning generate cron — the rows exist now, re-read
+                rows = repository.findByCreatedByAndQuestDateOrderBySlotAsc(userId, date);
+            }
         }
         List<LevelUpResult> levelUps = evaluateAndFinalize(rows, LocalDate.now());
         int rerollsUsed = repository.countByCreatedByAndQuestDateAndStatus(

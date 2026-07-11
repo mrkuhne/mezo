@@ -52,7 +52,7 @@ export function useQuestActions(date: string) {
             }
           })
         }
-      : (id: string) => questApi.reroll(id),
+      : (id: string) => questApi.reroll(id).then(() => undefined),
     onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: key(date) }),
   })
 
