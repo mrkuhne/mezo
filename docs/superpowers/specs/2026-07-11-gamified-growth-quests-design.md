@@ -138,7 +138,7 @@ Free-text logging of life activities; the AI routes the reward.
 
 | Epic | Content | Ships value |
 |---|---|---|
-| **E1 — Quest core** | ADR (XP-vs-narrative resolution) + `feature/quest` + catalog + selection/evaluation + *derived* quests on existing skills + Today `DailyQuestsCard` + reroll + XP wiring | 3 live daily quests on real data, day one |
+| **E1 — Quest core** | ADR (XP-vs-narrative resolution) + `feature/quest` + catalog + selection/evaluation + *derived* quests + Today `DailyQuestsCard` + reroll + XP wiring + LIFE kind CHECK relax with a single `recovery` skill (FUELBIO XP routing — robustness is recomputed absolutely and cannot carry quest XP; full LIFE band stays E2). BODY + FUELBIO slots; GROWTH slot activates in E2 | 2 live daily quests on real data, day one |
 | **E2 — Growth layer** | LIFE band (taxonomy + migration) + `feature/activity` + AI classification + `ActivityLogSheet` + activity-mode quests + Me `GrowthCard` (octagon + traits) | Personal-growth loop complete |
 | **E3 — Life integrations & polish** | savings aggregate, adaptive quest difficulty, companion flavor copy on quests, weekly-summary integration | Depth & personalization |
 | **E4 — Shop & coins** *(future, out of scope)* | wallet ledger, shop UI, coin visibility, spendable items | — |
