@@ -53,6 +53,7 @@ public class WeeklySuggestionGenerator {
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
+    private final GrowthDigestBlock growthDigestBlock;
 
     /** Generates (or returns the existing) suggestion for one ISO-Monday week; null = honest absence. */
     @Transactional
@@ -101,6 +102,7 @@ public class WeeklySuggestionGenerator {
         return contextSnapshotAssembler.render(userId, LocalDate.now())
                 + facts
                 + "\n\nELŐZŐ HÉT NAPJAI (legfrissebb elöl):\n" + narratives
-                + (patterns.isBlank() ? "" : "\n\nMINTÁK:\n" + patterns);
+                + (patterns.isBlank() ? "" : "\n\nMINTÁK:\n" + patterns)
+                + growthDigestBlock.render(userId, weekStart.minusWeeks(1));
     }
 }

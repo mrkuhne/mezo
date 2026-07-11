@@ -54,6 +54,7 @@ public class MemoirGenerator {
     private final KnowledgeFactService knowledgeFactService;
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
+    private final GrowthDigestBlock growthDigestBlock;
 
     public record MemoirGather(String payload, List<MemoirAnchorsEnvelope.Anchor> candidates) {
     }
@@ -110,6 +111,7 @@ public class MemoirGenerator {
             candidates.add(new MemoirAnchorsEnvelope.Anchor("Memory", s.getSummaryDate().toString()));
         }
         payload.append(knowledgeFactService.renderPromptBlock(userId));
+        payload.append(growthDigestBlock.render(userId, weekStart));
         var patterns = patternRepository
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId);
         if (!patterns.isEmpty()) {
