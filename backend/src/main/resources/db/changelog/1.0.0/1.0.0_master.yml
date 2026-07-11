@@ -328,3 +328,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607082000_mezo-52zg_catalog_write.sql
+  - changeSet:
+      id: "1.0.0:202607111300_mezo-df7q_create_daily_quest"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607111300_mezo-df7q_create_daily_quest.sql
