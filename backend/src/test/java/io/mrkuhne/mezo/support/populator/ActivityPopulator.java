@@ -30,4 +30,19 @@ public class ActivityPopulator {
         e.setCategorizedBy(categorizedBy);
         return repository.saveAndFlush(e);
     }
+
+    /** Financial entry with an AI-extracted HUF amount (savings aggregate tests, E3). */
+    public ActivityLogEntity financialActivity(UUID createdBy, LocalDate day, String text, Long amountHuf) {
+        ActivityLogEntity e = new ActivityLogEntity();
+        e.setCreatedBy(createdBy);
+        e.setOccurredOn(day);
+        e.setText(text);
+        e.setSkillKey("financial");
+        e.setConfidence(new BigDecimal("0.900"));
+        e.setXpAwarded(10);
+        e.setXpSuggested(10);
+        e.setExtracted(new ActivityExtract(null, amountHuf));
+        e.setCategorizedBy(ActivityLogEntity.BY_AI);
+        return repository.saveAndFlush(e);
+    }
 }
