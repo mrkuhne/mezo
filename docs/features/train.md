@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-07-09
+updated: 2026-07-11
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -166,6 +166,7 @@ This is the highest-value section: Train both consumes and exposes a number of s
 | Seam | Direction | Where | Type crossing |
 |---|---|---|---|
 | **Single data boundary** | Train ↔ app | `frontend/src/data/hooks.ts:202-203` re-exports `useTrain`, `useRunning` | hook return types `TrainData`, `RunningData` |
+| **Day-type seam → Growth quests** (`mezo-df7q`) | Train → Quest | `WorkoutService.findPlannedTemplateForDate` (extracted from `getToday` — planned template for a date via active meso + HU day label); `QuestEvaluator` reads `findDoneInstanceDates` | `Optional<WorkoutSessionEntity>` (present → GYM day, absent → REST); see [`growth.md`](growth.md). `LevelUpResult.source`/`Gain.kind` contract enums extended (`QUEST`/`LIFE`) in `train.yml` |
 | **`Mai` aggregation** | GYM/Sport ↔ Running | `pages/TrainTodayPage.tsx` composes BOTH hooks | `WeeklyAgendaDay`, `RunPrescribedSession`, `WorkoutPlan`, `SportSchedule` |
 | **Sport → all systems (cross-load)** | Sport → Train/Fuel/Sleep/Weight/Insights | `data/train/train.ts` `sport.crossLoad` + `SYSTEM_LABELS`; rendered by `CrossLoadRow` | `CrossLoadRow {target,impact,why,system,warning}` — 🟣 **mock-only; engine Phase 3** (real mode = `crossLoad: null` → view ghosts) |
 | **Running → GYM (cross-load)** | Running → Train leg volume | `components/RunCrossLoadCard.tsx` | static presentational text — 🟣 **Phase-3 engine** |
