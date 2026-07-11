@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.progression.PerkCatalog;
 import io.mrkuhne.mezo.feature.progression.ProgressionCurve;
 import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
 import io.mrkuhne.mezo.feature.progression.RobustnessSource;
+import io.mrkuhne.mezo.feature.progression.activity.ActivitySignal;
 import io.mrkuhne.mezo.feature.progression.config.ProgressionProperties;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpEventEntity;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
@@ -47,6 +48,7 @@ public class ProgressionService {
     private static final String SOURCE_RUN = "RUN";
     private static final String SOURCE_SPORT = "SPORT";
     private static final String SOURCE_QUEST = "QUEST";
+    private static final String SOURCE_ACTIVITY = "ACTIVITY";
     private static final int[] MILESTONES = {5, 10, 15, 20, 25, 30};
 
     private final SkillProgressRepository skillProgressRepository;
@@ -133,6 +135,45 @@ public class ProgressionService {
         }
         return award(createdBy, SOURCE_QUEST, signal.questId(), deltas, kinds,
             signal.label(), null, null);
+    }
+
+    /** Categorized activity → single-LIFE-skill XP through the shared idempotent tail (source ACTIVITY). */
+    @Transactional
+    public LevelUpResult applyActivity(UUID createdBy, ActivitySignal signal) {
+        Map<String, Long> deltas = new LinkedHashMap<>();
+        Map<String, String> kinds = new LinkedHashMap<>();
+        if (signal.xp() > 0) {
+            deltas.put(signal.skillKey(), (long) signal.xp());
+            kinds.put(signal.skillKey(), "LIFE");
+        }
+        return award(createdBy, SOURCE_ACTIVITY, signal.activityId(), deltas, kinds,
+            signal.label(), null, null);
+    }
+
+    /**
+     * Category override: MOVE already-awarded activity XP between LIFE rows (spec §5 — the
+     * override grants/moves the XP). Direct row adjustment, no new level_up_event: the original
+     * event stays as the grant's ledger entry (its payload keeps the old skill — acceptable
+     * correction-history trade-off, documented in docs/features/growth.md).
+     */
+    @Transactional
+    public void moveActivityXp(UUID createdBy, String fromSkillKey, String toSkillKey, long xp) {
+        skillProgressRepository.findByCreatedByAndSkillKey(createdBy, fromSkillKey).ifPresent(from -> {
+            from.setCumulativeXp(Math.max(0, from.getCumulativeXp() - xp));
+            from.setCurrentLevel(curve.levelFor(from.getCumulativeXp()));
+            skillProgressRepository.save(from);
+        });
+        SkillProgressEntity to = skillProgressRepository
+            .findByCreatedByAndSkillKey(createdBy, toSkillKey).orElseGet(() -> {
+                SkillProgressEntity r = new SkillProgressEntity();
+                r.setCreatedBy(createdBy);
+                r.setSkillKey(toSkillKey);
+                r.setSkillKind("LIFE");
+                return r;
+            });
+        to.setCumulativeXp(to.getCumulativeXp() + xp);
+        to.setCurrentLevel(curve.levelFor(to.getCumulativeXp()));
+        skillProgressRepository.save(to);
     }
 
     @Transactional
