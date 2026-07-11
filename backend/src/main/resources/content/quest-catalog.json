@@ -1,0 +1,51 @@
+[
+  {
+    "key": "body_gym_done", "slot": "BODY", "skillKey": "strength_endurance", "skillKind": "ATHLETIC",
+    "title": "A mai tervezett edzés a naptárban van — csináld végig",
+    "why": "A megjelenés a legerősebb identitás-szavazat: aki ma edz, az edző ember.",
+    "metric": "gym_session_done", "threshold": null, "xp": 25, "coins": 0, "difficulty": 2,
+    "dayTypes": ["GYM"], "requiresGoalPrescription": false, "cooldownDays": 0
+  },
+  {
+    "key": "body_rest_sleep", "slot": "BODY", "skillKey": "recovery", "skillKind": "LIFE",
+    "title": "Pihenőnap: aludj legalább 7,5 órát",
+    "why": "A pihenőnap edzés — az alvás alatt épül az izom és áll helyre az idegrendszer.",
+    "metric": "sleep_target", "threshold": 7.5, "xp": 20, "coins": 0, "difficulty": 2,
+    "dayTypes": ["REST"], "requiresGoalPrescription": false, "cooldownDays": 0
+  },
+  {
+    "key": "bio_checkin_full", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
+    "title": "Mind a 4 heartbeat check-in ma",
+    "why": "A napi 4 pillanatfelvétel az, amiből a mintáid kirajzolódnak — magadat figyeled meg.",
+    "metric": "checkin_full", "threshold": 4, "xp": 20, "coins": 0, "difficulty": 2,
+    "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
+  },
+  {
+    "key": "bio_weight_log", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
+    "title": "Reggeli súlymérés — logold be",
+    "why": "Egy pont zaj, a sorozat trend: a reggeli rutinod adja a görbét, amiből a cél él.",
+    "metric": "weight_logged", "threshold": null, "xp": 15, "coins": 0, "difficulty": 1,
+    "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
+  },
+  {
+    "key": "bio_water", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
+    "title": "Igyál meg legalább 2,5 litert ma",
+    "why": "A hidratáltság a legolcsóbb teljesítményfokozó — edzés, fókusz, étvágy mind rajta múlik.",
+    "metric": "water_target", "threshold": 2500, "xp": 15, "coins": 0, "difficulty": 1,
+    "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
+  },
+  {
+    "key": "bio_protein", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
+    "title": "Hozd be a heti recept fehérje-célját ma",
+    "why": "A fehérje a heti recepted gerince — ma bevinni annyi, mint holnap erősebbnek lenni.",
+    "metric": "protein_target", "threshold": null, "xp": 30, "coins": 0, "difficulty": 3,
+    "dayTypes": ["ANY"], "requiresGoalPrescription": true, "cooldownDays": 3
+  },
+  {
+    "key": "bio_sleep", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
+    "title": "Aludj legalább 7,5 órát",
+    "why": "7,5 óra alvás = a holnapi erőnléted, étvágy-kontrollod és hangulatod alapja.",
+    "metric": "sleep_target", "threshold": 7.5, "xp": 25, "coins": 0, "difficulty": 2,
+    "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 3
+  }
+]
