@@ -1,4 +1,5 @@
 import { useWeekly } from '@/data/hooks'
+import { GrowthWeekCard } from '@/features/insights/components/GrowthWeekCard'
 import type { WeeklyTrend } from '@/data/types'
 
 function trendArrow(t: WeeklyTrend): string {
@@ -10,7 +11,7 @@ function trendColor(t: WeeklyTrend): string {
 }
 
 export function WeeklyPage() {
-  const { weekly, deltaLabel, weeklySuggestion, mode } = useWeekly()
+  const { weekly, deltaLabel, weeklySuggestion, growthWeek, mode } = useWeekly()
 
   return (
     <div className="col gap-md">
@@ -76,6 +77,8 @@ export function WeeklyPage() {
           </p>
         )}
       </div>
+
+      <GrowthWeekCard growth={growthWeek} />
     </div>
   )
 }

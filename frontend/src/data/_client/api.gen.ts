@@ -971,6 +971,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progression/growth-week/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Weekly growth aggregate — quests, LIFE XP, activities, savings (Progression)
+         * @description Aggregates the ISO week (Monday-keyed) containing the given date: closed daily-quest counts, LIFE XP earned (level_up_event gains), activity-log entry count and the week's savings sum. Honest zeros when nothing happened — never a 404.
+         */
+        get: operations["getGrowthWeek"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/protocol": {
         parameters: {
             query?: never;
@@ -2899,6 +2919,11 @@ export interface components {
         ProgressionProfileResponse: {
             /** @description Mean of the 11 non-robustness athletic levels (1-decimal); null = ghost (no XP yet). */
             athleteLevel?: number | null;
+            /**
+             * Format: int64
+             * @description Sum of AI-extracted amountHuf on financial activity entries, trailing 30 days; null when the activity feature is off
+             */
+            savingsHuf30d?: number | null;
             streakWeeks: number;
             athletic: components["schemas"]["SkillLevel"][];
             muscle: components["schemas"]["SkillLevel"][];
@@ -2914,6 +2939,35 @@ export interface components {
             disciplinePct?: number | null;
             /** @description Current streak of consecutive weeks with >= 4 active days (any XP-earning action) */
             consistencyWeeks: number;
+        };
+        GrowthWeekResponse: {
+            /**
+             * Format: date
+             * @description ISO Monday of the aggregated week
+             */
+            weekStart: string;
+            /** Format: int32 */
+            questCompleted: number;
+            /**
+             * Format: int32
+             * @description completed + expired (rerolled/offered excluded)
+             */
+            questClosed: number;
+            /**
+             * Format: int64
+             * @description Sum of LIFE-kind gains in the week's level-up events
+             */
+            lifeXp: number;
+            /**
+             * Format: int32
+             * @description Activity-log entries dated in the week
+             */
+            activities: number;
+            /**
+             * Format: int64
+             * @description Sum of financial amountHuf dated in the week
+             */
+            savingsHuf: number;
         };
         SkillLevel: {
             skillKey: string;
@@ -6571,6 +6625,37 @@ export interface operations {
                 };
             };
             /** @description Unauthenticated. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getGrowthWeek: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The week's growth aggregate */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrowthWeekResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
             401: {
                 headers: {
                     [name: string]: unknown;

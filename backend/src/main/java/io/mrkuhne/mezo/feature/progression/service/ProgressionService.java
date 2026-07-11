@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
 import io.mrkuhne.mezo.api.dto.RadarAxis;
 import io.mrkuhne.mezo.api.dto.SkillLevel;
 import io.mrkuhne.mezo.api.dto.SkillRef;
+import io.mrkuhne.mezo.feature.progression.ActivityLedgerSource;
 import io.mrkuhne.mezo.feature.progression.PerkCatalog;
 import io.mrkuhne.mezo.feature.progression.ProgressionCurve;
 import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,7 @@ public class ProgressionService {
     private final RobustnessSource robustnessSource;
     private final ProgressionProperties properties;
     private final TraitCalculator traitCalculator;
+    private final ObjectProvider<ActivityLedgerSource> activityLedgerSource;
 
     @Transactional
     public LevelUpResult applyGym(UUID createdBy, GymSignal signal) {
@@ -257,8 +260,13 @@ public class ProgressionService {
             .bestMuscle(bestRow(rows, "MUSCLE", false))
             .build();
 
+        ActivityLedgerSource activityLedger = activityLedgerSource.getIfAvailable();
+        Long savingsHuf30d = activityLedger == null ? null
+            : activityLedger.stats(createdBy, LocalDate.now().minusDays(29), LocalDate.now()).savingsHuf();
+
         return ProgressionProfileResponse.builder()
             .athleteLevel(athleteLevel)
+            .savingsHuf30d(savingsHuf30d)
             .streakWeeks(robustnessSource.streakWeeks(createdBy))
             .athletic(athletic).muscle(muscle).radarAxes(axes).highlights(highlights)
             .life(life).traits(traitCalculator.traits(createdBy, LocalDate.now()))

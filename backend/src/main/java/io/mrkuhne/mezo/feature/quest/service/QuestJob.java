@@ -32,6 +32,7 @@ public class QuestJob {
     private final DailyQuestRepository repository;
     private final QuestSelector selector;
     private final QuestService questService;
+    private final org.springframework.beans.factory.ObjectProvider<QuestFlavor> questFlavor;
 
     @Scheduled(cron = "${mezo.quest.generate-cron}")
     public void runGenerate() {
@@ -40,7 +41,12 @@ public class QuestJob {
         for (AppUserEntity user : appUserRepository.findAll()) {
             try {
                 if (repository.findByCreatedByAndQuestDateOrderBySlotAsc(user.getId(), today).isEmpty()) {
-                    generated += selector.generate(user.getId(), today).size();
+                    List<DailyQuestEntity> fresh = selector.generate(user.getId(), today);
+                    generated += fresh.size();
+                    QuestFlavor flavor = questFlavor.getIfAvailable();
+                    if (flavor != null) {
+                        flavor.rewrite(fresh); // companion voice; failures keep catalog copy
+                    }
                 }
             } catch (Exception e) {
                 log.warn("Quest generation failed for user {} on {}", user.getId(), today, e);

@@ -4,6 +4,7 @@ import type {
   Prediction,
   Experiment,
   WeeklyReview,
+  WeeklyGrowth,
   Memoir,
 } from '@/data/types'
 
@@ -68,6 +69,15 @@ export const weekly: WeeklyReview = {
     { label: 'Kcal pacing', value: '94% target', trend: 'up' },
     { label: 'Niggle-mentes napok', value: '5/7', trend: 'down' },
   ],
+}
+
+export const growthWeek: WeeklyGrowth = {
+  weekStart: '2026-05-18',
+  questCompleted: 9,
+  questClosed: 14,
+  lifeXp: 120,
+  activities: 6,
+  savingsHuf: 50000,
 }
 
 export const weeklySuggestion =

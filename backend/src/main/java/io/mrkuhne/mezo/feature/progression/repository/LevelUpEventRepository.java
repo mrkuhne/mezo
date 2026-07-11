@@ -18,4 +18,7 @@ public interface LevelUpEventRepository extends JpaRepository<LevelUpEventEntity
     /** Active-day feed of the consistency trait: every award timestamp since the horizon. */
     @Query("select e.occurredAt from LevelUpEventEntity e where e.createdBy = :createdBy and e.occurredAt >= :from")
     List<Instant> findOccurredAtSince(@Param("createdBy") UUID createdBy, @Param("from") Instant from);
+
+    /** Growth-week aggregation: full events since the horizon (payload gains summed in code). */
+    List<LevelUpEventEntity> findByCreatedByAndOccurredAtGreaterThanEqual(UUID createdBy, Instant from);
 }

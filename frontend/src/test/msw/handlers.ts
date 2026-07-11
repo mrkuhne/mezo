@@ -140,6 +140,7 @@ export const handlers = [
       highlights: { bestAthletic: { skillKey: 'max_strength', level: 7 }, bestMuscle: { skillKey: 'back-mid', level: 6 } },
       life: [],
       traits: { disciplinePct: null, consistencyWeeks: 0 },
+      savingsHuf30d: null,
     }),
   ),
   http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
@@ -194,6 +195,18 @@ export const handlers = [
 
   // Proactive weekly suggestion (W1) — default: honest 404, the Weekly card keeps its placeholder.
   http.get(`${API_BASE}/api/proactive/weekly-suggestion`, () => new HttpResponse(null, { status: 404 })),
+
+  // Weekly growth aggregate (E3, mezo-6ng8) — default: honest zeros (never a 404); the
+  // GrowthWeekCard renders its "nincs growth-adat" empty line. Tests override with server.use(...).
+  http.get(`${API_BASE}/api/progression/growth-week/:date`, ({ params }) =>
+    HttpResponse.json({
+      weekStart: params.date,
+      questCompleted: 0,
+      questClosed: 0,
+      lifeXp: 0,
+      activities: 0,
+      savingsHuf: 0,
+    })),
 
   // Proactive memoir (W2) — default: honest 404, MemoirPage renders its "készül" state.
   http.get(`${API_BASE}/api/proactive/memoir`, () => new HttpResponse(null, { status: 404 })),

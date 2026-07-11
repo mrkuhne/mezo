@@ -133,6 +133,15 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern ACTIVITY_SENTINEL =
             Pattern.compile("\\[fake-activity:(\\{.*\\}|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of QuestFlavor.FLAVOR_MARKER (feature/quest) — LITERAL, cycle rule. */
+    public static final String QUEST_FLAVOR_MARKER_MIRROR = "KULDETES-IZESITES-FELADAT";
+
+    /** Scripted flavor rewrite (E3): {@code [fake-quest-flavor:[…]]} planted in a quest title.
+     *  GREEDY — the payload is a JSON array of objects. Default [] = no rewrite, so unscripted
+     *  cron runs keep catalog copy deterministically. */
+    public static final Pattern QUEST_FLAVOR_SENTINEL =
+            Pattern.compile("\\[fake-quest-flavor:(\\[.*\\]|[^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -197,6 +206,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1)
                     : "{\"skillKey\":\"learning\",\"confidence\":0.9,\"xpSuggestion\":15,"
                             + "\"durationMin\":null,\"amountHuf\":null}";
+        }
+        if (systemPrompt.startsWith(QUEST_FLAVOR_MARKER_MIRROR)) {
+            Matcher m = QUEST_FLAVOR_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "[]";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);

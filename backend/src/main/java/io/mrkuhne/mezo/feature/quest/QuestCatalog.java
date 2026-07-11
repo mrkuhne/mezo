@@ -64,7 +64,8 @@ public class QuestCatalog {
             && d.xp() >= 15 && d.xp() <= 40
             && d.coins() == 0
             && d.dayTypes() != null && !d.dayTypes().isEmpty() && DAY_TYPES.containsAll(d.dayTypes())
-            && d.cooldownDays() >= 0;
+            && d.cooldownDays() >= 0
+            && d.difficulty() >= 1 && d.difficulty() <= 3;
         if (!valid) {
             throw new IllegalStateException("Invalid quest-catalog item: key=" + d.key());
         }

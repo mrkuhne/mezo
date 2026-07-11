@@ -14,4 +14,7 @@ public interface ActivityLogRepository extends JpaRepository<ActivityLogEntity, 
 
     /** Owned lookup for the categorize path. */
     Optional<ActivityLogEntity> findByIdAndCreatedBy(UUID id, UUID createdBy);
+
+    /** Window read for growth aggregates (entry count + financial amount sums in code). */
+    List<ActivityLogEntity> findByCreatedByAndOccurredOnBetween(UUID createdBy, LocalDate from, LocalDate to);
 }

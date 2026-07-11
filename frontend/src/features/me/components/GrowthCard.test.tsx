@@ -27,6 +27,16 @@ describe('GrowthCard', () => {
     // computed traits (never self-claimed)
     expect(screen.getByText('78%')).toBeInTheDocument() // disciplinePct
     expect(screen.getByText('5 hét')).toBeInTheDocument() // consistencyWeeks
+    // 30-day savings stat (bar-less row, hu-HU grouped Ft)
+    expect(screen.getByText('Megtakarítás (30 nap)')).toBeInTheDocument()
+    expect(screen.getByText('50 000 Ft')).toBeInTheDocument()
+  })
+
+  it('hides the savings row when savingsHuf30d is 0', () => {
+    stubReduced()
+    const profile = { ...progressionProfileMock, savingsHuf30d: 0 }
+    render(<GrowthCard profile={profile} />)
+    expect(screen.queryByText('Megtakarítás (30 nap)')).not.toBeInTheDocument()
   })
 
   it('renders a ghost prompt when there is no LIFE XP yet', () => {

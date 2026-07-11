@@ -2,7 +2,7 @@
 title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-07-07
+updated: 2026-07-11
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -136,7 +136,10 @@ an L2 accept/dismiss write path, un-ghosting the last Insights tab.**
   (3-5 sentences, 2-3 actionable suggestions, invent-no-numbers, never suggest a med-dose change),
   `strip()`ped and persisted. **Empty prior week OR blank answer ⇒ NO row** (honest absence);
   existing row ⇒ returned untouched (idempotent, no LLM call). Gather = pure code, prose = pure LLM
-  (NFR-M-4) — the briefing split at the smart tier.
+  (NFR-M-4) — the briefing split at the smart tier. **Since gamified-growth E3 (`mezo-6ng8`)** the
+  gather also appends the growth-domain **`NÖVEKEDÉS` block** (`GrowthDigestBlock.render`, feature/quest→progression
+  aggregate — quest ratio + LIFE XP + activity count + savings; `""` on an empty week) for the
+  **PRIOR** week (`weekStart.minusWeeks(1)`), so the plan prose can reflect the week's growth. See [`growth.md` §5](growth.md).
 - **A Monday-dawn cron** — `WeeklySuggestionJob` `@Scheduled` on `mezo.proactive.weekly.cron`
   (**`0 0 6 * * MON`** — Monday 06:00 server zone) pre-generates the **CURRENT** week's suggestion
   per user (gathered from the just-finished previous week — §9 decision j). Gated on a THIRD switch
@@ -175,7 +178,10 @@ an L2 accept/dismiss write path, un-ghosting the last Insights tab.**
   **bounds-checked, deduped index→anchor resolution** (the model SELECTS anchors by index, can never
   invent one — the briefing ref rule). **Empty week OR unusable answer (null/blank title/body) ⇒ NO
   row** (honest absence); existing row ⇒ returned untouched (idempotent, no LLM call). Gather = pure
-  code, prose = pure LLM (NFR-M-4) — the briefing structure at the weekly-suggestion tier.
+  code, prose = pure LLM (NFR-M-4) — the briefing structure at the weekly-suggestion tier. **Since
+  gamified-growth E3 (`mezo-6ng8`)** the gather also appends the **`NÖVEKEDÉS` block**
+  (`GrowthDigestBlock.render`) for the **CURRENT** week (`weekStart`, the week being memoir'd), so the
+  narrative can name the week's quests/LIFE XP/savings. See [`growth.md` §5](growth.md).
 - **A Sunday-evening cron** — `MemoirJob` `@Scheduled` on `mezo.proactive.memoir.cron`
   (**`0 0 19 * * SUN`** — Sunday 19:00 server zone, the old PRD journey 5.8) pre-generates the memoir
   for the week **ENDING that Sunday** (its Monday = `previousOrSame(MONDAY)` of "now"). At 19:00 the
