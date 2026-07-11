@@ -34,6 +34,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -91,12 +92,7 @@ public class WorkoutService {
         // regardless of whether today is a gym day, so the weekly rows can mark PAST done days.
         List<LocalDate> weekDoneDates = doneDatesThisWeek(createdBy);
         empty.setWeekDoneDates(weekDoneDates);
-        String todayLabel = HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
-        WorkoutSessionEntity day = workoutSessionRepository
-            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()))
-            .stream()
-            .filter(s -> s.getTemplateSessionId() == null && todayLabel.equals(s.getDayLabel()))
-            .findFirst().orElse(null);
+        WorkoutSessionEntity day = findPlannedTemplateForDate(createdBy, LocalDate.now()).orElse(null);
         if (day == null) {
             return empty;
         }
@@ -135,6 +131,26 @@ public class WorkoutService {
             .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
             .weekDoneDates(weekDoneDates)
             .build();
+    }
+
+    /**
+     * The planned (date-less) template session for a calendar date: active mesocycle + HU
+     * day-label match. Quest generation (feature/quest) uses this as the day-type seam
+     * (present → GYM day, absent → REST day), sharing getToday's resolution logic.
+     */
+    public Optional<WorkoutSessionEntity> findPlannedTemplateForDate(UUID createdBy, LocalDate date) {
+        MesocycleEntity activeMeso = mesocycleRepository
+            .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
+            .stream().findFirst().orElse(null);
+        if (activeMeso == null) {
+            return Optional.empty();
+        }
+        String dayLabel = HU_DAY_LABELS.get(date.getDayOfWeek().getValue() - 1);
+        return workoutSessionRepository
+            .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()))
+            .stream()
+            .filter(s -> s.getTemplateSessionId() == null && dayLabel.equals(s.getDayLabel()))
+            .findFirst();
     }
 
     /**

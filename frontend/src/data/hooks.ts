@@ -31,3 +31,4 @@ export { useMedication, useMedicationActions } from '@/data/fuel/medicationHooks
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from '@/data/me/goalHooks'
 export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHooks'
 export { useProgressionProfile } from '@/data/progression/progressionHooks'
+export { useDailyQuests, useQuestActions } from '@/data/quest/questHooks'

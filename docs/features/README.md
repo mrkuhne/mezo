@@ -45,6 +45,7 @@ Status legend: ✅ done · 🔶 mock-only (Phase-1 FE, no real backend yet) · �
 | [`insights.md`](insights.md) | Insights (`/insights`) | 🔶 mock-only (🟣 Phase-3 landing zone) | The "AI brain" read surface: 7 sub-tabs (patterns, weekly, memoir, knowledge, chat, predictions, experiments) — hand-authored mock copy simulating the future AI. |
 | [`me.md`](me.md) | Me (`/me`, "Én") | mixed — `Cél`/`Alvás` ✅ backed; `Profil`/`Emberek`/`Tudás` 🔶 | Profile + biometrics + relationships hub. Weight (`Cél`) and sleep (`Alvás`) are real; profile, People, and the Knowledge alias are mock. |
 | [`companion.md`](companion.md) | Companion (AI chat brain, Phase-3) | mixed — backend ✅ V0.2 spine; FE 🔶 mock | The Phase-3 AI companion: persisted conversations + a sync Hungarian chat endpoint over the `CompanionLlm` port (Spring AI 2 / Gemini). No FE surface yet — the ChatPage stays the mock `insights` chat until V0.4. |
+| [`growth.md`](growth.md) | Growth (daily quests, no own route — Today card) | ✅ E1 done | Gamified growth layer per ADR 0010: deterministic catalog-driven daily quests (BODY+FUELBIO), derived completion → XP via the progression award tail, LIFE band seed (`recovery`), reroll, cron backstops. E2 (LIFE band + activity log + GrowthCard) planned. |
 
 ### Platform docs (cross-cutting, `_`-prefixed — no route/tab of their own)
 

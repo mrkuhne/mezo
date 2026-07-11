@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-07-10
+updated: 2026-07-11
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights

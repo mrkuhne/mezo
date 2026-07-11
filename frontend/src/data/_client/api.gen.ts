@@ -1431,6 +1431,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quest/day/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The day's daily quests (lazy-generates for today; evaluates derived completion) (Quests)
+         * @description Returns the day's quests (rerolled rows excluded). Lazily generates when none exist and date == today; lazily evaluates offered derived quests (completing them awards XP through progression — completions surface in levelUps); offered quests of past days expire quietly. An empty quests array is the honest empty state (never a 404).
+         */
+        get: operations["getQuestDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quest/{id}/reroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace one of today's offered quests with the next eligible catalog candidate (Quests) */
+        post: operations["rerollQuest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1856,7 +1893,7 @@ export interface components {
         };
         LevelUpResult: {
             /** @enum {string} */
-            source: "GYM" | "SPORT" | "RUN";
+            source: "GYM" | "SPORT" | "RUN" | "QUEST";
             workoutLabel?: string;
             durationMin?: number;
             rpe?: number;
@@ -1870,7 +1907,7 @@ export interface components {
         LevelUpGain: {
             skillKey: string;
             /** @enum {string} */
-            kind: "ATHLETIC" | "MUSCLE";
+            kind: "ATHLETIC" | "MUSCLE" | "LIFE";
             name: string;
             icon?: string;
             /** Format: int64 */
@@ -3220,6 +3257,37 @@ export interface components {
             outcomeGood?: boolean | null;
             /** Format: date-time */
             generatedAt: string;
+        };
+        QuestResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            questDate: string;
+            /** @description BODY | FUELBIO | GROWTH */
+            slot: string;
+            /** @description Progression skill the XP routes to */
+            skillKey: string;
+            /** @description HU identity-vote quest title */
+            title: string;
+            /** @description HU benefit-first rationale */
+            why: string;
+            /** @description Code-derived display string of the structured target */
+            targetLabel: string;
+            /** Format: int32 */
+            xp: number;
+            /** @description offered | completed | expired | rerolled */
+            status: string;
+            /** Format: date-time */
+            completedAt?: string | null;
+        };
+        QuestDayResponse: {
+            /** Format: date */
+            date: string;
+            quests: components["schemas"]["QuestResponse"][];
+            /** @description One entry per quest completed by THIS evaluation pass (idempotent — re-reads return []) */
+            levelUps: components["schemas"]["LevelUpResult"][];
+            /** Format: int32 */
+            rerollsLeft: number;
         };
     };
     responses: never;
@@ -7553,6 +7621,86 @@ export interface operations {
                 };
             };
             /** @description The challenge is not in the proposed state (already decided) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getQuestDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day's quests + any level-up payloads produced by this evaluation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestDayResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    rerollQuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The replacement quest */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Quest not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Quest not offered / not today / daily reroll cap reached / no alternative left */
             409: {
                 headers: {
                     [name: string]: unknown;

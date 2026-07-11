@@ -19,4 +19,7 @@ public final class ProgressionTaxonomy {
     public static final List<String> MUSCLE = List.of(
         "back-mid", "lats", "chest", "shoulder", "rear-delt", "biceps", "triceps",
         "quad", "ham", "glute", "calf", "core", "traps");
+
+    /** LIFE skills (gamified growth): E1 ships recovery only; the full band arrives in E2. */
+    public static final List<String> LIFE = List.of("recovery");
 }

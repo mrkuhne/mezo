@@ -234,6 +234,17 @@ export const handlers = [
     )
   }),
 
+  // Daily quests (gamified growth E1) — default: honest empty day. Tests override with server.use(...).
+  http.get(`${API_BASE}/api/quest/day/:date`, ({ params }) =>
+    HttpResponse.json({ date: params.date, quests: [], levelUps: [], rerollsLeft: 1 }),
+  ),
+  http.post(`${API_BASE}/api/quest/:id/reroll`, ({ params }) =>
+    HttpResponse.json({
+      id: `${params.id}-r`, questDate: '2026-07-11', slot: 'FUELBIO', skillKey: 'recovery',
+      title: 'Csere-küldetés', why: 'Teszt.', targetLabel: '', xp: 15, status: 'offered', completedAt: null,
+    }),
+  ),
+
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
   http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
 

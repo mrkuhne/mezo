@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-07-07
+updated: 2026-07-11
 tags: [today, biometrics, frontend, data-layer]
 key_files:
   - frontend/src/features/today
@@ -10,7 +10,7 @@ key_files:
   - frontend/src/data/me/biometricsApi.ts
   - api/feature/checkin/checkin.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin
-related: [_platform-data-layer, _platform-design-system, me, insights, train]
+related: [_platform-data-layer, _platform-design-system, me, insights, train, growth]
 ---
 
 # Today — Feature Documentation
@@ -33,6 +33,7 @@ Driving design: [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](../su
 - **Open the app →** lands on `/today` (index route redirects there; `router.tsx:46`). Mock data renders synchronously, no spinner.
 - **Reggeli briefing card:** in real mode it renders the companion's **generated** morning prose + real reference chips when a server briefing exists (no label); when there is none yet — loading, no narrative memory (404), or the companion/proactive switch is off — it falls back to the **static demo card behind the „Demo tartalom" label**. Mock mode always shows the static card. Behavior detail in [proactive.md §2](proactive.md).
 - **Companion note card (H1, real mode only):** under the check-in strip a `CompanionNoteCard` shows the companion's **in-day note** — a midday nudge („Mezo · napközbeni jegyzet") or an evening closing („Mezo · napzárás") — when `useCompanionNote()` has one. **Honest absence:** before the first window, without narrative memory, or on 404 there is simply **no card**; mock mode never shows one (Phase-1 byte-parity). Detail in [proactive.md §2](proactive.md).
+- **"Napi küldetések" card (E1, `mezo-df7q`):** below the companion note, above the workout teaser — the day's 2 daily quests (offered `◦` / completed `✓` / quietly dimmed expired `—`), `+N XP` chips, and a `Csere` reroll button on offered quests while the daily budget (1) lasts. Derived completion happens server-side on the read; a completion detected by the current read fires the level-up overlay once. Empty day → no card. The quest domain itself is documented in [growth.md](growth.md).
 - **Scenario deep-links** (no production UI — URL search params only, parsed by `useTodayScenario`):
   - `?day=good|medium|rough` (default `medium`). `rough` → AnchorMode full-screen replaces the normal stack.
   - `?niggle=on|off` (default `on`) → toggles the amber niggle banner inside the workout teaser.
@@ -129,6 +130,7 @@ Today is an **aggregation surface** — its value is in the seams to the other d
 - **→ Fuel (`/fuel`)** — *shared data*. `FuelTimelinePreview` consumes `useFuelPreview`, which composes the **same dual-mode `useFuelTimeline()` plan the Fuel "Mai" view renders** (mock: `fuelPlan.today`; real: the `buildDayPlan` composition) — so the two never diverge (seam types `FuelSlot` / `FuelPlanToday`). It uses the shared `KIND_META` constant from `data/kindMeta.ts` (also used by Fuel). The "Fuel → Terv" eyebrow is **not** a nav link in current code.
 - **→ Insights (`/insights`)** — *live shared data + navigation* (Slice T). `useInsightsTeaser` surfaces the top proposed pattern from the real `usePatterns()` inbox (the companion V3.1 surface); the card deep-links to `/insights` and hides when there is no pattern / the switch-off 404 degraded state.
 - **→ Biometrics backend (real)** — `useCheckins` reads (`listForDay`) + writes (`save`) `feature/biometrics/checkin`; `useQuickStats` reads the sleep + weight logs (`useSleep`/`useWeight` — same cache keys as the Me tab). Server-side the check-in is a sibling of weight/sleep inside the biometrics feature, not a Today package. Since companion V0.3 the **latest check-in is also read into every chat turn's context snapshot** ([`companion.md`](companion.md) §5.5) via the `CheckInRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc` finder — read-only, one-directional (companion → biometrics).
+- **→ Growth (quests, `mezo-df7q`)** — *live shared data*. `DailyQuestsCard` consumes `useDailyQuests`/`useQuestActions` (`data/quest/`, key `['dailyQuests', date]`); the read itself triggers server-side lazy generation + derived evaluation, and completion payloads feed the global `LevelUpProvider` overlay via `useLevelUp`. Domain doc: [growth.md](growth.md).
 - **← AppLayout / shell** — `AppLayout.tsx` calls `useTodayScenario()` **itself** and passes `anchor = scenario.anchorMode && pathname.startsWith('/today')` to `PhoneFrame` (warm canvas). The contract here is the shared `TodayScenario.anchorMode` boolean: the layout's canvas and the screen's content must agree (both derive it from the same hook). The `QuickInputSheet` ("Gyors rögzítés", `features/quickinput/`) is referenced by the Today design but **owned by the shell**, not Today; its global mic Fab trigger was removed, so the sheet is currently unmounted.
 - **Shared UI primitives consumed:** `RetaPhaseBar`, `QuickStat` (`shared/ui/`), plus `Eyebrow`, `PageTitle`, `Chip`, `RefTag`, `Sheet`, `Icon`/`BrandGlyph`, `CtaPrimary`, and `SafeMarkdown` (renders briefing `**bold**` without `dangerouslySetInnerHTML`).
 
@@ -219,7 +221,7 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 **Frontend — screen + components** (`frontend/src/features/today/`):
 - `TodayPage.tsx` — composition root, AnchorMode branch, `CheckInSheet` wiring.
 - `CheckInStrip.tsx` / `CheckInSheet.tsx` (incl. `CHECKIN_DIMS`, `CheckInObservation`) / `AnchorModeView.tsx` — heartbeat strip, wizard sheet, recovery view.
-- `components/`: `BrandRow.tsx`, `RetaPhaseSection.tsx`, `DateMesoHeader.tsx`, `BriefingCard.tsx`, `CompanionNoteCard.tsx` (H1 — the in-day heartbeat note; data from `data/today/heartbeatHooks.ts`, see [proactive.md](proactive.md)), `WorkoutTeaser.tsx`, `VolleyballCard.tsx`, `VulnerabilityCard.tsx`, `FuelTimelinePreview.tsx`, `QuickStatsRow.tsx`, `InsightsTeaser.tsx`.
+- `components/`: `BrandRow.tsx`, `RetaPhaseSection.tsx`, `DateMesoHeader.tsx`, `BriefingCard.tsx`, `CompanionNoteCard.tsx` (H1 — the in-day heartbeat note; data from `data/today/heartbeatHooks.ts`, see [proactive.md](proactive.md)), `DailyQuestsCard.tsx` (E1 daily quests — data from `data/quest/`, see [growth.md](growth.md)), `WorkoutTeaser.tsx`, `VolleyballCard.tsx`, `VulnerabilityCard.tsx`, `FuelTimelinePreview.tsx`, `QuickStatsRow.tsx`, `InsightsTeaser.tsx`.
 
 **Frontend — data & lib:**
 - `frontend/src/data/today/todayHooks.ts` (+ `todayHooks.test.tsx`) — `useTodayScenario`, `resolveBriefing`, `useToday`, `useFuelPreview`, `useQuickStats`, `useInsightsTeaser`; `checkinHooks.ts` (+ test, incl. `buildDaySlots`) — `useCheckins`; `briefingHooks.ts` (+ test) — `useBriefing` (proactive B1.2) + `briefingApi.ts` (`toBriefing` wire→`Briefing`); all re-exported by the `data/hooks.ts` barrel.
