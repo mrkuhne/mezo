@@ -714,3 +714,19 @@ export interface GoalPreset {
   phaseTemplate: MesoPhase[]; color: string; icon: IconName
 }
 export interface SplitOption { label: string; days: number[]; best: string | null }
+
+// ── Daily quests (gamified growth E1, mezo-df7q) ─────────────────────────────
+export type QuestSlot = 'BODY' | 'FUELBIO' | 'GROWTH'
+export type QuestStatus = 'offered' | 'completed' | 'expired' | 'rerolled'
+export interface DailyQuest {
+  id: string
+  questDate: string
+  slot: QuestSlot
+  skillKey: string
+  title: string
+  why: string
+  targetLabel: string
+  xp: number
+  status: QuestStatus
+  completedAt?: string | null
+}
