@@ -1,7 +1,7 @@
 import { apiFetch } from '@/data/_client/api'
 import type { paths } from '@/data/_client/api.gen'
 import type { LevelUpResult } from '@/data/train/trainApi'
-import type { DailyQuest, QuestSlot, QuestStatus } from '@/data/types'
+import type { DailyQuest, QuestCompletionMode, QuestSlot, QuestStatus } from '@/data/types'
 
 type QuestDayWire =
   paths['/api/quest/day/{date}']['get']['responses']['200']['content']['application/json']
@@ -24,6 +24,7 @@ export function toQuest(w: QuestWire): DailyQuest {
     targetLabel: w.targetLabel,
     xp: w.xp,
     status: w.status as QuestStatus,
+    completionMode: (w.completionMode ?? 'DERIVED') as QuestCompletionMode,
     completedAt: w.completedAt ?? null,
   }
 }

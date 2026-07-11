@@ -718,6 +718,7 @@ export interface SplitOption { label: string; days: number[]; best: string | nul
 // ── Daily quests (gamified growth E1, mezo-df7q) ─────────────────────────────
 export type QuestSlot = 'BODY' | 'FUELBIO' | 'GROWTH'
 export type QuestStatus = 'offered' | 'completed' | 'expired' | 'rerolled'
+export type QuestCompletionMode = 'DERIVED' | 'ACTIVITY'
 export interface DailyQuest {
   id: string
   questDate: string
@@ -728,5 +729,24 @@ export interface DailyQuest {
   targetLabel: string
   xp: number
   status: QuestStatus
+  completionMode: QuestCompletionMode
   completedAt?: string | null
+}
+
+// ── Activity log (gamified growth E2, mezo-jzca) ─────────────────────────────
+export type LifeSkillKey =
+  | 'mindfulness' | 'mindset' | 'cooking' | 'financial'
+  | 'productivity' | 'learning' | 'connection' | 'recovery'
+export type ActivityCategorizedBy = 'AI' | 'USER'
+export interface ActivityEntry {
+  id: string
+  occurredOn: string
+  text: string
+  skillKey: LifeSkillKey | null
+  confidence: number | null
+  xpAwarded: number
+  durationMin?: number | null
+  amountHuf?: number | null
+  categorizedBy: ActivityCategorizedBy | null
+  createdAt?: string
 }

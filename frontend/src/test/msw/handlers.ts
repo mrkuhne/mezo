@@ -138,6 +138,8 @@ export const handlers = [
         { axis: 'Állóképesség', value: 5.5 }, { axis: 'Mozgékonyság', value: 3.2 }, { axis: 'Koordináció', value: 4.0 },
       ],
       highlights: { bestAthletic: { skillKey: 'max_strength', level: 7 }, bestMuscle: { skillKey: 'back-mid', level: 6 } },
+      life: [],
+      traits: { disciplinePct: null, consistencyWeeks: 0 },
     }),
   ),
   http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
@@ -241,9 +243,51 @@ export const handlers = [
   http.post(`${API_BASE}/api/quest/:id/reroll`, ({ params }) =>
     HttpResponse.json({
       id: `${params.id}-r`, questDate: '2026-07-11', slot: 'FUELBIO', skillKey: 'recovery',
-      title: 'Csere-küldetés', why: 'Teszt.', targetLabel: '', xp: 15, status: 'offered', completedAt: null,
+      title: 'Csere-küldetés', why: 'Teszt.', targetLabel: '', xp: 15, status: 'offered',
+      completionMode: 'DERIVED', completedAt: null,
     }),
   ),
+
+  // ── Activity log (E2, mezo-jzca). Defaults: empty day; create echoes a confident AI verdict.
+  http.get(`${API_BASE}/api/activity/day/:date`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/activity`, async ({ request }) => {
+    const body = (await request.json()) as { text: string; occurredOn?: string }
+    return HttpResponse.json({
+      entry: {
+        id: 'act-new',
+        occurredOn: body.occurredOn ?? '2026-07-11',
+        text: body.text,
+        skillKey: 'learning',
+        confidence: 0.9,
+        xpAwarded: 15,
+        durationMin: null,
+        amountHuf: null,
+        categorizedBy: 'AI',
+        createdAt: '2026-07-11T12:00:00Z',
+      },
+      completedQuest: null,
+      levelUps: [],
+    })
+  }),
+  http.post(`${API_BASE}/api/activity/:id/category`, async ({ params, request }) => {
+    const body = (await request.json()) as { skillKey: string }
+    return HttpResponse.json({
+      entry: {
+        id: params.id,
+        occurredOn: '2026-07-11',
+        text: 'Besorolt bejegyzés',
+        skillKey: body.skillKey,
+        confidence: 0.4,
+        xpAwarded: 10,
+        durationMin: null,
+        amountHuf: null,
+        categorizedBy: 'USER',
+        createdAt: '2026-07-11T12:00:00Z',
+      },
+      completedQuest: null,
+      levelUps: [],
+    })
+  }),
 
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
   http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),

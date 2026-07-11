@@ -12,6 +12,7 @@ export const mockQuestDay: DailyQuest[] = [
     targetLabel: 'Mai tervezett edzés teljesítve',
     xp: 25,
     status: 'offered',
+    completionMode: 'DERIVED',
   },
   {
     id: 'dq2',
@@ -23,7 +24,20 @@ export const mockQuestDay: DailyQuest[] = [
     targetLabel: 'Reggeli súly beloggolva',
     xp: 15,
     status: 'completed',
+    completionMode: 'DERIVED',
     completedAt: '2026-07-11T06:41:00Z',
+  },
+  {
+    id: 'dq3g',
+    questDate: '2026-07-11',
+    slot: 'GROWTH',
+    skillKey: 'learning',
+    title: 'Olvass ma legalább 10 percet',
+    why: 'Aki naponta olvas, az olvasó ember — napi 10 perc évi több mint 60 óra tanulás.',
+    targetLabel: 'Tevékenységnapló-bejegyzés ma',
+    xp: 20,
+    status: 'offered',
+    completionMode: 'ACTIVITY',
   },
 ]
 
@@ -38,4 +52,5 @@ export const mockRerollSpare: DailyQuest = {
   targetLabel: '≥ 7,5 óra alvás',
   xp: 20,
   status: 'offered',
+  completionMode: 'DERIVED',
 }

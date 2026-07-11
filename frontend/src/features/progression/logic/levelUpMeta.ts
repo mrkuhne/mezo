@@ -1,5 +1,6 @@
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { LevelUpResult } from '@/data/train/trainApi'
+import type { LifeSkillKey } from '@/data/types'
 
 type Source = LevelUpResult['source'] // 'GYM' | 'SPORT' | 'RUN' | 'QUEST' | 'ACTIVITY'
 
@@ -19,10 +20,19 @@ const ATHLETIC_META: Record<string, { name: string; icon: string }> = {
   robustness: { name: 'Robusztusság', icon: '🛡️' },
 }
 
-// LIFE band (gamified growth, ADR 0010) — E1 ships recovery only; E2 adds the full band.
-const LIFE_META: Record<string, { name: string; icon: string }> = {
-  recovery: { name: 'Regeneráció', icon: '🛌' },
-}
+// LIFE band (gamified growth E2, mezo-jzca) — octagon order, mirrors ProgressionTaxonomy.LIFE.
+export const LIFE_SKILLS: { key: LifeSkillKey; name: string; icon: string }[] = [
+  { key: 'mindfulness', name: 'Tudatosság', icon: '🧘' },
+  { key: 'mindset', name: 'Szemlélet', icon: '🌱' },
+  { key: 'cooking', name: 'Konyha', icon: '🍳' },
+  { key: 'financial', name: 'Pénzügyek', icon: '💰' },
+  { key: 'productivity', name: 'Produktivitás', icon: '🎯' },
+  { key: 'learning', name: 'Tanulás', icon: '📚' },
+  { key: 'connection', name: 'Kapcsolatok', icon: '🤝' },
+  { key: 'recovery', name: 'Regeneráció', icon: '🛌' },
+]
+const LIFE_META: Record<string, { name: string; icon: string }> =
+  Object.fromEntries(LIFE_SKILLS.map((s) => [s.key, { name: s.name, icon: s.icon }]))
 
 const MUSCLE_ICON = '💪'
 const FALLBACK_ICON = '✨'
@@ -50,7 +60,7 @@ export const HEADLINE_BY_SOURCE: Record<Source, string> = {
   RUN: 'Lett benne tempó.',
   SPORT: 'Megdolgoztattad.',
   QUEST: 'Napi győzelem.',
-  ACTIVITY: 'Ez is fejlődés.',
+  ACTIVITY: 'Az élet is edzés.',
 }
 
 /** Headline when XP accrued but no level was crossed (the common case). */
@@ -61,5 +71,5 @@ export const CHIP_ICON_BY_SOURCE: Record<Source, string> = {
   RUN: '🏃',
   SPORT: '🏐',
   QUEST: '📜',
-  ACTIVITY: '🌱',
+  ACTIVITY: '✍️',
 }
