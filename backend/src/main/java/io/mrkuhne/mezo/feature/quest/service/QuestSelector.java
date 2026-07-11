@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.quest.QuestCatalog;
+import io.mrkuhne.mezo.feature.quest.config.QuestProperties;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.quest.entity.QuestTargetEnvelope;
 import io.mrkuhne.mezo.feature.quest.repository.DailyQuestRepository;
@@ -45,6 +46,7 @@ public class QuestSelector {
     private final DailyQuestRepository repository;
     private final WorkoutService workoutService;
     private final GoalRepository goalRepository;
+    private final QuestProperties properties;
 
     @Transactional
     public List<DailyQuestEntity> generate(UUID userId, LocalDate date) {
@@ -82,11 +84,18 @@ public class QuestSelector {
                 usedMetrics.add(q.getTarget().metric());
             }
         }
-        List<QuestCatalog.QuestDef> pool = eligible(old.getSlot(), dayType, segment, usedMetrics).stream()
+        List<QuestCatalog.QuestDef> eligiblePool = eligible(old.getSlot(), dayType, segment, usedMetrics).stream()
             .filter(d -> !usedKeys.contains(d.key()))
             .toList();
-        if (pool.isEmpty()) {
+        if (eligiblePool.isEmpty()) {
             return Optional.empty();
+        }
+        Set<Integer> allowed = allowedDifficulties(userId, old.getQuestDate(), old.getSlot());
+        List<QuestCatalog.QuestDef> pool = eligiblePool.stream()
+            .filter(d -> allowed.contains(d.difficulty()))
+            .toList();
+        if (pool.isEmpty()) {
+            pool = eligiblePool; // difficulty yields to availability
         }
         QuestCatalog.QuestDef def =
             pool.get(Math.floorMod(Objects.hash(userId, old.getQuestDate(), old.getSlot(), salt), pool.size()));
@@ -97,12 +106,19 @@ public class QuestSelector {
         GoalPrescriptionJson.Segment segment, List<DailyQuestEntity> recent,
         Set<String> usedMetrics, int salt) {
 
+        Set<Integer> allowed = allowedDifficulties(userId, date, slot);
         List<QuestCatalog.QuestDef> base = eligible(slot, dayType, segment, usedMetrics);
-        List<QuestCatalog.QuestDef> pool = base.stream()
+        List<QuestCatalog.QuestDef> banded = base.stream()
+            .filter(d -> allowed.contains(d.difficulty()))
+            .toList();
+        if (banded.isEmpty()) {
+            banded = base; // difficulty yields to availability
+        }
+        List<QuestCatalog.QuestDef> pool = banded.stream()
             .filter(d -> !inCooldown(d, date, recent))
             .toList();
         if (pool.isEmpty()) {
-            pool = base; // cooldown yields to availability
+            pool = banded; // cooldown yields to availability (existing rule)
         }
         if (pool.isEmpty()) {
             return Optional.empty(); // honest: no eligible quest for this slot today
@@ -110,6 +126,29 @@ public class QuestSelector {
         QuestCatalog.QuestDef def =
             pool.get(Math.floorMod(Objects.hash(userId, date, slot, salt), pool.size()));
         return Optional.of(toEntity(userId, date, def, segment));
+    }
+
+    /** Allowed difficulty tiers for a slot from its trailing completion ratio (E3, spec §4). */
+    private Set<Integer> allowedDifficulties(UUID userId, LocalDate date, String slot) {
+        QuestProperties.Adaptive a = properties.adaptive();
+        LocalDate from = date.minusDays(a.windowDays());
+        LocalDate to = date.minusDays(1);
+        int completed = repository.countByCreatedByAndSlotAndStatusAndQuestDateBetween(
+            userId, slot, DailyQuestEntity.STATUS_COMPLETED, from, to);
+        int expired = repository.countByCreatedByAndSlotAndStatusAndQuestDateBetween(
+            userId, slot, DailyQuestEntity.STATUS_EXPIRED, from, to);
+        int closed = completed + expired;
+        if (closed < a.minSample()) {
+            return Set.of(1, 2, 3); // not enough signal — v1 behavior
+        }
+        double ratio = (double) completed / closed;
+        if (ratio >= a.highRatio()) {
+            return Set.of(1, 2, 3);
+        }
+        if (ratio <= a.lowRatio()) {
+            return Set.of(1);
+        }
+        return Set.of(1, 2);
     }
 
     private List<QuestCatalog.QuestDef> eligible(String slot, String dayType,

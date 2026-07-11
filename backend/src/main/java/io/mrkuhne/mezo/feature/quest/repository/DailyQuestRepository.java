@@ -26,4 +26,8 @@ public interface DailyQuestRepository extends JpaRepository<DailyQuestEntity, UU
 
     /** Discipline-trait window count (per terminal status). */
     int countByCreatedByAndStatusAndQuestDateBetween(UUID createdBy, String status, LocalDate from, LocalDate to);
+
+    /** Adaptive-difficulty window count (per slot + terminal status). */
+    int countByCreatedByAndSlotAndStatusAndQuestDateBetween(
+        UUID createdBy, String slot, String status, LocalDate from, LocalDate to);
 }
