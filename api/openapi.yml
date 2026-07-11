@@ -2549,6 +2549,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/progression/growth-week/{date}':
+    get:
+      tags:
+        - Progression
+      operationId: getGrowthWeek
+      summary: >-
+        Weekly growth aggregate — quests, LIFE XP, activities, savings
+        (Progression)
+      description: >-
+        Aggregates the ISO week (Monday-keyed) containing the given date: closed
+        daily-quest counts, LIFE XP earned (level_up_event gains), activity-log
+        entry count and the week's savings sum. Honest zeros when nothing
+        happened — never a 404.
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The week's growth aggregate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GrowthWeekResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/fuel/protocol:
     get:
       tags:
@@ -7433,6 +7466,13 @@ components:
           description: >-
             Mean of the 11 non-robustness athletic levels (1-decimal); null =
             ghost (no XP yet).
+        savingsHuf30d:
+          type: integer
+          format: int64
+          nullable: true
+          description: >-
+            Sum of AI-extracted amountHuf on financial activity entries,
+            trailing 30 days; null when the activity feature is off
         streakWeeks:
           type: integer
         athletic:
@@ -7473,6 +7513,39 @@ components:
           description: >-
             Current streak of consecutive weeks with >= 4 active days (any
             XP-earning action)
+    GrowthWeekResponse:
+      type: object
+      required:
+        - weekStart
+        - questCompleted
+        - questClosed
+        - lifeXp
+        - activities
+        - savingsHuf
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: ISO Monday of the aggregated week
+        questCompleted:
+          type: integer
+          format: int32
+        questClosed:
+          type: integer
+          format: int32
+          description: completed + expired (rerolled/offered excluded)
+        lifeXp:
+          type: integer
+          format: int64
+          description: Sum of LIFE-kind gains in the week's level-up events
+        activities:
+          type: integer
+          format: int32
+          description: Activity-log entries dated in the week
+        savingsHuf:
+          type: integer
+          format: int64
+          description: Sum of financial amountHuf dated in the week
     SkillLevel:
       type: object
       required:
