@@ -94,7 +94,7 @@ There is **no `view → hook → mock/real → api → backend → db` path for 
 ```
 main.tsx
   └─ QueryProvider
-       └─ ThemeProvider            (useState(() => readStoredTheme() ?? 'dark'))
+       └─ ThemeProvider            (useState(() => readStoredTheme() ?? DEFAULT_THEME))
             └─ RouterProvider       (router.tsx)
                  └─ AppLayout       (app/AppLayout.tsx)
                       PhoneFrame  (anchor skin ⇐ useTodayScenario().anchorMode)
