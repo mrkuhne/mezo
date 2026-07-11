@@ -127,6 +127,10 @@ mezo:
     # switch: proactive beans condition on BOTH (they call the CompanionLlm port).
     proactive:
       enabled: true
+    # Gamified growth E1 (ADR 0010) — daily quests (catalog-driven, derived completion).
+    # Off => the /api/quest surface 404s and no quest beans exist.
+    quest:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -168,6 +172,10 @@ mezo:
       # Workout challenges daily outcome backstop (schedule: mezo.proactive.challenge.outcome-cron);
       # off = the ChallengeJob bean does not exist (the write-path still serves)
       challenge-job:
+        enabled: true
+      # Daily-quest crons: morning generate backstop + nightly finalize (schedules: mezo.quest.*-cron);
+      # off = the QuestJob bean does not exist (the lazy GET path still serves)
+      quest-job:
         enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
@@ -429,6 +437,11 @@ mezo:
     # Radar aggregation (fixed axis grouping in v1; only the Erő muscle blend is tunable).
     radar:
       strength-muscle-blend: 0.5   # Erő = max_strength*(1-w) + muscle-level-mean*w
+  # Daily quests (gamified growth E1, ADR 0010). XP amounts live in content/quest-catalog.json.
+  quest:
+    reroll-per-day: 1               # autonomy valve (ADR 0010) — a shop item may raise it later (E4)
+    generate-cron: "0 35 6 * * *"   # morning backstop so quests exist even if Today is never opened
+    finalize-cron: "0 5 0 * * *"    # 00:05 — evaluate + quietly expire yesterday's offered quests
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
     default-increment: 2.5    # fallback load step when a type has no explicit increment

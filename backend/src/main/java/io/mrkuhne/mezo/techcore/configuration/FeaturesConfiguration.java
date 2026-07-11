@@ -62,4 +62,10 @@ public class FeaturesConfiguration {
 
     /** Hypertrophy Drive — pre-populated prescribed sets + dynamic weight/rep recommendation. */
     public static final String HYPERTROPHY_DRIVE_SWITCH = "mezo.feature.hypertrophy-drive.enabled";
+
+    /** Daily quests (gamified growth E1, ADR 0010). Gates the whole /api/quest surface + services. */
+    public static final String QUEST_SWITCH = "mezo.feature.quest.enabled";
+
+    /** Daily-quest crons (morning generate backstop + nightly finalize) — techcore cron zone (schedules: mezo.quest.*-cron). */
+    public static final String QUEST_JOB_SWITCH = "mezo.techcore.cron.quest-job.enabled";
 }
