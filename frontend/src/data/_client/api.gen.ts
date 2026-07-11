@@ -1893,7 +1893,7 @@ export interface components {
         };
         LevelUpResult: {
             /** @enum {string} */
-            source: "GYM" | "SPORT" | "RUN";
+            source: "GYM" | "SPORT" | "RUN" | "QUEST";
             workoutLabel?: string;
             durationMin?: number;
             rpe?: number;
@@ -1907,7 +1907,7 @@ export interface components {
         LevelUpGain: {
             skillKey: string;
             /** @enum {string} */
-            kind: "ATHLETIC" | "MUSCLE";
+            kind: "ATHLETIC" | "MUSCLE" | "LIFE";
             name: string;
             icon?: string;
             /** Format: int64 */

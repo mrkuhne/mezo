@@ -4685,6 +4685,7 @@ components:
             - GYM
             - SPORT
             - RUN
+            - QUEST
         workoutLabel:
           type: string
         durationMin:
@@ -4727,6 +4728,7 @@ components:
           enum:
             - ATHLETIC
             - MUSCLE
+            - LIFE
         name:
           type: string
         icon:
