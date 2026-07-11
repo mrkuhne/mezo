@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.quest.service;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
+import io.mrkuhne.mezo.feature.meal.repository.MealItemRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.WaterLogService;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
@@ -32,6 +33,7 @@ public class QuestEvaluator {
     private final WaterLogService waterLogService;
     private final FuelDayService fuelDayService;
     private final WorkoutSessionRepository workoutSessionRepository;
+    private final MealItemRepository mealItemRepository;
 
     public boolean satisfied(DailyQuestEntity q) {
         LocalDate d = q.getQuestDate();
@@ -54,6 +56,8 @@ public class QuestEvaluator {
                     && s.getDurationH().compareTo(threshold) >= 0);
             case "protein_target" -> fuelDayService.getDay(q.getCreatedBy(), d)
                 .getConsumed().getP().compareTo(threshold) >= 0;
+            case "own_recipe_meal" -> mealItemRepository
+                .existsByCreatedByAndDeletedFalseAndSourceAndMeal_MealDate(q.getCreatedBy(), "recipe", d);
             default -> {
                 log.warn("Unknown quest metric '{}' on quest {} — treated as not satisfied",
                     q.getTarget().metric(), q.getId());

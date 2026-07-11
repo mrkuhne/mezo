@@ -21,10 +21,11 @@ public class QuestCatalog {
 
     /** One quest as authored in content/quest-catalog.json. */
     public record QuestDef(String key, String slot, String skillKey, String skillKind,
-        String title, String why, String metric, BigDecimal threshold, int xp, int coins,
+        String title, String why, String mode, String metric, BigDecimal threshold, int xp, int coins,
         int difficulty, List<String> dayTypes, boolean requiresGoalPrescription, int cooldownDays) {}
 
     private static final Set<String> SLOTS = Set.of("BODY", "FUELBIO", "GROWTH");
+    private static final Set<String> MODES = Set.of("DERIVED", "ACTIVITY");
     private static final Set<String> DAY_TYPES = Set.of("GYM", "REST", "ANY");
     private static final Set<String> SKILL_KINDS = Set.of("ATHLETIC", "MUSCLE", "LIFE");
 
@@ -58,6 +59,7 @@ public class QuestCatalog {
             && SKILL_KINDS.contains(d.skillKind())
             && d.title() != null && !d.title().isBlank()
             && d.why() != null && !d.why().isBlank()
+            && MODES.contains(d.mode())
             && d.metric() != null && !d.metric().isBlank()
             && d.xp() >= 15 && d.xp() <= 40
             && d.coins() == 0

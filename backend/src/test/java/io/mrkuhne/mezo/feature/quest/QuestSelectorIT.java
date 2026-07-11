@@ -28,9 +28,10 @@ class QuestSelectorIT extends AbstractIntegrationTest {
 
         List<DailyQuestEntity> quests = selector.generate(owner, DATE);
 
-        assertThat(quests).hasSize(2);
+        assertThat(quests).hasSize(3);
         assertThat(quests).extracting(DailyQuestEntity::getSlot)
-            .containsExactlyInAnyOrder(DailyQuestEntity.SLOT_BODY, DailyQuestEntity.SLOT_FUELBIO);
+            .containsExactlyInAnyOrder(DailyQuestEntity.SLOT_BODY, DailyQuestEntity.SLOT_FUELBIO,
+                DailyQuestEntity.SLOT_GROWTH);
         // no active meso → REST day → the BODY slot must hold the rest-day quest
         assertThat(quests).filteredOn(q -> q.getSlot().equals(DailyQuestEntity.SLOT_BODY))
             .first().extracting(DailyQuestEntity::getCatalogKey).isEqualTo("body_rest_sleep");

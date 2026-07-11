@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -80,7 +81,8 @@ public class QuestService {
             if (!DailyQuestEntity.STATUS_OFFERED.equals(q.getStatus())) {
                 continue;
             }
-            if (evaluator.satisfied(q)) {
+            boolean derived = DailyQuestEntity.MODE_DERIVED.equals(q.getCompletionMode());
+            if (derived && evaluator.satisfied(q)) {
                 q.setStatus(DailyQuestEntity.STATUS_COMPLETED);
                 q.setCompletedAt(Instant.now());
                 repository.save(q);
@@ -121,5 +123,34 @@ public class QuestService {
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("QUEST_REROLL_NO_ALTERNATIVE").build(), HttpStatus.CONFLICT));
         return mapper.toQuestResponse(replacement);
+    }
+
+    /** One activity-completed quest + its XP payload (levelUp null when progression is off). */
+    public record ActivityQuestCompletion(DailyQuestEntity quest, LevelUpResult levelUp) {}
+
+    /**
+     * Activity-write hook (E2, spec §5 quest synergy): the day's first offered activity-mode
+     * quest with a matching LIFE skill completes; the triggering activity id is stamped for
+     * provenance. Same XP path as derived completion (idempotent per quest id).
+     */
+    @Transactional
+    public Optional<ActivityQuestCompletion> completeMatchingActivityQuest(
+        UUID userId, LocalDate date, String skillKey, UUID activityId) {
+        return repository.findByCreatedByAndQuestDateOrderBySlotAsc(userId, date).stream()
+            .filter(q -> DailyQuestEntity.STATUS_OFFERED.equals(q.getStatus()))
+            .filter(q -> DailyQuestEntity.MODE_ACTIVITY.equals(q.getCompletionMode()))
+            .filter(q -> q.getSkillKey().equals(skillKey))
+            .findFirst()
+            .map(q -> {
+                q.setStatus(DailyQuestEntity.STATUS_COMPLETED);
+                q.setCompletedAt(Instant.now());
+                q.setSourceActivityId(activityId);
+                repository.save(q);
+                LevelUpResult levelUp = progressionGate.getIfAvailable() != null
+                    ? progressionService.applyQuest(userId, new QuestSignal(
+                        q.getId(), q.getSkillKey(), q.getSkillKind(), q.getXp(), q.getTitle()))
+                    : null;
+                return new ActivityQuestCompletion(q, levelUp);
+            });
     }
 }

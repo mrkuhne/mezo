@@ -36,4 +36,24 @@ public class QuestPopulator {
         e.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return repository.saveAndFlush(e);
     }
+
+    /** GROWTH-slot activity-mode quest (E2): completes via a matching activity-log entry. */
+    public DailyQuestEntity activityQuest(UUID createdBy, LocalDate questDate, String skillKey,
+                                          int xp, String status) {
+        DailyQuestEntity e = new DailyQuestEntity();
+        e.setCreatedBy(createdBy);
+        e.setQuestDate(questDate);
+        e.setSlot(DailyQuestEntity.SLOT_GROWTH);
+        e.setCatalogKey("growth_" + skillKey);
+        e.setSkillKey(skillKey);
+        e.setSkillKind("LIFE");
+        e.setTitle("Teszt growth küldetés");
+        e.setWhy("Teszt indoklás.");
+        e.setCompletionMode(DailyQuestEntity.MODE_ACTIVITY);
+        e.setTarget(new QuestTargetEnvelope("activity_match", null));
+        e.setXp(xp);
+        e.setStatus(status);
+        e.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        return repository.saveAndFlush(e);
+    }
 }

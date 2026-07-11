@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.meal.repository;
 
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,8 @@ public interface MealItemRepository extends JpaRepository<MealItemEntity, UUID> 
      */
     List<MealItemEntity> findByRecipeIdAndCreatedByAndDeletedFalseOrderByMeal_LoggedAtDesc(
         UUID recipeId, UUID createdBy);
+
+    /** Cooking-quest derived signal (E2): did an own-recipe meal item land on this day? */
+    boolean existsByCreatedByAndDeletedFalseAndSourceAndMeal_MealDate(
+        UUID createdBy, String source, LocalDate mealDate);
 }
