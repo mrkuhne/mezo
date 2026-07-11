@@ -126,6 +126,13 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern CHALLENGE_SENTINEL =
             Pattern.compile("\\[fake-challenge:(\\{.*\\})]", Pattern.DOTALL);
 
+    /** Mirror of ActivityClassifier.CLASSIFY_MARKER (feature/activity) — LITERAL, cycle rule. */
+    public static final String ACTIVITY_MARKER_MIRROR = "TEVEKENYSEG-BESOROLAS-FELADAT";
+
+    /** Scripted classification (E2): {@code [fake-activity:{…}]} planted in the entry text. */
+    public static final Pattern ACTIVITY_SENTINEL =
+            Pattern.compile("\\[fake-activity:(\\{.*\\}|[^\\]]*)]", Pattern.DOTALL);
+
     @Override
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
@@ -183,6 +190,13 @@ public class FakeCompanionLlm implements CompanionLlm {
                     : "{\"challenges\":[{\"exerciseIndex\":0,\"type\":\"PR\",\"targetWeightKg\":107.5,"
                             + "\"targetReps\":8,\"risk\":\"low\",\"why\":\"FAKE-INDOK\",\"glory\":\"FAKE-DICS\","
                             + "\"refIndexes\":[0],\"patternIndex\":0}]}";
+        }
+        if (systemPrompt.startsWith(ACTIVITY_MARKER_MIRROR)) {
+            Matcher m = ACTIVITY_SENTINEL.matcher(userMessage);
+            // default = valid confident classification so the un-scripted happy path categorizes
+            return m.find() ? m.group(1)
+                    : "{\"skillKey\":\"learning\",\"confidence\":0.9,\"xpSuggestion\":15,"
+                            + "\"durationMin\":null,\"amountHuf\":null}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);
