@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.support;
 
 import io.mrkuhne.mezo.TestcontainersConfiguration;
+import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.AiConversationPopulator;
 import io.mrkuhne.mezo.support.populator.AiMessagePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
@@ -66,7 +67,7 @@ import org.springframework.context.annotation.Import;
     DailySummaryPopulator.class, PatternPopulator.class, BriefingPopulator.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class, HeartbeatNotePopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
-    QuestPopulator.class,
+    QuestPopulator.class, ActivityPopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     CheckInPopulator.class,
