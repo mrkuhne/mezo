@@ -13,6 +13,7 @@ import { InsightsTeaser } from '@/features/today/components/InsightsTeaser'
 import { CheckInStrip } from '@/features/today/components/CheckInStrip'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
 import { DailyQuestsCard } from '@/features/today/components/DailyQuestsCard'
+import { ActivityLogCard } from '@/features/today/components/ActivityLogCard'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { AnchorModeView } from '@/features/today/pages/AnchorModeView'
 
@@ -39,6 +40,7 @@ export function TodayPage() {
       <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
       {companionNote && <CompanionNoteCard note={companionNote} />}
       <DailyQuestsCard />
+      <ActivityLogCard />
       {workout && (
         <WorkoutTeaser workout={workout} niggle={scenario.niggle} time={workoutTime} prediction={prediction} />
       )}

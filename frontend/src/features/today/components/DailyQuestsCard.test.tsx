@@ -18,12 +18,18 @@ const offered = {
   id: 'q1', questDate: '2026-07-11', slot: 'BODY', skillKey: 'strength_endurance',
   title: 'A mai tervezett edzés a naptárban van — csináld végig',
   why: 'A megjelenés a legerősebb identitás-szavazat.', targetLabel: 'Mai tervezett edzés teljesítve',
-  xp: 25, status: 'offered' as const,
+  xp: 25, status: 'offered' as const, completionMode: 'DERIVED' as const,
 }
 const completed = {
   id: 'q2', questDate: '2026-07-11', slot: 'FUELBIO', skillKey: 'recovery',
   title: 'Reggeli súlymérés — logold be', why: 'Egy pont zaj, a sorozat trend.',
-  targetLabel: 'Reggeli súly beloggolva', xp: 15, status: 'completed' as const,
+  targetLabel: 'Reggeli súly beloggolva', xp: 15, status: 'completed' as const, completionMode: 'DERIVED' as const,
+}
+const activityQuest = {
+  id: 'q3', questDate: '2026-07-11', slot: 'GROWTH', skillKey: 'learning',
+  title: 'Olvass ma legalább 10 percet', why: 'Aki naponta olvas, az olvasó ember.',
+  targetLabel: 'Tevékenységnapló-bejegyzés ma', xp: 20, status: 'offered' as const,
+  completionMode: 'ACTIVITY' as const,
 }
 
 function renderCard() {
@@ -69,6 +75,18 @@ describe('DailyQuestsCard', () => {
     quests.useDailyQuests.mockReturnValue({ quests: [], levelUps: [], rerollsLeft: 1, mode: 'live' })
     const { container } = renderCard()
     expect(container.firstChild).toBeNull()
+  })
+
+  test('offered ACTIVITY quests get a "Naplózz" chip; derived quests do not', () => {
+    quests.useDailyQuests.mockReturnValue({
+      quests: [offered, completed, activityQuest], levelUps: [], rerollsLeft: 1, mode: 'mock',
+    })
+    renderCard()
+    const naplozz = screen.getAllByRole('button', { name: 'Naplózz' })
+    expect(naplozz).toHaveLength(1) // only the GROWTH/ACTIVITY quest
+    expect(screen.getByText('1/3 ma')).toBeInTheDocument()
+    fireEvent.click(naplozz[0])
+    expect(screen.getByText('Mi történt ma?')).toBeInTheDocument() // opens the log sheet
   })
 
   test('a level-up payload is consumed from the cache after firing (no replay on remount)', () => {

@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDailyQuests, useQuestActions } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
+import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { localDateString } from '@/shared/lib/dates'
 import type { DailyQuest } from '@/data/types'
 
@@ -21,6 +22,7 @@ export function DailyQuestsCard() {
   const { quests, levelUps, rerollsLeft } = useDailyQuests(date)
   const { reroll, pending, consumeLevelUps } = useQuestActions(date)
   const { showLevelUp } = useLevelUp()
+  const [activityQuest, setActivityQuest] = useState<DailyQuest | null>(null)
 
   useEffect(() => {
     if (levelUps.length > 0) {
@@ -52,6 +54,15 @@ export function DailyQuestsCard() {
             <div className="text-tertiary" style={{ fontSize: 11, paddingTop: 2 }}>{q.why}</div>
           </div>
           <span className="chip notch-4" style={{ whiteSpace: 'nowrap' }}>+{q.xp} XP</span>
+          {q.status === 'offered' && q.completionMode === 'ACTIVITY' && (
+            <button
+              className="chip notch-4"
+              onClick={() => setActivityQuest(q)}
+              style={{ cursor: 'pointer' }}
+            >
+              Naplózz
+            </button>
+          )}
           {q.status === 'offered' && rerollsLeft > 0 && (
             <button
               className="chip notch-4"
@@ -64,6 +75,7 @@ export function DailyQuestsCard() {
           )}
         </div>
       ))}
+      {activityQuest && <ActivityLogSheet quest={activityQuest} onClose={() => setActivityQuest(null)} />}
     </div>
   )
 }
