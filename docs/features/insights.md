@@ -129,7 +129,7 @@ The Insights data flow is a **degenerate (truncated) version** of mezo's standar
 
 ```
 View (PatternsPage, WeeklyPage, …)
-  → hook (useInsights / useKnowledge / useChat — frontend/src/data/hooks.ts:127-135)
+  → hook (useInsights / useKnowledge / useChat — frontend/src/data/hooks.ts:11-18)
     → static module import (data/insights/insights.ts, data/insights/knowledge.ts, data/insights/chat.ts)
       → [PHASE-3 GAP: no api client, no apiFetch, no backend, no db]
 ```
