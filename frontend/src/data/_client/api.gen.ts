@@ -1468,6 +1468,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log a free-text life activity; AI categorizes and routes clamped XP (Activity log)
+         * @description Persists the entry, classifies it with the companion cheap-tier LLM (when the companion switch is on), clamps the XP suggestion into the deterministic band and daily caps, awards XP through progression (source ACTIVITY), and completes a matching open activity-mode quest of the same day (its XP on top). Low confidence (< threshold) stores the entry uncategorized (no XP yet) — the client prompts for a manual category.
+         */
+        post: operations["createActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/activity/day/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The day's activity-log entries, newest first (Activity log) */
+        get: operations["getActivityDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/activity/{id}/category": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set or override the entry's LIFE skill (grants XP on first categorization) (Activity log)
+         * @description Manual categorization of an uncategorized entry grants the stored (clamped) XP suggestion within the daily caps; overriding an already-categorized entry MOVES the awarded XP between skill rows. Either way the matching open activity-mode quest of the entry's day completes. categorizedBy becomes USER.
+         */
+        post: operations["categorizeActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1893,7 +1950,7 @@ export interface components {
         };
         LevelUpResult: {
             /** @enum {string} */
-            source: "GYM" | "SPORT" | "RUN" | "QUEST";
+            source: "GYM" | "SPORT" | "RUN" | "QUEST" | "ACTIVITY";
             workoutLabel?: string;
             durationMin?: number;
             rpe?: number;
@@ -2847,10 +2904,20 @@ export interface components {
             muscle: components["schemas"]["SkillLevel"][];
             radarAxes: components["schemas"]["RadarAxis"][];
             highlights: components["schemas"]["ProfileHighlights"];
+            /** @description All 8 LIFE skills in taxonomy order (missing row → level 1, 0 XP) */
+            life: components["schemas"]["SkillLevel"][];
+            traits: components["schemas"]["ProfileTraits"];
+        };
+        /** @description Computed behavior traits (ADR 0010 — never self-claimed) */
+        ProfileTraits: {
+            /** @description 28-day commitment completion ratio 0–100 (planned sessions done + quests completed, blended); null when no commitments in the window */
+            disciplinePct?: number | null;
+            /** @description Current streak of consecutive weeks with >= 4 active days (any XP-earning action) */
+            consistencyWeeks: number;
         };
         SkillLevel: {
             skillKey: string;
-            /** @description ATHLETIC|MUSCLE */
+            /** @description ATHLETIC|MUSCLE|LIFE */
             kind: string;
             level: number;
             /** Format: int64 */
@@ -3277,6 +3344,8 @@ export interface components {
             xp: number;
             /** @description offered | completed | expired | rerolled */
             status: string;
+            /** @description DERIVED | ACTIVITY (activity-mode completes via a matching activity-log entry) */
+            completionMode: string;
             /** Format: date-time */
             completedAt?: string | null;
         };
@@ -3288,6 +3357,56 @@ export interface components {
             levelUps: components["schemas"]["LevelUpResult"][];
             /** Format: int32 */
             rerollsLeft: number;
+        };
+        ActivityCreateRequest: {
+            /** @description Free-text HU activity description */
+            text: string;
+            /**
+             * Format: date
+             * @description Defaults to today
+             */
+            occurredOn?: string;
+        };
+        ActivityCategoryRequest: {
+            /** @description One of the 8 LIFE skill keys */
+            skillKey: string;
+        };
+        ActivityResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            occurredOn: string;
+            text: string;
+            /** @description LIFE skill; null = uncategorized */
+            skillKey?: string | null;
+            /** @description AI confidence 0..1 */
+            confidence?: number | null;
+            /**
+             * Format: int32
+             * @description Clamped + capped XP actually granted
+             */
+            xpAwarded: number;
+            /**
+             * Format: int32
+             * @description AI-extracted duration
+             */
+            durationMin?: number | null;
+            /**
+             * Format: int64
+             * @description AI-extracted amount (financial)
+             */
+            amountHuf?: number | null;
+            /** @description AI | USER */
+            categorizedBy?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+        };
+        ActivityWriteResponse: {
+            entry: components["schemas"]["ActivityResponse"];
+            /** @description The activity-mode quest this write completed, if any */
+            completedQuest?: components["schemas"]["QuestResponse"] | null;
+            /** @description 0–2 payloads — the activity award and/or the completed quest's award */
+            levelUps: components["schemas"]["LevelUpResult"][];
         };
     };
     responses: never;
@@ -7702,6 +7821,132 @@ export interface operations {
             };
             /** @description Quest not offered / not today / daily reroll cap reached / no alternative left */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createActivity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored entry + any completed quest + level-up payloads */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityWriteResponse"];
+                };
+            };
+            /** @description Blank text */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getActivityDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries of the day (empty array when none — never a 404) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    categorizeActivity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivityCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated entry + any completed quest + level-up payloads */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityWriteResponse"];
+                };
+            };
+            /** @description Unknown LIFE skill key */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Entry not found (or owned by someone else) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -62,7 +62,7 @@ components:
   schemas:
     QuestResponse:
       type: object
-      required: [id, questDate, slot, skillKey, title, why, targetLabel, xp, status]
+      required: [id, questDate, slot, skillKey, title, why, targetLabel, xp, status, completionMode]
       properties:
         id: { type: string, format: uuid }
         questDate: { type: string, format: date }
@@ -73,6 +73,7 @@ components:
         targetLabel: { type: string, description: Code-derived display string of the structured target }
         xp: { type: integer, format: int32 }
         status: { type: string, description: 'offered | completed | expired | rerolled' }
+        completionMode: { type: string, description: 'DERIVED | ACTIVITY (activity-mode completes via a matching activity-log entry)' }
         completedAt: { type: string, format: date-time, nullable: true }
     QuestDayResponse:
       type: object

@@ -91,6 +91,8 @@ export const progressionProfileMock: ProgressionProfileResponse = {
     bestAthletic: { skillKey: 'max_strength', level: 7 },
     bestMuscle: { skillKey: 'back-mid', level: 6 },
   },
+  life: [],
+  traits: { consistencyWeeks: 5 },
 }
 
 /** Real-mode empty / ghost value (no XP yet, or progression switch off → 404). */
@@ -101,4 +103,6 @@ export const GHOST_PROGRESSION_PROFILE: ProgressionProfileResponse = {
   muscle: [],
   radarAxes: [],
   highlights: {},
+  life: [],
+  traits: { consistencyWeeks: 0 },
 }

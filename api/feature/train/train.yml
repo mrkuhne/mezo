@@ -1603,7 +1603,7 @@ components:
       type: object
       required: [source, totalXp, gains, levelUps, perks, robustness]
       properties:
-        source: { type: string, enum: [GYM, SPORT, RUN, QUEST] }
+        source: { type: string, enum: [GYM, SPORT, RUN, QUEST, ACTIVITY] }
         workoutLabel: { type: string }
         durationMin: { type: integer }
         rpe: { type: integer }

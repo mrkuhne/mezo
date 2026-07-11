@@ -1,7 +1,7 @@
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { LevelUpResult } from '@/data/train/trainApi'
 
-type Source = LevelUpResult['source'] // 'GYM' | 'SPORT' | 'RUN' | 'QUEST'
+type Source = LevelUpResult['source'] // 'GYM' | 'SPORT' | 'RUN' | 'QUEST' | 'ACTIVITY'
 
 // Canonical 12-athletic name + emoji (from skill-model-v3.html, the chosen model).
 const ATHLETIC_META: Record<string, { name: string; icon: string }> = {
@@ -50,6 +50,7 @@ export const HEADLINE_BY_SOURCE: Record<Source, string> = {
   RUN: 'Lett benne tempó.',
   SPORT: 'Megdolgoztattad.',
   QUEST: 'Napi győzelem.',
+  ACTIVITY: 'Ez is fejlődés.',
 }
 
 /** Headline when XP accrued but no level was crossed (the common case). */
@@ -60,4 +61,5 @@ export const CHIP_ICON_BY_SOURCE: Record<Source, string> = {
   RUN: '🏃',
   SPORT: '🏐',
   QUEST: '📜',
+  ACTIVITY: '🌱',
 }

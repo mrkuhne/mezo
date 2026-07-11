@@ -3616,6 +3616,126 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/activity:
+    post:
+      tags:
+        - Activity
+      operationId: createActivity
+      summary: >-
+        Log a free-text life activity; AI categorizes and routes clamped XP
+        (Activity log)
+      description: >-
+        Persists the entry, classifies it with the companion cheap-tier LLM
+        (when the companion switch is on), clamps the XP suggestion into the
+        deterministic band and daily caps, awards XP through progression (source
+        ACTIVITY), and completes a matching open activity-mode quest of the same
+        day (its XP on top). Low confidence (< threshold) stores the entry
+        uncategorized (no XP yet) — the client prompts for a manual category.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityCreateRequest'
+      responses:
+        '200':
+          description: The stored entry + any completed quest + level-up payloads
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityWriteResponse'
+        '400':
+          description: Blank text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/activity/day/{date}':
+    get:
+      tags:
+        - Activity
+      operationId: getActivityDay
+      summary: 'The day''s activity-log entries, newest first (Activity log)'
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Entries of the day (empty array when none — never a 404)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/activity/{id}/category':
+    post:
+      tags:
+        - Activity
+      operationId: categorizeActivity
+      summary: >-
+        Set or override the entry's LIFE skill (grants XP on first
+        categorization) (Activity log)
+      description: >-
+        Manual categorization of an uncategorized entry grants the stored
+        (clamped) XP suggestion within the daily caps; overriding an
+        already-categorized entry MOVES the awarded XP between skill rows.
+        Either way the matching open activity-mode quest of the entry's day
+        completes. categorizedBy becomes USER.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityCategoryRequest'
+      responses:
+        '200':
+          description: The updated entry + any completed quest + level-up payloads
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityWriteResponse'
+        '400':
+          description: Unknown LIFE skill key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Entry not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -4686,6 +4806,7 @@ components:
             - SPORT
             - RUN
             - QUEST
+            - ACTIVITY
         workoutLabel:
           type: string
         durationMin:
@@ -7303,6 +7424,8 @@ components:
         - muscle
         - radarAxes
         - highlights
+        - life
+        - traits
       properties:
         athleteLevel:
           type: number
@@ -7326,6 +7449,30 @@ components:
             $ref: '#/components/schemas/RadarAxis'
         highlights:
           $ref: '#/components/schemas/ProfileHighlights'
+        life:
+          type: array
+          description: 'All 8 LIFE skills in taxonomy order (missing row → level 1, 0 XP)'
+          items:
+            $ref: '#/components/schemas/SkillLevel'
+        traits:
+          $ref: '#/components/schemas/ProfileTraits'
+    ProfileTraits:
+      type: object
+      description: Computed behavior traits (ADR 0010 — never self-claimed)
+      required:
+        - consistencyWeeks
+      properties:
+        disciplinePct:
+          type: integer
+          nullable: true
+          description: >-
+            28-day commitment completion ratio 0–100 (planned sessions done +
+            quests completed, blended); null when no commitments in the window
+        consistencyWeeks:
+          type: integer
+          description: >-
+            Current streak of consecutive weeks with >= 4 active days (any
+            XP-earning action)
     SkillLevel:
       type: object
       required:
@@ -7339,7 +7486,7 @@ components:
           type: string
         kind:
           type: string
-          description: ATHLETIC|MUSCLE
+          description: ATHLETIC|MUSCLE|LIFE
         level:
           type: integer
         cumulativeXp:
@@ -8292,6 +8439,7 @@ components:
         - targetLabel
         - xp
         - status
+        - completionMode
       properties:
         id:
           type: string
@@ -8320,6 +8468,11 @@ components:
         status:
           type: string
           description: offered | completed | expired | rerolled
+        completionMode:
+          type: string
+          description: >-
+            DERIVED | ACTIVITY (activity-mode completes via a matching
+            activity-log entry)
         completedAt:
           type: string
           format: date-time
@@ -8349,3 +8502,87 @@ components:
         rerollsLeft:
           type: integer
           format: int32
+    ActivityCreateRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          maxLength: 500
+          description: Free-text HU activity description
+        occurredOn:
+          type: string
+          format: date
+          description: Defaults to today
+    ActivityCategoryRequest:
+      type: object
+      required:
+        - skillKey
+      properties:
+        skillKey:
+          type: string
+          description: One of the 8 LIFE skill keys
+    ActivityResponse:
+      type: object
+      required:
+        - id
+        - occurredOn
+        - text
+        - xpAwarded
+      properties:
+        id:
+          type: string
+          format: uuid
+        occurredOn:
+          type: string
+          format: date
+        text:
+          type: string
+        skillKey:
+          type: string
+          nullable: true
+          description: LIFE skill; null = uncategorized
+        confidence:
+          type: number
+          nullable: true
+          description: AI confidence 0..1
+        xpAwarded:
+          type: integer
+          format: int32
+          description: Clamped + capped XP actually granted
+        durationMin:
+          type: integer
+          format: int32
+          nullable: true
+          description: AI-extracted duration
+        amountHuf:
+          type: integer
+          format: int64
+          nullable: true
+          description: AI-extracted amount (financial)
+        categorizedBy:
+          type: string
+          nullable: true
+          description: AI | USER
+        createdAt:
+          type: string
+          format: date-time
+    ActivityWriteResponse:
+      type: object
+      required:
+        - entry
+        - levelUps
+      properties:
+        entry:
+          $ref: '#/components/schemas/ActivityResponse'
+        completedQuest:
+          allOf:
+            - $ref: '#/components/schemas/QuestResponse'
+          nullable: true
+          description: 'The activity-mode quest this write completed, if any'
+        levelUps:
+          type: array
+          description: 0–2 payloads — the activity award and/or the completed quest's award
+          items:
+            $ref: '#/components/schemas/LevelUpResult'
