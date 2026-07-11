@@ -91,6 +91,17 @@ export const progressionProfileMock: ProgressionProfileResponse = {
     bestAthletic: { skillKey: 'max_strength', level: 7 },
     bestMuscle: { skillKey: 'back-mid', level: 6 },
   },
+  life: [
+    { skillKey: 'mindfulness', kind: 'LIFE', level: 1, cumulativeXp: 40, progressPct: 40 },
+    { skillKey: 'mindset', kind: 'LIFE', level: 2, cumulativeXp: 130, progressPct: 15.9 },
+    { skillKey: 'cooking', kind: 'LIFE', level: 2, cumulativeXp: 150, progressPct: 26.5 },
+    { skillKey: 'financial', kind: 'LIFE', level: 1, cumulativeXp: 55, progressPct: 55 },
+    { skillKey: 'productivity', kind: 'LIFE', level: 1, cumulativeXp: 25, progressPct: 25 },
+    { skillKey: 'learning', kind: 'LIFE', level: 3, cumulativeXp: 320, progressPct: 27.7 },
+    { skillKey: 'connection', kind: 'LIFE', level: 1, cumulativeXp: 60, progressPct: 60 },
+    { skillKey: 'recovery', kind: 'LIFE', level: 3, cumulativeXp: 305, progressPct: 22.4 },
+  ],
+  traits: { disciplinePct: 78, consistencyWeeks: 5 },
 }
 
 /** Real-mode empty / ghost value (no XP yet, or progression switch off → 404). */
@@ -101,4 +112,6 @@ export const GHOST_PROGRESSION_PROFILE: ProgressionProfileResponse = {
   muscle: [],
   radarAxes: [],
   highlights: {},
+  life: [],
+  traits: { disciplinePct: null, consistencyWeeks: 0 },
 }

@@ -68,4 +68,8 @@ public class FeaturesConfiguration {
 
     /** Daily-quest crons (morning generate backstop + nightly finalize) — techcore cron zone (schedules: mezo.quest.*-cron). */
     public static final String QUEST_JOB_SWITCH = "mezo.techcore.cron.quest-job.enabled";
+
+    /** Activity log (gamified growth E2). Gates the whole /api/activity surface + services;
+     *  the AI classifier additionally requires COMPANION_SWITCH (it calls the CompanionLlm port). */
+    public static final String ACTIVITY_SWITCH = "mezo.feature.activity.enabled";
 }

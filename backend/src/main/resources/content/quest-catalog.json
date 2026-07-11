@@ -3,6 +3,7 @@
     "key": "body_gym_done", "slot": "BODY", "skillKey": "strength_endurance", "skillKind": "ATHLETIC",
     "title": "A mai tervezett edzés a naptárban van — csináld végig",
     "why": "A megjelenés a legerősebb identitás-szavazat: aki ma edz, az edző ember.",
+    "mode": "DERIVED",
     "metric": "gym_session_done", "threshold": null, "xp": 25, "coins": 0, "difficulty": 2,
     "dayTypes": ["GYM"], "requiresGoalPrescription": false, "cooldownDays": 0
   },
@@ -10,6 +11,7 @@
     "key": "body_rest_sleep", "slot": "BODY", "skillKey": "recovery", "skillKind": "LIFE",
     "title": "Pihenőnap: aludj legalább 7,5 órát",
     "why": "A pihenőnap edzés — az alvás alatt épül az izom és áll helyre az idegrendszer.",
+    "mode": "DERIVED",
     "metric": "sleep_target", "threshold": 7.5, "xp": 20, "coins": 0, "difficulty": 2,
     "dayTypes": ["REST"], "requiresGoalPrescription": false, "cooldownDays": 0
   },
@@ -17,6 +19,7 @@
     "key": "bio_checkin_full", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
     "title": "Mind a 4 heartbeat check-in ma",
     "why": "A napi 4 pillanatfelvétel az, amiből a mintáid kirajzolódnak — magadat figyeled meg.",
+    "mode": "DERIVED",
     "metric": "checkin_full", "threshold": 4, "xp": 20, "coins": 0, "difficulty": 2,
     "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
   },
@@ -24,6 +27,7 @@
     "key": "bio_weight_log", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
     "title": "Reggeli súlymérés — logold be",
     "why": "Egy pont zaj, a sorozat trend: a reggeli rutinod adja a görbét, amiből a cél él.",
+    "mode": "DERIVED",
     "metric": "weight_logged", "threshold": null, "xp": 15, "coins": 0, "difficulty": 1,
     "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
   },
@@ -31,6 +35,7 @@
     "key": "bio_water", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
     "title": "Igyál meg legalább 2,5 litert ma",
     "why": "A hidratáltság a legolcsóbb teljesítményfokozó — edzés, fókusz, étvágy mind rajta múlik.",
+    "mode": "DERIVED",
     "metric": "water_target", "threshold": 2500, "xp": 15, "coins": 0, "difficulty": 1,
     "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
   },
@@ -38,6 +43,7 @@
     "key": "bio_protein", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
     "title": "Hozd be a heti recept fehérje-célját ma",
     "why": "A fehérje a heti recepted gerince — ma bevinni annyi, mint holnap erősebbnek lenni.",
+    "mode": "DERIVED",
     "metric": "protein_target", "threshold": null, "xp": 30, "coins": 0, "difficulty": 3,
     "dayTypes": ["ANY"], "requiresGoalPrescription": true, "cooldownDays": 3
   },
@@ -45,7 +51,57 @@
     "key": "bio_sleep", "slot": "FUELBIO", "skillKey": "recovery", "skillKind": "LIFE",
     "title": "Aludj legalább 7,5 órát",
     "why": "7,5 óra alvás = a holnapi erőnléted, étvágy-kontrollod és hangulatod alapja.",
+    "mode": "DERIVED",
     "metric": "sleep_target", "threshold": 7.5, "xp": 25, "coins": 0, "difficulty": 2,
     "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 3
+  },
+  {
+    "key": "growth_read", "slot": "GROWTH", "skillKey": "learning", "skillKind": "LIFE",
+    "title": "Olvass ma legalább 10 percet",
+    "why": "Aki naponta olvas, az olvasó ember — napi 10 perc évi több mint 60 óra tanulás.",
+    "mode": "ACTIVITY", "metric": "activity_match", "threshold": null, "xp": 20, "coins": 0,
+    "difficulty": 2, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
+  },
+  {
+    "key": "growth_gratitude", "slot": "GROWTH", "skillKey": "mindset", "skillKind": "LIFE",
+    "title": "Írj le 3 dolgot, amiért ma hálás vagy",
+    "why": "A hála-gyakorlat a legjobban dokumentált hangulat-emelő — 2 perc, mérhető hatás.",
+    "mode": "ACTIVITY", "metric": "activity_match", "threshold": null, "xp": 15, "coins": 0,
+    "difficulty": 1, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
+  },
+  {
+    "key": "growth_mindfulness", "slot": "GROWTH", "skillKey": "mindfulness", "skillKind": "LIFE",
+    "title": "10 perc meditáció vagy légzőgyakorlat",
+    "why": "A figyelmed izom: napi 10 perc edzéssel nyugodtabb az alvás és élesebb a fókusz.",
+    "mode": "ACTIVITY", "metric": "activity_match", "threshold": null, "xp": 20, "coins": 0,
+    "difficulty": 2, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
+  },
+  {
+    "key": "growth_finance_review", "slot": "GROWTH", "skillKey": "financial", "skillKind": "LIFE",
+    "title": "Nézd át a heti költéseid",
+    "why": "Aki látja a pénzét, az dönt róla — 10 perc áttekintés többet ér egy hónap találgatásnál.",
+    "mode": "ACTIVITY", "metric": "activity_match", "threshold": null, "xp": 20, "coins": 0,
+    "difficulty": 2, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 3
+  },
+  {
+    "key": "growth_deepwork", "slot": "GROWTH", "skillKey": "productivity", "skillKind": "LIFE",
+    "title": "Egy 45 perces deep-work blokk megszakítás nélkül",
+    "why": "Egy védett blokk többet ér, mint egy szétdarabolt délelőtt — a fókusz edzhető.",
+    "mode": "ACTIVITY", "metric": "activity_match", "threshold": null, "xp": 25, "coins": 0,
+    "difficulty": 2, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
+  },
+  {
+    "key": "growth_connect", "slot": "GROWTH", "skillKey": "connection", "skillKind": "LIFE",
+    "title": "Hívj fel egy barátot vagy családtagot",
+    "why": "A leghosszabb boldogság-kutatás szerint a kapcsolatok a jó élet legerősebb előrejelzői.",
+    "mode": "ACTIVITY", "metric": "activity_match", "threshold": null, "xp": 20, "coins": 0,
+    "difficulty": 2, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 2
+  },
+  {
+    "key": "growth_cook_own", "slot": "GROWTH", "skillKey": "cooking", "skillKind": "LIFE",
+    "title": "Főzz ma a saját receptjeid egyikéből",
+    "why": "Egy szakács ma is főz — és pontosan tudja, mi kerül a tányérjára.",
+    "mode": "DERIVED", "metric": "own_recipe_meal", "threshold": null, "xp": 25, "coins": 0,
+    "difficulty": 2, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 3
   }
 ]

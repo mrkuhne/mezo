@@ -38,8 +38,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class QuestSelector {
 
     private static final int COOLDOWN_LOOKBACK_DAYS = 7;
-    private static final List<String> E1_SLOTS =
-        List.of(DailyQuestEntity.SLOT_BODY, DailyQuestEntity.SLOT_FUELBIO);
+    private static final List<String> SLOTS =
+        List.of(DailyQuestEntity.SLOT_BODY, DailyQuestEntity.SLOT_FUELBIO, DailyQuestEntity.SLOT_GROWTH);
 
     private final QuestCatalog catalog;
     private final DailyQuestRepository repository;
@@ -56,7 +56,7 @@ public class QuestSelector {
 
         List<DailyQuestEntity> out = new ArrayList<>();
         Set<String> usedMetrics = new HashSet<>();
-        for (String slot : E1_SLOTS) {
+        for (String slot : SLOTS) {
             pick(userId, date, slot, dayType, segment, recent, usedMetrics, 0)
                 .ifPresent(q -> {
                     usedMetrics.add(q.getTarget().metric());
@@ -142,7 +142,7 @@ public class QuestSelector {
         e.setSkillKind(def.skillKind());
         e.setTitle(def.title());
         e.setWhy(def.why());
-        e.setCompletionMode(DailyQuestEntity.MODE_DERIVED);
+        e.setCompletionMode(def.mode());
         e.setTarget(new QuestTargetEnvelope(def.metric(), resolveThreshold(def, segment)));
         e.setXp(def.xp());
         e.setCoins(def.coins());

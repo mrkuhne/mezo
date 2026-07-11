@@ -20,6 +20,8 @@ final class QuestDisplay {
             case "water_target" -> "≥ " + e.getTarget().threshold().intValue() + " ml víz";
             case "protein_target" -> "≥ " + e.getTarget().threshold().intValue() + " g fehérje";
             case "sleep_target" -> "≥ " + e.getTarget().threshold().stripTrailingZeros().toPlainString() + " óra alvás";
+            case "activity_match" -> "Tevékenységnapló-bejegyzés ma";
+            case "own_recipe_meal" -> "Saját recept étkezésként loggolva";
             default -> "";
         };
     }

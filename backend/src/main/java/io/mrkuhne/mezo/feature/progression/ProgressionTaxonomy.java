@@ -20,6 +20,8 @@ public final class ProgressionTaxonomy {
         "back-mid", "lats", "chest", "shoulder", "rear-delt", "biceps", "triceps",
         "quad", "ham", "glute", "calf", "core", "traps");
 
-    /** LIFE skills (gamified growth): E1 ships recovery only; the full band arrives in E2. */
-    public static final List<String> LIFE = List.of("recovery");
+    /** LIFE skills (gamified growth E2, spec §3) — octagon order on the Me GrowthCard. */
+    public static final List<String> LIFE = List.of(
+        "mindfulness", "mindset", "cooking", "financial",
+        "productivity", "learning", "connection", "recovery");
 }

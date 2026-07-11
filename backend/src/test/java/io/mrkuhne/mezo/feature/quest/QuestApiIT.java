@@ -30,13 +30,13 @@ class QuestApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testGetQuestDay_shouldLazilyGenerateTwoSlots_whenTodayAndNoRows() {
+    void testGetQuestDay_shouldLazilyGenerateThreeSlots_whenTodayAndNoRows() {
         QuestDayResponse day = getForBody("/api/quest/day/" + LocalDate.now(),
             ownerAuthHeaders(), HttpStatus.OK, QuestDayResponse.class);
 
-        assertThat(day.getQuests()).hasSize(2);
+        assertThat(day.getQuests()).hasSize(3);
         assertThat(day.getQuests()).extracting(QuestResponse::getSlot)
-            .containsExactlyInAnyOrder("BODY", "FUELBIO");
+            .containsExactlyInAnyOrder("BODY", "FUELBIO", "GROWTH");
         assertThat(day.getRerollsLeft()).isEqualTo(1);
         assertThat(day.getLevelUps()).isEmpty();
     }

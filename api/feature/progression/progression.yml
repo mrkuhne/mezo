@@ -25,7 +25,7 @@ components:
   schemas:
     ProgressionProfileResponse:
       type: object
-      required: [streakWeeks, athletic, muscle, radarAxes, highlights]
+      required: [streakWeeks, athletic, muscle, radarAxes, highlights, life, traits]
       properties:
         athleteLevel:
           type: number
@@ -44,12 +44,30 @@ components:
           items: { $ref: '#/components/schemas/RadarAxis' }
         highlights:
           $ref: '#/components/schemas/ProfileHighlights'
+        life:
+          type: array
+          description: All 8 LIFE skills in taxonomy order (missing row → level 1, 0 XP)
+          items: { $ref: '#/components/schemas/SkillLevel' }
+        traits:
+          $ref: '#/components/schemas/ProfileTraits'
+    ProfileTraits:
+      type: object
+      description: Computed behavior traits (ADR 0010 — never self-claimed)
+      required: [consistencyWeeks]
+      properties:
+        disciplinePct:
+          type: integer
+          nullable: true
+          description: 28-day commitment completion ratio 0–100 (planned sessions done + quests completed, blended); null when no commitments in the window
+        consistencyWeeks:
+          type: integer
+          description: Current streak of consecutive weeks with >= 4 active days (any XP-earning action)
     SkillLevel:
       type: object
       required: [skillKey, kind, level, cumulativeXp, progressPct]
       properties:
         skillKey: { type: string }
-        kind: { type: string, description: 'ATHLETIC|MUSCLE' }
+        kind: { type: string, description: 'ATHLETIC|MUSCLE|LIFE' }
         level: { type: integer }
         cumulativeXp: { type: integer, format: int64 }
         progressPct: { type: number, description: 'within-level fill 0..100' }
