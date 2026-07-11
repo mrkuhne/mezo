@@ -453,6 +453,10 @@ mezo:
       min-sample: 5
       high-ratio: 0.85
       low-ratio: 0.50
+    # E3 flavor copy: the companion rewrites quest title/why in its own voice on the morning
+    # cron; lazy generation and rerolls keep catalog copy; any LLM failure keeps catalog copy.
+    flavor:
+      enabled: true
   # Activity-log tuning (E2, ADR 0010): the LLM proposes, the server disposes — XP clamped into
   # [xp-min, xp-max], per-skill and per-day caps bound the honor system; below the confidence
   # threshold the entry lands uncategorized and the client prompts for a manual category.

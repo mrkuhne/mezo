@@ -72,4 +72,8 @@ public class FeaturesConfiguration {
     /** Activity log (gamified growth E2). Gates the whole /api/activity surface + services;
      *  the AI classifier additionally requires COMPANION_SWITCH (it calls the CompanionLlm port). */
     public static final String ACTIVITY_SWITCH = "mezo.feature.activity.enabled";
+
+    /** E3 quest flavor copy — sub-switch of quest; the LLM rewrites title/why on the MORNING CRON
+     *  only (never targets/XP — ADR 0010). Requires COMPANION_SWITCH too (CompanionLlm port). */
+    public static final String QUEST_FLAVOR_SWITCH = "mezo.quest.flavor.enabled";
 }

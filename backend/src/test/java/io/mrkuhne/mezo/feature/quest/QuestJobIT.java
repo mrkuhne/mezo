@@ -12,8 +12,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 
 /** Cron backstops: morning generation for users who never open Today; nightly quiet finalize. */
+@ActiveProfiles("companion-fake")
 class QuestJobIT extends AbstractIntegrationTest {
 
     @Autowired private QuestJob job;
