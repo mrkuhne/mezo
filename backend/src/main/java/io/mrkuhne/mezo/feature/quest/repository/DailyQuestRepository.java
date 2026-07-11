@@ -23,4 +23,7 @@ public interface DailyQuestRepository extends JpaRepository<DailyQuestEntity, UU
 
     /** Nightly finalize backstop: offered rows whose day has passed. */
     List<DailyQuestEntity> findByCreatedByAndStatusAndQuestDateBefore(UUID createdBy, String status, LocalDate before);
+
+    /** Discipline-trait window count (per terminal status). */
+    int countByCreatedByAndStatusAndQuestDateBetween(UUID createdBy, String status, LocalDate from, LocalDate to);
 }

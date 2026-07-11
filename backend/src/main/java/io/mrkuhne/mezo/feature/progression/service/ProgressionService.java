@@ -23,6 +23,7 @@ import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
 import io.mrkuhne.mezo.feature.progression.run.RunSignal;
 import io.mrkuhne.mezo.feature.progression.sport.SportSignal;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -58,6 +59,7 @@ public class ProgressionService {
     private final PerkCatalog perkCatalog;
     private final RobustnessSource robustnessSource;
     private final ProgressionProperties properties;
+    private final TraitCalculator traitCalculator;
 
     @Transactional
     public LevelUpResult applyGym(UUID createdBy, GymSignal signal) {
@@ -233,6 +235,8 @@ public class ProgressionService {
         athletic.add(skillLevel(byKey, ProgressionTaxonomy.ROBUSTNESS, "ATHLETIC"));
         List<SkillLevel> muscle = ProgressionTaxonomy.MUSCLE.stream()
             .map(k -> skillLevel(byKey, k, "MUSCLE")).toList();
+        List<SkillLevel> life = ProgressionTaxonomy.LIFE.stream()
+            .map(k -> skillLevel(byKey, k, "LIFE")).toList();
 
         BigDecimal athleteLevel = rows.isEmpty() ? null
             : round1(ProgressionTaxonomy.ATHLETIC.stream().mapToInt(k -> levelOf(byKey, k)).average().orElse(1));
@@ -257,6 +261,7 @@ public class ProgressionService {
             .athleteLevel(athleteLevel)
             .streakWeeks(robustnessSource.streakWeeks(createdBy))
             .athletic(athletic).muscle(muscle).radarAxes(axes).highlights(highlights)
+            .life(life).traits(traitCalculator.traits(createdBy, LocalDate.now()))
             .build();
     }
 
