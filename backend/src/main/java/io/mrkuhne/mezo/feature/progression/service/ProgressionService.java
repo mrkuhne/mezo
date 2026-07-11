@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.feature.progression.config.ProgressionProperties;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpEventEntity;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
 import io.mrkuhne.mezo.feature.progression.entity.PerkUnlockEntity;
+import io.mrkuhne.mezo.feature.progression.quest.QuestSignal;
 import io.mrkuhne.mezo.feature.progression.entity.SkillProgressEntity;
 import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
@@ -45,6 +46,7 @@ public class ProgressionService {
     private static final String SOURCE_GYM = "GYM";
     private static final String SOURCE_RUN = "RUN";
     private static final String SOURCE_SPORT = "SPORT";
+    private static final String SOURCE_QUEST = "QUEST";
     private static final int[] MILESTONES = {5, 10, 15, 20, 25, 30};
 
     private final SkillProgressRepository skillProgressRepository;
@@ -118,6 +120,19 @@ public class ProgressionService {
         String label = sprint ? "Sprint futás" : "Futás";
         return award(createdBy, SOURCE_RUN, signal.logId(), deltas, kinds,
             label, signal.durationMin(), signal.rpeActual());
+    }
+
+    /** Quest completion → single-skill XP through the shared idempotent tail (source QUEST). */
+    @Transactional
+    public LevelUpResult applyQuest(UUID createdBy, QuestSignal signal) {
+        Map<String, Long> deltas = new LinkedHashMap<>();
+        Map<String, String> kinds = new LinkedHashMap<>();
+        if (signal.xp() > 0) {
+            deltas.put(signal.skillKey(), (long) signal.xp());
+            kinds.put(signal.skillKey(), signal.skillKind());
+        }
+        return award(createdBy, SOURCE_QUEST, signal.questId(), deltas, kinds,
+            signal.label(), null, null);
     }
 
     @Transactional
