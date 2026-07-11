@@ -39,11 +39,12 @@ function renderCard() {
 
 describe('DailyQuestsCard', () => {
   const reroll = vi.fn()
+  const consumeLevelUps = vi.fn()
   beforeEach(() => {
     quests.useDailyQuests.mockReturnValue({
       quests: [offered, completed], levelUps: [], rerollsLeft: 1, mode: 'mock',
     })
-    quests.useQuestActions.mockReturnValue({ reroll, pending: false })
+    quests.useQuestActions.mockReturnValue({ reroll, pending: false, consumeLevelUps })
   })
   afterEach(() => vi.clearAllMocks())
 
@@ -68,5 +69,17 @@ describe('DailyQuestsCard', () => {
     quests.useDailyQuests.mockReturnValue({ quests: [], levelUps: [], rerollsLeft: 1, mode: 'live' })
     const { container } = renderCard()
     expect(container.firstChild).toBeNull()
+  })
+
+  test('a level-up payload is consumed from the cache after firing (no replay on remount)', () => {
+    const payload = {
+      source: 'QUEST', workoutLabel: completed.title, durationMin: null, rpe: null, totalXp: 15,
+      gains: [], levelUps: [], perks: [], robustness: { xpGained: 0, streakWeeks: 0 },
+    }
+    quests.useDailyQuests.mockReturnValue({
+      quests: [offered, completed], levelUps: [payload], rerollsLeft: 1, mode: 'live',
+    })
+    renderCard()
+    expect(consumeLevelUps).toHaveBeenCalledTimes(1)
   })
 })

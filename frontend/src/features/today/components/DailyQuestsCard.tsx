@@ -19,12 +19,15 @@ const STATE_ICON: Record<DailyQuest['status'], string> = {
 export function DailyQuestsCard() {
   const date = localDateString()
   const { quests, levelUps, rerollsLeft } = useDailyQuests(date)
-  const { reroll, pending } = useQuestActions(date)
+  const { reroll, pending, consumeLevelUps } = useQuestActions(date)
   const { showLevelUp } = useLevelUp()
 
   useEffect(() => {
-    if (levelUps.length > 0) showLevelUp(levelUps[0])
-  }, [levelUps, showLevelUp])
+    if (levelUps.length > 0) {
+      showLevelUp(levelUps[0])
+      consumeLevelUps() // clear from the cache — a remount must not replay the celebration
+    }
+  }, [levelUps, showLevelUp, consumeLevelUps])
 
   if (quests.length === 0) return null
   const doneCount = quests.filter(q => q.status === 'completed').length

@@ -1,10 +1,12 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 
+// LevelUpProvider mirrors production (mounted once in AppLayout) — DailyQuestsCard requires it.
 const renderAt = (path: string) => render(
-  <QueryWrapper><MemoryRouter initialEntries={[path]}><TodayPage /></MemoryRouter></QueryWrapper>,
+  <QueryWrapper><LevelUpProvider><MemoryRouter initialEntries={[path]}><TodayPage /></MemoryRouter></LevelUpProvider></QueryWrapper>,
 )
 
 test('default (medium) renders briefing + quick stats, not AnchorMode', () => {

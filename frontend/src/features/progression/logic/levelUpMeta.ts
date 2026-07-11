@@ -1,7 +1,7 @@
 import { MUSCLE_LABELS } from '@/data/train/train'
 import type { LevelUpResult } from '@/data/train/trainApi'
 
-type Source = LevelUpResult['source'] // 'GYM' | 'SPORT' | 'RUN'
+type Source = LevelUpResult['source'] // 'GYM' | 'SPORT' | 'RUN' | 'QUEST'
 
 // Canonical 12-athletic name + emoji (from skill-model-v3.html, the chosen model).
 const ATHLETIC_META: Record<string, { name: string; icon: string }> = {

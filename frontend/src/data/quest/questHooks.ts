@@ -59,5 +59,13 @@ export function useQuestActions(date: string) {
   return {
     reroll: (id: string) => rerollM.mutate(id),
     pending: rerollM.isPending,
+    /**
+     * Consume-once for the level-up payloads: clears levelUps from the cached day after the
+     * overlay fired. Without this a Today → Train → Today remount within gcTime replays the
+     * cached payload (the only showLevelUp caller driven by a cached-query effect, not a
+     * mutation onSuccess).
+     */
+    consumeLevelUps: () =>
+      qc.setQueryData<QuestDay>(key(date), (d) => d && { ...d, levelUps: [] }),
   }
 }
