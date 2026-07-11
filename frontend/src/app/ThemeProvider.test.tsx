@@ -9,11 +9,17 @@ function Probe() {
 
 beforeEach(() => { localStorage.clear(); document.documentElement.removeAttribute('data-theme') })
 
-test('defaults to dark and toggles to light, persisting + setting data-theme', async () => {
+test('defaults to light and toggles to dark, persisting + clearing data-theme', async () => {
+  render(<ThemeProvider><Probe /></ThemeProvider>)
+  expect(screen.getByText('theme:light')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button'))
+  expect(screen.getByText('theme:dark')).toBeInTheDocument()
+  expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+  expect(localStorage.getItem('mezo-theme')).toBe('dark')
+})
+
+test('a stored dark preference overrides the light default', () => {
+  localStorage.setItem('mezo-theme', 'dark')
   render(<ThemeProvider><Probe /></ThemeProvider>)
   expect(screen.getByText('theme:dark')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button'))
-  expect(screen.getByText('theme:light')).toBeInTheDocument()
-  expect(document.documentElement.getAttribute('data-theme')).toBe('light')
-  expect(localStorage.getItem('mezo-theme')).toBe('light')
 })

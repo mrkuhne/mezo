@@ -23,9 +23,11 @@ test('navigates between tabs by clicking the bottom nav', async () => {
   expect(screen.getByLabelText('Insights alnavigáció')).toBeInTheDocument()
 })
 test('Me screen theme toggle flips data-theme', async () => {
+  localStorage.clear()
   renderApp('/me')
-  document.documentElement.removeAttribute('data-theme')
   await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))
-  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
+  // Light is the default (data-theme="light"); toggling flips to the dark CSS base (no attribute).
   expect(document.documentElement.getAttribute('data-theme')).toBe('light')
+  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
+  expect(document.documentElement.getAttribute('data-theme')).toBeNull()
 })

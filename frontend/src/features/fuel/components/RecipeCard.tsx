@@ -41,7 +41,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
           style={{
             position: 'absolute', left: 12, right: 12, bottom: 10, zIndex: 3,
             fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600,
-            textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1, color: 'var(--text-primary)',
+            textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1, color: 'var(--text-on-media)',
           }}
         >
           {recipe.name}

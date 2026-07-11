@@ -38,7 +38,7 @@ export function MacroCells({ macros, perLabel, size = 'sm' }: MacroCellsProps) {
         <div
           key={c.key}
           className="notch-4"
-          style={{ flex: 1, textAlign: 'center', padding: '6px 2px', background: 'rgba(255,255,255,0.025)' }}
+          style={{ flex: 1, textAlign: 'center', padding: '6px 2px', background: 'var(--surface-glass)' }}
         >
           <div style={{ fontFamily: 'var(--ff-mono)', fontSize: valFs, fontWeight: 600, color: c.color }}>
             {macros[c.key]}
