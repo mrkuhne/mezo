@@ -1,0 +1,89 @@
+openapi: 3.0.3
+info: { title: mezo quest fragment, version: 1.0.0 }
+paths:
+  /api/quest/day/{date}:
+    get:
+      tags: [Quest]
+      operationId: getQuestDay
+      summary: The day's daily quests (lazy-generates for today; evaluates derived completion) (Quests)
+      description: >-
+        Returns the day's quests (rerolled rows excluded). Lazily generates when none exist and
+        date == today; lazily evaluates offered derived quests (completing them awards XP through
+        progression — completions surface in levelUps); offered quests of past days expire quietly.
+        An empty quests array is the honest empty state (never a 404).
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: The day's quests + any level-up payloads produced by this evaluation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuestDayResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/quest/{id}/reroll:
+    post:
+      tags: [Quest]
+      operationId: rerollQuest
+      summary: Replace one of today's offered quests with the next eligible catalog candidate (Quests)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The replacement quest
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/QuestResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Quest not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: Quest not offered / not today / daily reroll cap reached / no alternative left
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    QuestResponse:
+      type: object
+      required: [id, questDate, slot, skillKey, title, why, targetLabel, xp, status]
+      properties:
+        id: { type: string, format: uuid }
+        questDate: { type: string, format: date }
+        slot: { type: string, description: 'BODY | FUELBIO | GROWTH' }
+        skillKey: { type: string, description: Progression skill the XP routes to }
+        title: { type: string, description: HU identity-vote quest title }
+        why: { type: string, description: HU benefit-first rationale }
+        targetLabel: { type: string, description: Code-derived display string of the structured target }
+        xp: { type: integer, format: int32 }
+        status: { type: string, description: 'offered | completed | expired | rerolled' }
+        completedAt: { type: string, format: date-time, nullable: true }
+    QuestDayResponse:
+      type: object
+      required: [date, quests, levelUps, rerollsLeft]
+      properties:
+        date: { type: string, format: date }
+        quests:
+          type: array
+          items: { $ref: '#/components/schemas/QuestResponse' }
+        levelUps:
+          type: array
+          description: One entry per quest completed by THIS evaluation pass (idempotent — re-reads return [])
+          items: { $ref: '#/components/schemas/LevelUpResult' }
+        rerollsLeft: { type: integer, format: int32 }
