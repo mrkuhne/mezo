@@ -22,6 +22,7 @@ describe('WeeklyPage (mock mode)', () => {
     expect(screen.getByText('Mezo · heti tervjavaslat')).toBeInTheDocument()
     expect(screen.getByText(/Hét 22: tartsd ezt a Pull\/Push/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Elfogad' })).toBeInTheDocument()
+    expect(screen.getByText('Growth — heti')).toBeInTheDocument()
   })
 })
 

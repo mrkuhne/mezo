@@ -5,7 +5,7 @@ import { API_BASE } from '@/data/_client/api'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { prevMondayIso, weekEndIso, isoWeekNumber, inWeek, deriveWeekMetrics, deriveItems, deriveScore, trendOf, weightTrendOf, useWeekly } from '@/data/insights/weeklyHooks'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
-import { weekly as mockWeekly, weeklySuggestion as mockSuggestion } from '@/data/insights/insights'
+import { weekly as mockWeekly, weeklySuggestion as mockSuggestion, growthWeek as mockGrowthWeek } from '@/data/insights/insights'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { SleepEntry } from '@/data/types'
 
@@ -91,6 +91,7 @@ describe('useWeekly (mock mode)', () => {
     expect(result.current.weekly).toEqual(mockWeekly)
     expect(result.current.deltaLabel).toBe('vs hét 20')
     expect(result.current.weeklySuggestion).toBe(mockSuggestion)
+    expect(result.current.growthWeek).toEqual(mockGrowthWeek)
     expect(result.current.mode).toBe('mock')
   })
 })
@@ -142,6 +143,8 @@ describe('useWeekly (real mode)', () => {
     // done: 1 gym + 1 volleyball this week; planned from the default schedule handlers
     expect(byLabel['Edzés'].value).toMatch(/^2\//)
     expect(result.current.weekly.title).toMatch(/^Hét \d+ áttekintés · /)
+    // Weekly growth aggregate (E3): the default MSW handler serves honest zeros.
+    await waitFor(() => expect(result.current.growthWeek?.questClosed).toBe(0))
   })
 
   test('returns the tanulom null-state (score null, em-dash rows) when nothing is logged', async () => {

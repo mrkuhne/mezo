@@ -12,14 +12,15 @@ import { ApiError } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
 import { localDateString } from '@/shared/lib/dates'
 import { weeklySuggestionApi } from '@/data/insights/weeklySuggestionApi'
+import { growthWeekApi } from '@/data/insights/growthWeekApi'
 import { mealApi } from '@/data/fuel/mealApi'
 import { mondayIso, deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { trainApi } from '@/data/train/trainApi'
 import { useSleep } from '@/data/me/sleepHooks'
 import { useWeight } from '@/data/me/weightHooks'
-import { weekly as mockWeekly, weeklySuggestion as mockWeeklySuggestion } from '@/data/insights/insights'
+import { weekly as mockWeekly, weeklySuggestion as mockWeeklySuggestion, growthWeek as mockGrowthWeek } from '@/data/insights/insights'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
-import type { SleepEntry, WeeklyItem, WeeklyTrend } from '@/data/types'
+import type { SleepEntry, WeeklyGrowth, WeeklyItem, WeeklyTrend } from '@/data/types'
 
 /** Documented score constants (FE v0 — promote to backend config with the proactive epic). */
 export const SLEEP_TARGET_H = 8
@@ -158,6 +159,8 @@ export interface WeeklyView {
   deltaLabel: string
   /** Mock: the seed prose. Real: the generated tervjavaslat prose, or null (404) — the card renders the honest placeholder. */
   weeklySuggestion: string | null
+  /** Mock: the seed aggregate. Real: the fetched growth-week aggregate, or null while unresolved (or on error). */
+  growthWeek: WeeklyGrowth | null
   mode: 'mock' | 'live'
 }
 
@@ -203,9 +206,16 @@ export function useWeekly(): WeeklyView {
     enabled: !mock,
     retry: false,
   })
+  // Weekly growth aggregate (E3, mezo-6ng8) — real-only; honest zeros on data, null on error.
+  const growthQ = useQuery<WeeklyGrowth | null>({
+    queryKey: ['insightsWeekly', 'growth', start],
+    queryFn: () => growthWeekApi.get(start).catch(() => null),
+    enabled: !mock,
+    retry: false,
+  })
 
   if (mock) {
-    return { weekly: mockWeekly, deltaLabel: 'vs hét 20', weeklySuggestion: mockWeeklySuggestion, mode: 'mock' }
+    return { weekly: mockWeekly, deltaLabel: 'vs hét 20', weeklySuggestion: mockWeeklySuggestion, growthWeek: mockGrowthWeek, mode: 'mock' }
   }
 
   const planned = gymSlots != null && sportSlots != null ? gymSlots.length + sportSlots.length : null
@@ -242,6 +252,7 @@ export function useWeekly(): WeeklyView {
     },
     deltaLabel: 'vs előző hét',
     weeklySuggestion: suggestionQ.data ?? null,
+    growthWeek: growthQ.data ?? null,
     mode: 'live',
   }
 }

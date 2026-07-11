@@ -534,6 +534,16 @@ export type WeeklyTrend = 'up' | 'down' | 'flat'
 export interface WeeklyItem { label: string; value: string; trend: WeeklyTrend }
 export interface WeeklyReview { title: string; score: number; delta: number; items: WeeklyItem[] }
 
+/** Weekly growth aggregate (E3, mezo-6ng8) — mirrors GrowthWeekResponse. */
+export interface WeeklyGrowth {
+  weekStart: string
+  questCompleted: number
+  questClosed: number
+  lifeXp: number
+  activities: number
+  savingsHuf: number
+}
+
 export type ChatRole = 'user' | 'assistant'
 export interface ChatRef { kind: string; id: string }
 export interface ChatMessage {
