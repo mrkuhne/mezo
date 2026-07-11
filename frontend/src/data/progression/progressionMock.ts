@@ -102,6 +102,7 @@ export const progressionProfileMock: ProgressionProfileResponse = {
     { skillKey: 'recovery', kind: 'LIFE', level: 3, cumulativeXp: 305, progressPct: 22.4 },
   ],
   traits: { disciplinePct: 78, consistencyWeeks: 5 },
+  savingsHuf30d: 50000,
 }
 
 /** Real-mode empty / ghost value (no XP yet, or progression switch off → 404). */
@@ -114,4 +115,5 @@ export const GHOST_PROGRESSION_PROFILE: ProgressionProfileResponse = {
   highlights: {},
   life: [],
   traits: { disciplinePct: null, consistencyWeeks: 0 },
+  savingsHuf30d: null,
 }

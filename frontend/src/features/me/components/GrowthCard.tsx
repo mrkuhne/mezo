@@ -66,6 +66,8 @@ export function GrowthCard({ profile }: { profile: ProgressionProfileResponse })
     { label: 'Következetesség', value: `${weeks} hét`, pct: (Math.min(weeks, 12) / 12) * 100 },
   ]
 
+  const savings = profile.savingsHuf30d
+
   return (
     <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(var(--brand-core), var(--brand-glow))' }} />
@@ -151,6 +153,14 @@ export function GrowthCard({ profile }: { profile: ProgressionProfileResponse })
               </div>
             </div>
           ))}
+          {typeof savings === 'number' && savings > 0 && (
+            <div className="progress-mrow" style={{ marginTop: 2 }}>
+              <span className="progress-mnm" style={{ width: 'auto', flex: 1 }}>Megtakarítás (30 nap)</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)' }}>
+                {`${savings.toLocaleString('hu-HU').replace(/[  ]/g, ' ')} Ft`}
+              </span>
+            </div>
+          )}
           <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2 }}>
             A számaid mondják ki — nem önbevallás.
           </span>

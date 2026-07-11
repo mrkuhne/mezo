@@ -140,6 +140,7 @@ export const handlers = [
       highlights: { bestAthletic: { skillKey: 'max_strength', level: 7 }, bestMuscle: { skillKey: 'back-mid', level: 6 } },
       life: [],
       traits: { disciplinePct: null, consistencyWeeks: 0 },
+      savingsHuf30d: null,
     }),
   ),
   http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
