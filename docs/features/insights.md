@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-07-11
+updated: 2026-07-12
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -81,7 +81,7 @@ PERSISTED `pattern.status`, no local decision state.
 
 ### 2.2 Weekly (`pages/WeeklyPage.tsx`) — **REAL dual-mode since D′ (`mezo-t16y.1`)**
 A big `score` `/100` with a `delta` label, a bordered list of `weekly.items` (label · value · trend arrow `↗/↘/→`), then a "Mezo · heti tervjavaslat" card, and (E3 `mezo-6ng8`) a **"Growth — heti" `GrowthWeekCard`** last. Reads `useWeekly()` (`data/insights/weeklyHooks.ts`, exported via the `hooks.ts` barrel) → `{ weekly:{title,score,delta,items}, deltaLabel, weeklySuggestion, growthWeek, mode }`.
-- **Growth-week card (E3):** `<GrowthWeekCard growth={growthWeek} />` (`components/GrowthWeekCard.tsx`) renders the week's **Küldetések** `{completed}/{closed}`, **LIFE XP** `+N`, **Tevékenységek** count, and a **Megtakarítás** `{amount} Ft` row (only when > 0). Empty/zero week (or a null on error) → the honest line *"Még nincs growth-adat ezen a héten."* This is the growth domain's Insights surface — the domain (quests, activity log, savings, adaptive difficulty, flavor copy) lives in [`growth.md`](growth.md).
+- **Growth-week card (E3):** `<GrowthWeekCard growth={growthWeek} />` (`components/GrowthWeekCard.tsx`) renders the week's **Küldetések** `{completed}/{closed}`, **LIFE XP** `+N`, **Tevékenységek** count, and a **Megtakarítás** `{amount} Ft` row (only when > 0). Empty/zero week (or a null on error) → the honest line *"Még nincs growth-adat ezen a héten."* This is the growth domain's *weekly* Insights surface; the growth domain's dedicated home is the separate **`/me/growth` page** (all-band skills + a 30-day journal + badges/perks, `mezo-rmhr`) — the domain (quests, activity log, savings, adaptive difficulty, flavor copy) lives in [`growth.md`](growth.md).
 - **Mock:** byte-parity with the Phase-1 seed — `mockWeekly` + `deltaLabel 'vs hét 20'` + the seed `weeklySuggestion` prose with inert **"Elfogad" / "Hangoljuk"** buttons.
 - **Real:** the review is **composed client-side** from the user's own data (no Insights backend — see §3) with a **documented deterministic score** (§4 / the formula in `weeklyHooks.ts:146-154`). `deltaLabel` becomes `'vs előző hét'`; `title` date-derives (`Hét N áttekintés · …`). **Since proactive W1 (`mezo-h4wp.3`) the tervjavaslat card is LIVE:** `weeklySuggestion` fetches the generated plan prose from `GET /api/proactive/weekly-suggestion` (via `weeklySuggestionApi`, `['weeklySuggestion', start]`, `retry:false`); when present the card renders it, and the inert **"Elfogad" / "Hangoljuk"** buttons are **hidden** (`mode !== 'mock'`, `WeeklyPage.tsx:66-71` — false affordance). On the **404** (no prior-week narrative memory yet) `weeklySuggestion` is **null** → the card falls back to the honest placeholder *"A társ heti tervjavaslata hamarosan."* — the D′ null-path is now the **degraded** path, not the default. Details: [`proactive.md` §2/§5.5](proactive.md).
 - **Honest null-state:** when no sub-score has data the `score` is **null** and the page renders the patterns-precedent **„tanulom"** placeholder (*"még gyűjtöm az adatokat a heti értékeléshez"*, `WeeklyPage.tsx:27-35`) instead of a fabricated number; `delta` is likewise null when either week's score is missing. The **Súly trend** row is trend-only (goal-ward arrow) and is **excluded from the score**.
