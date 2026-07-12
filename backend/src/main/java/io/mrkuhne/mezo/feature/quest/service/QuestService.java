@@ -73,6 +73,20 @@ public class QuestService {
             .build();
     }
 
+    /** Growth-journal read: non-rerolled quests of the inclusive range, newest date first. */
+    @Transactional(readOnly = true)
+    public List<QuestResponse> history(UUID userId, LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("QUEST_INVALID_DATE_RANGE").build(), HttpStatus.BAD_REQUEST);
+        }
+        return repository.findByCreatedByAndQuestDateBetweenOrderByQuestDateDesc(userId, from, to)
+            .stream()
+            .filter(q -> !DailyQuestEntity.STATUS_REROLLED.equals(q.getStatus()))
+            .map(mapper::toQuestResponse)
+            .toList();
+    }
+
     /** Shared with the nightly cron: complete satisfied offered rows (award XP), expire passed ones. */
     @Transactional
     public List<LevelUpResult> evaluateAndFinalize(List<DailyQuestEntity> rows, LocalDate today) {
