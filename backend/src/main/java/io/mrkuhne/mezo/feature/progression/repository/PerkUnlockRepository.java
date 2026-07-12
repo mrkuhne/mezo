@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface PerkUnlockRepository extends JpaRepository<PerkUnlockEntity, UUID> {
 
     List<PerkUnlockEntity> findByCreatedByOrderByUnlockedAtAsc(UUID createdBy);
+
+    List<PerkUnlockEntity> findByCreatedByOrderByUnlockedAtDesc(UUID createdBy);
 }
