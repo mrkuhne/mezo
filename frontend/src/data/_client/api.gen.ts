@@ -991,6 +991,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progression/achievements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Computed growth badges + unlocked perk milestones (Progression)
+         * @description Badges are derived on read from the ledgers (deterministic, retroactive, no unlock dates in v1); perks are the persisted perk_unlock rows joined with the perk catalog. Honest zero-progress badges — never a 404.
+         */
+        get: operations["getAchievements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/protocol": {
         parameters: {
             query?: never;
@@ -3008,6 +3028,37 @@ export interface components {
              * @description Sum of financial amountHuf dated in the week
              */
             savingsHuf: number;
+        };
+        BadgeResponse: {
+            key: string;
+            /** @description Emoji */
+            icon: string;
+            /** @description HU display name */
+            name: string;
+            achieved: boolean;
+            /**
+             * Format: int64
+             * @description Progress numerator (also set when achieved)
+             */
+            current: number;
+            /** Format: int64 */
+            target: number;
+        };
+        PerkUnlockResponse: {
+            perkKey: string;
+            /** @description HU perk name from the catalog */
+            name: string;
+            /** @description HU effect line from the catalog */
+            effectCopy: string;
+            skillKey: string;
+            /** Format: int32 */
+            milestoneLevel: number;
+            /** Format: date-time */
+            unlockedAt: string;
+        };
+        AchievementsResponse: {
+            badges: components["schemas"]["BadgeResponse"][];
+            perks: components["schemas"]["PerkUnlockResponse"][];
         };
         SkillLevel: {
             skillKey: string;
@@ -6693,6 +6744,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GrowthWeekResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAchievements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The 9 badges (fixed catalog order) + unlocked perks (newest first) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AchievementsResponse"];
                 };
             };
             /** @description Missing or invalid token */
