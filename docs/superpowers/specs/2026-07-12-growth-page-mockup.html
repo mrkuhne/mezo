@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Me · Growth — B variáns, minden skill, diagram nélkül</title>
+<link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  input, textarea { font-family: inherit; color: inherit; background: none; border: none; outline: none; }
+  :root {
+    --brand-core: #0E7C7B; --brand-primary: #14B8A6; --brand-glow: #5EEAD4;
+    --canvas: #0A0F14; --surface-1: #121A22; --surface-2: #1A242E; --surface-3: #232F3B;
+    --border-subtle: rgba(255,255,255,0.06); --border-strong: rgba(255,255,255,0.12);
+    --border-brand: rgba(94,234,212,0.35);
+    --text-primary: #ECECF1; --text-secondary: #9CA3AF; --text-tertiary: #6B7280; --text-quaternary: #4B5563;
+    --success: #34D399; --warning: #F59E0B;
+    --ff-display: "Antonio", "Arial Narrow", sans-serif;
+    --ff-body: "Inter", system-ui, sans-serif;
+    --ff-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  body { background: #06090d; color: var(--text-primary); font-family: var(--ff-body); padding: 28px 24px 80px; }
+  h1 { font-family: var(--ff-display); font-size: 28px; letter-spacing: 1px; text-transform: uppercase; }
+  .sub { color: var(--text-secondary); font-size: 13px; margin: 6px 0 30px; max-width: 860px; line-height: 1.5; }
+  .phones { display: flex; gap: 26px; align-items: flex-start; overflow-x: auto; padding-bottom: 20px; }
+  .phone { width: 390px; flex-shrink: 0; background: var(--canvas); border: 1px solid var(--border-strong); border-radius: 26px; padding: 16px 0 24px; box-shadow: 0 24px 60px rgba(0,0,0,.55); overflow: hidden; }
+  .flabel { font-family: var(--ff-mono); font-size: 11px; letter-spacing: 2px; color: var(--brand-glow); margin: 0 0 10px 6px; }
+
+  .appbar { display: flex; justify-content: space-between; align-items: center; padding: 6px 24px 2px; }
+  .logo { font-family: var(--ff-display); letter-spacing: 3px; font-size: 15px; color: var(--brand-glow); }
+  .pagehead { padding: 10px 24px 0; }
+  .eyebrow { font-family: var(--ff-mono); font-size: 10px; letter-spacing: 2.5px; color: var(--text-tertiary); text-transform: uppercase; }
+  .eyebrow.brand { color: var(--brand-glow); }
+  .ptitle { font-family: var(--ff-display); font-size: 34px; letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+  .subnav { display: flex; gap: 4px; padding: 12px 24px 4px; font-family: var(--ff-mono); font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-tertiary); white-space: nowrap; overflow: hidden; }
+  .subnav span { padding: 6px 9px; }
+  .subnav .active { color: var(--brand-glow); border-bottom: 2px solid var(--brand-glow); }
+  .col { display: flex; flex-direction: column; gap: 14px; padding: 10px 24px 0; }
+  .card { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 14px 15px 15px; position: relative; overflow: hidden; }
+  .accent { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(var(--brand-core), var(--brand-primary)); }
+  .row { display: flex; align-items: center; } .sb { justify-content: space-between; }
+  .chip { font-family: var(--ff-mono); font-size: 10px; letter-spacing: 1px; padding: 4px 9px; border: 1px solid var(--border-strong); border-radius: 3px; color: var(--text-secondary); background: var(--surface-2); }
+  .chip.brand { color: var(--brand-glow); border-color: var(--border-brand); }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .stat { background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 11px 6px 9px; text-align: center; }
+  .stat .v { font-family: var(--ff-display); font-size: 23px; color: var(--brand-glow); }
+  .stat .v small { font-size: 12px; color: var(--text-secondary); }
+  .stat .l { font-family: var(--ff-mono); font-size: 8.5px; letter-spacing: 1.5px; color: var(--text-tertiary); text-transform: uppercase; margin-top: 3px; }
+
+  .seg { display: flex; background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 5px; padding: 3px; gap: 3px; }
+  .seg span { flex: 1; text-align: center; font-family: var(--ff-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 7px 0; border-radius: 3px; color: var(--text-tertiary); }
+  .seg .on { background: var(--surface-3); color: var(--brand-glow); box-shadow: inset 0 0 0 1px var(--border-brand); }
+
+  .mrow { display: flex; align-items: center; gap: 8px; margin-top: 7px; font-size: 12px; }
+  .mrk { width: 17px; text-align: center; flex-shrink: 0; } .mnm { width: 118px; color: var(--text-primary); flex-shrink: 0; }
+  .mlv { width: 34px; font-family: var(--ff-mono); font-size: 10.5px; color: var(--brand-glow); flex-shrink: 0; }
+  .mbar { flex: 1; height: 5px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+  .mfill { height: 100%; background: linear-gradient(90deg, var(--brand-core), var(--brand-glow)); border-radius: 3px; }
+  .mxp { width: 44px; text-align: right; font-family: var(--ff-mono); font-size: 9px; color: var(--text-tertiary); flex-shrink: 0; }
+  .cap { font-size: 10px; color: var(--text-tertiary); margin-top: 9px; }
+
+  .trow { display: flex; align-items: center; gap: 8px; margin-top: 7px; font-size: 12px; }
+  .tnm { width: 118px; } .tlv { width: 44px; font-family: var(--ff-mono); font-size: 10.5px; color: var(--brand-glow); }
+
+  .badges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+  .badge { background: var(--surface-2); border: 1px solid var(--border-subtle); border-radius: 4px; padding: 10px 6px 8px; text-align: center; }
+  .badge .ic { font-size: 19px; }
+  .badge .nm { font-size: 9.5px; font-weight: 600; margin-top: 4px; line-height: 1.25; }
+  .badge .st { font-family: var(--ff-mono); font-size: 8px; color: var(--text-tertiary); margin-top: 3px; letter-spacing: .5px; }
+  .badge.done { border-color: var(--border-brand); background: rgba(94,234,212,0.05); }
+  .badge.done .st { color: var(--brand-glow); }
+  .bprog { height: 3px; background: var(--surface-3); border-radius: 2px; margin-top: 5px; overflow: hidden; }
+  .bprog i { display: block; height: 100%; background: var(--brand-primary); }
+  .perk { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border-subtle); font-size: 12px; }
+  .perk .pi { width: 26px; height: 26px; border-radius: 5px; background: var(--surface-3); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .perk .pd { flex: 1; } .perk .pd small { display: block; color: var(--text-tertiary); font-size: 10px; margin-top: 1px; }
+  .perk .lv { font-family: var(--ff-mono); font-size: 9px; color: var(--text-tertiary); }
+
+  .day { margin-top: 12px; }
+  .dayh { display: flex; justify-content: space-between; font-family: var(--ff-mono); font-size: 9.5px; letter-spacing: 1.5px; color: var(--text-tertiary); text-transform: uppercase; padding-bottom: 5px; border-bottom: 1px solid var(--border-subtle); }
+  .ev { display: flex; gap: 9px; align-items: flex-start; padding: 7px 0 0; font-size: 12px; }
+  .ev .ic { width: 15px; text-align: center; flex-shrink: 0; }
+  .ev .ok { color: var(--success); } .ev .miss { color: var(--text-quaternary); } .ev .act { color: var(--brand-glow); }
+  .ev .tx { flex: 1; line-height: 1.35; } .ev .tx small { color: var(--text-tertiary); font-size: 10px; display: block; }
+  .ev .xp { font-family: var(--ff-mono); font-size: 10px; color: var(--brand-glow); white-space: nowrap; }
+  .ev .xp.zero { color: var(--text-quaternary); }
+  .ev.expired .tx { color: var(--text-tertiary); }
+</style>
+</head>
+<body>
+
+<h1>Me · Growth — B variáns · minden skill, diagram nélkül</h1>
+<p class="sub">A választott szegmentált szerkezet, radarok nélkül: a <b>Skillek</b> tab mind a 33 skillt kilistázza (8 LIFE + 12 atlétikus + 13 izom) — sávonként egy kártya, szint szerint rendezve, <b>Lv + progress-sáv + össz-XP</b> minden sorban. A hero és a másik két tab változatlan. Mindhárom telefon a teljes tab-tartalmat mutatja kigörgetve.</p>
+
+<div class="phones">
+
+  <!-- ======== SKILLEK TAB ======== -->
+  <div class="phone">
+    <div class="flabel">SKILLEK TAB (alapértelmezett)</div>
+    <div class="appbar"><span class="logo">〽 MEZO</span><span class="chip">⚙</span></div>
+    <div class="pagehead"><div class="eyebrow">ME</div><div class="ptitle">Growth</div></div>
+    <div class="subnav"><span>Profil</span><span class="active">Growth</span><span>Cél</span><span>Súly</span><span>Alvás</span><span>Emberek</span></div>
+    <div class="col">
+
+      <div class="card" style="padding:10px 12px"><div class="stats">
+        <div class="stat"><div class="v">12 480</div><div class="l">Össz XP</div></div>
+        <div class="stat"><div class="v">78%</div><div class="l">Fegyelem</div></div>
+        <div class="stat"><div class="v">5<small> hét</small></div><div class="l">Ritmus</div></div>
+      </div></div>
+
+      <div class="seg"><span class="on">Skillek</span><span>Napló</span><span>Kitüntetések</span></div>
+
+      <div class="card"><span class="accent"></span>
+        <div class="row sb"><div class="eyebrow brand">LIFE</div><span class="chip">8 skill · 1 085 XP</span></div>
+        <div class="mrow"><span class="mrk">📚</span><span class="mnm">Tanulás</span><span class="mlv">Lv 3</span><div class="mbar"><div class="mfill" style="width:28%"></div></div><span class="mxp">320</span></div>
+        <div class="mrow"><span class="mrk">🛌</span><span class="mnm">Regeneráció</span><span class="mlv">Lv 3</span><div class="mbar"><div class="mfill" style="width:22%"></div></div><span class="mxp">305</span></div>
+        <div class="mrow"><span class="mrk">🍳</span><span class="mnm">Konyha</span><span class="mlv">Lv 2</span><div class="mbar"><div class="mfill" style="width:27%"></div></div><span class="mxp">150</span></div>
+        <div class="mrow"><span class="mrk">🌱</span><span class="mnm">Szemlélet</span><span class="mlv">Lv 2</span><div class="mbar"><div class="mfill" style="width:16%"></div></div><span class="mxp">130</span></div>
+        <div class="mrow"><span class="mrk">🤝</span><span class="mnm">Kapcsolatok</span><span class="mlv">Lv 1</span><div class="mbar"><div class="mfill" style="width:60%"></div></div><span class="mxp">60</span></div>
+        <div class="mrow"><span class="mrk">💰</span><span class="mnm">Pénzügyek</span><span class="mlv">Lv 1</span><div class="mbar"><div class="mfill" style="width:55%"></div></div><span class="mxp">55</span></div>
+        <div class="mrow"><span class="mrk">🧘</span><span class="mnm">Tudatosság</span><span class="mlv">Lv 1</span><div class="mbar"><div class="mfill" style="width:40%"></div></div><span class="mxp">40</span></div>
+        <div class="mrow"><span class="mrk">🎯</span><span class="mnm">Produktivitás</span><span class="mlv">Lv 1</span><div class="mbar"><div class="mfill" style="width:25%"></div></div><span class="mxp">25</span></div>
+        <div class="row sb" style="margin-top:11px;padding-top:9px;border-top:1px solid var(--border-subtle)">
+          <span style="font-size:12px;color:var(--text-secondary)">Megtakarítás (30 nap)</span>
+          <span style="font-family:var(--ff-mono);font-size:12px;color:var(--brand-glow);font-weight:600">50 000 Ft</span>
+        </div>
+      </div>
+
+      <div class="card"><span class="accent"></span>
+        <div class="row sb"><div class="eyebrow brand">Atlétikus</div><span class="chip">12 skill · átlag 4.3</span></div>
+        <div class="mrow"><span class="mrk">🏋️</span><span class="mnm">Maximális erő</span><span class="mlv">Lv 5</span><div class="mbar"><div class="mfill" style="width:62%"></div></div><span class="mxp">2 140</span></div>
+        <div class="mrow"><span class="mrk">🔁</span><span class="mnm">Erő-állóképesség</span><span class="mlv">Lv 5</span><div class="mbar"><div class="mfill" style="width:38%"></div></div><span class="mxp">1 980</span></div>
+        <div class="mrow"><span class="mrk">🛡️</span><span class="mnm">Robusztusság</span><span class="mlv">Lv 5</span><div class="mbar"><div class="mfill" style="width:20%"></div></div><span class="mxp">1 850</span></div>
+        <div class="mrow"><span class="mrk">🫁</span><span class="mnm">Aerob kapacitás</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:81%"></div></div><span class="mxp">1 520</span></div>
+        <div class="mrow"><span class="mrk">🤸</span><span class="mnm">Mozgékonyság</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:55%"></div></div><span class="mxp">1 310</span></div>
+        <div class="mrow"><span class="mrk">🧱</span><span class="mnm">Core-stabilitás</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:42%"></div></div><span class="mxp">1 240</span></div>
+        <div class="mrow"><span class="mrk">🤹</span><span class="mnm">Koordináció</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:18%"></div></div><span class="mxp">1 090</span></div>
+        <div class="mrow"><span class="mrk">🔥</span><span class="mnm">Anaerob kapacitás</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:10%"></div></div><span class="mxp">1 020</span></div>
+        <div class="mrow"><span class="mrk">⚡</span><span class="mnm">Robbanékonyság</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:6%"></div></div><span class="mxp">990</span></div>
+        <div class="mrow"><span class="mrk">🎯</span><span class="mnm">Agility</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:3%"></div></div><span class="mxp">960</span></div>
+        <div class="mrow"><span class="mrk">💨</span><span class="mnm">Sprint-sebesség</span><span class="mlv">Lv 3</span><div class="mbar"><div class="mfill" style="width:66%"></div></div><span class="mxp">760</span></div>
+        <div class="mrow"><span class="mrk">🦘</span><span class="mnm">Vertikális emelk.</span><span class="mlv">Lv 3</span><div class="mbar"><div class="mfill" style="width:48%"></div></div><span class="mxp">690</span></div>
+      </div>
+
+      <div class="card"><span class="accent"></span>
+        <div class="row sb"><div class="eyebrow brand">Izom</div><span class="chip">13 izom · legjobb Lv 6</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Hát (közép)</span><span class="mlv">Lv 6</span><div class="mbar"><div class="mfill" style="width:58%"></div></div><span class="mxp">3 210</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Comb</span><span class="mlv">Lv 6</span><div class="mbar"><div class="mfill" style="width:44%"></div></div><span class="mxp">3 050</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Mell</span><span class="mlv">Lv 6</span><div class="mbar"><div class="mfill" style="width:31%"></div></div><span class="mxp">2 910</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Far</span><span class="mlv">Lv 5</span><div class="mbar"><div class="mfill" style="width:84%"></div></div><span class="mxp">2 540</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Szárny (lat)</span><span class="mlv">Lv 5</span><div class="mbar"><div class="mfill" style="width:66%"></div></div><span class="mxp">2 380</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Váll</span><span class="mlv">Lv 5</span><div class="mbar"><div class="mfill" style="width:41%"></div></div><span class="mxp">2 190</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Combhajlító</span><span class="mlv">Lv 5</span><div class="mbar"><div class="mfill" style="width:22%"></div></div><span class="mxp">2 020</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Tricepsz</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:88%"></div></div><span class="mxp">1 760</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Bicepsz</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:71%"></div></div><span class="mxp">1 620</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Core</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:52%"></div></div><span class="mxp">1 480</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Hátsó váll</span><span class="mlv">Lv 4</span><div class="mbar"><div class="mfill" style="width:30%"></div></div><span class="mxp">1 350</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Trapéz</span><span class="mlv">Lv 3</span><div class="mbar"><div class="mfill" style="width:77%"></div></div><span class="mxp">890</span></div>
+        <div class="mrow"><span class="mrk">💪</span><span class="mnm">Vádli</span><span class="mlv">Lv 2</span><div class="mbar"><div class="mfill" style="width:35%"></div></div><span class="mxp">420</span></div>
+        <div class="cap">Vádli a legtöbb tartalék (Lv 2)</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======== NAPLÓ TAB ======== -->
+  <div class="phone">
+    <div class="flabel">NAPLÓ TAB</div>
+    <div class="appbar"><span class="logo">〽 MEZO</span><span class="chip">⚙</span></div>
+    <div class="pagehead"><div class="eyebrow">ME</div><div class="ptitle">Growth</div></div>
+    <div class="subnav"><span>Profil</span><span class="active">Growth</span><span>Cél</span><span>Súly</span><span>Alvás</span><span>Emberek</span></div>
+    <div class="col">
+      <div class="card" style="padding:10px 12px"><div class="stats">
+        <div class="stat"><div class="v">12 480</div><div class="l">Össz XP</div></div>
+        <div class="stat"><div class="v">78%</div><div class="l">Fegyelem</div></div>
+        <div class="stat"><div class="v">5<small> hét</small></div><div class="l">Ritmus</div></div>
+      </div></div>
+      <div class="seg"><span>Skillek</span><span class="on">Napló</span><span>Kitüntetések</span></div>
+      <div class="card"><span class="accent"></span>
+        <div class="row sb"><div class="eyebrow brand">Utolsó 30 nap</div><span class="chip">23 ✓ · 9 — · 14 ✎</span></div>
+        <div class="day">
+          <div class="dayh"><span>Ma · Júl 12</span><span>+53 XP</span></div>
+          <div class="ev"><span class="ic ok">✓</span><span class="tx">Reggeli súlymérés — logold be<small>küldetés · FUELBIO</small></span><span class="xp">+15</span></div>
+          <div class="ev"><span class="ic act">✎</span><span class="tx">Olvastam 25 percet a teraszon<small>tevékenység · 📚 Tanulás</small></span><span class="xp">+18</span></div>
+          <div class="ev"><span class="ic ok">✓</span><span class="tx">Olvass ma legalább 10 percet<small>küldetés · GROWTH — tevékenységgel teljesült</small></span><span class="xp">+20</span></div>
+        </div>
+        <div class="day">
+          <div class="dayh"><span>Tegnap · Júl 11</span><span>+88 XP</span></div>
+          <div class="ev"><span class="ic ok">✓</span><span class="tx">A mai tervezett edzés a naptárban van — csináld végig<small>küldetés · BODY</small></span><span class="xp">+25</span></div>
+          <div class="ev"><span class="ic act">✎</span><span class="tx">Átraktam 50 ezret megtakarításba<small>tevékenység · 💰 Pénzügyek · 50 000 Ft</small></span><span class="xp">+15</span></div>
+          <div class="ev"><span class="ic ok">✓</span><span class="tx">Mind a 4 heartbeat check-in ma<small>küldetés · FUELBIO</small></span><span class="xp">+20</span></div>
+          <div class="ev expired"><span class="ic miss">—</span><span class="tx">10 perc meditáció vagy légzőgyakorlat<small>küldetés · GROWTH · csendben lejárt</small></span><span class="xp zero">0</span></div>
+        </div>
+        <div class="day">
+          <div class="dayh"><span>Júl 10</span><span>+35 XP</span></div>
+          <div class="ev"><span class="ic ok">✓</span><span class="tx">Igyál meg legalább 2,5 litert ma<small>küldetés · FUELBIO</small></span><span class="xp">+15</span></div>
+          <div class="ev"><span class="ic act">✎</span><span class="tx">Rendet raktam a garázsban<small>tevékenység · 🎯 Produktivitás</small></span><span class="xp">+10</span></div>
+          <div class="ev"><span class="ic ok">✓</span><span class="tx">Főzz ma a saját receptjeid egyikéből<small>küldetés · GROWTH — recept-loggal teljesült</small></span><span class="xp">+25</span></div>
+        </div>
+        <div class="day">
+          <div class="dayh"><span>Júl 9</span><span>+40 XP</span></div>
+          <div class="ev"><span class="ic ok">✓</span><span class="tx">Aludj legalább 7,5 órát<small>küldetés · FUELBIO</small></span><span class="xp">+25</span></div>
+          <div class="ev expired"><span class="ic miss">—</span><span class="tx">Hívj fel egy barátot vagy családtagot<small>küldetés · GROWTH · csendben lejárt</small></span><span class="xp zero">0</span></div>
+          <div class="ev"><span class="ic act">✎</span><span class="tx">Meditáltam lefekvés előtt 10 percet<small>tevékenység · 🧘 Tudatosság</small></span><span class="xp">+15</span></div>
+        </div>
+        <div class="cap" style="text-align:center">továbbiak betöltése ↓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== KITÜNTETÉSEK TAB ======== -->
+  <div class="phone">
+    <div class="flabel">KITÜNTETÉSEK TAB</div>
+    <div class="appbar"><span class="logo">〽 MEZO</span><span class="chip">⚙</span></div>
+    <div class="pagehead"><div class="eyebrow">ME</div><div class="ptitle">Growth</div></div>
+    <div class="subnav"><span>Profil</span><span class="active">Growth</span><span>Cél</span><span>Súly</span><span>Alvás</span><span>Emberek</span></div>
+    <div class="col">
+      <div class="card" style="padding:10px 12px"><div class="stats">
+        <div class="stat"><div class="v">12 480</div><div class="l">Össz XP</div></div>
+        <div class="stat"><div class="v">78%</div><div class="l">Fegyelem</div></div>
+        <div class="stat"><div class="v">5<small> hét</small></div><div class="l">Ritmus</div></div>
+      </div></div>
+      <div class="seg"><span>Skillek</span><span>Napló</span><span class="on">Kitüntetések</span></div>
+      <div class="card"><span class="accent"></span>
+        <div class="row sb"><div class="eyebrow brand">Badge-ek</div><span class="chip">4 / 9 megszerezve</span></div>
+        <div class="badges">
+          <div class="badge done"><div class="ic">🏁</div><div class="nm">Első küldetés</div><div class="st">✓ Júl 11</div></div>
+          <div class="badge done"><div class="ic">📜</div><div class="nm">10 küldetés</div><div class="st">✓ Júl 11</div></div>
+          <div class="badge"><div class="ic">🎖️</div><div class="nm">50 küldetés</div><div class="bprog"><i style="width:46%"></i></div><div class="st">23 / 50</div></div>
+          <div class="badge done"><div class="ic">🔥</div><div class="nm">4 hetes ritmus</div><div class="st">✓ 5 hét</div></div>
+          <div class="badge"><div class="ic">🌈</div><div class="nm">Mind a 8 LIFE aktív</div><div class="bprog"><i style="width:75%"></i></div><div class="st">6 / 8</div></div>
+          <div class="badge"><div class="ic">💰</div><div class="nm">100k megtakarítás</div><div class="bprog"><i style="width:50%"></i></div><div class="st">50k / 100k</div></div>
+          <div class="badge done"><div class="ic">✍️</div><div class="nm">Első tevékenység</div><div class="st">✓ Júl 11</div></div>
+          <div class="badge"><div class="ic">🧠</div><div class="nm">LIFE Lv 5</div><div class="bprog"><i style="width:60%"></i></div><div class="st">legjobb Lv 3</div></div>
+          <div class="badge"><div class="ic">🏛️</div><div class="nm">10 000 LIFE XP</div><div class="bprog"><i style="width:11%"></i></div><div class="st">1 085</div></div>
+        </div>
+      </div>
+      <div class="card"><span class="accent"></span>
+        <div class="row sb"><div class="eyebrow brand">Perkek — mérföldkövek</div><span class="chip">6 feloldva</span></div>
+        <div class="perk" style="border-top:none"><span class="pi">🏋️</span><div class="pd">Vas-törzs II <small>push-volumen tűrés +6%</small></div><span class="lv">MAX ERŐ · LV5</span></div>
+        <div class="perk"><span class="pi">🔥</span><div class="pd">Tejsav-puffer II <small>becsült munkakapacitás +8%</small></div><span class="lv">ANAEROB · LV5</span></div>
+        <div class="perk"><span class="pi">🦘</span><div class="pd">Rugós láb <small>becsült vertikál +3 cm</small></div><span class="lv">VERT · LV5</span></div>
+        <div class="perk"><span class="pi">🫁</span><div class="pd">Nagy tüdő <small>regeneráció két kör közt +5%</small></div><span class="lv">AEROB · LV5</span></div>
+        <div class="perk"><span class="pi">💨</span><div class="pd">Utánégő <small>becsült csúcssebesség +4%</small></div><span class="lv">SPRINT · LV10</span></div>
+        <div class="perk"><span class="pi">🛡️</span><div class="pd">Páncélzat <small>10 hét töretlen — sérülésállóság nő</small></div><span class="lv">ROBUST · LV10</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
