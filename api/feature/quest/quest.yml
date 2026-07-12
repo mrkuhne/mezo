@@ -58,6 +58,41 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/quest/history:
+    get:
+      tags: [Quest]
+      operationId: getQuestHistory
+      summary: Quest history in an inclusive date range, newest first (Quests)
+      description: >-
+        Non-rerolled quests of the range for the Growth journal. Honest empty array — never a
+        404. from must not be after to (400 QUEST_INVALID_DATE_RANGE).
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Quests of the range (rerolled rows excluded)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/QuestResponse' }
+        '400':
+          description: from is after to
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     QuestResponse:
