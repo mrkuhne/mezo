@@ -5,13 +5,31 @@ import { MemoryRouter } from 'react-router-dom'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { progressionProfileMock } from '@/data/progression/progressionMock'
+import { mockQuestHistory } from '@/data/quest/questMock'
+import { mockActivityHistory } from '@/data/activity/activityMock'
+import { achievementsMock } from '@/data/progression/achievementsMock'
 
-// Barrel-mock the one hook the page reads (sibling-page pattern) so the fixture
-// drives the view deterministically in both mock and real test modes.
-const hooks = vi.hoisted(() => ({ useProgressionProfile: vi.fn() }))
+// Barrel-mock the hooks the page reads (sibling-page pattern) so the fixtures
+// drive the view deterministically in both mock and real test modes.
+const hooks = vi.hoisted(() => ({
+  useProgressionProfile: vi.fn(),
+  useQuestHistory: vi.fn(),
+  useActivityHistory: vi.fn(),
+  useAchievements: vi.fn(),
+}))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
   useProgressionProfile: hooks.useProgressionProfile,
+  useQuestHistory: hooks.useQuestHistory,
+  useActivityHistory: hooks.useActivityHistory,
+  useAchievements: hooks.useAchievements,
+}))
+
+// Pin "today" to 2026-07-12 so the mock quest/activity dates (Júl 10–11) yield
+// deterministic Tegnap/Júl labels in the journal regardless of the wall clock.
+vi.mock('@/shared/lib/dates', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/shared/lib/dates')>()),
+  localDateString: () => '2026-07-12',
 }))
 
 function renderPage() {
@@ -26,6 +44,9 @@ function renderPage() {
 
 beforeEach(() => {
   hooks.useProgressionProfile.mockReturnValue({ data: progressionProfileMock })
+  hooks.useQuestHistory.mockReturnValue({ data: mockQuestHistory })
+  hooks.useActivityHistory.mockReturnValue({ data: mockActivityHistory })
+  hooks.useAchievements.mockReturnValue({ data: achievementsMock })
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -70,4 +91,25 @@ test('switching to Napló hides the skill bands', async () => {
   await userEvent.click(screen.getByRole('tab', { name: 'Napló' }))
   expect(container.querySelectorAll('.progress-mrow')).toHaveLength(0)
   expect(screen.queryByText('LIFE')).not.toBeInTheDocument()
+})
+
+test('Napló tab renders the day-grouped journal from the mock seeds', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('tab', { name: 'Napló' }))
+  // With today pinned to 2026-07-12, the 2026-07-11 rows group under "Tegnap".
+  expect(screen.getByText('Tegnap')).toBeInTheDocument()
+  expect(screen.getByText('A mai tervezett edzés a naptárban van — csináld végig')).toBeInTheDocument()
+  // qh3 is expired (still surfaced, muted) → "csendben lejárt".
+  expect(screen.getByText(/csendben lejárt/)).toBeInTheDocument()
+  // summary chip: 3 completed · 1 expired · 4 activities.
+  expect(screen.getByText('3 ✓ · 1 — · 4 ✎')).toBeInTheDocument()
+})
+
+test('Kitüntetések tab renders both the Badges and Perks cards', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('tab', { name: 'Kitüntetések' }))
+  expect(screen.getByText('Badge-ek')).toBeInTheDocument()
+  expect(screen.getByText('4 / 9 megszerezve')).toBeInTheDocument()
+  expect(screen.getByText('Perkek — mérföldkövek')).toBeInTheDocument()
+  expect(screen.getByText('3 feloldva')).toBeInTheDocument()
 })

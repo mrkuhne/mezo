@@ -1,11 +1,22 @@
 import { useState } from 'react'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { PageTitle } from '@/shared/ui/PageTitle'
-import { useProgressionProfile } from '@/data/hooks'
+import { useAchievements, useActivityHistory, useProgressionProfile, useQuestHistory } from '@/data/hooks'
 import { SkillBandCard, type SkillRowVM } from '@/features/me/components/SkillBandCard'
+import { GrowthJournalCard } from '@/features/me/components/GrowthJournalCard'
+import { BadgesCard } from '@/features/me/components/BadgesCard'
+import { PerksCard } from '@/features/me/components/PerksCard'
+import { buildGrowthJournal } from '@/features/me/logic/growthJournal'
 import { ATHLETIC_META, LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { MUSCLE_LABELS } from '@/data/train/train'
+import { localDateString } from '@/shared/lib/dates'
 import type { SkillLevel } from '@/data/progression/progressionApi'
+
+const isoDaysAgo = (n: number) => {
+  const d = new Date()
+  d.setDate(d.getDate() - n)
+  return d.toISOString().slice(0, 10)
+}
 
 type Tab = 'skills' | 'journal' | 'awards'
 
@@ -119,6 +130,23 @@ function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void
   )
 }
 
-/* Task 7 fills these in — Task 6 ships placeholders that render nothing visible. */
-function JournalTab() { return null }
-function AwardsTab() { return null }
+function JournalTab() {
+  const today = localDateString()
+  const from = isoDaysAgo(29)
+  const { data: quests } = useQuestHistory(from, today)
+  const { data: activities } = useActivityHistory(from, today)
+  const days = buildGrowthJournal(quests, activities, today)
+  const completed = quests.filter((q) => q.status === 'completed').length
+  const expired = quests.filter((q) => q.status === 'expired').length
+  return <GrowthJournalCard days={days} summary={`${completed} ✓ · ${expired} — · ${activities.length} ✎`} />
+}
+
+function AwardsTab() {
+  const { data } = useAchievements()
+  return (
+    <>
+      <BadgesCard badges={data.badges} />
+      <PerksCard perks={data.perks} />
+    </>
+  )
+}
