@@ -57,8 +57,8 @@ test('renders the Growth header', () => {
 
 test('hero trio shows the FE-summed Össz XP, Fegyelem and Ritmus', () => {
   renderPage()
-  // Össz XP = Σ cumulativeXp across life (1085) + athletic (7500) + muscle (8550) = 17135.
-  expect(screen.getByText('17 135')).toBeInTheDocument()
+  // Össz XP = Σ cumulativeXp across life (1085) + athletic (9350) + muscle (8550) = 18985.
+  expect(screen.getByText('18 985')).toBeInTheDocument()
   expect(screen.getByText('Össz XP')).toBeInTheDocument()
   expect(screen.getByText('78%')).toBeInTheDocument() // traits.disciplinePct
   expect(screen.getByText('5 hét')).toBeInTheDocument() // traits.consistencyWeeks
@@ -69,13 +69,13 @@ test('default Skillek tab lists all three bands, one .progress-mrow per skill', 
   expect(screen.getByText('LIFE')).toBeInTheDocument()
   expect(screen.getByText('Atlétikus')).toBeInTheDocument()
   expect(screen.getByText('Izom')).toBeInTheDocument()
-  // One row per skill across the three bands. The seed has 8 LIFE + 11 athletic
-  // (robustness is not in the fixture) + 13 muscle = 32 rows.
+  // One row per skill across the three bands. The seed has 8 LIFE + 12 athletic
+  // (robustness is the 12th, mirroring the backend) + 13 muscle = 33 rows.
   const expected =
     progressionProfileMock.life.length +
     progressionProfileMock.athletic.length +
     progressionProfileMock.muscle.length
-  expect(expected).toBe(32)
+  expect(expected).toBe(33)
   expect(container.querySelectorAll('.progress-mrow')).toHaveLength(expected)
 })
 

@@ -23,8 +23,8 @@ function renderCard(profile: ProgressionProfileResponse) {
 describe('GrowthSummaryCard', () => {
   it('renders the total-XP chip, the top-3 skills (highest level first) and the stats line', () => {
     renderCard(progressionProfileMock)
-    // total XP chip = Σ cumulativeXp across athletic + muscle + life (7500 + 8550 + 1085)
-    expect(screen.getByText(/17 135 XP/)).toBeInTheDocument()
+    // total XP chip = Σ cumulativeXp across athletic + muscle + life (9350 + 8550 + 1085)
+    expect(screen.getByText(/18 985 XP/)).toBeInTheDocument()
     // top-3 by (level, cumulativeXp): max_strength Lv7 → aerobic_capacity Lv6 → back-mid Lv6
     expect(screen.getByText('Maximális erő')).toBeInTheDocument()
     expect(screen.getByText('Aerob kapacitás')).toBeInTheDocument()

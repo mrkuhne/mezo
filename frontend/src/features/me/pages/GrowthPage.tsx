@@ -15,7 +15,7 @@ import type { SkillLevel } from '@/data/progression/progressionApi'
 const isoDaysAgo = (n: number) => {
   const d = new Date()
   d.setDate(d.getDate() - n)
-  return d.toISOString().slice(0, 10)
+  return localDateString(d)
 }
 
 type Tab = 'skills' | 'journal' | 'awards'

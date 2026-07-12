@@ -77,7 +77,10 @@ const skill = (skillKey: string, kind: 'ATHLETIC' | 'MUSCLE', level: number, pro
 export const progressionProfileMock: ProgressionProfileResponse = {
   athleteLevel: 4.3,
   streakWeeks: 5,
-  athletic: Object.entries(athleticLevels).map(([k, lv], i) => skill(k, 'ATHLETIC', lv, 30 + ((i * 13) % 60))),
+  athletic: [
+    ...Object.entries(athleticLevels).map(([k, lv], i) => skill(k, 'ATHLETIC', lv, 30 + ((i * 13) % 60))),
+    { skillKey: 'robustness', kind: 'ATHLETIC', level: 5, cumulativeXp: 1850, progressPct: 20 },
+  ],
   muscle: Object.entries(muscleLevels).map(([k, lv], i) => skill(k, 'MUSCLE', lv, 25 + ((i * 17) % 65))),
   radarAxes: [
     { axis: 'Erő', value: 6.8 },

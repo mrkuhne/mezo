@@ -17,7 +17,7 @@ export function dayLabel(dateIso: string, todayIso: string): string {
   if (dateIso === todayIso) return 'Ma'
   const d = new Date(dateIso + 'T00:00:00')
   const t = new Date(todayIso + 'T00:00:00')
-  if (t.getTime() - d.getTime() === 86_400_000) return 'Tegnap'
+  if (Math.round((t.getTime() - d.getTime()) / 86_400_000) === 1) return 'Tegnap'
   return `${MONTHS_HU[d.getMonth()]} ${d.getDate()}`
 }
 

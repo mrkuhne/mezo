@@ -72,4 +72,11 @@ describe('dayLabel', () => {
     expect(dayLabel('2026-07-11', TODAY)).toBe('Tegnap')
     expect(dayLabel('2026-07-10', TODAY)).toBe('Júl 10')
   })
+
+  test('Tegnap survives the Europe/Budapest spring-forward DST day (23h)', () => {
+    // 2026-03-29 is the CET→CEST spring-forward Sunday (only 23h long); the naive
+    // exact-86.4M-ms check misfires in a CET/CEST environment. The whole-day-distance
+    // rounding makes the label environment-independent.
+    expect(dayLabel('2026-03-29', '2026-03-30')).toBe('Tegnap')
+  })
 })
