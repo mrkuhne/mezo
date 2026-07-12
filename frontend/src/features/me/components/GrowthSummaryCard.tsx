@@ -19,9 +19,9 @@ export function GrowthSummaryCard({ profile }: { profile: ProgressionProfileResp
       <button
         className="card notch-12"
         onClick={() => navigate('/me/growth')}
-        aria-label="Growth oldal megnyitása"
         style={{ padding: '16px 15px', position: 'relative', overflow: 'hidden', background: 'rgba(94, 234, 212, 0.04)', borderColor: 'var(--border-brand)', textAlign: 'left', width: '100%', display: 'block' }}
       >
+        <span className="sr-only">Growth oldal megnyitása — </span>
         <div className="row gap-md" style={{ alignItems: 'center' }}>
           <Icon name="sparkle" size={16} color="var(--brand-glow)" />
           <div className="col flex-1">
@@ -47,8 +47,9 @@ export function GrowthSummaryCard({ profile }: { profile: ProgressionProfileResp
   const savings = profile.savingsHuf30d
 
   return (
-    <button className="card notch-12" onClick={() => navigate('/me/growth')} aria-label="Growth oldal megnyitása"
+    <button className="card notch-12" onClick={() => navigate('/me/growth')}
       style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden', textAlign: 'left', width: '100%', display: 'block' }}>
+      <span className="sr-only">Growth oldal megnyitása — </span>
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(var(--brand-core), var(--brand-primary))' }} />
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span className="eyebrow brand">Growth</span>

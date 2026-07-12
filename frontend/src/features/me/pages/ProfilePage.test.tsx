@@ -37,7 +37,7 @@ test('renders the consolidated Growth summary card below biometrics (radars reti
   renderProfile()
   // The three profile radar/level cards were consolidated into GrowthSummaryCard,
   // whose whole surface is a button to /me/growth (present in both ghost + populated states).
-  expect(await screen.findByRole('button', { name: 'Growth oldal megnyitása' })).toBeInTheDocument()
+  expect(await screen.findByRole('button', { name: /Growth oldal megnyitása/ })).toBeInTheDocument()
   // The retired cards' chrome is gone.
   expect(screen.queryByText('Atlétikai profil')).not.toBeInTheDocument()
   expect(screen.queryByText('Izom-szintek')).not.toBeInTheDocument()

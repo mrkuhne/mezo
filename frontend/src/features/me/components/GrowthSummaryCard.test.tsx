@@ -42,7 +42,7 @@ describe('GrowthSummaryCard', () => {
   it('navigates to /me/growth when the whole card is tapped', async () => {
     renderCard(progressionProfileMock)
     expect(screen.getByTestId('location')).toHaveTextContent('/me')
-    await userEvent.click(screen.getByRole('button', { name: 'Growth oldal megnyitása' }))
+    await userEvent.click(screen.getByRole('button', { name: /Growth oldal megnyitása/ }))
     expect(screen.getByTestId('location')).toHaveTextContent('/me/growth')
   })
 
@@ -50,7 +50,7 @@ describe('GrowthSummaryCard', () => {
     renderCard(GHOST_PROGRESSION_PROFILE)
     expect(screen.getByText('Az élet is edzés.')).toBeInTheDocument()
     expect(screen.queryByText(/XP →/)).not.toBeInTheDocument() // no populated chip
-    await userEvent.click(screen.getByRole('button', { name: 'Growth oldal megnyitása' }))
+    await userEvent.click(screen.getByRole('button', { name: /Growth oldal megnyitása/ }))
     expect(screen.getByTestId('location')).toHaveTextContent('/me/growth')
   })
 
