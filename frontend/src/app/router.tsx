@@ -33,6 +33,7 @@ import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 import { MeSection, type MeOutletContext } from '@/features/me/pages/MeSection'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { ProfilePage } from '@/features/me/pages/ProfilePage'
+import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
@@ -104,6 +105,7 @@ export const routes: RouteObject[] = [
         element: <MeSection />,
         children: [
           { index: true, element: <ProfileRoute /> },
+          { path: 'growth', element: <GrowthPage /> },
           { path: 'goals', element: <GoalsPage /> },
           { path: 'weight', element: <WeightPage /> },
           { path: 'sleep', element: <SleepPage /> },

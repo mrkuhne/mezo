@@ -3,6 +3,7 @@ import { cn } from '@/shared/lib/cn'
 
 const SUBNAV: Array<{ to: string; label: string; end?: boolean }> = [
   { to: '/me', label: 'Profil', end: true },
+  { to: '/me/growth', label: 'Growth' },
   { to: '/me/goals', label: 'Cél' },
   { to: '/me/weight', label: 'Súly' },
   { to: '/me/sleep', label: 'Alvás' },
