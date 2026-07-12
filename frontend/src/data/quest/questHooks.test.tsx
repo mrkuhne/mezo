@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { useDailyQuests, useQuestActions } from '@/data/quest/questHooks'
+import { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 import { API_BASE } from '@/test/msw/handlers'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -76,5 +76,27 @@ describe('useDailyQuests (mock mode)', () => {
     expect(result.current.mode).toBe('mock')
     expect(result.current.quests.length).toBeGreaterThan(0)
     expect(result.current.quests.some(q => q.status === 'completed')).toBe(true)
+  })
+})
+
+describe('useQuestHistory (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('serves the 4-entry history seed synchronously', () => {
+    const { result } = renderHook(() => useQuestHistory('2026-06-12', DATE), { wrapper: makeHookWrapper() })
+    expect(result.current.data).toHaveLength(4)
+    expect(result.current.data.every(q => q.status !== 'offered' && q.status !== 'rerolled')).toBe(true)
+  })
+})
+
+describe('useQuestHistory (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('resolves the empty range from the default handler', async () => {
+    const { result } = renderHook(() => useQuestHistory('2026-06-12', DATE), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.data).toEqual([])
   })
 })

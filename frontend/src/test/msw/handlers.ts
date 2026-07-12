@@ -261,6 +261,18 @@ export const handlers = [
     }),
   ),
 
+  // Growth history + achievements (Growth page, mezo-rmhr) — honest-empty defaults
+  // (never a 404); tests override with server.use() for data cases.
+  http.get(`${API_BASE}/api/quest/history`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/activity/history`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/progression/achievements`, () =>
+    HttpResponse.json({
+      badges: [
+        { key: 'first_quest', icon: '🏁', name: 'Első küldetés', achieved: false, current: 0, target: 1 },
+      ],
+      perks: [],
+    })),
+
   // ── Activity log (E2, mezo-jzca). Defaults: empty day; create echoes a confident AI verdict.
   http.get(`${API_BASE}/api/activity/day/:date`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/activity`, async ({ request }) => {

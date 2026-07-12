@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { activityApi, type ActivityWriteResult } from '@/data/activity/activityApi'
-import { mockActivities } from '@/data/activity/activityMock'
+import { mockActivities, mockActivityHistory } from '@/data/activity/activityMock'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
 import type { ActivityEntry, LifeSkillKey } from '@/data/types'
@@ -12,6 +12,16 @@ export function useActivities(date: string): { data: ActivityEntry[]; isPending:
     queryKey: key(date),
     mockData: mockActivities,
     realFetch: () => activityApi.day(date),
+    realEmpty: [],
+  })
+}
+
+/** Activity-log history for a date range (Growth journal). */
+export function useActivityHistory(from: string, to: string): { data: ActivityEntry[]; isPending: boolean } {
+  return useDualQuery<ActivityEntry[]>({
+    queryKey: ['activityHistory', from, to],
+    mockData: mockActivityHistory,
+    realFetch: () => activityApi.history(from, to),
     realEmpty: [],
   })
 }

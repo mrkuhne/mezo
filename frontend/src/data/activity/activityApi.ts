@@ -45,6 +45,8 @@ function toWriteResult(w: ActivityWriteWire): ActivityWriteResult {
 export const activityApi = {
   day: (date: string): Promise<ActivityEntry[]> =>
     apiFetch<ActivityWire[]>(`/api/activity/day/${date}`).then((list) => list.map(toActivity)),
+  history: (from: string, to: string): Promise<ActivityEntry[]> =>
+    apiFetch<ActivityWire[]>(`/api/activity/history?from=${from}&to=${to}`).then((list) => list.map(toActivity)),
   create: (text: string, occurredOn?: string): Promise<ActivityWriteResult> =>
     apiFetch<ActivityWriteWire>('/api/activity', {
       method: 'POST',

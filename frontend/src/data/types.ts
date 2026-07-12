@@ -760,3 +760,25 @@ export interface ActivityEntry {
   categorizedBy: ActivityCategorizedBy | null
   createdAt?: string
 }
+
+// ── Growth achievements (Me Growth page, mezo-rmhr) ──────────────────────────
+export interface GrowthBadge {
+  key: string
+  icon: string
+  name: string
+  achieved: boolean
+  current: number
+  target: number
+}
+export interface PerkUnlock {
+  perkKey: string
+  name: string
+  effectCopy: string
+  skillKey: string
+  milestoneLevel: number
+  unlockedAt: string
+}
+export interface Achievements {
+  badges: GrowthBadge[]
+  perks: PerkUnlock[]
+}

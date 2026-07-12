@@ -39,3 +39,13 @@ export const mockActivities: ActivityEntry[] = [
     createdAt: '2026-07-11T11:05:00Z',
   },
 ]
+
+/** Mock seed: 30-day activity history for the Growth journal. */
+export const mockActivityHistory: ActivityEntry[] = [
+  ...mockActivities,
+  {
+    id: 'ah1', occurredOn: '2026-07-10', text: 'Rendet raktam a garázsban',
+    skillKey: 'productivity', confidence: 0.7, xpAwarded: 10,
+    durationMin: null, amountHuf: null, categorizedBy: 'USER', createdAt: '2026-07-10T17:00:00Z',
+  },
+]

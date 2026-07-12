@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { useActivities, useActivityActions } from '@/data/hooks'
+import { useActivities, useActivityActions, useActivityHistory } from '@/data/hooks'
 import type { ActivityWriteResult } from '@/data/activity/activityApi'
 import { makeHookWrapper } from '@/test/queryWrapper'
 
@@ -62,6 +62,28 @@ describe('useActivities (real mode)', () => {
 
   test('resolves the empty day from the default handler', async () => {
     const { result } = renderHook(() => useActivities(DATE), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.data).toEqual([])
+  })
+})
+
+describe('useActivityHistory (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('serves the 4-entry history seed synchronously', () => {
+    const { result } = renderHook(() => useActivityHistory('2026-06-12', DATE), { wrapper: makeHookWrapper() })
+    expect(result.current.data).toHaveLength(4)
+    expect(result.current.data[3].id).toBe('ah1')
+  })
+})
+
+describe('useActivityHistory (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('resolves the empty range from the default handler', async () => {
+    const { result } = renderHook(() => useActivityHistory('2026-06-12', DATE), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.isPending).toBe(false))
     expect(result.current.data).toEqual([])
   })
