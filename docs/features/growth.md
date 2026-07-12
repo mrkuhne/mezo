@@ -142,6 +142,8 @@ await categorize(entryId, 'learning')                                  // pick/o
 
 ## 9. Decisions, gotchas & deferred
 
+- **Mock fidelity note (mezo-rmhr fix wave):** `progressionProfileMock.athletic` carries the full 12-entry band (incl. `robustness`) to mirror the real profile response, so all-band row counts and FE-summed XP literals match between modes.
+
 - **[ADR 0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md)** is the contract every extension must respect (no failure states, no XP-gated content, no gambling mechanics, coins only with a shop, **the LLM proposes but the server disposes**, traits computed not self-claimed).
 - **Gotcha — XP move keeps the original event payload:** an activity **category override** adjusts the LIFE `skill_progress` rows directly (`moveActivityXp`) and writes **no new `level_up_event`**; the original grant's ledger event still names the *old* skill. An accepted correction-history trade-off (documented in `ProgressionService.moveActivityXp`), not a bug.
 - **Gotcha — uncategorized entries carry 0 XP until a pick:** a low-confidence (`< 0.6`) or classifier-off entry lands with `skill_key` null and `xp_awarded` 0; the stored `xp_suggested` (already clamped) is what a later manual categorization grants, within the day's remaining caps.
