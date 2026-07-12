@@ -33,12 +33,14 @@ test('renders the Biometria card with the derived base-TDEE line', async () => {
   expect(screen.getByText(/≈2960/)).toBeInTheDocument()
 })
 
-test('renders the athletic radar + muscle cards below biometrics', async () => {
+test('renders the consolidated Growth summary card below biometrics (radars retired)', async () => {
   renderProfile()
-  // Both cards read useProgressionProfile (mock seed / MSW default — both have a profile).
-  expect(await screen.findByText('ERŐ')).toBeInTheDocument() // radar axis label (after the fetch resolves in real mode)
-  expect(screen.getByText('Atlétikai profil')).toBeInTheDocument()
-  expect(screen.getByText('Izom-szintek')).toBeInTheDocument()
+  // The three profile radar/level cards were consolidated into GrowthSummaryCard,
+  // whose whole surface is a button to /me/growth (present in both ghost + populated states).
+  expect(await screen.findByRole('button', { name: /Growth oldal megnyitása/ })).toBeInTheDocument()
+  // The retired cards' chrome is gone.
+  expect(screen.queryByText('Atlétikai profil')).not.toBeInTheDocument()
+  expect(screen.queryByText('Izom-szintek')).not.toBeInTheDocument()
 })
 
 test('Szerkesztés opens the BiometricSheet', async () => {

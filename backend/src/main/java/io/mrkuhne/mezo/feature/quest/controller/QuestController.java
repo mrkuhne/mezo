@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.quest.service.QuestService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,5 +29,10 @@ public class QuestController implements QuestApi {
     @Override
     public QuestResponse rerollQuest(UUID id) {
         return questService.reroll(currentUserId.get(), id);
+    }
+
+    @Override
+    public List<QuestResponse> getQuestHistory(LocalDate from, LocalDate to) {
+        return questService.history(currentUserId.get(), from, to);
     }
 }

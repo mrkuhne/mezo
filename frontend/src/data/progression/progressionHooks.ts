@@ -2,6 +2,7 @@ import { useDualQuery } from '@/data/useDualQuery'
 import { progressionApi } from '@/data/progression/progressionApi'
 import { ApiError } from '@/data/_client/api'
 import { progressionProfileMock, GHOST_PROGRESSION_PROFILE } from '@/data/progression/progressionMock'
+import { achievementsMock } from '@/data/progression/achievementsMock'
 
 /**
  * Athletic + muscle progression profile (radar, athlete-level, streak, highlights).
@@ -24,6 +25,22 @@ export function useProgressionProfile() {
       }
     },
     realEmpty: GHOST_PROGRESSION_PROFILE,
+    realStaleTime: 60_000,
+  })
+}
+
+/**
+ * Growth achievements (badges + unlocked perks) for the Me Growth page.
+ * Dual-mode: the seeded 4/9 mockup state in mock mode, the real
+ * `GET /api/progression/achievements` in real mode. Honest empty (no badges/perks)
+ * while unresolved — never the seed.
+ */
+export function useAchievements() {
+  return useDualQuery({
+    queryKey: ['achievements'],
+    mockData: achievementsMock,
+    realFetch: () => progressionApi.getAchievements(),
+    realEmpty: { badges: [], perks: [] },
     realStaleTime: 60_000,
   })
 }

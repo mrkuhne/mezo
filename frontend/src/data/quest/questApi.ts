@@ -38,4 +38,6 @@ export const questApi = {
     })),
   reroll: (id: string): Promise<DailyQuest> =>
     apiFetch<QuestWire>(`/api/quest/${id}/reroll`, { method: 'POST' }).then(toQuest),
+  history: (from: string, to: string): Promise<DailyQuest[]> =>
+    apiFetch<QuestWire[]>(`/api/quest/history?from=${from}&to=${to}`).then((list) => list.map(toQuest)),
 }

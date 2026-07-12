@@ -1,8 +1,10 @@
 package io.mrkuhne.mezo.feature.progression.controller;
 
 import io.mrkuhne.mezo.api.controller.ProgressionApi;
+import io.mrkuhne.mezo.api.dto.AchievementsResponse;
 import io.mrkuhne.mezo.api.dto.GrowthWeekResponse;
 import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
+import io.mrkuhne.mezo.feature.progression.service.AchievementService;
 import io.mrkuhne.mezo.feature.progression.service.GrowthWeekService;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -23,6 +25,7 @@ public class ProgressionController implements ProgressionApi {
 
     private final ProgressionService progressionService;
     private final GrowthWeekService growthWeekService;
+    private final AchievementService achievementService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -33,5 +36,10 @@ public class ProgressionController implements ProgressionApi {
     @Override
     public GrowthWeekResponse getGrowthWeek(LocalDate date) {
         return growthWeekService.growthWeek(currentUserId.get(), date);
+    }
+
+    @Override
+    public AchievementsResponse getAchievements() {
+        return achievementService.achievements(currentUserId.get());
     }
 }

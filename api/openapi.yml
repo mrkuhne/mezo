@@ -2582,6 +2582,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/progression/achievements:
+    get:
+      tags:
+        - Progression
+      operationId: getAchievements
+      summary: Computed growth badges + unlocked perk milestones (Progression)
+      description: >-
+        Badges are derived on read from the ledgers (deterministic, retroactive,
+        no unlock dates in v1); perks are the persisted perk_unlock rows joined
+        with the perk catalog. Honest zero-progress badges — never a 404.
+      responses:
+        '200':
+          description: The 9 badges (fixed catalog order) + unlocked perks (newest first)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AchievementsResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/fuel/protocol:
     get:
       tags:
@@ -3649,6 +3672,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/quest/history:
+    get:
+      tags:
+        - Quest
+      operationId: getQuestHistory
+      summary: 'Quest history in an inclusive date range, newest first (Quests)'
+      description: >-
+        Non-rerolled quests of the range for the Growth journal. Honest empty
+        array — never a 404. from must not be after to (400
+        QUEST_INVALID_DATE_RANGE).
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Quests of the range (rerolled rows excluded)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QuestResponse'
+        '400':
+          description: from is after to
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/activity:
     post:
       tags:
@@ -3765,6 +3832,51 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Entry not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/activity/history:
+    get:
+      tags:
+        - Activity
+      operationId: getActivityHistory
+      summary: >-
+        Activity-log entries in an inclusive date range, newest first (Activity
+        log)
+      description: >-
+        Entries of the range for the Growth journal. Honest empty array — never
+        a 404. from must not be after to (400 ACTIVITY_INVALID_DATE_RANGE).
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Entries of the range
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityResponse'
+        '400':
+          description: from is after to
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
           content:
             application/json:
               schema:
@@ -7546,6 +7658,73 @@ components:
           type: integer
           format: int64
           description: Sum of financial amountHuf dated in the week
+    BadgeResponse:
+      type: object
+      required:
+        - key
+        - icon
+        - name
+        - achieved
+        - current
+        - target
+      properties:
+        key:
+          type: string
+        icon:
+          type: string
+          description: Emoji
+        name:
+          type: string
+          description: HU display name
+        achieved:
+          type: boolean
+        current:
+          type: integer
+          format: int64
+          description: Progress numerator (also set when achieved)
+        target:
+          type: integer
+          format: int64
+    PerkUnlockResponse:
+      type: object
+      required:
+        - perkKey
+        - name
+        - effectCopy
+        - skillKey
+        - milestoneLevel
+        - unlockedAt
+      properties:
+        perkKey:
+          type: string
+        name:
+          type: string
+          description: HU perk name from the catalog
+        effectCopy:
+          type: string
+          description: HU effect line from the catalog
+        skillKey:
+          type: string
+        milestoneLevel:
+          type: integer
+          format: int32
+        unlockedAt:
+          type: string
+          format: date-time
+    AchievementsResponse:
+      type: object
+      required:
+        - badges
+        - perks
+      properties:
+        badges:
+          type: array
+          items:
+            $ref: '#/components/schemas/BadgeResponse'
+        perks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PerkUnlockResponse'
     SkillLevel:
       type: object
       required:

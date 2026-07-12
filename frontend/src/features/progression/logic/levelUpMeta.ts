@@ -5,7 +5,7 @@ import type { LifeSkillKey } from '@/data/types'
 type Source = LevelUpResult['source'] // 'GYM' | 'SPORT' | 'RUN' | 'QUEST' | 'ACTIVITY'
 
 // Canonical 12-athletic name + emoji (from skill-model-v3.html, the chosen model).
-const ATHLETIC_META: Record<string, { name: string; icon: string }> = {
+export const ATHLETIC_META: Record<string, { name: string; icon: string }> = {
   explosiveness: { name: 'Robbanékonyság', icon: '⚡' },
   vertical_jump: { name: 'Vertikális emelkedés', icon: '🦘' },
   sprint_speed: { name: 'Sprint-sebesség', icon: '💨' },

@@ -991,6 +991,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progression/achievements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Computed growth badges + unlocked perk milestones (Progression)
+         * @description Badges are derived on read from the ledgers (deterministic, retroactive, no unlock dates in v1); perks are the persisted perk_unlock rows joined with the perk catalog. Honest zero-progress badges — never a 404.
+         */
+        get: operations["getAchievements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/protocol": {
         parameters: {
             query?: never;
@@ -1488,6 +1508,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quest/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Quest history in an inclusive date range, newest first (Quests)
+         * @description Non-rerolled quests of the range for the Growth journal. Honest empty array — never a 404. from must not be after to (400 QUEST_INVALID_DATE_RANGE).
+         */
+        get: operations["getQuestHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/activity": {
         parameters: {
             query?: never;
@@ -1539,6 +1579,26 @@ export interface paths {
          * @description Manual categorization of an uncategorized entry grants the stored (clamped) XP suggestion within the daily caps; overriding an already-categorized entry MOVES the awarded XP between skill rows. Either way the matching open activity-mode quest of the entry's day completes. categorizedBy becomes USER.
          */
         post: operations["categorizeActivity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/activity/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Activity-log entries in an inclusive date range, newest first (Activity log)
+         * @description Entries of the range for the Growth journal. Honest empty array — never a 404. from must not be after to (400 ACTIVITY_INVALID_DATE_RANGE).
+         */
+        get: operations["getActivityHistory"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2968,6 +3028,37 @@ export interface components {
              * @description Sum of financial amountHuf dated in the week
              */
             savingsHuf: number;
+        };
+        BadgeResponse: {
+            key: string;
+            /** @description Emoji */
+            icon: string;
+            /** @description HU display name */
+            name: string;
+            achieved: boolean;
+            /**
+             * Format: int64
+             * @description Progress numerator (also set when achieved)
+             */
+            current: number;
+            /** Format: int64 */
+            target: number;
+        };
+        PerkUnlockResponse: {
+            perkKey: string;
+            /** @description HU perk name from the catalog */
+            name: string;
+            /** @description HU effect line from the catalog */
+            effectCopy: string;
+            skillKey: string;
+            /** Format: int32 */
+            milestoneLevel: number;
+            /** Format: date-time */
+            unlockedAt: string;
+        };
+        AchievementsResponse: {
+            badges: components["schemas"]["BadgeResponse"][];
+            perks: components["schemas"]["PerkUnlockResponse"][];
         };
         SkillLevel: {
             skillKey: string;
@@ -6666,6 +6757,35 @@ export interface operations {
             };
         };
     };
+    getAchievements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The 9 badges (fixed catalog order) + unlocked perks (newest first) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AchievementsResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getProtocol: {
         parameters: {
             query?: never;
@@ -7915,6 +8035,47 @@ export interface operations {
             };
         };
     };
+    getQuestHistory: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quests of the range (rerolled rows excluded) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestResponse"][];
+                };
+            };
+            /** @description from is after to */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     createActivity: {
         parameters: {
             query?: never;
@@ -8032,6 +8193,47 @@ export interface operations {
             };
             /** @description Entry not found (or owned by someone else) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getActivityHistory: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entries of the range */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityResponse"][];
+                };
+            };
+            /** @description from is after to */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

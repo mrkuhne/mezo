@@ -30,4 +30,8 @@ public interface DailyQuestRepository extends JpaRepository<DailyQuestEntity, UU
     /** Adaptive-difficulty window count (per slot + terminal status). */
     int countByCreatedByAndSlotAndStatusAndQuestDateBetween(
         UUID createdBy, String slot, String status, LocalDate from, LocalDate to);
+
+    /** Growth-journal history read (rerolled filtered in the service). */
+    List<DailyQuestEntity> findByCreatedByAndQuestDateBetweenOrderByQuestDateDesc(
+        UUID createdBy, LocalDate from, LocalDate to);
 }

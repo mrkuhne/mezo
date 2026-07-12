@@ -46,6 +46,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/progression/achievements:
+    get:
+      tags: [Progression]
+      operationId: getAchievements
+      summary: Computed growth badges + unlocked perk milestones (Progression)
+      description: >-
+        Badges are derived on read from the ledgers (deterministic, retroactive, no unlock
+        dates in v1); perks are the persisted perk_unlock rows joined with the perk catalog.
+        Honest zero-progress badges — never a 404.
+      responses:
+        '200':
+          description: The 9 badges (fixed catalog order) + unlocked perks (newest first)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AchievementsResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     ProgressionProfileResponse:
@@ -102,6 +122,36 @@ components:
         lifeXp: { type: integer, format: int64, description: Sum of LIFE-kind gains in the week's level-up events }
         activities: { type: integer, format: int32, description: Activity-log entries dated in the week }
         savingsHuf: { type: integer, format: int64, description: Sum of financial amountHuf dated in the week }
+    BadgeResponse:
+      type: object
+      required: [key, icon, name, achieved, current, target]
+      properties:
+        key: { type: string }
+        icon: { type: string, description: Emoji }
+        name: { type: string, description: HU display name }
+        achieved: { type: boolean }
+        current: { type: integer, format: int64, description: Progress numerator (also set when achieved) }
+        target: { type: integer, format: int64 }
+    PerkUnlockResponse:
+      type: object
+      required: [perkKey, name, effectCopy, skillKey, milestoneLevel, unlockedAt]
+      properties:
+        perkKey: { type: string }
+        name: { type: string, description: HU perk name from the catalog }
+        effectCopy: { type: string, description: HU effect line from the catalog }
+        skillKey: { type: string }
+        milestoneLevel: { type: integer, format: int32 }
+        unlockedAt: { type: string, format: date-time }
+    AchievementsResponse:
+      type: object
+      required: [badges, perks]
+      properties:
+        badges:
+          type: array
+          items: { $ref: '#/components/schemas/BadgeResponse' }
+        perks:
+          type: array
+          items: { $ref: '#/components/schemas/PerkUnlockResponse' }
     SkillLevel:
       type: object
       required: [skillKey, kind, level, cumulativeXp, progressPct]

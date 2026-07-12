@@ -4,9 +4,7 @@ import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { useBiometricProfile, useProgressionProfile } from '@/data/hooks'
 import { BiometricCard } from '@/features/me/components/BiometricCard'
-import { AthleticRadarCard } from '@/features/me/components/AthleticRadarCard'
-import { MuscleLevelsCard } from '@/features/me/components/MuscleLevelsCard'
-import { GrowthCard } from '@/features/me/components/GrowthCard'
+import { GrowthSummaryCard } from '@/features/me/components/GrowthSummaryCard'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
 
 export function ProfilePage({ onOpenSettings }: { onOpenSettings: () => void }) {
@@ -27,15 +25,14 @@ export function ProfilePage({ onOpenSettings }: { onOpenSettings: () => void }) 
         </button>
       </div>
 
-      {/* Biometria (base-TDEE source, G6) + the gamified progression cards (P6,
-          mezo-xje5): athletic radar + muscle levels + the LIFE growth octagon +
-          computed traits (E2, mezo-jzca). Each ghosts before any XP. */}
+      {/* Biometria (base-TDEE source, G6) + a single Growth summary card. The full
+          athletic/muscle/LIFE detail moved to the dedicated /me/growth page; the
+          three profile radar/level cards were consolidated into GrowthSummaryCard,
+          whose whole surface opens that page (mezo-rmhr). Both ghost before any XP. */}
       <div style={{ padding: '8px 24px 24px' }}>
         <div className="col gap-md">
           <BiometricCard profile={biometric} onEdit={() => setSheet('biometric')} />
-          <AthleticRadarCard profile={progression} />
-          <MuscleLevelsCard profile={progression} />
-          <GrowthCard profile={progression} />
+          <GrowthSummaryCard profile={progression} />
         </div>
       </div>
 

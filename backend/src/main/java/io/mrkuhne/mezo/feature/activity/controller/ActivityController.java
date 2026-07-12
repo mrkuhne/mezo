@@ -38,4 +38,9 @@ public class ActivityController implements ActivityApi {
     public ActivityWriteResponse categorizeActivity(UUID id, ActivityCategoryRequest request) {
         return activityService.categorize(currentUserId.get(), id, request.getSkillKey());
     }
+
+    @Override
+    public List<ActivityResponse> getActivityHistory(LocalDate from, LocalDate to) {
+        return activityService.history(currentUserId.get(), from, to);
+    }
 }

@@ -33,13 +33,13 @@ describe('progression mock fixtures', () => {
 })
 
 describe('progression profile fixtures', () => {
-  it('seed has an athlete level, a full 6-axis radar (Erő first), and 11+13 skills', () => {
+  it('seed has an athlete level, a full 6-axis radar (Erő first), and 12+13 skills', () => {
     expect(progressionProfileMock.athleteLevel).toBeGreaterThan(0)
     expect(progressionProfileMock.streakWeeks).toBeGreaterThan(0)
     expect(progressionProfileMock.radarAxes.map((a) => a.axis)).toEqual([
       'Erő', 'Robbanékonyság', 'Sebesség', 'Állóképesség', 'Mozgékonyság', 'Koordináció',
     ])
-    expect(progressionProfileMock.athletic).toHaveLength(11)
+    expect(progressionProfileMock.athletic).toHaveLength(12)
     expect(progressionProfileMock.muscle).toHaveLength(13)
     expect(progressionProfileMock.highlights.bestAthletic?.skillKey).toBeTruthy()
   })

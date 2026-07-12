@@ -97,6 +97,41 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/activity/history:
+    get:
+      tags: [Activity]
+      operationId: getActivityHistory
+      summary: Activity-log entries in an inclusive date range, newest first (Activity log)
+      description: >-
+        Entries of the range for the Growth journal. Honest empty array — never a 404. from
+        must not be after to (400 ACTIVITY_INVALID_DATE_RANGE).
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Entries of the range
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ActivityResponse' }
+        '400':
+          description: from is after to
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     ActivityCreateRequest:

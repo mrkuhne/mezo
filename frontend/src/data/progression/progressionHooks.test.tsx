@@ -1,7 +1,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { useProgressionProfile } from '@/data/hooks'
+import { useAchievements, useProgressionProfile } from '@/data/hooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -34,4 +34,20 @@ test('real mode shows the ghost profile (athleteLevel null) on a 404 (switch off
   const { result } = renderHook(() => useProgressionProfile(), { wrapper: makeHookWrapper() })
   await waitFor(() => expect(result.current.isPending).toBe(false))
   expect(result.current.data.athleteLevel).toBeNull()
+})
+
+test('mock mode seeds the 9-badge achievements fixture synchronously', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  const { result } = renderHook(() => useAchievements(), { wrapper: makeHookWrapper() })
+  expect(result.current.data.badges).toHaveLength(9)
+  expect(result.current.data.badges.filter((b) => b.achieved)).toHaveLength(4)
+  expect(result.current.data.perks).toHaveLength(3)
+})
+
+test('real mode fetches achievements from /api/progression/achievements', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const { result } = renderHook(() => useAchievements(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.data.badges).toHaveLength(1))
+  expect(result.current.data.badges[0].key).toBe('first_quest')
+  expect(result.current.data.perks).toEqual([])
 })

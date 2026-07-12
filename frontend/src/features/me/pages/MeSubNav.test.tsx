@@ -12,9 +12,17 @@ function renderAt(path: string) {
 
 test('renders all sub-nav items with verbatim labels', () => {
   renderAt('/me')
-  for (const label of ['Profil', 'Cél', 'Súly', 'Alvás', 'Emberek', 'Tudás']) {
+  for (const label of ['Profil', 'Growth', 'Cél', 'Súly', 'Alvás', 'Emberek', 'Tudás']) {
     expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
   }
+})
+
+test('Growth tab sits right after Profil and links to /me/growth', () => {
+  renderAt('/me')
+  const links = screen.getAllByRole('link')
+  const labels = links.map((l) => l.textContent)
+  expect(labels.slice(0, 2)).toEqual(['Profil', 'Growth'])
+  expect(screen.getByRole('link', { name: 'Growth' })).toHaveAttribute('href', '/me/growth')
 })
 
 test('MeSubNav exposes a Súly tab linking to /me/weight', () => {

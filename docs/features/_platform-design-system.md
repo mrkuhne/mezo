@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Deep Current v2")
 type: feature-platform
 status: done
-updated: 2026-07-10
+updated: 2026-07-12
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -65,7 +65,7 @@ features/<domain>/
 | `*Sheet` / `*Modal` | bottom-sheet modal | `sheets/` |
 | `*Skeleton` · `*SubNav` · `tabs.ts` | route-adjacent scaffolding | `pages/` |
 | `*Card/Panel/Row/Hero/Stat/Bar/Grid/Chip/Cell` | presentational | `components/` |
-| pure `.ts` logic / derivations | `planner`, `agenda`, `workoutState`, `radarGeometry`, `weightStats`… | `logic/` |
+| pure `.ts` logic / derivations | `planner`, `agenda`, `workoutState`, `weightStats`, `growthJournal`… | `logic/` |
 
 **`data/` layer.** `data/hooks.ts` is a thin re-export **barrel** — the single `@/data/hooks` surface every feature consumes; implementations live in per-domain `data/<domain>/<name>Hooks.ts`. Per-domain folders (`today · fuel · train · me · insights · progression`) hold hooks + mock data + types + the REST `*Api.ts` client. `data/_client/` holds cross-cutting infra (`api`, `api.gen`, `mode`, `flags`, `auth`); the shared core (`types.ts`, `nova.ts`, `pantrySources.ts`, `kindMeta.ts`, `useDualQuery.ts`) stays at `data/` root to avoid a root→domain dependency inversion.
 

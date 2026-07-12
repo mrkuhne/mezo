@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { questApi, type QuestDay } from '@/data/quest/questApi'
-import { mockQuestDay, mockRerollSpare } from '@/data/quest/questMock'
+import { mockQuestDay, mockQuestHistory, mockRerollSpare } from '@/data/quest/questMock'
+import { useDualQuery } from '@/data/useDualQuery'
 import type { LevelUpResult } from '@/data/train/trainApi'
 import type { DailyQuest } from '@/data/types'
 
@@ -33,6 +34,17 @@ export function useDailyQuests(date: string): DailyQuestsView {
   })
   const data = q.data ?? (mock ? MOCK_DAY : EMPTY_DAY)
   return { ...data, mode: mock ? 'mock' : 'live' }
+}
+
+/** Quest history for a date range (Growth journal). Terminal statuses only — the builder
+ *  drops any still-live offered/rerolled rows defensively. */
+export function useQuestHistory(from: string, to: string) {
+  return useDualQuery<DailyQuest[]>({
+    queryKey: ['questHistory', from, to],
+    mockData: mockQuestHistory,
+    realFetch: () => questApi.history(from, to),
+    realEmpty: [],
+  })
 }
 
 /** Reroll (1/day). Mock: swaps the quest client-side from the spare pool (inert economy). */

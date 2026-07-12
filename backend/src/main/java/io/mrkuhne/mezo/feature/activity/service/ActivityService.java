@@ -99,6 +99,20 @@ public class ActivityService {
             .stream().map(mapper::toResponse).toList();
     }
 
+    /** Growth-journal read: entries of the inclusive range, newest first. */
+    @Transactional(readOnly = true)
+    public List<ActivityResponse> history(UUID userId, LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("ACTIVITY_INVALID_DATE_RANGE").build(), HttpStatus.BAD_REQUEST);
+        }
+        return repository.findByCreatedByAndOccurredOnBetween(userId, from, to).stream()
+            .sorted(java.util.Comparator.comparing(ActivityLogEntity::getOccurredOn).reversed()
+                .thenComparing(ActivityLogEntity::getCreatedAt, java.util.Comparator.reverseOrder()))
+            .map(mapper::toResponse)
+            .toList();
+    }
+
     @Transactional
     public ActivityWriteResponse categorize(UUID userId, UUID id, String skillKey) {
         if (!ProgressionTaxonomy.LIFE.contains(skillKey)) {
