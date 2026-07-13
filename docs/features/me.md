@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-07-13
+updated: 2026-07-14
 tags: [me, biometrics, progression, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/me
@@ -65,7 +65,7 @@ Specs of record: **[`docs/superpowers/specs/2026-06-08-me-domain-sheets-design.m
 The dedicated home of the whole XP universe (route `/me/growth`, `MeSubNav` tab right after Profil). Design spec: [`docs/superpowers/specs/2026-07-12-growth-page-design.md`](../superpowers/specs/2026-07-12-growth-page-design.md) (variant B, all skills, no radars). Layout:
 - **Hero trio** (always visible): **Össz XP** (FE-summed `cumulativeXp` across ALL life/athletic/muscle skills), **Fegyelem** (`traits.disciplinePct`, `–` when null), **Ritmus** (`traits.consistencyWeeks` hét) — all off the one `useProgressionProfile()`.
 - **Segmented control** `Skillek` / `Napló` / `Kitüntetések` (local `useState`, `Skillek` default).
-- **Skillek tab:** three `<SkillBandCard>`s — **LIFE** (chip `8 skill · {Σ} XP`, footer = "Megtakarítás (30 nap)" when `savingsHuf30d > 0`), **Atlétikus** (chip `12 skill · átlag {athleteLevel}`), **Izom** (chip `13 izom · legjobb Lv {max}`) — each listing **ALL** skills of that band sorted `(level desc, cumulativeXp desc)`, row = icon · HU name · `Lv n` · progress bar (`progressPct`) · cumulative XP (mono). Icons: LIFE from `LIFE_SKILLS`, athletic from the now-exported `ATHLETIC_META`, muscle 💪 + `MUSCLE_LABELS`.
+- **Skillek tab:** since the Napív S3 Growth relocation (`mezo-8141`, Task 7 — cross-feature import, files unmoved), a **"Ma" block** heads the tab — an `Eyebrow>Ma` label over the `DailyQuestsCard` + `ActivityLogCard` (imported from `@/features/today/components/`), the daily-quest and activity-log cards that used to render on `/today`; Today itself now keeps only a one-row `GrowthTodayRow` summary linking back here (detail: [today.md §5](today.md), [growth.md §2](growth.md)). Below the "Ma" block: three `<SkillBandCard>`s — **LIFE** (chip `8 skill · {Σ} XP`, footer = "Megtakarítás (30 nap)" when `savingsHuf30d > 0`), **Atlétikus** (chip `12 skill · átlag {athleteLevel}`), **Izom** (chip `13 izom · legjobb Lv {max}`) — each listing **ALL** skills of that band sorted `(level desc, cumulativeXp desc)`, row = icon · HU name · `Lv n` · progress bar (`progressPct`) · cumulative XP (mono). Icons: LIFE from `LIFE_SKILLS`, athletic from the now-exported `ATHLETIC_META`, muscle 💪 + `MUSCLE_LABELS`.
 - **Napló tab (`JournalTab`):** a `<GrowthJournalCard>` over a **fixed 30-day window** — `useQuestHistory(from,to)` + `useActivityHistory(from,to)` merged by the pure **`buildGrowthJournal(quests, activities, today)`** (`logic/growthJournal.ts`) into descending day groups with per-day XP totals; header chip `{completed} ✓ · {expired} — · {activities} ✎`. Still-live `offered`/`rerolled` quests are excluded (they belong to Today). Quests show ✓ completed (success, "tevékenységgel teljesült" when `completionMode === 'ACTIVITY'`) / `—` "csendben lejárt" when expired (XP 0); activities show ✎ + skill icon/name (+ `amountHuf` Ft for financial). No pagination in v1.
 - **Kitüntetések tab (`AwardsTab`):** `<BadgesCard>` (a 3-column grid of the **9 computed badges** — achieved = brand tint + ✓, else a progress bar + `current / target`) + `<PerksCard>` (the user's unlocked perk milestones, newest first). Both from `useAchievements()`. **No unlock dates in v1** (badges are derived on read — §9 / [growth.md §9](growth.md)).
 

@@ -1237,7 +1237,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 :root[data-theme="dark"] .phone-screen[data-day] { background: var(--canvas); }
 /* Dark theme: the sky dims until the Pulse dark pass (S8) designs its own night variants. */
 :root[data-theme="dark"] .sky { opacity: .18; }
-/* AnchorMode: rough days mute the atmosphere (full anchor remap lands with Today in S3). */
+/* AnchorMode: rough days mute the atmosphere (full anchor remap landed with Today in S3, mezo-8141). */
 .phone-screen.anchor .sky { opacity: .35; filter: saturate(.6); }
 
 /* ===== Napív motion vocabulary (spec §3.5) ===== */
