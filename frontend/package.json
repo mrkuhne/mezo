@@ -10,7 +10,6 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "parity": "playwright test --config tests/parity/playwright.config.ts",
     "generate:api": "openapi-typescript ../api/openapi.yml -o src/data/_client/api.gen.ts"
   },
   "keywords": [],

@@ -30,15 +30,13 @@ export default defineConfig({
     }),
   ],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  // Custom dev port — 5173 is taken by other local projects. Parity keeps its own port (4317).
+  // Custom dev port — 5173 is taken by other local projects.
   server: { port: 5180 },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
-    // Playwright parity specs (tests/parity/*.spec.ts) import @playwright/test
-    // and must not be collected by Vitest — they only run via `pnpm parity`.
-    exclude: [...configDefaults.exclude, 'tests/parity/**'],
+    exclude: [...configDefaults.exclude],
   },
 })

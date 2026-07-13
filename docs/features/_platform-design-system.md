@@ -240,15 +240,14 @@ For XSS-safe inline copy with `**bold**` markers, use `SafeMarkdown` from `@/sha
 
 - **Unit / render tests (Vitest + React Testing Library)**, colocated in `frontend/src/shared/ui/*.test.tsx` (12 files): `text.test.tsx` (Eyebrow/LabelMono/Display/PageTitle), `Icon.test.tsx` (svg render, size prop, `BrandGlyph`), `NotchCard.test.tsx` (card/notch/glass/accent-strip), `chips.test.tsx` (Chip variant, ToolChip type/args, ToolChipRow, RefTag), `Sheet.test.tsx` (handle, render-prop close, backdrop/Escape close, no-close-on-inner-click), `cta.test.tsx`, `progressbar.test.tsx`, `QuickStat.test.tsx`, `RetaPhaseBar.test.tsx` (7 segs, active/past), `ScoreRing.test.tsx`, `Toggle.test.tsx`, `fuelPrimitives.test.tsx`. Plus shell tests in `frontend/src/app/{shell,navigation,TabBar,ThemeProvider}.test.tsx` and lib tests in `frontend/src/shared/lib/theme.test.ts` + `frontend/src/shared/lib/safeMarkdown.test.tsx`.
 - Tests assert **classes / structure / aria**, not pixels (e.g. `expect(className).toBe('eyebrow brand')`).
-- **Pixel-parity (Playwright)** — `frontend/tests/parity/playwright.config.ts` (viewport `440×956`, scale 2, dev server on `:4317`) renders the app vs. the prototype HTML for visual diffing; this is the design system's true regression net. Run via `pnpm parity`; prototype path via the `MEZO_PROTOTYPE_DIR` env var.
+- **Pixel-parity retired.** The old-prototype Playwright harness (`frontend/tests/parity/`, `pnpm parity`) — pixel-parity vs the Phase-1 prototype retired 2026-07-13 by the Napív redesign (mezo-8141); visual self-baselines return in S8.
 
 ```bash
 cd frontend
 pnpm test            # vitest (design-system tests are mode-agnostic)
-pnpm parity          # playwright pixel-parity vs prototype
 ```
 
-**Mode caveat to know:** `isMockMode()` (`frontend/src/data/_client/mode.ts`) defaults to **mock** when `VITE_USE_MOCK` is absent (so tests/parity run with no backend), but `.env`/`.env.example` set `VITE_USE_MOCK=false` (real mode) for `pnpm dev`. Design-system tests are mode-agnostic regardless.
+**Mode caveat to know:** `isMockMode()` (`frontend/src/data/_client/mode.ts`) defaults to **mock** when `VITE_USE_MOCK` is absent (so tests run with no backend), but `.env`/`.env.example` set `VITE_USE_MOCK=false` (real mode) for `pnpm dev`. Design-system tests are mode-agnostic regardless.
 
 ---
 
@@ -270,7 +269,7 @@ pnpm parity          # playwright pixel-parity vs prototype
 ## 10. Key files
 
 **Tokens & CSS**
-- `frontend/src/styles/prototype.css` — all tokens + every component CSS class (~1190 lines); the Napív section at the end (from the `:root` token block, `mezo-8141`) overrides several earlier rules by cascade order rather than deleting them (`.tab-bar`, `.screen-content`).
+- `frontend/src/styles/prototype.css` — all tokens + every component CSS class (~1190 lines); the Napív section at the end (from the `:root` token block, `mezo-8141`) overrides several earlier rules by cascade order rather than deleting them (`.tab-bar`, `.screen-content`, and — in the same safe-area media block — `.recipe-save-bar`).
 - `frontend/src/index.css` — Tailwind v4 `@theme inline` bridge.
 - `frontend/index.html` — fonts (Antonio/Inter/JetBrains), `viewport-fit=cover`, static `theme-color` (`#F4F6F8`, light), the **pre-paint theme script** (sets `data-theme="light"` unless stored `'dark'`), zoom disabled (`maximum-scale=1, user-scalable=no`).
 - `frontend/vite.config.ts` — PWA manifest `theme_color`/`background_color` (light `#F4F6F8` / `#DDE2E8`) — keep in sync with `DEFAULT_THEME` + the static meta.
@@ -311,7 +310,6 @@ pnpm parity          # playwright pixel-parity vs prototype
 **Tests**
 - `frontend/src/shared/ui/*.test.tsx` (12) — render/unit tests.
 - `frontend/src/app/{shell,navigation,TabBar,ThemeProvider}.test.tsx` — shell tests.
-- `frontend/tests/parity/playwright.config.ts` — pixel-parity harness (`440×956`).
 
 **Spec (link, don't duplicate)**
 - [`docs/superpowers/specs/2026-06-02-mezo-phase1-frontend-design.md`](../superpowers/specs/2026-06-02-mezo-phase1-frontend-design.md) — historical design rationale + visual non-negotiables.
