@@ -9,12 +9,12 @@ function Probe() {
 
 beforeEach(() => { localStorage.clear(); document.documentElement.removeAttribute('data-theme') })
 
-test('defaults to light and toggles to dark, persisting + clearing data-theme', async () => {
+test('defaults to light and toggles to dark, persisting + setting data-theme', async () => {
   render(<ThemeProvider><Probe /></ThemeProvider>)
   expect(screen.getByText('theme:light')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button'))
   expect(screen.getByText('theme:dark')).toBeInTheDocument()
-  expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
   expect(localStorage.getItem('mezo-theme')).toBe('dark')
 })
 

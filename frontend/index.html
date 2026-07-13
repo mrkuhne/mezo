@@ -9,7 +9,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#F4F6F8" />
+    <meta name="theme-color" content="#FBF6EF" />
     <title>Mezo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -21,9 +21,9 @@
       (function () {
         var t = null
         try { t = localStorage.getItem('mezo-theme') } catch (e) {}
-        /* Light is the default: only an explicit stored 'dark' keeps the attribute off
-           (dark is the CSS base). Invalid/missing values fall through to light. */
-        if (t !== 'dark') document.documentElement.setAttribute('data-theme', 'light')
+        /* Napív: light is the CSS base (no attribute). Only an explicit stored 'dark'
+           adds data-theme="dark". Invalid/missing values fall through to light. */
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark')
       })()
     </script>
   </head>

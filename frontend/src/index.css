@@ -2,7 +2,7 @@
 @import "./styles/prototype.css";
 
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.
-   `inline` => utilities emit var(--…) refs, so [data-theme="light"] flips them live. */
+   `inline` => utilities emit var(--…) refs, so [data-theme="dark"] flips them live. */
 @theme inline {
   --color-brand-deep: var(--brand-deep);
   --color-brand-core: var(--brand-core);
