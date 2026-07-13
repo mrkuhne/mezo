@@ -38,7 +38,7 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
         position: 'absolute',
         inset: 0,
         zIndex: 60,
-        background: 'radial-gradient(ellipse at center, #0c1218 0%, var(--canvas) 70%)',
+        background: 'radial-gradient(ellipse at center, var(--page-glow) 0%, var(--canvas) 70%)',
       }}
     >
       {/* Top bar: ✕ back + "Új cél" eyebrow, mirroring the wizard chrome. */}

@@ -16,8 +16,8 @@ export default defineConfig({
         name: 'Mezo',
         short_name: 'Mezo',
         description: 'Holistic AI performance & health companion',
-        theme_color: '#F4F6F8',
-        background_color: '#DDE2E8',
+        theme_color: '#FBF6EF',
+        background_color: '#E6E1D8',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
@@ -30,15 +30,13 @@ export default defineConfig({
     }),
   ],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
-  // Custom dev port — 5173 is taken by other local projects. Parity keeps its own port (4317).
+  // Custom dev port — 5173 is taken by other local projects.
   server: { port: 5180 },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     css: true,
-    // Playwright parity specs (tests/parity/*.spec.ts) import @playwright/test
-    // and must not be collected by Vitest — they only run via `pnpm parity`.
-    exclude: [...configDefaults.exclude, 'tests/parity/**'],
+    exclude: [...configDefaults.exclude],
   },
 })

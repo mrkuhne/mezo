@@ -1,125 +1,39 @@
 /* ===== Mezo prototype · Design tokens (Deep Current v2) ===== */
 
 :root {
-  /* Brand · Deep Current */
-  --brand-deep: #064E5B;
-  --brand-core: #0E7C7B;
-  --brand-primary: #14B8A6;
-  --brand-glow: #5EEAD4;
-  --brand-tint: #CCFBF1;
-
-  /* Canvas / surfaces */
-  --canvas: #0A0F14;
-  --surface-1: #121A22;
-  --surface-2: #1A242E;
-  --surface-3: #232F3B;
-  --surface-glass: rgba(255, 255, 255, 0.04);
-
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --border-brand: rgba(94, 234, 212, 0.35);
-
-  /* Text */
-  --text-primary: #ECECF1;
-  --text-secondary: #9CA3AF;
-  --text-tertiary: #6B7280;
-  --text-quaternary: #4B5563;
-  --text-inverse: #0A0F14;
-
-  /* Text over permanently-dark media bands (recipe hero/list image placeholders
-     are intentionally dark in BOTH themes) — stays light in both themes, so it is
-     defined once here and never overridden in the light block. Values mirror the
-     dark-theme text tones so dark mode is pixel-identical. */
-  --text-on-media: #ECECF1;
-  --text-on-media-dim: #9CA3AF;
-
-  /* Semantic */
-  --success: #34D399;
-  --warning: #F59E0B;
-  --error: #F43F5E;
-  --info: #60A5FA;
-
-  /* Pattern category palette */
-  --cat-physiology: #60A5FA;
-  --cat-preference: #A78BFA;
-  --cat-trigger:    #F59E0B;
-  --cat-response:   #34D399;
-  --cat-tendency:   #F472B6;
-  --cat-goal-state: #5EEAD4;
-
-  /* Tool transparency */
-  --tool-read:    rgba(94, 234, 212, 0.4);
-  --tool-compute: var(--warning);
-  --tool-write:   var(--brand-glow);
-
-  /* Reta phase gradient stops (D1 peak → D7 trough) */
-  --reta-d1: #5EEAD4;
-  --reta-d2: #14B8A6;
-  --reta-d3: #F59E0B;
-  --reta-d4: #F59E0B;
-  --reta-d5: #D97757;
-  --reta-d6: #6B7280;
-  --reta-d7: #4B5563;
-
-  /* AnchorMode (muted, warmer) */
-  --anchor-canvas:  #14110E;
-  --anchor-surface: #1F1915;
-  --anchor-accent:  #D97757;
-  --anchor-text:    #E8DDD3;
-
-  /* Fonts */
-  --ff-display: "Antonio", sans-serif;
-  --ff-body:    "Inter", -apple-system, system-ui, sans-serif;
-  --ff-mono:    "JetBrains Mono", monospace;
-
-  /* Spacing 8pt */
-  --sp-xs: 4px;  --sp-sm: 8px;  --sp-md: 12px;
-  --sp-lg: 16px; --sp-xl: 20px; --sp-2xl: 24px;
-  --sp-3xl: 32px; --sp-4xl: 40px; --sp-5xl: 64px;
-
-  /* Radii */
-  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
-  --r-xl: 20px; --r-2xl: 24px; --r-full: 9999px;
-
-  /* Page (bezel/letterbox) background */
-  --page-bg: #050709;
-
-  /* Card elevation — light lifts cards off the canvas; dark stays flat.
-     drop-shadow (not box-shadow): the notch clip-path would clip a box-shadow. */
-  --card-elevation: none;
-  --card-border: var(--border-subtle);
-  /* Desktop bezel (letterbox) radial gradient center stop */
-  --page-glow: #0c1218;
-}
-
-/* ===== Light theme overrides ===== */
-:root[data-theme="light"] {
-  /* Brand · slightly deeper for contrast on light surfaces */
+  /* Brand · legacy teal (screens still on Deep Current use these until S3–S7) */
   --brand-deep: #064E5B;
   --brand-core: #0E7C7B;
   --brand-primary: #0E7C7B;
   --brand-glow: #0E7C7B;
   --brand-tint: #E6F7F4;
 
-  /* Canvas / surfaces */
-  --canvas: #F4F6F8;
+  /* Canvas / surfaces — warmed to Napív */
+  --canvas: #FBF6EF;
   --surface-1: #FFFFFF;
-  --surface-2: #EEF1F5;
-  --surface-3: #E2E7ED;
+  --surface-2: #F4EBDF;
+  --surface-3: #EFE5D8;
   --surface-glass: rgba(0, 0, 0, 0.03);
 
-  --border-subtle: rgba(15, 23, 35, 0.08);
-  --border-strong: rgba(15, 23, 35, 0.18);
+  --border-subtle: rgba(43, 33, 24, 0.08);
+  --border-strong: rgba(43, 33, 24, 0.18);
   --border-brand: rgba(14, 124, 123, 0.40);
 
-  /* Text */
-  --text-primary: #0A0F14;
-  --text-secondary: #3F4853;
-  --text-tertiary: #6B7280;
-  --text-quaternary: #9CA3AF;
+  /* Text — warm ink */
+  --text-primary: #2B2118;
+  --text-secondary: #5F5346;
+  --text-tertiary: #8A7A6A;
+  --text-quaternary: #A5978A;
   --text-inverse: #FFFFFF;
 
-  /* Semantic — darker tones for AA on white */
+  /* Text over permanently-dark media bands (recipe hero/list image placeholders
+     are intentionally dark in BOTH themes) — stays light in both themes, so it is
+     defined once here and never overridden in the dark block. Values mirror the
+     dark-theme text tones so dark mode is pixel-identical. */
+  --text-on-media: #ECECF1;
+  --text-on-media-dim: #9CA3AF;
+
+  /* Semantic — AA on white */
   --success: #047857;
   --warning: #B45309;
   --error: #BE123C;
@@ -133,10 +47,13 @@
   --cat-tendency:   #BE185D;
   --cat-goal-state: #0E7C7B;
 
-  /* Tool transparency */
   --tool-read:    rgba(14, 124, 123, 0.55);
   --tool-compute: var(--warning);
   --tool-write:   var(--brand-glow);
+
+  /* Reta phase gradient stops (unchanged) */
+  --reta-d1: #5EEAD4; --reta-d2: #14B8A6; --reta-d3: #F59E0B; --reta-d4: #F59E0B;
+  --reta-d5: #D97757; --reta-d6: #6B7280; --reta-d7: #4B5563;
 
   /* AnchorMode (light, warmer) */
   --anchor-canvas:  #FBF4EC;
@@ -144,22 +61,83 @@
   --anchor-accent:  #B45309;
   --anchor-text:    #3A2A1A;
 
-  /* Page background */
-  --page-bg: #DDE2E8;
+  /* Fonts */
+  --ff-display: "Bricolage Grotesque", sans-serif;
+  --ff-body:    "Plus Jakarta Sans", -apple-system, system-ui, sans-serif;
+  --ff-mono:    "JetBrains Mono", monospace;
 
-  /* Card elevation (approved variant A) */
-  --card-elevation: drop-shadow(0 1px 2px rgba(10, 15, 20, 0.06)) drop-shadow(0 4px 10px rgba(10, 15, 20, 0.07));
-  --card-border: rgba(15, 23, 35, 0.10);
-  --page-glow: #E8EDF2;
+  /* Spacing 8pt (unchanged) */
+  --sp-xs: 4px;  --sp-sm: 8px;  --sp-md: 12px;
+  --sp-lg: 16px; --sp-xl: 20px; --sp-2xl: 24px;
+  --sp-3xl: 32px; --sp-4xl: 40px; --sp-5xl: 64px;
+
+  /* Radii (unchanged slots) */
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+  --r-xl: 20px; --r-2xl: 24px; --r-full: 9999px;
+
+  --page-bg: #E6E1D8;
+  --card-elevation: drop-shadow(0 1px 2px rgba(43, 33, 24, 0.06)) drop-shadow(0 4px 10px rgba(43, 33, 24, 0.07));
+  --card-border: rgba(43, 33, 24, 0.10);
+  --page-glow: #F0EBE2;
+}
+
+/* ===== Dark theme (opt-in; Pulse warm-graphite lands fully in S8 — until then legacy navy) ===== */
+:root[data-theme="dark"] {
+  --brand-deep: #064E5B;
+  --brand-core: #0E7C7B;
+  --brand-primary: #14B8A6;
+  --brand-glow: #5EEAD4;
+  --brand-tint: #CCFBF1;
+
+  --canvas: #0A0F14;
+  --surface-1: #121A22;
+  --surface-2: #1A242E;
+  --surface-3: #232F3B;
+  --surface-glass: rgba(255, 255, 255, 0.04);
+
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-brand: rgba(94, 234, 212, 0.35);
+
+  --text-primary: #ECECF1;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
+  --text-quaternary: #4B5563;
+  --text-inverse: #0A0F14;
+
+  --success: #34D399;
+  --warning: #F59E0B;
+  --error: #F43F5E;
+  --info: #60A5FA;
+
+  --cat-physiology: #60A5FA;
+  --cat-preference: #A78BFA;
+  --cat-trigger:    #F59E0B;
+  --cat-response:   #34D399;
+  --cat-tendency:   #F472B6;
+  --cat-goal-state: #5EEAD4;
+
+  --tool-read:    rgba(94, 234, 212, 0.4);
+  --tool-compute: var(--warning);
+  --tool-write:   var(--brand-glow);
+
+  --anchor-canvas:  #14110E;
+  --anchor-surface: #1F1915;
+  --anchor-accent:  #D97757;
+  --anchor-text:    #E8DDD3;
+
+  --page-bg: #050709;
+  --card-elevation: none;
+  --card-border: var(--border-subtle);
+  --page-glow: #0c1218;
 }
 
 /* Notched chamfer clip-paths */
-.notch-4  { clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px); }
-.notch-8  { clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-.notch-12 { clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
-.notch-16 { clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px); }
-.notch-tl-12 { clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px); }
-.notch-br-12 { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+.notch-4  { clip-path: none; border-radius: 12px; }
+.notch-8  { clip-path: none; border-radius: 16px; }
+.notch-12 { clip-path: none; border-radius: 20px; }
+.notch-16 { clip-path: none; border-radius: 24px; }
+.notch-tl-12, .notch-br-12 { clip-path: none; border-radius: 20px; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 
@@ -326,7 +304,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .recipe-save-bar {
   position: absolute;
   left: 0; right: 0;
-  bottom: 88px; /* directly above the 88px desktop tab bar */
+  bottom: 92px; /* above the floating tab-bar capsule (top edge ≈78px on desktop; 92px leaves 14px clearance) */
   z-index: 45;  /* above tab-bar (40), below sheets (200+) so the picker covers it */
   display: flex;
   gap: 9px;
@@ -1153,3 +1131,134 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .progress-mfill--reduced { animation: none; }
 @keyframes progress-mbar-grow { from { width: 0; } to { width: var(--w); } }
 @media (prefers-reduced-motion: reduce) { .progress-mfill { animation: none; } }
+
+/* ===== Napív tokens (2026-07-13 redesign, spec: 2026-07-13-napiv-frontend-redesign-design.md) ===== */
+:root {
+  --surface: #FFFFFF;
+  --warm: #F4EBDF;
+  --line: #EFE5D8;
+  --ink: #2B2118;
+  --sub: #8A7A6A;
+  --faint: #A5978A;
+  --coral: #FF6B4A;      --coral-deep: #C4622F;
+  --amber: #FFB347;
+  --sage: #7FA48A;       --sage-deep: #5F7A52;
+  --lav: #9B8FC4;        --lav-deep: #7A6DA8;
+  --rose: #E27A8B;
+  --sky: #6FA7D8;
+  --np-shadow-card: 0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
+  --np-shadow-row: 0 8px 20px rgba(43,33,24,.05);
+  --np-ease-ios: cubic-bezier(.32,.72,0,1);
+  --np-ease-spring: cubic-bezier(.34,1.4,.44,1);
+}
+
+/* Dark placeholders (spec §7 S1): keep the Napív-token consumers legible on the legacy
+   navy dark until the Pulse dark pass (S8) designs real values. Accents unchanged. */
+:root[data-theme="dark"] {
+  --surface: #121A22;
+  --warm: #1A242E;
+  --line: rgba(255, 255, 255, 0.08);
+  --ink: #ECECF1;
+  --sub: #9CA3AF;
+  --faint: #6B7280;
+  --np-shadow-card: 0 2px 4px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+  --np-shadow-row: 0 8px 20px rgba(0,0,0,.3);
+}
+
+/* Transitional shape softening: chamfers become rounded corners app-wide.
+   Radii follow spec §3.3 (rows 18-20px, cards 20-28px). */
+
+/* Napív tab bar — frosted floating capsule (supersedes mezo-ci5's opaque bar; blur+tint solves both recorded failure modes) */
+.tab-bar {
+  position: absolute; left: 14px; right: 14px; bottom: 14px;
+  border-radius: 999px; border-top: none;
+  background: color-mix(in srgb, var(--canvas) 66%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 14px 34px rgba(43,33,24,.16), inset 0 0 0 1px rgba(255,255,255,.55);
+  padding: 10px 18px;
+  display: flex; align-items: center; justify-content: space-around;
+  z-index: 40; height: 64px;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .tab-bar { background: color-mix(in srgb, var(--canvas) 96%, transparent); }
+}
+.tab-fab {
+  width: 56px; height: 56px; border-radius: 50%; border: 4px solid var(--canvas);
+  margin-top: -34px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--coral), var(--amber)); color: #fff;
+  box-shadow: 0 12px 26px rgba(255,107,74,.5), inset 0 1.5px 0 rgba(255,255,255,.35);
+  cursor: pointer;
+}
+.quicklog { padding: 4px 6px 10px; }
+.quicklog h2 { font-family: var(--ff-display); font-size: 19px; font-weight: 800; }
+.quicklog-sub { font-size: 12px; color: var(--faint); font-weight: 600; margin-top: 2px; }
+.quicklog-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+.quicklog-tile {
+  border-radius: 22px; padding: 16px 8px 14px; text-align: center;
+  border: 1.5px solid var(--line); background: var(--canvas); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.quicklog-emoji { width: 42px; height: 42px; border-radius: 50%; background: var(--warm); display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 6px; }
+.quicklog-label { font-size: 12px; font-weight: 800; color: var(--ink); }
+.quicklog-hint { font-size: 10px; color: var(--faint); font-weight: 700; }
+.screen-content { padding-bottom: 118px; }
+.icon-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; color: var(--sub); }
+
+/* ===== Circadian atmosphere (every screen; spec §3.4) ===== */
+.sky {
+  position: absolute; top: 0; left: 0; right: 0; height: 295px; z-index: 0;
+  pointer-events: none; transition: background 1s ease;
+  -webkit-mask-image: linear-gradient(#000 55%, transparent);
+  mask-image: linear-gradient(#000 55%, transparent);
+}
+.phone-screen { transition: background 1s ease; }
+.phone-screen[data-day="reggel"] {
+  background: #FCF1DF;
+}
+.phone-screen[data-day="reggel"] .sky {
+  background: radial-gradient(440px 310px at 18% 0%, rgba(255,158,66,.45), transparent 72%),
+              linear-gradient(180deg, #FFDDAE, #FFEDD4 55%, transparent);
+}
+.phone-screen[data-day="delutan"] .sky {
+  background: radial-gradient(420px 260px at 50% -6%, rgba(255,199,115,.16), transparent 70%),
+              linear-gradient(180deg, #FAF3E6, #FBF6EF 65%, transparent);
+}
+.phone-screen[data-day="este"] {
+  background: #F3EDF2;
+}
+.phone-screen[data-day="este"] .sky {
+  background: radial-gradient(440px 310px at 82% 2%, rgba(155,143,196,.4), transparent 72%),
+              linear-gradient(180deg, #E2D9EF, #F0E9E9 62%, transparent);
+}
+/* Dark theme keeps its own canvas — daypart tints are a light-theme device until the
+   Pulse dark pass (S8) designs night variants. The sky dim below still applies. */
+:root[data-theme="dark"] .phone-screen[data-day] { background: var(--canvas); }
+/* Dark theme: the sky dims until the Pulse dark pass (S8) designs its own night variants. */
+:root[data-theme="dark"] .sky { opacity: .18; }
+/* AnchorMode: rough days mute the atmosphere (full anchor remap lands with Today in S3). */
+.phone-screen.anchor .sky { opacity: .35; filter: saturate(.6); }
+
+/* ===== Napív motion vocabulary (spec §3.5) ===== */
+@keyframes np-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes np-pop  { 0% { opacity: 0; transform: scale(.3); } 70% { transform: scale(1.15); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes np-grow { to { transform: scaleX(1); } }
+@keyframes np-draw { to { stroke-dashoffset: 0; } }
+
+.np-anim { opacity: 0; animation: np-rise .55s var(--np-ease-ios) forwards; animation-delay: calc(var(--i, 0) * 70ms); }
+.np-press { transition: transform .18s var(--np-ease-spring); }
+.np-press:active { transform: scale(.955); }
+
+@media (prefers-reduced-motion: reduce) {
+  .np-anim { animation: none; opacity: 1; }
+  .np-press, .np-press:active { transition: none; transform: none; }
+  .sky, .phone-screen { transition: none; }
+}
+
+/* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
+   and keep scroll clearance (replaces the old docked-bar safe-area padding). */
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .tab-bar { bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .screen-content { padding-bottom: calc(118px + env(safe-area-inset-bottom)); }
+  .recipe-save-bar { bottom: calc(88px + env(safe-area-inset-bottom)); }
+}

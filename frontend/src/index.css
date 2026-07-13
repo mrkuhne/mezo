@@ -2,7 +2,7 @@
 @import "./styles/prototype.css";
 
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.
-   `inline` => utilities emit var(--…) refs, so [data-theme="light"] flips them live. */
+   `inline` => utilities emit var(--…) refs, so [data-theme="dark"] flips them live. */
 @theme inline {
   --color-brand-deep: var(--brand-deep);
   --color-brand-core: var(--brand-core);
@@ -37,6 +37,22 @@
   --color-anchor-surface: var(--anchor-surface);
   --color-anchor-accent: var(--anchor-accent);
   --color-anchor-text: var(--anchor-text);
+
+  --color-ink: var(--ink);
+  --color-sub: var(--sub);
+  --color-faint: var(--faint);
+  --color-warm: var(--warm);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-coral: var(--coral);
+  --color-coral-deep: var(--coral-deep);
+  --color-amber: var(--amber);
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+  --color-lav: var(--lav);
+  --color-lav-deep: var(--lav-deep);
+  --color-rose: var(--rose);
+  --color-sky: var(--sky);
 
   --font-display: var(--ff-display);
   --font-body: var(--ff-body);

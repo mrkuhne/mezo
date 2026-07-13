@@ -16,7 +16,7 @@ test('redirects / to Today', () => {
 })
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
-  await userEvent.click(screen.getByText('Insights'))
+  await userEvent.click(screen.getByLabelText('Insights'))
   // Insights shell: the brand eyebrow is the stable landmark; the page title is
   // dynamic per active sub-view (the index sub-view renders "Patterns").
   expect(screen.getByRole('heading', { level: 1, name: /patterns/i })).toBeInTheDocument()
@@ -26,8 +26,8 @@ test('Me screen theme toggle flips data-theme', async () => {
   localStorage.clear()
   renderApp('/me')
   await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))
-  // Light is the default (data-theme="light"); toggling flips to the dark CSS base (no attribute).
-  expect(document.documentElement.getAttribute('data-theme')).toBe('light')
-  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
+  // Light is the default (no attribute; light is the CSS base); toggling flips to dark.
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
+  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })

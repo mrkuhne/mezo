@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-07-11
+updated: 2026-07-13
 tags: [today, biometrics, frontend, data-layer]
 key_files:
   - frontend/src/features/today
@@ -41,7 +41,7 @@ Driving design: [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](../su
   - `?vulnerable=on|off` (default `off`) → shows the "sebezhetőbb hangnem" `VulnerabilityCard`.
   - `?retaDay=N` (1–7, clamped; top priority in both modes) → moves the reta phase bar's active segment and its phase descriptor. With no override, the **base** is the derived medication cycle in real mode (`useMedication().cycle.retaDay`, falling back to `today.retaDay = 3` when 0/no-dose) and `today.retaDay = 3` in mock mode (mezo-d94).
 - **Check-in ("Heartbeat" strip):** tap a slot (4 slots: `06:30 · 10:00 · 14:00 · 20:00`) → opens `CheckInSheet`, a 5-step wizard. Four dimensions — Energia / Stressz / Testi / Mentális tisztaság — on a 1–10 scale with auto-advance; each shows a reactive "Mezo · azonnali olvasat" observation (`CheckInObservation`). The final step is a summary + optional one-line note. **Mentés** → the strip flips the slot optimistically (`done` + average-score badge + N/4 counter) and, in real mode, `POST`s then invalidates the day query. In **real mode the strip also READS** `GET /api/biometrics/checkin?date=today` (Slice T): saved slots survive a reload; a slot with no server row derives its state from wall-clock — current window → `now` (tap), past → `skipped` (—), future → `pending` (•).
-- **Cross-slice navigation:** the `WorkoutTeaser` card and its **"Indítsuk"** CTA both `navigate('/train')`; the `InsightsTeaser` card navigates to `/insights` (Slice T). The fuel preview "Fuel → Terv" eyebrow is **visual only**; the `VolleyballCard` chevron is visual.
+- **Cross-slice navigation:** the `WorkoutTeaser` card and its **"Indítsuk"** CTA both `navigate('/train')`; the `InsightsTeaser` card navigates to `/insights` (Slice T). The fuel preview "Fuel → Terv" eyebrow is **visual only**; the `VolleyballCard` chevron is visual. Since the **Napív** redesign (`mezo-8141`) the header row (`BrandRow.tsx`) also carries a direct `<Link to="/insights" aria-label="Insights">` ✨ button — this is now the primary way Insights is reached, since the bottom tab bar dropped its Insights tab.
 - **AnchorMode:** the `Kilépés` chip calls `navigate('/today')`, dropping the `?day=rough` param and returning to the normal screen.
 
 ## 3. Architecture & data flow
@@ -132,7 +132,7 @@ Today is an **aggregation surface** — its value is in the seams to the other d
 - **→ Insights (`/insights`)** — *live shared data + navigation* (Slice T). `useInsightsTeaser` surfaces the top proposed pattern from the real `usePatterns()` inbox (the companion V3.1 surface); the card deep-links to `/insights` and hides when there is no pattern / the switch-off 404 degraded state.
 - **→ Biometrics backend (real)** — `useCheckins` reads (`listForDay`) + writes (`save`) `feature/biometrics/checkin`; `useQuickStats` reads the sleep + weight logs (`useSleep`/`useWeight` — same cache keys as the Me tab). Server-side the check-in is a sibling of weight/sleep inside the biometrics feature, not a Today package. Since companion V0.3 the **latest check-in is also read into every chat turn's context snapshot** ([`companion.md`](companion.md) §5.5) via the `CheckInRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc` finder — read-only, one-directional (companion → biometrics).
 - **→ Growth (quests + activity log, `mezo-df7q` / `mezo-jzca`)** — *live shared data*. `DailyQuestsCard` consumes `useDailyQuests`/`useQuestActions` (`data/quest/`, key `['dailyQuests', date]`); the read itself triggers server-side lazy generation + DERIVED evaluation. `ActivityLogCard` + `ActivityLogSheet` consume `useActivities`/`useActivityActions` (`data/activity/`, key `['activities', date]`) — a write POSTs free text, the companion cheap-tier LLM classifies it onto a LIFE skill, and a confident entry can complete a matching activity-mode GROWTH quest. Both surfaces' completion payloads feed the global `LevelUpProvider` overlay via `useLevelUp`; the activity write also invalidates `['dailyQuests', date]` + `['progressionProfile']`. Domain doc: [growth.md](growth.md).
-- **← AppLayout / shell** — `AppLayout.tsx` calls `useTodayScenario()` **itself** and passes `anchor = scenario.anchorMode && pathname.startsWith('/today')` to `PhoneFrame` (warm canvas). The contract here is the shared `TodayScenario.anchorMode` boolean: the layout's canvas and the screen's content must agree (both derive it from the same hook). The `QuickInputSheet` ("Gyors rögzítés", `features/quickinput/`) is referenced by the Today design but **owned by the shell**, not Today; its global mic Fab trigger was removed, so the sheet is currently unmounted.
+- **← AppLayout / shell** — `AppLayout.tsx` calls `useTodayScenario()` **itself** and passes `anchor = scenario.anchorMode && pathname.startsWith('/today')` to `PhoneFrame` (warm canvas). The contract here is the shared `TodayScenario.anchorMode` boolean: the layout's canvas and the screen's content must agree (both derive it from the same hook). The `QuickInputSheet` (`features/quickinput/`) is referenced by the original Today design but **owned by the shell**, not Today — since the Napív redesign (`mezo-8141`) it's a 6-tile quick-log grid mounted by `TabBar`'s center FAB (`aria-label="Gyors logolás"`), not by anything in Today itself.
 - **Shared UI primitives consumed:** `RetaPhaseBar`, `QuickStat` (`shared/ui/`), plus `Eyebrow`, `PageTitle`, `Chip`, `RefTag`, `Sheet`, `Icon`/`BrandGlyph`, `CtaPrimary`, and `SafeMarkdown` (renders briefing `**bold**` without `dangerouslySetInnerHTML`).
 
 ## 6. How to use it (consume)
@@ -173,7 +173,7 @@ saveCheckIn(idx, { state: 'done', values, note, savedAt }) // optimistic; real a
 2. Add a typed slice to `data/today/today.ts` (or a new `data/*.ts`) + its type in `data/types.ts`.
 3. Expose it through a hook in `data/hooks.ts` (extend `useToday` or add a focused hook like `useFuelPreview`).
 4. Render it in `TodayPage.tsx` (mind the AnchorMode early-return at line 23 — sections after it only show on non-rough days).
-5. Add a colocated `*.test.tsx` and a parity variant in `tests/parity/foundation.spec.ts`.
+5. Add a colocated `*.test.tsx`.
 Follow the design in [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](../superpowers/specs/2026-06-03-mezo-today-design.md).
 
 **Promote a mock Today section to a real backend (the check-in is the working template):**
@@ -192,7 +192,7 @@ Follow the design in [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](
 - `data/today/todayHooks.test.tsx` — mock byte-parity (statics returned by reference) + real composition off the MSW Train fixtures (workout title, meso chips, `MAV` phase, 5 schedule sessions, null demo copy).
 - `data/today/checkinHooks.test.tsx` — `buildDaySlots` wall-clock derivation + server-row overlay (pure), real-mode hydration from `listForDay`, and the existing save-POST/mock-no-fetch pair.
 
-**Parity (Playwright @440×956)** — `frontend/tests/parity/foundation.spec.ts:82–114`: variants `today-default`, `today-good`, `today-rough-anchor`, `today-niggle-off`, `today-vulnerable`, plus the `checkin sheet` (clicks the `tap` slot) and `quickinput sheet`. Compared against the prototype `prototype-today.png`.
+**Parity (Playwright @440×956)** — Pixel-parity vs the Phase-1 prototype retired 2026-07-13 by the Napív redesign (mezo-8141); visual self-baselines return in S8.
 
 **Backend IT** — `backend/src/test/java/io/mrkuhne/mezo/feature/biometrics/BiometricsContractIT.java:49–68`: `testSaveCheckIn_shouldUpsertSameSlot_whenPostedTwice` (POST the same slot twice → same `id`, state updates to `skipped`; GET by date → 1 row). Extends `ApiIntegrationTest` against real Postgres; `check_in` is in `support/ResetDatabase.java:39`.
 
@@ -215,14 +215,14 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 - **Scenario duplication:** `useTodayScenario` is called in both `TodayPage` and `AppLayout`; both must derive `anchorMode` consistently for the warm canvas and the content to match.
 - **Known console noise (pre-existing, `mezo-edrv`):** `useGoal`'s queryFn-less `['weightLog']` read-only query floods the console with TanStack errors on every Today load (mounted via `useFuelTimeline`); present before Slice T on the baseline too.
 - **Generated briefing shipped (proactive B1.2, `mezo-h4wp.2`).** The briefing card is now real in real mode (`useBriefing` → `useToday`, `briefing: Briefing | null`, fallback at `TodayPage:35`); the „Demo tartalom" static card is only the honest fallback (loading / 404 / switch off) and the mock-mode card. `resolveBriefing` + `briefingVariants` shape ONLY that fallback, never a generated briefing. `Briefing.confidence` went optional to model the server shape. Full behavior + backend in [proactive.md](proactive.md).
-- **Deferred / proactive-epic:** real predictions (`prediction` stays null), real niggle/vulnerable sources, AnchorMode triggered by real signals, HRV (needs a data source first), QuickInputSheet re-mount.
+- **Deferred / proactive-epic:** real predictions (`prediction` stays null), real niggle/vulnerable sources, AnchorMode triggered by real signals, HRV (needs a data source first). (`QuickInputSheet` was re-mounted by the Napív redesign, `mezo-8141` — see [_platform-design-system.md](_platform-design-system.md).)
 
 ## 10. Key files
 
 **Frontend — screen + components** (`frontend/src/features/today/`):
 - `TodayPage.tsx` — composition root, AnchorMode branch, `CheckInSheet` wiring.
 - `CheckInStrip.tsx` / `CheckInSheet.tsx` (incl. `CHECKIN_DIMS`, `CheckInObservation`) / `AnchorModeView.tsx` — heartbeat strip, wizard sheet, recovery view.
-- `components/`: `BrandRow.tsx`, `RetaPhaseSection.tsx`, `DateMesoHeader.tsx`, `BriefingCard.tsx`, `CompanionNoteCard.tsx` (H1 — the in-day heartbeat note; data from `data/today/heartbeatHooks.ts`, see [proactive.md](proactive.md)), `DailyQuestsCard.tsx` (daily quests — data from `data/quest/`, see [growth.md](growth.md)), `ActivityLogCard.tsx` (Growth E2 activity mini-journal — data from `data/activity/`, opens `sheets/ActivityLogSheet.tsx`; see [growth.md](growth.md)), `WorkoutTeaser.tsx`, `VolleyballCard.tsx`, `VulnerabilityCard.tsx`, `FuelTimelinePreview.tsx`, `QuickStatsRow.tsx`, `InsightsTeaser.tsx`.
+- `components/`: `BrandRow.tsx` (brand wordmark + search chip + the Insights ✨ entry point, `mezo-8141`), `RetaPhaseSection.tsx`, `DateMesoHeader.tsx`, `BriefingCard.tsx`, `CompanionNoteCard.tsx` (H1 — the in-day heartbeat note; data from `data/today/heartbeatHooks.ts`, see [proactive.md](proactive.md)), `DailyQuestsCard.tsx` (daily quests — data from `data/quest/`, see [growth.md](growth.md)), `ActivityLogCard.tsx` (Growth E2 activity mini-journal — data from `data/activity/`, opens `sheets/ActivityLogSheet.tsx`; see [growth.md](growth.md)), `WorkoutTeaser.tsx`, `VolleyballCard.tsx`, `VulnerabilityCard.tsx`, `FuelTimelinePreview.tsx`, `QuickStatsRow.tsx`, `InsightsTeaser.tsx`.
 
 **Frontend — data & lib:**
 - `frontend/src/data/today/todayHooks.ts` (+ `todayHooks.test.tsx`) — `useTodayScenario`, `resolveBriefing`, `useToday`, `useFuelPreview`, `useQuickStats`, `useInsightsTeaser`; `checkinHooks.ts` (+ test, incl. `buildDaySlots`) — `useCheckins`; `briefingHooks.ts` (+ test) — `useBriefing` (proactive B1.2) + `briefingApi.ts` (`toBriefing` wire→`Briefing`); all re-exported by the `data/hooks.ts` barrel.
@@ -230,7 +230,6 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 - `frontend/src/data/me/biometricsApi.ts` (`checkinApi`), `data/_client/mode.ts`, `shared/lib/dates.ts`, `data/_client/api.ts` (`apiFetch`/`setToken`), `shared/lib/safeMarkdown.tsx`.
 - `frontend/src/shared/ui/RetaPhaseBar.tsx`, `QuickStat.tsx` — shared primitives.
 - `frontend/src/app/AppLayout.tsx` (anchor wiring), `router.tsx:47`, `PhoneFrame.tsx`.
-- `frontend/tests/parity/foundation.spec.ts:82–114` — parity variants.
 
 **API contract:** `api/feature/checkin/checkin.yml` → `api/openapi.yml` → `frontend/src/data/_client/api.gen.ts` + backend `io.mrkuhne.mezo.api` (`CheckInApi`, `CheckInResponse`, `SaveCheckInRequest`).
 

@@ -180,7 +180,7 @@ dual-mode hook → both-test-modes-green. Link the references; never restate the
 mock-only extension path where relevant.
 
 ## 8. Testing
-FE (Vitest + RTL + MSW, both `pnpm test` and `VITE_USE_MOCK=true pnpm test`; parity), and —
+FE (Vitest + RTL + MSW, both `pnpm test` and `VITE_USE_MOCK=true pnpm test`), and —
 if backed — backend ITs (`AbstractIntegrationTest`/`ApiIntegrationTest` + Postgres, populators,
 `ResetDatabase`). Name representative tests and the commands.
 

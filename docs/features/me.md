@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-07-12
+updated: 2026-07-13
 tags: [me, biometrics, progression, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/me
@@ -300,7 +300,6 @@ cd backend && ./mvnw clean test
 # Frontend — BOTH modes must be green
 cd frontend && pnpm test                       # real (default)
 cd frontend && VITE_USE_MOCK=true pnpm test     # mock
-cd frontend && pnpm parity                      # Playwright parity screenshots
 ```
 
 ## 9. Decisions, gotchas & deferred

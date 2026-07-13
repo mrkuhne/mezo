@@ -87,7 +87,6 @@ cd frontend
 pnpm dev          # vite dev server on :5180 — REAL mode by default (backend on :8090 required); mock: VITE_USE_MOCK=true pnpm dev (no backend needed)
 pnpm build        # tsc -b && vite build
 pnpm test         # vitest run — REAL mode by default; also run VITE_USE_MOCK=true pnpm test (both modes must be green)
-pnpm parity       # playwright parity screenshots (own port :4317; prototype path: MEZO_PROTOTYPE_DIR env var)
 
 # Backend (under backend/)
 cd backend
@@ -106,7 +105,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 # backend Java types regenerate automatically in ./mvnw generate-sources/test
 ```
 
-**Custom local ports** (standard ones are taken by other projects on this machine): Postgres **15432** (`DB_PORT`), backend HTTP **8090** (`MEZO_PORT`), Vite dev **5180**, parity **4317**. Frontend targets the API via `VITE_API_URL` (see `frontend/.env.example`). If the `mezo_pg` volume predates `backend/initdb/`, recreate it once: `docker compose down -v && docker compose up -d`.
+**Custom local ports** (standard ones are taken by other projects on this machine): Postgres **15432** (`DB_PORT`), backend HTTP **8090** (`MEZO_PORT`), Vite dev **5180**. Frontend targets the API via `VITE_API_URL` (see `frontend/.env.example`). If the `mezo_pg` volume predates `backend/initdb/`, recreate it once: `docker compose down -v && docker compose up -d`.
 
 ## Frontend Development Conventions (Phase 1+) — MANDATORY
 

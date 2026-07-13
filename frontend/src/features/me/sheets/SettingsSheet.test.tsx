@@ -16,10 +16,10 @@ test('renders the Téma section', () => {
 test('the theme toggle flips data-theme via useTheme', async () => {
   localStorage.clear()
   renderSheet()
-  // Light is the default (data-theme="light"); toggling flips to the dark CSS base (no attribute).
-  expect(document.documentElement.getAttribute('data-theme')).toBe('light')
-  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
+  // Light is the default (no attribute; light is the CSS base); toggling flips to dark.
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
+  expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 
 test('closes on Escape', async () => {
