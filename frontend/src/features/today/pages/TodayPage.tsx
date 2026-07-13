@@ -1,19 +1,17 @@
 import { useState } from 'react'
 import { useTodayScenario, useToday, useCheckins, useCompanionNote, resolveBriefing } from '@/data/hooks'
 import { BrandRow } from '@/features/today/components/BrandRow'
-import { RetaPhaseSection } from '@/features/today/components/RetaPhaseSection'
-import { DateMesoHeader } from '@/features/today/components/DateMesoHeader'
+import { GreetingHeader } from '@/features/today/components/GreetingHeader'
+import { DayArc } from '@/features/today/components/DayArc'
 import { BriefingCard } from '@/features/today/components/BriefingCard'
 import { WorkoutTeaser } from '@/features/today/components/WorkoutTeaser'
 import { VolleyballCard } from '@/features/today/components/VolleyballCard'
 import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 import { FuelTimelinePreview } from '@/features/today/components/FuelTimelinePreview'
 import { QuickStatsRow } from '@/features/today/components/QuickStatsRow'
-import { InsightsTeaser } from '@/features/today/components/InsightsTeaser'
+import { GrowthTodayRow } from '@/features/today/components/GrowthTodayRow'
 import { CheckInStrip } from '@/features/today/components/CheckInStrip'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
-import { DailyQuestsCard } from '@/features/today/components/DailyQuestsCard'
-import { ActivityLogCard } from '@/features/today/components/ActivityLogCard'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { AnchorModeView } from '@/features/today/pages/AnchorModeView'
 
@@ -34,21 +32,21 @@ export function TodayPage() {
   return (
     <>
       <BrandRow />
-      <RetaPhaseSection day={scenario.retaDay} />
-      <DateMesoHeader today={today} user={user} />
-      <BriefingCard briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />
-      <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
-      {companionNote && <CompanionNoteCard note={companionNote} />}
-      <DailyQuestsCard />
-      <ActivityLogCard />
-      {workout && (
+      <GreetingHeader today={today} user={user} retaDay={scenario.retaDay} />
+      <DayArc checkins={checkins} workoutTime={workoutTime} />
+      {workout ? (
         <WorkoutTeaser workout={workout} niggle={scenario.niggle} time={workoutTime} prediction={prediction} />
+      ) : (
+        todaySport && <VolleyballCard session={todaySport} note={volleyballNote} />
       )}
-      <VolleyballCard session={todaySport} note={volleyballNote} />
+      <BriefingCard briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />
+      {companionNote && <CompanionNoteCard note={companionNote} />}
       {scenario.vulnerable && <VulnerabilityCard />}
-      <FuelTimelinePreview />
+      <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
+      {workout && todaySport && <VolleyballCard session={todaySport} note={volleyballNote} />}
       <QuickStatsRow />
-      <InsightsTeaser />
+      <FuelTimelinePreview />
+      <GrowthTodayRow />
       {checkInIdx !== null && (
         <CheckInSheet
           slot={checkins[checkInIdx]}
