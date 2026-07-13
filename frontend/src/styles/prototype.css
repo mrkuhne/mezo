@@ -304,7 +304,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .recipe-save-bar {
   position: absolute;
   left: 0; right: 0;
-  bottom: 88px; /* directly above the 88px desktop tab bar */
+  bottom: 92px; /* above the floating tab-bar capsule (top edge ≈78px on desktop; 92px leaves 14px clearance) */
   z-index: 45;  /* above tab-bar (40), below sheets (200+) so the picker covers it */
   display: flex;
   gap: 9px;
@@ -1164,6 +1164,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   backdrop-filter: blur(20px) saturate(1.5);
   box-shadow: 0 14px 34px rgba(43,33,24,.16), inset 0 0 0 1px rgba(255,255,255,.55);
   padding: 10px 18px;
+  display: flex; align-items: center; justify-content: space-around;
+  z-index: 40; height: 64px;
 }
 @supports not (backdrop-filter: blur(1px)) {
   .tab-bar { background: color-mix(in srgb, var(--canvas) 96%, transparent); }
@@ -1189,3 +1191,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .quicklog-hint { font-size: 10px; color: var(--faint); font-weight: 700; }
 .screen-content { padding-bottom: 118px; }
 .icon-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; color: var(--sub); }
+
+/* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
+   and keep scroll clearance (replaces the old docked-bar safe-area padding). */
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .tab-bar { bottom: calc(10px + env(safe-area-inset-bottom)); }
+  .screen-content { padding-bottom: calc(118px + env(safe-area-inset-bottom)); }
+  .recipe-save-bar { bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
