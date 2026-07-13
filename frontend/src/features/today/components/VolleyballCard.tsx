@@ -17,29 +17,26 @@ export function VolleyballCard({
           <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>Sport · {session.time}</span>
           <span className="eyebrow text-tertiary">{session.duration} perc</span>
         </div>
-        <div className="card notch-12" style={{
-          padding: '14px 18px',
-          background: 'rgba(244, 114, 182, 0.04)',
-          borderColor: 'rgba(244, 114, 182, 0.3)',
-          position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--cat-tendency)' }} />
+        <div className="np-eventrow">
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="col">
-              <div className="h-display size-sm" style={{ lineHeight: 1.15 }}>Röplabda</div>
+              <div className="np-eventrow-head">
+                <span className="typetag typetag-sport">RÖPI</span>
+                <div className="h-display size-sm" style={{ lineHeight: 1.15 }}>Röplabda</div>
+              </div>
               <span className="text-tertiary" style={{ fontSize: 11, marginTop: 4, fontFamily: 'var(--ff-mono)' }}>{session.court} · {session.role}</span>
             </div>
-            <Icon name="chevron-right" size={18} color="var(--cat-tendency)" />
+            <Icon name="chevron-right" size={18} color="var(--sub)" />
           </div>
 
           {note && (
             <div className="row gap-sm mt-md" style={{
-              paddingTop: 10, borderTop: '1px solid rgba(244, 114, 182, 0.15)',
+              paddingTop: 10, borderTop: '1px solid var(--line)',
               alignItems: 'flex-start',
             }}>
-              <Icon name="sparkle" size={11} color="var(--brand-glow)" />
-              <span style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, flex: 1 }}>
-                <strong style={{ color: 'var(--brand-glow)', fontWeight: 500 }}>Stacked day</strong> — {note}
+              <Icon name="sparkle" size={11} color="var(--coral)" />
+              <span style={{ fontSize: 11, color: 'var(--ink)', lineHeight: 1.5, flex: 1 }}>
+                <strong style={{ color: 'var(--coral-deep)', fontWeight: 600 }}>Stacked day</strong> — {note}
               </span>
             </div>
           )}
