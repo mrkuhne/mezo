@@ -38,6 +38,22 @@
   --color-anchor-accent: var(--anchor-accent);
   --color-anchor-text: var(--anchor-text);
 
+  --color-ink: var(--ink);
+  --color-sub: var(--sub);
+  --color-faint: var(--faint);
+  --color-warm: var(--warm);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-coral: var(--coral);
+  --color-coral-deep: var(--coral-deep);
+  --color-amber: var(--amber);
+  --color-sage: var(--sage);
+  --color-sage-deep: var(--sage-deep);
+  --color-lav: var(--lav);
+  --color-lav-deep: var(--lav-deep);
+  --color-rose: var(--rose);
+  --color-sky: var(--sky);
+
   --font-display: var(--ff-display);
   --font-body: var(--ff-body);
   --font-mono: var(--ff-mono);

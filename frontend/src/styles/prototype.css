@@ -68,8 +68,8 @@
   --anchor-text:    #E8DDD3;
 
   /* Fonts */
-  --ff-display: "Antonio", sans-serif;
-  --ff-body:    "Inter", -apple-system, system-ui, sans-serif;
+  --ff-display: "Bricolage Grotesque", sans-serif;
+  --ff-body:    "Plus Jakarta Sans", -apple-system, system-ui, sans-serif;
   --ff-mono:    "JetBrains Mono", monospace;
 
   /* Spacing 8pt */
@@ -154,12 +154,11 @@
 }
 
 /* Notched chamfer clip-paths */
-.notch-4  { clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px); }
-.notch-8  { clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); }
-.notch-12 { clip-path: polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px); }
-.notch-16 { clip-path: polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px); }
-.notch-tl-12 { clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px); }
-.notch-br-12 { clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%); }
+.notch-4  { clip-path: none; border-radius: 12px; }
+.notch-8  { clip-path: none; border-radius: 16px; }
+.notch-12 { clip-path: none; border-radius: 20px; }
+.notch-16 { clip-path: none; border-radius: 24px; }
+.notch-tl-12, .notch-br-12 { clip-path: none; border-radius: 20px; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 
@@ -1153,3 +1152,26 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .progress-mfill--reduced { animation: none; }
 @keyframes progress-mbar-grow { from { width: 0; } to { width: var(--w); } }
 @media (prefers-reduced-motion: reduce) { .progress-mfill { animation: none; } }
+
+/* ===== Napív tokens (2026-07-13 redesign, spec: 2026-07-13-napiv-frontend-redesign-design.md) ===== */
+:root {
+  --surface: #FFFFFF;
+  --warm: #F4EBDF;
+  --line: #EFE5D8;
+  --ink: #2B2118;
+  --sub: #8A7A6A;
+  --faint: #A5978A;
+  --coral: #FF6B4A;      --coral-deep: #C4622F;
+  --amber: #FFB347;
+  --sage: #7FA48A;       --sage-deep: #5F7A52;
+  --lav: #9B8FC4;        --lav-deep: #7A6DA8;
+  --rose: #E27A8B;
+  --sky: #6FA7D8;
+  --np-shadow-card: 0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
+  --np-shadow-row: 0 8px 20px rgba(43,33,24,.05);
+  --np-ease-ios: cubic-bezier(.32,.72,0,1);
+  --np-ease-spring: cubic-bezier(.34,1.4,.44,1);
+}
+
+/* Transitional shape softening: chamfers become rounded corners app-wide.
+   Radii follow spec §3.3 (rows 18-20px, cards 20-28px). */
