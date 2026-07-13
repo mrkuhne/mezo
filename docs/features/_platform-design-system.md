@@ -119,6 +119,10 @@ The animated loading state (§2.6) is a small primitive family in `frontend/src/
 - **The per-view branch.** A flash view renders its skeleton **before** the empty-state guard: `if (pending) return <XSkeleton/>` (a layout-aware skeleton for the rich views; `<ScreenSkeleton/>` for the two blank-flash routes), each rooted at `role="status"`. Tests assert this dual-mode: real-pending (a never-resolving MSW handler for the backing endpoint) → `findByRole('status')`; mock → real content/redirect, `queryByRole('status')` is null.
 - **Mock-safety note (GoalPlannerPage).** `GoalPlannerPage` keys its skeleton off `useBiometricProfile().isLoading` rather than a `!mock`-gated flag. That is still mock-safe **without** an explicit gate, because the hook passes `initialData` in mock mode, so TanStack Query reports `isLoading: false` synchronously (no flash). `ActiveWorkoutPage` uses the already-`!mock`-gated `workoutPending`.
 
+### Napív motion utilities (mezo-8141)
+
+The Napív redesign adds a suite of motion classes — `.np-anim` (staggered rise via `--i`), `.np-press` (spring scale on active), and keyframes `np-rise`, `np-pop`, `np-grow`, `np-draw` — all disabled under `prefers-reduced-motion: reduce` (including a forced `transition: none` on `.sky` and `.phone-screen` to prevent visual flicker on reduced-motion devices).
+
 ---
 
 ## 4. Data model & API
