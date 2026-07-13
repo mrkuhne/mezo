@@ -61,3 +61,6 @@ playwright-report/
 # Superpowers brainstorm visual-companion (local only)
 .superpowers/
 .playwright-mcp/
+
+# Manual git worktrees for independent sessions (never commit)
+.worktrees/
