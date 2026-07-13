@@ -16,7 +16,7 @@ export function ActivityLogCard() {
   const [categorizeEntry, setCategorizeEntry] = useState<ActivityEntry | null>(null)
 
   return (
-    <div className="card" style={{ margin: '8px 24px', padding: '14px 16px' }}>
+    <div className="card" style={{ margin: '8px 0', padding: '14px 16px' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8 }}>
         <span className="eyebrow">Tevékenységnapló</span>
         <button className="chip notch-4" onClick={() => setSheetOpen(true)} style={{ cursor: 'pointer' }}>+ Bejegyzés</button>

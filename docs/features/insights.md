@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-07-12
+updated: 2026-07-13
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -12,7 +12,6 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - frontend/src/data/insights/weeklyHooks.ts
   - frontend/src/data/hooks.ts
-  - frontend/src/features/today/components/InsightsTeaser.tsx
 related: [_platform-data-layer, _platform-design-system, today, me, companion]
 ---
 
@@ -218,8 +217,8 @@ Insights is the **hub the other tabs point *toward*** and is itself **fed concep
 
 **Crossing type:** `KnowledgeFact[]` + `KnowledgeEdge[]`. Since V1.2 the backend IS live and serves both tabs through the same `useKnowledge()`: Insights/Knowledge consumes the real facts + candidates; Me/Knowledge keeps rendering the seed in mock mode and gets an honest `edges: []` in real mode (the graph/edges layer has no backend yet — a future slice).
 
-### 5.2 Today → Insights (teaser deep-link)
-`frontend/src/features/today/components/InsightsTeaser.tsx` is a Today-tab card that **mirrors pattern `p1` verbatim** ("Reta beadás + 36h ablakban étvágy lefulladás", `Eyebrow "Új minta · 0.85 konfidencia"`) and shows an `Insights → Patterns` chip — a hand-wired teaser into the Insights/Patterns surface. **Contract today:** a *copy* of the mock pattern, not a live read of `useInsights`. Phase 3 should make this a real read of the top pattern.
+### 5.2 Today → Insights (nav entry, no live teaser)
+The `InsightsTeaser.tsx` Today-tab card (a real-mode `usePatterns()` teaser, per Today's `useInsightsTeaser` hook) was **removed** by the Napív S3 Today re-composition (`mezo-8141`, 2026-07-13 — spec §4.2: the Insights entry point is the ✨ icon in `BrandRow`, nothing else). Today's only remaining path into this tab is that plain `<Link to="/insights" aria-label="Insights">` — navigation only, no pattern preview. `useInsightsTeaser` (`data/today/todayHooks.ts`) still exists and is still real-mode-wired to `usePatterns()`, but is now orphaned (unconsumed) — see [today.md §9](today.md).
 
 ### 5.3 Me-tab `InsightCard` + `TrendInsight` — a parallel, lighter "insight" type
 `frontend/src/features/me/components/InsightCard.tsx` renders a **different** type: `TrendInsight { type: 'milestone'|'pattern'|'warning'; text }` (`types.ts:157-158`). `TrendInsight[]` arrays are embedded in **Goals** (`data/me/goals.ts`, `insights` field on the goal aggregate, `types.ts:186,218`) and **Sleep**. So the *insight concept leaks into Me/Goals/Sleep* via a lighter inline type. The `pattern` icon in `InsightCard` is literally `'insights'`. **Phase-3 reconciliation needed:** rich `Pattern` (Insights tab) vs lightweight `TrendInsight` (embedded) — decide whether to unify or keep two tiers.
@@ -361,7 +360,6 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 **Cross-feature seams:**
 - `frontend/src/app/router.tsx:76-87` — route wiring · `frontend/src/app/TabBar.tsx:10`
-- `frontend/src/features/today/components/InsightsTeaser.tsx` — Today→Patterns teaser (mirrors `p1`)
 - `frontend/src/features/me/pages/KnowledgePage.tsx` + `ProfilePage.tsx` — share `useKnowledge`
 - `frontend/src/features/me/components/InsightCard.tsx` — `TrendInsight` (lightweight insight, used by Goals/Sleep)
 - `frontend/src/data/train/train.ts:57` · `sleep.ts:25-33` · `fuelWeek.ts:55,151,156` · `goals.ts:50` — "pattern engine" references (shared `P2`/`P3` IDs)

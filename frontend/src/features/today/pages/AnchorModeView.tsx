@@ -14,53 +14,50 @@ export function AnchorModeView() {
       <div style={{ padding: '16px 24px 6px' }}>
         <div className="row gap-sm" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="row gap-sm">
-            <Icon name="anchor" size={20} color="var(--anchor-accent)" />
-            <span className="eyebrow" style={{ color: 'var(--anchor-accent)' }}>Anchor mode · csendben</span>
+            <Icon name="anchor" size={20} color="var(--sub)" />
+            <span className="eyebrow" style={{ color: 'var(--sub)' }}>Anchor mode · csendben</span>
           </div>
           <button className="chip" onClick={() => navigate('/today')} style={{ fontSize: 9 }}>
             Kilépés
           </button>
         </div>
-        <div className="page-title" style={{ marginTop: 16, color: 'var(--anchor-text)', lineHeight: 1.1 }}>
+        <div className="page-title" style={{ marginTop: 16, color: 'var(--ink)', lineHeight: 1.1 }}>
           Itt vagyok.<br/>
-          <span style={{ color: 'var(--anchor-accent)' }}>Lassítsunk együtt.</span>
+          <span style={{ color: 'var(--coral-deep)' }}>Lassítsunk együtt.</span>
         </div>
       </div>
 
       <div style={{ padding: '24px' }}>
-        <div className="card notch-12" style={{
-          padding: 18, background: 'var(--anchor-surface)',
-          borderColor: 'rgba(217, 119, 87, 0.3)',
-        }}>
-          <p style={{ fontSize: 14, color: 'var(--anchor-text)', lineHeight: 1.6 }}>
+        <div style={{ padding: 18, borderRadius: 20, background: 'var(--warm)' }}>
+          <p style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.6 }}>
             Tegnap éjszaka 5.2h volt, és ezen a héten ez a harmadik ilyen. Tudom hogy érzed magad — ne a Pull Day-ről beszélgessünk most. Hanem arról ami valóban kell.
           </p>
         </div>
       </div>
 
       <div style={{ padding: '0 24px' }}>
-        <div className="eyebrow mt-md" style={{ marginBottom: 12, color: 'var(--anchor-accent)' }}>Mai három horgony</div>
+        <div className="eyebrow mt-md" style={{ marginBottom: 12, color: 'var(--sub)' }}>Mai három horgony</div>
         <div className="col gap-md">
           {anchors.map((a, i) => (
-            <button key={i} className="card notch-8" style={{
-              padding: 16, display: 'flex', gap: 14, alignItems: 'center',
-              background: 'var(--anchor-surface)', borderColor: 'rgba(217, 119, 87, 0.2)', textAlign: 'left',
+            <button key={i} style={{
+              padding: 16, borderRadius: 18, display: 'flex', gap: 14, alignItems: 'center',
+              background: 'var(--surface)', boxShadow: 'var(--np-shadow-row)', textAlign: 'left',
             }}>
-              <Icon name={a.icon} size={22} color="var(--anchor-accent)" />
+              <Icon name={a.icon} size={22} color="var(--coral-deep)" />
               <div className="col flex-1">
-                <span style={{ fontSize: 15, color: 'var(--anchor-text)' }}>{a.label}</span>
-                <span style={{ fontSize: 12, color: 'rgba(232, 221, 211, 0.5)', marginTop: 2 }}>{a.sub}</span>
+                <span style={{ fontSize: 15, color: 'var(--ink)' }}>{a.label}</span>
+                <span style={{ fontSize: 12, color: 'var(--faint)', marginTop: 2 }}>{a.sub}</span>
               </div>
-              <Icon name="check" size={18} color="rgba(232, 221, 211, 0.3)" />
+              <Icon name="check" size={18} color="var(--faint)" />
             </button>
           ))}
         </div>
       </div>
 
       <div style={{ padding: '24px' }}>
-        <div className="card notch-8" style={{ padding: 16, background: 'transparent', border: '1px dashed rgba(217, 119, 87, 0.3)' }}>
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--anchor-accent)' }}>Heti terv · szünetel</span>
-          <p style={{ fontSize: 13, marginTop: 8, color: 'rgba(232, 221, 211, 0.7)', lineHeight: 1.5 }}>
+        <div style={{ padding: 16, borderRadius: 16, background: 'transparent', border: '1px dashed var(--line)' }}>
+          <span className="label-mono" style={{ fontSize: 9, color: 'var(--sub)' }}>Heti terv · szünetel</span>
+          <p style={{ fontSize: 13, marginTop: 8, color: 'var(--sub)', lineHeight: 1.5 }}>
             A Pull Day és a péntek volleyball kivettem a naptárból. Amikor 3 napon át újra erőd lesz, magunktól újraindítjuk.
           </p>
         </div>

@@ -3,19 +3,24 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
+import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { progressionProfileMock } from '@/data/progression/progressionMock'
-import { mockQuestHistory } from '@/data/quest/questMock'
-import { mockActivityHistory } from '@/data/activity/activityMock'
+import { mockQuestDay, mockQuestHistory } from '@/data/quest/questMock'
+import { mockActivities, mockActivityHistory } from '@/data/activity/activityMock'
 import { achievementsMock } from '@/data/progression/achievementsMock'
 
-// Barrel-mock the hooks the page reads (sibling-page pattern) so the fixtures
-// drive the view deterministically in both mock and real test modes.
+// Barrel-mock the hooks the page (and, since Task 7, the DailyQuestsCard + ActivityLogCard
+// it mounts in the "Ma" block) read, so the fixtures drive the view deterministically in
+// both mock and real test modes.
 const hooks = vi.hoisted(() => ({
   useProgressionProfile: vi.fn(),
   useQuestHistory: vi.fn(),
   useActivityHistory: vi.fn(),
   useAchievements: vi.fn(),
+  useDailyQuests: vi.fn(),
+  useQuestActions: vi.fn(),
+  useActivities: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
@@ -23,6 +28,9 @@ vi.mock('@/data/hooks', async (importOriginal) => ({
   useQuestHistory: hooks.useQuestHistory,
   useActivityHistory: hooks.useActivityHistory,
   useAchievements: hooks.useAchievements,
+  useDailyQuests: hooks.useDailyQuests,
+  useQuestActions: hooks.useQuestActions,
+  useActivities: hooks.useActivities,
 }))
 
 // Pin "today" to 2026-07-12 so the mock quest/activity dates (Júl 10–11) yield
@@ -33,11 +41,15 @@ vi.mock('@/shared/lib/dates', async (importOriginal) => ({
 }))
 
 function renderPage() {
+  // LevelUpProvider mirrors production (mounted once in AppLayout) — the "Ma" block's
+  // DailyQuestsCard requires it (Task 7 relocation).
   return render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={['/me/growth']}>
-        <GrowthPage />
-      </MemoryRouter>
+      <LevelUpProvider>
+        <MemoryRouter initialEntries={['/me/growth']}>
+          <GrowthPage />
+        </MemoryRouter>
+      </LevelUpProvider>
     </QueryWrapper>,
   )
 }
@@ -47,6 +59,9 @@ beforeEach(() => {
   hooks.useQuestHistory.mockReturnValue({ data: mockQuestHistory })
   hooks.useActivityHistory.mockReturnValue({ data: mockActivityHistory })
   hooks.useAchievements.mockReturnValue({ data: achievementsMock })
+  hooks.useDailyQuests.mockReturnValue({ quests: mockQuestDay, levelUps: [], rerollsLeft: 1, mode: 'mock' })
+  hooks.useQuestActions.mockReturnValue({ reroll: vi.fn(), pending: false, consumeLevelUps: vi.fn() })
+  hooks.useActivities.mockReturnValue({ data: mockActivities, isPending: false })
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -77,6 +92,15 @@ test('default Skillek tab lists all three bands, one .progress-mrow per skill', 
     progressionProfileMock.muscle.length
   expect(expected).toBe(33)
   expect(container.querySelectorAll('.progress-mrow')).toHaveLength(expected)
+})
+
+test('the "Ma" block mounts the quests card + activity log card at the top of Skillek (Task 7 relocation)', () => {
+  renderPage()
+  expect(screen.getByText('Ma')).toBeInTheDocument()
+  expect(screen.getByText('Napi küldetések')).toBeInTheDocument()
+  expect(screen.getByText('A mai tervezett edzés a naptárban van — csináld végig')).toBeInTheDocument()
+  expect(screen.getByText('Tevékenységnapló')).toBeInTheDocument()
+  expect(screen.getByText('Olvastam 30 percet a Psychology of Money-ból')).toBeInTheDocument()
 })
 
 test('LIFE band renders the 30-day savings footer', () => {

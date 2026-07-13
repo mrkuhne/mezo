@@ -1,10 +1,23 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { ReactNode } from 'react'
-import { QuickStatsRow } from '@/features/today/components/QuickStatsRow'
-import { InsightsTeaser } from '@/features/today/components/InsightsTeaser'
+import { QuickStatsRow, ringPct } from '@/features/today/components/QuickStatsRow'
 import { QueryWrapper } from '@/test/queryWrapper'
+
+describe('ringPct', () => {
+  test('sleep hours map to a fraction of the 8h target', () => {
+    expect(ringPct('Alvás', '7.5')).toBeCloseTo(93.75)
+  })
+
+  test('missing sleep data ("—") renders an empty ring, not a full one', () => {
+    expect(ringPct('Alvás', '—')).toBe(0)
+  })
+
+  test('stats with no natural target always render a full "chip" ring', () => {
+    expect(ringPct('Súly', '82.5')).toBe(100)
+  })
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -13,12 +26,14 @@ afterEach(() => {
 const renderIn = (ui: ReactNode) =>
   render(<QueryWrapper><MemoryRouter>{ui}</MemoryRouter></QueryWrapper>)
 
-test('QuickStatsRow (mock) shows the three demo stats incl. HRV', () => {
+test('QuickStatsRow (mock) shows the three demo stats incl. HRV, each as a mini-ring scard', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
-  renderIn(<QuickStatsRow />)
+  const { container } = renderIn(<QuickStatsRow />)
   expect(screen.getByText('Alvás')).toBeInTheDocument()
   expect(screen.getByText('Súly')).toBeInTheDocument()
   expect(screen.getByText('HRV')).toBeInTheDocument()
+  expect(container.querySelectorAll('.scard')).toHaveLength(3)
+  expect(container.querySelectorAll('.scard svg')).toHaveLength(3)
 })
 
 test('QuickStatsRow (real) derives sleep + weight and drops the HRV cell', async () => {
@@ -28,19 +43,5 @@ test('QuickStatsRow (real) derives sleep + weight and drops the HRV cell', async
   await waitFor(() => expect(container.textContent).toContain('7.5'))
   expect(container.textContent).toContain('82.5')
   expect(screen.queryByText('HRV')).not.toBeInTheDocument()
-})
-
-test('InsightsTeaser (mock) shows the demo pattern + link chip', () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  renderIn(<InsightsTeaser />)
-  expect(screen.getByText(/Új minta/)).toBeInTheDocument()
-  expect(screen.getByText('Insights → Patterns')).toBeInTheDocument()
-})
-
-test('InsightsTeaser (real) surfaces the top proposed pattern from the API', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  renderIn(<InsightsTeaser />)
-  // Hidden during the cold-load window, then the MSW pattern fixture lands.
-  await waitFor(() => expect(screen.getByText(/Új minta · 0.85 konfidencia/)).toBeInTheDocument())
-  expect(screen.getByText('Reta beadás + 36h ablakban étvágy lefulladás')).toBeInTheDocument()
+  expect(container.querySelectorAll('.scard svg')).toHaveLength(2)
 })

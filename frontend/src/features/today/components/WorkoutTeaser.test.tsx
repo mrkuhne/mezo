@@ -14,15 +14,19 @@ function renderTeaser(niggle = true) {
     </MemoryRouter>,
   )
 }
-test('shows title + niggle banner and navigates to /train on the CTA', async () => {
-  renderTeaser(true)
-  // Title appears twice (card heading + CTA), faithful to the prototype markup.
-  expect(screen.getAllByText(workout.title).length).toBeGreaterThan(0)
-  expect(screen.getByText(/aktív niggle/)).toBeInTheDocument()
+
+test('shows title + Gym typetag, niggle banner text and navigates to /train on the CTA', async () => {
+  const { container } = renderTeaser(true)
+  expect(screen.getByText(workout.title)).toBeInTheDocument()
+  const typetag = container.querySelector('.typetag')
+  expect(typetag).not.toBeNull()
+  expect(typetag).toHaveTextContent(/Gym/i)
+  // Niggle strip renders the human-copy detail field, not hardcoded text (spec fix).
+  expect(screen.getByText(workout.niggleWarning.detail, { exact: false })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: /Indítsuk/ }))
   expect(screen.getByText('TRAIN ROUTE')).toBeInTheDocument()
 })
 test('hides niggle banner when niggle off', () => {
   renderTeaser(false)
-  expect(screen.queryByText(/aktív niggle/)).not.toBeInTheDocument()
+  expect(screen.queryByText(workout.niggleWarning.detail, { exact: false })).not.toBeInTheDocument()
 })

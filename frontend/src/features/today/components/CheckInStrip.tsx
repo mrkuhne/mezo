@@ -7,13 +7,14 @@ export function CheckInStrip({
   checkins: CheckinSlot[]
   onCheckIn: (idx: number) => void
 }) {
+  const doneCount = checkins.filter(c => c.state === 'done').length
   return (
-    <div style={{ padding: '4px 0 8px' }}>
-      <div className="row" style={{ padding: '0 24px 8px', justifyContent: 'space-between' }}>
-        <span className="eyebrow">Heartbeat · 4×/nap</span>
-        <span className="eyebrow text-tertiary">{checkins.filter(c => c.state === 'done').length}/4 ma</span>
+    <div style={{ padding: '4px 24px 8px' }}>
+      <div className="secthead-np">
+        <h3>Hogy vagy ma?</h3>
+        <span>{doneCount}/4</span>
       </div>
-      <div className="checkin-strip">
+      <div className="beats">
         {checkins.map((c, i) => {
           const avg = c.values
             ? Math.round((c.values.energy + (11 - c.values.stress) + c.values.body + c.values.mental) / 4)
@@ -21,16 +22,15 @@ export function CheckInStrip({
           return (
             <button
               key={i}
-              className={'checkin-slot notch-4 ' + c.state}
+              type="button"
+              className={'beat ' + c.state}
               onClick={() => onCheckIn(i)}
             >
-              <div className="time">{c.time}</div>
-              <div className="ico">
-                {c.state === 'done' && avg !== null ? (
-                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 16, color: 'var(--brand-glow)', letterSpacing: 0 }}>{avg}</span>
-                ) : c.state === 'done' ? '✓ in'
-                  : c.state === 'now' ? 'tap'
-                  : c.state === 'skipped' ? '—' : '•'}
+              <div className="t">{c.time}</div>
+              <div className="v">
+                {c.state === 'done' ? (avg !== null ? avg : '✓')
+                  : c.state === 'now' ? 'koppints'
+                  : c.state === 'skipped' ? '—' : '·'}
               </div>
             </button>
           )

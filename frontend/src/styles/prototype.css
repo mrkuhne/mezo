@@ -191,7 +191,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   overflow: hidden;
   display: flex; flex-direction: column;
 }
-.phone-screen.anchor { background: var(--anchor-canvas); }
+/* AnchorMode canvas: no longer a dedicated skin — it now sits on the same canvas as the
+   current daypart (desaturated via the .sky rule below), per the Napiv redesign spec. */
 
 /* Dynamic Island */
 .dynamic-island {
@@ -1236,7 +1237,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 :root[data-theme="dark"] .phone-screen[data-day] { background: var(--canvas); }
 /* Dark theme: the sky dims until the Pulse dark pass (S8) designs its own night variants. */
 :root[data-theme="dark"] .sky { opacity: .18; }
-/* AnchorMode: rough days mute the atmosphere (full anchor remap lands with Today in S3). */
+/* AnchorMode: rough days mute the atmosphere (full anchor remap landed with Today in S3, mezo-8141). */
 .phone-screen.anchor .sky { opacity: .35; filter: saturate(.6); }
 
 /* ===== Napív motion vocabulary (spec §3.5) ===== */
@@ -1254,6 +1255,88 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   .np-press, .np-press:active { transition: none; transform: none; }
   .sky, .phone-screen { transition: none; }
 }
+
+/* ===== Napív day-arc (Today signature, spec §3.4) ===== */
+.dayarc { margin: 4px 24px 2px; }
+.arc-base { stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
+.arc-progress { stroke-width: 5; stroke-linecap: round; }
+.arc-dot { transform-box: fill-box; transform-origin: center; }
+.arc-checkin-done { fill: var(--sage); }
+.arc-checkin-now { fill: var(--surface); stroke: var(--coral); stroke-width: 2.5; }
+.arc-checkin-pending { fill: var(--surface); stroke: var(--faint); stroke-width: 2.5; }
+.arc-workout { fill: var(--surface); stroke: var(--coral); stroke-width: 2.5; }
+.arc-sleep { fill: var(--surface); stroke: var(--lav); stroke-width: 2.5; }
+.arc-sun { fill: var(--coral); filter: drop-shadow(0 0 8px rgba(255, 150, 60, .7)); }
+[data-day="este"] .arc-sun { fill: var(--lav); filter: drop-shadow(0 0 8px rgba(155, 143, 196, .8)); }
+.arclbl { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); font-weight: 700; padding: 0 18px; margin-top: -4px; }
+.arclbl b { color: var(--coral-deep); }
+
+/* ===== Napív greeting header (Today greeting, spec §3.3) ===== */
+.greet { padding: 8px 24px 0; }
+.greet-day { font-size: 12.5px; font-weight: 700; color: var(--coral-deep); letter-spacing: .4px; text-transform: uppercase; }
+[data-day="reggel"] .greet-day { color: #B2690F; }
+[data-day="este"] .greet-day { color: var(--lav-deep); }
+.greet h1 { font-family: var(--ff-display); font-size: 26px; font-weight: 700; letter-spacing: -.3px; margin-top: 2px; color: var(--ink); }
+.greet h1 em { font-style: normal; color: var(--coral); }
+[data-day="reggel"] .greet h1 em { color: #E8890C; }
+[data-day="este"] .greet h1 em { color: var(--lav-deep); }
+
+/* ===== Napív Today hero ===== */
+.np-hero { position: relative; background: var(--surface); border-radius: 26px; padding: 18px; box-shadow: var(--np-shadow-card); overflow: hidden; margin: 10px 24px 0; }
+.np-hero::after { content: ''; position: absolute; top: -52px; right: -52px; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle, rgba(255,107,74,.13), transparent 68%); }
+.np-hero-eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; color: var(--coral-deep); letter-spacing: .5px; text-transform: uppercase; }
+.np-hero-eyebrow .dotp { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 4px rgba(255,107,74,.16); }
+.h2row { display: flex; align-items: center; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
+.h2row h2 { font-family: var(--ff-display); font-size: 29px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); }
+.typetag { display: inline-block; border-radius: 999px; padding: 5px 11px; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+.typetag-gym { background: #FFEDE6; color: var(--coral-deep); }
+.typetag-sport { background: #FBE9EC; color: #B14B5E; }
+.typetag-run { background: #E7F0F8; color: #3E6E9E; }
+:root[data-theme="dark"] .typetag-gym { background: rgba(255,107,74,.16); }
+:root[data-theme="dark"] .typetag-sport { background: rgba(226,122,139,.16); }
+:root[data-theme="dark"] .typetag-run { background: rgba(111,167,216,.16); }
+.np-hero-meta { font-size: 13.5px; color: var(--sub); margin-top: 4px; }
+.np-hero-meta b { color: var(--ink); font-weight: 700; }
+.warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
+:root[data-theme="dark"] .warmstrip { color: #E8B36B; }
+.np-ctarow { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 1; }
+.np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px rgba(255,91,54,.35), inset 0 1px 0 rgba(255,255,255,.25); }
+.alt-btn { width: 52px; height: 52px; border: 1.5px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--sub); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+/* ===== Napív secondary event row (VolleyballCard — RÖPI) ===== */
+.np-eventrow { background: var(--surface); border-radius: 18px; padding: 12px 16px; box-shadow: var(--np-shadow-row); }
+.np-eventrow-head { display: flex; align-items: center; gap: 8px; }
+
+/* ===== Napív briefing collapse (BriefingCard, spec §Task 5) ===== */
+.brief { display: flex; gap: 10px; background: var(--warm); border-radius: 20px; padding: 13px 15px; margin-top: 12px; }
+.brief-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 12.5px; line-height: 1.55; color: var(--sub); }
+.brief-more { border: 0; background: none; cursor: pointer; font: inherit; color: var(--coral-deep); font-weight: 800; white-space: nowrap; font-size: 12px; align-self: flex-end; }
+
+/* ===== Napív heartbeat beats + "Ma eddig" mini-rings (spec §Task 6) ===== */
+.beats { display: flex; gap: 8px; }
+.beat { flex: 1; border: 0; cursor: pointer; font: inherit; border-radius: 16px; padding: 9px 0 8px; text-align: center; background: var(--warm); color: var(--faint); }
+.beat .t { font-size: 10.5px; font-weight: 800; }
+.beat .v { font-size: 16px; font-weight: 800; margin-top: 1px; font-family: var(--ff-display); }
+.beat.done { background: #EAF0E3; color: var(--sage-deep); }
+:root[data-theme="dark"] .beat.done { background: rgba(127,164,138,.16); }
+.beat.now { background: var(--surface); color: var(--coral-deep); box-shadow: 0 0 0 2px var(--coral), 0 6px 14px rgba(255,107,74,.22); position: relative; }
+.beat.now .v { font-size: 11px; font-weight: 800; padding-top: 4px; }
+.beat.now::after { content: ''; position: absolute; inset: -2px; border-radius: 16px; box-shadow: 0 0 0 2px var(--coral); opacity: 0; animation: beatpulse 2.4s ease-out infinite; }
+@keyframes beatpulse { 0% { opacity: .7; transform: scale(1); } 70% { opacity: 0; transform: scale(1.1); } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .beat.now::after { animation: none; } }
+.secthead-np { display: flex; justify-content: space-between; align-items: baseline; margin: 16px 6px 9px; }
+.secthead-np h3 { font-size: 14.5px; font-weight: 800; color: var(--ink); }
+.secthead-np span { font-size: 12px; color: var(--faint); font-weight: 700; }
+.snap { display: flex; gap: 9px; }
+.scard { flex: 1; background: var(--surface); border-radius: 18px; padding: 11px; box-shadow: var(--np-shadow-row); display: flex; align-items: center; gap: 8px; }
+.scard .l { font-size: 9.5px; color: var(--faint); font-weight: 800; letter-spacing: .4px; text-transform: uppercase; }
+.scard .n { font-size: 14px; font-weight: 800; font-family: var(--ff-display); margin-top: 1px; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+/* ===== Napív growth-today row (GrowthTodayRow — Growth relocation, Task 7) ===== */
+.growrow { display: flex; align-items: center; gap: 11px; background: var(--surface); border-radius: 18px; padding: 12px 14px; box-shadow: var(--np-shadow-row); margin: 9px 24px 0; text-decoration: none; color: inherit; }
+.growrow .t1 { font-size: 13px; font-weight: 800; color: var(--ink); }
+.growrow .t2 { font-size: 11.5px; color: var(--faint); font-weight: 700; margin-top: 1px; }
+.growrow .chev { margin-left: auto; color: var(--faint); }
 
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
