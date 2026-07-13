@@ -1223,6 +1223,22 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* AnchorMode: rough days mute the atmosphere (full anchor remap lands with Today in S3). */
 .phone-screen.anchor .sky { opacity: .35; filter: saturate(.6); }
 
+/* ===== Napív motion vocabulary (spec §3.5) ===== */
+@keyframes np-rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes np-pop  { 0% { opacity: 0; transform: scale(.3); } 70% { transform: scale(1.15); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes np-grow { to { transform: scaleX(1); } }
+@keyframes np-draw { to { stroke-dashoffset: 0; } }
+
+.np-anim { opacity: 0; animation: np-rise .55s var(--np-ease-ios) forwards; animation-delay: calc(var(--i, 0) * 70ms); }
+.np-press { transition: transform .18s var(--np-ease-spring); }
+.np-press:active { transform: scale(.955); }
+
+@media (prefers-reduced-motion: reduce) {
+  .np-anim { animation: none; opacity: 1; }
+  .np-press, .np-press:active { transition: none; transform: none; }
+  .sky, .phone-screen { transition: none; }
+}
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
