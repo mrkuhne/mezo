@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Deep Current v2")
 type: feature-platform
 status: done
-updated: 2026-07-12
+updated: 2026-07-13
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -16,7 +16,7 @@ related: [_platform-data-layer, today, train, me]
 
 # Design System & UI Primitives ("Deep Current v2") — Feature Documentation
 
-> **One-line:** mezo's mobile-first visual foundation — a single CSS-token vocabulary, ~25 thin React primitives, and an iPhone-frame app shell that every screen renders on. **Status: ✅ done (Phase 1, frontend-only).** It is _platform-level_ (the `_` prefix): it has no route/tab of its own; it lives under `frontend/src/styles/`, `frontend/src/shared/ui/`, and `frontend/src/app/`, and is consumed by all 5 domain tabs (`Today/Train/Fuel/Insights/Me`).
+> **One-line:** mezo's mobile-first visual foundation — a single CSS-token vocabulary, ~25 thin React primitives, and an iPhone-frame app shell that every screen renders on. **Status: ✅ done (Phase 1, frontend-only).** It is _platform-level_ (the `_` prefix): it has no route/tab of its own; it lives under `frontend/src/styles/`, `frontend/src/shared/ui/`, and `frontend/src/app/`, and is consumed by all 5 domains (`Today/Train/Fuel/Insights/Me`) — since the **Napív** redesign (`mezo-8141`, 2026-07-13) Insights no longer has its own bottom tab; it's reached via a ✨ link in the Today header.
 
 ---
 
@@ -26,7 +26,7 @@ related: [_platform-data-layer, today, train, me]
 
 1. a **token vocabulary** — brand teal, canvas/surfaces, the `--cat-*` category palette, Antonio/Inter/JetBrains-Mono type, 8pt spacing, and the signature notch-chamfer clip-paths — in `frontend/src/styles/prototype.css` (~1130 lines);
 2. **~25 React primitives** (`frontend/src/shared/ui/**`), each a thin wrapper over a CSS class; and
-3. an **app shell** (`frontend/src/app/**`) — a desktop iPhone-mockup frame, a 5-tab bottom bar, and the bottom-`Sheet` modal idiom.
+3. an **app shell** (`frontend/src/app/**`) — a desktop iPhone-mockup frame, a 4-tab bottom bar with a center quick-log FAB, and the bottom-`Sheet` modal idiom.
 
 **Status per layer.** This is a pure **frontend** concern. It has **no backend, no API contract, no DB, no data hook** — it sits _below_ `frontend/src/data/hooks.ts` (the FE↔data boundary) and renders identically whether a view is mock-only (Fuel/Insights/People) or real (Train/biometrics). The only stateful platform piece here is the **theme** (dark/light), persisted in `localStorage`, never in the backend. Nothing here is Phase 2 or Phase 3.
 
@@ -77,7 +77,7 @@ features/<domain>/
 
 The design system has no "flows" of its own; it provides the chrome and the idioms every flow uses. The user-visible behaviors it owns:
 
-1. **App shell / navigation.** On desktop, the app renders inside a `440×956` iPhone 17 Pro Max mockup — `.phone` → `.phone-screen`, a fake `.dynamic-island`, `.status-bar`, and `.home-indicator` (`PhoneFrame.tsx`, `StatusBar.tsx`). On a real narrow viewport or an installed PWA (`@media (max-width: 519px), (display-mode: standalone|fullscreen|minimal-ui)` — `prototype.css:303–335`) the mockup chrome is hidden and the app goes full-bleed, deferring to real `env(safe-area-inset-*)` insets. The bottom `.tab-bar` holds 5 tabs — `"Today" · "Train" · "Fuel" · "Insights" · "Me"`. (There is **no** global floating mic FAB anymore — it was removed; the `QuickInputSheet` it used to trigger still exists in `features/quickinput/` but is currently unmounted, awaiting a future entry point.)
+1. **App shell / navigation.** On desktop, the app renders inside a `440×956` iPhone 17 Pro Max mockup — `.phone` → `.phone-screen`, a fake `.dynamic-island`, `.status-bar`, and `.home-indicator` (`PhoneFrame.tsx`, `StatusBar.tsx`). On a real narrow viewport or an installed PWA (`@media (max-width: 519px), (display-mode: standalone|fullscreen|minimal-ui)` — `prototype.css:303–335`) the mockup chrome is hidden and the app goes full-bleed, deferring to real `env(safe-area-inset-*)` insets. **Since the Napív redesign (`mezo-8141`):** the bottom `.tab-bar` is a frosted floating capsule (`backdrop-filter: blur(20px) saturate(1.5)` over `color-mix(var(--canvas))`, `@supports not` falls back to a near-opaque tint) holding **4 tabs** — `"Ma" · "Edzés" · "Fuel" · "Én"` — split `LEFT`/`RIGHT` around a center **`.tab-fab`** (`aria-label="Gyors logolás"`, coral→amber gradient circle) that mounts `QuickInputSheet` on click. `Insights` no longer has a bottom tab; it's reached via a ✨ `Icon name="sparkle"` link (`aria-label="Insights"`, `.icon-btn`) in the Today header (`BrandRow.tsx`) — the route and its sub-nav (`InsightsSection`) are unchanged, only the entry point moved.
 2. **Theme toggle.** `Me → Profil → gear → SettingsSheet` (`frontend/src/features/me/sheets/SettingsSheet.tsx`) flips dark/light via `useTheme().toggle()`. The choice persists to `localStorage` and is applied as `data-theme="light"` on `<html>`. **Light is the default; dark is opt-in** via this toggle, and a stored preference always wins. The **CSS attribute semantics are unchanged** — `:root` is still the dark base and `data-theme="light"` selects light — only the _default when nothing is stored_ flipped to light (`DEFAULT_THEME = 'light'`, `theme.ts:3`; `applyTheme` still sets the attribute for light / removes it for dark — `theme.ts:21–26`). A pre-paint inline script in `index.html` sets `data-theme="light"` before first paint unless the stored value is exactly `'dark'` (no-flash).
 3. **Bottom sheets.** Every modal interaction (quick input, check-in, settings, pickers, score detail) slides a `Sheet` up from the bottom, dismissible by backdrop tap, `Escape`, the in-sheet X, or a drag-down on the grab handle.
 4. **Ghost / empty states.** In real mode, when a section has no data yet, views render `GhostState` — a faint skeleton + a one-line Hungarian message + an optional CTA (e.g. `"A statisztikáid az első logolt session után jelennek meg."`). This is the **empty** state (query resolved, no data); the **loading** state (query still pending) is the animated skeletons in item 6.
@@ -100,7 +100,7 @@ main.tsx
                       PhoneFrame  (anchor skin ⇐ useTodayScenario().anchorMode)
                         ScreenContent (.screen-content scroller)
                           <Outlet/>   → *Section → *SubNav + nested <Outlet/> → *Page
-                        TabBar (5 NavLinks)
+                        TabBar (4 NavLinks + center FAB → QuickInputSheet)
 ```
 
 - **Theme cascade.** `ThemeProvider` seeds state from `readStoredTheme() ?? DEFAULT_THEME` (default **light**); a `useEffect` calls `applyTheme(theme)` (sets/removes `data-theme="light"` on `documentElement`) and `writeStoredTheme(theme)` (`localStorage['mezo-theme']`). All logic is in `frontend/src/shared/lib/theme.ts` (`THEME_KEY = 'mezo-theme'`, `DEFAULT_THEME = 'light'`). Consumed via `useTheme()` (throws if used outside the provider). `applyTheme` also syncs the browser/PWA chrome color: it rewrites `<meta name="theme-color">` to the per-theme value (`theme.ts:25`, light `#F4F6F8` / dark `#0A0F14`). Three places must stay in sync for the default: the pre-paint script + static `theme-color` meta in `index.html`, `DEFAULT_THEME` here, and the PWA manifest `theme_color`/`background_color` in `frontend/vite.config.ts` (light `#F4F6F8` / `#DDE2E8`).
@@ -141,9 +141,9 @@ The design system is consumed by **every** feature; the seams are the imports fr
 | Seam | Direction & contract |
 |---|---|
 | **App shell ↔ Today** | `AppLayout.tsx` _consumes_ `useTodayScenario()` (`@/data/hooks`); the crossing type is `TodayScenario.anchorMode: boolean`. When `true` on `/today`, `PhoneFrame` _exposes_ the `--anchor-*` skin (`.phone-screen.anchor`). |
-| **Shell ↔ QuickInput** | `QuickInputSheet` (`@/features/quickinput`) is a `Sheet` consumer whose only trigger — the global mic `Fab` — was removed. The component is preserved but **currently has no mount point**; re-wiring it needs a new trigger in `AppLayout` (or elsewhere) that renders it as a `Sheet`. |
+| **Shell ↔ QuickInput** | `QuickInputSheet` (`@/features/quickinput/sheets/QuickInputSheet.tsx`) is a `Sheet` consumer mounted by `TabBar`'s center `.tab-fab` (`aria-label="Gyors logolás"`). Since the Napív redesign (`mezo-8141`) it's a 6-tile quick-log grid (Étkezés/Edzés/Víz/Súly/Stack/Check-in) — each tile calls the `Sheet` render-prop `close()` then `navigate()`s to its target route (`/fuel`, `/train`, `/me/weight`, `/fuel/stack`, `/today`); navigation-only in S1, real quick-actions land in later slices. |
 | **Theme ↔ Me** | `SettingsSheet.tsx` (Me) _consumes_ `useTheme()` and drives the global `data-theme`. The `Toggle` primitive + `sun`/`moon` `Icon`s are the UI. Crossing type: `Theme = 'dark' \| 'light'`. |
-| **Icon set ↔ TabBar / every view** | The `IconName` union (`Icon.tsx:7`) is the contract. `TabBar.TABS` maps tab ids → `IconName` (`today/train/fuel/insights/me` — `TabBar.tsx:7–11`). Adding a glyph = extend the `IconName` union **and** add a `case` in `Icon.tsx`. Recent additions: `pencil` + `trash` (edit/delete affordances, for the Train catalog-authoring sheet — `mezo-52zg`). |
+| **Icon set ↔ TabBar / every view** | The `IconName` union (`Icon.tsx:7`) is the contract. `TabBar`'s `LEFT`/`RIGHT` tab arrays map tab ids → `IconName` (`today/train` · `fuel/me` — `TabBar.tsx:6–13`); the center FAB uses `'plus'`. Adding a glyph = extend the `IconName` union **and** add a `case` in `Icon.tsx`. Recent additions: `pencil` + `trash` (edit/delete affordances, for the Train catalog-authoring sheet — `mezo-52zg`). |
 | **ToolChip ↔ AI-surfacing views** | `Tool { type: 'read' \| 'compute' \| 'write'; name; args? }` (exported from `ToolChip.tsx`) is the cross-feature type, consumed by Train cross-load, Fuel, and Insights to show the AI's tool calls. Mock today; real in Phase 3. |
 | **NovaDot / SourceBadge ↔ Fuel** | _Consume_ `NovaGroup`/`NovaMeta` (`data/nova.ts`) and `PantrySourceKey`/`PantrySourceMeta` (`data/pantrySources.ts`) — the Fuel domain's food-provenance vocabulary. |
 | **ScoreRing / MacroRow ↔ Fuel** | `ScoreHero`, `MacroHero`, `RecipeDetailSheet` _consume_ them for meal scores/macros (`{ pct, label }` and `{ macros, per? }`). |
@@ -228,7 +228,7 @@ For XSS-safe inline copy with `**bold**` markers, use `SafeMarkdown` from `@/sha
 4. Add a colocated render test `<Name>.test.tsx` (Vitest + RTL — assert classes/structure/aria; mirror the existing files).
 5. (Optional) expose it to Tailwind by adding a `--color-…: var(--…)` line to `index.css @theme inline`.
 
-**Add a glyph:** extend the `IconName` union (`Icon.tsx:7`) **and** add a matching `case` rendering an SVG `<path>` in `Icon.tsx`. If it's a tab icon, also wire it in `TabBar.TABS`.
+**Add a glyph:** extend the `IconName` union (`Icon.tsx:7`) **and** add a matching `case` rendering an SVG `<path>` in `Icon.tsx`. If it's a tab icon, also wire it in `TabBar`'s `LEFT`/`RIGHT` arrays.
 
 **Add a new screen (recipe — follow §5's idiom):** new `*Screen.tsx` + `*SubNav.tsx` + `tabs.ts`; register routes in `frontend/src/app/router.tsx`; give each view a `.page-header` (`<Eyebrow brand>` + `<PageTitle>`) + an accent-themed hero `.card.notch-12` + a view switcher + `Sheet`s + `GhostState` ghost-guards. Pick **one** accent token and thread it via `color-mix`.
 
@@ -258,7 +258,7 @@ pnpm parity          # playwright pixel-parity vs prototype
 - **`Sheet` portals to `.phone-screen`, not `<body>`** (`Sheet.tsx:28–30`) — so the backdrop covers the tab bar and `position: absolute` anchors to the device viewport. Falls back to `<body>` in tests. The close animation deliberately kills the entrance keyframe + forces a reflow (`Sheet.tsx:43–65`) to get a real start→end transform delta — a subtle gotcha if refactored. It respects `prefers-reduced-motion`.
 - **Light is the default; dark is the CSS base.** Two facts that sound contradictory but aren't: the _default theme_ is light (`DEFAULT_THEME = 'light'`), but the _CSS base_ (`:root`, i.e. the attribute-absent state) is still dark. Light is selected by **adding** `data-theme="light"`; dark by **removing** it (`applyTheme`, `theme.ts:21–26`). So "default = light" is achieved by defaulting the _stored/seed value_ to light (pre-paint script + `ThemeProvider` fallback + `DEFAULT_THEME`), NOT by changing which attribute means what. **Never add `data-theme="dark"`** — there is no such block; dark is attribute-absence.
 - **The 519px breakpoint** is the desktop-mockup ↔ full-bleed-PWA switch (`prototype.css:303–335`). Scrollbars are globally hidden with `display: none` (not just `width: 0` — required for macOS Safari overlay scrollbars; `prototype.css:156–160`).
-- **The `.tab-bar` is fully opaque `var(--canvas)`** (`prototype.css:257`), like `.status-bar` and `.sticky-top`. `.screen-content` scrolls _under_ it (`padding-bottom: 96px` gives the clearance), so the bar **must** stay opaque or scrolled content bleeds through. An earlier translucent frosted version (`rgba(10,15,20,0.92)` + `backdrop-filter`) leaked ~8% and — being hardcoded dark — broke in light theme; don't reintroduce a translucent bar without solving both (mezo-ci5).
+- **The `.tab-bar` is a frosted floating capsule again (Napív, `mezo-8141`), superseding the fully-opaque bar from `mezo-ci5`.** The old opaque `var(--canvas)` rule (still physically present earlier in `prototype.css`, undeleted until an S8 cleanup pass) is overridden by a later same-specificity `.tab-bar` rule appended to the Napív CSS section: `background: color-mix(in srgb, var(--canvas) 66%, transparent)` + `backdrop-filter: blur(20px) saturate(1.5)`, with an `@supports not (backdrop-filter: …)` fallback bumping the tint to 96% opaque. This time the translucency is theme-aware (`color-mix` over the live `--canvas` var, not a hardcoded `rgba()`), which is what broke the pre-`mezo-ci5` attempt — light theme leaked. `.screen-content`'s `padding-bottom` grew `96px → 118px` for the floating capsule's clearance (same cascade-override trick, same CSS section).
 - **House rule — in-view tab/segment switchers must use `useStickyTab`, not raw `useState`** (`frontend/src/shared/hooks/useStickyTab.ts`, mezo-0h9). Route-based sub-navs (Train/Fuel/Insights/Me) already remember their position via the URL, but a _segment switcher rendered inside one route_ (e.g. Futás's `E heti edzés · Napló · Tervek`) keeps its selection in component state, so navigating into a detail screen and back via breadcrumb remounts the view and snaps it to the default. `useStickyTab(key, fallback)` is a drop-in for `useState` that persists the selection per stable `key` in `sessionStorage`, so breadcrumb-back restores the **last** segment, not the default. Current keys: `train.futas.view`, `train.sport.view`. The global test setup clears `sessionStorage` after each test so the stickiness never leaks between tests.
 - **Accent-via-`color-mix` is a convention, not a primitive.** `NotchCard` only supports `accent: brand/warning/error/tendency`; Sport/Running do their full accent theming with inline `color-mix`, not `NotchCard`. A reusable accent-hero primitive is an obvious-but-deferred refactor.
 - **Mock-only AI motifs:** `ToolChip`, the `--cat-*` pattern palette, and the tool-transparency rows render mock data; they become real in **Phase 3** (Spring AI / pgvector / RAG).
@@ -270,7 +270,7 @@ pnpm parity          # playwright pixel-parity vs prototype
 ## 10. Key files
 
 **Tokens & CSS**
-- `frontend/src/styles/prototype.css` — all tokens + every component CSS class (809 lines).
+- `frontend/src/styles/prototype.css` — all tokens + every component CSS class (~1190 lines); the Napív section at the end (from the `:root` token block, `mezo-8141`) overrides several earlier rules by cascade order rather than deleting them (`.tab-bar`, `.screen-content`).
 - `frontend/src/index.css` — Tailwind v4 `@theme inline` bridge.
 - `frontend/index.html` — fonts (Antonio/Inter/JetBrains), `viewport-fit=cover`, static `theme-color` (`#F4F6F8`, light), the **pre-paint theme script** (sets `data-theme="light"` unless stored `'dark'`), zoom disabled (`maximum-scale=1, user-scalable=no`).
 - `frontend/vite.config.ts` — PWA manifest `theme_color`/`background_color` (light `#F4F6F8` / `#DDE2E8`) — keep in sync with `DEFAULT_THEME` + the static meta.
@@ -289,7 +289,7 @@ pnpm parity          # playwright pixel-parity vs prototype
 
 **App shell** (`frontend/src/app/`)
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell.
-- `TabBar.tsx` / `AppLayout.tsx` — 5-tab nav + layout (anchor-mode wiring). (The global mic `Fab.tsx` was removed.)
+- `TabBar.tsx` / `AppLayout.tsx` — 4-tab nav + center quick-log FAB + layout (anchor-mode wiring). `TabBar` owns the `quickOpen` state and conditionally mounts `QuickInputSheet` (Napív, `mezo-8141`).
 - `router.tsx` — route tree (section/subnav/page structure) plus full-screen builder/wizard siblings registered outside the tab tree (e.g. `train/mesocycles/new`, `me/goals/new` → `GoalPlannerPage`).
 - `ThemeProvider.tsx` — `useTheme()` context.
 

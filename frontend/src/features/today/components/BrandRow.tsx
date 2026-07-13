@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { BrandGlyph, Icon } from '@/shared/ui/Icon'
 
 export function BrandRow() {
@@ -9,6 +10,9 @@ export function BrandRow() {
       </div>
       <div className="row gap-sm">
         <button className="chip"><Icon name="search" size={12} /></button>
+        <Link to="/insights" aria-label="Insights" className="icon-btn">
+          <Icon name="sparkle" size={18} />
+        </Link>
       </div>
     </div>
   )

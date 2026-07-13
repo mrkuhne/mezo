@@ -1,26 +1,41 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Icon, type IconName } from '@/shared/ui/Icon'
+import { QuickInputSheet } from '@/features/quickinput/sheets/QuickInputSheet'
 
 interface Tab { id: string; label: string; icon: IconName }
-const TABS: Tab[] = [
-  { id: 'today', label: 'Today', icon: 'today' },
-  { id: 'train', label: 'Train', icon: 'train' },
+const LEFT: Tab[] = [
+  { id: 'today', label: 'Ma', icon: 'today' },
+  { id: 'train', label: 'Edzés', icon: 'train' },
+]
+const RIGHT: Tab[] = [
   { id: 'fuel', label: 'Fuel', icon: 'fuel' },
-  { id: 'insights', label: 'Insights', icon: 'insights' },
-  { id: 'me', label: 'Me', icon: 'me' },
+  { id: 'me', label: 'Én', icon: 'me' },
 ]
 
-export function TabBar() {
+function TabItem({ t }: { t: Tab }) {
   return (
-    <nav className="tab-bar">
-      {TABS.map(t => (
-        <NavLink key={t.id} to={`/${t.id}`} className={({ isActive }) => cn('tab-item', isActive && 'active')}>
-          <span className="tab-dot" />
-          <Icon name={t.icon} size={22} />
-          <span>{t.label}</span>
-        </NavLink>
-      ))}
-    </nav>
+    <NavLink to={`/${t.id}`} className={({ isActive }) => cn('tab-item', isActive && 'active')}>
+      <span className="tab-dot" />
+      <Icon name={t.icon} size={22} />
+      <span>{t.label}</span>
+    </NavLink>
+  )
+}
+
+export function TabBar() {
+  const [quickOpen, setQuickOpen] = useState(false)
+  return (
+    <>
+      <nav className="tab-bar">
+        {LEFT.map(t => <TabItem key={t.id} t={t} />)}
+        <button type="button" className="tab-fab" aria-label="Gyors logolás" onClick={() => setQuickOpen(true)}>
+          <Icon name="plus" size={26} />
+        </button>
+        {RIGHT.map(t => <TabItem key={t.id} t={t} />)}
+      </nav>
+      {quickOpen && <QuickInputSheet onClose={() => setQuickOpen(false)} />}
+    </>
   )
 }

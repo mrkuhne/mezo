@@ -1154,3 +1154,38 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 
 /* Transitional shape softening: chamfers become rounded corners app-wide.
    Radii follow spec §3.3 (rows 18-20px, cards 20-28px). */
+
+/* Napív tab bar — frosted floating capsule (supersedes mezo-ci5's opaque bar; blur+tint solves both recorded failure modes) */
+.tab-bar {
+  position: absolute; left: 14px; right: 14px; bottom: 14px;
+  border-radius: 999px; border-top: none;
+  background: color-mix(in srgb, var(--canvas) 66%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(20px) saturate(1.5);
+  box-shadow: 0 14px 34px rgba(43,33,24,.16), inset 0 0 0 1px rgba(255,255,255,.55);
+  padding: 10px 18px;
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .tab-bar { background: color-mix(in srgb, var(--canvas) 96%, transparent); }
+}
+.tab-fab {
+  width: 56px; height: 56px; border-radius: 50%; border: 4px solid var(--canvas);
+  margin-top: -34px; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--coral), var(--amber)); color: #fff;
+  box-shadow: 0 12px 26px rgba(255,107,74,.5), inset 0 1.5px 0 rgba(255,255,255,.35);
+  cursor: pointer;
+}
+.quicklog { padding: 4px 6px 10px; }
+.quicklog h2 { font-family: var(--ff-display); font-size: 19px; font-weight: 800; }
+.quicklog-sub { font-size: 12px; color: var(--faint); font-weight: 600; margin-top: 2px; }
+.quicklog-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 16px; }
+.quicklog-tile {
+  border-radius: 22px; padding: 16px 8px 14px; text-align: center;
+  border: 1.5px solid var(--line); background: var(--canvas); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.quicklog-emoji { width: 42px; height: 42px; border-radius: 50%; background: var(--warm); display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 6px; }
+.quicklog-label { font-size: 12px; font-weight: 800; color: var(--ink); }
+.quicklog-hint { font-size: 10px; color: var(--faint); font-weight: 700; }
+.screen-content { padding-bottom: 118px; }
+.icon-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; color: var(--sub); }

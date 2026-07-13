@@ -16,7 +16,7 @@ test('redirects / to Today', () => {
 })
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
-  await userEvent.click(screen.getByText('Insights'))
+  await userEvent.click(screen.getByLabelText('Insights'))
   // Insights shell: the brand eyebrow is the stable landmark; the page title is
   // dynamic per active sub-view (the index sub-view renders "Patterns").
   expect(screen.getByRole('heading', { level: 1, name: /patterns/i })).toBeInTheDocument()
