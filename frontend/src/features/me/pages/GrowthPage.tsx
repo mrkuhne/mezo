@@ -11,6 +11,10 @@ import { ATHLETIC_META, LIFE_SKILLS } from '@/features/progression/logic/levelUp
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { localDateString } from '@/shared/lib/dates'
 import type { SkillLevel } from '@/data/progression/progressionApi'
+// Cross-feature import — legal here (Task 7, mezo-8141): the quests + activity log cards
+// don't move files, they relocate onto Growth's "Ma" block while Today keeps a summary row.
+import { DailyQuestsCard } from '@/features/today/components/DailyQuestsCard'
+import { ActivityLogCard } from '@/features/today/components/ActivityLogCard'
 
 const isoDaysAgo = (n: number) => {
   const d = new Date()
@@ -77,6 +81,13 @@ export function GrowthPage() {
 
           {tab === 'skills' && (
             <>
+              {/* "Ma" block (Task 7 relocation): the quests + activity log cards moved here
+                  from Today, which now only shows a GrowthTodayRow summary linking back. */}
+              <div>
+                <Eyebrow>Ma</Eyebrow>
+                <DailyQuestsCard />
+                <ActivityLogCard />
+              </div>
               <SkillBandCard
                 eyebrow="LIFE"
                 chip={`8 skill · ${fmt(lifeXp)} XP`}
