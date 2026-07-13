@@ -1270,6 +1270,16 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .arclbl { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); font-weight: 700; padding: 0 18px; margin-top: -4px; }
 .arclbl b { color: var(--coral-deep); }
 
+/* ===== Napív greeting header (Today greeting, spec §3.3) ===== */
+.greet { padding: 8px 6px 0; }
+.greet-day { font-size: 12.5px; font-weight: 700; color: var(--coral-deep); letter-spacing: .4px; text-transform: uppercase; }
+[data-day="reggel"] .greet-day { color: #B2690F; }
+[data-day="este"] .greet-day { color: var(--lav-deep); }
+.greet h1 { font-family: var(--ff-display); font-size: 26px; font-weight: 700; letter-spacing: -.3px; margin-top: 2px; color: var(--ink); }
+.greet h1 em { font-style: normal; color: var(--coral); }
+[data-day="reggel"] .greet h1 em { color: #E8890C; }
+[data-day="este"] .greet h1 em { color: var(--lav-deep); }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
