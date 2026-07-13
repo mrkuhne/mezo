@@ -1152,6 +1152,19 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --np-ease-spring: cubic-bezier(.34,1.4,.44,1);
 }
 
+/* Dark placeholders (spec §7 S1): keep the Napív-token consumers legible on the legacy
+   navy dark until the Pulse dark pass (S8) designs real values. Accents unchanged. */
+:root[data-theme="dark"] {
+  --surface: #121A22;
+  --warm: #1A242E;
+  --line: rgba(255, 255, 255, 0.08);
+  --ink: #ECECF1;
+  --sub: #9CA3AF;
+  --faint: #6B7280;
+  --np-shadow-card: 0 2px 4px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
+  --np-shadow-row: 0 8px 20px rgba(0,0,0,.3);
+}
+
 /* Transitional shape softening: chamfers become rounded corners app-wide.
    Radii follow spec §3.3 (rows 18-20px, cards 20-28px). */
 
@@ -1218,6 +1231,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: radial-gradient(440px 310px at 82% 2%, rgba(155,143,196,.4), transparent 72%),
               linear-gradient(180deg, #E2D9EF, #F0E9E9 62%, transparent);
 }
+/* Dark theme keeps its own canvas — daypart tints are a light-theme device until the
+   Pulse dark pass (S8) designs night variants. The sky dim below still applies. */
+:root[data-theme="dark"] .phone-screen[data-day] { background: var(--canvas); }
 /* Dark theme: the sky dims until the Pulse dark pass (S8) designs its own night variants. */
 :root[data-theme="dark"] .sky { opacity: .18; }
 /* AnchorMode: rough days mute the atmosphere (full anchor remap lands with Today in S3). */
