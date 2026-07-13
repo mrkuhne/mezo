@@ -28,7 +28,7 @@ export function CheckInStrip({
             >
               <div className="t">{c.time}</div>
               <div className="v">
-                {c.state === 'done' && avg !== null ? avg
+                {c.state === 'done' ? (avg !== null ? avg : '✓')
                   : c.state === 'now' ? 'koppints'
                   : c.state === 'skipped' ? '—' : '·'}
               </div>

@@ -21,3 +21,14 @@ test('renders done/now/pending slot content per state', () => {
   expect(screen.getByText('koppints')).toBeInTheDocument()
   expect(screen.getByText('·')).toBeInTheDocument()
 })
+
+test('renders check glyph for done slot without values', () => {
+  const checkins: typeof initialCheckins = [
+    { time: '08:00', state: 'done', values: null, note: null },
+  ]
+  const { container } = render(<CheckInStrip checkins={checkins} onCheckIn={vi.fn()} />)
+  expect(screen.getByText('✓')).toBeInTheDocument()
+  expect(container.querySelector('.beat.done')).toBeInTheDocument()
+  // Ensure pending glyph is NOT rendered
+  expect(screen.queryAllByText('·')).toHaveLength(0)
+})
