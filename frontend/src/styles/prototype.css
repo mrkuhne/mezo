@@ -191,7 +191,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   overflow: hidden;
   display: flex; flex-direction: column;
 }
-.phone-screen.anchor { background: var(--anchor-canvas); }
+/* AnchorMode canvas: no longer a dedicated skin — it now sits on the same canvas as the
+   current daypart (desaturated via the .sky rule below), per the Napiv redesign spec. */
 
 /* Dynamic Island */
 .dynamic-island {
