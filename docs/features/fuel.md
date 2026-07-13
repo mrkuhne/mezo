@@ -229,7 +229,6 @@ Commands (from `frontend/`):
 ```bash
 pnpm test                       # vitest — REAL mode default
 VITE_USE_MOCK=true pnpm test    # mock mode — BOTH modes must be green
-pnpm parity                     # Playwright parity screenshots vs the prototype
 ```
 When Slice C lands, add MSW handlers so real-mode hook tests exercise `fuelApi`, and add backend ITs per the references above.
 

@@ -173,7 +173,7 @@ saveCheckIn(idx, { state: 'done', values, note, savedAt }) // optimistic; real a
 2. Add a typed slice to `data/today/today.ts` (or a new `data/*.ts`) + its type in `data/types.ts`.
 3. Expose it through a hook in `data/hooks.ts` (extend `useToday` or add a focused hook like `useFuelPreview`).
 4. Render it in `TodayPage.tsx` (mind the AnchorMode early-return at line 23 — sections after it only show on non-rough days).
-5. Add a colocated `*.test.tsx` and a parity variant in `tests/parity/foundation.spec.ts`.
+5. Add a colocated `*.test.tsx`.
 Follow the design in [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](../superpowers/specs/2026-06-03-mezo-today-design.md).
 
 **Promote a mock Today section to a real backend (the check-in is the working template):**
@@ -192,7 +192,7 @@ Follow the design in [`docs/superpowers/specs/2026-06-03-mezo-today-design.md`](
 - `data/today/todayHooks.test.tsx` — mock byte-parity (statics returned by reference) + real composition off the MSW Train fixtures (workout title, meso chips, `MAV` phase, 5 schedule sessions, null demo copy).
 - `data/today/checkinHooks.test.tsx` — `buildDaySlots` wall-clock derivation + server-row overlay (pure), real-mode hydration from `listForDay`, and the existing save-POST/mock-no-fetch pair.
 
-**Parity (Playwright @440×956)** — `frontend/tests/parity/foundation.spec.ts:82–114`: variants `today-default`, `today-good`, `today-rough-anchor`, `today-niggle-off`, `today-vulnerable`, plus the `checkin sheet` (clicks the `tap` slot) and `quickinput sheet`. Compared against the prototype `prototype-today.png`.
+**Parity (Playwright @440×956)** — Pixel-parity vs the Phase-1 prototype retired 2026-07-13 by the Napív redesign (mezo-8141); visual self-baselines return in S8.
 
 **Backend IT** — `backend/src/test/java/io/mrkuhne/mezo/feature/biometrics/BiometricsContractIT.java:49–68`: `testSaveCheckIn_shouldUpsertSameSlot_whenPostedTwice` (POST the same slot twice → same `id`, state updates to `skipped`; GET by date → 1 row). Extends `ApiIntegrationTest` against real Postgres; `check_in` is in `support/ResetDatabase.java:39`.
 
@@ -230,7 +230,6 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 - `frontend/src/data/me/biometricsApi.ts` (`checkinApi`), `data/_client/mode.ts`, `shared/lib/dates.ts`, `data/_client/api.ts` (`apiFetch`/`setToken`), `shared/lib/safeMarkdown.tsx`.
 - `frontend/src/shared/ui/RetaPhaseBar.tsx`, `QuickStat.tsx` — shared primitives.
 - `frontend/src/app/AppLayout.tsx` (anchor wiring), `router.tsx:47`, `PhoneFrame.tsx`.
-- `frontend/tests/parity/foundation.spec.ts:82–114` — parity variants.
 
 **API contract:** `api/feature/checkin/checkin.yml` → `api/openapi.yml` → `frontend/src/data/_client/api.gen.ts` + backend `io.mrkuhne.mezo.api` (`CheckInApi`, `CheckInResponse`, `SaveCheckInRequest`).
 

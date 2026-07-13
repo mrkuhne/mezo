@@ -249,7 +249,7 @@ Adding a Train endpoint/field/sub-tab is **contract-first + dual-mode + both-tes
 
 Both modes and both layers must stay green.
 
-- **Frontend (vitest — `VITE_USE_MOCK` both modes must pass):** per-tab view tests (`pages/*.test.tsx`), `ActiveWorkoutPage.test.tsx`, `MesocyclePlannerPage.test.tsx`, `MesocycleBuilderPage.test.tsx`, `RunningBlockBuilderPage.test.tsx`, `WeekdayGrid.test.tsx`, `planner.test.ts`, sheet tests (incl. `GymScheduleSheet.test.tsx`), `agenda.test.ts` (the `daySessions` time-ordering), `WeeklyDayRow.test.tsx` (time-ordered rows), `trainHooks.test.tsx`, `trainHooks.deriveGym.test.ts` (the gym-slot join), `trainData.test.tsx`, `train.emptyStates.test.tsx` (the ghost-guards), `train.nav.test.tsx`, `runningDraft.test.ts`, `runningHooks.test.ts`, `runningAgenda.test.ts`. Plus Playwright parity (`pnpm parity`).
+- **Frontend (vitest — `VITE_USE_MOCK` both modes must pass):** per-tab view tests (`pages/*.test.tsx`), `ActiveWorkoutPage.test.tsx`, `MesocyclePlannerPage.test.tsx`, `MesocycleBuilderPage.test.tsx`, `RunningBlockBuilderPage.test.tsx`, `WeekdayGrid.test.tsx`, `planner.test.ts`, sheet tests (incl. `GymScheduleSheet.test.tsx`), `agenda.test.ts` (the `daySessions` time-ordering), `WeeklyDayRow.test.tsx` (time-ordered rows), `trainHooks.test.tsx`, `trainHooks.deriveGym.test.ts` (the gym-slot join), `trainData.test.tsx`, `train.emptyStates.test.tsx` (the ghost-guards), `train.nav.test.tsx`, `runningDraft.test.ts`, `runningHooks.test.ts`, `runningAgenda.test.ts`.
   ```bash
   cd frontend
   pnpm test                          # REAL mode
