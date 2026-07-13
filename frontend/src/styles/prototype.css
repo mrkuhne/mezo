@@ -1257,7 +1257,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 
 /* ===== Napív day-arc (Today signature, spec §3.4) ===== */
-.dayarc { margin: 4px 0 2px; }
+.dayarc { margin: 4px 24px 2px; }
 .arc-base { stroke: var(--line); stroke-width: 5; stroke-linecap: round; }
 .arc-progress { stroke-width: 5; stroke-linecap: round; }
 .arc-dot { transform-box: fill-box; transform-origin: center; }
@@ -1272,7 +1272,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .arclbl b { color: var(--coral-deep); }
 
 /* ===== Napív greeting header (Today greeting, spec §3.3) ===== */
-.greet { padding: 8px 6px 0; }
+.greet { padding: 8px 24px 0; }
 .greet-day { font-size: 12.5px; font-weight: 700; color: var(--coral-deep); letter-spacing: .4px; text-transform: uppercase; }
 [data-day="reggel"] .greet-day { color: #B2690F; }
 [data-day="este"] .greet-day { color: var(--lav-deep); }
@@ -1282,7 +1282,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 [data-day="este"] .greet h1 em { color: var(--lav-deep); }
 
 /* ===== Napív Today hero ===== */
-.np-hero { position: relative; background: var(--surface); border-radius: 26px; padding: 18px; box-shadow: var(--np-shadow-card); overflow: hidden; margin-top: 10px; }
+.np-hero { position: relative; background: var(--surface); border-radius: 26px; padding: 18px; box-shadow: var(--np-shadow-card); overflow: hidden; margin: 10px 24px 0; }
 .np-hero::after { content: ''; position: absolute; top: -52px; right: -52px; width: 170px; height: 170px; border-radius: 50%; background: radial-gradient(circle, rgba(255,107,74,.13), transparent 68%); }
 .np-hero-eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; color: var(--coral-deep); letter-spacing: .5px; text-transform: uppercase; }
 .np-hero-eyebrow .dotp { width: 8px; height: 8px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 4px rgba(255,107,74,.16); }
@@ -1333,7 +1333,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .scard .n { font-size: 14px; font-weight: 800; font-family: var(--ff-display); margin-top: 1px; font-variant-numeric: tabular-nums; color: var(--ink); }
 
 /* ===== Napív growth-today row (GrowthTodayRow — Growth relocation, Task 7) ===== */
-.growrow { display: flex; align-items: center; gap: 11px; background: var(--surface); border-radius: 18px; padding: 12px 14px; box-shadow: var(--np-shadow-row); margin-top: 9px; text-decoration: none; color: inherit; }
+.growrow { display: flex; align-items: center; gap: 11px; background: var(--surface); border-radius: 18px; padding: 12px 14px; box-shadow: var(--np-shadow-row); margin: 9px 24px 0; text-decoration: none; color: inherit; }
 .growrow .t1 { font-size: 13px; font-weight: 800; color: var(--ink); }
 .growrow .t2 { font-size: 11.5px; color: var(--faint); font-weight: 700; margin-top: 1px; }
 .growrow .chev { margin-left: auto; color: var(--faint); }

@@ -35,7 +35,7 @@ export function DailyQuestsCard() {
   const doneCount = quests.filter(q => q.status === 'completed').length
 
   return (
-    <div className="card" style={{ margin: '8px 24px', padding: '14px 16px' }}>
+    <div className="card" style={{ margin: '8px 0', padding: '14px 16px' }}>
       <div className="row" style={{ justifyContent: 'space-between', paddingBottom: 8 }}>
         <span className="eyebrow">Napi küldetések</span>
         <span className="eyebrow text-tertiary">{doneCount}/{quests.length} ma</span>

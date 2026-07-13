@@ -1,9 +1,23 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { ReactNode } from 'react'
-import { QuickStatsRow } from '@/features/today/components/QuickStatsRow'
+import { QuickStatsRow, ringPct } from '@/features/today/components/QuickStatsRow'
 import { QueryWrapper } from '@/test/queryWrapper'
+
+describe('ringPct', () => {
+  test('sleep hours map to a fraction of the 8h target', () => {
+    expect(ringPct('Alvás', '7.5')).toBeCloseTo(93.75)
+  })
+
+  test('missing sleep data ("—") renders an empty ring, not a full one', () => {
+    expect(ringPct('Alvás', '—')).toBe(0)
+  })
+
+  test('stats with no natural target always render a full "chip" ring', () => {
+    expect(ringPct('Súly', '82.5')).toBe(100)
+  })
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()

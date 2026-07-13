@@ -19,10 +19,13 @@ const RING_COLOR: Record<string, string> = {
 // targets) — per the restyle scope, they render a full ring (a visual chip) instead.
 const SLEEP_TARGET_H = 8
 
-function ringPct(label: string, value: string): number {
+export function ringPct(label: string, value: string): number {
   if (label.toLowerCase() === 'alvás') {
     const hours = parseFloat(value)
-    if (Number.isFinite(hours)) return Math.max(0, Math.min(100, (hours / SLEEP_TARGET_H) * 100))
+    // Non-finite (e.g. the '—' placeholder for missing data) must render an empty
+    // ring, not a full one — a full ring next to a "—" value is a dishonest visual.
+    if (!Number.isFinite(hours)) return 0
+    return Math.max(0, Math.min(100, (hours / SLEEP_TARGET_H) * 100))
   }
   return 100
 }

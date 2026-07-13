@@ -1,10 +1,11 @@
 import { buildArcPoints, arcProgress, pointXY } from '@/features/today/logic/dayArc'
+import type { ArcPoint } from '@/features/today/logic/dayArc'
 import type { CheckinSlot } from '@/data/types'
 
 const ARC = 'M 22 100 Q 182 -28 342 100'
 const ARC_LEN = 400 // ≥ real path length; progress uses fraction of this
 
-const DOT_CLASS: Record<string, string> = {
+const DOT_CLASS: Record<ArcPoint['kind'], string> = {
   'checkin-done': 'arc-dot arc-checkin-done',
   'checkin-now': 'arc-dot arc-checkin-now',
   'checkin-pending': 'arc-dot arc-checkin-pending',
