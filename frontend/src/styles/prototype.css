@@ -1192,6 +1192,37 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .screen-content { padding-bottom: 118px; }
 .icon-btn { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; color: var(--sub); }
 
+/* ===== Circadian atmosphere (every screen; spec §3.4) ===== */
+.sky {
+  position: absolute; top: 0; left: 0; right: 0; height: 295px; z-index: 0;
+  pointer-events: none; transition: background 1s ease;
+  -webkit-mask-image: linear-gradient(#000 55%, transparent);
+  mask-image: linear-gradient(#000 55%, transparent);
+}
+.phone-screen { transition: background 1s ease; }
+.phone-screen[data-day="reggel"] {
+  background: #FCF1DF;
+}
+.phone-screen[data-day="reggel"] .sky {
+  background: radial-gradient(440px 310px at 18% 0%, rgba(255,158,66,.45), transparent 72%),
+              linear-gradient(180deg, #FFDDAE, #FFEDD4 55%, transparent);
+}
+.phone-screen[data-day="delutan"] .sky {
+  background: radial-gradient(420px 260px at 50% -6%, rgba(255,199,115,.16), transparent 70%),
+              linear-gradient(180deg, #FAF3E6, #FBF6EF 65%, transparent);
+}
+.phone-screen[data-day="este"] {
+  background: #F3EDF2;
+}
+.phone-screen[data-day="este"] .sky {
+  background: radial-gradient(440px 310px at 82% 2%, rgba(155,143,196,.4), transparent 72%),
+              linear-gradient(180deg, #E2D9EF, #F0E9E9 62%, transparent);
+}
+/* Dark theme: the sky dims until the Pulse dark pass (S8) designs its own night variants. */
+:root[data-theme="dark"] .sky { opacity: .18; }
+/* AnchorMode: rough days mute the atmosphere (full anchor remap lands with Today in S3). */
+.phone-screen.anchor .sky { opacity: .35; filter: saturate(.6); }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
