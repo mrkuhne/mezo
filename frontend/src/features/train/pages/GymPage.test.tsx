@@ -14,9 +14,9 @@ afterEach(() => vi.unstubAllEnvs())
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><GymPage /></MemoryRouter></QueryWrapper>)
 
-test('own page-header: brand eyebrow + meso short title + week badge', () => {
+test('own page-header: pghead-np over + h1 + week badge', () => {
   renderView()
-  expect(screen.getByText('Train · GYM')).toBeInTheDocument()
+  expect(screen.getByText('Edzés · Gym')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Hypertrophy 04' })).toBeInTheDocument()
   expect(screen.getByText('W3 / 6')).toBeInTheDocument()
 })

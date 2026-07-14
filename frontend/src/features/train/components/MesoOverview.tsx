@@ -87,9 +87,9 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
                   alignItems: 'center',
                   textAlign: 'left',
                   width: '100%',
-                  borderColor: d.current ? 'var(--border-brand)' : 'var(--border-subtle)',
+                  borderColor: d.current ? 'color-mix(in srgb, var(--tag-gym) 40%, transparent)' : 'var(--border-subtle)',
                   background: d.current
-                    ? 'color-mix(in srgb, var(--brand-glow) 4%, transparent)'
+                    ? 'var(--wash-gym)'
                     : 'var(--surface-1)',
                   position: 'relative',
                   overflow: 'hidden',
@@ -97,14 +97,14 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
               >
                 {d.current && (
                   <div
-                    style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-glow)' }}
+                    style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--tag-gym)' }}
                   />
                 )}
                 <span
                   className="label-mono"
                   style={{
                     width: 36,
-                    color: d.current ? 'var(--brand-glow)' : 'var(--text-tertiary)',
+                    color: d.current ? 'var(--tag-gym)' : 'var(--text-tertiary)',
                     fontSize: 10,
                     marginLeft: d.current ? 6 : 0,
                   }}
@@ -123,7 +123,15 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
                   )}
                 </div>
                 {d.current && (
-                  <Chip variant="brand" style={{ fontSize: 9, padding: '2px 6px' }}>
+                  <Chip
+                    style={{
+                      fontSize: 9,
+                      padding: '2px 6px',
+                      background: 'var(--wash-gym)',
+                      borderColor: 'color-mix(in srgb, var(--tag-gym) 40%, transparent)',
+                      color: 'var(--tag-gym)',
+                    }}
+                  >
                     MA
                   </Chip>
                 )}

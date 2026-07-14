@@ -15,6 +15,13 @@ afterEach(() => vi.unstubAllEnvs())
 const renderView = () =>
   render(<QueryWrapper><MemoryRouter><ExercisesPage /></MemoryRouter></QueryWrapper>)
 
+test('own header: pghead-np over + h1', async () => {
+  renderView()
+  await screen.findByText('Top gyakorlatok · rekordjaid')
+  expect(screen.getByText('Edzés · Gyakorlatok')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Gyakorlatok' })).toBeInTheDocument()
+})
+
 test('default state ranks top exercises with best set and e1RM chip', async () => {
   renderView()
   expect(await screen.findByText('Top gyakorlatok · rekordjaid')).toBeInTheDocument()

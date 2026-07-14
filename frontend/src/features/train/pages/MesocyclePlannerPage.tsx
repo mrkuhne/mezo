@@ -173,7 +173,12 @@ export function MesocyclePlannerPage() {
         <span className="eyebrow brand">
           {String(step + 1).padStart(2, '0')} / {String(STEP_COUNT).padStart(2, '0')} · {stepLabels[step]}
         </span>
-        <div className="page-title mt-sm">{PAGE_TITLES[step]}</div>
+      </div>
+      <div className="pghead-np">
+        <div>
+          <div className="over">Edzés · Mesociklusok</div>
+          <h1>{PAGE_TITLES[step]}</h1>
+        </div>
       </div>
 
       {step === 0 && <Step0Goal goal={goal} onSelect={selectGoal} />}

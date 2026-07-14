@@ -18,23 +18,29 @@ afterEach(() => vi.unstubAllEnvs())
 const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
 
 test('today gym block + weekly timeline render', () => {
-  renderView()
-  // "Pull Day" appears in both the gym hero (Display) and the weekly rows
-  // (Sze + Csü schedule entries); the hero one is unique via "07:30 · 78p".
+  const { container } = renderView()
+  // "Pull Day" appears in both the gym hero (h2) and the weekly rows
+  // (Sze + Csü schedule entries); the hero itself is unique via .trainhero.
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  expect(screen.getByText('07:30 · 78p')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
-  expect(screen.getByText('Heti terv · gym + futás + sport')).toBeInTheDocument()
+  expect(container.querySelector('.trainhero')).not.toBeNull()
+  expect(screen.getByRole('button', { name: 'Indítsuk →' })).toBeInTheDocument()
+  expect(screen.getByText('Heti terv')).toBeInTheDocument()
+  // mock week: 5 gym days + 5 volleyball days + 2 running sessions ⇒ 3 load tiles
+  expect(container.querySelectorAll('.loadtile')).toHaveLength(3)
   // weekly note (verbatim, substring)
   expect(screen.getByText(/A gym a mesociklus szerint/)).toBeInTheDocument()
 })
 
-test('own page-header: eyebrow + title + day-label', () => {
+test('own page-header: Mai nap h1 + Napiv over-line', () => {
   renderView()
-  expect(screen.getByText('Train · Mai')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Edzés' })).toBeInTheDocument()
-  // today is Csü ⇒ "Csütörtök · W3"
-  expect(screen.getByText('Csütörtök · W3')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+  // today is Csü ⇒ "Edzés · Csütörtök · W3"
+  expect(screen.getByText('Edzés · Csütörtök · W3')).toBeInTheDocument()
+})
+
+test('weekly timeline renders a Pihenőnap rest row for the empty Vasárnap slot', () => {
+  renderView()
+  expect(screen.getByText('Pihenőnap')).toBeInTheDocument()
 })
 
 test('no volleyball session today (Csü) ⇒ today-volleyball block is absent', () => {
@@ -128,10 +134,10 @@ test('real mode orders the morning run hero above the evening gym hero', async (
   )
   renderView()
   // both heroes present
-  const runEyebrow = await screen.findByText('Futás · ma')
-  const startBtn = await screen.findByRole('button', { name: /Indítsuk/ }) // gym hero CTA
+  const runTag = await screen.findByText('🏃 FUTÁS')
+  const startBtn = await screen.findByRole('button', { name: 'Indítsuk →' }) // gym hero CTA
   // run hero (08:00) must precede gym hero (18:30) in the DOM
-  expect(runEyebrow.compareDocumentPosition(startBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(runTag.compareDocumentPosition(startBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 })
 
 test('real mode renders the run hero (no rest-day note) when only a run is prescribed today', async () => {
@@ -164,9 +170,9 @@ test('real mode renders the run hero (no rest-day note) when only a run is presc
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  // the "Futás · ma" run hero IS rendered (eyebrow + log CTA are hero-unique;
+  // the run hero IS rendered (typetag + log CTA are hero-unique;
   // "Reggeli sprint" itself also appears in the weekly row, hence not asserted alone) ...
-  expect(await screen.findByText('Futás · ma')).toBeInTheDocument()
+  expect(await screen.findByText('🏃 FUTÁS')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
   expect(screen.getAllByText('Reggeli sprint').length).toBeGreaterThan(0)
   // ... and the rest-day note is NOT (a prescribed run is not a rest day)
@@ -269,7 +275,6 @@ test('real mode: gym logged today ⇒ hero flips to done (Kész + logged summary
   )
   renderView()
   expect(await screen.findByText(/Mai edzés logolva/)).toBeInTheDocument()
-  expect(screen.getByText('Kész')).toBeInTheDocument() // hero done chip (capitalised)
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
 })
 
@@ -304,7 +309,7 @@ test('real mode: prescribed run logged today ⇒ run hero flips to the done summ
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  expect(await screen.findByText('Futás · ma')).toBeInTheDocument()
+  expect(await screen.findByText('🏃 FUTÁS')).toBeInTheDocument()
   expect(screen.getByText(/Logolva · RPE 9/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
 })

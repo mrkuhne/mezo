@@ -1,15 +1,15 @@
 // ============================================================
-// Mezo · GymPage (GYM) — mesocycle week-by-week gym breakdown.
+// Mezo · GymPage (Gym) — mesocycle week-by-week gym breakdown.
 // Viewable per day; today's day is startable. Thin TrainSection shell
-// ⇒ this view owns its own .page-header.
+// ⇒ this view owns its own .pghead-np (over `Edzés · Gym`, h1 = current
+// title — meso short title, or the static "Gym" ghost-state title).
+// Napiv coral vocabulary: --wash-gym/--tag-gym accents.
 // Ported from prototype train-views.jsx (GymPage + sub-components).
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import type { MesoDay } from '@/data/types'
@@ -36,10 +36,10 @@ export function GymPage() {
   if (!activeMeso) {
     return (
       <>
-        <div className="page-header">
-          <div className="col gap-xs">
-            <Eyebrow brand>Train · GYM</Eyebrow>
-            <PageTitle>Gym</PageTitle>
+        <div className="pghead-np">
+          <div>
+            <div className="over">Edzés · Gym</div>
+            <h1>Gym</h1>
           </div>
         </div>
         <div style={{ padding: '0 24px 12px' }}>
@@ -65,10 +65,10 @@ export function GymPage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Train · GYM</Eyebrow>
-          <PageTitle>{activeMeso.shortTitle}</PageTitle>
+      <div className="pghead-np">
+        <div>
+          <div className="over">Edzés · Gym</div>
+          <h1>{activeMeso.shortTitle}</h1>
         </div>
         <div className="row gap-sm" style={{ alignItems: 'center' }}>
           {/* saveGymSchedule is a no-op in mock mode (trainHooks) — hide the
@@ -77,8 +77,8 @@ export function GymPage() {
             <button
               type="button"
               onClick={() => setScheduleOpen(true)}
-              className="chip notch-4"
-              style={{ padding: '8px 10px' }}
+              className="pgact-np np-press"
+              style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
             >
               <Icon name="today" size={12} /> Időpontok
             </button>
@@ -93,7 +93,7 @@ export function GymPage() {
       <div style={{ padding: '0 24px 12px' }}>
         <div className="card notch-12" style={{ padding: 16 }}>
           <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
-            <GymStat label="Fázis" val={currentPhase} sub={`hét ${activeMeso.currentWeek}`} color="var(--brand-glow)" />
+            <GymStat label="Fázis" val={currentPhase} sub={`hét ${activeMeso.currentWeek}`} color="var(--tag-gym)" />
             <GymStat label="Split" val={splitHead} sub={splitTail ?? ''} color="var(--text-primary)" />
             <GymStat label="Szetek" val={totalSets} sub="heti összesen" color="var(--cat-physiology)" />
             <GymStat label="Gym napok" val={gymDays.length} sub="hét" color="var(--cat-preference)" />
@@ -102,7 +102,7 @@ export function GymPage() {
             className="row gap-md mt-md"
             style={{ paddingTop: 12, borderTop: '1px solid var(--border-subtle)', alignItems: 'center' }}
           >
-            <Icon name="train" size={11} color="var(--brand-glow)" />
+            <Icon name="train" size={11} color="var(--tag-gym)" />
             <span className="label-mono text-tertiary" style={{ fontSize: 10, flex: 1 }}>
               {activeMeso.startDate} → {activeMeso.endDate} · {activeMeso.style}
             </span>

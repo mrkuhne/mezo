@@ -22,6 +22,12 @@ function setup() {
   )
 }
 
+test('own header: pghead-np over + h1', () => {
+  setup()
+  expect(screen.getByText('Edzés · Mesociklusok')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Mesociklusok' })).toBeInTheDocument()
+})
+
 test('renders the active mesocycle hero card', () => {
   setup()
   expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()

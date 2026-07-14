@@ -1,7 +1,8 @@
 // ============================================================
 // Mezo · SportSessionCard — one logged volleyball session in the
-// SportPage log list: date/time eyebrow, mono duration/sets, a big
-// RPE readout coloured by intensity, two MiniBars and optional notes.
+// SportPage log list: a stag-sport RÖPI type tag + date/time eyebrow,
+// mono duration/sets, a big RPE readout coloured by intensity, two
+// MiniBars and optional notes.
 // Ported from prototype sport.jsx SportSessionCard.
 // ============================================================
 import type { SportSession } from '@/data/types'
@@ -26,8 +27,11 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
     <div className="card notch-4" style={{ padding: 14 }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div className="col flex-1">
-          <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>
-            {session.date} · {session.time}
+          <span className="row gap-sm" style={{ alignItems: 'center' }}>
+            <span className="stag stag-sport">RÖPI</span>
+            <span className="eyebrow" style={{ color: 'var(--tag-sport)' }}>
+              {session.date} · {session.time}
+            </span>
           </span>
           <div className="row gap-md mt-md" style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}>
             <span>
@@ -62,7 +66,7 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
       {/* Mini stat row */}
       <div className="row gap-sm mt-md" style={{ paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}>
         {session.intensity != null && (
-          <MiniBar label="Intenzitás" val={session.intensity} max={10} color="var(--cat-tendency)" />
+          <MiniBar label="Intenzitás" val={session.intensity} max={10} color="var(--tag-sport)" />
         )}
         {session.shoulderStrain != null && (
           <MiniBar

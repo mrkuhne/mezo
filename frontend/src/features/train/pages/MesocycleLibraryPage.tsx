@@ -8,7 +8,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import { ActiveMesoCard } from '@/features/train/components/ActiveMesoCard'
@@ -35,12 +34,17 @@ export function MesocycleLibraryPage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Train · Mesocycles</Eyebrow>
-          <PageTitle>Mesociklusok</PageTitle>
+      <div className="pghead-np">
+        <div>
+          <div className="over">Edzés · Mesociklusok</div>
+          <h1>Mesociklusok</h1>
         </div>
-        <button type="button" className="chip notch-4" style={{ padding: '8px 10px' }} onClick={openPlanner}>
+        <button
+          type="button"
+          onClick={openPlanner}
+          className="pgact-np np-press"
+          style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
+        >
           <Icon name="plus" size={12} /> Új
         </button>
       </div>

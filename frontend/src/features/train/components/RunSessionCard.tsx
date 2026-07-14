@@ -2,19 +2,20 @@
 // Mezo · RunSessionCard — pure presentational card for ONE prescribed
 // running session (sprint / pyramid / steady). Mirrors the .seg-pill +
 // .rpe-tag look from the Futás mockup (futas-app-faithful.html). Running
-// accent is --info. No hooks, no data fetching — props in, markup out.
+// accent is the Napiv --tag-run/--wash-run pair; a stag-run FUTÁS tag marks
+// the session type. No hooks, no data fetching — props in, markup out.
 // ============================================================
 import type { RunPrescribedSession, RunSegment } from '@/data/train/runningApi'
 import { DAY_ORDER } from '@/data/train/train'
 
-const RUN = 'var(--info)'
+const RUN = 'var(--tag-run)'
 
-// Mockup's .seg-pill: mono, small, tinted by role. work = --info, warmup/
+// Mockup's .seg-pill: mono, small, tinted by role. work = --tag-run, warmup/
 // cooldown = --warning, rest/other = neutral surface-2.
 function Pill({ text, tone }: { text: string; tone: 'work' | 'warm' | 'rest' }) {
   const style =
     tone === 'work'
-      ? { color: RUN, borderColor: 'color-mix(in srgb, var(--info) 35%, transparent)', background: 'color-mix(in srgb, var(--info) 8%, transparent)' }
+      ? { color: RUN, borderColor: 'color-mix(in srgb, var(--tag-run) 35%, transparent)', background: 'var(--wash-run)' }
       : tone === 'warm'
         ? { color: 'var(--warning)', borderColor: 'rgba(245, 158, 11, 0.3)', background: 'var(--surface-2)' }
         : { color: 'var(--text-secondary)', borderColor: 'var(--border-subtle)', background: 'var(--surface-2)' }
@@ -82,6 +83,7 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
       <div style={{ padding: '13px 14px 13px 16px' }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+            <span className="stag stag-run">FUTÁS</span>
             <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{dayLabel}</span>
             {session.timeOfDay && (
               <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: RUN }}>{session.timeOfDay}</span>

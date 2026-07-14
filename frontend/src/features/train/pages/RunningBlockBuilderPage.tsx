@@ -119,19 +119,22 @@ export function RunningBlockBuilderPage() {
       </div>
 
       {/* Header */}
-      <div style={{ padding: '6px 24px 4px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <span className="eyebrow" style={{ color: RUN }}>Builder · {statusEyebrow}</span>
-          <div className="row gap-md">
-            <span className="label-mono" style={{ fontSize: 9, color: dirty ? 'var(--text-tertiary)' : 'var(--success)' }}>
-              {runningMutationPending ? 'Mentés…' : dirty ? 'Nem mentve' : '✓ Mentve'}
-            </span>
-            <OverflowMenu
-              onDuplicate={() => saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList })}
-              onDelete={() => deleteRunningBlock(block.id, { onSuccess: backToList })}
-            />
-          </div>
+      <div className="pghead-np">
+        <div>
+          <div className="over">Edzés · Futás</div>
         </div>
+        <div className="row gap-md" style={{ alignItems: 'center' }}>
+          <span className="label-mono" style={{ fontSize: 9, color: dirty ? 'var(--text-tertiary)' : 'var(--success)' }}>
+            {runningMutationPending ? 'Mentés…' : dirty ? 'Nem mentve' : '✓ Mentve'}
+          </span>
+          <OverflowMenu
+            onDuplicate={() => saveRunningBlock(null, duplicateDraft(block), { onSuccess: backToList })}
+            onDelete={() => deleteRunningBlock(block.id, { onSuccess: backToList })}
+          />
+        </div>
+      </div>
+      <div style={{ padding: '6px 24px 4px' }}>
+        <span className="eyebrow" style={{ color: RUN }}>Builder · {statusEyebrow}</span>
         <div className="col gap-sm mt-sm">
           <input
             aria-label="Cím"

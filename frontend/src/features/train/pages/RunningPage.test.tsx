@@ -33,6 +33,12 @@ describe('RunningPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
+  test('own page-header: pghead-np over + h1', () => {
+    renderView()
+    expect(screen.getByText('Edzés · Futás')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Intervallum' })).toBeInTheDocument()
+  })
+
   test('default (E heti edzés) renders the active block hero + this week sessions', () => {
     renderView()
     // active block rb-active-01: currentWeek 3 / 8 weeks
@@ -44,12 +50,21 @@ describe('RunningPage (mock mode)', () => {
     expect(screen.getByText(/Cross-load/i)).toBeInTheDocument()
   })
 
+  test('each prescribed session row carries the stag-run FUTÁS tag', () => {
+    renderView()
+    const tags = screen.getAllByText('FUTÁS')
+    expect(tags.length).toBeGreaterThan(0)
+    expect(tags[0]).toHaveClass('stag', 'stag-run')
+  })
+
   test('Napló switcher shows the logged run sessions', async () => {
     renderView()
     await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
     // rs-01: rpeActual 9 -> "RPE 9" chip; sessionKey tue-sprint -> "Sprint" label
     expect(screen.getByText('RPE 9')).toBeInTheDocument()
     expect(screen.getByText('Sprint')).toBeInTheDocument()
+    // Napló rows also carry the stag-run FUTÁS type tag (mirrors the week view cards).
+    expect(screen.getAllByText('FUTÁS')[0]).toHaveClass('stag', 'stag-run')
   })
 
   test('Tervek switcher renders the full block library (all three titles)', async () => {
