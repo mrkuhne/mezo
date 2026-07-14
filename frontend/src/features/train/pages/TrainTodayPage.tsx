@@ -317,6 +317,18 @@ export function TrainTodayPage() {
         )
       })}
 
+      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
+      {!today?.gym && !today?.volleyball && todayRuns.length === 0 && (
+        <div style={{ padding: '0 24px 12px' }}>
+          <div className="card notch-12" style={{ padding: 18 }}>
+            <span className="eyebrow">Ma pihenőnap</span>
+            <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Nincs tervezett edzés mára — a heti rended lent találod.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Weekly load summary tiles (renders null on an empty week) */}
       <LoadTiles tiles={weeklyLoad(agenda)} />
 
@@ -348,18 +360,6 @@ export function TrainTodayPage() {
           ))}
         </div>
       </div>
-
-      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
-      {!today?.gym && !today?.volleyball && todayRuns.length === 0 && (
-        <div style={{ padding: '0 24px 12px' }}>
-          <div className="card notch-12" style={{ padding: 18 }}>
-            <span className="eyebrow">Ma pihenőnap</span>
-            <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Nincs tervezett edzés mára — a heti rended lent találod.
-            </p>
-          </div>
-        </div>
-      )}
 
       {/* Note */}
       <div style={{ padding: '0 24px 32px' }}>
