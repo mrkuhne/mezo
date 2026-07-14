@@ -13,6 +13,8 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useChallengeActions, useChallenges, useTrain } from '@/data/hooks'
 import { localDateString } from '@/shared/lib/dates'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
+import { useLiveActivity } from '@/app/providers/LiveActivityProvider'
+import { restSecondsFor } from '@/features/train/logic/restTimer'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import {
@@ -115,7 +117,13 @@ function ActiveWorkoutSession({
 }: SessionProps) {
   const W = workout
   const navigate = useNavigate()
-  const onExit = () => navigate('/train')
+  const { startRest, clearRest } = useLiveActivity()
+  // Exiting the session (Bezárás / back / Mentés — all route through here) must not
+  // leave a rest ticking in the shell's Dynamic Island after the user has left.
+  const onExit = () => {
+    clearRest()
+    navigate('/train')
+  }
 
   const weekLabel = `Week ${activeMeso.currentWeek} · ${activeMeso.phaseCurve[activeMeso.currentWeek - 1]}`
   const niggleActive = !!W.niggleWarning
@@ -169,6 +177,14 @@ function ActiveWorkoutSession({
     const t = setTimeout(() => setShowPR(null), PR_TOAST_MS)
     return () => clearTimeout(t)
   }, [showPR])
+
+  // The rest Live-Activity must not survive past this session: clear it once the
+  // recap phase is reached, and on unmount (mid-workout navigation away, e.g. a
+  // deep-link change) as a final safety net.
+  useEffect(() => {
+    if (phase === 'complete') clearRest()
+  }, [phase, clearRest])
+  useEffect(() => () => clearRest(), [clearRest])
 
   // Plan growth mid-session (mezo-ohvm): the server-side closing block can append
   // template exercises while this session is already open — a refetch then grows
@@ -284,9 +300,16 @@ function ActiveWorkoutSession({
     }
 
     // Last set of this exercise → pin it for the debrief sheet. Otherwise
-    // completeSetModel already advanced the cursor for the same exercise.
+    // completeSetModel already advanced the cursor for the same exercise, and the
+    // island rest starts (spec §4.5): "next" is the current exercise's name when
+    // more of its sets remain, else the upcoming exercise's (or null on the last).
     if (wasSetIdx + 1 >= effectiveSetCount(session, finishing.id)) {
       setFeedbackEx(finishing)
+    } else {
+      startRest({
+        seconds: restSecondsFor(current.type),
+        next: session.setIdx + 1 < currentSetCount ? current.name : (nextEx?.name ?? null),
+      })
     }
   }
 

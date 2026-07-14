@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
+import { LiveActivityProvider } from '@/app/providers/LiveActivityProvider'
+import { DynamicIsland } from '@/app/DynamicIsland'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -14,12 +16,18 @@ import { API_BASE } from '@/test/msw/handlers'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
+// The page itself has no LiveActivityProvider (that's AppLayout's job in the real
+// app router) — mount it here alongside a bare <DynamicIsland/> so rest-wiring
+// tests (mezo-8141) can observe the island without double-wrapping AppLayout.
 function setup() {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session']}>
         <LevelUpProvider>
-          <ActiveWorkoutPage />
+          <LiveActivityProvider>
+            <DynamicIsland />
+            <ActiveWorkoutPage />
+          </LiveActivityProvider>
         </LevelUpProvider>
       </MemoryRouter>
     </QueryWrapper>,
@@ -104,6 +112,111 @@ test('completing a set advances the set-dot cursor and the header counter', asyn
   await user.click(screen.getByText('Szett kész ✓'))
   expect(container.querySelectorAll('.setdots .sd.don')).toHaveLength(1)
   expect(screen.getByText('1/5 gyakorlat · 1/22 szett')).toBeInTheDocument()
+})
+
+// ---- rest wiring: "Szett kész ✓" starts the island rest (mezo-8141) ----
+
+test('mock mode: logging a mid-exercise set starts the island rest ("Pihenő")', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  // ex1 (Chest Supported Row, compound): 2 warmup + 3 working = 5 planned sets.
+  // Logging the first (a warmup) leaves 4 sets remaining -> the exercise continues.
+  await user.click(screen.getByText('Szett kész ✓'))
+  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
+  expect(screen.getByText('Pihenő')).toBeInTheDocument()
+})
+
+test('mock mode: logging an exercise\'s final set (opens the feedback modal) starts no rest', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Drive through ex1's 4 non-final sets — each is mid-exercise, so each restarts
+  // the island rest (overwrite semantics, asserted separately below).
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
+  // Clear the leftover mid-exercise rest (tap-to-skip) so it can't mask the
+  // assertion below — isolates "does THIS click start a rest" from "one is
+  // already live from an earlier click".
+  await user.click(screen.getByRole('button', { name: 'Pihenő átugrása' }))
+  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  // The 5th (last) set completes the exercise -> feedback modal opens, no rest.
+  await user.click(screen.getByText('Szett kész ✓'))
+  expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
+  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+})
+
+test('mock mode: exiting the workout clears a live rest', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓'))
+  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Vissza' }))
+  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+})
+
+test('mock mode: a new rest replaces (does not stack with) an already-live one', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // warmup 1 -> rest starts
+  expect(container.querySelectorAll('.dynamic-island.live')).toHaveLength(1)
+  await user.click(screen.getByText('Szett kész ✓')) // warmup 2 -> replaces, not stacks
+  expect(container.querySelectorAll('.dynamic-island.live')).toHaveLength(1)
+  expect(screen.getByText('Pihenő')).toBeInTheDocument()
+})
+
+test('mock mode: finishing the workout (phase -> complete) clears a live rest', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Skip ex0 (no rest on skip), then drive the remaining 4 exercises to completion.
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Kihagyás'))
+  await screen.findByText('Lat Pulldown · Pronated')
+  for (let ex = 0; ex < 4; ex++) {
+    await completeExerciseSets(user)
+    if (ex < 3) {
+      // Mid-way through, a rest should be live (proves the loop is actually logging
+      // mid-exercise sets, not just skipping straight to the debrief).
+      expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
+    }
+    const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
+    await user.click(cta)
+    if (ex < 3) await waitFor(() => expect(document.querySelector('.setdots .sd.don')).toBeNull())
+  }
+  // The workout is finished (phase -> complete) — any leftover live rest is cleared.
+  expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument()
+  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+})
+
+test('mock mode: unmounting the workout session clears a live rest', async () => {
+  const user = userEvent.setup()
+  function Harness({ mounted }: { mounted: boolean }) {
+    return (
+      <QueryWrapper>
+        <MemoryRouter initialEntries={['/train/session']}>
+          <LevelUpProvider>
+            <LiveActivityProvider>
+              <DynamicIsland />
+              {mounted && <ActiveWorkoutPage />}
+            </LiveActivityProvider>
+          </LevelUpProvider>
+        </MemoryRouter>
+      </QueryWrapper>
+    )
+  }
+  const { container, rerender } = render(<Harness mounted />)
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓'))
+  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
+  rerender(<Harness mounted={false} />)
+  expect(container.querySelector('.dynamic-island.live')).toBeNull()
 })
 
 test('mock mode: the giant steppers pre-fill the current set from the prescribed target', async () => {
