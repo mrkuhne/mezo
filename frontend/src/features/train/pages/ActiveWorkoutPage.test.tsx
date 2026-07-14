@@ -203,6 +203,25 @@ test('a skipped exercise is marked "kihagyva" in the recap', async () => {
   expect(await screen.findByText('kihagyva')).toBeInTheDocument()
 })
 
+test('a skipped exercise dot shows as dashed (skp class), not solid done (don class)', async () => {
+  const user = userEvent.setup()
+  setup() // mock mode, 5 exercises, current = Chest Supported Row (ex0)
+  await user.click(screen.getByText(/Kezdjük el/))
+  // The header's exdots container has 5 dots (one per exercise); ex0 is current (cur).
+  // Skip ex0 and verify its dot now carries .skp, not .don (which marks completed).
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Kihagyás'))
+  // After skip, we're on ex1 (Lat Pulldown). The exdots are re-rendered with ex0 skipped.
+  await screen.findByText('Lat Pulldown · Pronated')
+  const dots = document.querySelectorAll('.exdots i')
+  expect(dots.length).toBe(5)
+  // Skipped dot (ex0): has .skp, no .don
+  expect(dots[0]).toHaveClass('skp')
+  expect(dots[0]).not.toHaveClass('don')
+  // Current dot (ex1): has .cur
+  expect(dots[1]).toHaveClass('cur')
+})
+
 test('shows the level-up overlay on finish, then reveals the recap on Tovább (mock)', async () => {
   const user = userEvent.setup()
   setup()

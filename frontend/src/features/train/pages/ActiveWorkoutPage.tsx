@@ -668,7 +668,7 @@ function ActiveWorkoutSession({
           </div>
           <div className="exdots" aria-hidden="true">
             {W.exercises.map((e, i) => (
-              <i key={e.id} className={i < currentIdx ? 'don' : i === currentIdx ? 'cur' : undefined} />
+              <i key={e.id} className={session.skipped.includes(e.id) ? 'skp' : i < currentIdx ? 'don' : i === currentIdx ? 'cur' : undefined} />
             ))}
           </div>
           <button

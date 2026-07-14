@@ -1457,3 +1457,4 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .exdots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
 .exdots i.don { background: var(--sage); }
 .exdots i.cur { background: var(--coral); box-shadow: 0 0 0 3px rgba(255,107,74,.22); }
+.exdots i.skp { background: transparent; border: 1.5px dashed var(--line); box-sizing: border-box; }
