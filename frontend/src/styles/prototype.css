@@ -1458,3 +1458,28 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .exdots i.don { background: var(--sage); }
 .exdots i.cur { background: var(--coral); box-shadow: 0 0 0 3px rgba(255,107,74,.22); }
 .exdots i.skp { background: transparent; border: 1.5px dashed var(--line); box-sizing: border-box; }
+
+/* ===== Napív execution card (spec §4.5) ===== */
+.excard { background: var(--surface); border-radius: 30px; padding: 22px 19px; box-shadow: 0 3px 6px rgba(43,33,24,.04), 0 20px 44px rgba(43,33,24,.10); margin: 16px 24px 0; }
+.excard .exo { font-size: 11px; font-weight: 800; color: var(--coral-deep); letter-spacing: 1px; text-transform: uppercase; }
+.excard h2 { font-family: var(--ff-display); font-size: 27px; font-weight: 800; margin-top: 6px; letter-spacing: -.4px; color: var(--ink); }
+.excard .prev { font-size: 12.5px; color: var(--faint); font-weight: 600; margin-top: 4px; }
+.setdots { display: flex; gap: 8px; margin-top: 15px; }
+.setdots .sd { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; background: var(--warm); color: var(--faint); }
+.setdots .sd.don { background: #EAF0E3; color: var(--sage-deep); }
+:root[data-theme="dark"] .setdots .sd.don { background: rgba(127,164,138,.16); }
+.setdots .sd.cur { background: var(--coral); color: #fff; box-shadow: 0 6px 14px rgba(255,107,74,.38); }
+.setdots .sd.wu:not(.don):not(.cur) { background: rgba(255,179,71,.16); color: #8F5514; }
+:root[data-theme="dark"] .setdots .sd.wu:not(.don):not(.cur) { color: #E8B36B; }
+.donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px rgba(255,91,54,.35), inset 0 1px 0 rgba(255,255,255,.25); }
+.nextex { display: flex; align-items: center; background: var(--surface); border-radius: 20px; padding: 13px 16px; box-shadow: var(--np-shadow-row); margin: 12px 24px 0; }
+.nextex .k { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .5px; text-transform: uppercase; }
+.nextex .n { font-size: 13px; font-weight: 700; color: var(--ink); margin-top: 2px; }
+.nextex .chev { margin-left: auto; color: var(--faint); }
+.rirrow { display: flex; gap: 6px; margin-top: 12px; align-items: center; }
+.rirrow .rk { font-size: 10px; font-weight: 800; color: var(--faint); letter-spacing: .6px; text-transform: uppercase; margin-right: 4px; }
+.rirrow button { flex: 1; padding: 8px 0; border-radius: 12px; border: 1.5px solid var(--line); background: var(--canvas); color: var(--sub); font-family: var(--ff-display); font-size: 14px; font-weight: 800; cursor: pointer; }
+.rirrow button[aria-pressed="true"] { border-color: var(--coral); color: var(--coral-deep); background: var(--surface); box-shadow: 0 0 0 1px var(--coral); }
+.aistrip { display: flex; gap: 9px; background: rgba(255,179,71,.16); border-radius: 20px; padding: 13px 15px; margin: 12px 24px 0; }
+.aistrip p { font-size: 12.5px; line-height: 1.55; color: #7A4A18; font-weight: 500; }
+:root[data-theme="dark"] .aistrip p { color: #E8B36B; }

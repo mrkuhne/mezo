@@ -31,13 +31,11 @@ import {
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Chip } from '@/shared/ui/Chip'
-import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Sheet } from '@/shared/ui/Sheet'
-import { CompactStepper } from '@/features/train/components/CompactStepper'
+import { SetStepper } from '@/features/train/components/SetStepper'
 import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
-import { LastWeekStat } from '@/features/train/components/LastWeekStat'
 import { PRToast, type PRState } from '@/features/train/components/PRToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutComplete } from '@/features/train/components/WorkoutComplete'
@@ -57,9 +55,6 @@ const WARMUP_ROWS = [
 const AMBER_TINT_6 = 'color-mix(in srgb, var(--warning) 6%, transparent)'
 const AMBER_BORDER = 'color-mix(in srgb, var(--warning) 30%, transparent)'
 const BRAND_TINT_4 = 'color-mix(in srgb, var(--brand-glow) 4%, transparent)'
-const BRAND_TINT_6 = 'color-mix(in srgb, var(--brand-glow) 6%, transparent)'
-const BRAND_TINT_8 = 'color-mix(in srgb, var(--brand-glow) 8%, transparent)'
-const BRAND_TINT_12 = 'color-mix(in srgb, var(--brand-glow) 12%, transparent)'
 
 // PR demo (prototype-scripted moment): the 3rd set of exercise 0 at/above this
 // weight triggers the Personal Record toast, which auto-hides after PR_TOAST_MS.
@@ -144,8 +139,6 @@ function ActiveWorkoutSession({
   const [rir, setRir] = useState(startPrefill.rir)
   const [workoutId, setWorkoutId] = useState<string | null>(open?.id ?? null)
   const [side, setSide] = useState<Side | null>(null)
-  const [noteOpen, setNoteOpen] = useState(false)
-  const [note, setNote] = useState('')
   const [showPR, setShowPR] = useState<PRState | null>(null)
   // Progression: a real max_strength level-up from the finish signal drives the
   // recap's "PR" framing (replaces the old 105 kg demo scan). Captured here so it
@@ -187,10 +180,6 @@ function ActiveWorkoutSession({
   // model's derived current exercise. Drives the active card, dots, history & PR.
   const current = feedbackEx ?? W.exercises.find((e) => e.id === currentExerciseId(session)) ?? W.exercises[0]
   const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
-  // The engine's prescribed target for the current set (warmup then working, aligned
-  // to setIdx). Null on a first-ever workout / no-engine day → the panel falls back
-  // to lastWeek. Drives the pre-fill effect below, the kind chip and the set-dots.
-  const curTarget = prescribedAt(session, current.id, session.setIdx)
   // Only genuinely load-less exercises (plyo) hide the kg stepper. A null target
   // weight ALSO happens on a first-ever workout (no history, no anchor) — there the
   // user must still enter a starting weight, so we must NOT hide the stepper then.
@@ -275,10 +264,9 @@ function ActiveWorkoutSession({
         // Plyo / bodyweight sets carry no load.
         weightKg: weightless ? 0 : weight, reps, rir,
         kind: prescribedAt(session, finishing.id, wasSetIdx)?.kind ?? 'working',
-        ...(side ? { side } : {}), ...(note.trim() ? { note: note.trim() } : {}),
+        ...(side ? { side } : {}),
       })
     }
-    setNote('')
 
     // PR demo: only set 3 of the first exercise at/above the threshold counts,
     // and only when a last-week reference exists to compare against.
@@ -556,6 +544,9 @@ function ActiveWorkoutSession({
       const fixed = s.order.slice(0, ci + 1)
       return { ...s, order: [...fixed, ...newRemaining] }
     })
+  // Presentational "Következő" row below the excard — the next exercise in
+  // session.order (post-reorder), or null on the last exercise.
+  const nextEx = remaining[0] ? W.exercises.find((e) => e.id === remaining[0].id) ?? null : null
 
   // F2 "Minden hétre": persist the extra set to the TEMPLATE by bumping this
   // exercise's set count in its meso day and reusing the day-exercises PUT. The
@@ -692,117 +683,132 @@ function ActiveWorkoutSession({
           </div>
         )}
 
-        {/* Active exercise card */}
-        <div style={{ padding: '16px 24px' }}>
-          <div className="card notch-12" style={{ padding: 18 }}>
-            {activeChallenge && (
-              <div
-                style={{
-                  margin: '-18px -18px 14px',
-                  padding: '10px 16px',
-                  background: BRAND_TINT_8,
-                  borderBottom: '1px solid var(--border-brand)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                }}
-              >
-                <Icon name="sparkle" size={14} color="var(--brand-glow)" />
-                <div className="col flex-1">
-                  <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
-                    Aktív kihívás · {activeChallenge.typeLabel}
-                  </span>
-                  <span style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>
-                    Cél: <strong style={{ color: 'var(--brand-glow)', fontWeight: 500 }}>{activeChallenge.target}</strong>
-                  </span>
-                </div>
-              </div>
-            )}
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-              <span className="eyebrow brand">
-                {current.type === 'compound' ? 'Compound' : 'Isolation'} · Set {session.setIdx + 1}/{currentSetCount}
-              </span>
-              <span className="chip brand" style={{ fontSize: 9, padding: '3px 8px' }}>
-                {curTarget?.kind === 'warmup' ? 'Bemelegítő' : `Cél · ${current.repMin}-${current.repMax} @ RIR ${current.targetRIR}`}
-              </span>
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <Display size="lg">{current.name}</Display>
-            </div>
-
-            {/* Inline demo video (catalog-resolved) — the wrapper renders only when a real
-                YouTube id is extractable, so a stored non-YouTube url leaves no empty gap. */}
-            {current.videoUrl && youTubeId(current.videoUrl) && (
-              <div className="mt-sm">
-                <VideoDemo url={current.videoUrl} />
-              </div>
-            )}
-
-            {/* Durable per-exercise note pill (F4) — always visible while a note exists */}
-            {effectiveNote && (
-              <div
-                aria-label="Gyakorlat-jegyzet"
-                className="exercise-note-pill row gap-sm mt-sm"
-                style={{
-                  alignItems: 'center',
-                  padding: '6px 10px',
-                  background: 'var(--surface-2)',
-                  borderLeft: '2px solid var(--brand-glow)',
-                  fontSize: 12,
-                  color: 'var(--text-secondary)',
-                  lineHeight: 1.4,
-                }}
-              >
-                <Icon name="tool" size={11} color="var(--brand-glow)" />
-                <span style={{ flex: 1 }}>{effectiveNote}</span>
-              </div>
-            )}
-
-            {/* Múlt hét — hero comparison block (only with a previous completed instance) */}
-            {current.lastWeek && (
-              <div
-                className="mt-lg"
-                style={{
-                  padding: '14px 16px',
-                  background: 'var(--surface-2)',
-                  borderLeft: '2px solid var(--brand-glow)',
-                  position: 'relative',
-                }}
-              >
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
-                  <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>Múlt hét · Kedd</span>
-                  <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>7 napja</span>
-                </div>
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-end', gap: 8 }}>
-                  <LastWeekStat label="Súly" val={current.lastWeek.weight} unit="kg" />
-                  <div style={{ width: 1, height: 32, background: 'var(--border-subtle)' }} />
-                  <LastWeekStat label="Reps" val={'× ' + current.lastWeek.reps} />
-                  <div style={{ width: 1, height: 32, background: 'var(--border-subtle)' }} />
-                  <LastWeekStat label="RIR" val={current.lastWeek.rir} />
-                </div>
-              </div>
-            )}
-
-            {/* Engine rationale — rendered whenever the engine returns one, INDEPENDENT
-                of lastWeek: a first-ever workout (no lastWeek) still surfaces its
-                rationale (e.g. "Kezdő súly (anchor)" / "Első alkalom — add meg a súlyt"). */}
-            {current.rationale && (
-              <div className="row mt-lg gap-sm" style={{ alignItems: 'center' }}>
-                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                  {current.rationale}
+        {/* Execution card — Napív §4.5: challenge banner, exo/name/prev, video +
+            note pill, set-dots, giant steppers, RIR/Side pills, Szett kész ✓
+            (mezo-8141). Replaces the old eyebrow/Múlt-hét-hero/tool-row layout. */}
+        <div className="excard np-anim" style={{ '--i': 1 } as React.CSSProperties}>
+          {activeChallenge && (
+            <div className="warmstrip">
+              <Icon name="sparkle" size={14} color="var(--brand-glow)" />
+              <div className="col flex-1">
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+                  Aktív kihívás · {activeChallenge.typeLabel}
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>
+                  Cél: <strong style={{ color: 'var(--brand-glow)', fontWeight: 500 }}>{activeChallenge.target}</strong>
                 </span>
               </div>
-            )}
+            </div>
+          )}
+          <div className="exo">{currentIdx + 1}. gyakorlat · {current.muscle}</div>
+          <h2>{current.name}</h2>
+          {current.lastWeek && (
+            <div className="prev">
+              múlt héten: {current.lastWeek.weight.toLocaleString('hu-HU')} kg × {current.lastWeek.reps} @ RIR {current.lastWeek.rir}
+            </div>
+          )}
 
-            {/* Prescribed sets render as a full list below the card (spec §6). */}
+          {/* Inline demo video (catalog-resolved) — the wrapper renders only when a real
+              YouTube id is extractable, so a stored non-YouTube url leaves no empty gap. */}
+          {current.videoUrl && youTubeId(current.videoUrl) && (
+            <div className="mt-sm">
+              <VideoDemo url={current.videoUrl} />
+            </div>
+          )}
+
+          {/* Durable per-exercise note pill (F4) — always visible while a note exists */}
+          {effectiveNote && (
+            <div
+              aria-label="Gyakorlat-jegyzet"
+              className="exercise-note-pill row gap-sm mt-sm"
+              style={{
+                alignItems: 'center',
+                padding: '6px 10px',
+                background: 'var(--surface-2)',
+                borderLeft: '2px solid var(--brand-glow)',
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+                lineHeight: 1.4,
+              }}
+            >
+              <Icon name="tool" size={11} color="var(--brand-glow)" />
+              <span style={{ flex: 1 }}>{effectiveNote}</span>
+            </div>
+          )}
+
+          {/* Set-dots — one per planned+extra set; ✓ done, coral current, amber
+              "B{n}" pending warmups, plain ordinal pending working sets. */}
+          <div className="setdots">
+            {Array.from({ length: currentSetCount }, (_, i) => {
+              const warm = prescribedAt(session, current.id, i)?.kind === 'warmup'
+              const cls = i < session.setIdx ? 'sd don' : i === session.setIdx ? 'sd cur' : 'sd'
+              return (
+                <div key={i} className={cls + (warm ? ' wu' : '')}>
+                  {i < session.setIdx ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
+                </div>
+              )
+            })}
           </div>
+
+          {/* Giant steppers — the single logging surface (spec §4.5). Only
+              genuinely load-less exercises (plyo) hide the kg stepper. */}
+          <div className="steprow">
+            {current.type !== 'plyo' && (
+              <SetStepper label="Súly" value={weight} step={2.5} unit="kg" min={0} max={999} onChange={setWeight} />
+            )}
+            <SetStepper label="Ismétlés" value={reps} step={1} integer min={1} max={100} onChange={setReps} />
+          </div>
+
+          <div className="rirrow">
+            <span className="rk">RIR</span>
+            {[0, 1, 2, 3].map((n) => (
+              <button key={n} type="button" aria-pressed={rir === n} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
+                {n}
+              </button>
+            ))}
+          </div>
+          {current.type === 'isolation' && (
+            <div className="rirrow">
+              <span className="rk">Side</span>
+              {(['L', 'B', 'R'] as const).map((s) => (
+                <button key={s} type="button" aria-pressed={side === s} onClick={() => setSide(side === s ? null : s)}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <button type="button" className="donebtn np-press" onClick={completeSet}>
+            Szett kész ✓
+          </button>
         </div>
 
-        {/* Prescribed set list (spec §6): ALL sets up front — warmups (amber) then
-            working (teal), each pre-filled to its target; the current set expands to
-            the logging panel, done sets show the logged actuals. Replaces the old
-            set-dots + one-at-a-time single panel. */}
+        {/* Next-exercise preview — presentational, derived from the reorderable
+            `remaining` segment (post-reorder order). */}
+        {nextEx && (
+          <div className="nextex">
+            <div>
+              <div className="k">Következő</div>
+              <div className="n">{nextEx.name} — {effectiveSetCount(session, nextEx.id)} × {nextEx.repMin}-{nextEx.repMax}</div>
+            </div>
+            <span className="chev" aria-hidden="true">›</span>
+          </div>
+        )}
+
+        {/* Engine rationale — rendered whenever the engine returns one, INDEPENDENT
+            of lastWeek: a first-ever workout (no lastWeek) still surfaces its
+            rationale (e.g. "Kezdő súly (anchor)" / "Első alkalom — add meg a súlyt"). */}
+        {current.rationale && (
+          <div className="aistrip">
+            <span aria-hidden="true">✨</span>
+            <p>{current.rationale}</p>
+          </div>
+        )}
+
+        {/* Prescribed set list (spec §6): demoted to read-only status rows now that
+            logging lives in the excard above — targets for pending sets, logged
+            actuals for done sets; ALL information survives, only the input
+            controls moved out. */}
         <div style={{ padding: '6px 24px 20px' }}>
           <div className="col gap-sm">
             {Array.from({ length: currentSetCount }, (_, i) => {
@@ -813,121 +819,8 @@ function ActiveWorkoutSession({
               const accent = warm ? 'var(--warning)' : 'var(--brand-glow)'
               const actual = session.logged[current.id]?.[i]
               const isDone = i < session.setIdx
-              const isCurrent = i === session.setIdx
 
-              if (isCurrent) {
-                const rowWeightless = current.type === 'plyo'
-                return (
-                  <div
-                    key={i}
-                    className="card notch-8"
-                    style={{ padding: 0, border: '1px solid var(--brand-glow)', borderLeft: '2px solid var(--brand-glow)', background: BRAND_TINT_6 }}
-                  >
-                    <div className="row gap-sm" style={{ padding: '10px 12px 2px', alignItems: 'center' }}>
-                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 20 }}>{setLabel}</span>
-                      <span className="chip" style={{ fontSize: 8, padding: '2px 6px', color: accent, borderColor: accent }}>{kindLabel}</span>
-                      <span style={{ flex: 1 }} />
-                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>Soron</span>
-                    </div>
-                    <div style={{ padding: '4px 10px 12px' }}>
-                      <div className="row gap-sm">
-                        {/* Only genuinely load-less (plyo) sets hide the kg stepper — a
-                            first-workout null recommendation still needs manual entry. */}
-                        {!rowWeightless && (
-                          <CompactStepper label="kg" value={weight} step={2.5} onChange={setWeight} primary min={0} max={999} />
-                        )}
-                        <CompactStepper label="reps" value={reps} step={1} onChange={setReps} integer min={1} max={100} />
-                      </div>
-                      <div className="row gap-sm" style={{ marginTop: 8, alignItems: 'stretch' }}>
-                        <div className="flex-1" style={{ background: 'var(--surface-2)', padding: '5px 8px' }}>
-                          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <span className="label-mono" style={{ fontSize: 8 }}>RIR</span>
-                            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)' }}>reps in reserve</span>
-                          </div>
-                          <div className="row gap-xs">
-                            {[0, 1, 2, 3].map((n) => (
-                              <button
-                                key={n}
-                                type="button"
-                                aria-pressed={rir === n}
-                                aria-label={`RIR ${n}`}
-                                onClick={() => setRir(n)}
-                                style={{
-                                  flex: 1,
-                                  padding: '6px 0',
-                                  background: rir === n ? BRAND_TINT_12 : 'var(--surface-1)',
-                                  border: '1px solid ' + (rir === n ? 'var(--brand-glow)' : 'var(--border-subtle)'),
-                                  color: rir === n ? 'var(--brand-glow)' : 'var(--text-secondary)',
-                                  fontFamily: 'var(--ff-display)',
-                                  fontSize: 14,
-                                  fontWeight: 600,
-                                  clipPath: 'polygon(2px 0, 100% 0, 100% calc(100% - 2px), calc(100% - 2px) 100%, 0 100%, 0 2px)',
-                                }}
-                              >
-                                {n}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        {current.type === 'isolation' && (
-                          <div style={{ background: 'var(--surface-2)', padding: '5px 8px', flexShrink: 0 }}>
-                            <div className="label-mono" style={{ fontSize: 8, marginBottom: 4 }}>Side</div>
-                            <div className="row gap-xs">
-                              {(['L', 'B', 'R'] as const).map((s) => (
-                                <button
-                                  key={s}
-                                  type="button"
-                                  aria-pressed={side === s}
-                                  className={'chip' + (side === s ? ' brand' : '')}
-                                  style={{ fontSize: 9, padding: '5px 8px' }}
-                                  onClick={() => setSide(side === s ? null : s)}
-                                >
-                                  {s}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      {/* Tool row — Note is live (T2); 90s timer + Voice stay inert (Phase 3) */}
-                      <div className="row gap-xs" style={{ marginTop: 8 }}>
-                        <button type="button" className="chip flex-1" style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}>
-                          <Icon name="today" size={11} /> 90s
-                        </button>
-                        <button
-                          type="button"
-                          className={'chip flex-1' + (noteOpen ? ' brand' : '')}
-                          style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}
-                          onClick={() => setNoteOpen(!noteOpen)}
-                        >
-                          <Icon name="tool" size={11} /> Note
-                        </button>
-                        <button type="button" className="chip flex-1" style={{ justifyContent: 'center', padding: '8px', fontSize: 9 }}>
-                          <Icon name="mic" size={11} /> Voice
-                        </button>
-                      </div>
-                      {noteOpen && (
-                        <input
-                          aria-label="Szet megjegyzés"
-                          value={note}
-                          onChange={(e) => setNote(e.target.value)}
-                          placeholder="Megjegyzés a következő szethez"
-                          style={{ width: '100%', fontSize: 13, padding: '10px 12px', marginTop: 8, background: 'var(--surface-2)' }}
-                        />
-                      )}
-                      <button
-                        className="cta-primary notch-8"
-                        onClick={completeSet}
-                        style={{ width: '100%', marginTop: 9, padding: '14px 20px', fontSize: 15 }}
-                      >
-                        <Icon name="check" size={16} /> Set kész
-                      </button>
-                    </div>
-                  </div>
-                )
-              }
-
-              // Done or upcoming — a compact pre-filled row (actual if logged, else target).
+              // A read-only row — target for pending sets, logged actuals for done ones.
               const w = isDone ? actual?.weight : t?.targetWeightKg
               const r = isDone ? actual?.reps : t?.targetReps
               const rr = isDone ? actual?.rir : t?.targetRIR
@@ -938,7 +831,7 @@ function ActiveWorkoutSession({
                   style={{ padding: '10px 12px', alignItems: 'center', background: 'var(--surface-2)', borderLeft: '2px solid ' + accent, opacity: isDone ? 0.5 : 1 }}
                 >
                   <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', width: 20 }}>{setLabel}</span>
-                  <span className="chip" style={{ fontSize: 8, padding: '2px 6px', color: accent, borderColor: accent }}>{kindLabel}</span>
+                  <span className="stag" style={{ background: 'color-mix(in srgb, ' + accent + ' 14%, transparent)', color: accent }}>{kindLabel}</span>
                   <span
                     style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)', whiteSpace: 'nowrap', marginLeft: 4 }}
                   >
