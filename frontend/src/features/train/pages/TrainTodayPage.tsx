@@ -79,14 +79,14 @@ export function TrainTodayPage() {
   }
   const agenda: WeeklyAgendaDay[] = DAY_ORDER.map((d, i) => {
     const g = gymTimes.find((x) => x.day === d)
-    const v = vbSessions.find((x) => x.day === d)
+    const v = vbSessions.filter((x) => x.day === d)
     return {
       day: d,
       date: weekDateIso(i),
       gym: g && g.active ? g : null,
-      volleyball: v ?? null,
+      sport: v,
       running: runSessionsForDay(activeRunningBlock, DAY_ORDER.indexOf(d)),
-      isToday: Boolean(g?.today || v?.today),
+      isToday: Boolean(g?.today || v.some((x) => x.today)),
     }
   })
 
@@ -101,11 +101,11 @@ export function TrainTodayPage() {
   const orderedToday = daySessions({
     day: today?.day ?? '',
     gym: today?.gym ?? null,
-    volleyball: today?.volleyball ?? null,
+    sport: today?.sport ?? [],
     running: todayRuns,
     isToday: true,
   })
-  const sessionCount = agenda.filter((a) => a.gym || a.volleyball || a.running.length).length
+  const sessionCount = agenda.filter((a) => a.gym || a.sport.length || a.running.length).length
 
   // Active meso phase for the current week (Week 3 ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
@@ -191,10 +191,10 @@ export function TrainTodayPage() {
           )
         }
 
-        if (item.kind === 'volleyball') {
-          const vb = item.volleyball
+        if (item.kind === 'sport') {
+          const vb = item.sport
           return (
-            <div key="hero-vb" style={{ padding: '0 24px 12px' }}>
+            <div key={`hero-sport-${vb.time}`} style={{ padding: '0 24px 12px' }}>
               <div className="np-eventrow">
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div className="col">
@@ -318,7 +318,7 @@ export function TrainTodayPage() {
       })}
 
       {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
-      {!today?.gym && !today?.volleyball && todayRuns.length === 0 && (
+      {!today?.gym && !today?.sport.length && todayRuns.length === 0 && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card notch-12" style={{ padding: 18 }}>
             <span className="eyebrow">Ma pihenőnap</span>
@@ -344,10 +344,10 @@ export function TrainTodayPage() {
               key={a.day}
               agenda={a}
               gymLogged={Boolean(a.date) && gymDoneDates.includes(a.date!)}
-              vbLogged={vbDoneOn(a.date)}
+              isSportLogged={() => vbDoneOn(a.date)}
               isRunLogged={(key) => Boolean(runLoggedFor(key))}
               onStartGym={openSession}
-              onLogVolleyball={() => setVbLogOpen(true)}
+              onLogSport={() => setVbLogOpen(true)}
               onLogRun={(s) => setRunLogCtx({
                 blockId: activeRunningBlock!.id,
                 weekNumber: activeRunningBlock!.currentWeek,
