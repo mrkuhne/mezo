@@ -55,7 +55,6 @@ const WARMUP_ROWS = [
 ] as const
 
 const AMBER_TINT_6 = 'color-mix(in srgb, var(--warning) 6%, transparent)'
-const AMBER_TINT_8 = 'color-mix(in srgb, var(--warning) 8%, transparent)'
 const AMBER_BORDER = 'color-mix(in srgb, var(--warning) 30%, transparent)'
 const BRAND_TINT_4 = 'color-mix(in srgb, var(--brand-glow) 4%, transparent)'
 const BRAND_TINT_6 = 'color-mix(in srgb, var(--brand-glow) 6%, transparent)'
@@ -659,48 +658,35 @@ function ActiveWorkoutSession({
       )}
 
       <div>
-        {/* Header — pinned below the status bar so progress stays visible (mezo-wdk) */}
-        <div className="sticky-top" style={{ padding: '8px 24px 10px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <button onClick={onExit} className="row gap-sm">
-              <Icon name="x" size={16} color="var(--text-secondary)" />
-              <span className="eyebrow">Bezárás</span>
-            </button>
-            <div className="row gap-sm" style={{ alignItems: 'center' }}>
-              <span className="label-mono">
-                {currentIdx + 1}/{W.exercises.length} · {doneSets}/{totalSets} szet
-              </span>
-              <button
-                type="button"
-                aria-label="Gyakorlat műveletek"
-                disabled={!!feedbackEx}
-                onClick={() => setActionSheetOpen(true)}
-                className="chip notch-4"
-                style={{ padding: '6px 10px', fontSize: 14, lineHeight: 1 }}
-              >
-                ⋯
-              </button>
-            </div>
+        {/* Header — Napív wk-top (spec §4.5): back pill, title + counter, exercise
+            dots, and the ⋯ actions chip, all in one sticky row (mezo-8141). */}
+        <div className="wk-top np-anim" style={{ '--i': 0 } as React.CSSProperties}>
+          <button type="button" className="back np-press" aria-label="Vissza" onClick={onExit}>‹</button>
+          <div className="tt">
+            <div className="t1">{W.title}</div>
+            <div className="t2">{currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
           </div>
-          <div className="bar mt-sm">
-            <div className="bar-fill glow" style={{ width: (doneSets / totalSets) * 100 + '%' }} />
+          <div className="exdots" aria-hidden="true">
+            {W.exercises.map((e, i) => (
+              <i key={e.id} className={i < currentIdx ? 'don' : i === currentIdx ? 'cur' : undefined} />
+            ))}
           </div>
+          <button
+            type="button"
+            aria-label="Gyakorlat műveletek"
+            disabled={!!feedbackEx}
+            onClick={() => setActionSheetOpen(true)}
+            className="back np-press"
+            style={{ fontSize: 15 }}
+          >
+            ⋯
+          </button>
         </div>
 
         {/* Niggle banner if active */}
         {niggleActive && currentIdx <= 1 && (
           <div style={{ padding: '8px 24px' }}>
-            <div
-              style={{
-                padding: '8px 12px',
-                background: AMBER_TINT_8,
-                borderLeft: '2px solid var(--warning)',
-                fontSize: 11,
-                color: 'var(--warning)',
-                fontFamily: 'var(--ff-mono)',
-                letterSpacing: '0.08em',
-              }}
-            >
+            <div className="warmstrip">
               ⚠ Jobb váll aktív · {currentIdx === 1 ? 'pronated grif' : 'óvatos, először warm-up'}
             </div>
           </div>

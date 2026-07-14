@@ -12,6 +12,9 @@ export function AppLayout() {
   const scenario = useTodayScenario()
   const location = useLocation()
   const anchor = scenario.anchorMode && location.pathname.startsWith('/today')
+  // Full-screen active-workout session (wk-top header owns its own back affordance
+  // and exercise dots) — the bottom tab bar would just be dead chrome underneath it.
+  const hideTabBar = location.pathname === '/train/session'
   return (
     <LiveActivityProvider>
       <PhoneFrame anchor={anchor}>
@@ -24,7 +27,7 @@ export function AppLayout() {
                 <Outlet />
               </ErrorBoundary>
             </ScreenContent>
-            <TabBar />
+            {!hideTabBar && <TabBar />}
           </LevelUpProvider>
         </ToastProvider>
       </PhoneFrame>

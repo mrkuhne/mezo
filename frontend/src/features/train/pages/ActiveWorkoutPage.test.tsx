@@ -66,6 +66,18 @@ test('clicking the start CTA reveals the first active exercise', async () => {
   expect(screen.getByText('Set kész')).toBeInTheDocument()
 })
 
+test('the wk-top header shows the workout title, the gyakorlat/szett counter, an exercise dot per exercise and the Vissza + ⋯ buttons', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelector('.wk-top .t1')).toHaveTextContent('Pull Day')
+  // currentIdx=0, 5 exercises, 0 sets logged yet, 22 total planned sets (5+5+4+4+4).
+  expect(screen.getByText('1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
+  expect(container.querySelectorAll('.exdots i')).toHaveLength(5)
+  expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Gyakorlat műveletek' })).toBeInTheDocument()
+})
+
 test('completing a set advances the set counter', async () => {
   const user = userEvent.setup()
   setup()
