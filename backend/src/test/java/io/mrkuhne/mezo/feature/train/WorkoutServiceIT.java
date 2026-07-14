@@ -459,8 +459,11 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         assertThat(today.getTemplateSessionId()).isEqualTo(template.getId());
         assertThat(today.getTitle()).isEqualTo("Pull Day");
         assertThat(today.getDayLabel()).isEqualTo(todayLabel());
-        assertThat(today.getExercises()).hasSize(2);
+        // 2 created + the fix-zárás closing pair appended by the default-on closing block (mezo-z2ul)
+        assertThat(today.getExercises()).hasSize(4);
         assertThat(today.getExercises().get(0).getName()).isEqualTo("Chest Supported Row");
+        assertThat(today.getExercises().get(2).getName()).isEqualTo("Dead Hang");
+        assertThat(today.getExercises().get(3).getName()).isEqualTo("45° Back Extension");
         assertThat(today.getExercises().get(0).getLastWeek()).isNull(); // first-ever workout
         assertThat(today.getOpenWorkout()).isNull();
     }

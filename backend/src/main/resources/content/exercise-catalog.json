@@ -80,6 +80,7 @@
   { "slug": "machine-hip-abduction", "name": "Machine Hip Abduction", "muscle": "glute", "type": "isolation", "stim": 0.60, "fatigue": 0.15 },
   { "slug": "sumo-deadlift", "name": "Sumo Deadlift", "muscle": "glute", "type": "compound", "stim": 0.88, "fatigue": 0.85 },
   { "slug": "back-extension-45", "name": "45° Back Extension", "muscle": "glute", "type": "isolation", "stim": 0.68, "fatigue": 0.30 },
+  { "slug": "dead-hang", "name": "Dead Hang", "muscle": "lats", "type": "plyo", "stim": 0.30, "fatigue": 0.15 },
   { "slug": "standing-calf-raise", "name": "Standing Calf Raise", "muscle": "calf", "type": "isolation", "stim": 0.72, "fatigue": 0.20 },
   { "slug": "seated-calf-raise", "name": "Seated Calf Raise", "muscle": "calf", "type": "isolation", "stim": 0.68, "fatigue": 0.18 },
   { "slug": "leg-press-calf-raise", "name": "Leg-Press Calf Raise", "muscle": "calf", "type": "isolation", "stim": 0.70, "fatigue": 0.18 },
