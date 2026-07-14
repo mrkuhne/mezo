@@ -44,7 +44,6 @@ import { ReasoningRow } from '@/features/fuel/components/ReasoningRow'
 import { RecommendationCard } from '@/features/fuel/components/RecommendationCard'
 import { MealMatchRow } from '@/features/fuel/components/MealMatchRow'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Chip } from '@/shared/ui/Chip'
 import { Icon } from '@/shared/ui/Icon'
 import { StatCell } from '@/shared/ui/StatCell'
@@ -93,10 +92,10 @@ export function FuelStackPage() {
   return (
     <>
       {/* Page header */}
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Fuel · Stack</Eyebrow>
-          <PageTitle>AI builder</PageTitle>
+      <div className="pghead-np sage">
+        <div>
+          <div className="over">Fuel · Stack</div>
+          <h1>AI builder</h1>
         </div>
         <Chip variant="brand" style={{ padding: '6px 8px', fontSize: 9 }}>
           <Icon name="sparkle" size={10} /> live
@@ -108,9 +107,9 @@ export function FuelStackPage() {
       {weekInMeso != null && (
       <div style={{ padding: '0 24px 12px' }}>
         <div className="card notch-12" style={{ padding: 14 }}>
-          <Eyebrow brand>Mit nézek most</Eyebrow>
+          <span className="eyebrow" style={{ color: 'var(--sage-deep)' }}>Mit nézek most</span>
           <div className="row gap-md mt-md" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
-            <StatCell label="Meso" val={'W' + weekInMeso} sub={today.mesoPhase + ' · ' + mesoTitle} color="var(--brand-glow)" />
+            <StatCell label="Meso" val={'W' + weekInMeso} sub={today.mesoPhase + ' · ' + mesoTitle} color="var(--sage)" />
             <StatCell label="Reta" val={'D' + today.retaDay} sub="stable ablak" color="var(--reta-d3)" />
             <StatCell label="Heti load" val="5+4" sub="gym + vb" color="var(--cat-tendency)" />
             <StatCell label="Alvás" val="7.5h" sub="14d átlag" color="var(--cat-preference)" />
@@ -136,15 +135,15 @@ export function FuelStackPage() {
           className="card notch-4"
           style={{
             padding: 14,
-            background: 'color-mix(in srgb, var(--brand-glow) 5%, transparent)',
+            background: 'var(--wash-sage)',
             borderColor: 'var(--border-brand)',
             position: 'relative',
             overflow: 'hidden',
           }}
         >
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-glow)' }} />
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--sage)' }} />
           <div className="row gap-sm" style={{ alignItems: 'flex-start', paddingLeft: 6 }}>
-            <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+            <Icon name="sparkle" size={12} color="var(--sage-deep)" />
             <p style={{ fontSize: 12.5, lineHeight: 1.55, color: 'var(--text-primary)', flex: 1 }}>
               <SafeMarkdown
                 text={
@@ -228,7 +227,7 @@ export function FuelStackPage() {
       {recommendations.length > 0 && (
         <div style={{ padding: '16px 24px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-            <Eyebrow brand>Mit hozzáadnék</Eyebrow>
+            <span className="eyebrow" style={{ color: 'var(--sage-deep)' }}>Mit hozzáadnék</span>
             <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>auto-discover</span>
           </div>
           <div className="col gap-sm">
@@ -242,7 +241,7 @@ export function FuelStackPage() {
       {/* Meal recommendations */}
       <div style={{ padding: '16px 24px 24px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-          <Eyebrow brand>Étkezések ehhez a stack-hez</Eyebrow>
+          <span className="eyebrow" style={{ color: 'var(--sage-deep)' }}>Étkezések ehhez a stack-hez</span>
           <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>macro + micro match</span>
         </div>
         <div className="col gap-sm">
@@ -281,7 +280,7 @@ export function FuelStackPage() {
           }}
         >
           <div className="row gap-sm" style={{ alignItems: 'center' }}>
-            <Icon name="sparkle" size={14} color="var(--brand-glow)" />
+            <Icon name="sparkle" size={14} color="var(--sage-deep)" />
             <div className="col flex-1">
               <span className="label-mono brand" style={{ fontSize: 9 }}>
                 Protokoll · v{appliedVersion} aktív
@@ -290,7 +289,7 @@ export function FuelStackPage() {
                 Mai timeline frissítve · {selectedIds.length} item
               </span>
             </div>
-            <Icon name="check" size={14} color="var(--brand-glow)" />
+            <Icon name="check" size={14} color="var(--sage-deep)" />
           </div>
         </div>
       )}

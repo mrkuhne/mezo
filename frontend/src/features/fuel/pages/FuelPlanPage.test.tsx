@@ -34,6 +34,13 @@ describe('FuelPlanPage (mock mode)', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Idők' }))
     expect(await screen.findByText('Heti gym idők')).toBeInTheDocument()
   })
+
+  it('own header: pghead-np sage over + h1 + pgact-np action chip', () => {
+    const { container } = renderView()
+    expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
+    expect(screen.getByText('Fuel · Heti terv')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Idők' })).toHaveClass('pgact-np', 'np-press')
+  })
 })
 
 describe('FuelPlanPage (real mode)', () => {

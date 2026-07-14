@@ -20,7 +20,7 @@ export function ProtocolSlot({
       style={{
         padding: 0,
         borderColor: slot.primary ? 'var(--border-brand)' : 'var(--border-subtle)',
-        background: slot.primary ? 'color-mix(in srgb, var(--brand-glow) 4%, transparent)' : 'var(--surface-1)',
+        background: slot.primary ? 'var(--wash-sage)' : 'var(--surface-1)',
       }}
     >
       <div className="row" style={{ alignItems: 'stretch' }}>
@@ -33,7 +33,7 @@ export function ProtocolSlot({
             alignItems: 'center',
             justifyContent: 'center',
             borderRight: '1px solid var(--border-subtle)',
-            background: slot.primary ? 'color-mix(in srgb, var(--brand-glow) 6%, transparent)' : 'transparent',
+            background: slot.primary ? 'var(--wash-sage)' : 'transparent',
           }}
         >
           <span
@@ -41,7 +41,7 @@ export function ProtocolSlot({
               fontFamily: 'var(--ff-display)',
               fontSize: 15,
               fontWeight: 600,
-              color: slot.primary ? 'var(--brand-glow)' : 'var(--text-primary)',
+              color: slot.primary ? 'var(--sage-deep)' : 'var(--text-primary)',
             }}
           >
             {slot.time}
@@ -103,7 +103,7 @@ export function ProtocolSlot({
                   <span className="label-mono text-tertiary" style={{ fontSize: 10 }}>
                     {it.dose}
                   </span>
-                  {taken && <Icon name="check" size={10} color="var(--brand-glow)" />}
+                  {taken && <Icon name="check" size={10} color="var(--sage-deep)" />}
                 </button>
               )
             })}
@@ -113,7 +113,7 @@ export function ProtocolSlot({
             className="text-secondary mt-sm"
             style={{ fontSize: 11, lineHeight: 1.5, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}
           >
-            <Icon name="sparkle" size={10} color="var(--brand-glow)" /> {slot.reasoning}
+            <Icon name="sparkle" size={10} color="var(--sage-deep)" /> {slot.reasoning}
           </p>
         </div>
       </div>
