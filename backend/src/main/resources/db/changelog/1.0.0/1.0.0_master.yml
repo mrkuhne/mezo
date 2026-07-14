@@ -342,3 +342,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607112000_mezo-jzca_create_activity_log.sql
+  - changeSet:
+      id: "1.0.0:202607141200_mezo-05v6_sport_schedule_slot_sport"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607141200_mezo-05v6_sport_schedule_slot_sport.sql

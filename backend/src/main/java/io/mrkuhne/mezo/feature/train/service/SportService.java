@@ -90,6 +90,7 @@ public class SportService {
             s.setTime(in.getTime());
             s.setDurationMin(in.getDurationMin());
             s.setKind(in.getKind());
+            if (in.getSport() != null) s.setSport(in.getSport()); // volleyball|cross|trx; entity defaults volleyball
             s.setLocation(in.getLocation());
             s.setIntensityLabel(in.getIntensityLabel());
             fresh.add(slotRepository.save(s));
