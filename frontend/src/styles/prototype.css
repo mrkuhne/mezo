@@ -1382,6 +1382,21 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .loadtile .lk { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .3px; text-transform: uppercase; }
 .loadtile .lva { font-size: 13.5px; font-weight: 800; font-family: var(--ff-display); margin-top: 1px; color: var(--ink); white-space: nowrap; }
 
+/* ===== Napív weekly plan day cards (Mai, spec §4.3) ===== */
+.dayrow { display: flex; align-items: center; background: var(--surface); border-radius: 20px; padding: 12px 15px; box-shadow: var(--np-shadow-row); margin-bottom: 9px; }
+.dayrow .d { width: 48px; font-size: 11px; font-weight: 800; color: var(--faint); flex-shrink: 0; text-transform: uppercase; }
+.dayrow .d small { display: block; font-size: 9px; color: var(--coral-deep); }
+.dayrow .sess { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.dayrow .sess .s { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink); background: none; border: 0; padding: 0; text-align: left; font-family: inherit; width: 100%; cursor: inherit; }
+.dayrow .sess .s .meta { color: var(--faint); font-weight: 600; font-size: 11.5px; }
+.dayrow .chev { color: var(--faint); }
+.dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); }
+.dayrow.today .chev { color: var(--coral-deep); }
+.dayrow.rest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
+.dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: #EAF0E3; color: var(--sage-deep); }
+:root[data-theme="dark"] .dayrow .done-chip { background: rgba(127,164,138,.16); }
+.dayrow .log-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
