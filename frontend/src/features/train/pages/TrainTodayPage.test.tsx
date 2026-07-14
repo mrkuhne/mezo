@@ -338,3 +338,29 @@ describe('TrainTodayPage (mock mode)', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 })
+
+test('real mode: a TRX slot renders its own hero, sport-matched done-state, and preselects the log sheet', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const dow = (new Date().getDay() + 6) % 7
+  const otherDay = DAY_ORDER[(dow + 1) % 7]
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(otherDay)])),
+    // A volleyball session logged TODAY must NOT mark the TRX slot done (date+sport matching).
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([
+      { id: 'ss-1', sport: 'volleyball', date: localDateString(), time: '19:00', duration: 90, rpe: 7 },
+    ])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+      { id: 'sl-1', dayOfWeek: dow, time: '12:00', durationMin: 60, kind: 'training', sport: 'trx', location: 'Life1 Corvin' },
+    ])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({ templateSessionId: null, dayLabel: todayLabel(), title: '', durationEst: 0, exercises: [], openWorkout: null })),
+  )
+  renderView()
+  // TRX hero with its own tag + title, NOT done (the logged session is volleyball)
+  expect(await screen.findByText('TRX · 12:00')).toBeInTheDocument()
+  expect(screen.getByText('🪢 TRX')).toBeInTheDocument()
+  const cta = screen.getByRole('button', { name: /Logold a session-t/ })
+  // The log sheet opens preselected to TRX
+  fireEvent.click(cta)
+  expect(screen.getByText('Sport log · TRX')).toBeInTheDocument()
+})

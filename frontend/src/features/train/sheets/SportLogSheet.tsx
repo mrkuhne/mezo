@@ -132,13 +132,15 @@ export function ScaleRow({
 }
 
 // --- SportLogSheet ---
-export function SportLogSheet({ onClose, onSave }: {
+export function SportLogSheet({ onClose, onSave, initialSport }: {
   onClose: () => void
   // `done` closes the sheet — the parent calls it from the log mutation's onSuccess
   // so the close is deferred until the save lands (and the level-up overlay can show).
   onSave?: (input: SportSessionCreateRequest, done: () => void) => void
+  /** Pre-selects the kind (a schedule slot's log CTA passes its sport). */
+  initialSport?: SportKind
 }) {
-  const [kind, setKind] = useState<SportKind>('volleyball')
+  const [kind, setKind] = useState<SportKind>(initialSport ?? 'volleyball')
   const [duration, setDuration] = useState(90)
   const [sets, setSets] = useState(5)
   const [rounds, setRounds] = useState(6)
