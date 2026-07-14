@@ -124,6 +124,22 @@ test('mock mode: the current set-dot shows a B-prefixed label on a warmup set', 
   expect(container.querySelector('.setdots .sd.cur')).toHaveTextContent('B1') // ex1 set 1 is a warmup
 })
 
+// Transient per-set note (SetLogRequest.note) — the ONLY write path for it, distinct
+// from the durable per-exercise note pill/editor (F4, tested below). Regression guard
+// for the excard recomposition that silently dropped this input (mezo-8141).
+test('mock mode: the excard renders a per-set note input that clears after logging the set', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  const noteInput = await screen.findByLabelText('Szett megjegyzés')
+  await user.type(noteInput, 'Nehéz volt az utolsó ismétlés')
+  expect(noteInput).toHaveValue('Nehéz volt az utolsó ismétlés')
+  await user.click(screen.getByText('Szett kész ✓'))
+  // Post-log reset: the transient note clears (proves it participates in the
+  // completeSet submit path, same as the old removed input did).
+  expect(await screen.findByLabelText('Szett megjegyzés')).toHaveValue('')
+})
+
 test('mock mode: renders the rationale line instead of the static hint', async () => {
   const user = userEvent.setup()
   setup()
@@ -353,8 +369,10 @@ function useRealHandlers(today: typeof REAL_TODAY, calls: string[]) {
       return HttpResponse.json({ id: 'w-1', templateSessionId: body.templateSessionId, date: '2026-06-12', status: 'active', sets: [] }, { status: 201 })
     }),
     http.post(`${API_BASE}/api/train/workouts/:id/sets`, async ({ params, request }) => {
-      const body = (await request.json()) as { exerciseId: string; setIndex: number; weightKg: number }
-      calls.push(`set:${params.id}:${body.exerciseId}:${body.setIndex}:${body.weightKg}`)
+      const body = (await request.json()) as { exerciseId: string; setIndex: number; weightKg: number; note?: string }
+      // note is appended only when present, so pre-existing exact-string assertions
+      // (tests that never type a note) stay unaffected.
+      calls.push(`set:${params.id}:${body.exerciseId}:${body.setIndex}:${body.weightKg}` + (body.note ? `:note=${body.note}` : ''))
       return HttpResponse.json({ id: 'st-' + body.setIndex, exerciseId: body.exerciseId, setIndex: body.setIndex }, { status: 201 })
     }),
     http.post(`${API_BASE}/api/train/workouts/:id/skip`, async ({ params, request }) => {
@@ -388,6 +406,19 @@ test('real mode: starting creates the instance and Szett kész posts the set', a
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(screen.getByText('Szett kész ✓'))
   await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5')) // prefill = last week
+})
+
+test('real mode: typing a per-set note before Szett kész sends it in the logSet payload', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.type(await screen.findByLabelText('Szett megjegyzés'), 'Fájt a csukló')
+  await user.click(screen.getByText('Szett kész ✓'))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:102.5:note=Fájt a csukló'))
 })
 
 test('real mode: an open instance resumes mid-workout with seeded sets', async () => {

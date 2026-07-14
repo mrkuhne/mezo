@@ -139,6 +139,9 @@ function ActiveWorkoutSession({
   const [rir, setRir] = useState(startPrefill.rir)
   const [workoutId, setWorkoutId] = useState<string | null>(open?.id ?? null)
   const [side, setSide] = useState<Side | null>(null)
+  // Transient per-SET note (SetLogRequest.note, max 500 chars) — distinct from the
+  // durable per-EXERCISE note (effectiveNote/localNotes above). Cleared after each log.
+  const [note, setNote] = useState('')
   const [showPR, setShowPR] = useState<PRState | null>(null)
   // Progression: a real max_strength level-up from the finish signal drives the
   // recap's "PR" framing (replaces the old 105 kg demo scan). Captured here so it
@@ -264,9 +267,10 @@ function ActiveWorkoutSession({
         // Plyo / bodyweight sets carry no load.
         weightKg: weightless ? 0 : weight, reps, rir,
         kind: prescribedAt(session, finishing.id, wasSetIdx)?.kind ?? 'working',
-        ...(side ? { side } : {}),
+        ...(side ? { side } : {}), ...(note.trim() ? { note: note.trim() } : {}),
       })
     }
+    setNote('')
 
     // PR demo: only set 3 of the first exercise at/above the threshold counts,
     // and only when a last-week reference exists to compare against.
@@ -777,6 +781,17 @@ function ActiveWorkoutSession({
               ))}
             </div>
           )}
+
+          {/* Transient per-set note (SetLogRequest.note) — cleared after each log;
+              distinct from the durable per-exercise note pill/editor above. */}
+          <input
+            className="setnote"
+            aria-label="Szett megjegyzés"
+            placeholder="Megjegyzés ehhez a szetthez (opcionális)"
+            maxLength={500}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
 
           <button type="button" className="donebtn np-press" onClick={completeSet}>
             Szett kész ✓
