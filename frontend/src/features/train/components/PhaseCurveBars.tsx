@@ -62,7 +62,7 @@ export function PhaseCurveBars({ phases, currentWeek, size = 'sm', status = 'act
             />
             <span
               className="label-mono"
-              style={{ fontSize: 8, color: current ? 'var(--brand-glow)' : 'var(--text-tertiary)' }}
+              style={{ fontSize: 8, color: current ? 'var(--coral)' : 'var(--text-tertiary)' }}
             >
               W{i + 1}
             </span>

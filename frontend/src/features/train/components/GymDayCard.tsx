@@ -2,7 +2,8 @@
 // Mezo · GymDayCard — one day row in the GymPage weekly split.
 // Training days are tappable (open the GymDaySheet); rest days
 // (exerciseCount === 0) render dashed + italic with their note and
-// are not interactive. Today's card ("current") is brand-accented.
+// are not interactive. Today's card ("current") is gym-coral-accented
+// (--tag-gym/--wash-gym, Napiv vocabulary).
 // Ported from prototype train-views.jsx GymDayCard.
 // ============================================================
 import { Icon } from '@/shared/ui/Icon'
@@ -29,9 +30,9 @@ export function GymDayCard({ day, onOpen }: GymDayCardProps) {
         padding: 0,
         textAlign: 'left',
         width: '100%',
-        borderColor: isToday ? 'var(--border-brand)' : 'var(--border-subtle)',
+        borderColor: isToday ? 'color-mix(in srgb, var(--tag-gym) 40%, transparent)' : 'var(--border-subtle)',
         background: isToday
-          ? 'color-mix(in srgb, var(--brand-glow) 4%, transparent)'
+          ? 'var(--wash-gym)'
           : isRest
             ? 'transparent'
             : 'var(--surface-1)',
@@ -47,7 +48,7 @@ export function GymDayCard({ day, onOpen }: GymDayCardProps) {
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: isToday ? 'var(--brand-glow)' : isRest ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+              color: isToday ? 'var(--tag-gym)' : isRest ? 'var(--text-tertiary)' : 'var(--text-secondary)',
             }}
           >
             {day.day}
@@ -67,7 +68,20 @@ export function GymDayCard({ day, onOpen }: GymDayCardProps) {
             >
               {day.type}
             </span>
-            {day.muscleAccent && <span className="chip brand" style={{ fontSize: 8, padding: '1px 5px' }}>focus</span>}
+            {day.muscleAccent && (
+              <span
+                className="chip"
+                style={{
+                  fontSize: 8,
+                  padding: '1px 5px',
+                  background: 'var(--wash-gym)',
+                  borderColor: 'color-mix(in srgb, var(--tag-gym) 40%, transparent)',
+                  color: 'var(--tag-gym)',
+                }}
+              >
+                focus
+              </span>
+            )}
           </div>
           {!isRest && (
             <div className="row gap-md mt-xs" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10 }}>
@@ -82,7 +96,7 @@ export function GymDayCard({ day, onOpen }: GymDayCardProps) {
         </div>
 
         {!isRest && (
-          <Icon name="chevron-right" size={12} color={isToday ? 'var(--brand-glow)' : 'var(--text-tertiary)'} />
+          <Icon name="chevron-right" size={12} color={isToday ? 'var(--tag-gym)' : 'var(--text-tertiary)'} />
         )}
       </div>
     </button>
