@@ -51,6 +51,19 @@ test('renders the hero, macro hero and ingredient contributions', async () => {
   expect(screen.getByText(r.ingredients[0].name!)).toBeInTheDocument()
 })
 
+// Napiv de-darkening (mezo-8141): the hero title/meta moved OFF the media band onto
+// the card surface below it — var(--ink)/var(--faint), never the retired
+// dark-media text tokens.
+test('the hero title/meta render off the media band in var(--ink)/var(--faint)', async () => {
+  const qc = newQc()
+  const r = firstId(qc)
+  renderDetail(r.id, qc)
+  const title = await screen.findByText(r.name)
+  expect(title.style.color).toBe('var(--ink)')
+  const meta = screen.getByText(/létrehozva/)
+  expect(meta.style.color).toBe('var(--faint)')
+})
+
 test('a missing id shows the not-found fallback', async () => {
   renderDetail('does-not-exist', newQc())
   expect(await screen.findByText('Nincs ilyen recept.')).toBeInTheDocument()

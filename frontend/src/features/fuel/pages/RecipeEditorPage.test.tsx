@@ -53,6 +53,18 @@ async function closePicker() {
   await waitForElementToBeRemoved(() => screen.queryByText('Válassz hozzávalót'), { timeout: 2000 })
 }
 
+// Header-only re-skin (mezo-8141): pghead-np sage over ("Fuel · Receptek") + h1
+// keeps the current title content (the typed name, or the "—" placeholder).
+test('header-only pass: pghead-np sage over + h1 keeps the current title content', async () => {
+  const qc = newQc()
+  const { container } = renderNew(qc)
+  expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
+  expect(screen.getByText('Fuel · Receptek')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: '—' })).toBeInTheDocument()
+  await userEvent.type(screen.getByPlaceholderText(/Tonhalsaláta/), 'Teszt recept')
+  expect(screen.getByRole('heading', { name: 'Teszt recept' })).toBeInTheDocument()
+})
+
 test('create mode: Mentés is disabled until a name + an ingredient are present', async () => {
   const qc = newQc()
   renderNew(qc)
