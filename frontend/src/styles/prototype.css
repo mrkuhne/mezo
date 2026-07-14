@@ -1417,3 +1417,22 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   .screen-content { padding-bottom: calc(118px + env(safe-area-inset-bottom)); }
   .recipe-save-bar { bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
+
+/* ===== Napív rest Live-Activity island (spec §4.5 — always-dark capsule, both themes) ===== */
+button.dynamic-island { border: 0; padding: 0; font: inherit; }
+.dynamic-island.live { width: calc(100% - 28px); height: 62px; border-radius: 31px; display: flex; align-items: center; gap: 11px; padding: 0 16px; cursor: pointer; z-index: 60; background: #0F0D0B; }
+.dynamic-island.live .ring { flex-shrink: 0; }
+.dynamic-island.live .lt1 { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #B7A899; text-transform: uppercase; }
+.dynamic-island.live .lt2 { font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: #FBF6EF; font-variant-numeric: tabular-nums; text-align: left; }
+.dynamic-island.live .lnext { margin-left: auto; text-align: right; }
+.dynamic-island.live .ln1 { font-size: 9px; font-weight: 800; letter-spacing: .8px; color: #8A7A6A; text-transform: uppercase; }
+.dynamic-island.live .ln2 { font-size: 11.5px; font-weight: 700; color: #E8DDCE; margin-top: 1px; }
+@media (prefers-reduced-motion: no-preference) {
+  .dynamic-island { transition: width .3s ease, height .3s ease, border-radius .3s ease; }
+}
+/* The full-bleed block above hides .dynamic-island on real devices/PWA (the device chrome
+   already renders its own island) — but a live rest is OUR content, not chrome, so keep it
+   visible there and dock it to the real safe-area top instead of the mockup's fixed 11px. */
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .dynamic-island.live { display: flex; top: calc(10px + env(safe-area-inset-top)); }
+}
