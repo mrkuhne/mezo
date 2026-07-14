@@ -6,7 +6,7 @@ function renderAt(path: string) {
   return render(<MemoryRouter initialEntries={[path]}><FuelSubNav /></MemoryRouter>)
 }
 
-test('renders all six sub-nav items with verbatim labels', () => {
+test('renders all six pills with verbatim labels', () => {
   renderAt('/fuel')
   for (const label of ['Mai', 'Terv', 'Stack', 'Receptek', 'Kamra', 'Gyógyszer']) {
     expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
@@ -14,11 +14,11 @@ test('renders all six sub-nav items with verbatim labels', () => {
 })
 
 test('marks the active sub-view from the URL', () => {
-  const { container } = renderAt('/fuel/recipes')
-  expect(container.querySelector('.subnav-item.active')).toHaveTextContent('Receptek')
+  const { container } = renderAt('/fuel/stack')
+  expect(container.querySelector('.np-pill.on')).toHaveTextContent('Stack')
 })
 
 test('Mai (index) is active only on exact /fuel', () => {
   const { container } = renderAt('/fuel/plan')
-  expect(container.querySelector('.subnav-item.active')).toHaveTextContent('Terv')
+  expect(container.querySelector('.np-pill.on')).toHaveTextContent('Terv')
 })

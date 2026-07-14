@@ -1486,3 +1486,16 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .aistrip { display: flex; gap: 9px; background: rgba(255,179,71,.16); border-radius: 20px; padding: 13px 15px; margin: 12px 24px 0; }
 .aistrip p { font-size: 12.5px; line-height: 1.55; color: #7A4A18; font-weight: 500; }
 :root[data-theme="dark"] .aistrip p { color: #E8B36B; }
+
+/* ===== Napív S6 — Fuel accent vocabulary ===== */
+.pghead-np.sage .over { color: var(--sage-deep); }
+:root {
+  --wash-sage: #EAF0E3;
+  --wash-amber: #FFF3E4;
+  --wash-lav: #EEEBF6;
+}
+:root[data-theme="dark"] {
+  --wash-sage: rgba(127,164,138,.16);
+  --wash-amber: rgba(255,179,71,.16);
+  --wash-lav: rgba(155,143,196,.16);
+}
