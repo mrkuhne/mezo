@@ -107,6 +107,27 @@ export function skipExercise(s: Session, id: string): Session {
   return { ...s, skipped: [...s.skipped, id] }
 }
 
+/**
+ * Reconcile the session with a plan that GREW after the session was seeded — the
+ * server can append template exercises mid-workout (the closing block, mezo-z2ul),
+ * and a refetch then surfaces them while the session is already in flight. Unknown
+ * plan exercises are APPENDED to `order` (never spliced mid-list, so the in-flight
+ * cursor and any user reorder stay put) with their planned count + prescription;
+ * logged/extra/skipped/setIdx are untouched. Returns the SAME session object when
+ * nothing is new, so an effect can call it on every plan render without looping.
+ */
+export function mergePlan(s: Session, exercises: SessionExerciseInput[]): Session {
+  const fresh = exercises.filter((e) => !(e.id in s.planned))
+  if (fresh.length === 0) return s
+  const planned = { ...s.planned }
+  const prescribed = { ...s.prescribed }
+  for (const e of fresh) {
+    planned[e.id] = e.warmupSets + e.workingSets
+    prescribed[e.id] = e.prescribedSets ?? []
+  }
+  return { ...s, order: [...s.order, ...fresh.map((e) => e.id)], planned, prescribed }
+}
+
 /** Persisted-set shape used when resuming an in-flight workout. */
 interface PersistedSet {
   exerciseId: string

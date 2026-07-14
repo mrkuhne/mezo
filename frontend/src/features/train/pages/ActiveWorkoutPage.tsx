@@ -23,6 +23,7 @@ import {
   currentExerciseId,
   effectiveSetCount,
   makeSession,
+  mergePlan,
   prescribedAt,
   seedFromOpen,
   skipExercise as skipExerciseModel,
@@ -173,6 +174,15 @@ function ActiveWorkoutSession({
     const t = setTimeout(() => setShowPR(null), PR_TOAST_MS)
     return () => clearTimeout(t)
   }, [showPR])
+
+  // Plan growth mid-session (mezo-ohvm): the server-side closing block can append
+  // template exercises while this session is already open — a refetch then grows
+  // W.exercises. Fold the new exercises into the model so the cursor VISITS them
+  // instead of counting them as done (an id missing from session.planned reads as
+  // 0 planned sets). mergePlan is identity-stable, so re-renders don't loop.
+  useEffect(() => {
+    setSession((s) => mergePlan(s, W.exercises))
+  }, [W.exercises])
 
   // On-screen exercise: the pinned feedback target while debriefing, else the
   // model's derived current exercise. Drives the active card, dots, history & PR.
