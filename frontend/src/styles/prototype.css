@@ -1417,3 +1417,72 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   .screen-content { padding-bottom: calc(118px + env(safe-area-inset-bottom)); }
   .recipe-save-bar { bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
+
+/* ===== Napív rest Live-Activity island (spec §4.5 — always-dark capsule, both themes) ===== */
+button.dynamic-island { border: 0; padding: 0; font: inherit; }
+.dynamic-island.live { width: calc(100% - 28px); height: 62px; border-radius: 31px; display: flex; align-items: center; gap: 11px; padding: 0 16px; cursor: pointer; z-index: 60; background: #0F0D0B; }
+.dynamic-island.live .ring { flex-shrink: 0; }
+.dynamic-island.live .lt1 { font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #B7A899; text-transform: uppercase; }
+.dynamic-island.live .lt2 { font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: #FBF6EF; font-variant-numeric: tabular-nums; text-align: left; }
+.dynamic-island.live .lnext { margin-left: auto; text-align: right; }
+.dynamic-island.live .ln1 { font-size: 9px; font-weight: 800; letter-spacing: .8px; color: #8A7A6A; text-transform: uppercase; }
+.dynamic-island.live .ln2 { font-size: 11.5px; font-weight: 700; color: #E8DDCE; margin-top: 1px; }
+
+/* ===== Napív giant set steppers (active workout, spec §4.5) ===== */
+.steprow { display: flex; gap: 11px; margin-top: 18px; }
+.stepper { flex: 1; background: var(--canvas); border-radius: 22px; padding: 13px 12px 12px; text-align: center; border: 1.5px solid var(--line); }
+.stepper .k { font-size: 10px; font-weight: 800; color: var(--faint); letter-spacing: 1px; text-transform: uppercase; }
+.stepper .row { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+.stepper .b { width: 40px; height: 40px; border-radius: 50%; background: var(--surface); box-shadow: 0 4px 12px rgba(43,33,24,.10); font-size: 19px; color: var(--coral-deep); display: flex; align-items: center; justify-content: center; font-weight: 800; border: 0; cursor: pointer; font-family: inherit; }
+.stepper .n { font-family: var(--ff-display); font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.5px; color: var(--ink); }
+.stepper .n small { font-size: 12px; color: var(--faint); font-weight: 800; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .dynamic-island { transition: width .3s ease, height .3s ease, border-radius .3s ease; }
+}
+/* The full-bleed block above hides .dynamic-island on real devices/PWA (the device chrome
+   already renders its own island) — but a live rest is OUR content, not chrome, so keep it
+   visible there and dock it to the real safe-area top instead of the mockup's fixed 11px. */
+@media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
+  .dynamic-island.live { display: flex; top: calc(10px + env(safe-area-inset-top)); }
+}
+
+/* ===== Napív active-workout header (spec §4.5) ===== */
+.wk-top { display: flex; align-items: center; gap: 12px; padding: 12px 24px 0; position: sticky; top: 0; z-index: 5; background: var(--canvas); }
+.wk-top .back { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); box-shadow: var(--np-shadow-row); display: flex; align-items: center; justify-content: center; color: var(--sub); font-size: 18px; border: 0; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+.wk-top .tt { min-width: 0; }
+.wk-top .tt .t1 { font-family: var(--ff-display); font-size: 18px; font-weight: 800; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wk-top .tt .t2 { font-size: 10.5px; color: var(--faint); font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
+.exdots { margin-left: auto; display: flex; gap: 5px; flex-shrink: 0; }
+.exdots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.exdots i.don { background: var(--sage); }
+.exdots i.cur { background: var(--coral); box-shadow: 0 0 0 3px rgba(255,107,74,.22); }
+.exdots i.skp { background: transparent; border: 1.5px dashed var(--line); box-sizing: border-box; }
+
+/* ===== Napív execution card (spec §4.5) ===== */
+.excard { background: var(--surface); border-radius: 30px; padding: 22px 19px; box-shadow: 0 3px 6px rgba(43,33,24,.04), 0 20px 44px rgba(43,33,24,.10); margin: 16px 24px 0; }
+.excard .exo { font-size: 11px; font-weight: 800; color: var(--coral-deep); letter-spacing: 1px; text-transform: uppercase; }
+.excard h2 { font-family: var(--ff-display); font-size: 27px; font-weight: 800; margin-top: 6px; letter-spacing: -.4px; color: var(--ink); }
+.excard .prev { font-size: 12.5px; color: var(--faint); font-weight: 600; margin-top: 4px; }
+.setdots { display: flex; gap: 8px; margin-top: 15px; }
+.setdots .sd { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; background: var(--warm); color: var(--faint); }
+.setdots .sd.don { background: #EAF0E3; color: var(--sage-deep); }
+:root[data-theme="dark"] .setdots .sd.don { background: rgba(127,164,138,.16); }
+.setdots .sd.cur { background: var(--coral); color: #fff; box-shadow: 0 6px 14px rgba(255,107,74,.38); }
+.setdots .sd.wu:not(.don):not(.cur) { background: rgba(255,179,71,.16); color: #8F5514; }
+:root[data-theme="dark"] .setdots .sd.wu:not(.don):not(.cur) { color: #E8B36B; }
+.setdots .sd.extra:not(.don):not(.cur) { background: transparent; border: 1.5px dashed var(--coral); box-sizing: border-box; color: var(--coral-deep); }
+.donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px rgba(255,91,54,.35), inset 0 1px 0 rgba(255,255,255,.25); }
+.nextex { display: flex; align-items: center; background: var(--surface); border-radius: 20px; padding: 13px 16px; box-shadow: var(--np-shadow-row); margin: 12px 24px 0; }
+.nextex .k { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .5px; text-transform: uppercase; }
+.nextex .n { font-size: 13px; font-weight: 700; color: var(--ink); margin-top: 2px; }
+.nextex .chev { margin-left: auto; color: var(--faint); }
+.rirrow { display: flex; gap: 6px; margin-top: 12px; align-items: center; }
+.rirrow .rk { font-size: 10px; font-weight: 800; color: var(--faint); letter-spacing: .6px; text-transform: uppercase; margin-right: 4px; }
+.rirrow button { flex: 1; padding: 8px 0; border-radius: 12px; border: 1.5px solid var(--line); background: var(--canvas); color: var(--sub); font-family: var(--ff-display); font-size: 14px; font-weight: 800; cursor: pointer; }
+.rirrow button[aria-pressed="true"] { border-color: var(--coral); color: var(--coral-deep); background: var(--surface); box-shadow: 0 0 0 1px var(--coral); }
+.setnote { width: 100%; margin-top: 12px; padding: 11px 14px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--canvas); color: var(--ink); font-size: 13px; font-family: inherit; }
+.setnote::placeholder { color: var(--faint); }
+.aistrip { display: flex; gap: 9px; background: rgba(255,179,71,.16); border-radius: 20px; padding: 13px 15px; margin: 12px 24px 0; }
+.aistrip p { font-size: 12.5px; line-height: 1.55; color: #7A4A18; font-weight: 500; }
+:root[data-theme="dark"] .aistrip p { color: #E8B36B; }

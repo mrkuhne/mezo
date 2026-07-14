@@ -31,3 +31,11 @@ test('Me screen theme toggle flips data-theme', async () => {
   await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
+test('the tab bar stays visible on the regular Train tab', () => {
+  const { container } = renderApp('/train')
+  expect(container.querySelector('.tab-bar')).toBeTruthy()
+})
+test('the tab bar hides on the full-screen active-workout session (mezo-8141)', () => {
+  const { container } = renderApp('/train/session')
+  expect(container.querySelector('.tab-bar')).toBeNull()
+})
