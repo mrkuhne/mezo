@@ -91,7 +91,8 @@ class WorkoutContractIT extends ApiIntegrationTest {
 
         assertThat(today.getTemplateSessionId()).isEqualTo(template.getId());
         assertThat(today.getTitle()).isEqualTo("Pull Day");
-        assertThat(today.getExercises()).hasSize(1);
+        // 1 created + the fix-zárás closing pair appended by the default-on closing block (mezo-z2ul)
+        assertThat(today.getExercises()).hasSize(3);
     }
 
     @Test
