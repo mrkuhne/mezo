@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -20,10 +20,20 @@ const renderView = () =>
     </QueryWrapper>,
   )
 
-test('renders header, macro hero, timeline and micronutrients', () => {
-  renderView()
-  expect(screen.getByRole('heading', { name: 'Pacing' })).toBeInTheDocument()
+test('renders header, gauge, fuelchips, macro bars, timeline and micronutrients', () => {
+  const { container } = renderView()
+  expect(screen.getByRole('heading', { name: 'Mai pacing' })).toBeInTheDocument()
+  // Napiv kcal gauge — consumed value renders inside .gauge (mezo-8141).
+  expect(container.querySelector('.gauge')).toBeInTheDocument()
   expect(screen.getByText(/1840/)).toBeInTheDocument()
+  // fuelchips — coffee cutoff / kitchen close, moved off the retired context strip.
+  expect(screen.getByText(/kávé cutoff/)).toBeInTheDocument()
+  expect(screen.getByText(/konyha zár/)).toBeInTheDocument()
+  // macro soft bars — Fehérje/Szénhidrát/Zsír, three `.mac` rows.
+  expect(container.querySelectorAll('.mac')).toHaveLength(3)
+  expect(screen.getByText('Fehérje')).toBeInTheDocument()
+  expect(screen.getByText('Szénhidrát')).toBeInTheDocument()
+  expect(screen.getByText('Zsír')).toBeInTheDocument()
   expect(screen.getByText('Mikrotápanyagok · heti')).toBeInTheDocument()
 })
 test('shows the protocol-meta row when a protocol is active (mock, v3)', () => {
@@ -33,7 +43,7 @@ test('shows the protocol-meta row when a protocol is active (mock, v3)', () => {
 test('hides the protocol-meta row when there is no active protocol (real-mode ghost v0)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   renderView()
-  await screen.findByRole('heading', { name: 'Pacing' })
+  await screen.findByRole('heading', { name: 'Mai pacing' })
   expect(screen.queryByText(/Stack · v/)).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Replan' })).not.toBeInTheDocument()
 })
@@ -70,18 +80,24 @@ test('opens the LogMealSheet from the ＋ Log entry', async () => {
   fireEvent.click(screen.getByRole('button', { name: /log/i }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
-test('real mode: the context strip shows schedule-derived values (kitchen close, coffee cutoff)', async () => {
+test('logs water via the +250/+500 slot buttons', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Víz +250 ml' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Víz +500 ml' }))
+  // Mock mode increments consumed.water in place — the slot's own text reflects the new total.
+  await waitFor(() => expect(screen.getByText(/Víz · \d+ \/ \d+ ml/)).toBeInTheDocument())
+})
+test('real mode: fuelchips show schedule-derived values (kitchen close, coffee cutoff)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   renderView()
-  await screen.findByRole('heading', { name: 'Pacing' })
+  await screen.findByRole('heading', { name: 'Mai pacing' })
   // Derived from the default wake/bed rhythm: kitchen close = bed(23:00) − 90m = 21:30,
   // caffeine cutoff pinned 14:00 (both are planner-composed, not the frozen mock plan).
-  expect(screen.getByText('Kitchen')).toBeInTheDocument()
-  expect(screen.getByText('Coffee')).toBeInTheDocument()
-  expect(screen.getAllByText('21:30').length).toBeGreaterThanOrEqual(1) // Kitchen-close cell (+ the Vacsora window snaps here)
-  expect(screen.getByText('14:00')).toBeInTheDocument()                 // Coffee-cutoff cell
+  expect(screen.getByText(/kávé cutoff 14:00/)).toBeInTheDocument()
+  expect(screen.getByText(/konyha zár 21:30/)).toBeInTheDocument()
+  expect(screen.getAllByText('21:30').length).toBeGreaterThanOrEqual(1) // the Vacsora window snaps here
 })
-test('real mode: the gym context cell reads the schedule-derived workout type, not the mock seed', async () => {
+test('real mode: the timeline workout block reads the schedule-derived type, not a stale label', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   // Pin a Thursday (Csü) so the meso fixture's only gym day is "today"; fake ONLY Date so
   // findBy's real timers keep polling.
@@ -113,11 +129,10 @@ test('real mode: the gym context cell reads the schedule-derived workout type, n
       ),
     )
     renderView()
-    // Scope to the context strip (its unique 'Coffee' cell anchors the card) so we assert on the
-    // gym cell label — not the timeline's workout block, which also carries the type.
-    const strip = (await screen.findByText('Coffee')).closest('.card') as HTMLElement
-    await within(strip).findByText('Push')                            // schedule-derived type surfaced
-    expect(within(strip).queryByText('Pull Day')).not.toBeInTheDocument() // frozen mock label gone
+    // The gym block now surfaces as the timeline's workout slot (gym/vb context strip retired,
+    // mezo-8141) — its title carries the schedule-derived type, not the frozen mock's 'Pull Day'.
+    await screen.findByText('Push')
+    expect(screen.queryByText('Pull Day')).not.toBeInTheDocument()
   } finally {
     vi.useRealTimers()
   }
