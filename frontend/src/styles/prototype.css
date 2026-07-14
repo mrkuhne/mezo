@@ -1372,6 +1372,16 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .stag-sport { background: var(--wash-sport); color: var(--tag-sport); }
 .stag-run { background: var(--wash-run); color: var(--tag-run); }
 
+/* ===== Napív weekly load tiles (Mai, spec §4.3) ===== */
+.loadrow { display: flex; gap: 9px; margin: 14px 24px 0; }
+.loadtile { flex: 1; border-radius: 18px; padding: 10px 11px; display: flex; align-items: center; gap: 9px; background: var(--surface); box-shadow: var(--np-shadow-row); min-width: 0; }
+.loadtile .lic { width: 32px; height: 32px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.loadtile .lic-gym { background: var(--wash-gym); }
+.loadtile .lic-sport { background: var(--wash-sport); }
+.loadtile .lic-run { background: var(--wash-run); }
+.loadtile .lk { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .3px; text-transform: uppercase; }
+.loadtile .lva { font-size: 13.5px; font-weight: 800; font-family: var(--ff-display); margin-top: 1px; color: var(--ink); white-space: nowrap; }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
