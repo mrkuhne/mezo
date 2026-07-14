@@ -1,10 +1,11 @@
 // ============================================================
 // Mezo · RunningPage (Futás) — the 6th Train sub-tab, READ-ONLY in R1.
-// Thin TrainSection shell ⇒ this view owns its own .page-header (eyebrow
-// `Train · Futás`, title `Intervallum`) and a 3-button view-switcher:
+// Thin TrainSection shell ⇒ this view owns its own .pghead-np (over
+// `Edzés · Futás`, title `Intervallum`) and a 3-button view-switcher:
 // E heti edzés · Napló · Tervek. Mirrors SportPage's DNA (own header, hero
 // .card.notch-12 with left accent strip + radial glow + <Display>, ghost
-// states) but uses the running accent --info instead of --cat-tendency.
+// states) using the Napiv --tag-run/--wash-run sky vocabulary (running
+// accent) and a stag-run FUTÁS type tag on session rows/cards.
 // Ported from the approved mockups futas-app-faithful.html (week landing)
 // and futas-blocks-builder.html (Tervek library). No writes, no builder
 // navigation, no Mai/cross-load — those are later R-steps.
@@ -17,7 +18,6 @@ import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import type { RunningBlockResponse, RunSessionLogResponse, RunSessionLogRequest } from '@/data/train/runningApi'
 import { newDraft } from '@/data/train/runningDraft'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Display } from '@/shared/ui/Display'
@@ -27,7 +27,7 @@ import { RunSessionCard } from '@/features/train/components/RunSessionCard'
 import { RunCrossLoadCard } from '@/features/train/components/RunCrossLoadCard'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 
-const RUN = 'var(--info)'
+const RUN = 'var(--tag-run)'
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
@@ -70,13 +70,18 @@ export function RunningPage() {
   return (
     <>
       {/* Header — `＋ Új terv` chip lives on the Tervek (blocks) segment */}
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Train · Futás</Eyebrow>
-          <PageTitle>Intervallum</PageTitle>
+      <div className="pghead-np">
+        <div>
+          <div className="over">Edzés · Futás</div>
+          <h1>Intervallum</h1>
         </div>
         {view === 'blocks' && (
-          <button type="button" className="chip notch-4" style={{ padding: '8px 10px' }} onClick={createBlock}>
+          <button
+            type="button"
+            onClick={createBlock}
+            className="pgact-np np-press"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--wash-run)', color: 'var(--tag-run)' }}
+          >
             <Icon name="plus" size={12} /> Új terv
           </button>
         )}
@@ -95,8 +100,8 @@ export function RunningPage() {
               className="flex-1 notch-4"
               style={{
                 padding: '10px',
-                background: active ? 'color-mix(in srgb, var(--info) 8%, transparent)' : 'var(--surface-1)',
-                border: `1px solid ${active ? 'color-mix(in srgb, var(--info) 40%, transparent)' : 'var(--border-subtle)'}`,
+                background: active ? 'var(--wash-run)' : 'var(--surface-1)',
+                border: `1px solid ${active ? 'color-mix(in srgb, var(--tag-run) 40%, transparent)' : 'var(--border-subtle)'}`,
                 color: active ? RUN : 'var(--text-secondary)',
                 fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
@@ -153,8 +158,8 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
         style={{
           padding: 18,
           background:
-            'linear-gradient(180deg, color-mix(in srgb, var(--info) 6%, transparent) 0%, var(--surface-1) 100%)',
-          borderColor: 'color-mix(in srgb, var(--info) 30%, transparent)',
+            'linear-gradient(180deg, var(--wash-run) 0%, var(--surface-1) 100%)',
+          borderColor: 'color-mix(in srgb, var(--tag-run) 30%, transparent)',
           position: 'relative',
           overflow: 'hidden',
           marginBottom: 16,
@@ -169,7 +174,7 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
             width: 160,
             height: 160,
             borderRadius: '50%',
-            background: 'radial-gradient(circle, color-mix(in srgb, var(--info) 12%, transparent), transparent 70%)',
+            background: 'radial-gradient(circle, var(--wash-run), transparent 70%)',
           }}
         />
         <div style={{ position: 'relative' }}>
@@ -295,8 +300,8 @@ function RunLogChip({ text }: { text: string }) {
       style={{
         fontSize: 9,
         padding: '2px 7px',
-        background: 'color-mix(in srgb, var(--info) 8%, transparent)',
-        borderColor: 'color-mix(in srgb, var(--info) 35%, transparent)',
+        background: 'var(--wash-run)',
+        borderColor: 'color-mix(in srgb, var(--tag-run) 35%, transparent)',
         color: RUN,
       }}
     >
@@ -315,6 +320,7 @@ function RunLogCard({ session }: { session: RunSessionLogResponse }) {
     <div className="card notch-4" style={{ padding: '13px 14px' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+          <span className="stag stag-run">FUTÁS</span>
           <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{huMonthDayDow(session.date)}</span>
           <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{sessionKeyLabel(session.sessionKey)}</span>
         </div>
@@ -382,7 +388,7 @@ function RunBlocksView({ blocks, onOpen }: { blocks: RunningBlockResponse[]; onO
 function RunStatusChip({ status }: { status: RunningBlockResponse['status'] }) {
   const style =
     status === 'active'
-      ? { color: RUN, background: 'color-mix(in srgb, var(--info) 10%, transparent)', borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)' }
+      ? { color: RUN, background: 'var(--wash-run)', borderColor: 'color-mix(in srgb, var(--tag-run) 40%, transparent)' }
       : status === 'planned'
         ? { color: 'var(--warning)', background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.3)' }
         : { color: 'var(--text-tertiary)', background: 'var(--surface-2)', borderColor: 'var(--border-subtle)' }
@@ -418,8 +424,8 @@ function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; on
         position: 'relative',
         overflow: 'hidden',
         cursor: 'pointer',
-        background: 'linear-gradient(180deg, color-mix(in srgb, var(--info) 6%, transparent), var(--surface-1))',
-        borderColor: 'color-mix(in srgb, var(--info) 30%, transparent)',
+        background: 'linear-gradient(180deg, var(--wash-run), var(--surface-1))',
+        borderColor: 'color-mix(in srgb, var(--tag-run) 30%, transparent)',
       }}
     >
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: RUN }} />

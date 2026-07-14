@@ -18,12 +18,12 @@ export function RunWeekStrip({ weeks, currentWeek }: { weeks: number; currentWee
               borderRadius: 1,
               background:
                 state === 'now'
-                  ? 'var(--info)'
+                  ? 'var(--tag-run)'
                   : state === 'past'
-                    ? 'color-mix(in srgb, var(--info) 50%, var(--surface-2))'
+                    ? 'color-mix(in srgb, var(--tag-run) 50%, var(--surface-2))'
                     : 'var(--surface-2)',
               opacity: state === 'future' ? 0.5 : 1,
-              boxShadow: state === 'now' ? '0 0 8px var(--info)' : 'none',
+              boxShadow: state === 'now' ? '0 0 8px var(--tag-run)' : 'none',
             }}
           />
         )
