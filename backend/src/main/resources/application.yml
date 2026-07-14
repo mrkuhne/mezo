@@ -115,6 +115,10 @@ mezo:
     # Hypertrophy Drive — pre-populated prescribed sets + dynamic recommendation on GET /workouts/today.
     hypertrophy-drive:
       enabled: true
+    # Fix zárás (closing block) — dead hang + back extension lazily ensured at the end of every
+    # template gym day of the active meso on GET /workouts/today (idempotent; mezo.closing-block).
+    closing-block:
+      enabled: true
     # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
     # the import feed + suggestions in GET /api/pantry stay on regardless.
     pantry-import:
@@ -477,6 +481,13 @@ mezo:
     warmup-ramp:
       - { pct: 0.50, reps-factor: 1.0 }   # 50% × repMax
       - { pct: 0.75, reps-factor: 0.5 }   # 75% × ⌈repMax/2⌉
+  # Fix zárás — closing exercises ensured on every gym day of the active meso; slug references
+  # master exercise-catalog rows (content/exercise-catalog.json). Dead-hang reps are SECONDS
+  # (plyo type -> weightless, reps-only logging on the FE).
+  closing-block:
+    exercises:
+      - { slug: dead-hang, working-sets: 2, rep-min: 45, rep-max: 60, target-rir: 0 }         # 2×45–60 mp függés
+      - { slug: back-extension-45, working-sets: 2, rep-min: 12, rep-max: 15, target-rir: 2 }
 management:
   endpoints:
     web:

@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -78,6 +79,10 @@ public class WorkoutService {
     // progressionGate); off ⇒ getToday attaches no prescribedSets and the FE falls back to the logger.
     private final SetRecommendationService setRecommendationService;
     private final ObjectProvider<HypertrophyDriveGate> hypertrophyGate;
+    // Fix zárás (mezo-z2ul): lazy closing-exercise ensure behind its own switch. The gate bean
+    // exists ONLY when mezo.feature.closing-block.enabled=true (mirrors hypertrophyGate).
+    private final ClosingBlockService closingBlockService;
+    private final ObjectProvider<ClosingBlockGate> closingBlockGate;
 
     public WorkoutTodayResponse getToday(UUID createdBy) {
         WorkoutTodayResponse empty = new WorkoutTodayResponse();
@@ -87,6 +92,11 @@ public class WorkoutService {
             .stream().findFirst().orElse(null);
         if (activeMeso == null) {
             return empty;
+        }
+        // Fix zárás: idempotent ensure across ALL template days of the active meso, BEFORE
+        // today's exercise list is resolved — its own @Transactional (getToday itself is a read).
+        if (closingBlockGate.getIfAvailable() != null) {
+            closingBlockService.ensureClosingExercises(createdBy, activeMeso.getId());
         }
         // Gym done-state signal: this week's instance dates with >=1 logged set. Computed
         // regardless of whether today is a gym day, so the weekly rows can mark PAST done days.
