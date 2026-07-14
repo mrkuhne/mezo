@@ -1471,6 +1471,7 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .setdots .sd.cur { background: var(--coral); color: #fff; box-shadow: 0 6px 14px rgba(255,107,74,.38); }
 .setdots .sd.wu:not(.don):not(.cur) { background: rgba(255,179,71,.16); color: #8F5514; }
 :root[data-theme="dark"] .setdots .sd.wu:not(.don):not(.cur) { color: #E8B36B; }
+.setdots .sd.extra:not(.don):not(.cur) { background: transparent; border: 1.5px dashed var(--coral); box-sizing: border-box; color: var(--coral-deep); }
 .donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px rgba(255,91,54,.35), inset 0 1px 0 rgba(255,255,255,.25); }
 .nextex { display: flex; align-items: center; background: var(--surface); border-radius: 20px; padding: 13px 16px; box-shadow: var(--np-shadow-row); margin: 12px 24px 0; }
 .nextex .k { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .5px; text-transform: uppercase; }

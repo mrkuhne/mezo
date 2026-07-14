@@ -9,9 +9,19 @@ export function DynamicIsland() {
   const activity = useLiveActivityOptional()
   const rest = activity?.rest ?? null
   const [now, setNow] = useState(() => Date.now())
+  // Render-time reset (not effect-time): a rest starting mid-session changes
+  // `rest`'s identity, but an effect keyed on it only fires AFTER the first
+  // paint — that first paint would show an inflated remaining computed against
+  // a stale `now` from mount. Resetting synchronously during render (React's
+  // documented "adjust state on prop change" pattern) closes that one-frame gap
+  // (final-review fix, mezo-8141 — Ride-along B).
+  const [prevRest, setPrevRest] = useState(rest)
+  if (rest !== prevRest) {
+    setPrevRest(rest)
+    setNow(Date.now())
+  }
   useEffect(() => {
     if (!rest) return
-    setNow(Date.now())
     const id = setInterval(() => setNow(Date.now()), 500)
     return () => clearInterval(id)
   }, [rest])

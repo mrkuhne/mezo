@@ -357,6 +357,9 @@ function ActiveWorkoutSession({
   // finish (if it was the last unresolved exercise) or advance to the next one,
   // prefilling the logging panel from its targets. Mirrors advanceAfterFeedback.
   const handleSkip = () => {
+    // Abandoning the current exercise must not leave the island counting down
+    // toward it (final-review fix, mezo-8141 — Ride-along A).
+    clearRest()
     const exId = currentExerciseId(session)
     if (workoutId) skipExercise(workoutId, exId)
     const afterSkip = skipExerciseModel(session, exId)
@@ -560,6 +563,12 @@ function ActiveWorkoutSession({
   const doneSets = Object.values(session.logged).reduce((a, arr) => a + arr.length, 0)
   const activeChallenge = challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
   const currentSetCount = effectiveSetCount(session, current.id)
+  // Order-position (not W.exercises' fixed array index) cutoff for the header dots:
+  // the ⋯ sheet's reorder mutates session.order, not the static exercise array, so
+  // "done" must derive from position there — otherwise a reorder that moves an
+  // untouched exercise BEHIND the current one renders it as falsely done (final-
+  // review fix, mezo-8141 — Finding 1).
+  const orderPos = (id: string) => session.order.indexOf(id)
 
   // Reorderable segment for the ⋯ action sheet: the done + current exercises
   // stay FIXED; only the FUTURE exercises (after the current one in session.order)
@@ -694,8 +703,19 @@ function ActiveWorkoutSession({
             <div className="t2">{currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
           </div>
           <div className="exdots" aria-hidden="true">
-            {W.exercises.map((e, i) => (
-              <i key={e.id} className={session.skipped.includes(e.id) ? 'skp' : i < currentIdx ? 'don' : i === currentIdx ? 'cur' : undefined} />
+            {W.exercises.map((e) => (
+              <i
+                key={e.id}
+                className={
+                  session.skipped.includes(e.id)
+                    ? 'skp'
+                    : orderPos(e.id) < orderPos(current.id)
+                      ? 'don'
+                      : e.id === current.id
+                        ? 'cur'
+                        : undefined
+                }
+              />
             ))}
           </div>
           <button
@@ -778,8 +798,12 @@ function ActiveWorkoutSession({
             {Array.from({ length: currentSetCount }, (_, i) => {
               const warm = prescribedAt(session, current.id, i)?.kind === 'warmup'
               const cls = i < session.setIdx ? 'sd don' : i === session.setIdx ? 'sd cur' : 'sd'
+              // An F2-added set (index at/past the exercise's planned baseline)
+              // gets a distinct dashed marker while still pending — restored in
+              // the final-review fix (mezo-8141 — Finding 2), gone since S5.
+              const extra = i >= (session.planned[current.id] ?? 0)
               return (
-                <div key={i} className={cls + (warm ? ' wu' : '')}>
+                <div key={i} className={cls + (warm ? ' wu' : '') + (extra && cls === 'sd' ? ' extra' : '')}>
                   {i < session.setIdx ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
                 </div>
               )

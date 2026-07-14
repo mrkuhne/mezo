@@ -295,7 +295,7 @@ test('the giant Súly/Ismétlés steppers increment by their step on tap', async
 
 test('reordering remaining exercises changes which exercise comes next', async () => {
   const user = userEvent.setup()
-  setup() // mock mode (file pins VITE_USE_MOCK=true)
+  const { container } = setup() // mock mode (file pins VITE_USE_MOCK=true)
   await user.click(screen.getByText(/Kezdjük el/)) // active, current = Chest Supported Row (ex1)
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' })) // open ⋯
   await user.click(screen.getByText('Áthelyezés')) // reorder sub-view (remaining = ex2..ex5)
@@ -306,6 +306,14 @@ test('reordering remaining exercises changes which exercise comes next', async (
   await user.click(await screen.findByText('Mentés · tovább')) // debrief advance (non-last)
   // the next active exercise is now Cable Pull-Around (was Lat Pulldown before the reorder)
   expect(await screen.findByText('Cable Pull-Around')).toBeInTheDocument()
+  // Header dots (final-review fix, mezo-8141 — Finding 1): Cable Pull-Around is now
+  // current even though its STATIC array index (2) is past Lat Pulldown's (1) —
+  // Lat Pulldown was only moved BEHIND it by the reorder, never actually logged, so
+  // it must stay pending (no `.don`), not read as falsely "done" by array position.
+  const dots = container.querySelectorAll('.exdots i')
+  expect(dots[0]).toHaveClass('don') // Chest Supported Row: genuinely done
+  expect(dots[1]).not.toHaveClass('don') // Lat Pulldown: untouched, merely reordered behind
+  expect(dots[2]).toHaveClass('cur') // Cable Pull-Around: now current
 })
 
 test('＋ Szett adds an extra set: the set-dots and prescribed list grow 5→6', async () => {
@@ -316,22 +324,33 @@ test('＋ Szett adds an extra set: the set-dots and prescribed list grow 5→6',
   expect(screen.getAllByText('Working')).toHaveLength(3)    // 3 planned working rows
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('＋ Szett'))             // adds one extra set; sheet closes
-  expect(container.querySelectorAll('.setdots .sd')).toHaveLength(6)
+  const dots = container.querySelectorAll('.setdots .sd')
+  expect(dots).toHaveLength(6)
   expect(screen.getAllByText('Working')).toHaveLength(4)    // the extra shows as a 4th working row
   expect(screen.getAllByText('Bemel.')).toHaveLength(2)     // warmups unchanged
+  // The added (6th) set-dot carries the restored dashed "extra" marker (final-review
+  // fix, mezo-8141 — Finding 2); the planned dots stay plain.
+  expect(dots[5]).toHaveClass('extra')
+  expect(dots[0]).not.toHaveClass('extra')
 })
 
 test('⋯ Kihagyás advances to the next exercise without opening the debrief', async () => {
   const user = userEvent.setup()
-  setup() // mock mode, current = Chest Supported Row (ex1)
+  const { container } = setup() // mock mode, current = Chest Supported Row (ex1)
   await user.click(screen.getByText(/Kezdjük el/))
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+  // Start a mid-exercise rest before skipping — skip must clear it (final-review
+  // fix, mezo-8141 — Ride-along A), not leave the island counting toward an
+  // abandoned exercise.
+  await user.click(screen.getByText('Szett kész ✓'))
+  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Kihagyás'))
   // Advances straight to the next exercise — no FeedbackModal / debrief CTA.
   expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
   expect(screen.queryByText('Mentés · tovább')).not.toBeInTheDocument()
   expect(screen.queryByText('Edzés vége →')).not.toBeInTheDocument()
+  expect(container.querySelector('.dynamic-island.live')).toBeNull()
 })
 
 test('a skipped exercise is marked "kihagyva" in the recap', async () => {
