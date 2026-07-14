@@ -1,12 +1,11 @@
 // ============================================================
 // Mezo · WorkoutComplete — the closing screen of a workout. Companion
-// celebration card (brand gradient + radial glow on a PR), "Mai mérleg"
+// celebration card (coral tint + radial glow on a PR), "Mai mérleg"
 // stats, per-exercise recap, post-workout fuel window, optional note,
 // and the save / share actions. Ported from prototype train.jsx
 // (WorkoutComplete + CompleteStat).
 // ============================================================
 import type { WorkoutPlan, LastWeekSet } from '@/data/types'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { ToolChip } from '@/shared/ui/ToolChip'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
@@ -32,7 +31,7 @@ function CompleteStat({
         textAlign: 'center',
         borderColor: highlight ? 'var(--border-brand)' : 'var(--border-subtle)',
         background: highlight
-          ? 'color-mix(in srgb, var(--brand-glow) 4%, transparent)'
+          ? 'color-mix(in srgb, var(--coral) 4%, transparent)'
           : 'var(--surface-1)',
       }}
     >
@@ -45,8 +44,8 @@ function CompleteStat({
           fontSize: 28,
           fontWeight: 600,
           marginTop: 4,
-          color: highlight ? 'var(--brand-glow)' : 'var(--text-primary)',
-          textShadow: highlight ? '0 0 12px var(--brand-glow)' : 'none',
+          color: highlight ? 'var(--coral)' : 'var(--text-primary)',
+          textShadow: highlight ? '0 0 12px var(--coral)' : 'none',
         }}
       >
         {val}
@@ -104,7 +103,7 @@ export function WorkoutComplete({
           <Icon name="x" size={16} color="var(--text-secondary)" />
           <span className="eyebrow">Bezárás</span>
         </button>
-        <Eyebrow brand>Edzés vége · {workout.title}</Eyebrow>
+        <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Edzés vége · {workout.title}</span>
       </div>
 
       {/* Companion celebration */}
@@ -114,7 +113,7 @@ export function WorkoutComplete({
           style={{
             padding: 22,
             background: hadPR
-              ? 'linear-gradient(180deg, color-mix(in srgb, var(--brand-glow) 8%, transparent) 0%, var(--surface-1) 100%)'
+              ? 'linear-gradient(180deg, color-mix(in srgb, var(--coral) 8%, transparent) 0%, var(--surface-1) 100%)'
               : 'var(--surface-1)',
             borderColor: hadPR ? 'var(--border-brand)' : 'var(--border-subtle)',
             position: 'relative',
@@ -131,13 +130,13 @@ export function WorkoutComplete({
                 height: 160,
                 borderRadius: '50%',
                 background:
-                  'radial-gradient(circle, color-mix(in srgb, var(--brand-glow) 18%, transparent), transparent 70%)',
+                  'radial-gradient(circle, color-mix(in srgb, var(--coral) 18%, transparent), transparent 70%)',
               }}
             />
           )}
           <div className="row gap-sm" style={{ position: 'relative' }}>
-            <Icon name={hadPR ? 'sparkle' : 'check'} size={14} color="var(--brand-glow)" />
-            <Eyebrow brand>Mezo · most</Eyebrow>
+            <Icon name={hadPR ? 'sparkle' : 'check'} size={14} color="var(--coral)" />
+            <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Mezo · most</span>
           </div>
           <div
             style={{
@@ -223,7 +222,7 @@ export function WorkoutComplete({
                     // Has logged sets (incl. partially-done-then-skipped): real count,
                     // counted in the totals. A muted marker flags the skipped remainder.
                     <span className="row gap-xs" style={{ alignItems: 'baseline' }}>
-                      <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
+                      <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral-deep)' }}>
                         {e.sets.length}/{workout.exercises[i].sets} szet
                       </span>
                       {isSkipped && (
@@ -261,12 +260,12 @@ export function WorkoutComplete({
       <div style={{ padding: '0 24px 16px' }}>
         <div
           className="card notch-12"
-          style={{ padding: 16, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)' }}
+          style={{ padding: 16, background: 'color-mix(in srgb, var(--coral) 3%, transparent)' }}
         >
           <div className="row gap-sm">
-            <Icon name="fuel" size={14} color="var(--brand-glow)" />
+            <Icon name="fuel" size={14} color="var(--coral)" />
             <div className="col flex-1">
-              <Eyebrow brand>Most · post-workout window</Eyebrow>
+              <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Most · post-workout window</span>
               <p style={{ fontSize: 13, marginTop: 6, color: 'var(--text-primary)', lineHeight: 1.5 }}>
                 30 perc múlva 40g whey + 60g szénhidrát logikus. A volleyball előtti vacsora-ablak
                 18:00.

@@ -34,7 +34,6 @@ import { PageTitle } from '@/shared/ui/PageTitle'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Chip } from '@/shared/ui/Chip'
 import { Icon } from '@/shared/ui/Icon'
-import { CtaPrimary } from '@/shared/ui/Cta'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SetStepper } from '@/features/train/components/SetStepper'
 import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
@@ -56,7 +55,7 @@ const WARMUP_ROWS = [
 
 const AMBER_TINT_6 = 'color-mix(in srgb, var(--warning) 6%, transparent)'
 const AMBER_BORDER = 'color-mix(in srgb, var(--warning) 30%, transparent)'
-const BRAND_TINT_4 = 'color-mix(in srgb, var(--brand-glow) 4%, transparent)'
+const CORAL_TINT_4 = 'color-mix(in srgb, var(--coral) 4%, transparent)'
 
 // PR demo (prototype-scripted moment): the 3rd set of exercise 0 at/above this
 // weight triggers the Personal Record toast, which auto-hides after PR_TOAST_MS.
@@ -449,10 +448,20 @@ function ActiveWorkoutSession({
           </div>
           <div className="col gap-sm">
             {WARMUP_ROWS.map((w, i) => (
-              <div key={i} className="card notch-4 row" style={{ padding: '10px 14px', alignItems: 'center' }}>
+              <div
+                key={i}
+                className="row"
+                style={{
+                  padding: '10px 14px',
+                  alignItems: 'center',
+                  background: 'var(--surface)',
+                  borderRadius: 20,
+                  boxShadow: 'var(--np-shadow-row)',
+                }}
+              >
                 <span
                   className="label-mono"
-                  style={{ fontSize: 9, color: 'var(--brand-glow)', marginRight: 12 }}
+                  style={{ fontSize: 9, color: 'var(--coral-deep)', marginRight: 12 }}
                 >
                   0{i + 1}
                 </span>
@@ -478,17 +487,17 @@ function ActiveWorkoutSession({
               return (
                 <div
                   key={i}
-                  className="card notch-4"
                   style={{
                     padding: 12,
-                    borderColor: exChallenge ? 'var(--border-brand)' : 'var(--border-subtle)',
-                    background: exChallenge ? BRAND_TINT_4 : 'var(--surface-1)',
+                    borderRadius: 20,
+                    boxShadow: 'var(--np-shadow-row)',
+                    background: exChallenge ? CORAL_TINT_4 : 'var(--surface)',
                     position: 'relative',
                     overflow: 'hidden',
                   }}
                 >
                   {exChallenge && (
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-glow)' }} />
+                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--coral)' }} />
                   )}
                   <div
                     className="row"
@@ -498,8 +507,8 @@ function ActiveWorkoutSession({
                       <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{e.name}</span>
                       {exChallenge && (
                         <div className="row gap-sm mt-xs" style={{ alignItems: 'center' }}>
-                          <Icon name="sparkle" size={10} color="var(--brand-glow)" />
-                          <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+                          <Icon name="sparkle" size={10} color="var(--coral)" />
+                          <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral-deep)' }}>
                             {exChallenge.typeLabel} · {exChallenge.target}
                           </span>
                         </div>
@@ -520,11 +529,11 @@ function ActiveWorkoutSession({
         </div>
 
         <div style={{ padding: '24px' }}>
-          <CtaPrimary onClick={beginWorkout}>
+          <button type="button" className="np-cta np-press" onClick={beginWorkout}>
             <span>Kezdjük el</span>
             <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span>
             <span>{W.title}</span>
-          </CtaPrimary>
+          </button>
         </div>
       </div>
     )
@@ -639,7 +648,7 @@ function ActiveWorkoutSession({
         <Sheet onClose={() => setAddSetPrompt(null)} labelledBy="add-set-prompt-title" className="sheet-nested">
           {(close) => (
             <div style={{ padding: '4px 2px 2px' }}>
-              <span className="eyebrow brand">Extra szett hozzáadva</span>
+              <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Extra szett hozzáadva</span>
               <h3
                 id="add-set-prompt-title"
                 style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}
@@ -716,13 +725,13 @@ function ActiveWorkoutSession({
         <div className="excard np-anim" style={{ '--i': 1 } as React.CSSProperties}>
           {activeChallenge && (
             <div className="warmstrip">
-              <Icon name="sparkle" size={14} color="var(--brand-glow)" />
+              <Icon name="sparkle" size={14} color="var(--coral)" />
               <div className="col flex-1">
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral-deep)' }}>
                   Aktív kihívás · {activeChallenge.typeLabel}
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>
-                  Cél: <strong style={{ color: 'var(--brand-glow)', fontWeight: 500 }}>{activeChallenge.target}</strong>
+                  Cél: <strong style={{ color: 'var(--coral-deep)', fontWeight: 500 }}>{activeChallenge.target}</strong>
                 </span>
               </div>
             </div>
@@ -752,13 +761,13 @@ function ActiveWorkoutSession({
                 alignItems: 'center',
                 padding: '6px 10px',
                 background: 'var(--surface-2)',
-                borderLeft: '2px solid var(--brand-glow)',
+                borderLeft: '2px solid var(--coral)',
                 fontSize: 12,
                 color: 'var(--text-secondary)',
                 lineHeight: 1.4,
               }}
             >
-              <Icon name="tool" size={11} color="var(--brand-glow)" />
+              <Icon name="tool" size={11} color="var(--coral)" />
               <span style={{ flex: 1 }}>{effectiveNote}</span>
             </div>
           )}
@@ -854,7 +863,7 @@ function ActiveWorkoutSession({
               const warm = t?.kind === 'warmup'
               const setLabel = warm ? `B${i + 1}` : `${i - warmupCount + 1}`
               const kindLabel = warm ? 'Bemel.' : 'Working'
-              const accent = warm ? 'var(--warning)' : 'var(--brand-glow)'
+              const accent = warm ? 'var(--warning)' : 'var(--coral)'
               const actual = session.logged[current.id]?.[i]
               const isDone = i < session.setIdx
 
@@ -880,7 +889,7 @@ function ActiveWorkoutSession({
                   </span>
                   <span style={{ flex: 1 }} />
                   {isDone ? (
-                    <Icon name="check" size={13} color="var(--brand-glow)" />
+                    <Icon name="check" size={13} color="var(--coral)" />
                   ) : (
                     <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>
                   )}
@@ -911,7 +920,7 @@ function NoteEditSheet({
     <Sheet onClose={onClose} labelledBy="note-edit-title" className="sheet-nested">
       {(close) => (
         <div style={{ padding: '4px 2px 2px' }}>
-          <span className="eyebrow brand">Gyakorlat-jegyzet</span>
+          <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Gyakorlat-jegyzet</span>
           <h3
             id="note-edit-title"
             style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}

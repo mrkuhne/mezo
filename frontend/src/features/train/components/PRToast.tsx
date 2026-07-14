@@ -12,7 +12,14 @@ export interface PRState {
 
 export function PRToast({ pr }: { pr: PRState }) {
   return (
-    <div className="toast notch-12" role="status">
+    <div
+      className="toast notch-12"
+      role="status"
+      style={{
+        background: 'linear-gradient(135deg, #FF7A55, #FF5B36)',
+        boxShadow: '0 12px 40px rgba(255, 91, 54, 0.35)',
+      }}
+    >
       <div className="row gap-md" style={{ alignItems: 'center' }}>
         <Icon name="sparkle" size={28} color="var(--text-inverse)" />
         <div className="col flex-1">
