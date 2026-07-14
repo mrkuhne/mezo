@@ -1338,6 +1338,40 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .growrow .t2 { font-size: 11.5px; color: var(--faint); font-weight: 700; margin-top: 1px; }
 .growrow .chev { margin-left: auto; color: var(--faint); }
 
+/* ===== Napív S4 — train-type accent tokens (mockup stag/lic palette) ===== */
+:root {
+  --wash-gym: #FFEDE6;
+  --wash-sport: #FBE9EC;
+  --wash-run: #E7F0F8;
+  --tag-gym: #C4622F;
+  --tag-sport: #B14B5E;
+  --tag-run: #3E6E9E;
+}
+:root[data-theme="dark"] {
+  --wash-gym: rgba(255,107,74,.16);
+  --wash-sport: rgba(226,122,139,.16);
+  --wash-run: rgba(111,167,216,.16);
+}
+
+/* ===== Napív pill sub-nav (spec §4.3; Fuel/Me adopt later via --pill-accent) ===== */
+.np-pills { display: flex; gap: 7px; padding: 8px 24px 10px; overflow-x: auto; scrollbar-width: none; position: sticky; top: 0; z-index: 5; background: var(--canvas); -webkit-mask-image: linear-gradient(to right, black 92%, transparent); mask-image: linear-gradient(to right, black 92%, transparent); }
+.np-pills::-webkit-scrollbar { display: none; }
+.np-pill { flex-shrink: 0; border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--sub); background: rgba(255,255,255,.75); border: 1px solid rgba(43,33,24,.05); white-space: nowrap; }
+:root[data-theme="dark"] .np-pill { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.08); }
+.np-pill.on { color: #fff; border-color: transparent; background: var(--pill-accent, var(--coral)); }
+
+/* ===== Napív page head (pgheadrow — Train sub-pages; Fuel/Me adopt later) ===== */
+.pghead-np { display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 24px 0; }
+.pghead-np .over { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--coral-deep); }
+.pghead-np h1 { font-family: var(--ff-display); font-weight: 800; letter-spacing: -.4px; font-size: 27px; color: var(--ink); }
+.pgact-np { border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 800; background: var(--warm); color: var(--coral-deep); white-space: nowrap; }
+
+/* ===== Napív session type tags (weekly plan + session rows) ===== */
+.stag { display: inline-block; border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; letter-spacing: .5px; flex-shrink: 0; text-transform: uppercase; }
+.stag-gym { background: var(--wash-gym); color: var(--tag-gym); }
+.stag-sport { background: var(--wash-sport); color: var(--tag-sport); }
+.stag-run { background: var(--wash-run); color: var(--tag-run); }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {

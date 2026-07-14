@@ -4,17 +4,13 @@ import { TRAIN_TABS } from '@/features/train/pages/tabs'
 
 export function TrainSubNav() {
   return (
-    <nav
-      className="subnav"
-      aria-label="Train alnavigáció"
-      style={{ position: 'sticky', top: 0, background: 'var(--canvas)', zIndex: 5, paddingTop: 8 }}
-    >
+    <nav className="np-pills" aria-label="Train alnavigáció">
       {TRAIN_TABS.map(({ to, label, end }) => (
         <NavLink
           key={to}
           to={to}
           end={end}
-          className={({ isActive }) => cn('subnav-item', isActive && 'active')}
+          className={({ isActive }) => cn('np-pill np-press', isActive && 'on')}
         >
           {label}
         </NavLink>

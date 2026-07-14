@@ -6,19 +6,19 @@ function renderAt(path: string) {
   return render(<MemoryRouter initialEntries={[path]}><TrainSubNav /></MemoryRouter>)
 }
 
-test('renders all five sub-nav items with verbatim labels', () => {
+test('renders all six pills with verbatim labels', () => {
   renderAt('/train')
-  for (const label of ['Mai', 'GYM', 'Sport', 'Gyakorlatok', 'Mesociklusok']) {
+  for (const label of ['Mai', 'Gym', 'Sport', 'Futás', 'Gyakorlatok', 'Mesociklusok']) {
     expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
   }
 })
 
 test('marks the active sub-view from the URL', () => {
   const { container } = renderAt('/train/sport')
-  expect(container.querySelector('.subnav-item.active')).toHaveTextContent('Sport')
+  expect(container.querySelector('.np-pill.on')).toHaveTextContent('Sport')
 })
 
 test('Mai (index) is active only on exact /train', () => {
   const { container } = renderAt('/train/gym')
-  expect(container.querySelector('.subnav-item.active')).toHaveTextContent('GYM')
+  expect(container.querySelector('.np-pill.on')).toHaveTextContent('Gym')
 })
