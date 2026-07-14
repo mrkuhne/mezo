@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · SportStat — one stat cell in the SportPage hero card:
 // tiny mono label / big Antonio value / mono sub. The highlighted
-// variant glows in the tendency (volleyball) accent.
+// variant glows in the Napiv --tag-sport (volleyball) accent.
 // Ported from prototype sport.jsx SportStat.
 // ============================================================
 interface SportStatProps {
@@ -24,8 +24,8 @@ export function SportStat({ label, val, sub, highlight = false }: SportStatProps
           fontWeight: 600,
           marginTop: 2,
           lineHeight: 1,
-          color: highlight ? 'var(--cat-tendency)' : 'var(--text-primary)',
-          textShadow: highlight ? '0 0 12px color-mix(in srgb, var(--cat-tendency) 40%, transparent)' : 'none',
+          color: highlight ? 'var(--tag-sport)' : 'var(--text-primary)',
+          textShadow: highlight ? '0 0 12px color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'none',
         }}
       >
         {val}

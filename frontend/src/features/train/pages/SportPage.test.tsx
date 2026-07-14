@@ -19,9 +19,9 @@ const Wrapper = ({ children }: { children: ReactNode }) => (
 )
 const renderView = () => render(<SportPage />, { wrapper: Wrapper })
 
-test('own page-header: brand eyebrow + PageTitle', () => {
+test('own page-header: pghead-np over + h1', () => {
   renderView()
-  expect(screen.getByText('Train · Sport')).toBeInTheDocument()
+  expect(screen.getByText('Edzés · Sport')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Röplabda' })).toBeInTheDocument()
 })
 
@@ -40,6 +40,14 @@ test('switching to Napló shows the session log header with avg jump count', asy
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
   expect(screen.getByText(/avg \d+ ugrás/)).toBeInTheDocument()
+})
+
+test('switching to Napló shows the stag-sport tag on each session row', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Napló' }))
+  const tags = screen.getAllByText('RÖPI')
+  expect(tags.length).toBeGreaterThan(0)
+  expect(tags[0]).toHaveClass('stag', 'stag-sport')
 })
 
 test('switching to Cross-load shows the read tool chip', async () => {

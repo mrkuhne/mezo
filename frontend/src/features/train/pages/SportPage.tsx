@@ -1,10 +1,10 @@
 // ============================================================
 // Mezo · SportPage (Sport) — volleyball schedule + session log +
 // cross-system load. Thin TrainSection shell ⇒ this view owns its own
-// .page-header (eyebrow `Train · Sport`, title `Röplabda`, `+ Log` chip).
+// .pghead-np (over `Edzés · Sport`, h1 `Röplabda`, `+ Log` pgact-np chip).
 // Ported from prototype sport.jsx (SportPage + SportWeekView +
-// SportLogView + SportCrossloadView). All sport pinks use the
-// --cat-tendency token via color-mix (no raw pink rgba); the faint teal
+// SportLogView + SportCrossloadView). All sport rose accents use the
+// Napiv --tag-sport/--wash-sport tokens (rose vocabulary); the faint teal
 // brand-glow card tints follow the existing Insights/Fuel slice convention.
 // ============================================================
 import { useState } from 'react'
@@ -13,8 +13,6 @@ import { useTrain } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { isMockMode } from '@/data/_client/mode'
 import type { SportSchedule, SportSession, CrossLoadRow as CrossLoadRowData } from '@/data/types'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
@@ -74,18 +72,18 @@ export function SportPage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Train · Sport</Eyebrow>
-          <PageTitle>Röplabda</PageTitle>
+      <div className="pghead-np">
+        <div>
+          <div className="over">Edzés · Sport</div>
+          <h1>Röplabda</h1>
         </div>
         <button
           type="button"
           onClick={() => setLogOpen(true)}
-          className="chip notch-4"
-          style={{ padding: '8px 10px' }}
+          className="pgact-np np-press"
+          style={{ background: 'var(--wash-sport)', color: 'var(--tag-sport)' }}
         >
-          <Icon name="plus" size={12} /> Log
+          + Log
         </button>
       </div>
 
@@ -99,13 +97,13 @@ export function SportPage() {
           style={{
             padding: 18,
             background:
-              'linear-gradient(180deg, color-mix(in srgb, var(--cat-tendency) 6%, transparent) 0%, var(--surface-1) 100%)',
-            borderColor: 'color-mix(in srgb, var(--cat-tendency) 30%, transparent)',
+              'linear-gradient(180deg, var(--wash-sport) 0%, var(--surface-1) 100%)',
+            borderColor: 'color-mix(in srgb, var(--tag-sport) 30%, transparent)',
             position: 'relative',
             overflow: 'hidden',
           }}
         >
-          <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--cat-tendency)' }} />
+          <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--tag-sport)' }} />
           <span
             style={{
               position: 'absolute',
@@ -114,13 +112,13 @@ export function SportPage() {
               width: 160,
               height: 160,
               borderRadius: '50%',
-              background: 'radial-gradient(circle, color-mix(in srgb, var(--cat-tendency) 12%, transparent), transparent 70%)',
+              background: 'radial-gradient(circle, var(--wash-sport), transparent 70%)',
             }}
           />
           <div style={{ position: 'relative' }}>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div className="col">
-                <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>
+                <span className="eyebrow" style={{ color: 'var(--tag-sport)' }}>
                   {volleyball.team || 'Volleyball'}
                 </span>
                 <div style={{ marginTop: 6 }}>
@@ -173,9 +171,9 @@ export function SportPage() {
               className="flex-1 notch-4"
               style={{
                 padding: '10px',
-                background: active ? 'color-mix(in srgb, var(--cat-tendency) 8%, transparent)' : 'var(--surface-1)',
-                border: `1px solid ${active ? 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' : 'var(--border-subtle)'}`,
-                color: active ? 'var(--cat-tendency)' : 'var(--text-secondary)',
+                background: active ? 'var(--wash-sport)' : 'var(--surface-1)',
+                border: `1px solid ${active ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--border-subtle)'}`,
+                color: active ? 'var(--tag-sport)' : 'var(--text-secondary)',
                 fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
                 fontWeight: 600,
@@ -254,9 +252,9 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
               className="card"
               style={{
                 padding: 0,
-                borderColor: isToday ? 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' : 'var(--border-subtle)',
+                borderColor: isToday ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--border-subtle)',
                 background: isToday
-                  ? 'color-mix(in srgb, var(--cat-tendency) 4%, transparent)'
+                  ? 'var(--wash-sport)'
                   : session
                     ? 'var(--surface-1)'
                     : 'transparent',
@@ -267,7 +265,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
               }}
             >
               {isToday && (
-                <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--cat-tendency)' }} />
+                <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--tag-sport)' }} />
               )}
               <div
                 className="row"
@@ -278,7 +276,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                   style={{
                     width: 36,
                     fontSize: 11,
-                    color: isToday ? 'var(--cat-tendency)' : session ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                    color: isToday ? 'var(--tag-sport)' : session ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   }}
                 >
                   {d}
@@ -297,9 +295,9 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                             style={{
                               fontSize: 9,
                               padding: '2px 6px',
-                              background: 'color-mix(in srgb, var(--cat-tendency) 10%, transparent)',
-                              borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)',
-                              color: 'var(--cat-tendency)',
+                              background: 'var(--wash-sport)',
+                              borderColor: 'color-mix(in srgb, var(--tag-sport) 40%, transparent)',
+                              color: 'var(--tag-sport)',
                             }}
                           >
                             MA
