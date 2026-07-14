@@ -16,7 +16,7 @@ import org.hibernate.annotations.SQLRestriction;
 import org.hibernate.type.SqlTypes;
 
 /**
- * One recurring weekly sport (volleyball) schedule slot — the user's fixed training/match
+ * One recurring weekly sport schedule slot (volleyball | cross | trx) — the user's fixed training/match
  * rhythm, independent of the gym mesocycle. {@code dayOfWeek} is 0=Hét..6=Vas (the FE
  * DAY_ORDER index; DB CHECK enforces the range). The whole week is maintained via
  * full-replace ({@code PUT /api/train/sport-schedule}), so rows are short-lived:
@@ -53,6 +53,10 @@ public class SportScheduleSlotEntity extends OwnedEntity {
     @NotNull
     @Column(nullable = false)
     private String kind; // 'training' | 'match' (DB CHECK)
+
+    @NotNull
+    @Column(nullable = false)
+    private String sport = "volleyball"; // 'volleyball' | 'cross' | 'trx' (DB CHECK)
 
     @Column
     private String location;

@@ -23,6 +23,7 @@ import { daySessions } from '@/features/train/logic/agenda'
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
 import { LoadTiles } from '@/features/train/components/LoadTiles'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
+import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
@@ -31,7 +32,7 @@ export function TrainTodayPage() {
   const { activeRunningBlock, runSessions, logRunSession, runningPending } = useRunning()
   const navigate = useNavigate()
   const { showLevelUp } = useLevelUp()
-  const [vbLogOpen, setVbLogOpen] = useState(false)
+  const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
@@ -79,14 +80,14 @@ export function TrainTodayPage() {
   }
   const agenda: WeeklyAgendaDay[] = DAY_ORDER.map((d, i) => {
     const g = gymTimes.find((x) => x.day === d)
-    const v = vbSessions.find((x) => x.day === d)
+    const v = vbSessions.filter((x) => x.day === d)
     return {
       day: d,
       date: weekDateIso(i),
       gym: g && g.active ? g : null,
-      volleyball: v ?? null,
+      sport: v,
       running: runSessionsForDay(activeRunningBlock, DAY_ORDER.indexOf(d)),
-      isToday: Boolean(g?.today || v?.today),
+      isToday: Boolean(g?.today || v.some((x) => x.today)),
     }
   })
 
@@ -101,11 +102,11 @@ export function TrainTodayPage() {
   const orderedToday = daySessions({
     day: today?.day ?? '',
     gym: today?.gym ?? null,
-    volleyball: today?.volleyball ?? null,
+    sport: today?.sport ?? [],
     running: todayRuns,
     isToday: true,
   })
-  const sessionCount = agenda.filter((a) => a.gym || a.volleyball || a.running.length).length
+  const sessionCount = agenda.filter((a) => a.gym || a.sport.length || a.running.length).length
 
   // Active meso phase for the current week (Week 3 ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
@@ -116,17 +117,18 @@ export function TrainTodayPage() {
   // mapped session carries the HU display date). Running carries the prescribed
   // tuple back, so we match on block + week + sessionKey.
   const todayHu = huMonthDayDow(localDateString())
-  const loggedVb = sport.sessions.find((s) => s.sport === 'volleyball' && s.date === todayHu) ?? null
+  // A slot's done-state matches a logged session by DATE **and** SPORT — a mixed day
+  // (TRX noon + volleyball evening) must flip each slot independently.
+  const loggedSportToday = (k: SportKind) =>
+    sport.sessions.find((s) => s.sport === k && s.date === todayHu) ?? null
+  const sportDoneOn = (iso: string | undefined, k: SportKind) =>
+    Boolean(iso) && sport.sessions.some((s) => s.sport === k && s.date === huMonthDayDow(iso!))
   // Gym done-state: today's date is in the server-computed set of this week's logged-set dates.
   const loggedGym = gymDoneDates.includes(localDateString())
   const runLoggedFor = (key: string) =>
     runSessions.find(
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
     ) ?? null
-  // A weekly row's done-state matches by its calendar date: volleyball by the mapped HU date,
-  // gym by the ISO date in gymDoneDates. (Running matches by block+week+sessionKey, date-agnostic.)
-  const vbDoneOn = (iso?: string) =>
-    Boolean(iso) && sport.sessions.some((s) => s.sport === 'volleyball' && s.date === huMonthDayDow(iso!))
 
   // Napiv page-head over-line: `Edzés · {day} · W{n}`; without a today row
   // (agenda has no isToday flag set — a run-only day still has `today` undefined
@@ -149,7 +151,7 @@ export function TrainTodayPage() {
       {/* Today's hero cards, ordered by time-of-day (gym / volleyball / running).
           A morning run hero appears above an evening gym hero. Each hero keeps
           its bespoke markup; the gym hero additionally requires the /today workout. */}
-      {orderedToday.map((item) => {
+      {orderedToday.map((item, i) => {
         if (item.kind === 'gym') {
           const gym = item.gym
           if (!workout) return null
@@ -191,16 +193,18 @@ export function TrainTodayPage() {
           )
         }
 
-        if (item.kind === 'volleyball') {
-          const vb = item.volleyball
+        if (item.kind === 'sport') {
+          const vb = item.sport
+          const k = sportOf(vb)
+          const logged = loggedSportToday(k)
           return (
-            <div key="hero-vb" style={{ padding: '0 24px 12px' }}>
+            <div key={`hero-sport-${k}-${vb.time}-${i}`} style={{ padding: '0 24px 12px' }}>
               <div className="np-eventrow">
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div className="col">
                     <div className="np-eventrow-head">
-                      <span className="typetag typetag-sport">🏐 RÖPI</span>
-                      <Display size="sm">Volleyball · {vb.time}</Display>
+                      <span className="typetag typetag-sport">{SPORT_EMOJI[k]} {SPORT_TAGS[k]}</span>
+                      <Display size="sm">{SPORT_TITLES[k]} · {vb.time}</Display>
                     </div>
                     <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
                       {[vb.court, `${vb.duration}p`, vb.role].filter(Boolean).join(' · ')}
@@ -210,19 +214,17 @@ export function TrainTodayPage() {
                     className="chip notch-4"
                     style={{
                       fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
-                      color: loggedVb ? 'var(--success)' : 'var(--tag-sport)',
-                      borderColor: `color-mix(in srgb, ${loggedVb ? 'var(--success)' : 'var(--tag-sport)'} 40%, transparent)`,
+                      color: logged ? 'var(--success)' : 'var(--tag-sport)',
+                      borderColor: `color-mix(in srgb, ${logged ? 'var(--success)' : 'var(--tag-sport)'} 40%, transparent)`,
                     }}
                   >
-                    {loggedVb ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
+                    {logged ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
                   </span>
                 </div>
-                {loggedVb ? (
-                  // Done-state: a muted, tappable summary of the logged effort
-                  // (re-opens the sheet — an in-place edit needs a backend PUT, mezo-0p3 follow-up).
+                {logged ? (
                   <button
                     type="button"
-                    onClick={() => setVbLogOpen(true)}
+                    onClick={() => setSportLogSport(k)}
                     className="row notch-4 mt-md"
                     style={{
                       width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
@@ -232,12 +234,16 @@ export function TrainTodayPage() {
                     }}
                   >
                     <Icon name="check" size={12} />
-                    <span>Logolva · RPE {loggedVb.rpe} · {loggedVb.duration}p · váll {loggedVb.shoulderStrain ?? '–'}</span>
+                    <span>
+                      {k === 'volleyball'
+                        ? `Logolva · RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
+                        : `Logolva · RPE ${logged.rpe} · ${logged.duration}p`}
+                    </span>
                   </button>
                 ) : (
                   <CtaGhost
                     className="notch-4 mt-md"
-                    onClick={() => setVbLogOpen(true)}
+                    onClick={() => setSportLogSport(k)}
                     style={{ borderColor: 'color-mix(in srgb, var(--tag-sport) 40%, transparent)', color: 'var(--tag-sport)' }}
                   >
                     <Icon name="plus" size={12} /> Logold a session-t
@@ -318,7 +324,7 @@ export function TrainTodayPage() {
       })}
 
       {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
-      {!today?.gym && !today?.volleyball && todayRuns.length === 0 && (
+      {!today?.gym && !today?.sport.length && todayRuns.length === 0 && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card notch-12" style={{ padding: 18 }}>
             <span className="eyebrow">Ma pihenőnap</span>
@@ -344,10 +350,10 @@ export function TrainTodayPage() {
               key={a.day}
               agenda={a}
               gymLogged={Boolean(a.date) && gymDoneDates.includes(a.date!)}
-              vbLogged={vbDoneOn(a.date)}
+              isSportLogged={(s) => sportDoneOn(a.date, sportOf(s))}
               isRunLogged={(key) => Boolean(runLoggedFor(key))}
               onStartGym={openSession}
-              onLogVolleyball={() => setVbLogOpen(true)}
+              onLogSport={(s) => setSportLogSport(sportOf(s))}
               onLogRun={(s) => setRunLogCtx({
                 blockId: activeRunningBlock!.id,
                 weekNumber: activeRunningBlock!.currentWeek,
@@ -367,16 +373,17 @@ export function TrainTodayPage() {
           <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
             <Icon name="sparkle" size={12} color="var(--brand-glow)" />
             <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', flex: 1 }}>
-              A gym a mesociklus szerint, a volleyball recurring · független. A két ütemterv együtt-mozgatja a
+              A gym a mesociklus szerint, a sport (röpi/cross/TRX) recurring · független. A két ütemterv együtt-mozgatja a
               pacing-et, alvás-onsetet és a vacsora-időt.
             </p>
           </div>
         </div>
       </div>
 
-      {vbLogOpen && (
+      {sportLogSport && (
         <SportLogSheet
-          onClose={() => setVbLogOpen(false)}
+          initialSport={sportLogSport}
+          onClose={() => setSportLogSport(null)}
           onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
       )}

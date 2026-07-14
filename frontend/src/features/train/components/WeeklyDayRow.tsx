@@ -1,18 +1,20 @@
 // ============================================================
-// Mezo · WeeklyDayRow — one day in the combined gym + volleyball
+// Mezo · WeeklyDayRow — one day in the combined gym + sport
 // weekly timeline (Mai view). Napiv `.dayrow` day card (spec §4.3).
 // ============================================================
 import { cn } from '@/shared/lib/cn'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
 import { daySessions } from '@/features/train/logic/agenda'
+import { sportOf, SPORT_TAGS, SPORT_TITLES } from '@/features/train/logic/sportKinds'
 
 export interface WeeklyAgendaDay {
   day: string
   /** ISO date of this row's day in the current week — used by the parent to derive done-state. */
   date?: string
   gym: GymScheduleDay | null
-  volleyball: VolleyballSession | null
+  /** This day's recurring sport slots (volleyball/cross/trx) — a day can hold several. */
+  sport: VolleyballSession[]
   running: RunPrescribedSession[]
   isToday: boolean
 }
@@ -21,16 +23,16 @@ interface WeeklyDayRowProps {
   agenda: WeeklyAgendaDay
   /** This day's gym workout has a logged set ⇒ show the done chip (today or a past day). */
   gymLogged?: boolean
-  /** This day's volleyball slot has a logged session ⇒ show the done chip (today or a past day). */
-  vbLogged?: boolean
+  /** This slot's sport has a logged session on this date ⇒ show the done chip. */
+  isSportLogged?: (s: VolleyballSession) => boolean
   /** This day's prescribed run (by key) has a logged session ⇒ show the done chip. */
   isRunLogged?: (key: string) => boolean
   onStartGym: () => void
-  onLogVolleyball: () => void
+  onLogSport?: (s: VolleyballSession) => void
   onLogRun?: (s: RunPrescribedSession) => void
 }
 
-export function WeeklyDayRow({ agenda, gymLogged, vbLogged, isRunLogged, onStartGym, onLogVolleyball, onLogRun }: WeeklyDayRowProps) {
+export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, onStartGym, onLogSport, onLogRun }: WeeklyDayRowProps) {
   const { day, isToday } = agenda
   // Time-ordered flat session list — gym/volleyball/running interleave by
   // time-of-day so a morning run renders above an evening gym (untimed last).
@@ -51,7 +53,7 @@ export function WeeklyDayRow({ agenda, gymLogged, vbLogged, isRunLogged, onStart
           </div>
         )}
 
-        {sessions.map((item) => {
+        {sessions.map((item, i) => {
           if (item.kind === 'gym') {
             const gym = item.gym
             // `type` doubles as the row title below (no separate workout-name field on
@@ -68,19 +70,19 @@ export function WeeklyDayRow({ agenda, gymLogged, vbLogged, isRunLogged, onStart
             )
           }
 
-          if (item.kind === 'volleyball') {
-            const volleyball = item.volleyball
-            const meta = [volleyball.time, `${volleyball.duration}p`, volleyball.role, volleyball.intensity]
-              .filter(Boolean)
-              .join(' · ')
+          if (item.kind === 'sport') {
+            const s = item.sport
+            const k = sportOf(s)
+            const logged = Boolean(isSportLogged?.(s))
+            const meta = [s.time, `${s.duration}p`, s.role, s.intensity].filter(Boolean).join(' · ')
             return (
-              <button key="volleyball" type="button" className="s" onClick={isToday ? onLogVolleyball : undefined}>
-                <span className="stag stag-sport">RÖPI</span>
-                {isToday ? <b>Volleyball</b> : 'Volleyball'}
+              <button key={`sport-${k}-${s.time}-${i}`} type="button" className="s" onClick={isToday ? () => onLogSport?.(s) : undefined}>
+                <span className="stag stag-sport">{SPORT_TAGS[k]}</span>
+                {isToday ? <b>{SPORT_TITLES[k]}</b> : SPORT_TITLES[k]}
                 <span className="meta">{meta}</span>
-                {(vbLogged || isToday) && (
-                  <span className={vbLogged ? 'done-chip' : cn('log-chip', 'stag-sport')}>
-                    {vbLogged ? 'kész' : 'log'}
+                {(logged || isToday) && (
+                  <span className={logged ? 'done-chip' : cn('log-chip', 'stag-sport')}>
+                    {logged ? 'kész' : 'log'}
                   </span>
                 )}
               </button>

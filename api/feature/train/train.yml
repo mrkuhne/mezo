@@ -1837,6 +1837,10 @@ components:
         intensityLabel:
           type: string
           maxLength: 40
+        sport:
+          type: string
+          pattern: '^(volleyball|cross|trx)$'
+          description: Sport discriminator; defaults to volleyball server-side when omitted.
     SportScheduleSlotResponse:
       type: object
       required:
@@ -1845,6 +1849,7 @@ components:
         - time
         - durationMin
         - kind
+        - sport
       properties:
         id:
           type: string
@@ -1863,6 +1868,9 @@ components:
           type: string
         intensityLabel:
           type: string
+        sport:
+          type: string
+          description: volleyball | cross | trx
     GymScheduleSlotResponse:
       type: object
       required:

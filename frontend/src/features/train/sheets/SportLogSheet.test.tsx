@@ -117,3 +117,9 @@ test('trx kind sends sport:trx + rounds', async () => {
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(onSave.mock.calls[0][0].sport).toBe('trx')
 })
+
+test('initialSport preselects the kind', () => {
+  render(<SportLogSheet initialSport="trx" onClose={vi.fn()} />)
+  expect(screen.getByText('Sport log · TRX')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'TRX' })).toHaveAttribute('aria-pressed', 'true')
+})

@@ -2143,6 +2143,8 @@ export interface components {
             kind: string;
             location?: string;
             intensityLabel?: string;
+            /** @description Sport discriminator; defaults to volleyball server-side when omitted. */
+            sport?: string;
         };
         SportScheduleSlotResponse: {
             /** Format: uuid */
@@ -2155,6 +2157,8 @@ export interface components {
             kind: "training" | "match";
             location?: string;
             intensityLabel?: string;
+            /** @description volleyball | cross | trx */
+            sport: string;
         };
         GymScheduleSlotResponse: {
             /** Format: uuid */
