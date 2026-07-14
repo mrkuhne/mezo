@@ -151,7 +151,7 @@ export function TrainTodayPage() {
       {/* Today's hero cards, ordered by time-of-day (gym / volleyball / running).
           A morning run hero appears above an evening gym hero. Each hero keeps
           its bespoke markup; the gym hero additionally requires the /today workout. */}
-      {orderedToday.map((item) => {
+      {orderedToday.map((item, i) => {
         if (item.kind === 'gym') {
           const gym = item.gym
           if (!workout) return null
@@ -198,7 +198,7 @@ export function TrainTodayPage() {
           const k = sportOf(vb)
           const logged = loggedSportToday(k)
           return (
-            <div key={`hero-sport-${k}-${vb.time}`} style={{ padding: '0 24px 12px' }}>
+            <div key={`hero-sport-${k}-${vb.time}-${i}`} style={{ padding: '0 24px 12px' }}>
               <div className="np-eventrow">
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div className="col">

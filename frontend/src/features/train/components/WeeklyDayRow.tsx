@@ -53,7 +53,7 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, on
           </div>
         )}
 
-        {sessions.map((item) => {
+        {sessions.map((item, i) => {
           if (item.kind === 'gym') {
             const gym = item.gym
             // `type` doubles as the row title below (no separate workout-name field on
@@ -76,7 +76,7 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, on
             const logged = Boolean(isSportLogged?.(s))
             const meta = [s.time, `${s.duration}p`, s.role, s.intensity].filter(Boolean).join(' · ')
             return (
-              <button key={`sport-${k}-${s.time}`} type="button" className="s" onClick={isToday ? () => onLogSport?.(s) : undefined}>
+              <button key={`sport-${k}-${s.time}-${i}`} type="button" className="s" onClick={isToday ? () => onLogSport?.(s) : undefined}>
                 <span className="stag stag-sport">{SPORT_TAGS[k]}</span>
                 {isToday ? <b>{SPORT_TITLES[k]}</b> : SPORT_TITLES[k]}
                 <span className="meta">{meta}</span>

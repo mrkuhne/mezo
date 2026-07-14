@@ -364,3 +364,30 @@ test('real mode: a TRX slot renders its own hero, sport-matched done-state, and 
   fireEvent.click(cta)
   expect(screen.getByText('Sport log · TRX')).toBeInTheDocument()
 })
+
+test('real mode: a TRX slot logged today shows the done hero (no váll segment) and re-opens the sheet', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const dow = (new Date().getDay() + 6) % 7
+  const otherDay = DAY_ORDER[(dow + 1) % 7]
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(otherDay)])),
+    // A TRX session logged TODAY — non-volleyball, so no shoulderStrain field at all.
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([
+      { id: 'ss-2', sport: 'trx', date: localDateString(), time: '12:00', duration: 60, rpe: 7 },
+    ])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+      { id: 'sl-1', dayOfWeek: dow, time: '12:00', durationMin: 60, kind: 'training', sport: 'trx', location: 'Life1 Corvin' },
+    ])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({ templateSessionId: null, dayLabel: todayLabel(), title: '', durationEst: 0, exercises: [], openWorkout: null })),
+  )
+  renderView()
+  // TRX hero, done state: "Kész" chip, summary with no "váll" segment (volleyball-only)
+  expect(await screen.findByText('TRX · 12:00')).toBeInTheDocument()
+  expect(screen.getByText('Kész')).toBeInTheDocument()
+  const summary = screen.getByText(/Logolva · RPE 7 · 60p$/)
+  expect(summary).toBeInTheDocument()
+  // Clicking the done summary re-opens the sheet, preselected to TRX
+  fireEvent.click(screen.getByRole('button', { name: /Logolva · RPE 7 · 60p/ }))
+  expect(screen.getByText('Sport log · TRX')).toBeInTheDocument()
+})
