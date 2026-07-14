@@ -33,7 +33,7 @@ test('hero shows the venue Display and the RPE explainer', () => {
 
 test('default view is the weekly plan', () => {
   renderView()
-  expect(screen.getByText(/Heti ritmus · 7\.5h court/)).toBeInTheDocument()
+  expect(screen.getByText(/Heti ritmus · 7\.5h/)).toBeInTheDocument()
 })
 
 test('switching to Napló shows the session log header with avg jump count', async () => {
@@ -76,7 +76,7 @@ test('real mode renders the weekly plan from the schedule endpoint', async () =>
   vi.stubEnv('VITE_USE_MOCK', 'false')
   renderView()
   // 5 BVSC fixture slots (msw default) -> derived weekly hours 8 and the Mon row time
-  expect(await screen.findByText(/Heti ritmus · 8h court/)).toBeInTheDocument()
+  expect(await screen.findByText(/Heti ritmus · 8h/)).toBeInTheDocument()
   expect(screen.getAllByText(/18:15/).length).toBeGreaterThan(0)
   expect(screen.getByRole('button', { name: 'Szerkesztés' })).toBeInTheDocument()
 })
@@ -107,6 +107,24 @@ test('real mode ghost CTA opens the editor when no schedule exists', async () =>
   renderView()
   await userEvent.click(await screen.findByRole('button', { name: /Állítsd be a heti rended/ }))
   expect(await screen.findByRole('heading', { name: 'Heti rend' })).toBeInTheDocument()
+})
+
+test('real mode: a day with TRX + volleyball slots renders both rows with sport tags', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+      { id: 'sl-1', dayOfWeek: 1, time: '12:00', durationMin: 60, kind: 'training', sport: 'trx', location: 'Life1 Corvin' },
+      { id: 'sl-2', dayOfWeek: 1, time: '19:00', durationMin: 90, kind: 'training', sport: 'volleyball', location: 'BVSC csarnok' },
+    ])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+  )
+  renderView()
+  expect(await screen.findByText('12:00')).toBeInTheDocument()
+  expect(screen.getByText('19:00')).toBeInTheDocument()
+  expect(screen.getByText('TRX')).toBeInTheDocument()
+  // weeklyHours is a plain JS number rendered raw (no hu-HU locale formatting anywhere
+  // in the mapper/view) — 2.5 renders with a dot, not a comma.
+  expect(screen.getByText(/Heti ritmus · 2\.5h/)).toBeInTheDocument()
 })
 
 test('real mode hero shows week stats once a session lands in the current week', async () => {
