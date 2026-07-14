@@ -60,7 +60,7 @@ test('header-only pass: pghead-np sage over + h1 keeps the current title content
   const { container } = renderNew(qc)
   expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
   expect(screen.getByText('Fuel · Receptek')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: '—' })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Új recept' })).toBeInTheDocument()
   await userEvent.type(screen.getByPlaceholderText(/Tonhalsaláta/), 'Teszt recept')
   expect(screen.getByRole('heading', { name: 'Teszt recept' })).toBeInTheDocument()
 })

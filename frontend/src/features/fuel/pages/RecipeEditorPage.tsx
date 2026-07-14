@@ -202,7 +202,7 @@ export function RecipeEditorPage() {
         <div className="pghead-np sage" style={{ padding: '8px 0 14px' }}>
           <div>
             <div className="over">Fuel · Receptek</div>
-            <h1>{name || '—'}</h1>
+            <h1>{name || (isEditMode ? '—' : 'Új recept')}</h1>
           </div>
         </div>
 
