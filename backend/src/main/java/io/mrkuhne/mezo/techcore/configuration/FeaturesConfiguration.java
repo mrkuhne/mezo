@@ -63,6 +63,10 @@ public class FeaturesConfiguration {
     /** Hypertrophy Drive — pre-populated prescribed sets + dynamic weight/rep recommendation. */
     public static final String HYPERTROPHY_DRIVE_SWITCH = "mezo.feature.hypertrophy-drive.enabled";
 
+    /** Fix zárás (closing block) — configured closing exercises (mezo.closing-block) lazily
+     *  ensured at the END of every template gym day of the active meso on GET /workouts/today. */
+    public static final String CLOSING_BLOCK_SWITCH = "mezo.feature.closing-block.enabled";
+
     /** Daily quests (gamified growth E1, ADR 0010). Gates the whole /api/quest surface + services. */
     public static final String QUEST_SWITCH = "mezo.feature.quest.enabled";
 
