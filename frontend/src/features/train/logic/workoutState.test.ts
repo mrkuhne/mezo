@@ -1,6 +1,6 @@
 // workoutState.test.ts
 import { describe, expect, test } from 'vitest'
-import { makeSession, completeSet, effectiveSetCount, currentExerciseId, advance, addExtraSet, skipExercise, seedFromOpen } from '@/features/train/logic/workoutState'
+import { makeSession, completeSet, effectiveSetCount, currentExerciseId, advance, addExtraSet, skipExercise, seedFromOpen, mergePlan } from '@/features/train/logic/workoutState'
 
 // warmupSets:0 keeps planned == the old `sets` count; `sets` is retained only for
 // the test loops below (makeSession reads warmupSets/workingSets/prescribedSets).
@@ -90,6 +90,40 @@ test('currentExerciseId returns the last exercise once all are done (complete se
     s = advance(s)
   }
   expect(currentExerciseId(s)).toBe('c')
+})
+
+// Mid-workout plan growth (mezo-ohvm): the server-side closing block (mezo-z2ul) can append
+// template exercises while a session is already open — a refetch grows the plan, and the
+// model must fold the new exercises in instead of treating them as done (0 planned).
+test('mergePlan appends plan growth to the session without touching progress', () => {
+  let s = makeSession(EX)
+  s = completeSet(s, { weight: 1, reps: 1, rir: 1 }) // a: 1/2
+  const grown = [...EX,
+    { id: 'dh', warmupSets: 0, workingSets: 2, prescribedSets: null },
+    { id: 'be', warmupSets: 0, workingSets: 2, prescribedSets: null },
+  ]
+  const m = mergePlan(s, grown)
+  expect(m.order).toEqual(['a', 'b', 'c', 'dh', 'be'])
+  expect(effectiveSetCount(m, 'dh')).toBe(2)
+  expect(m.logged['a']).toHaveLength(1) // progress untouched
+  expect(currentExerciseId(m)).toBe('a') // cursor unchanged while a incomplete
+})
+
+test('mergePlan makes grown exercises visitable after the last original one (the auto-finish bug)', () => {
+  let s = makeSession(EX)
+  for (const e of EX) {
+    for (let i = 0; i < e.sets; i++) s = completeSet(s, { weight: 1, reps: 1, rir: 1 })
+    s = advance(s)
+  }
+  // all originals done — WITHOUT the merge the session would read as complete
+  const m = mergePlan(s, [...EX, { id: 'dh', warmupSets: 0, workingSets: 2, prescribedSets: null }])
+  expect(currentExerciseId(m)).toBe('dh')
+  expect(m.logged['dh']).toBeUndefined()
+})
+
+test('mergePlan returns the SAME session object when the plan has nothing new (identity-stable)', () => {
+  const s = makeSession(EX)
+  expect(mergePlan(s, EX)).toBe(s)
 })
 
 })
