@@ -30,10 +30,10 @@ test('suggestion slot renders the recipe name + macros + an "ajánlott" chip', (
   renderCard(suggestion)
   expect(screen.getByText('Túrós palacsinta')).toBeInTheDocument()
   expect(screen.getByText('ajánlott')).toBeInTheDocument()
-  expect(screen.getByText('500kcal')).toBeInTheDocument()
+  expect(screen.getByText('500 kcal')).toBeInTheDocument()
 })
 
-test('tapping a suggestion title fires onLogMeal(slot)', async () => {
+test('tapping the suggestion Logolás CTA fires onLogMeal(slot)', async () => {
   const onLogMeal = renderCard(suggestion)
   await userEvent.click(screen.getByRole('button', { name: 'Túrós palacsinta logolása' }))
   expect(onLogMeal).toHaveBeenCalledWith(suggestion)
@@ -44,10 +44,13 @@ const budget: FuelSlot = {
   time: '12:30', kind: 'meal', label: 'Ebéd', state: 'pending', kcal: 700, p: 45, c: 70, f: 22,
 }
 
-test('budget-only slot renders its label + a "~kcal · P C F" budget line + a Logolás affordance', () => {
+test('budget-only slot renders its label + a .mrow kcal/macro readout + a Logolás affordance', () => {
   renderCard(budget)
   expect(screen.getByText('Ebéd')).toBeInTheDocument()
-  expect(screen.getByText('~700 kcal · P45 C70 F22')).toBeInTheDocument()
+  expect(screen.getByText('700 kcal')).toBeInTheDocument()
+  expect(screen.getByText('F 45')).toBeInTheDocument()
+  expect(screen.getByText('Sz 70')).toBeInTheDocument()
+  expect(screen.getByText('Zs 22')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Ebéd logolása' })).toBeInTheDocument()
 })
 
@@ -68,4 +71,38 @@ test('a workout slot without a duration renders no "· perc" suffix', () => {
 test('a workout slot with a duration keeps the "· N perc" suffix', () => {
   renderCard({ time: '17:00', kind: 'workout', label: 'Push A', state: 'pending', duration: 60 })
   expect(screen.getByText('Push A · 60 perc')).toBeInTheDocument()
+})
+
+// ── New Napiv slot template (.slot/.fav/.tx/.mrow/.st — mezo-8141) ─────────────
+test('renders the .slot template with a .fav avatar and a .mrow meta row', () => {
+  const { container } = render(
+    <SlotCard slot={suggestion} meta={KIND_META[suggestion.kind]} scoredMeal={null} onOpenScore={noop} onLogMeal={vi.fn()} />,
+  )
+  expect(container.querySelector('.slot')).toBeInTheDocument()
+  expect(container.querySelector('.fav')).toBeInTheDocument()
+  expect(container.querySelector('.mrow')).toBeInTheDocument()
+})
+
+test('a done slot renders the .slot.done wrapper with a ✓ in its .st status circle', () => {
+  const done: FuelSlot = {
+    time: '09:15', kind: 'meal', label: 'Reggeli', state: 'done',
+    mealName: 'Zabkása', kcal: 500, p: 30, c: 55, f: 12,
+  }
+  const { container } = render(
+    <SlotCard slot={done} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop} onLogMeal={vi.fn()} />,
+  )
+  expect(container.querySelector('.slot.done')).toBeInTheDocument()
+  expect(container.querySelector('.st')).toHaveTextContent('✓')
+})
+
+test('the now slot renders .slot.next with "következő" inside its .mrow', () => {
+  const now: FuelSlot = {
+    time: '16:00', kind: 'snack', label: 'Délutáni snack', state: 'now',
+    mealName: 'Túró', kcal: 300, p: 30, c: 30, f: 10,
+  }
+  const { container } = render(
+    <SlotCard slot={now} meta={KIND_META.snack} scoredMeal={null} onOpenScore={noop} onLogMeal={vi.fn()} />,
+  )
+  expect(container.querySelector('.slot.next')).toBeInTheDocument()
+  expect(container.querySelector('.mrow')).toHaveTextContent('következő')
 })
