@@ -93,8 +93,8 @@ test('real mode editor saves the full slot list via PUT', async () => {
   renderView()
   await userEvent.click(await screen.findByRole('button', { name: 'Szerkesztés' }))
   expect(await screen.findByRole('heading', { name: 'Heti rend' })).toBeInTheDocument()
-  // toggle Csü on (it is off in the BVSC week) and save
-  await userEvent.click(screen.getByRole('button', { name: 'Csü session' }))
+  // add a Csü slot (the day is empty in the BVSC week) and save
+  await userEvent.click(screen.getByRole('button', { name: 'Csütörtök sport hozzáadása' }))
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   await waitFor(() => expect(put).toHaveLength(1))
   const slots = put[0] as Array<{ dayOfWeek: number }>
