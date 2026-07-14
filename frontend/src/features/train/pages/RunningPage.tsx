@@ -80,7 +80,7 @@ export function RunningPage() {
             type="button"
             onClick={createBlock}
             className="pgact-np np-press"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--wash-run)', color: 'var(--tag-run)' }}
+            style={{ background: 'var(--wash-run)', color: 'var(--tag-run)' }}
           >
             <Icon name="plus" size={12} /> Új terv
           </button>

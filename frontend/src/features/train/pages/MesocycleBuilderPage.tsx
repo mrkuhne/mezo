@@ -10,7 +10,6 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { MesoOverview } from '@/features/train/components/MesoOverview'
@@ -67,16 +66,19 @@ export function MesocycleBuilderPage() {
         </button>
       </div>
       {/* Header */}
-      <div style={{ padding: '6px 24px 4px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div className="col flex-1">
-            <span className={meso.status === 'active' ? 'eyebrow brand' : 'eyebrow'}>{statusEyebrow}</span>
-            <PageTitle className="mt-sm">{meso.title}</PageTitle>
-            <span className="text-secondary mt-sm" style={{ fontSize: 13, lineHeight: 1.5 }}>
-              {meso.goal}
-            </span>
-          </div>
+      <div style={{ padding: '6px 24px 0' }}>
+        <span className={meso.status === 'active' ? 'eyebrow brand' : 'eyebrow'}>{statusEyebrow}</span>
+      </div>
+      <div className="pghead-np">
+        <div>
+          <div className="over">Edzés · Mesociklusok</div>
+          <h1>{meso.title}</h1>
         </div>
+      </div>
+      <div style={{ padding: '4px 24px 4px' }}>
+        <span className="text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>
+          {meso.goal}
+        </span>
       </div>
 
       {/* View switcher */}

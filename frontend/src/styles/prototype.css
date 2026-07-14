@@ -1364,7 +1364,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .pghead-np { display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 24px 0; }
 .pghead-np .over { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--coral-deep); }
 .pghead-np h1 { font-family: var(--ff-display); font-weight: 800; letter-spacing: -.4px; font-size: 27px; color: var(--ink); }
-.pgact-np { border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 800; background: var(--warm); color: var(--coral-deep); white-space: nowrap; }
+.pgact-np { display: inline-flex; align-items: center; gap: 4px; border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 800; background: var(--warm); color: var(--coral-deep); white-space: nowrap; }
 
 /* ===== Napív session type tags (weekly plan + session rows) ===== */
 .stag { display: inline-block; border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; letter-spacing: .5px; flex-shrink: 0; text-transform: uppercase; }

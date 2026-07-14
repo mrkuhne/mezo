@@ -13,8 +13,6 @@ import { MUSCLE_LABELS } from '@/data/train/train'
 import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '@/features/train/logic/muscleFilters'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
@@ -133,10 +131,10 @@ export function ExercisesPage() {
 
   return (
     <>
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Train · Gyakorlatok</Eyebrow>
-          <PageTitle>Gyakorlatok</PageTitle>
+      <div className="pghead-np">
+        <div>
+          <div className="over">Edzés · Gyakorlatok</div>
+          <h1>Gyakorlatok</h1>
         </div>
         <button className="chip notch-4 brand" onClick={() => setCatalog({})} style={{ padding: '8px 12px' }}>
           <Icon name="plus" size={12} /> Új gyakorlat
