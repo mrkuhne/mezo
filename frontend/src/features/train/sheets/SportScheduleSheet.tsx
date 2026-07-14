@@ -1,6 +1,7 @@
 // ============================================================
-// Mezo · SportScheduleSheet — weekly sport (volleyball) plan editor.
-// One slot max per day (the weekly views render one row per day);
+// Mezo · SportScheduleSheet — weekly sport plan editor.
+// Per-day slot lists (a day holds 0..n slots, each with a sport discriminator);
+// non-volleyball slots always save kind 'training'.
 // Save emits the full slot list -> PUT /api/train/sport-schedule
 // (full-replace). Real-mode-only affordance: mock mode keeps the
 // Phase-1 static schedule (parity snapshot), so the editor entry
@@ -11,13 +12,14 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
-import { DAY_ORDER } from '@/data/train/train'
+import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import type { SportScheduleSlotInput } from '@/data/train/trainApi'
 import type { VolleyballSession } from '@/data/types'
 import { NumberStep } from '@/features/train/sheets/SportLogSheet'
+import { SPORT_KINDS, SPORT_LABELS, sportOf, type SportKind } from '@/features/train/logic/sportKinds'
 
-interface DayDraft {
-  on: boolean
+interface SlotDraft {
+  sport: SportKind
   time: string
   durationMin: number
   kind: 'training' | 'match'
@@ -25,22 +27,18 @@ interface DayDraft {
   intensityLabel: string
 }
 
-const emptyDraft = (): DayDraft =>
-  ({ on: false, time: '18:00', durationMin: 90, kind: 'training', location: '', intensityLabel: '' })
+const newSlot = (): SlotDraft =>
+  ({ sport: 'volleyball', time: '18:00', durationMin: 90, kind: 'training', location: '', intensityLabel: '' })
 
-// Round-trips the mapped schedule (role 'meccs*' <-> kind 'match') — exact for
-// real-mode data, best-effort for the Phase-1 mock fixture.
-function draftsFrom(sessions: VolleyballSession[]): DayDraft[] {
-  return DAY_ORDER.map((d) => {
-    const s = sessions.find((x) => x.day === d)
-    return s
-      ? {
-          on: true, time: s.time, durationMin: s.duration,
-          kind: s.role.startsWith('meccs') ? 'match' as const : 'training' as const,
-          location: s.court, intensityLabel: s.intensity,
-        }
-      : emptyDraft()
-  })
+// Groups the mapped schedule per weekday (role 'meccs*' <-> kind 'match') — exact for
+// real-mode data, best-effort for the Phase-1 mock fixture. A day holds 0..n slots.
+function draftsFrom(sessions: VolleyballSession[]): SlotDraft[][] {
+  return DAY_ORDER.map((d) =>
+    sessions.filter((x) => x.day === d).map((s) => ({
+      sport: sportOf(s), time: s.time, durationMin: s.duration,
+      kind: s.role.startsWith('meccs') ? 'match' as const : 'training' as const,
+      location: s.court, intensityLabel: s.intensity,
+    })))
 }
 
 export function SportScheduleSheet({ initial, onSave, onClose }: {
@@ -48,18 +46,20 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
   onSave?: (slots: SportScheduleSlotInput[]) => void
   onClose: () => void
 }) {
-  const [drafts, setDrafts] = useState<DayDraft[]>(() => draftsFrom(initial))
-  const patch = (i: number, p: Partial<DayDraft>) =>
-    setDrafts((ds) => ds.map((d, j) => (j === i ? { ...d, ...p } : d)))
+  const [days, setDays] = useState<SlotDraft[][]>(() => draftsFrom(initial))
+  const patch = (di: number, si: number, p: Partial<SlotDraft>) =>
+    setDays((ds) => ds.map((slots, j) => (j === di ? slots.map((s, k) => (k === si ? { ...s, ...p } : s)) : slots)))
+  const addSlot = (di: number) => setDays((ds) => ds.map((slots, j) => (j === di ? [...slots, newSlot()] : slots)))
+  const removeSlot = (di: number, si: number) =>
+    setDays((ds) => ds.map((slots, j) => (j === di ? slots.filter((_, k) => k !== si) : slots)))
 
   const save = () => {
-    onSave?.(drafts.flatMap((d, i) => d.on
-      ? [{
-          dayOfWeek: i, time: d.time, durationMin: d.durationMin, kind: d.kind,
-          ...(d.location.trim() ? { location: d.location.trim() } : {}),
-          ...(d.intensityLabel.trim() ? { intensityLabel: d.intensityLabel.trim() } : {}),
-        }]
-      : []))
+    onSave?.(days.flatMap((slots, i) => slots.map((d) => ({
+      dayOfWeek: i, time: d.time, durationMin: d.durationMin,
+      sport: d.sport, kind: d.sport === 'volleyball' ? d.kind : 'training',
+      ...(d.location.trim() ? { location: d.location.trim() } : {}),
+      ...(d.intensityLabel.trim() ? { intensityLabel: d.intensityLabel.trim() } : {}),
+    }))))
   }
 
   const inputStyle = {
@@ -89,89 +89,121 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
 
           {/* Day editors */}
           <div className="col gap-sm">
-            {DAY_ORDER.map((day, i) => {
-              const d = drafts[i]
-              return (
-                <div key={day} className="card notch-4" style={{ padding: 10 }}>
-                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span
-                      className="label-mono"
-                      style={{ width: 36, color: d.on ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
-                    >
-                      {day}
-                    </span>
-                    <button
-                      type="button"
-                      className="chip notch-4"
-                      aria-pressed={d.on}
-                      onClick={() => patch(i, { on: !d.on })}
-                      style={{
-                        padding: '6px 10px', fontSize: 9,
-                        color: d.on ? 'var(--cat-tendency)' : 'var(--text-tertiary)',
-                        borderColor: d.on
-                          ? 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)'
-                          : 'var(--border-subtle)',
-                      }}
-                    >
-                      {day} session
-                    </button>
-                  </div>
-                  {d.on && (
-                    <div className="col gap-sm mt-md">
-                      <div className="row gap-sm">
-                        <input
-                          type="time"
-                          aria-label={`${day} idő`}
-                          value={d.time}
-                          onChange={(e) => patch(i, { time: e.target.value })}
-                          style={{ ...inputStyle, width: 110 }}
-                        />
-                        <button
-                          type="button"
-                          className="chip notch-4 flex-1"
-                          aria-pressed={d.kind === 'training'}
-                          onClick={() => patch(i, { kind: 'training' })}
-                          style={{ fontSize: 9, color: d.kind === 'training' ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
-                        >
-                          {day} edzés
-                        </button>
-                        <button
-                          type="button"
-                          className="chip notch-4 flex-1"
-                          aria-pressed={d.kind === 'match'}
-                          onClick={() => patch(i, { kind: 'match' })}
-                          style={{ fontSize: 9, color: d.kind === 'match' ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
-                        >
-                          {day} meccs
-                        </button>
+            {DAY_ORDER.map((day, di) => (
+              <div key={day} className="card notch-4" style={{ padding: 10 }}>
+                <span
+                  className="label-mono"
+                  style={{ color: days[di].length ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
+                >
+                  {day}
+                </span>
+                <div className="col gap-sm mt-sm">
+                  {days[di].map((d, si) => {
+                    const slotName = `${DAY_LABELS[day]} ${si + 1}.`
+                    return (
+                      <div key={si} className="card notch-4" style={{ padding: 10, background: 'var(--surface-2)' }}>
+                        <div className="row gap-xs" role="group" aria-label={`${slotName} sport`}>
+                          {SPORT_KINDS.map((k) => (
+                            <button
+                              key={k}
+                              type="button"
+                              className="chip notch-4 flex-1"
+                              aria-pressed={d.sport === k}
+                              aria-label={`${slotName} ${SPORT_LABELS[k]}`}
+                              onClick={() => patch(di, si, { sport: k, ...(k !== 'volleyball' ? { kind: 'training' as const } : {}) })}
+                              style={{
+                                padding: '6px 8px', fontSize: 9,
+                                color: d.sport === k ? 'var(--cat-tendency)' : 'var(--text-tertiary)',
+                                borderColor: d.sport === k
+                                  ? 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)'
+                                  : 'var(--border-subtle)',
+                              }}
+                            >
+                              {SPORT_LABELS[k]}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            className="chip notch-4"
+                            aria-label={`${slotName} slot törlése`}
+                            onClick={() => removeSlot(di, si)}
+                            style={{ padding: '6px 8px' }}
+                          >
+                            <Icon name="x" size={10} />
+                          </button>
+                        </div>
+                        <div className="col gap-sm mt-md">
+                          <div className="row gap-sm">
+                            <input
+                              type="time"
+                              aria-label={`${slotName} idő`}
+                              value={d.time}
+                              onChange={(e) => patch(di, si, { time: e.target.value })}
+                              style={{ ...inputStyle, width: 110 }}
+                            />
+                            {d.sport === 'volleyball' && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="chip notch-4 flex-1"
+                                  aria-pressed={d.kind === 'training'}
+                                  aria-label={`${slotName} edzés`}
+                                  onClick={() => patch(di, si, { kind: 'training' })}
+                                  style={{ fontSize: 9, color: d.kind === 'training' ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
+                                >
+                                  edzés
+                                </button>
+                                <button
+                                  type="button"
+                                  className="chip notch-4 flex-1"
+                                  aria-pressed={d.kind === 'match'}
+                                  aria-label={`${slotName} meccs`}
+                                  onClick={() => patch(di, si, { kind: 'match' })}
+                                  style={{ fontSize: 9, color: d.kind === 'match' ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
+                                >
+                                  meccs
+                                </button>
+                              </>
+                            )}
+                          </div>
+                          <NumberStep
+                            label="Hossz · perc"
+                            val={d.durationMin}
+                            step={15}
+                            min={15}
+                            max={360}
+                            onChange={(v) => patch(di, si, { durationMin: v })}
+                          />
+                          <input
+                            aria-label={`${slotName} helyszín`}
+                            placeholder="Helyszín"
+                            value={d.location}
+                            onChange={(e) => patch(di, si, { location: e.target.value })}
+                            style={inputStyle}
+                          />
+                          <input
+                            aria-label={`${slotName} intenzitás`}
+                            placeholder="Intenzitás · pl. közepes"
+                            value={d.intensityLabel}
+                            onChange={(e) => patch(di, si, { intensityLabel: e.target.value })}
+                            style={inputStyle}
+                          />
+                        </div>
                       </div>
-                      <NumberStep
-                        label="Hossz · perc"
-                        val={d.durationMin}
-                        step={15}
-                        min={15}
-                        max={360}
-                        onChange={(v) => patch(i, { durationMin: v })}
-                      />
-                      <input
-                        aria-label={`${day} helyszín`}
-                        placeholder="Helyszín"
-                        value={d.location}
-                        onChange={(e) => patch(i, { location: e.target.value })}
-                        style={inputStyle}
-                      />
-                      <input
-                        aria-label={`${day} intenzitás`}
-                        placeholder="Intenzitás · pl. közepes"
-                        value={d.intensityLabel}
-                        onChange={(e) => patch(i, { intensityLabel: e.target.value })}
-                        style={inputStyle}
-                      />
-                    </div>
-                  )}
+                    )
+                  })}
+                  <button
+                    type="button"
+                    className="chip notch-4"
+                    aria-label={`${DAY_LABELS[day]} sport hozzáadása`}
+                    onClick={() => addSlot(di)}
+                    style={{ padding: '8px 10px', fontSize: 9, color: 'var(--text-secondary)' }}
+                  >
+                    + Sport hozzáadása
+                  </button>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
 
           {/* Footer */}
