@@ -12,16 +12,16 @@ import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
-import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
+import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import { daySessions } from '@/features/train/logic/agenda'
+import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
+import { LoadTiles } from '@/features/train/components/LoadTiles'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
@@ -45,10 +45,10 @@ export function TrainTodayPage() {
   if (!activeMeso) {
     return (
       <>
-        <div className="page-header">
-          <div className="col gap-xs">
-            <Eyebrow brand>Train · Mai</Eyebrow>
-            <PageTitle>Edzés</PageTitle>
+        <div className="pghead-np">
+          <div>
+            <div className="over">Edzés</div>
+            <h1>Mai nap</h1>
           </div>
         </div>
         <div style={{ padding: '0 24px 12px' }}>
@@ -60,8 +60,8 @@ export function TrainTodayPage() {
           />
         </div>
         <div style={{ padding: '0 24px 16px' }}>
-          <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-            <span className="eyebrow">Heti terv · gym + futás + sport</span>
+          <div className="secthead-np">
+            <h3>Heti terv</h3>
           </div>
           <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
         </div>
@@ -128,17 +128,22 @@ export function TrainTodayPage() {
   const vbDoneOn = (iso?: string) =>
     Boolean(iso) && sport.sessions.some((s) => s.sport === 'volleyball' && s.date === huMonthDayDow(iso!))
 
+  // Napiv page-head over-line: `Edzés · {day} · W{n}`; without a today row
+  // (agenda has no isToday flag set — a run-only day still has `today` undefined
+  // via the flag-based find above), drop the day segment instead of interpolating
+  // an empty string (avoids a dangling " · " artifact).
+  const overLine = today
+    ? `Edzés · ${DAY_LABELS[today.day]} · W${activeMeso.currentWeek}`
+    : `Edzés · W${activeMeso.currentWeek}`
+
   return (
     <>
       {/* Header */}
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Train · Mai</Eyebrow>
-          <PageTitle>Edzés</PageTitle>
+      <div className="pghead-np">
+        <div>
+          <div className="over">{overLine}</div>
+          <h1>Mai nap</h1>
         </div>
-        <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>
-          {today ? DAY_LABELS[today.day] : ''} · W{activeMeso.currentWeek}
-        </span>
       </div>
 
       {/* Today's hero cards, ordered by time-of-day (gym / volleyball / running).
@@ -148,62 +153,41 @@ export function TrainTodayPage() {
         if (item.kind === 'gym') {
           const gym = item.gym
           if (!workout) return null
+          const gymEyebrow = `MA ${gym.time ?? ''} · ${currentPhase}`
           return (
-            <div key="hero-gym" style={{ padding: '0 24px 12px' }}>
-              <div className="card notch-12" style={{ padding: 18 }}>
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div className="col">
-                    <span className="eyebrow brand">Week {activeMeso.currentWeek} · {currentPhase}</span>
-                    <div style={{ marginTop: 8 }}>
-                      <Display size="lg">{workout.title}</Display>
-                    </div>
-                    {(gym.time || gym.duration) && (
-                      <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
-                        {[gym.time, gym.duration ? `${gym.duration}p` : null]
-                          .filter(Boolean).join(' · ')}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    className="chip notch-4"
-                    style={{
-                      fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
-                      color: loggedGym ? 'var(--success)' : 'var(--brand-glow)',
-                      borderColor: loggedGym ? 'color-mix(in srgb, var(--success) 40%, transparent)' : 'var(--border-brand)',
-                    }}
-                  >
-                    {loggedGym ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
-                  </span>
-                </div>
-                <div className="row gap-sm mt-md">
-                  <span className="chip notch-4">{workout.exercises.length} gyakorlat</span>
-                  <span className="chip notch-4">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szet</span>
-                  {workout.durationEst > 0 && <span className="chip notch-4">~{workout.durationEst}p</span>}
-                </div>
-                {loggedGym ? (
-                  // Done-state: a muted summary in place of the start CTA (re-entry/edit is the
-                  // active-workout-v2 follow-up; gym sessions have no in-place edit sheet yet).
-                  <div
-                    className="row notch-4 mt-md"
-                    style={{
-                      justifyContent: 'center', gap: 6, padding: '10px 12px',
-                      background: 'rgba(52, 211, 153, 0.08)',
-                      border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
-                      color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
-                    }}
-                  >
-                    <Icon name="check" size={12} />
-                    <span>Mai edzés logolva</span>
-                  </div>
-                ) : (
-                  <CtaPrimary className="mt-md" onClick={openSession}>
-                    <span>Indítsuk</span>
-                    <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span>
-                    <span>{workout.title}</span>
-                  </CtaPrimary>
-                )}
+            <section key="hero-gym" className="trainhero np-anim">
+              <div className="trainhero-over">{gymEyebrow}</div>
+              <div className="h2row">
+                <h2>{workout.title}</h2>
+                <span className="typetag typetag-gym">🏋️ GYM</span>
               </div>
-            </div>
+              <div className="chips">
+                <span className="chip-np">{workout.exercises.length} gyakorlat</span>
+                <span className="chip-np">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>
+                {workout.durationEst > 0 && <span className="chip-np">~{workout.durationEst} perc</span>}
+                {gym.type && <span className="chip-np">{gym.type}</span>}
+              </div>
+              {loggedGym ? (
+                // Done-state: a muted summary in place of the start CTA (re-entry/edit is the
+                // active-workout-v2 follow-up; gym sessions have no in-place edit sheet yet).
+                <div
+                  className="row notch-4 mt-md"
+                  style={{
+                    justifyContent: 'center', gap: 6, padding: '10px 12px',
+                    background: 'rgba(52, 211, 153, 0.08)',
+                    border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
+                    color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
+                  }}
+                >
+                  <Icon name="check" size={12} />
+                  <span>Mai edzés logolva</span>
+                </div>
+              ) : (
+                <div className="np-ctarow">
+                  <button type="button" className="np-cta np-press" onClick={openSession}>Indítsuk →</button>
+                </div>
+              )}
+            </section>
           )
         }
 
@@ -211,22 +195,12 @@ export function TrainTodayPage() {
           const vb = item.volleyball
           return (
             <div key="hero-vb" style={{ padding: '0 24px 12px' }}>
-              <div
-                className="card notch-12"
-                style={{
-                  padding: 16,
-                  background: 'linear-gradient(180deg, color-mix(in srgb, var(--cat-tendency) 6%, transparent) 0%, var(--surface-1) 100%)',
-                  borderColor: 'color-mix(in srgb, var(--cat-tendency) 30%, transparent)',
-                  position: 'relative',
-                  overflow: 'hidden',
-                }}
-              >
-                <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--cat-tendency)' }} />
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: 6 }}>
+              <div className="np-eventrow">
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div className="col">
-                    <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>Sport · ma</span>
-                    <div style={{ marginTop: 6 }}>
-                      <Display size="md">Volleyball · {vb.time}</Display>
+                    <div className="np-eventrow-head">
+                      <span className="typetag typetag-sport">🏐 RÖPI</span>
+                      <Display size="sm">Volleyball · {vb.time}</Display>
                     </div>
                     <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
                       {[vb.court, `${vb.duration}p`, vb.role].filter(Boolean).join(' · ')}
@@ -278,33 +252,12 @@ export function TrainTodayPage() {
         const rl = runLoggedFor(s.key)
         return (
           <div key={s.key} style={{ padding: '0 24px 12px' }}>
-            <div
-              className="card notch-12"
-              style={{
-                padding: 16,
-                background: 'linear-gradient(180deg, color-mix(in srgb, var(--info) 6%, transparent) 0%, var(--surface-1) 100%)',
-                borderColor: 'color-mix(in srgb, var(--info) 30%, transparent)',
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--info)' }} />
-              <span
-                style={{
-                  position: 'absolute',
-                  right: -50,
-                  top: -50,
-                  width: 160,
-                  height: 160,
-                  borderRadius: '50%',
-                  background: 'radial-gradient(circle, color-mix(in srgb, var(--info) 12%, transparent), transparent 70%)',
-                }}
-              />
-              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: 6, position: 'relative' }}>
+            <div className="np-eventrow">
+              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div className="col">
-                  <span className="eyebrow" style={{ color: 'var(--info)' }}>Futás · ma</span>
-                  <div style={{ marginTop: 6 }}>
-                    <Display size="md">{s.label}</Display>
+                  <div className="np-eventrow-head">
+                    <span className="typetag typetag-run">🏃 FUTÁS</span>
+                    <Display size="sm">{s.label}</Display>
                   </div>
                   <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
                     {`RPE ${s.rpeTarget.min}–${s.rpeTarget.max}${s.rounds ? ` · ${s.rounds} kör` : ''}`}
@@ -334,7 +287,7 @@ export function TrainTodayPage() {
                   })}
                   className="row notch-4 mt-md"
                   style={{
-                    width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px', position: 'relative',
+                    width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
                     background: 'rgba(52, 211, 153, 0.08)',
                     border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
                     color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
@@ -364,23 +317,14 @@ export function TrainTodayPage() {
         )
       })}
 
-      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
-      {!today?.gym && !today?.volleyball && todayRuns.length === 0 && (
-        <div style={{ padding: '0 24px 12px' }}>
-          <div className="card notch-12" style={{ padding: 18 }}>
-            <span className="eyebrow">Ma pihenőnap</span>
-            <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Nincs tervezett edzés mára — a heti rended lent találod.
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Weekly load summary tiles (renders null on an empty week) */}
+      <LoadTiles tiles={weeklyLoad(agenda)} />
 
       {/* Weekly combined timeline */}
       <div style={{ padding: '0 24px 16px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-          <span className="eyebrow">Heti terv · gym + futás + sport</span>
-          <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>{sessionCount} session</span>
+        <div className="secthead-np">
+          <h3>Heti terv</h3>
+          <span>{sessionCount} session</span>
         </div>
         <div className="col gap-sm">
           {agenda.map((a) => (
@@ -404,6 +348,18 @@ export function TrainTodayPage() {
           ))}
         </div>
       </div>
+
+      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
+      {!today?.gym && !today?.volleyball && todayRuns.length === 0 && (
+        <div style={{ padding: '0 24px 12px' }}>
+          <div className="card notch-12" style={{ padding: 18 }}>
+            <span className="eyebrow">Ma pihenőnap</span>
+            <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              Nincs tervezett edzés mára — a heti rended lent találod.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Note */}
       <div style={{ padding: '0 24px 32px' }}>

@@ -1397,6 +1397,19 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 :root[data-theme="dark"] .dayrow .done-chip { background: rgba(127,164,138,.16); }
 .dayrow .log-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
 
+/* ===== Napív train hero (Mai, spec §4.3) ===== */
+.trainhero { border-radius: 28px; padding: 19px; margin: 14px 24px 0; background: linear-gradient(150deg, #FFE9DF, #FFF9F3 65%); box-shadow: 0 14px 32px rgba(196,98,47,.12); position: relative; overflow: hidden; }
+:root[data-theme="dark"] .trainhero { background: linear-gradient(150deg, rgba(255,107,74,.14), rgba(255,255,255,.03) 65%); }
+.trainhero::after { content: ''; position: absolute; top: -46px; right: -46px; width: 160px; height: 160px; border-radius: 50%; background: radial-gradient(circle, rgba(255,107,74,.17), transparent 68%); }
+.trainhero-over { font-size: 11px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; color: var(--coral-deep); }
+.trainhero .h2row h2 { font-family: var(--ff-display); font-size: 30px; font-weight: 800; letter-spacing: -.5px; color: var(--ink); }
+.trainhero .typetag { background: rgba(255,255,255,.9); color: var(--tag-gym); }
+:root[data-theme="dark"] .trainhero .typetag { background: rgba(255,255,255,.12); }
+.trainhero .chips { display: flex; gap: 7px; margin-top: 11px; flex-wrap: wrap; }
+.trainhero .chip-np { background: rgba(255,255,255,.9); border-radius: 999px; padding: 7px 13px; font-size: 11.5px; font-weight: 800; color: var(--coral-deep); }
+:root[data-theme="dark"] .trainhero .chip-np { background: rgba(255,255,255,.1); }
+.trainhero .np-ctarow { margin-top: 14px; }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {

@@ -24,8 +24,8 @@ function renderApp(path: string) {
 
 test('Train opens on Mai and the sub-nav switches between sub-tabs', async () => {
   renderApp('/train')
-  expect(screen.getByText('07:30 · 78p')).toBeInTheDocument()
-  expect(screen.getByText('Heti terv · gym + futás + sport')).toBeInTheDocument()
+  expect(screen.getByText('MA 07:30 · MAV')).toBeInTheDocument()
+  expect(screen.getByText('Heti terv')).toBeInTheDocument()
 
   await userEvent.click(screen.getByRole('link', { name: 'Sport' }))
   expect(screen.getByText('BVSC csarnok')).toBeInTheDocument()
