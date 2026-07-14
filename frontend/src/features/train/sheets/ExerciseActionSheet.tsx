@@ -11,7 +11,6 @@
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { Icon, type IconName } from '@/shared/ui/Icon'
 import { SortableList } from '@/shared/ui/SortableList'
@@ -125,7 +124,7 @@ export function ExerciseActionSheet({
         return (
           <>
             <div className="col" style={{ marginBottom: 14 }}>
-              <Eyebrow brand>Gyakorlat műveletek</Eyebrow>
+              <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Gyakorlat műveletek</span>
               <div id="exercise-action-title" style={{ marginTop: 6 }}>
                 <Display size="md">{exerciseName}</Display>
               </div>

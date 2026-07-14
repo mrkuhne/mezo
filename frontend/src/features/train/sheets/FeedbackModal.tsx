@@ -9,7 +9,6 @@
 import { useRef, useState } from 'react'
 import type { LoggedWorkoutExercise } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 
@@ -83,7 +82,7 @@ export function FeedbackModal({
       {(close) => (
         <>
           <div className="col">
-            <Eyebrow brand>Set debrief · RP feedback</Eyebrow>
+            <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>Set debrief · RP feedback</span>
             <div style={{ marginTop: 6 }}>
               <Display size="md">{ex.name}</Display>
             </div>
