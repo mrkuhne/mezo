@@ -210,8 +210,8 @@ export function TrainTodayPage() {
                     className="chip notch-4"
                     style={{
                       fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
-                      color: loggedVb ? 'var(--success)' : 'var(--cat-tendency)',
-                      borderColor: `color-mix(in srgb, ${loggedVb ? 'var(--success)' : 'var(--cat-tendency)'} 40%, transparent)`,
+                      color: loggedVb ? 'var(--success)' : 'var(--tag-sport)',
+                      borderColor: `color-mix(in srgb, ${loggedVb ? 'var(--success)' : 'var(--tag-sport)'} 40%, transparent)`,
                     }}
                   >
                     {loggedVb ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
@@ -238,7 +238,7 @@ export function TrainTodayPage() {
                   <CtaGhost
                     className="notch-4 mt-md"
                     onClick={() => setVbLogOpen(true)}
-                    style={{ borderColor: 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)', color: 'var(--cat-tendency)' }}
+                    style={{ borderColor: 'color-mix(in srgb, var(--tag-sport) 40%, transparent)', color: 'var(--tag-sport)' }}
                   >
                     <Icon name="plus" size={12} /> Logold a session-t
                   </CtaGhost>
@@ -267,8 +267,8 @@ export function TrainTodayPage() {
                   className="chip notch-4"
                   style={{
                     fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
-                    color: rl ? 'var(--success)' : 'var(--info)',
-                    borderColor: `color-mix(in srgb, ${rl ? 'var(--success)' : 'var(--info)'} 40%, transparent)`,
+                    color: rl ? 'var(--success)' : 'var(--tag-run)',
+                    borderColor: `color-mix(in srgb, ${rl ? 'var(--success)' : 'var(--tag-run)'} 40%, transparent)`,
                   }}
                 >
                   {rl ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
@@ -307,7 +307,7 @@ export function TrainTodayPage() {
                     isSprint: s.kind === 'sprint',
                     defaultRounds: s.rounds ?? undefined,
                   })}
-                  style={{ borderColor: 'color-mix(in srgb, var(--info) 40%, transparent)', color: 'var(--info)' }}
+                  style={{ borderColor: 'color-mix(in srgb, var(--tag-run) 40%, transparent)', color: 'var(--tag-run)' }}
                 >
                   <Icon name="plus" size={12} /> Naplózd a futást
                 </CtaGhost>

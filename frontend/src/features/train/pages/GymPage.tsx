@@ -78,7 +78,7 @@ export function GymPage() {
               type="button"
               onClick={() => setScheduleOpen(true)}
               className="pgact-np np-press"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
+              style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
             >
               <Icon name="today" size={12} /> Időpontok
             </button>
