@@ -72,7 +72,7 @@ const PR_TOAST_MS = 4500
 // — a conditional early return between hook calls would break the hook order
 // now that `workout` is query-driven (T2).
 export function ActiveWorkoutPage() {
-  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
+  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Show the generic skeleton
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
@@ -81,6 +81,12 @@ export function ActiveWorkoutPage() {
   if (workoutPending) return <ScreenSkeleton />
   // T0 clean slate: never render the session without a workout (and at least one exercise).
   if (!workout || workout.exercises.length === 0 || !activeMeso) return <Navigate to="/train" replace />
+  // Completed today + nothing open → the session is over; review instead of restart
+  // (spec 2026-07-15 gating — the prep screen must be unreachable, challenges included).
+  // Mock mode has no completedTodayWorkout (always null), so this never fires there.
+  if (completedTodayWorkout && !todaySession?.openWorkout) {
+    return <Navigate to={`/train/review/${completedTodayWorkout.id}`} replace />
+  }
   return (
     <ActiveWorkoutSession
       workout={workout}

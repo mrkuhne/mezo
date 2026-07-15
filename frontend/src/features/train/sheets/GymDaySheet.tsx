@@ -15,10 +15,12 @@ import { GymExRow } from '@/features/train/components/GymExRow'
 
 interface GymDaySheetProps {
   day: MesoDay
+  /** Today's completed instance id (null when none) — flips the start CTA to review. */
+  completedWorkoutId?: string | null
   onClose: () => void
 }
 
-export function GymDaySheet({ day, onClose }: GymDaySheetProps) {
+export function GymDaySheet({ day, completedWorkoutId, onClose }: GymDaySheetProps) {
   const navigate = useNavigate()
   const totalSets = day.exercises.reduce((acc, e) => acc + e.workingSets, 0)
   const canStart = Boolean(day.current)
@@ -60,8 +62,17 @@ export function GymDaySheet({ day, onClose }: GymDaySheetProps) {
             ))}
           </div>
 
-          {/* Footer: start today, else view-mode note */}
-          {canStart ? (
+          {/* Footer: today's completed instance → review; else start today; else view-mode note */}
+          {canStart && completedWorkoutId ? (
+            <CtaPrimary
+              onClick={() => {
+                navigate(`/train/review/${completedWorkoutId}`)
+                close()
+              }}
+            >
+              <Icon name="check" size={14} /> Kész · Megnézem →
+            </CtaPrimary>
+          ) : canStart ? (
             <CtaPrimary
               onClick={() => {
                 navigate('/train/session')

@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
@@ -1039,6 +1039,41 @@ test('real mode: add-set "Csak ma" fires no template PUT', async () => {
   await user.click(await screen.findByText('Csak ma'))
   await new Promise((r) => setTimeout(r, 0))
   expect(puts).toHaveLength(0)
+})
+
+// --- done-day gating: the session route redirects to the review (mezo-cd8s) ---
+// A completed today instance with nothing open means the workout is over; the prep
+// screen must be unreachable — the guard redirects /train/session to the review.
+test('real mode: a completed today instance redirects the session route to the review', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([REAL_MESO])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'd-1', dayLabel: 'Ma', title: 'Pull Day', durationEst: 0,
+        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', warmupSets: 0, workingSets: 2, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', lastWeek: null }],
+        openWorkout: null,
+        completedWorkout: { id: 'w-done', templateSessionId: 'd-1', date: '2026-06-12', status: 'completed', sets: [] },
+      }),
+    ),
+  )
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/train/session']}>
+        <LevelUpProvider>
+          <LiveActivityProvider>
+            <Routes>
+              <Route path="/train/session" element={<ActiveWorkoutPage />} />
+              <Route path="/train/review/:workoutId" element={<div>REVIEW PROBE</div>} />
+            </Routes>
+          </LiveActivityProvider>
+        </LevelUpProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  expect(await screen.findByText('REVIEW PROBE')).toBeInTheDocument()
+  expect(screen.queryByText(/Kezdjük el/)).toBeNull()
 })
 
 // --- loading skeleton (mezo-f2z) ---------------------------------------------
