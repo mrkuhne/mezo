@@ -12,6 +12,7 @@ import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import type { SportSessionCreateRequest } from '@/data/train/trainApi'
 import { useEditableNumber } from '@/features/train/logic/useEditableNumber'
+import { SPORT_KINDS, SPORT_LABELS, type SportKind } from '@/features/train/logic/sportKinds'
 
 // --- NumberStep: label + mono value + 44px ± buttons (reuses .stepper) ---
 // min/max clamp the stepped value to the API contract bounds so the sheets can
@@ -131,17 +132,15 @@ export function ScaleRow({
 }
 
 // --- SportLogSheet ---
-type SportKind = 'volleyball' | 'cross' | 'trx'
-const KIND_LABELS: Record<SportKind, string> = { volleyball: 'Röpi', cross: 'Cross', trx: 'TRX' }
-const SPORT_KINDS: SportKind[] = ['volleyball', 'cross', 'trx']
-
-export function SportLogSheet({ onClose, onSave }: {
+export function SportLogSheet({ onClose, onSave, initialSport }: {
   onClose: () => void
   // `done` closes the sheet — the parent calls it from the log mutation's onSuccess
   // so the close is deferred until the save lands (and the level-up overlay can show).
   onSave?: (input: SportSessionCreateRequest, done: () => void) => void
+  /** Pre-selects the kind (a schedule slot's log CTA passes its sport). */
+  initialSport?: SportKind
 }) {
-  const [kind, setKind] = useState<SportKind>('volleyball')
+  const [kind, setKind] = useState<SportKind>(initialSport ?? 'volleyball')
   const [duration, setDuration] = useState(90)
   const [sets, setSets] = useState(5)
   const [rounds, setRounds] = useState(6)
@@ -158,7 +157,7 @@ export function SportLogSheet({ onClose, onSave }: {
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
               <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>
-                Sport log · {KIND_LABELS[kind]}
+                Sport log · {SPORT_LABELS[kind]}
               </span>
               <div id="sport-log-title" style={{ marginTop: 4 }}>
                 <Display size="md">Hogy ment?</Display>
@@ -192,7 +191,7 @@ export function SportLogSheet({ onClose, onSave }: {
                     textTransform: 'uppercase',
                   }}
                 >
-                  {KIND_LABELS[k]}
+                  {SPORT_LABELS[k]}
                 </button>
               )
             })}

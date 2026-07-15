@@ -15,7 +15,7 @@ export interface CompanionNote { window: string; kind: 'nudge' | 'closing'; text
 export interface WorkoutExercise { id: string; name: string; sets: number; targetReps: string; targetRIR: number; type: string; muscle: string }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
 export interface Workout { title: string; tag: string; durationEst: number; exercises: WorkoutExercise[]; niggleWarning: NiggleWarning }
-export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; today?: boolean; flex?: boolean }
+export interface VolleyballSession { day: string; time: string; duration: number; court: string; intensity: string; role: string; sport?: 'volleyball' | 'cross' | 'trx'; today?: boolean; flex?: boolean }
 export type FuelKind = 'wake' | 'meal' | 'midday' | 'snack' | 'preworkout' | 'workout' | 'sport' | 'evening'
 export interface SlotItem { type: 'supplement'; refId: string; label: string; done: boolean; primary?: boolean; note?: string }
 export interface FuelSlot {

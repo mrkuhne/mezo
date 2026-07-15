@@ -7,7 +7,7 @@ export function LoadTiles({ tiles }: { tiles: LoadTile[] }) {
   return (
     <div className="loadrow">
       {tiles.map((t) => (
-        <div key={t.kind} className="loadtile">
+        <div key={t.label} className="loadtile">
           <div className={LIC[t.kind]} aria-hidden="true">{t.icon}</div>
           <div>
             <div className="lk">{t.label}</div>

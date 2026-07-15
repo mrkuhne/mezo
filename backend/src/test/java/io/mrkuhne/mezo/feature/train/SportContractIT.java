@@ -28,6 +28,11 @@ class SportContractIT extends ApiIntegrationTest {
             .dayOfWeek(dayOfWeek).time(time).durationMin(durationMin).kind(kind).build();
     }
 
+    private static SportScheduleSlotInput slot(int dayOfWeek, String time, int durationMin, String kind, String sport) {
+        return SportScheduleSlotInput.builder()
+            .dayOfWeek(dayOfWeek).time(time).durationMin(durationMin).kind(kind).sport(sport).build();
+    }
+
     // ---- 401s ------------------------------------------------------------------
 
     @Test
@@ -142,6 +147,35 @@ class SportContractIT extends ApiIntegrationTest {
         String body = putForBody("/api/train/sport-schedule", List.of(slot(0, "18:15", 90, "race")),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "kind", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testReplaceSportSchedule_shouldRoundTripMixedSportsAndDefaultVolleyball_whenMultiSlotDay() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        // Tue TRX noon + Tue volleyball evening on the SAME day, Thu TRX; omitted sport -> volleyball.
+        List<SportScheduleSlotResponse> saved = putForList("/api/train/sport-schedule",
+            List.of(slot(1, "12:00", 60, "training", "trx"),
+                slot(1, "19:00", 90, "training", null),
+                slot(3, "12:00", 60, "training", "trx")), auth);
+
+        assertThat(saved).hasSize(3);
+        assertThat(saved).extracting(SportScheduleSlotResponse::getDayOfWeek).containsExactly(1, 1, 3);
+        assertThat(saved).extracting(SportScheduleSlotResponse::getSport)
+            .containsExactly("trx", "volleyball", "trx");
+
+        List<SportScheduleSlotResponse> after =
+            getForList("/api/train/sport-schedule", auth, HttpStatus.OK, SportScheduleSlotResponse.class);
+        assertThat(after).extracting(SportScheduleSlotResponse::getSport)
+            .containsExactly("trx", "volleyball", "trx");
+    }
+
+    @Test
+    void testReplaceSportSchedule_shouldReturn400InvalidValue_whenSportUnknown() {
+        String body = putForBody("/api/train/sport-schedule",
+            List.of(slot(0, "18:15", 90, "training", "tennis")),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "sport", "VALIDATION_INVALID_VALUE");
     }
 
     /** PUT returning a JSON array — deserialized via the shared ObjectMapper. */

@@ -1,7 +1,10 @@
 import type { WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
+import { SPORT_KINDS, SPORT_EMOJI, sportOf, type SportKind } from '@/features/train/logic/sportKinds'
 
 /** Weekly load summary tiles (spec §4.3 — "GYM 5×·75p / RÖPLABDA 4×·6,5h / FUTÁS 2×"). */
 export type LoadTile = { kind: 'gym' | 'sport' | 'run'; label: string; icon: string; value: string }
+
+const SPORT_TILE_LABELS: Record<SportKind, string> = { volleyball: 'Röplabda', cross: 'Cross', trx: 'TRX' }
 
 /** 390 → "6,5h" (hu decimal comma), 120 → "2h". */
 function hoursHu(mins: number): string {
@@ -10,7 +13,7 @@ function hoursHu(mins: number): string {
   return `${s}h`
 }
 
-export function weeklyLoad(agenda: Pick<WeeklyAgendaDay, 'gym' | 'volleyball' | 'running'>[]): LoadTile[] {
+export function weeklyLoad(agenda: Pick<WeeklyAgendaDay, 'gym' | 'sport' | 'running'>[]): LoadTile[] {
   const tiles: LoadTile[] = []
 
   const gymDays = agenda.filter((a) => a.gym)
@@ -20,10 +23,14 @@ export function weeklyLoad(agenda: Pick<WeeklyAgendaDay, 'gym' | 'volleyball' | 
     tiles.push({ kind: 'gym', label: 'Gym', icon: '🏋️', value: avg ? `${gymDays.length}× · ${avg}p` : `${gymDays.length}×` })
   }
 
-  const vbDays = agenda.filter((a) => a.volleyball)
-  if (vbDays.length) {
-    const total = vbDays.reduce((x, a) => x + (a.volleyball!.duration ?? 0), 0)
-    tiles.push({ kind: 'sport', label: 'Röplabda', icon: '🏐', value: total ? `${vbDays.length}× · ${hoursHu(total)}` : `${vbDays.length}×` })
+  for (const k of SPORT_KINDS) {
+    const slots = agenda.flatMap((a) => a.sport).filter((s) => sportOf(s) === k)
+    if (!slots.length) continue
+    const total = slots.reduce((x, s) => x + (s.duration ?? 0), 0)
+    tiles.push({
+      kind: 'sport', label: SPORT_TILE_LABELS[k], icon: SPORT_EMOJI[k],
+      value: total ? `${slots.length}× · ${hoursHu(total)}` : `${slots.length}×`,
+    })
   }
 
   const runs = agenda.flatMap((a) => a.running)

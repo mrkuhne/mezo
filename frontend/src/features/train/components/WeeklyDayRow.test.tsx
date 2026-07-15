@@ -7,10 +7,10 @@ test('renders the morning run before the evening gym and shows the run time', ()
     agenda={{
       day: 'Kedd', isToday: false,
       gym: { day: 'Kedd', active: true, time: '18:30', duration: null, type: 'Plyo Power' } as never,
-      volleyball: null,
+      sport: [],
       running: [{ key: 'tue-sprint', timeOfDay: '08:00', label: 'Sprint-intervallum', kind: 'sprint', rpeTarget: { min: 9, max: 10 } } as never],
     }}
-    onStartGym={() => {}} onLogVolleyball={() => {}} />)
+    onStartGym={() => {}} onLogSport={() => {}} />)
   const buttons = screen.getAllByRole('button')
   // first session button is the 08:00 run, carrying the Napiv FUTÁS type tag
   expect(within(buttons[0]).getByText('Sprint-intervallum')).toBeInTheDocument()
@@ -29,10 +29,10 @@ test('a PAST gym day with a logged workout shows the done chip (no isToday neede
     agenda={{
       day: 'Hét', date: '2026-06-15', isToday: false,
       gym: { day: 'Hét', active: true, time: '18:30', duration: null, type: 'Plyo Power' } as never,
-      volleyball: null, running: [],
+      sport: [], running: [],
     }}
     gymLogged
-    onStartGym={() => {}} onLogVolleyball={() => {}} />)
+    onStartGym={() => {}} onLogSport={() => {}} />)
   expect(screen.getByText('kész')).toBeInTheDocument()
 })
 
@@ -40,11 +40,11 @@ test('today volleyball row shows the "log" chip, or the done chip once logged', 
   const agenda = {
     day: 'Hét', isToday: true,
     gym: null,
-    volleyball: { day: 'Hét', time: '18:00', duration: 120, court: '', intensity: '', role: 'edzés' },
+    sport: [{ day: 'Hét', time: '18:00', duration: 120, court: '', intensity: '', role: 'edzés' }],
     running: [],
   } as never
   const { container, rerender } = render(
-    <WeeklyDayRow agenda={agenda} onStartGym={() => {}} onLogVolleyball={() => {}} />,
+    <WeeklyDayRow agenda={agenda} onStartGym={() => {}} onLogSport={() => {}} />,
   )
   // not logged -> the "log" chip; the row is ringed `.dayrow.today` and the day label carries the MA marker
   expect(screen.getByText('log')).toBeInTheDocument()
@@ -55,7 +55,7 @@ test('today volleyball row shows the "log" chip, or the done chip once logged', 
 
   // logged today -> the done chip replaces it
   rerender(
-    <WeeklyDayRow agenda={agenda} vbLogged onStartGym={() => {}} onLogVolleyball={() => {}} />,
+    <WeeklyDayRow agenda={agenda} isSportLogged={() => true} onStartGym={() => {}} onLogSport={() => {}} />,
   )
   expect(screen.getByText('kész')).toBeInTheDocument()
   expect(screen.queryByText('log')).not.toBeInTheDocument()
@@ -64,8 +64,8 @@ test('today volleyball row shows the "log" chip, or the done chip once logged', 
 test('an empty day renders a dashed rest row with the Pihenőnap copy', () => {
   const { container } = render(
     <WeeklyDayRow
-      agenda={{ day: 'Szo', isToday: false, gym: null, volleyball: null, running: [] }}
-      onStartGym={() => {}} onLogVolleyball={() => {}}
+      agenda={{ day: 'Szo', isToday: false, gym: null, sport: [], running: [] }}
+      onStartGym={() => {}} onLogSport={() => {}}
     />,
   )
   expect(screen.getByText('Pihenőnap')).toBeInTheDocument()

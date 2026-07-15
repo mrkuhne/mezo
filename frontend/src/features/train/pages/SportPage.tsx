@@ -26,6 +26,7 @@ import { CrossLoadRow } from '@/features/train/components/CrossLoadRow'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { SportScheduleSheet } from '@/features/train/sheets/SportScheduleSheet'
 import SportSkeleton from '@/features/train/pages/SportSkeleton'
+import { sportOf, SPORT_TAGS } from '@/features/train/logic/sportKinds'
 
 type SportSubView = 'week' | 'log' | 'crossload'
 
@@ -235,7 +236,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
   return (
     <div style={{ padding: '8px 24px 16px' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span className="eyebrow">Heti ritmus · {schedule.weeklyHours}h court</span>
+        <span className="eyebrow">Heti ritmus · {schedule.weeklyHours}h</span>
         {onEdit && (
           <button type="button" className="chip notch-4" onClick={onEdit} style={{ padding: '4px 8px', fontSize: 9 }}>
             Szerkesztés
@@ -244,8 +245,8 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
       </div>
       <div className="col gap-sm">
         {DAY_ORDER.map((d) => {
-          const session = schedule.sessions.find((s) => s.day === d)
-          const isToday = Boolean(session?.today)
+          const daySlots = schedule.sessions.filter((s) => s.day === d)
+          const isToday = daySlots.some((s) => s.today)
           return (
             <div
               key={d}
@@ -255,10 +256,10 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                 borderColor: isToday ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--border-subtle)',
                 background: isToday
                   ? 'var(--wash-sport)'
-                  : session
+                  : daySlots.length
                     ? 'var(--surface-1)'
                     : 'transparent',
-                borderStyle: session ? 'solid' : 'dashed',
+                borderStyle: daySlots.length ? 'solid' : 'dashed',
                 position: 'relative',
                 overflow: 'hidden',
                 clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)',
@@ -276,40 +277,50 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                   style={{
                     width: 36,
                     fontSize: 11,
-                    color: isToday ? 'var(--tag-sport)' : session ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                    color: isToday ? 'var(--tag-sport)' : daySlots.length ? 'var(--text-primary)' : 'var(--text-tertiary)',
                   }}
                 >
                   {d}
                 </span>
-                {session ? (
+                {daySlots.length ? (
                   <>
-                    <div className="col flex-1">
-                      <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.time}</span>
-                        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>
-                          · {session.duration}p
-                        </span>
-                        {isToday && (
-                          <span
-                            className="chip"
-                            style={{
-                              fontSize: 9,
-                              padding: '2px 6px',
-                              background: 'var(--wash-sport)',
-                              borderColor: 'color-mix(in srgb, var(--tag-sport) 40%, transparent)',
-                              color: 'var(--tag-sport)',
-                            }}
-                          >
-                            MA
-                          </span>
-                        )}
-                      </div>
-                      <span
-                        className="text-tertiary"
-                        style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}
-                      >
-                        {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
-                      </span>
+                    <div className="col flex-1 gap-sm">
+                      {daySlots.map((session, i) => {
+                        const kind = sportOf(session)
+                        return (
+                          <div key={`${session.time}-${i}`} className="col">
+                            <div className="row gap-sm" style={{ alignItems: 'center' }}>
+                              {kind !== 'volleyball' && (
+                                <span className="stag stag-sport">{SPORT_TAGS[kind]}</span>
+                              )}
+                              <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.time}</span>
+                              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>
+                                · {session.duration}p
+                              </span>
+                              {session.today && (
+                                <span
+                                  className="chip"
+                                  style={{
+                                    fontSize: 9,
+                                    padding: '2px 6px',
+                                    background: 'var(--wash-sport)',
+                                    borderColor: 'color-mix(in srgb, var(--tag-sport) 40%, transparent)',
+                                    color: 'var(--tag-sport)',
+                                  }}
+                                >
+                                  MA
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              className="text-tertiary"
+                              style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}
+                            >
+                              {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
+                            </span>
+                          </div>
+                        )
+                      })}
                     </div>
                     <Icon name="chevron-right" size={12} color="var(--text-tertiary)" />
                   </>

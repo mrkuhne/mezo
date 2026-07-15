@@ -41,6 +41,7 @@ import type {
   SportSchedule,
   SportSession,
   SportWeek,
+  VolleyballSession,
   WorkoutPlan,
 } from '@/data/types'
 
@@ -139,6 +140,7 @@ function toSportSchedule(slots: SportScheduleSlotResponse[]): SportSchedule | nu
         court: s.location ?? '',
         intensity: s.intensityLabel ?? '',
         role: s.kind === 'match' ? 'meccs' : 'edzés',
+        sport: (s.sport as VolleyballSession['sport']) ?? 'volleyball',
         ...(s.dayOfWeek === todayIdx ? { today: true } : {}),
       })),
     },
