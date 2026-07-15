@@ -698,7 +698,7 @@ function ActiveWorkoutSession({
         <ExerciseOverviewSheet
           exercises={overviewRows}
           currentId={current.id}
-          onJump={(id) => setViewedId(id)}
+          onJump={jumpTo}
           onClose={() => setOverviewOpen(false)}
         />
       )}
@@ -749,7 +749,7 @@ function ActiveWorkoutSession({
           <button type="button" className="back np-press" aria-label="Vissza" onClick={onExit}>‹</button>
           {/* Counter is now a button — tapping it opens the jump-to overview sheet
               (spec 2026-07-15 free navigation). ▾ signals the drop-down affordance. */}
-          <button type="button" className="tt" aria-label="Gyakorlatlista" onClick={() => setOverviewOpen(true)} style={{ textAlign: 'left' }}>
+          <button type="button" className="tt" aria-label="Gyakorlatlista" disabled={!!feedbackEx} onClick={() => setOverviewOpen(true)} style={{ textAlign: 'left' }}>
             <div className="t1">{W.title}</div>
             <div className="t2">▾ {currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
           </button>

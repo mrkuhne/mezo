@@ -1126,3 +1126,14 @@ test('the header counter opens the exercise overview and a row jump switches the
   await user.click(rows[rows.length - 1])
   expect(container.querySelector('.excard h2')).not.toHaveTextContent('Chest Supported Row')
 })
+
+test('the header counter is disabled while a debrief modal is open (jumps must no-op)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Log every set of the first exercise → the debrief pins feedbackEx.
+  await completeExerciseSets(user)
+  expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
+  // Parity with the ⋯ actions button: the overview trigger is inert during a debrief.
+  expect(screen.getByRole('button', { name: 'Gyakorlatlista' })).toBeDisabled()
+})
