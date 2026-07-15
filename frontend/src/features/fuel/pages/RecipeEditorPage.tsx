@@ -10,13 +10,16 @@
 //
 // Contribution = round(macro * amount/per) — the SAME amount/per rule as the
 // backend mapper and the mock hook (replaces NewRecipeSheet's unit==='g' hack).
+//
+// Header-only re-skin (Napiv, mezo-8141): back button on its own row, then a
+// pghead-np sage header (over "Fuel · Receptek", h1 = the current title content
+// — the typed name, or the "—" placeholder). Body/editor flows unchanged.
 // ============================================================
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Ingredient, Recipe, RecipeCategory, RecipeInput } from '@/data/types'
 import { useRecipes, useRecipeActions } from '@/data/hooks'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
@@ -187,19 +190,19 @@ export function RecipeEditorPage() {
   return (
     <>
       <div style={{ padding: '0 16px 110px' }}>
-        {/* Top bar */}
-        <div className="row" style={{ alignItems: 'center', gap: 10, padding: '6px 0 12px' }}>
+        {/* Top bar — back button, own row (header-only re-skin, mezo-8141) */}
+        <div className="row" style={{ padding: '6px 0 0' }}>
           <button
             onClick={() => navigate(-1)}
             className="notch-8"
             style={{ width: 34, height: 34, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1 }}
             aria-label="Vissza"
           >‹</button>
-          <div className="col" style={{ flex: 1, minWidth: 0 }}>
-            <Eyebrow brand>{isEditMode ? 'Recept szerkesztése' : 'Új recept'}</Eyebrow>
-            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 600, textTransform: 'uppercase', lineHeight: 1, marginTop: 2, color: 'var(--text-primary)' }}>
-              {name || '—'}
-            </span>
+        </div>
+        <div className="pghead-np sage" style={{ padding: '8px 0 14px' }}>
+          <div>
+            <div className="over">Fuel · Receptek</div>
+            <h1>{name || (isEditMode ? '—' : 'Új recept')}</h1>
           </div>
         </div>
 

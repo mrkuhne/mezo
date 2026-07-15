@@ -34,6 +34,9 @@ const renderView = () =>
 test('renders stats and the type switcher', () => {
   renderView()
   expect(screen.getByRole('heading', { name: 'Polc' })).toBeInTheDocument()
+  // Sage Napiv header (Task 7): the .over eyebrow copy is unchanged, only the pghead-np/
+  // sage vocabulary + the action chips' accent moved off brand-teal.
+  expect(screen.getByText('Fuel · Kamra')).toBeInTheDocument()
   // Direction A: the type axis is a segmented switcher (Mind/Étel/Supp/Stim).
   expect(screen.getByRole('button', { name: /Supp/ })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /^Mind\d+$/ })).toBeInTheDocument()

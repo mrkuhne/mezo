@@ -33,6 +33,13 @@ function renderDetail(id: string, qc: QueryClient) {
 
 const newQc = () => new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
+test('header eyebrow reads the Fuel · Kamra breadcrumb (sage header-only re-skin, mezo-8141)', () => {
+  // Was "Kamra · tétel" (brand/teal Eyebrow) — Task 7 aligns the eyebrow copy with the
+  // Kamra list page's breadcrumb and moves it onto the sage Napiv .pghead-np/.over vocabulary.
+  renderDetail('ing-csirkemell', newQc())
+  expect(screen.getByText('Fuel · Kamra')).toBeInTheDocument()
+})
+
 test('renders a food item with macros + extended nutrients', () => {
   // ing-csirkemell · Csirkemell · friss — macros 110/23/0/1.5, protein category.
   renderDetail('ing-csirkemell', newQc())

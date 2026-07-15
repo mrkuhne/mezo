@@ -15,18 +15,26 @@ function setup(onOpenScore = () => {}) {
   // useFuelTimeline composes dual-mode TanStack queries (mezo-9ys) → needs a QueryClient
   // (mock mode seeds them synchronously).
   const { result } = renderHook(() => useFuelTimeline(), { wrapper: QueryWrapper })
-  render(
+  const { container } = render(
     <QueryWrapper>
       <FuelTimeline slots={result.current.plan.slots} getScoredMeal={result.current.getScoredMeal} onOpenScore={onOpenScore} />
     </QueryWrapper>,
   )
-  return result.current
+  return { ...result.current, container }
 }
-test('renders a row per slot with its time + meal name + MOST chip', () => {
-  setup()
+test('renders a row per slot (.slot/.fav/.mrow) with its time + meal name, and marks the now-slot .next with a "következő" mrow marker', () => {
+  const { container } = setup()
   expect(screen.getByText('05:50')).toBeInTheDocument()
   expect(screen.getByText(/Túrós zabkása/)).toBeInTheDocument()
-  expect(screen.getByText('MOST')).toBeInTheDocument()    // the now-slot chip (16:00)
+  expect(screen.getByText('következő')).toBeInTheDocument()   // the now-slot's mrow marker (16:00)
+  expect(container.querySelectorAll('.slot').length).toBeGreaterThan(0)
+  expect(container.querySelector('.slot.next')).toBeInTheDocument()
+  expect(container.querySelector('.fav')).toBeInTheDocument()
+  expect(container.querySelector('.mrow')).toBeInTheDocument()
+})
+test('a pending supplement-item slot (esti stack) shows a 🌙 status marker', () => {
+  setup()
+  expect(screen.getAllByText('🌙').length).toBeGreaterThanOrEqual(1)
 })
 test('AI-score button opens the score sheet for a scored meal', async () => {
   const onOpenScore = vi.fn()
@@ -36,7 +44,7 @@ test('AI-score button opens the score sheet for a scored meal', async () => {
   await userEvent.click(aiButtons[0])
   expect(onOpenScore).toHaveBeenCalled()
 })
-test('threads onLogMeal through to a suggestion slot title', async () => {
+test('threads onLogMeal through the suggestion slot\'s Logolás pill', async () => {
   const onLogMeal = vi.fn()
   const slots: FuelSlot[] = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', state: 'pending', mealName: 'Zabkása', suggestedRecipeId: 'r1', kcal: 480, p: 30, c: 55, f: 12 },

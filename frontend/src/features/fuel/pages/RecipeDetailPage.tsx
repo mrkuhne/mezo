@@ -2,10 +2,12 @@
 // Mezo · RecipeDetailPage (Receptek — recipe detail PAGE)
 // Approved full-page detail (docs/design/recipes-detail.html · "A" phone),
 // consistent with the Kamra item detail being a route. Single scroll, v1-honest:
-// editorial hero → /adag↔egész macro hero → meta strip → Hozzávalók (per-line
-// contribution in MacroCells) → Logok (RecipeLogsList ← useRecipeLogs) → "Mezo-fit
-// · hamarosan" sparkle zone → actions. Star / Szerkesztés / Törlés / + Mai
-// étkezéshez are all LIVE (useRecipeActions / LogMealSheet). Route guard relies on useRecipes().recipes: mock is
+// editorial hero (image band + name/meta on the card surface below it, var(--ink)/
+// var(--faint) — Napiv de-darkening, mezo-8141: the retired dark-media text tokens) →
+// /adag↔egész macro hero → meta strip → Hozzávalók (per-line contribution in
+// MacroCells) → Logok (RecipeLogsList ← useRecipeLogs) → "Mezo-fit · hamarosan"
+// sparkle zone → actions. Star / Szerkesztés / Törlés / + Mai étkezéshez are all
+// LIVE (useRecipeActions / LogMealSheet). Route guard relies on useRecipes().recipes: mock is
 // synchronous via initialData; real mode briefly shows the not-found fallback on
 // a cold deep-link until the list resolves.
 // ============================================================
@@ -117,20 +119,25 @@ export function RecipeDetailPage() {
         <div style={{ width: 34 }} />
       </div>
 
-      {/* Hero */}
-      <div className="notch-16" style={{ position: 'relative', height: 196, marginBottom: 14, overflow: 'hidden', background: 'linear-gradient(135deg,#16323a,#0f2027)' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg,rgba(255,255,255,0.025) 0 16px,rgba(255,255,255,0) 16px 32px)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(5,7,9,0) 32%,rgba(5,7,9,0.9) 100%)' }} />
-        <div className="row gap-xs" style={{ position: 'absolute', top: 11, left: 12, zIndex: 3, alignItems: 'center' }}>
-          {recipe.slot && <span className="chip brand" style={{ fontSize: 8, padding: '3px 7px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{recipe.slot}</span>}
-          {recipe.starred && <Icon name="bookmark" size={13} color="var(--warning)" />}
+      {/* Hero — image band on top (no text overlay); name/meta live on the card
+          surface below it (var(--ink)/var(--faint) — Napiv de-darkening, mezo-8141:
+          the retired dark-media text tokens). */}
+      <div className="notch-16" style={{ position: 'relative', marginBottom: 14, overflow: 'hidden', background: 'var(--surface-1)' }}>
+        <div style={{ position: 'relative', height: 150, background: 'linear-gradient(135deg,#16323a,#0f2027)' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg,rgba(255,255,255,0.025) 0 16px,rgba(255,255,255,0) 16px 32px)' }} />
+          <div className="row gap-xs" style={{ position: 'absolute', top: 11, left: 12, zIndex: 3, alignItems: 'center' }}>
+            {recipe.slot && <span className="chip brand" style={{ fontSize: 8, padding: '3px 7px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{recipe.slot}</span>}
+            {recipe.starred && <Icon name="bookmark" size={13} color="var(--warning)" />}
+          </div>
+          <RecipeFitBadge score={recipe.mezoFit.score} size="hero" />
         </div>
-        <RecipeFitBadge score={recipe.mezoFit.score} size="hero" />
-        <div style={{ position: 'absolute', left: 14, right: 14, bottom: 30, zIndex: 3, fontFamily: 'var(--ff-display)', fontSize: 28, fontWeight: 600, textTransform: 'uppercase', lineHeight: 0.98, color: 'var(--text-on-media)' }}>
-          {recipe.name}
-        </div>
-        <div style={{ position: 'absolute', left: 14, bottom: 12, zIndex: 3, fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--text-on-media-dim)' }}>
-          {recipe.servings} adag · {totalMins} perc · létrehozva {recipe.createdDate}
+        <div style={{ padding: '14px 16px 16px' }}>
+          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.05, color: 'var(--ink)' }}>
+            {recipe.name}
+          </div>
+          <div style={{ marginTop: 6, fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--faint)' }}>
+            {recipe.servings} adag · {totalMins} perc · létrehozva {recipe.createdDate}
+          </div>
         </div>
       </div>
 

@@ -3,19 +3,24 @@ import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
 import { useFuelDay, useFuelTimeline, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
 import { slotKeyOfLabel } from '@/data/fuel/fuelConfig'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
-import { StatCell } from '@/shared/ui/StatCell'
 import { RetaPhaseBar } from '@/shared/ui/RetaPhaseBar'
 import { ProgressBar } from '@/shared/ui/ProgressBar'
-import { MacroHero } from '@/features/fuel/components/MacroHero'
+import { pct } from '@/shared/lib/pct'
+import { KcalGauge } from '@/features/fuel/components/KcalGauge'
 import { FuelTimeline } from '@/features/fuel/components/FuelTimeline'
 import { PacingCard } from '@/features/fuel/components/PacingCard'
 import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { ReplanSheet } from '@/features/fuel/sheets/ReplanSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 
+// Napiv Mai recomposition (spec §4.4, mezo-8141): pghead-np sage header → RetaPhaseBar →
+// gauge card (KcalGauge + fuelchips + macro soft bars) → aistrip (PacingCard) → timeline
+// (secthead-np + protocol meta + FuelTimeline, unchanged mount) → NEW water .slot →
+// micronutrients. The retired context-strip card's gym/vb data lives on in the timeline's
+// workout/sport blocks; its coffee/kitchen cells moved into .fuelchips. MacroHero unmounted
+// here (kcal → gauge, macro cells → .macror, water → the water slot) — file kept, S8 decides
+// deletion once its last consumer (this page) drops it; see task-4 report for the orphan check.
 export function FuelMaiPage() {
   const { fuel } = useFuelDay()
   const { plan, getScoredMeal } = useFuelTimeline()
@@ -32,6 +37,7 @@ export function FuelMaiPage() {
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
 
   const doneCount = plan.slots.filter(s => s.state === 'done').length
+  const waterPct = pct(fuel.consumed.water, fuel.targets.water)
 
   // Tap-to-log a planner slot: a recipe suggestion prefills the sheet from that recipe; a budget-only
   // window opens the sheet on its mapped slot (label → MealSlot) so the user just picks items.
@@ -48,17 +54,17 @@ export function FuelMaiPage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Fuel · Mai</Eyebrow>
-          <PageTitle>Pacing</PageTitle>
+      <div className="pghead-np sage">
+        <div>
+          <div className="over">Fuel · Reta D{retaDay} · kcal floor 2500</div>
+          <h1>Mai pacing</h1>
         </div>
         <button
           type="button"
           onClick={() => openLog()}
-          className="chip brand"
+          className="pgact-np np-press"
           aria-label="Logolás"
-          style={{ fontSize: 10, padding: '6px 10px' }}
+          style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
         >
           <Icon name="plus" size={12} /> Log
         </button>
@@ -66,64 +72,65 @@ export function FuelMaiPage() {
 
       {/* Reta phase context */}
       <RetaPhaseBar day={retaDay} />
-      <div className="row" style={{ padding: '4px 24px 12px', justifyContent: 'space-between' }}>
-        <span className="eyebrow">Reta D{retaDay} · medication-aware</span>
-        <span className="eyebrow text-tertiary">kcal floor 2500</span>
-      </div>
 
-      {/* Context strip (gym/vb/coffee/kitchen) */}
-      <div style={{ padding: '0 24px 12px' }}>
-        <div className="card notch-4" style={{ padding: 12, background: 'var(--surface-1)' }}>
-          <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
-            <StatCell
-              label={plan.workout.start === '—' ? 'Gym' : (plan.workout.type || 'Gym')}
-              val={plan.workout.start}
-              sub={plan.workout.duration ? plan.workout.duration + 'p' : ''}
-              color="var(--brand-glow)"
-            />
-            <StatCell
-              label="Volleyball"
-              val={plan.volleyball.noneToday ? 'off' : plan.volleyball.start}
-              sub={plan.volleyball.noneToday ? 'Csü nincs' : '90p'}
-              color={plan.volleyball.noneToday ? 'var(--text-tertiary)' : 'var(--cat-tendency)'}
-            />
-            <StatCell label="Coffee" val={plan.caffeineCutoff} sub="cutoff" color="var(--warning)" />
-            <StatCell label="Kitchen" val={plan.kitchenClose} sub="close" color="var(--info)" />
+      {/* Gauge card — kcal gauge + coffee/kitchen chips + macro soft bars */}
+      <div style={{ padding: '16px 24px 12px' }}>
+        <div className="card notch-12" style={{ padding: 18 }}>
+          <KcalGauge consumed={fuel.consumed.kcal} target={fuel.targets.kcal} />
+
+          <div className="fuelchips">
+            <span className="chx" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}>
+              kávé cutoff {plan.caffeineCutoff}
+            </span>
+            <span className="chx" style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}>
+              konyha zár {plan.kitchenClose}
+            </span>
+          </div>
+
+          <div className="macror">
+            <div className="mac">
+              <span className="k">Fehérje</span>
+              <span className="bar"><i style={{ width: pct(fuel.consumed.p, fuel.targets.p) + '%', background: 'var(--sage)' }} /></span>
+              <span className="v">{fuel.consumed.p} / {fuel.targets.p} g</span>
+            </div>
+            <div className="mac">
+              <span className="k">Szénhidrát</span>
+              <span className="bar"><i style={{ width: pct(fuel.consumed.c, fuel.targets.c) + '%', background: 'var(--amber)' }} /></span>
+              <span className="v">{fuel.consumed.c} / {fuel.targets.c} g</span>
+            </div>
+            <div className="mac">
+              <span className="k">Zsír</span>
+              <span className="bar"><i style={{ width: pct(fuel.consumed.f, fuel.targets.f) + '%', background: 'var(--lav)' }} /></span>
+              <span className="v">{fuel.consumed.f} / {fuel.targets.f} g</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Macro hero */}
-      <div style={{ padding: '0 24px 12px' }}>
-        <MacroHero targets={fuel.targets} consumed={fuel.consumed} eyebrow={fuel.pacing.eyebrow} onLogWater={logWater} />
-      </div>
-
       {/* Pacing insight */}
-      <div style={{ padding: '8px 24px 8px' }}>
-        <PacingCard pacing={fuel.pacing} />
-      </div>
+      <PacingCard pacing={fuel.pacing} />
 
-      {/* Timeline — meals + supplements + workout/sport blocks */}
+      {/* Timeline — meals + supplements + workout/sport blocks (gym/vb context now lives here) */}
       <div style={{ padding: '16px 24px 8px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-          <span className="eyebrow">Mai timeline · {plan.slots.length} slot</span>
-          <span className="eyebrow brand">{doneCount}/{plan.slots.length}</span>
+        <div className="secthead-np">
+          <h3>Mai timeline</h3>
+          <span>{doneCount}/{plan.slots.length} slot</span>
         </div>
         {/* Protocol meta row — hidden when there is no active protocol yet (real-mode ghost, v0) */}
         {protocol.version > 0 && (
           <div
             className="row gap-sm"
             style={{
-              padding: '6px 10px',
+              padding: '8px 10px',
               marginBottom: 12,
-              background: 'var(--surface-1)',
-              border: '1px solid var(--border-subtle)',
+              borderRadius: 14,
+              background: 'var(--warm)',
               alignItems: 'center',
             }}
           >
-            <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+            <Icon name="sparkle" size={11} color="var(--sage-deep)" />
             <div className="col flex-1" style={{ minWidth: 0 }}>
-              <span className="label-mono brand" style={{ fontSize: 9 }}>
+              <span className="label-mono" style={{ fontSize: 9, color: 'var(--sage-deep)' }}>
                 Stack · v{protocol.version} · {protocol.builtAt}
               </span>
               <span className="label-mono text-tertiary" style={{ fontSize: 8, marginTop: 1 }}>
@@ -136,8 +143,8 @@ export function FuelMaiPage() {
               <button
                 type="button"
                 onClick={() => setReplanOpen(true)}
-                className="chip"
-                style={{ fontSize: 9, padding: '4px 8px', color: 'var(--brand-glow)', borderColor: 'var(--border-brand)' }}
+                className="chx"
+                style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
               >
                 <Icon name="tool" size={10} /> Replan
               </button>
@@ -145,6 +152,31 @@ export function FuelMaiPage() {
           </div>
         )}
         <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} />
+      </div>
+
+      {/* Water — NEW dedicated slot (replaces MacroHero's water row) */}
+      <div style={{ padding: '0 24px 8px' }}>
+        <div className="slot">
+          <span className="fav" role="img" aria-label="Víz" style={{ background: 'var(--wash-run)' }}>💧</span>
+          <div className="tx">
+            <div className="t1">Víz · {fuel.consumed.water} / {fuel.targets.water} ml</div>
+            <div className="mrow">{waterPct.toFixed(0)}% · cél</div>
+          </div>
+          <div className="row gap-xs" style={{ flexShrink: 0 }}>
+            {[250, 500].map(ml => (
+              <button
+                key={ml}
+                type="button"
+                className="chx"
+                aria-label={`Víz +${ml} ml`}
+                style={{ background: 'var(--wash-run)', color: 'var(--tag-run)' }}
+                onClick={() => logWater(ml)}
+              >
+                +{ml}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Micronutrients */}

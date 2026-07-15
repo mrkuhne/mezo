@@ -1,10 +1,34 @@
-import type { FuelSlot, FuelMeal } from '@/data/types'
+import type { FuelSlot, FuelMeal, FuelKind } from '@/data/types'
 import type { KIND_META } from '@/data/kindMeta'
-import { Icon } from '@/shared/ui/Icon'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { SupplementItemRow } from '@/features/fuel/components/SupplementItemRow'
 
 type KindMeta = (typeof KIND_META)[keyof typeof KIND_META]
+
+// KIND_META's `icon` field names an abstract SVG glyph (fuel/pill/train/today) shared across
+// kinds that need visually DIFFERENT fav emoji (meal vs snack both use 'fuel'; wake vs sport
+// both use 'today') — so it can't drive the timeline avatar directly. Mapping by kind key
+// instead, per the Napiv slot-card spec (mezo-8141).
+const FAV_EMOJI: Record<FuelKind, string> = {
+  wake: '💧',
+  meal: '🥣',
+  midday: '💊',
+  snack: '🍎',
+  preworkout: '💊',
+  workout: '🏋️',
+  sport: '🏐',
+  evening: '💊',
+}
+const FAV_WASH: Record<FuelKind, string> = {
+  wake: 'var(--wash-run)',
+  meal: 'var(--wash-sage)',
+  midday: 'var(--wash-lav)',
+  snack: 'var(--wash-amber)',
+  preworkout: 'var(--wash-lav)',
+  workout: 'var(--wash-gym)',
+  sport: 'var(--wash-sport)',
+  evening: 'var(--wash-lav)',
+}
 
 export function SlotCard({
   slot,
@@ -24,195 +48,123 @@ export function SlotCard({
   // Planner (P5) pending shapes — additive; absent on logged/mock slots so their render is unchanged.
   const isSuggestion = !isDone && !!slot.suggestedRecipeId
   const isBudgetSlot = !slot.mealName && (slot.kind === 'meal' || slot.kind === 'snack') && !isDone && !!slot.kcal
+  const isWorkoutKind = slot.kind === 'workout' || slot.kind === 'sport'
+  const hasItems = (slot.items ?? []).length > 0
+  const hasKcal = slot.kcal != null
+  const hasFullMacros = slot.p != null && slot.c != null && slot.f != null
+
+  const title = slot.mealName ?? slot.label
+  const durationSuffix = isWorkoutKind && slot.duration ? ` · ${slot.duration} perc` : ''
 
   return (
-    <div
-      className="card notch-8"
-      style={{
-        padding: '12px 14px',
-        background: isNow ? 'color-mix(in srgb, var(--brand-glow) 4%, transparent)' : 'var(--surface-1)',
-        borderColor: isNow ? 'var(--border-brand)' : 'var(--border-subtle)',
-        opacity: isDone ? 0.7 : 1,
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {isNow && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-glow)' }} />}
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', paddingLeft: isNow ? 4 : 0 }}>
-        <div className="row gap-sm" style={{ alignItems: 'center' }}>
-          <span
-            style={{
-              padding: '2px 6px',
-              fontSize: 9,
-              fontWeight: 600,
-              fontFamily: 'var(--ff-mono)',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: meta.color,
-              border: '1px solid color-mix(in srgb, ' + meta.color + ' 25%, transparent)',
-              background: 'color-mix(in srgb, ' + meta.color + ' 6%, transparent)',
-            }}
-          >
-            {meta.label}
-          </span>
-          {slot.windowTip && (
-            <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>
-              {slot.windowTip}
-            </span>
+    <div className={`slot${isDone ? ' done' : ''}${isNow ? ' next' : ''}`}>
+      <span className="fav" role="img" aria-label={meta.label} style={{ background: FAV_WASH[slot.kind] }}>
+        {FAV_EMOJI[slot.kind]}
+      </span>
+
+      <div className="tx">
+        <div className="t1">
+          {title}
+          {durationSuffix}
+        </div>
+
+        <div className="mrow">
+          <span>{slot.time}</span>
+          {hasKcal && (
+            <>
+              {' · '}
+              <b>{slot.kcal} kcal</b>
+            </>
+          )}
+          {hasFullMacros && (
+            <>
+              <span className="mm">
+                <i style={{ background: 'var(--sage)' }} />F {slot.p}
+              </span>
+              <span className="mm">
+                <i style={{ background: 'var(--amber)' }} />Sz {slot.c}
+              </span>
+              <span className="mm">
+                <i style={{ background: 'var(--lav)' }} />Zs {slot.f}
+              </span>
+            </>
           )}
           {isSuggestion && (
-            <span
-              className="label-mono"
-              style={{
-                padding: '2px 6px',
-                fontSize: 8,
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: 'var(--brand-glow)',
-                border: '1px solid var(--border-brand)',
-                background: 'color-mix(in srgb, var(--brand-glow) 6%, transparent)',
-              }}
-            >
-              ajánlott
-            </span>
+            <>
+              {' · '}
+              <span>ajánlott</span>
+            </>
+          )}
+          {slot.windowTip && (
+            <>
+              {' · '}
+              <span>{slot.windowTip}</span>
+            </>
+          )}
+          {isNow && (
+            <>
+              {' · '}
+              <span>következő</span>
+            </>
           )}
         </div>
-        {isNow && <span className="chip brand" style={{ fontSize: 9, padding: '2px 6px' }}>MOST</span>}
-        {isDone && <Icon name="check" size={12} color="var(--brand-glow)" />}
+
+        {/* AI meal-score chip — opens MealScoreSheet on the parent-supplied scoredMeal. */}
+        {scoredMeal && (
+          <button
+            type="button"
+            aria-label="AI score"
+            onClick={(e) => {
+              e.stopPropagation()
+              onOpenScore(scoredMeal)
+            }}
+            className="chx"
+            style={{ marginTop: 6, marginRight: 6, background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
+          >
+            AI {((scoredMeal.score ?? 0) * 100).toFixed(0)}
+          </button>
+        )}
+
+        {/* Planner (P5) log CTAs — recipe-suggestion prefill vs budget-only tap-to-log. */}
+        {isSuggestion && (
+          <button
+            type="button"
+            aria-label={`${slot.mealName} logolása`}
+            onClick={() => onLogMeal?.(slot)}
+            className="chx"
+            style={{ marginTop: 6, background: 'var(--wash-amber)', color: 'var(--ink)' }}
+          >
+            Logolás
+          </button>
+        )}
+        {isBudgetSlot && (
+          <button
+            type="button"
+            aria-label={`${slot.label} logolása`}
+            onClick={() => onLogMeal?.(slot)}
+            className="chx"
+            style={{ marginTop: 6, background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+          >
+            Logolás
+          </button>
+        )}
+
+        {/* Supplement items — the esti stack capsules. */}
+        {hasItems && (
+          <div className="col gap-sm mt-md">
+            {slot.items?.map((item, i) => <SupplementItemRow key={i} item={item} />)}
+          </div>
+        )}
+
+        {/* Mezo note */}
+        {slot.mezoNote && (
+          <div style={{ marginTop: 8, fontSize: 11, color: 'var(--sub)', lineHeight: 1.5 }}>
+            <SafeMarkdown text={slot.mezoNote} />
+          </div>
+        )}
       </div>
 
-      {/* Title / meal name + AI-score */}
-      {slot.mealName && (
-        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginTop: 8 }}>
-          {isSuggestion ? (
-            <button
-              type="button"
-              aria-label={`${slot.mealName} logolása`}
-              onClick={() => onLogMeal?.(slot)}
-              style={{
-                fontFamily: 'var(--ff-display)',
-                fontSize: 15,
-                fontWeight: 600,
-                color: 'var(--text-primary)',
-                lineHeight: 1.2,
-                flex: 1,
-                minWidth: 0,
-                textAlign: 'left',
-                background: 'transparent',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-              }}
-            >
-              {slot.mealName}
-            </button>
-          ) : (
-            <div
-              style={{
-                fontFamily: 'var(--ff-display)',
-                fontSize: 15,
-                fontWeight: 600,
-                color: 'var(--text-primary)',
-                lineHeight: 1.2,
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              {slot.mealName}
-            </div>
-          )}
-          {scoredMeal && (
-            <button
-              type="button"
-              aria-label="AI score"
-              onClick={(e) => {
-                e.stopPropagation()
-                onOpenScore(scoredMeal)
-              }}
-              className="col"
-              style={{
-                alignItems: 'flex-end',
-                padding: '2px 6px',
-                border: '1px solid var(--border-brand)',
-                background: 'color-mix(in srgb, var(--brand-glow) 6%, transparent)',
-                flexShrink: 0,
-                cursor: 'pointer',
-              }}
-            >
-              <div className="row gap-xs" style={{ alignItems: 'center' }}>
-                <span className="label-mono" style={{ fontSize: 8, color: 'var(--brand-glow)' }}>AI</span>
-                <span style={{ fontFamily: 'var(--ff-display)', fontSize: 14, color: 'var(--brand-glow)', lineHeight: 1, fontWeight: 600 }}>
-                  {((scoredMeal.score ?? 0) * 100).toFixed(0)}
-                </span>
-              </div>
-            </button>
-          )}
-        </div>
-      )}
-
-      {slot.mealName && (
-        <div className="row gap-md mt-sm" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>
-          <span>{slot.kcal}kcal</span>
-          <span>P {slot.p}</span>
-          <span>C {slot.c}</span>
-          <span>F {slot.f}</span>
-        </div>
-      )}
-
-      {(slot.kind === 'workout' || slot.kind === 'sport') && (
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>
-          {slot.label}{slot.duration ? ` · ${slot.duration} perc` : ''}
-        </div>
-      )}
-
-      {/* Budget-only pending meal/snack window (no recipe suggestion) — label + a mono budget
-          line + a tap-to-log affordance that opens the sheet on the mapped slot. */}
-      {isBudgetSlot && (
-        <>
-          <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>
-            {slot.label}
-          </div>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 6 }}>
-            <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
-              ~{slot.kcal} kcal · P{slot.p} C{slot.c} F{slot.f}
-            </span>
-            <button
-              type="button"
-              aria-label={`${slot.label} logolása`}
-              onClick={() => onLogMeal?.(slot)}
-              className="chip brand"
-              style={{ fontSize: 9, padding: '3px 8px', flexShrink: 0 }}
-            >
-              Logolás
-            </button>
-          </div>
-        </>
-      )}
-
-      {/* Supplement items */}
-      {(slot.items ?? []).length > 0 && (
-        <div className="col gap-sm mt-md">
-          {slot.items?.map((item, i) => <SupplementItemRow key={i} item={item} />)}
-        </div>
-      )}
-
-      {/* Mezo note */}
-      {slot.mezoNote && (
-        <div
-          className="row gap-sm mt-md"
-          style={{
-            paddingTop: 10,
-            borderTop: '1px solid var(--border-subtle)',
-            alignItems: 'flex-start',
-          }}
-        >
-          <Icon name="sparkle" size={11} color="var(--brand-glow)" />
-          <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
-            <SafeMarkdown text={slot.mezoNote} />
-          </span>
-        </div>
-      )}
+      <span className="st">{isDone ? '✓' : hasItems ? '🌙' : null}</span>
     </div>
   )
 }

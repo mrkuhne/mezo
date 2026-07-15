@@ -1,10 +1,11 @@
 // ============================================================
 // Mezo · RecipeCard (editorial library card)
 // docs/design/recipes-library.html `.rc-b`: an image band (diagonal-stripe
-// gradient + bottom fade) with the Antonio name overlaid, a slot tag + star
-// top-left and the Mezo-fit badge top-right; below the band a MacroCells strip
-// (whole-recipe macros) and a meta line. v1 fit_score is null → the badge shows
-// the P2 pending sparkle.
+// gradient placeholder) with a slot tag + star top-left and the Mezo-fit badge
+// top-right; the Antonio name lives on the card surface below the band
+// (var(--ink) — Napiv de-darkening, mezo-8141: the retired dark-media text token),
+// followed by a MacroCells strip (whole-recipe macros) and a meta line. v1
+// fit_score is null → the badge shows the P2 pending sparkle.
 // ============================================================
 import type { Recipe } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
@@ -25,7 +26,6 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
       {/* Image band */}
       <div style={{ position: 'relative', height: 118, background: 'linear-gradient(135deg,#16323a,#0f2027)' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg,rgba(255,255,255,0.025) 0 14px,rgba(255,255,255,0) 14px 28px)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(5,7,9,0) 28%,rgba(5,7,9,0.88) 100%)' }} />
         {/* top-left: slot tag + star */}
         <div className="row gap-xs" style={{ position: 'absolute', top: 10, left: 11, zIndex: 3, alignItems: 'center' }}>
           {recipe.slot && (
@@ -36,20 +36,18 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
           {recipe.starred && <Icon name="bookmark" size={12} color="var(--warning)" />}
         </div>
         <RecipeFitBadge score={recipe.mezoFit.score} />
-        {/* name overlay */}
+      </div>
+
+      {/* Body — name moved off the media band onto the card surface (var(--ink)) */}
+      <div style={{ padding: '11px 13px 13px' }}>
         <div
           style={{
-            position: 'absolute', left: 12, right: 12, bottom: 10, zIndex: 3,
-            fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600,
-            textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1, color: 'var(--text-on-media)',
+            fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600,
+            textTransform: 'uppercase', letterSpacing: '0.01em', lineHeight: 1.15, color: 'var(--ink)', marginBottom: 9,
           }}
         >
           {recipe.name}
         </div>
-      </div>
-
-      {/* Body */}
-      <div style={{ padding: '11px 13px 13px' }}>
         <MacroCells macros={recipe.macros} />
         <div className="row gap-xs flex-wrap" style={{ alignItems: 'center', marginTop: 10, fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)' }}>
           <span>{recipe.ingredients.length} hozzávaló</span>

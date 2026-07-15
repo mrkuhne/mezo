@@ -1,5 +1,6 @@
 import type { FuelSlot, FuelMeal } from '@/data/types'
-import { TimelineSlot } from '@/features/fuel/components/TimelineSlot'
+import { KIND_META } from '@/data/kindMeta'
+import { SlotCard } from '@/features/fuel/components/SlotCard'
 
 export function FuelTimeline({
   slots,
@@ -15,10 +16,10 @@ export function FuelTimeline({
   return (
     <div className="col" style={{ gap: 0 }}>
       {slots.map((slot, i) => (
-        <TimelineSlot
+        <SlotCard
           key={i}
           slot={slot}
-          isLast={i === slots.length - 1}
+          meta={KIND_META[slot.kind] ?? KIND_META.meal}
           scoredMeal={getScoredMeal(slot)}
           onOpenScore={onOpenScore}
           onLogMeal={onLogMeal}

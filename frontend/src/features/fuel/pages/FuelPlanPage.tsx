@@ -15,7 +15,6 @@ import { useState } from 'react'
 import type { GymScheduleDay } from '@/data/types'
 import { useFuelWeek, useFuelWeekActions, useTodayScenario } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { StatCell } from '@/shared/ui/StatCell'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
@@ -42,12 +41,17 @@ export function FuelPlanPage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
-        <div className="col gap-xs">
-          <Eyebrow brand>Fuel · Heti terv</Eyebrow>
-          <PageTitle>{title}</PageTitle>
+      <div className="pghead-np sage">
+        <div>
+          <div className="over">Fuel · Heti terv</div>
+          <h1>{title}</h1>
         </div>
-        <button onClick={() => setEditOpen(true)} className="chip" style={{ padding: '8px 10px' }}>
+        <button
+          type="button"
+          onClick={() => setEditOpen(true)}
+          className="pgact-np np-press"
+          style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+        >
           <Icon name="settings" size={12} /> Idők
         </button>
       </div>
@@ -60,7 +64,7 @@ export function FuelPlanPage() {
               label="Kcal avg"
               val={weeklyKcalAvg > 0 ? weeklyKcalAvg.toLocaleString() : '—'}
               sub={'/ ' + weeklyStats.kcalTarget}
-              color="var(--brand-glow)"
+              color="var(--sage)"
             />
             <StatCell
               label="Protein hit"
@@ -91,7 +95,7 @@ export function FuelPlanPage() {
                 alignItems: 'center',
               }}
             >
-              <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+              <Icon name="sparkle" size={12} color="var(--sage-deep)" />
               <span style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
                 <SafeMarkdown text={weeklyNote} />
               </span>

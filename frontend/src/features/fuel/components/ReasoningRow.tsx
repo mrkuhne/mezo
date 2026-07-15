@@ -6,7 +6,7 @@ export function ReasoningRow({ reason }: { reason: Reasoning }) {
     reason.kind === 'physiology'
       ? 'var(--cat-physiology)'
       : reason.kind === 'timing'
-        ? 'var(--brand-glow)'
+        ? 'var(--sage-deep)'
         : reason.kind === 'interaction'
           ? 'var(--warning)'
           : 'var(--cat-preference)'

@@ -12,14 +12,9 @@ const SUBNAV: Array<{ to: string; label: string; end?: boolean }> = [
 
 export function FuelSubNav() {
   return (
-    <nav className="subnav" aria-label="Fuel alnavigáció">
+    <nav className="np-pills" aria-label="Fuel alnavigáció" style={{ '--pill-accent': 'var(--sage)' } as React.CSSProperties}>
       {SUBNAV.map(({ to, label, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={({ isActive }) => cn('subnav-item', isActive && 'active')}
-        >
+        <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('np-pill np-press', isActive && 'on')}>
           {label}
         </NavLink>
       ))}

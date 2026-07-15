@@ -43,6 +43,14 @@ test('the fake "Avg fit" stat is gone', () => {
   expect(screen.queryByText(/Avg fit/)).not.toBeInTheDocument()
 })
 
+test('own header: pghead-np sage over + h1 + pgact-np action chip', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
+  expect(screen.getByText('Fuel · Receptek')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Receptek' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Új/ })).toHaveClass('pgact-np', 'np-press')
+})
+
 test('filtering to a category with no recipes shows the empty state', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: /Vacsi/ }))

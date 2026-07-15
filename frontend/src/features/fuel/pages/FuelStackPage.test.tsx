@@ -20,6 +20,13 @@ test('renders context, active stack and generated timing', () => {
   expect(screen.getByText(/AI-generált timing/)).toBeInTheDocument()
 })
 
+test('own header: pghead-np sage over + h1', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
+  expect(screen.getByText('Fuel · Stack')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'AI builder' })).toBeInTheDocument()
+})
+
 test('Hozzáadás opens the stack picker', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   renderView()

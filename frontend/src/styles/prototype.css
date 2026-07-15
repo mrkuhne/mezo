@@ -26,13 +26,6 @@
   --text-quaternary: #A5978A;
   --text-inverse: #FFFFFF;
 
-  /* Text over permanently-dark media bands (recipe hero/list image placeholders
-     are intentionally dark in BOTH themes) — stays light in both themes, so it is
-     defined once here and never overridden in the dark block. Values mirror the
-     dark-theme text tones so dark mode is pixel-identical. */
-  --text-on-media: #ECECF1;
-  --text-on-media-dim: #9CA3AF;
-
   /* Semantic — AA on white */
   --success: #047857;
   --warning: #B45309;
@@ -1486,3 +1479,50 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .aistrip { display: flex; gap: 9px; background: rgba(255,179,71,.16); border-radius: 20px; padding: 13px 15px; margin: 12px 24px 0; }
 .aistrip p { font-size: 12.5px; line-height: 1.55; color: #7A4A18; font-weight: 500; }
 :root[data-theme="dark"] .aistrip p { color: #E8B36B; }
+
+/* ===== Napív S6 — Fuel accent vocabulary ===== */
+.pghead-np.sage .over { color: var(--sage-deep); }
+:root {
+  --wash-sage: #EAF0E3;
+  --wash-amber: #FFF3E4;
+  --wash-lav: #EEEBF6;
+}
+:root[data-theme="dark"] {
+  --wash-sage: rgba(127,164,138,.16);
+  --wash-amber: rgba(255,179,71,.16);
+  --wash-lav: rgba(155,143,196,.16);
+}
+
+/* ===== Napív kcal gauge (Fuel Mai, spec §4.4) ===== */
+.gauge { position: relative; display: flex; flex-direction: column; align-items: center; }
+.gauge .big { position: absolute; top: 56px; text-align: center; }
+.gauge .big .n { font-family: var(--ff-display); font-size: 37px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.5px; color: var(--ink); }
+.gauge .big .u { font-size: 11.5px; color: var(--faint); font-weight: 700; }
+@media (prefers-reduced-motion: no-preference) {
+  .gauge-p { transition: stroke-dasharray .9s ease; }
+}
+
+/* ===== Napív fuel timeline slots (spec §4.4) ===== */
+.slot { display: flex; gap: 12px; background: var(--surface); border-radius: 20px; padding: 13px 15px; box-shadow: var(--np-shadow-row); margin-bottom: 9px; align-items: center; }
+.slot.next { box-shadow: 0 0 0 2px var(--sage), 0 10px 24px rgba(127,164,138,.2); }
+.slot.done { opacity: .78; }
+.slot .fav { width: 42px; height: 42px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
+.slot .tx { flex: 1; min-width: 0; }
+.slot .t1 { font-size: 14px; font-weight: 800; color: var(--ink); }
+.slot .mrow { display: flex; align-items: center; gap: 9px; font-size: 10.5px; color: var(--faint); font-weight: 700; margin-top: 4px; flex-wrap: wrap; }
+.slot .mrow b { color: var(--ink); font-weight: 800; font-size: 11.5px; }
+.slot .mm { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 800; color: var(--sub); }
+.slot .mm i { width: 6px; height: 6px; border-radius: 50%; }
+.slot .st { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.slot.done .st { background: var(--wash-sage); color: var(--sage-deep); }
+.chx { border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 7px 13px; font-size: 11.5px; font-weight: 700; }
+
+/* ===== Napív fuel Mai — chips + macro soft bars (spec §4.4) ===== */
+.fuelchips { display: flex; gap: 7px; justify-content: center; margin-top: 10px; flex-wrap: wrap; }
+.macror { margin-top: 14px; }
+.mac { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.mac:last-child { margin-bottom: 0; }
+.mac .k { width: 70px; font-size: 11.5px; font-weight: 700; color: var(--sub); }
+.mac .bar { flex: 1; height: 11px; border-radius: 999px; background: var(--warm); overflow: hidden; }
+.mac .bar i { display: block; height: 100%; border-radius: 999px; }
+.mac .v { width: 78px; text-align: right; font-size: 11.5px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink); }

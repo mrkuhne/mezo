@@ -26,3 +26,13 @@ test('renders the editorial name, macro cells and pending fit; click opens', asy
   await userEvent.click(screen.getByText(recipe.name))
   expect(onOpen).toHaveBeenCalledWith(recipe)
 })
+
+// Napiv de-darkening (mezo-8141): the editorial name moved OFF the media band onto
+// the card surface below it — var(--ink), never the retired dark-media text token.
+test('the name renders off the media band in var(--ink), not the retired dark-media token', () => {
+  const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
+  const recipe = result.current.recipes[0]
+  render(<RecipeCard recipe={recipe} onOpen={() => {}} />, { wrapper: QueryWrapper })
+  const title = screen.getByText(recipe.name)
+  expect(title.style.color).toBe('var(--ink)')
+})

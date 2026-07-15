@@ -1,6 +1,7 @@
 // ============================================================
 // Mezo · FuelRecipesPage (Receptek — editorial library)
-// Approved redesign (docs/design/recipes-library.html): editorial RecipeCards +
+// Approved redesign (docs/design/recipes-library.html): pghead-np sage own header
+// (over "Fuel · Receptek", h1 "Receptek", pgact-np "+ Új") + editorial RecipeCards +
 // a segmented typebar filter (Mind / Reggeli / Ebéd / Vacsi / ★ with live counts,
 // the Kamra typebar pattern) replacing the old chip row. The fake "Avg fit 0.89"
 // stat is removed; the header sub shows real counts. Detail + create are now
@@ -11,8 +12,6 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Recipe } from '@/data/types'
 import { useRecipes } from '@/data/hooks'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { RecipeCard } from '@/features/fuel/components/RecipeCard'
 import RecipesSkeleton from '@/features/fuel/pages/RecipesSkeleton'
@@ -51,15 +50,20 @@ export function FuelRecipesPage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="pghead-np sage">
         <div>
-          <Eyebrow brand>Fuel · Receptek</Eyebrow>
-          <PageTitle className="mt-sm">Receptek</PageTitle>
+          <div className="over">Fuel · Receptek</div>
+          <h1>Receptek</h1>
           <span className="label-mono" style={{ display: 'block', fontSize: 9, letterSpacing: '0.12em', color: 'var(--text-tertiary)', marginTop: 5 }}>
             {recipes.length} recept · {starredCount} csillagos
           </span>
         </div>
-        <button onClick={() => navigate('/fuel/recipes/new')} className="chip brand" style={{ padding: '8px 10px' }}>
+        <button
+          type="button"
+          onClick={() => navigate('/fuel/recipes/new')}
+          className="pgact-np np-press"
+          style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+        >
           <Icon name="plus" size={12} /> Új
         </button>
       </div>
