@@ -17,8 +17,6 @@ export interface LoggedSet {
 export interface Session {
   /** Exercise ids in session (display) order. Reorder = replace this array. */
   order: string[]
-  /** Cursor: next set index for the current exercise. */
-  setIdx: number
   /** Completed sets per exerciseId, in completion order. */
   logged: Record<string, LoggedSet[]>
   /** Extra (ad-hoc) sets added beyond the plan, per exerciseId. */
@@ -51,7 +49,7 @@ export function makeSession(exercises: SessionExerciseInput[]): Session {
     planned[e.id] = e.warmupSets + e.workingSets
     prescribed[e.id] = e.prescribedSets ?? []
   }
-  return { order, setIdx: 0, logged: {}, extra: {}, skipped: [], planned, prescribed }
+  return { order, logged: {}, extra: {}, skipped: [], planned, prescribed }
 }
 
 /** The prescribed target for a given set index of an exercise (null past the plan / no prescription). */
@@ -79,21 +77,32 @@ export function currentExerciseId(s: Session): string {
   return s.order[s.order.length - 1]
 }
 
-/** Append a completed set to the current exercise and advance the cursor. */
-export function completeSet(s: Session, set: LoggedSet): Session {
-  const id = currentExerciseId(s)
-  const next = [...(s.logged[id] ?? []), set]
-  return {
-    ...s,
-    logged: { ...s.logged, [id]: next },
-    setIdx: next.length,
-  }
+/** Append a completed set to the GIVEN exercise (the on-screen one — free navigation). */
+export function completeSet(s: Session, exerciseId: string, set: LoggedSet): Session {
+  return { ...s, logged: { ...s.logged, [exerciseId]: [...(s.logged[exerciseId] ?? []), set] } }
 }
 
-/** Re-sync the cursor to the (re-derived) current exercise. */
-export function advance(s: Session): Session {
-  const id = currentExerciseId(s)
-  return { ...s, setIdx: s.logged[id]?.length ?? 0 }
+/** Per-exercise cursor: the next set index to log for an exercise. */
+export function nextSetIdx(s: Session, id: string): number {
+  return s.logged[id]?.length ?? 0
+}
+
+/**
+ * The next non-skipped, not-fully-logged exercise STRICTLY AFTER `id` in `order`,
+ * wrapping around to the list start; null when every exercise is resolved.
+ * Auto-advance target after a debrief/skip.
+ */
+export function nextUnfinishedAfter(s: Session, id: string): string | null {
+  const start = s.order.indexOf(id)
+  for (let step = 1; step <= s.order.length; step++) {
+    const candidate = s.order[(start + step) % s.order.length]
+    if (candidate === id) continue
+    if (s.skipped.includes(candidate)) continue
+    if ((s.logged[candidate]?.length ?? 0) < effectiveSetCount(s, candidate)) return candidate
+  }
+  // the given exercise itself may still be unfinished (single-exercise session)
+  if (!s.skipped.includes(id) && (s.logged[id]?.length ?? 0) < effectiveSetCount(s, id)) return id
+  return null
 }
 
 /** Grow the effective set count for one exercise by a single extra set. */
@@ -112,8 +121,8 @@ export function skipExercise(s: Session, id: string): Session {
  * server can append template exercises mid-workout (the closing block, mezo-z2ul),
  * and a refetch then surfaces them while the session is already in flight. Unknown
  * plan exercises are APPENDED to `order` (never spliced mid-list, so the in-flight
- * cursor and any user reorder stay put) with their planned count + prescription;
- * logged/extra/skipped/setIdx are untouched. Returns the SAME session object when
+ * per-exercise cursors and any user reorder stay put) with their planned count +
+ * prescription; logged/extra/skipped are untouched. Returns the SAME session object when
  * nothing is new, so an effect can call it on every plan render without looping.
  */
 export function mergePlan(s: Session, exercises: SessionExerciseInput[]): Session {
@@ -141,8 +150,8 @@ interface PersistedSet {
 
 /**
  * Rebuild a session from persisted sets (resume an open workout):
- * group sets by exerciseId (ordered by setIndex) into `logged`, then
- * point the cursor at the next set of the current exercise. A persisted
+ * group sets by exerciseId (ordered by setIndex) into `logged` — the
+ * per-exercise cursor then derives from each `logged[id].length`. A persisted
  * skip marker (`skipped === true`, null perf) adds its exerciseId to
  * `session.skipped` instead of `logged` so a resume lands past it.
  */
@@ -168,6 +177,5 @@ export function seedFromOpen(
     }
     ;(logged[set.exerciseId] ??= []).push(entry)
   }
-  const seeded: Session = { ...base, logged, skipped }
-  return { ...seeded, setIdx: seeded.logged[currentExerciseId(seeded)]?.length ?? 0 }
+  return { ...base, logged, skipped }
 }

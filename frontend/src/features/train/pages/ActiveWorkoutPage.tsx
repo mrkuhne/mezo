@@ -20,12 +20,13 @@ import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInst
 import {
   type Session,
   addExtraSet,
-  advance,
   completeSet as completeSetModel,
   currentExerciseId,
   effectiveSetCount,
   makeSession,
   mergePlan,
+  nextSetIdx,
+  nextUnfinishedAfter,
   prescribedAt,
   seedFromOpen,
   skipExercise as skipExerciseModel,
@@ -141,6 +142,9 @@ function ActiveWorkoutSession({
 
   const [phase, setPhase] = useState<Phase>(initialPhase)
   const [session, setSession] = useState<Session>(initialSession)
+  // Free navigation (spec 2026-07-15): the VIEWED exercise is the logging target.
+  // Seeds from the linear resume point; Task 7's nav UI drives setViewedId.
+  const [viewedId, setViewedId] = useState<string>(() => currentExerciseId(initialSession))
   const [weight, setWeight] = useState(startPrefill.weight)
   const [reps, setReps] = useState(startPrefill.reps)
   const [rir, setRir] = useState(startPrefill.rir)
@@ -156,8 +160,8 @@ function ActiveWorkoutSession({
   const [hadPrFromSignal, setHadPrFromSignal] = useState(false)
   const { showLevelUp } = useLevelUp()
   // The just-finished exercise pinned for the debrief modal (and the active card
-  // it overlays): `currentExerciseId` jumps to the NEXT exercise the moment the
-  // last set is logged, so we keep an explicit feedback target until it resolves.
+  // it overlays): once resolved, the view advances to the next exercise, so we keep
+  // an explicit feedback target that overrides `viewedId` until the debrief closes.
   const [feedbackEx, setFeedbackEx] = useState<LoggedWorkoutExercise | null>(null)
   const [niggleConfirmed, setNiggleConfirmed] = useState(false)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
@@ -194,10 +198,13 @@ function ActiveWorkoutSession({
     setSession((s) => mergePlan(s, W.exercises))
   }, [W.exercises])
 
-  // On-screen exercise: the pinned feedback target while debriefing, else the
-  // model's derived current exercise. Drives the active card, dots, history & PR.
-  const current = feedbackEx ?? W.exercises.find((e) => e.id === currentExerciseId(session)) ?? W.exercises[0]
+  // On-screen exercise: the pinned feedback target while debriefing, else the FREELY
+  // NAVIGATED viewed exercise (the logging target — spec 2026-07-15 free navigation).
+  const current = feedbackEx ?? W.exercises.find((e) => e.id === viewedId) ?? W.exercises[0]
   const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
+  // Per-exercise cursor: the next set index to log for the on-screen exercise
+  // (derived from its logged count — replaces the old scalar session.setIdx).
+  const cursor = nextSetIdx(session, current.id)
   // Only genuinely load-less exercises (plyo) hide the kg stepper. A null target
   // weight ALSO happens on a first-ever workout (no history, no anchor) — there the
   // user must still enter a starting weight, so we must NOT hide the stepper then.
@@ -206,7 +213,7 @@ function ActiveWorkoutSession({
   const warmupCount = (session.prescribed[current.id] ?? []).filter((p) => p.kind === 'warmup').length
   // The current set's prescription drives the card's kind tag + the RIR row: a warmup
   // set is signalled explicitly and logs NO RIR (effort tracking is working-set-only).
-  const currentTarget = prescribedAt(session, current.id, session.setIdx)
+  const currentTarget = prescribedAt(session, current.id, cursor)
   const isWarmupSet = currentTarget?.kind === 'warmup'
   // Effective note for the on-screen exercise: a just-saved local override wins,
   // else the backend/mock note, else empty (drives the pill + the editor prefill).
@@ -220,8 +227,8 @@ function ActiveWorkoutSession({
   // it falls back to the lastWeek-based prefill. This is the single prefill
   // source — the feedback/skip advance handlers no longer set the inputs by hand.
   useEffect(() => {
-    const t = prescribedAt(session, current.id, session.setIdx)
-    const prev = (session.logged[current.id] ?? [])[session.setIdx - 1]
+    const t = prescribedAt(session, current.id, cursor)
+    const prev = (session.logged[current.id] ?? [])[cursor - 1]
     const p = prefill(current)
     if (t?.kind === 'warmup') {
       // Warmups follow the engine ramp; a null target inherits the previous
@@ -232,14 +239,14 @@ function ActiveWorkoutSession({
     } else {
       // Working sets: the just-logged WORKING set (never a warmup) wins over the
       // static engine target; the engine seeds only the first working set.
-      const prevWorking = session.setIdx > warmupCount ? prev : undefined
+      const prevWorking = cursor > warmupCount ? prev : undefined
       setWeight(prevWorking?.weight ?? t?.targetWeightKg ?? prev?.weight ?? p.weight)
       setReps(t?.targetReps ?? prevWorking?.reps ?? p.reps)
       setRir(t?.targetRIR ?? prevWorking?.rir ?? p.rir)
     }
     // Reset only on set-index / exercise transitions — NOT on extra-set or note changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.id, session.setIdx])
+  }, [current.id, cursor])
   // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
   // and the live session/day list (or honest []) in real. Accept/dismiss is a
   // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
@@ -285,8 +292,8 @@ function ActiveWorkoutSession({
   const completeSet = () => {
     const finishing = current // the exercise being logged right now
     const finishingIdx = W.exercises.findIndex((e) => e.id === finishing.id)
-    const wasSetIdx = session.setIdx // pre-update cursor (for the PR trigger + persisted setIndex)
-    const next = completeSetModel(session, { weight, reps, rir })
+    const wasSetIdx = nextSetIdx(session, finishing.id) // pre-update cursor (for the PR trigger + persisted setIndex)
+    const next = completeSetModel(session, finishing.id, { weight, reps, rir })
     setSession(next)
     if (workoutId) {
       const kind = prescribedAt(session, finishing.id, wasSetIdx)?.kind ?? 'working'
@@ -322,7 +329,7 @@ function ActiveWorkoutSession({
     } else {
       startRest({
         seconds: restSecondsFor(current.type),
-        next: session.setIdx + 1 < currentSetCount ? current.name : (nextEx?.name ?? null),
+        next: wasSetIdx + 1 < currentSetCount ? current.name : (nextEx?.name ?? null),
       })
     }
   }
@@ -359,9 +366,11 @@ function ActiveWorkoutSession({
       (e) => session.skipped.includes(e.id) || (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id),
     )
     if (!allDone) {
-      // The prefill effect (keyed on the derived current exercise) resets the
-      // logging inputs once the advanced session re-renders.
-      setSession(advance(session))
+      // Free navigation: point the viewed exercise at the next unfinished one after
+      // the just-debriefed exercise (wraps around). The prefill effect (keyed on
+      // current.id + cursor) resets the logging inputs once the view moves.
+      const nextId = feedbackEx ? nextUnfinishedAfter(session, feedbackEx.id) : nextUnfinishedAfter(session, current.id)
+      if (nextId) setViewedId(nextId)
     } else {
       finishAndCelebrate()
       setPhase('complete')
@@ -375,7 +384,7 @@ function ActiveWorkoutSession({
     // Abandoning the current exercise must not leave the island counting down
     // toward it (final-review fix, mezo-8141 — Ride-along A).
     clearRest()
-    const exId = currentExerciseId(session)
+    const exId = current.id // skip the VIEWED exercise (free navigation)
     if (workoutId) skipExercise(workoutId, exId)
     const afterSkip = skipExerciseModel(session, exId)
     const allDone = W.exercises.every(
@@ -386,8 +395,11 @@ function ActiveWorkoutSession({
       setSession(afterSkip)
       setPhase('complete')
     } else {
-      // The prefill effect resets the inputs from the next exercise's target.
-      setSession(advance(afterSkip))
+      // Move the view to the next unfinished exercise; the prefill effect resets
+      // the inputs from its target once the view moves.
+      const nextId = nextUnfinishedAfter(afterSkip, exId)
+      setSession(afterSkip)
+      if (nextId) setViewedId(nextId)
     }
   }
 
@@ -578,20 +590,13 @@ function ActiveWorkoutSession({
   const doneSets = Object.values(session.logged).reduce((a, arr) => a + arr.length, 0)
   const activeChallenge = challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
   const currentSetCount = effectiveSetCount(session, current.id)
-  // Order-position (not W.exercises' fixed array index) cutoff for the header dots:
-  // the ⋯ sheet's reorder mutates session.order, not the static exercise array, so
-  // "done" must derive from position there — otherwise a reorder that moves an
-  // untouched exercise BEHIND the current one renders it as falsely done (final-
-  // review fix, mezo-8141 — Finding 1).
-  const orderPos = (id: string) => session.order.indexOf(id)
 
-  // Reorderable segment for the ⋯ action sheet: the done + current exercises
-  // stay FIXED; only the FUTURE exercises (after the current one in session.order)
-  // can be reordered. Reorder is client-only / ephemeral — it just replaces
-  // session.order, never persists.
+  // Reorderable segment for the ⋯ action sheet: the exercises up to and including
+  // the VIEWED one stay FIXED; only the ones after it in session.order can be
+  // reordered. Reorder is client-only / ephemeral — it just replaces session.order,
+  // never persists.
   const remaining = (() => {
-    const currentId = currentExerciseId(session)
-    const ci = session.order.indexOf(currentId)
+    const ci = session.order.indexOf(current.id)
     return session.order.slice(ci + 1).map((id) => {
       const e = W.exercises.find((x) => x.id === id)!
       return { id, label: e.name }
@@ -599,8 +604,8 @@ function ActiveWorkoutSession({
   })()
   const handleReorder = (newRemaining: string[]) =>
     setSession((s) => {
-      // Recompute fixed segment from the latest session to avoid a stale closure.
-      const ci = s.order.indexOf(currentExerciseId(s))
+      // Fixed segment anchors on the viewed exercise (from the render closure).
+      const ci = s.order.indexOf(current.id)
       const fixed = s.order.slice(0, ci + 1)
       return { ...s, order: [...fixed, ...newRemaining] }
     })
@@ -649,9 +654,8 @@ function ActiveWorkoutSession({
           onReorder={handleReorder}
           onSkip={handleSkip}
           onAddSet={() => {
-            const id = currentExerciseId(session)
-            setSession((s) => addExtraSet(s, currentExerciseId(s)))
-            setAddSetPrompt({ exerciseId: id })
+            setSession((s) => addExtraSet(s, current.id))
+            setAddSetPrompt({ exerciseId: current.id })
           }}
           onEditNote={() => setNoteEditOpen(true)}
           hasNote={!!effectiveNote}
@@ -718,20 +722,16 @@ function ActiveWorkoutSession({
             <div className="t2">{currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
           </div>
           <div className="exdots" aria-hidden="true">
-            {W.exercises.map((e) => (
-              <i
-                key={e.id}
-                className={
-                  session.skipped.includes(e.id)
-                    ? 'skp'
-                    : orderPos(e.id) < orderPos(current.id)
-                      ? 'don'
-                      : e.id === current.id
-                        ? 'cur'
-                        : undefined
-                }
-              />
-            ))}
+            {W.exercises.map((e) => {
+              // Resolved-state classing (free navigation): a fully-logged or skipped
+              // exercise is done/skipped regardless of order; the viewed one is current.
+              const resolved = session.skipped.includes(e.id)
+                ? 'skp'
+                : (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id)
+                  ? 'don'
+                  : undefined
+              return <i key={e.id} className={e.id === current.id ? 'cur' : resolved} />
+            })}
           </div>
           <button
             type="button"
@@ -812,14 +812,14 @@ function ActiveWorkoutSession({
           <div className="setdots">
             {Array.from({ length: currentSetCount }, (_, i) => {
               const warm = prescribedAt(session, current.id, i)?.kind === 'warmup'
-              const cls = i < session.setIdx ? 'sd don' : i === session.setIdx ? 'sd cur' : 'sd'
+              const cls = i < cursor ? 'sd don' : i === cursor ? 'sd cur' : 'sd'
               // An F2-added set (index at/past the exercise's planned baseline)
               // gets a distinct dashed marker while still pending — restored in
               // the final-review fix (mezo-8141 — Finding 2), gone since S5.
               const extra = i >= (session.planned[current.id] ?? 0)
               return (
                 <div key={i} className={cls + (warm ? ' wu' : '') + (extra && cls === 'sd' ? ' extra' : '')}>
-                  {i < session.setIdx ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
+                  {i < cursor ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
                 </div>
               )
             })}
@@ -839,8 +839,8 @@ function ActiveWorkoutSession({
                 }}
               >
                 {isWarmupSet
-                  ? `Bemelegítő · B${session.setIdx + 1}`
-                  : `Working · ${session.setIdx + 1 - warmupCount}/${currentSetCount - warmupCount}`}
+                  ? `Bemelegítő · B${cursor + 1}`
+                  : `Working · ${cursor + 1 - warmupCount}/${currentSetCount - warmupCount}`}
               </span>
             </div>
           )}
@@ -927,7 +927,7 @@ function ActiveWorkoutSession({
               const kindLabel = warm ? 'Bemel.' : 'Working'
               const accent = warm ? 'var(--warning)' : 'var(--coral)'
               const actual = session.logged[current.id]?.[i]
-              const isDone = i < session.setIdx
+              const isDone = i < cursor
 
               // A read-only row — target for pending sets, logged actuals for done ones.
               const w = isDone ? actual?.weight : t?.targetWeightKg
