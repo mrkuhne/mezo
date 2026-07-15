@@ -73,10 +73,10 @@ test('renders the consolidated Growth summary card below biometrics (radars reti
   expect(screen.queryByText('Izom-szintek')).not.toBeInTheDocument()
 })
 
-test('Szerkesztés opens the BiometricSheet', async () => {
+test('szerkesztés › opens the BiometricSheet', async () => {
   renderProfile()
   await waitFor(() => expect(screen.getByText('Biometria')).toBeInTheDocument())
-  await userEvent.click(screen.getByRole('button', { name: /Szerkesztés/ }))
+  await userEvent.click(screen.getByRole('button', { name: /szerkesztés/i }))
   // The sheet's title appears once open.
   expect(screen.getByText('A motor ebből számol')).toBeInTheDocument()
 })

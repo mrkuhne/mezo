@@ -57,7 +57,7 @@ export function BiometricSheet({
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <span className="eyebrow brand">Biometria</span>
+              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Biometria</span>
               <div id="biometric-title" className="h-display size-md" style={{ marginTop: 4 }}>
                 A motor ebből számol
               </div>
@@ -81,9 +81,9 @@ export function BiometricSheet({
                     style={{
                       padding: '12px 0',
                       background:
-                        sex === s ? 'color-mix(in srgb, var(--brand-glow) 12%, transparent)' : 'var(--surface-1)',
-                      border: `1px solid ${sex === s ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
-                      color: sex === s ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                        sex === s ? 'color-mix(in srgb, var(--lav-deep) 12%, transparent)' : 'var(--surface-1)',
+                      border: `1px solid ${sex === s ? 'var(--lav-deep)' : 'var(--border-subtle)'}`,
+                      color: sex === s ? 'var(--lav-deep)' : 'var(--text-secondary)',
                       fontFamily: 'var(--ff-display)',
                       fontSize: 14,
                       fontWeight: 600,
@@ -117,7 +117,7 @@ export function BiometricSheet({
             )}
             {field(
               <>
-                Testzsír % <span style={{ color: 'var(--brand-glow)', opacity: 0.8 }}>· opcionális → pontosabb TDEE</span>
+                Testzsír % <span style={{ color: 'var(--lav-deep)', opacity: 0.8 }}>· opcionális → pontosabb TDEE</span>
               </>,
               <input
                 type="number"
@@ -147,8 +147,8 @@ export function BiometricSheet({
                         padding: '10px 12px',
                         textAlign: 'left',
                         width: '100%',
-                        background: sel ? 'color-mix(in srgb, var(--brand-glow) 10%, transparent)' : 'var(--surface-1)',
-                        borderColor: sel ? 'var(--brand-glow)' : 'var(--border-subtle)',
+                        background: sel ? 'color-mix(in srgb, var(--lav-deep) 10%, transparent)' : 'var(--surface-1)',
+                        borderColor: sel ? 'var(--lav-deep)' : 'var(--border-subtle)',
                       }}
                     >
                       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
@@ -157,7 +157,7 @@ export function BiometricSheet({
                             fontFamily: 'var(--ff-display)',
                             fontSize: 14,
                             fontWeight: 600,
-                            color: sel ? 'var(--brand-glow)' : 'var(--text-primary)',
+                            color: sel ? 'var(--lav-deep)' : 'var(--text-primary)',
                           }}
                         >
                           {sel ? '✓ ' : ''}

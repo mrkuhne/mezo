@@ -1551,3 +1551,26 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 @media (prefers-reduced-motion: no-preference) {
   .track .fill { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .3s var(--np-ease-ios) forwards; }
 }
+
+/* ===== Napív biometria + growth summary cards (Profil, spec §4.6) ===== */
+.biocard .bhd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
+.biocard .bhd h3 { font-size: 14.5px; font-weight: 800; color: var(--ink); }
+.biocard .bhd button { border: 0; background: none; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; color: var(--lav-deep); }
+.biogrid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px 14px; }
+.bio .k { font-size: 10px; color: var(--faint); font-weight: 800; letter-spacing: .4px; text-transform: uppercase; }
+.bio .v { font-size: 17px; font-weight: 800; font-family: var(--ff-display); margin-top: 2px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.bio .v small { font-size: 11px; color: var(--sub); font-weight: 700; }
+.tdee { display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid var(--line); margin-top: 14px; padding-top: 13px; }
+.tdee .k { font-size: 12px; font-weight: 700; color: var(--sub); }
+.tdee .v { font-family: var(--ff-display); font-size: 20px; font-weight: 800; color: var(--sage-deep); }
+.growth2 .hd { display: flex; justify-content: space-between; align-items: center; }
+.growth2 .hd .t { font-size: 14px; font-weight: 800; color: var(--ink); }
+.growth2 .hd .xp { background: var(--wash-amber); color: var(--amber-deep); font-size: 11px; font-weight: 800; border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+.skl { display: flex; align-items: center; gap: 9px; margin-top: 11px; }
+.skl .k { flex: 0 0 112px; font-size: 12.5px; font-weight: 700; color: var(--sub); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skl .bar { flex: 1; height: 9px; border-radius: 999px; background: var(--warm); overflow: hidden; }
+.skl .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lav), #B7A8E0); }
+.skl .lv { width: 36px; text-align: right; font-size: 12px; font-weight: 800; color: var(--lav-deep); }
+@media (prefers-reduced-motion: no-preference) {
+  .skl .bar i { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .45s var(--np-ease-ios) forwards; }
+}
