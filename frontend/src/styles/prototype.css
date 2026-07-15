@@ -1,12 +1,18 @@
 /* ===== Mezo prototype · Design tokens (Deep Current v2) ===== */
 
 :root {
-  /* Brand · legacy teal (screens still on Deep Current use these until S3–S7) */
-  --brand-deep: #064E5B;
-  --brand-core: #0E7C7B;
-  --brand-primary: #0E7C7B;
-  --brand-glow: #0E7C7B;
-  --brand-tint: #E6F7F4;
+  /* Legacy Deep-Current tokens — re-pointed onto the Napív palette (S8, spec §3.1:
+     "domain-accent mapping replaces --cat-* 1:1, brand-teal→coral as default accent").
+     Kept as aliases so un-migrated call sites render in-family; new code uses Napív tokens.
+     Alias architecture (single explanation, applies to every legacy token below): each alias
+     points at a Napív token. That Napív token is themed — light here in :root, dark in the
+     Pulse block — so the alias follows the theme automatically. This is why the dark override
+     block for these legacy tokens is EMPTY: overriding them would break the swap. */
+  --brand-deep: var(--coral-deep);
+  --brand-core: var(--coral-deep);
+  --brand-primary: var(--coral);
+  --brand-glow: var(--coral);
+  --brand-tint: var(--wash-gym);
 
   /* Canvas / surfaces — warmed to Napív */
   --canvas: #FBF6EF;
@@ -17,7 +23,7 @@
 
   --border-subtle: rgba(43, 33, 24, 0.08);
   --border-strong: rgba(43, 33, 24, 0.18);
-  --border-brand: rgba(14, 124, 123, 0.40);
+  --border-brand: var(--line);
 
   /* Text — warm ink */
   --text-primary: #2B2118;
@@ -26,27 +32,27 @@
   --text-quaternary: #A5978A;
   --text-inverse: #FFFFFF;
 
-  /* Semantic — AA on white */
-  --success: #047857;
-  --warning: #B45309;
-  --error: #BE123C;
-  --info: #1D4ED8;
+  /* Semantic — re-pointed onto Napív (aliases; error stays a literal red) */
+  --success: var(--sage-deep);
+  --warning: var(--amber-deep);
+  --error: #D9534F;              /* stays a true red; Napív has no error hue */
+  --info: var(--sky);
 
-  /* Pattern category palette — deepened */
-  --cat-physiology: #1D4ED8;
-  --cat-preference: #6D28D9;
-  --cat-trigger:    #B45309;
-  --cat-response:   #047857;
-  --cat-tendency:   #BE185D;
-  --cat-goal-state: #0E7C7B;
+  /* Pattern category palette — re-pointed onto Napív domain accents (1:1, spec §3.1) */
+  --cat-physiology: var(--sky);
+  --cat-preference: var(--lav-deep);
+  --cat-trigger:    var(--amber-deep);
+  --cat-response:   var(--sage-deep);
+  --cat-tendency:   var(--rose);
+  --cat-goal-state: var(--coral-deep);
 
-  --tool-read:    rgba(14, 124, 123, 0.55);
-  --tool-compute: var(--warning);
-  --tool-write:   var(--brand-glow);
+  --tool-read:    var(--lav);
+  --tool-compute: var(--amber-deep);
+  --tool-write:   var(--coral);
 
-  /* Reta phase gradient stops (unchanged) */
-  --reta-d1: #5EEAD4; --reta-d2: #14B8A6; --reta-d3: #F59E0B; --reta-d4: #F59E0B;
-  --reta-d5: #D97757; --reta-d6: #6B7280; --reta-d7: #4B5563;
+  /* Reta phase gradient stops — sage→amber ramp (light gradient, shared by both themes) */
+  --reta-d1: #7FA48A; --reta-d2: #8FAC7E; --reta-d3: #A3B272; --reta-d4: #BCB466;
+  --reta-d5: #D6B25B; --reta-d6: #EBB250; --reta-d7: #FFB347;   /* sage→amber ramp */
 
   /* AnchorMode (light, warmer) */
   --anchor-canvas:  #FBF4EC;
@@ -74,55 +80,40 @@
   --page-glow: #F0EBE2;
 }
 
-/* ===== Dark theme (opt-in; Pulse warm-graphite lands fully in S8 — until then legacy navy) ===== */
+/* ===== Dark theme — Pulse (warm graphite; spec §3.1 dark direction B, S8) =====
+   Only literal canvas/surface/ink/border/error values are overridden here. Every legacy
+   token that became a :root alias (--brand-*, --cat-*, --info, --success, --warning,
+   --tool-*, --border-brand, --reta-*) is intentionally ABSENT — it resolves against the
+   dark Napív accents (defined in the Pulse accents block below). That is the palette swap. */
 :root[data-theme="dark"] {
-  --brand-deep: #064E5B;
-  --brand-core: #0E7C7B;
-  --brand-primary: #14B8A6;
-  --brand-glow: #5EEAD4;
-  --brand-tint: #CCFBF1;
+  --canvas: #191614;
+  --surface-1: #221E1B;
+  --surface-2: #2A2521;
+  --surface-3: #332D27;
+  --surface-glass: rgba(245, 239, 230, 0.05);
 
-  --canvas: #0A0F14;
-  --surface-1: #121A22;
-  --surface-2: #1A242E;
-  --surface-3: #232F3B;
-  --surface-glass: rgba(255, 255, 255, 0.04);
+  --border-subtle: rgba(245, 239, 230, 0.07);
+  --border-strong: rgba(245, 239, 230, 0.14);
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --border-brand: rgba(94, 234, 212, 0.35);
+  --text-primary: #F5EFE6;
+  --text-secondary: #B7A899;
+  --text-tertiary: #8A7A6A;
+  --text-quaternary: #5E5348;
+  --text-inverse: #191614;
 
-  --text-primary: #ECECF1;
-  --text-secondary: #9CA3AF;
-  --text-tertiary: #6B7280;
-  --text-quaternary: #4B5563;
-  --text-inverse: #0A0F14;
+  --error: #F08A85;
 
-  --success: #34D399;
-  --warning: #F59E0B;
-  --error: #F43F5E;
-  --info: #60A5FA;
-
-  --cat-physiology: #60A5FA;
-  --cat-preference: #A78BFA;
-  --cat-trigger:    #F59E0B;
-  --cat-response:   #34D399;
-  --cat-tendency:   #F472B6;
-  --cat-goal-state: #5EEAD4;
-
-  --tool-read:    rgba(94, 234, 212, 0.4);
-  --tool-compute: var(--warning);
-  --tool-write:   var(--brand-glow);
-
+  /* AnchorMode (kept: --anchor-accent has JS consumers — VulnerabilityCard, train.ts) */
   --anchor-canvas:  #14110E;
   --anchor-surface: #1F1915;
   --anchor-accent:  #D97757;
   --anchor-text:    #E8DDD3;
 
-  --page-bg: #050709;
+  /* Page/card literals — warm-graphite tuned (previously cool navy) */
+  --page-bg: #100D0B;
   --card-elevation: none;
   --card-border: var(--border-subtle);
-  --page-glow: #0c1218;
+  --page-glow: #17130F;
 }
 
 /* Notched chamfer clip-paths */
@@ -1146,15 +1137,23 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --np-ease-spring: cubic-bezier(.34,1.4,.44,1);
 }
 
-/* Dark placeholders (spec §7 S1): keep the Napív-token consumers legible on the legacy
-   navy dark until the Pulse dark pass (S8) designs real values. Accents unchanged. */
+/* Pulse dark (spec §7 S8): warm-graphite neutrals + accents lifted for the graphite canvas.
+   Neutrals mirror the legacy surface/text scale in Block A; accents stay in-family but glow. */
 :root[data-theme="dark"] {
-  --surface: #121A22;
-  --warm: #1A242E;
-  --line: rgba(255, 255, 255, 0.08);
-  --ink: #ECECF1;
-  --sub: #9CA3AF;
-  --faint: #6B7280;
+  --surface: #221E1B;
+  --warm: #2A2521;
+  --line: rgba(245, 239, 230, 0.08);
+  --ink: #F5EFE6;
+  --sub: #B7A899;
+  --faint: #8A7A6A;
+
+  /* Pulse accents — same family, lifted for the graphite canvas */
+  --coral: #FF7E5C; --coral-deep: #F0966B;
+  --amber: #FFBE60; /* --amber-deep dark already exists (S7, #E3B565) */
+  --sage: #8FB49A; --sage-deep: #A9C79A;
+  --lav: #AB9FD2; --lav-deep: #B9ACD9;
+  --rose: #E98D9D; --sky: #7FB2DE;
+
   --np-shadow-card: 0 2px 4px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
   --np-shadow-row: 0 8px 20px rgba(0,0,0,.3);
 }
@@ -1344,6 +1343,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --wash-gym: rgba(255,107,74,.16);
   --wash-sport: rgba(226,122,139,.16);
   --wash-run: rgba(111,167,216,.16);
+  --tag-gym: #F0966B; --tag-sport: #E9A3AE; --tag-run: #9CC0E4;
 }
 
 /* ===== Napív pill sub-nav (spec §4.3; Fuel/Me adopt later via --pill-accent) ===== */
