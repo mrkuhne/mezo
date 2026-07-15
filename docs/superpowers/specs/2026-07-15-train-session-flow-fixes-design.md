@@ -93,6 +93,10 @@ git-ignored): `exercise-nav.html` (concept C), `exercise-nav-v2.html` (pager bar
 - **`weekDoneDates` semantics change** (no schema change): dates with a **completed**
   instance this week (was: ≥1 logged set). Same field, new meaning — documented in the
   fragment description.
+- **`ChallengeResponse` (proactive.yml) gains the structured targets** (`targetWeightKg`,
+  `targetReps`, `targetSets`, `targetRir` — optional, nullable, additive): the FE
+  pre-finish outcome preview needs the numeric targets, not just the display `target`
+  string. The entity already stores them; MapStruct maps by name.
 - No DDL. The `status` column and the `planned|active|completed|skipped` enum already exist.
 
 ## 2 · Backend
