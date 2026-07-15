@@ -27,7 +27,7 @@ export function RecipeFitBadge({ score, size = 'card' }: RecipeFitBadgeProps) {
     >
       {pending ? (
         <>
-          <div style={{ color: 'var(--brand-glow)', display: 'flex', justifyContent: 'center', animation: 'mezo-twinkle 2.2s ease-in-out infinite' }}>
+          <div className="np-twinkle" style={{ color: 'var(--brand-glow)', display: 'flex', justifyContent: 'center' }}>
             <Icon name="sparkle" size={isHero ? 18 : 16} />
           </div>
           <div className="label-mono" style={{ fontSize: 6.5, letterSpacing: '0.16em', color: 'var(--brand-glow)', opacity: 0.8, marginTop: 3 }}>

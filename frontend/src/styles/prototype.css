@@ -643,6 +643,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 20%, transparent); }
   50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--coral) 10%, transparent); }
 }
+@media (prefers-reduced-motion: reduce) { .set-dot.active { animation: none; } }
 
 /* Loading skeleton — light coral (brand-accent) sweep over a surface-2 block. */
 .sk {
@@ -754,6 +755,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
+@media (prefers-reduced-motion: reduce) { .graph-node-pulse { animation: none; } }
 
 /* Pattern card critique mini-bars */
 .critique-grid {
@@ -790,6 +792,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   0%, 100% { opacity: 0.45; transform: scale(0.9); }
   50% { opacity: 1; transform: scale(1.08); }
 }
+.np-twinkle { animation: mezo-twinkle 2.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .np-twinkle { animation: none; } }
 
 /* ============================================================
    Progression level-up overlay (P5, mezo-te8k) — ported from
@@ -1152,6 +1156,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   box-shadow: 0 12px 26px rgba(255,107,74,.5), inset 0 1.5px 0 rgba(255,255,255,.35);
   cursor: pointer;
 }
+/* Center + FAB soft glow pulse (spec §3.5) — motion only under no-preference. */
+@keyframes np-fabglow { 0%,100% { box-shadow: 0 6px 18px color-mix(in srgb, var(--cta-g2) 35%, transparent); }
+  50% { box-shadow: 0 8px 28px color-mix(in srgb, var(--cta-g2) 55%, transparent); } }
+@media (prefers-reduced-motion: no-preference) { .tab-fab { animation: np-fabglow 3.2s ease-in-out infinite; } }
 .quicklog { padding: 4px 6px 10px; }
 .quicklog h2 { font-family: var(--ff-display); font-size: 19px; font-weight: 800; }
 .quicklog-sub { font-size: 12px; color: var(--faint); font-weight: 600; margin-top: 2px; }
@@ -1193,11 +1201,15 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: radial-gradient(440px 310px at 82% 2%, rgba(155,143,196,.4), transparent 72%),
               linear-gradient(180deg, #E2D9EF, #F0E9E9 62%, transparent);
 }
-/* Dark theme keeps its own canvas — daypart tints are a light-theme device until the
-   Pulse dark pass (S8) designs night variants. The sky dim below still applies. */
+/* Dark theme keeps its own canvas (graphite) — the daypart tint on the canvas stays a
+   light-theme device. The S8 Pulse pass (mezo-8141) designs the night sky variants below:
+   the canvas stays graphite; only the faint sky band glows per daypart. */
 :root[data-theme="dark"] .phone-screen[data-day] { background: var(--canvas); }
-/* Dark theme: the sky dims until the Pulse dark pass (S8) designs its own night variants. */
-:root[data-theme="dark"] .sky { opacity: .18; }
+/* Pulse night skies — canvas stays graphite; only the sky band glows faintly */
+:root[data-theme="dark"] .sky { opacity: .5; }
+:root[data-theme="dark"] .phone-screen[data-day="reggel"] .sky { background: radial-gradient(60% 40% at 18% 0%, rgba(255,179,71,.10), transparent 70%); }
+:root[data-theme="dark"] .phone-screen[data-day="delutan"] .sky { background: radial-gradient(60% 40% at 50% 0%, rgba(245,239,230,.06), transparent 70%); }
+:root[data-theme="dark"] .phone-screen[data-day="este"] .sky { background: radial-gradient(60% 40% at 82% 0%, rgba(155,143,196,.12), transparent 70%); }
 /* AnchorMode: rough days mute the atmosphere (full anchor remap landed with Today in S3, mezo-8141). */
 .phone-screen.anchor .sky { opacity: .35; filter: saturate(.6); }
 
