@@ -2,6 +2,15 @@ import { Icon } from '@/shared/ui/Icon'
 import type { WeightEntry, WeightTrends, Goal } from '@/data/types'
 import { changeFromStart, latestValue, progressPct, etaWeeks, isImprovement, fmtSigned } from '@/features/me/logic/weightStats'
 
+// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
+const CAPTION: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '.1em',
+  textTransform: 'uppercase',
+  color: 'var(--faint)',
+}
+
 export function WeightHero({ log, weightTrends, goal, onLog }: {
   log: WeightEntry[]
   weightTrends: WeightTrends
@@ -21,22 +30,22 @@ export function WeightHero({ log, weightTrends, goal, onLog }: {
     <div style={{ padding: '0 24px 16px' }}>
       <div className="card notch-12" style={{ padding: '18px 18px 16px' }}>
         <div style={{ textAlign: 'center' }}>
-          <span className="label-mono" style={{ color: 'var(--text-secondary)' }}>Induláshoz képest</span>
+          <span style={CAPTION}>Induláshoz képest</span>
           <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
-            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, lineHeight: 0.95, color: 'var(--brand-glow)', textShadow: '0 0 26px rgba(94,234,212,0.4)' }}>
+            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, lineHeight: 0.95, color: 'var(--ink)', fontVariantNumeric: 'tabular-nums' }}>
               {change === null ? '—' : fmtSigned(change)}
             </span>
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 15, color: 'var(--text-tertiary)' }}>kg</span>
+            <span style={{ fontSize: 15, color: 'var(--text-tertiary)' }}>kg</span>
           </div>
           {latest !== null && start !== null && (
-            <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
+            <div className="text-secondary" style={{ fontSize: 12, marginTop: 8 }}>
               {start.toFixed(1)} → <b style={{ color: 'var(--text-primary)' }}>{latest.toFixed(1)}</b>
               {target !== null && <> · cél {target} kg</>}
             </div>
           )}
           {pct !== null && (
             <div className="row" style={{ justifyContent: 'center', marginTop: 10 }}>
-              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600, color: 'var(--success)', background: 'color-mix(in srgb, var(--success) 14%, transparent)', padding: '4px 10px', borderRadius: 999 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)', background: 'color-mix(in srgb, var(--success) 14%, transparent)', padding: '4px 10px', borderRadius: 999 }}>
                 ✓ {pct}% a célig
               </span>
             </div>
@@ -51,10 +60,10 @@ export function WeightHero({ log, weightTrends, goal, onLog }: {
           <Stat value={eta === null ? '—' : `${eta}h`} label="ETA" />
         </div>
         <div style={{ textAlign: 'center', marginTop: 10 }}>
-          <span className="label-mono">4-hét tempó {fmtSigned(weightTrends.last4w.weeklyRate)} kg/hét</span>
+          <span style={CAPTION}>4-hét tempó {fmtSigned(weightTrends.last4w.weeklyRate)} kg/hét</span>
         </div>
 
-        <button className="cta-primary notch-8" onClick={onLog} style={{ width: '100%', marginTop: 14, padding: 12, justifyContent: 'center' }}>
+        <button className="np-cta np-press" onClick={onLog} style={{ width: '100%', marginTop: 14 }}>
           <Icon name="plus" size={14} /> Súly naplózása
         </button>
       </div>
@@ -65,8 +74,8 @@ export function WeightHero({ log, weightTrends, goal, onLog }: {
 function Stat({ value, label, color }: { value: string; label: string; color?: string }) {
   return (
     <div className="flex-1 card notch-4" style={{ padding: 11, textAlign: 'center', background: 'var(--surface-2)' }}>
-      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1, color: color ?? 'var(--text-primary)' }}>{value}</div>
-      <div className="label-mono" style={{ marginTop: 4 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1, color: color ?? 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      <div style={{ ...CAPTION, marginTop: 4 }}>{label}</div>
     </div>
   )
 }

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { useGoal, useWeight } from '@/data/hooks'
 import { WeightHero } from '@/features/me/components/WeightHero'
@@ -27,10 +26,10 @@ export function WeightPage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="pghead-np lav">
         <div>
-          <Eyebrow brand>Me · Súly</Eyebrow>
-          <PageTitle className="mt-sm">Napi súly</PageTitle>
+          <div className="over">Me · Súly</div>
+          <h1>Napi súly</h1>
         </div>
       </div>
 
@@ -41,7 +40,16 @@ export function WeightPage() {
           <Eyebrow>Súly · trend</Eyebrow>
           <div className="row gap-xs">
             {PERIODS.map(p => (
-              <button key={p} onClick={() => setPeriod(p)} className={'chip' + (period === p ? ' brand' : '')} style={{ fontSize: 9, padding: '3px 8px' }}>{p}</button>
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className="chip"
+                style={period === p
+                  ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
+                  : { fontSize: 9, padding: '3px 8px' }}
+              >
+                {p}
+              </button>
             ))}
           </div>
         </div>
@@ -51,7 +59,11 @@ export function WeightPage() {
       <div style={{ padding: '0 24px 24px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
           <Eyebrow>Heti előzmény</Eyebrow>
-          {weeks.length > 0 && <span className="label-mono">{Math.min(visibleWeeks, weeks.length)} / {weeks.length} hét</span>}
+          {weeks.length > 0 && (
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)' }}>
+              {Math.min(visibleWeeks, weeks.length)} / {weeks.length} hét
+            </span>
+          )}
         </div>
         {weeks.slice(0, visibleWeeks).map(week => (
           <WeeklyWeightCard
