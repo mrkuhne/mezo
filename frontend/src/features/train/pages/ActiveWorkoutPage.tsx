@@ -1,15 +1,18 @@
 // ============================================================
 // Mezo · ActiveWorkoutPage — full-screen active-workout mode
-// (sibling route /train/session, NO sub-nav). Three-phase state machine:
+// (sibling route /train/session, NO sub-nav). Four-phase state machine:
 //   prep    → niggle pre-flag · challenges · warmup · exercise list · CTA
 //   active  → per-set logging (weight/reps/RIR), Múlt hét comparison,
 //             set dots, today's set history, PR toast + feedback debrief
-//   complete→ WorkoutComplete celebration / recap
+//   summary → explicit-finish WorkoutSummary (closing): stats + challenge
+//             outcomes + recap; "Edzés lezárása ✓" is the ONLY finish trigger
+//   complete→ the same WorkoutSummary read-only (post-finish, set lines)
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainSection).
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useChallengeActions, useChallenges, useTrain } from '@/data/hooks'
 import { localDateString } from '@/shared/lib/dates'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
@@ -40,13 +43,13 @@ import { SetStepper } from '@/features/train/components/SetStepper'
 import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
 import { PRToast, type PRState } from '@/features/train/components/PRToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
-import { WorkoutComplete } from '@/features/train/components/WorkoutComplete'
+import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
+import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
 import { ChallengesCarousel } from '@/features/train/components/ChallengesCarousel'
 import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet'
 import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/sheets/ExerciseOverviewSheet'
 
-type Phase = 'prep' | 'active' | 'complete'
-type CompletedSets = Record<string, LastWeekSet[]>
+type Phase = 'prep' | 'active' | 'summary' | 'complete'
 type Side = 'L' | 'B' | 'R'
 
 const WARMUP_ROWS = [
@@ -118,6 +121,7 @@ function ActiveWorkoutSession({
 }: SessionProps) {
   const W = workout
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const { startRest, clearRest } = useLiveActivity()
   // Exiting the session (Bezárás / back / Mentés — all route through here) must not
   // leave a rest ticking in the shell's Dynamic Island after the user has left.
@@ -159,6 +163,8 @@ function ActiveWorkoutSession({
   // recap's "PR" framing (replaces the old 105 kg demo scan). Captured here so it
   // survives after the level-up overlay (showLevelUp's host) is dismissed.
   const [hadPrFromSignal, setHadPrFromSignal] = useState(false)
+  // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA.
+  const [finishPending, setFinishPending] = useState(false)
   const { showLevelUp } = useLevelUp()
   // The just-finished exercise pinned for the debrief modal (and the active card
   // it overlays): once resolved, the view advances to the next exercise, so we keep
@@ -187,10 +193,10 @@ function ActiveWorkoutSession({
   }, [showPR])
 
   // The rest Live-Activity must not survive past this session: clear it once the
-  // recap phase is reached, and on unmount (mid-workout navigation away, e.g. a
-  // deep-link change) as a final safety net.
+  // summary/recap phase is reached, and on unmount (mid-workout navigation away,
+  // e.g. a deep-link change) as a final safety net.
   useEffect(() => {
-    if (phase === 'complete') clearRest()
+    if (phase === 'complete' || phase === 'summary') clearRest()
   }, [phase, clearRest])
   useEffect(() => () => clearRest(), [clearRest])
 
@@ -283,6 +289,27 @@ function ActiveWorkoutSession({
     }
   }
 
+  // Summary rows (used by both the closing 'summary' and read-only 'complete' phases).
+  const summaryExercises: SummaryExercise[] = W.exercises.map((e) => ({
+    id: e.id,
+    name: e.name,
+    plannedSets: effectiveSetCount(session, e.id),
+    sets: session.logged[e.id] ?? [],
+    skipped: session.skipped.includes(e.id),
+  }))
+  // Challenge rows: dismissed/undecided -> skippelted; accepted -> live server outcome when
+  // resolved, else the FE preview over the session's logged sets (pre-finish).
+  const summaryChallenges: SummaryChallenge[] = challenges.map((c) => {
+    const accepted = acceptedMap[c.id]
+    const resolved = c.status === 'hit' || c.status === 'miss' || c.status === 'inconclusive'
+    const state = !accepted && !resolved
+      ? 'skipped' as const
+      : resolved
+        ? (c.status as 'hit' | 'miss' | 'inconclusive')
+        : evaluateChallenge(c, session.logged[c.exerciseId] ?? [])
+    return { id: c.id, typeLabel: c.typeLabel, exercise: c.exercise, target: c.target, state, detail: c.outcome ?? undefined }
+  })
+
   // Mock mode has no todaySession — "Kezdjük el" keeps the Phase-1 local behavior.
   const beginWorkout = () => {
     if (!todaySession) {
@@ -347,19 +374,25 @@ function ActiveWorkoutSession({
     if (workoutId && feedbackEx) saveWorkoutFeedback(workoutId, [{ exerciseId: feedbackEx.id, ...vals }])
   }
 
-  // Finish the workout and present the gamified level-up. Real mode POSTs with the
-  // instance id; mock has no instance (workoutId null) but the mock finish mutation
-  // still returns a seeded LevelUpResult so the prototype shows the overlay. The
-  // overlay (the global LevelUpProvider host) portals OVER the WorkoutComplete recap
-  // and is dismissed on its Tovább CTA, revealing the recap. Switch-off / no-levelUp
-  // (real `levelUp` absent) simply shows the recap with no overlay.
+  // Finish the workout (the ONLY completion trigger — the summary's "Edzés lezárása ✓"
+  // CTA) and present the gamified level-up. Real mode POSTs with the instance id; mock
+  // has no instance (workoutId null → 'mock' sentinel) but the mock finish mutation
+  // still returns a seeded LevelUpResult so the prototype shows the overlay. The overlay
+  // (the global LevelUpProvider host) portals OVER the closed summary and is dismissed on
+  // its Tovább CTA, revealing it. Switch-off / no-levelUp (real `levelUp` absent) simply
+  // flips to the closed summary with no overlay. On success the server re-evaluates the
+  // challenges lazily on the next list read, so we invalidate them (real only).
   const finishAndCelebrate = () => {
+    setFinishPending(true)
     finishWorkout(workoutId ?? 'mock', {
       onSuccess: (r) => {
         if (r?.levelUp) {
           setHadPrFromSignal(r.levelUp.levelUps.includes('max_strength'))
           showLevelUp(r.levelUp)
         }
+        if (!isMock) qc.invalidateQueries({ queryKey: ['challenges', templateSessionId, localToday] })
+        setPhase('complete')
+        setFinishPending(false)
       },
     })
   }
@@ -380,8 +413,9 @@ function ActiveWorkoutSession({
       const nextId = feedbackEx ? nextUnfinishedAfter(session, feedbackEx.id) : nextUnfinishedAfter(session, current.id)
       if (nextId) setViewedId(nextId)
     } else {
-      finishAndCelebrate()
-      setPhase('complete')
+      // Explicit finish (spec 2026-07-15): land on the summary; finishing is now the
+      // user's "Edzés lezárása ✓" tap, not an implicit side effect of the last debrief.
+      setPhase('summary')
     }
   }
 
@@ -399,9 +433,10 @@ function ActiveWorkoutSession({
       (e) => afterSkip.skipped.includes(e.id) || (afterSkip.logged[e.id]?.length ?? 0) >= effectiveSetCount(afterSkip, e.id),
     )
     if (allDone) {
-      finishAndCelebrate()
+      // Skipping the last unresolved exercise ends the workout — land on the summary
+      // (explicit finish); the "Edzés lezárása ✓" CTA there drives finishWorkout.
       setSession(afterSkip)
-      setPhase('complete')
+      setPhase('summary')
     } else {
       // Move the view to the next unfinished exercise; the prefill effect resets
       // the inputs from its target once the view moves.
@@ -577,19 +612,27 @@ function ActiveWorkoutSession({
     )
   }
 
-  // ---------- COMPLETE ----------
-  if (phase === 'complete') {
-    // WorkoutComplete is index-keyed (unchanged) — adapt the exerciseId-keyed
-    // session into its `ex{i}` shape at the boundary.
-    const completedByIdx: CompletedSets = Object.fromEntries(
-      W.exercises.map((e, i) => ['ex' + i, session.logged[e.id] ?? []]),
-    )
-    // Real PR framing now comes from the progression signal (a max_strength
-    // level-up) rather than the old 105 kg session scan; the mid-workout PR
-    // toast (showPR) is unchanged.
-    const hadPR = !!showPR || hadPrFromSignal
+  // ---------- SUMMARY (closing) / COMPLETE (closed) ----------
+  // Both render the WorkoutSummary: 'summary' is the pre-finish closing screen whose
+  // "Edzés lezárása ✓" CTA drives finishWorkout; 'complete' is the same layout read-only
+  // (set lines) after the finish POST resolves. Real PR framing comes from the progression
+  // signal (a max_strength level-up); the mid-workout PR toast (showPR) is unchanged.
+  if (phase === 'summary' || phase === 'complete') {
+    const closing = phase === 'summary'
     return (
-      <WorkoutComplete workout={W} completedSets={completedByIdx} hadPR={hadPR} onExit={onExit} skippedExerciseIds={session.skipped} />
+      <WorkoutSummary
+        title={W.title}
+        eyebrow={closing ? `Edzés vége · ${W.title}` : 'Lezárva · ma'}
+        mode={closing ? 'closing' : 'closed'}
+        exercises={summaryExercises}
+        challenges={summaryChallenges}
+        hadPR={!!showPR || hadPrFromSignal}
+        showSetLines={!closing}
+        onFinish={finishAndCelebrate}
+        finishPending={finishPending}
+        onBack={() => setPhase('active')}
+        onExit={onExit}
+      />
     )
   }
 
@@ -680,6 +723,7 @@ function ActiveWorkoutSession({
             setAddSetPrompt({ exerciseId: current.id })
           }}
           onEditNote={() => setNoteEditOpen(true)}
+          onFinishWorkout={() => setPhase('summary')}
           hasNote={!!effectiveNote}
           onClose={() => setActionSheetOpen(false)}
         />

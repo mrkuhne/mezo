@@ -63,4 +63,22 @@ test('the un-wired action rows (Kihagyás, Szett, Jegyzet) are present but disab
   expect(screen.getByRole('button', { name: /Kihagyás/ })).toBeDisabled()
   expect(screen.getByRole('button', { name: /Szett/ })).toBeDisabled()
   expect(screen.getByRole('button', { name: /Jegyzet/ })).toBeDisabled()
+  expect(screen.getByRole('button', { name: /Edzés befejezése/ })).toBeDisabled()
+})
+
+test('the finish row fires onFinishWorkout and closes the sheet', async () => {
+  const onFinishWorkout = vi.fn()
+  const onClose = vi.fn()
+  const user = userEvent.setup()
+  render(
+    <ExerciseActionSheet
+      exerciseName="Chest Supported Row"
+      remaining={REMAINING}
+      onReorder={vi.fn()}
+      onFinishWorkout={onFinishWorkout}
+      onClose={onClose}
+    />,
+  )
+  await user.click(screen.getByRole('button', { name: /Edzés befejezése/ }))
+  expect(onFinishWorkout).toHaveBeenCalledOnce()
 })

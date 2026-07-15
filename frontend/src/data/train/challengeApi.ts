@@ -24,6 +24,10 @@ export function toChallenge(w: ChallengeWire): Challenge {
     status: w.status as ChallengeStatus,
     outcome: w.outcome ?? undefined,
     outcomeGood: w.outcomeGood ?? undefined,
+    targetWeightKg: w.targetWeightKg ?? null,
+    targetReps: w.targetReps ?? null,
+    targetSets: w.targetSets ?? null,
+    targetRir: w.targetRir ?? null,
     // no tools in live — omitted
   }
 }
