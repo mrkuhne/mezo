@@ -19,7 +19,7 @@ export function WeightTrendChart({ log, goalResponse, period }: {
   if (!win || data.length < 2) {
     return (
       <div className="card notch-12" style={{ padding: 24, textAlign: 'center' }}>
-        <span className="label-mono" style={{ color: 'var(--text-tertiary)' }}>Kevés mérés ehhez az ablakhoz</span>
+        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>Kevés mérés ehhez az ablakhoz</span>
       </div>
     )
   }
@@ -58,38 +58,38 @@ export function WeightTrendChart({ log, goalResponse, period }: {
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
         <defs>
           <linearGradient id="wtc-area" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--brand-glow)" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="var(--brand-glow)" stopOpacity="0" />
+            <stop offset="0%" stopColor="var(--lav)" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="var(--lav)" stopOpacity="0" />
           </linearGradient>
         </defs>
 
         {yTicks.map((t, i) => (
           <g key={i}>
             <line x1={PX0} x2={PX1} y1={t.y} y2={t.y} stroke="var(--border-subtle)" strokeDasharray="3 4" />
-            <text x={PX0 - 4} y={t.y + 3} fontFamily="var(--ff-mono)" fontSize="9" fill="var(--text-tertiary)" textAnchor="end">{t.label}</text>
+            <text x={PX0 - 4} y={t.y + 3} fontSize="9" fill="var(--text-tertiary)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{t.label}</text>
           </g>
         ))}
 
-        {plan && <path d={bandPath} fill="color-mix(in srgb, var(--warning) 14%, transparent)" />}
-        {plan && <path d={planPath} fill="none" stroke="var(--warning)" strokeWidth="1.6" strokeDasharray="5 4" />}
+        {plan && <path d={bandPath} fill="color-mix(in srgb, var(--sage-deep) 14%, transparent)" />}
+        {plan && <path d={planPath} fill="none" stroke="var(--sage-deep)" strokeWidth="1.6" strokeDasharray="5 4" />}
 
         <path d={areaPath} fill="url(#wtc-area)" />
-        <path d={path(pts)} fill="none" stroke="var(--brand-glow)" strokeWidth="1" opacity="0.4" strokeLinejoin="round" />
-        <path d={path(maPts)} fill="none" stroke="var(--brand-glow)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 5px var(--brand-glow))' }} />
+        <path d={path(pts)} fill="none" stroke="var(--lav-deep)" strokeWidth="1" opacity="0.4" strokeLinejoin="round" />
+        <path d={path(maPts)} fill="none" stroke="var(--lav-deep)" strokeWidth="2.4" strokeLinejoin="round" strokeLinecap="round" />
 
-        <circle cx={last.x} cy={last.y} r="4.5" fill="var(--brand-glow)" stroke="var(--canvas)" strokeWidth="2" />
-        <text x={last.x - 8} y={last.y - 8} fontFamily="var(--ff-mono)" fontSize="11" fontWeight="600" fill="var(--brand-glow)" textAnchor="end">{lastVal.toFixed(1)}</text>
+        <circle cx={last.x} cy={last.y} r="4.5" fill="var(--lav-deep)" stroke="var(--canvas)" strokeWidth="2" />
+        <text x={last.x - 8} y={last.y - 8} fontSize="11" fontWeight="700" fill="var(--lav-deep)" textAnchor="end" style={{ fontVariantNumeric: 'tabular-nums' }}>{lastVal.toFixed(1)}</text>
 
         {xLabels.map((l, i) => (
-          <text key={i} x={l.x} y={H - 8} fontFamily="var(--ff-mono)" fontSize="9" fill="var(--text-tertiary)"
+          <text key={i} x={l.x} y={H - 8} fontSize="9" fill="var(--text-tertiary)"
             textAnchor={i === 0 ? 'start' : i === xLabels.length - 1 ? 'end' : 'middle'}>{huMonthDay(l.iso)}</text>
         ))}
       </svg>
 
-      <div className="row gap-md" style={{ marginTop: 6, flexWrap: 'wrap', fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-secondary)' }}>
-        <span className="row" style={{ gap: 5 }}><i style={{ width: 14, borderTop: '2px solid var(--brand-glow)' }} /> tényleges</span>
-        {plan && <span className="row" style={{ gap: 5 }}><i style={{ width: 14, borderTop: '2px dashed var(--warning)' }} /> terv</span>}
-        {plan && <span className="row" style={{ gap: 5 }}><i style={{ width: 14, height: 10, background: 'color-mix(in srgb, var(--warning) 18%, transparent)', borderRadius: 2 }} /> tűréssáv</span>}
+      <div className="row gap-md" style={{ marginTop: 6, flexWrap: 'wrap', fontSize: 10, color: 'var(--text-secondary)' }}>
+        <span className="row" style={{ gap: 5 }}><i style={{ width: 14, borderTop: '2px solid var(--lav-deep)' }} /> tényleges</span>
+        {plan && <span className="row" style={{ gap: 5 }}><i style={{ width: 14, borderTop: '2px dashed var(--sage-deep)' }} /> terv</span>}
+        {plan && <span className="row" style={{ gap: 5 }}><i style={{ width: 14, height: 10, background: 'color-mix(in srgb, var(--sage-deep) 18%, transparent)', borderRadius: 2 }} /> tűréssáv</span>}
       </div>
     </div>
   )

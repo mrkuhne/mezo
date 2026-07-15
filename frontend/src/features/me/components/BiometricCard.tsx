@@ -11,35 +11,18 @@ function resolveActivity(level: ActivityLevel | null | undefined): { label: stri
   return { label: ACTIVITY_SHORT[lvl], pal: PAL_BY_ID[lvl] }
 }
 
-// Biometria card on the Profile (G6, mezo-06n). The biometric profile is a
-// first-class Profile card: once set, the engine always computes the base-TDEE
-// from it. Renders the validated `profile-biometria-v2` mockup — a notch-12 card
-// with the brand accent bar, the sex/height/age/bodyFat/activity stat grid, and
-// the derived base-TDEE line (from `profile.tdeeBootstrap`, omitted when null).
-// When no profile exists yet (the gate's "not set up" state) it shows an empty
-// prompt. `onEdit` opens the BiometricSheet either way.
+// Biometria card on the Profile (G6, mezo-06n). Re-skinned to the Napiv .biocard
+// idiom (spec §4.6, mezo-8141 Task 4): a header row (h3 + szerkesztés link) over
+// a Nem/Magasság/Kor/Testzsír/Aktivitás stat grid, and the derived base-TDEE
+// row (from `profile.tdeeBootstrap`, omitted when null). When no profile exists
+// yet (the gate's "not set up" state) it shows a --wash-lav prompt card instead.
+// `onEdit` opens the BiometricSheet either way.
 
-const STAT_KEY: React.CSSProperties = {
-  fontFamily: 'var(--ff-mono)',
-  fontSize: 8,
-  fontWeight: 600,
-  letterSpacing: '0.12em',
-  textTransform: 'uppercase',
-  color: 'var(--text-tertiary)',
-}
-const STAT_VAL: React.CSSProperties = {
-  fontFamily: 'var(--ff-display)',
-  fontSize: 19,
-  color: 'var(--text-primary)',
-  marginTop: 3,
-}
-const STAT_UNIT: React.CSSProperties = { fontFamily: 'var(--ff-body)', fontSize: 11, color: 'var(--text-secondary)' }
-
-function Stat({ k, children }: { k: string; children: React.ReactNode }) {
+function Stat({ k, children, style }: { k: string; children: React.ReactNode; style?: React.CSSProperties }) {
   return (
-    <div>
-      <div style={STAT_KEY}>{k}</div>
-      <div style={STAT_VAL}>{children}</div>
+    <div className="bio" style={style}>
+      <div className="k">{k}</div>
+      <div className="v">{children}</div>
     </div>
   )
 }
@@ -64,14 +47,13 @@ export function BiometricCard({
           overflow: 'hidden',
           width: '100%',
           textAlign: 'left',
-          background: 'rgba(94, 234, 212, 0.04)',
-          borderColor: 'var(--border-brand)',
+          background: 'var(--wash-lav)',
         }}
       >
         <div className="row gap-md" style={{ alignItems: 'center' }}>
-          <Icon name="sparkle" size={16} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={16} color="var(--lav-deep)" />
           <div className="col flex-1">
-            <span className="eyebrow brand">Biometria · TDEE</span>
+            <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Biometria · TDEE</span>
             <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, marginTop: 4, color: 'var(--text-primary)' }}>
               Állítsd be a biometriád
             </div>
@@ -90,70 +72,42 @@ export function BiometricCard({
   const tdee = profile.tdeeBootstrap
 
   return (
-    <div className="card notch-12" style={{ padding: '14px 15px 13px', position: 'relative', overflow: 'hidden' }}>
-      <span
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          background: 'linear-gradient(var(--brand-core), var(--brand-glow))',
-        }}
-      />
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
-        <span className="eyebrow brand">Biometria</span>
-        <button
-          type="button"
-          className="chip"
-          onClick={onEdit}
-          style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em' }}
-        >
-          Szerkesztés ›
+    <div className="card notch-12 biocard" style={{ padding: '14px 15px 13px' }}>
+      <div className="bhd">
+        <h3>Biometria</h3>
+        <button type="button" onClick={onEdit}>
+          szerkesztés ›
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '13px 16px' }}>
+      <div className="biogrid">
         <Stat k="Nem">{sexLabel}</Stat>
         <Stat k="Magasság">
-          {profile.heightCm} <small style={STAT_UNIT}>cm</small>
+          {profile.heightCm} <small>cm</small>
         </Stat>
         <Stat k="Kor">
-          {ageFromBirthDate(profile.birthDate)} <small style={STAT_UNIT}>év</small>
+          {ageFromBirthDate(profile.birthDate)} <small>év</small>
         </Stat>
         <Stat k="Testzsír">
           {profile.bodyFatPct != null ? (
             <>
-              {profile.bodyFatPct} <small style={STAT_UNIT}>%</small>
+              {profile.bodyFatPct} <small>%</small>
             </>
           ) : (
-            <small style={STAT_UNIT}>—</small>
+            <small>—</small>
           )}
         </Stat>
-        <div>
-          <div style={STAT_KEY}>Aktivitás</div>
-          <div style={{ ...STAT_VAL, fontSize: 15 }}>
-            {activity.label} <small style={STAT_UNIT}>{palLabel(activity.pal)}</small>
-          </div>
-        </div>
+        <Stat k="Aktivitás" style={{ gridColumn: '1/3' }}>
+          {activity.label} <small>{palLabel(activity.pal)}</small>
+        </Stat>
       </div>
 
       {tdee && (
-        <div
-          className="row"
-          style={{
-            marginTop: 13,
-            paddingTop: 12,
-            borderTop: '1px solid var(--border-subtle)',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-          }}
-        >
-          <span className="label-mono">Alap-TDEE · formula ({tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'})</span>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 20, color: 'var(--brand-glow)' }}>
-            ≈{Math.round(tdee.tdee)}{' '}
-            <small style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>kcal/nap</small>
+        <div className="tdee">
+          <span className="k">
+            Alap-TDEE · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'}
           </span>
+          <span className="v">≈{Math.round(tdee.tdee)} kcal/nap</span>
         </div>
       )}
     </div>

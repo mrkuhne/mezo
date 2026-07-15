@@ -4,12 +4,19 @@
 // Opened by the Profil gear chip (parent owns open/close state).
 // ============================================================
 import { Sheet } from '@/shared/ui/Sheet'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { LabelMono } from '@/shared/ui/LabelMono'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { Toggle } from '@/shared/ui/Toggle'
 import { useTheme } from '@/app/ThemeProvider'
+
+// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '.1em',
+  textTransform: 'uppercase',
+  color: 'var(--faint)',
+}
 
 export function SettingsSheet({ onClose }: { onClose: () => void }) {
   const { theme, toggle } = useTheme()
@@ -20,7 +27,7 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
         <div className="col gap-lg" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="col gap-xs">
-              <Eyebrow brand>Beállítások</Eyebrow>
+              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Beállítások</span>
               {/* Display does not forward an `id`, so wrap to anchor aria-labelledby. */}
               <div id="settings-title">
                 <Display size="md">Megjelenés</Display>
@@ -32,19 +39,19 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="col gap-sm">
-            <LabelMono>Téma</LabelMono>
+            <span style={SECTION_LABEL}>Téma</span>
             <div className="card notch-4 row" style={{ justifyContent: 'space-between', padding: 14, gap: 12 }}>
               <div className="row gap-md">
                 <span style={{
                   width: 36, height: 36, borderRadius: '50%',
                   display: 'grid', placeItems: 'center',
-                  background: light ? 'rgba(245,158,11,0.12)' : 'rgba(94,234,212,0.12)',
+                  background: light ? 'var(--wash-amber)' : 'var(--wash-lav)',
                 }}>
-                  <Icon name={light ? 'sun' : 'moon'} size={16} color={light ? 'var(--warning)' : 'var(--brand-glow)'} />
+                  <Icon name={light ? 'sun' : 'moon'} size={16} color={light ? 'var(--warning)' : 'var(--lav-deep)'} />
                 </span>
                 <div className="col">
                   <span>{light ? 'Light mód' : 'Dark mód'}</span>
-                  <span className="label-mono">{light ? 'Világos felület · nappali nézet' : 'Sötét felület · alapértelmezett'}</span>
+                  <span style={SECTION_LABEL}>{light ? 'Világos felület · nappali nézet' : 'Sötét felület · opcionális'}</span>
                 </div>
               </div>
               <Toggle on={light} onToggle={toggle} ariaLabel="Téma váltás" />

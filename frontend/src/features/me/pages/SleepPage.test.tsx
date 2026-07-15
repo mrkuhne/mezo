@@ -12,7 +12,7 @@ afterEach(() => vi.unstubAllEnvs())
 
 test('renders the last-night hero', () => {
   render(<SleepPage />, { wrapper: QueryWrapper })
-  expect(screen.getByRole('heading', { level: 1, name: /Sleep/ })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Alvás' })).toBeInTheDocument()
   expect(screen.getByText('Tegnap éjjel')).toBeInTheDocument()
   // hero duration (48px) renders "7.4" — also appears in the log, so assert it is present at least once
   expect(screen.getAllByText('7.4').length).toBeGreaterThan(0)

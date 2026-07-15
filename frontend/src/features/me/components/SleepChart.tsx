@@ -41,8 +41,8 @@ export function SleepChart({
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }}>
         <defs>
           <linearGradient id="sleep-bar" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--cat-preference)" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="var(--cat-preference)" stopOpacity="0.25" />
+            <stop offset="0%" stopColor="var(--lav)" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="var(--lav)" stopOpacity="0.25" />
           </linearGradient>
         </defs>
 
@@ -69,9 +69,8 @@ export function SleepChart({
         <path
           d={qualPath}
           fill="none"
-          stroke="var(--brand-glow)"
+          stroke="var(--lav-deep)"
           strokeWidth="1.8"
-          style={{ filter: 'drop-shadow(0 0 3px var(--brand-glow))' }}
         />
 
         {/* Quality dots */}
@@ -81,7 +80,7 @@ export function SleepChart({
             cx={xFor(i)}
             cy={yForQual(d.quality)}
             r="2.5"
-            fill="var(--brand-glow)"
+            fill="var(--lav-deep)"
             stroke="var(--canvas)"
             strokeWidth="1.2"
           />
@@ -89,12 +88,12 @@ export function SleepChart({
       </svg>
       <div className="row mt-sm gap-md" style={{ justifyContent: 'center' }}>
         <div className="row gap-xs">
-          <div style={{ width: 10, height: 4, background: 'var(--cat-preference)' }} />
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)' }}>időtartam</span>
+          <div style={{ width: 10, height: 4, background: 'var(--lav)' }} />
+          <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>időtartam</span>
         </div>
         <div className="row gap-xs">
-          <div style={{ width: 10, height: 2, background: 'var(--brand-glow)' }} />
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)' }}>minőség 1-10</span>
+          <div style={{ width: 10, height: 2, background: 'var(--lav-deep)' }} />
+          <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>minőség 1-10</span>
         </div>
       </div>
     </div>

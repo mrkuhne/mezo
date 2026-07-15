@@ -68,6 +68,7 @@ afterEach(() => vi.clearAllMocks())
 test('renders the Growth header', () => {
   renderPage()
   expect(screen.getByRole('heading', { level: 1, name: 'Growth' })).toBeInTheDocument()
+  expect(screen.getByText('Me · Growth')).toBeInTheDocument()
 })
 
 test('hero trio shows the FE-summed Össz XP, Fegyelem and Ritmus', () => {
@@ -79,7 +80,7 @@ test('hero trio shows the FE-summed Össz XP, Fegyelem and Ritmus', () => {
   expect(screen.getByText('5 hét')).toBeInTheDocument() // traits.consistencyWeeks
 })
 
-test('default Skillek tab lists all three bands, one .progress-mrow per skill', () => {
+test('default Skillek tab lists all three bands, one .skl row per skill', () => {
   const { container } = renderPage()
   expect(screen.getByText('LIFE')).toBeInTheDocument()
   expect(screen.getByText('Atlétikus')).toBeInTheDocument()
@@ -91,7 +92,7 @@ test('default Skillek tab lists all three bands, one .progress-mrow per skill', 
     progressionProfileMock.athletic.length +
     progressionProfileMock.muscle.length
   expect(expected).toBe(33)
-  expect(container.querySelectorAll('.progress-mrow')).toHaveLength(expected)
+  expect(container.querySelectorAll('.skl')).toHaveLength(expected)
 })
 
 test('the "Ma" block mounts the quests card + activity log card at the top of Skillek (Task 7 relocation)', () => {
@@ -111,9 +112,9 @@ test('LIFE band renders the 30-day savings footer', () => {
 
 test('switching to Napló hides the skill bands', async () => {
   const { container } = renderPage()
-  expect(container.querySelectorAll('.progress-mrow').length).toBeGreaterThan(0)
+  expect(container.querySelectorAll('.skl').length).toBeGreaterThan(0)
   await userEvent.click(screen.getByRole('tab', { name: 'Napló' }))
-  expect(container.querySelectorAll('.progress-mrow')).toHaveLength(0)
+  expect(container.querySelectorAll('.skl')).toHaveLength(0)
   expect(screen.queryByText('LIFE')).not.toBeInTheDocument()
 })
 

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { useSleep } from '@/data/hooks'
 import { SleepStat } from '@/features/me/components/SleepStat'
@@ -21,7 +20,7 @@ export function SleepPage() {
   if (!lastNight) {
     return (
       <div style={{ padding: '32px 24px' }}>
-        <span className="text-tertiary" style={{ fontSize: 12, fontFamily: 'var(--ff-mono)' }}>
+        <span className="text-tertiary" style={{ fontSize: 12 }}>
           Még nincs alvásadat.
         </span>
       </div>
@@ -35,12 +34,17 @@ export function SleepPage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
+      <div className="pghead-np lav">
         <div>
-          <Eyebrow brand>Me · Alvás</Eyebrow>
-          <PageTitle className="mt-sm">Sleep</PageTitle>
+          <div className="over">Me · Alvás</div>
+          <h1>Alvás</h1>
         </div>
-        <button className="chip" style={{ padding: '8px 10px' }} onClick={() => setLogOpen(true)}>
+        <button
+          type="button"
+          className="pgact-np np-press"
+          onClick={() => setLogOpen(true)}
+          style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
+        >
           <Icon name="plus" size={12} /> Log
         </button>
       </div>
@@ -51,28 +55,15 @@ export function SleepPage() {
           className="card notch-12"
           style={{
             padding: 20,
-            background: 'linear-gradient(180deg, rgba(167, 139, 250, 0.06) 0%, var(--surface-1) 100%)',
-            borderColor: 'rgba(167, 139, 250, 0.3)',
+            background: 'linear-gradient(180deg, var(--wash-lav) 0%, var(--surface-1) 65%)',
             position: 'relative',
             overflow: 'hidden',
           }}
         >
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--cat-preference)' }} />
-          <div
-            style={{
-              position: 'absolute',
-              right: -50,
-              top: -50,
-              width: 180,
-              height: 180,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(167, 139, 250, 0.14), transparent 70%)',
-            }}
-          />
           <div style={{ position: 'relative' }}>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div className="col">
-                <span className="eyebrow" style={{ color: 'var(--cat-preference)' }}>Tegnap éjjel</span>
+                <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Tegnap éjjel</span>
                 <div
                   style={{
                     fontFamily: 'var(--ff-display)',
@@ -80,22 +71,22 @@ export function SleepPage() {
                     fontWeight: 600,
                     lineHeight: 1,
                     marginTop: 8,
-                    color: 'var(--cat-preference)',
-                    textShadow: '0 0 20px rgba(167, 139, 250, 0.35)',
+                    color: 'var(--ink)',
+                    fontVariantNumeric: 'tabular-nums',
                   }}
                 >
                   {lastNight.duration.toFixed(1)}
-                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 14, color: 'var(--text-tertiary)', marginLeft: 4 }}>h</span>
+                  <span style={{ fontSize: 14, color: 'var(--text-tertiary)', marginLeft: 4 }}>h</span>
                 </div>
                 <span
                   className="text-secondary"
-                  style={{ fontSize: 11, marginTop: 6, fontFamily: 'var(--ff-mono)', display: 'block' }}
+                  style={{ fontSize: 11, marginTop: 6, fontWeight: 700, display: 'block' }}
                 >
                   {lastNight.bedtime} → {lastNight.wakeup}
                 </span>
               </div>
               <div className="col" style={{ alignItems: 'flex-end' }}>
-                <span className="label-mono" style={{ fontSize: 8 }}>Quality</span>
+                <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Quality</span>
                 <div
                   style={{
                     fontFamily: 'var(--ff-display)',
@@ -103,11 +94,12 @@ export function SleepPage() {
                     fontWeight: 600,
                     lineHeight: 1,
                     marginTop: 4,
-                    color: goodQuality ? 'var(--brand-glow)' : 'var(--warning)',
+                    color: goodQuality ? 'var(--sage-deep)' : 'var(--warning)',
+                    fontVariantNumeric: 'tabular-nums',
                   }}
                 >
                   {lastNight.quality}
-                  <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 2 }}>/10</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 2 }}>/10</span>
                 </div>
               </div>
             </div>
@@ -141,8 +133,10 @@ export function SleepPage() {
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={'chip' + (period === p ? ' brand' : '')}
-                style={{ fontSize: 9, padding: '3px 8px' }}
+                className="chip"
+                style={period === p
+                  ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
+                  : { fontSize: 9, padding: '3px 8px' }}
               >
                 {p}
               </button>

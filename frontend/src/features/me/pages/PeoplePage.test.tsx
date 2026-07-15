@@ -12,6 +12,7 @@ const renderPage = () => render(<PeoplePage />, { wrapper: QueryWrapper })
 test('renders the Kapcsolatok header', () => {
   renderPage()
   expect(screen.getByRole('heading', { level: 1, name: /Kapcsolatok/ })).toBeInTheDocument()
+  expect(screen.getByText('Me · Emberek')).toBeInTheDocument()
 })
 
 test('renders all five people in the active circle', () => {

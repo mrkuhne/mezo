@@ -11,7 +11,8 @@ const renderPage = () => render(<KnowledgePage />, { wrapper: QueryWrapper })
 
 test('renders the summary band with derived counts', () => {
   renderPage()
-  expect(screen.getByRole('heading', { level: 1, name: /Knowledge graph/ })).toBeInTheDocument()
+  expect(screen.getByRole('heading', { level: 1, name: 'Tudásgráf' })).toBeInTheDocument()
+  expect(screen.getByText('Me · Tudás')).toBeInTheDocument()
   expect(screen.getByText('15 tudás · 13 kapcsolat')).toBeInTheDocument()
 })
 

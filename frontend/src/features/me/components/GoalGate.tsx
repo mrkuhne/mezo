@@ -52,10 +52,10 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
         >
           <Icon name="x" size={12} />
         </button>
-        <span className="eyebrow brand">Új cél</span>
+        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Új cél</span>
       </div>
 
-      {/* Centered gate card (notch / brand-glow idiom). */}
+      {/* Centered gate card (notch / lav wash idiom). */}
       <div
         className="col"
         style={{
@@ -74,11 +74,11 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
             display: 'grid',
             placeItems: 'center',
             marginBottom: 18,
-            border: '1.5px solid var(--border-brand)',
-            background: 'color-mix(in srgb, var(--brand-glow) 7%, transparent)',
+            border: '1.5px solid var(--line)',
+            background: 'var(--wash-lav)',
           }}
         >
-          <Icon name="heart" size={28} color="var(--brand-glow)" />
+          <Icon name="heart" size={28} color="var(--lav-deep)" />
         </div>
 
         <div
@@ -106,8 +106,8 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
                 key={k}
                 className="chip notch-4"
                 style={{
-                  fontFamily: 'var(--ff-mono)',
                   fontSize: 9,
+                  fontWeight: 800,
                   letterSpacing: '0.06em',
                   padding: '4px 9px',
                   color: 'var(--warning)',
@@ -130,7 +130,7 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
         </button>
         <span
           className="text-tertiary"
-          style={{ marginTop: 11, fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.06em' }}
+          style={{ marginTop: 11, fontWeight: 700, fontSize: 10, letterSpacing: '0.06em' }}
         >
           egyszeri beállítás · ~20 mp
         </span>

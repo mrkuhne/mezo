@@ -73,7 +73,7 @@ export function PersonDetailSheet({
                   <div style={{ paddingLeft: 8 }}>
                     <div className="row gap-xs" style={{ alignItems: 'center' }}>
                       <Icon name={m.source === 'voice' ? 'mic' : m.source === 'chip' ? 'check' : 'send'} size={10} color="var(--text-tertiary)" />
-                      <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{m.dayLabel} · {m.timeLabel}</span>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)' }}>{m.dayLabel} · {m.timeLabel}</span>
                     </div>
                     <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, marginTop: 4, fontStyle: 'italic' }}>"{m.excerpt}"</p>
                   </div>

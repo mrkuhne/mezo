@@ -1,4 +1,4 @@
-import { Navigate, useOutletContext, type RouteObject } from 'react-router-dom'
+import { Navigate, type RouteObject } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import { TrainSection } from '@/features/train/pages/TrainSection'
@@ -31,7 +31,7 @@ import { KnowledgeListPage } from '@/features/insights/pages/KnowledgeListPage'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
 import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
-import { MeSection, type MeOutletContext } from '@/features/me/pages/MeSection'
+import { MeSection } from '@/features/me/pages/MeSection'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
 import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
@@ -40,11 +40,6 @@ import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
-
-function ProfileRoute() {
-  const { openSettings } = useOutletContext<MeOutletContext>()
-  return <ProfilePage onOpenSettings={openSettings} />
-}
 
 export const routes: RouteObject[] = [
   {
@@ -106,7 +101,7 @@ export const routes: RouteObject[] = [
         path: 'me',
         element: <MeSection />,
         children: [
-          { index: true, element: <ProfileRoute /> },
+          { index: true, element: <ProfilePage /> },
           { path: 'growth', element: <GrowthPage /> },
           { path: 'goals', element: <GoalsPage /> },
           { path: 'weight', element: <WeightPage /> },

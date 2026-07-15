@@ -21,10 +21,10 @@ test('omits the base-TDEE line when tdeeBootstrap is null', () => {
   expect(screen.queryByText(/Alap-TDEE/)).not.toBeInTheDocument()
 })
 
-test('Szerkesztés opens the sheet (calls onEdit)', async () => {
+test('szerkesztés › opens the sheet (calls onEdit)', async () => {
   const onEdit = vi.fn()
   render(<BiometricCard profile={mockProfile} onEdit={onEdit} />)
-  await userEvent.click(screen.getByRole('button', { name: /Szerkesztés/ }))
+  await userEvent.click(screen.getByRole('button', { name: /szerkesztés/i }))
   expect(onEdit).toHaveBeenCalledTimes(1)
 })
 
@@ -34,4 +34,11 @@ test('empty state prompts to set up biometrics and opens the sheet', async () =>
   expect(screen.getByText(/Állítsd be a biometriád/)).toBeInTheDocument()
   await userEvent.click(screen.getByText(/Állítsd be a biometriád/))
   expect(onEdit).toHaveBeenCalledTimes(1)
+})
+
+test('renders the Napiv .biocard grid + tdee row', () => {
+  const { container } = render(<BiometricCard profile={mockProfile} onEdit={() => {}} />)
+  expect(container.querySelector('.biocard')).toBeInTheDocument()
+  expect(container.querySelector('.biogrid')).toBeInTheDocument()
+  expect(container.querySelector('.tdee')).toBeInTheDocument()
 })

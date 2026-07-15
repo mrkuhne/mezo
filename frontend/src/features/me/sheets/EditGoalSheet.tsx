@@ -1,13 +1,20 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
-import { LabelMono } from '@/shared/ui/LabelMono'
 import { Icon } from '@/shared/ui/Icon'
 import { useGoalActions } from '@/data/hooks'
 import { FieldRow } from '@/features/me/components/FieldRow'
 import type { GoalResponse } from '@/data/me/goalApi'
 import type { Goal } from '@/data/types'
+
+// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '.1em',
+  textTransform: 'uppercase',
+  color: 'var(--faint)',
+}
 
 // Goal manage sheet (G4b). Opened from the GoalsPage hero. Shows the read-only
 // goal fields, an editable "Napi ritmus" day-planner section (Fuel P5), plus the
@@ -39,7 +46,7 @@ export function EditGoalSheet({
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <Eyebrow brand>Cél kezelése</Eyebrow>
+              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Cél kezelése</span>
               <div id="edit-goal-title"><Display size="md">{goal.title}</Display></div>
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close}><Icon name="x" size={12} /></button>
@@ -57,7 +64,7 @@ export function EditGoalSheet({
             />
 
             <div className="col gap-sm mt-md">
-              <LabelMono>Identity frame</LabelMono>
+              <span style={SECTION_LABEL}>Identity frame</span>
               <div className="card notch-4" style={{ padding: 12 }}>
                 <p style={{ fontSize: 12, color: 'var(--text-primary)', fontStyle: 'italic', lineHeight: 1.5 }}>
                   "{goal.identityFrame}"
@@ -70,14 +77,14 @@ export function EditGoalSheet({
               stepper (3–6) + wake/bed time anchors. Save PUTs the full goal with
               these overrides (window/weights preserved) via useGoalActions. */}
           <div className="col gap-sm mt-lg">
-            <LabelMono>Napi ritmus</LabelMono>
+            <span style={SECTION_LABEL}>Napi ritmus</span>
 
             {/* Étkezés/nap stepper — clamped 3..6 */}
             <div
               className="row"
               style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}
             >
-              <span className="label-mono" style={{ fontSize: 9 }}>Étkezés/nap</span>
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Étkezés/nap</span>
               <div className="row gap-sm" style={{ alignItems: 'center' }}>
                 <button
                   type="button"
@@ -91,7 +98,7 @@ export function EditGoalSheet({
                 </button>
                 <span
                   aria-label={`Étkezés/nap ${mealsPerDay}`}
-                  style={{ minWidth: 18, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 14, color: 'var(--text-primary)' }}
+                  style={{ minWidth: 18, textAlign: 'center', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
                 >
                   {mealsPerDay}
                 </span>
@@ -113,26 +120,26 @@ export function EditGoalSheet({
               className="row"
               style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}
             >
-              <span className="label-mono" style={{ fontSize: 9 }}>Ébredés</span>
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Ébredés</span>
               <input
                 type="time"
                 aria-label="Ébredés"
                 value={wakeTime}
                 onChange={(e) => setWakeTime(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontFamily: 'var(--ff-mono)', fontSize: 13, colorScheme: 'dark' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums', colorScheme: 'dark' }}
               />
             </div>
             <div
               className="row"
               style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}
             >
-              <span className="label-mono" style={{ fontSize: 9 }}>Lefekvés</span>
+              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Lefekvés</span>
               <input
                 type="time"
                 aria-label="Lefekvés"
                 value={bedTime}
                 onChange={(e) => setBedTime(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontFamily: 'var(--ff-mono)', fontSize: 13, colorScheme: 'dark' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums', colorScheme: 'dark' }}
               />
             </div>
 
@@ -149,7 +156,7 @@ export function EditGoalSheet({
 
           {/* Management actions — archive + delete (destructive = var(--error)) */}
           <div className="col gap-sm mt-lg">
-            <LabelMono>Cél kezelése</LabelMono>
+            <span style={SECTION_LABEL}>Cél kezelése</span>
             <button
               type="button"
               className="cta-ghost notch-4"
