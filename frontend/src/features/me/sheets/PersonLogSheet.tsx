@@ -11,6 +11,15 @@ const TONES: [Affect, string][] = [
   ['negative', 'Nehéz'],
 ]
 
+// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '.1em',
+  textTransform: 'uppercase',
+  color: 'var(--faint)',
+}
+
 export function PersonLogSheet({
   onClose,
   onSave,
@@ -38,15 +47,15 @@ export function PersonLogSheet({
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>People · gyors log</span>
+              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>People · gyors log</span>
               <div id="person-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Mit jegyzünk meg?</div>
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
           <div className="card notch-12" style={{ padding: 18, marginBottom: 14, textAlign: 'center',
-            background: 'linear-gradient(180deg, rgba(244, 114, 182, 0.07) 0%, var(--surface-1) 100%)', borderColor: 'rgba(244, 114, 182, 0.3)' }}>
-            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--cat-tendency)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', boxShadow: '0 0 24px rgba(244, 114, 182, 0.4)' }}>
+            background: 'linear-gradient(180deg, var(--wash-lav) 0%, var(--surface-1) 100%)' }}>
+            <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--lav-deep)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
               <Icon name="mic" size={26} color="var(--text-inverse)" />
             </div>
             <div style={{ fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 600, marginTop: 12 }}>Tartsd nyomva · mondd el</div>
@@ -56,16 +65,17 @@ export function PersonLogSheet({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '14px 0' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>vagy gyors chip</span>
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>vagy gyors chip</span>
             <div style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
           </div>
           <div className="col gap-sm">
-            <span className="label-mono">Ki?</span>
+            <span style={SECTION_LABEL}>Ki?</span>
             <div className="row gap-xs flex-wrap">
               {people.map(p => (
                 <button key={p.id} onClick={() => setChosen(p.id)}
-                  className={'chip' + (chosen === p.id ? ' brand' : '')}
+                  className="chip"
                   style={{ padding: '6px 10px', fontSize: 11,
+                    background: chosen === p.id ? `color-mix(in srgb, ${affectColor(p.affect_baseline)} 14%, transparent)` : 'var(--surface-2)',
                     borderColor: chosen === p.id ? affectColor(p.affect_baseline) : 'var(--border-subtle)',
                     color: chosen === p.id ? affectColor(p.affect_baseline) : 'var(--text-secondary)' }}>
                   {p.initial} · {p.name}
@@ -74,19 +84,20 @@ export function PersonLogSheet({
             </div>
           </div>
           <div className="col gap-sm mt-md">
-            <span className="label-mono">Hogy érzed</span>
+            <span style={SECTION_LABEL}>Hogy érzed</span>
             <div className="row gap-xs">
               {TONES.map(([k, l]) => (
                 <button key={k} onClick={() => setTone(k)}
-                  className={'chip flex-1' + (tone === k ? ' brand' : '')}
+                  className="chip flex-1"
                   style={{ padding: '8px 10px', fontSize: 11, justifyContent: 'center',
+                    background: tone === k ? `color-mix(in srgb, ${affectColor(k)} 14%, transparent)` : 'var(--surface-2)',
                     borderColor: tone === k ? affectColor(k) : 'var(--border-subtle)',
                     color: tone === k ? affectColor(k) : 'var(--text-secondary)' }}>{l}</button>
               ))}
             </div>
           </div>
           <div className="col gap-sm mt-md">
-            <span className="label-mono">Egy mondat · opcionális</span>
+            <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
             <div className="card notch-4" style={{ padding: 10 }}>
               <textarea value={text} onChange={e => setText(e.target.value.slice(0, 240))}
                 placeholder='pl. "Petrával hosszú vacsi, csendben"'

@@ -13,14 +13,9 @@ const SUBNAV: Array<{ to: string; label: string; end?: boolean }> = [
 
 export function MeSubNav() {
   return (
-    <nav className="subnav" aria-label="Me alnavigáció">
+    <nav className="np-pills" aria-label="Me alnavigáció" style={{ '--pill-accent': 'var(--lav)' } as React.CSSProperties}>
       {SUBNAV.map(({ to, label, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={({ isActive }) => cn('subnav-item', isActive && 'active')}
-        >
+        <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('np-pill np-press', isActive && 'on')}>
           {label}
         </NavLink>
       ))}

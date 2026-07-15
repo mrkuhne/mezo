@@ -11,7 +11,9 @@ export function GoalStat({
 }) {
   return (
     <div className="col flex-1">
-      <span className="label-mono" style={{ fontSize: 8 }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
+        {label}
+      </span>
       <span
         style={{
           fontFamily: 'var(--ff-display)',
@@ -19,13 +21,14 @@ export function GoalStat({
           fontWeight: 600,
           lineHeight: 1,
           marginTop: 4,
-          color: highlight ? 'var(--brand-glow)' : 'var(--text-primary)',
+          color: highlight ? 'var(--sage-deep)' : 'var(--text-primary)',
           whiteSpace: 'nowrap',
+          fontVariantNumeric: 'tabular-nums',
         }}
       >
         {val}
         {unit && (
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 2 }}>
+          <span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 2 }}>
             {unit}
           </span>
         )}

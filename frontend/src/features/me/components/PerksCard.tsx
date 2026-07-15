@@ -4,9 +4,8 @@ import type { PerkUnlock } from '@/data/types'
 export function PerksCard({ perks }: { perks: PerkUnlock[] }) {
   return (
     <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(var(--brand-core), var(--brand-primary))' }} />
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="eyebrow brand">Perkek — mérföldkövek</span>
+        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Perkek — mérföldkövek</span>
         <span className="chip notch-4">{perks.length} feloldva</span>
       </div>
       {perks.length === 0 && (
@@ -20,7 +19,7 @@ export function PerksCard({ perks }: { perks: PerkUnlock[] }) {
             {p.name}
             <span className="text-tertiary" style={{ display: 'block', fontSize: 10, marginTop: 1 }}>{p.effectCopy}</span>
           </span>
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
             {p.skillKey} · LV{p.milestoneLevel}
           </span>
         </div>

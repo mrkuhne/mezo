@@ -1,5 +1,4 @@
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { useKnowledge } from '@/data/hooks'
 import { FACT_CATEGORIES, factCategoryColor } from '@/data/insights/knowledge'
 import { CategoryHeader } from '@/features/me/components/CategoryHeader'
@@ -11,10 +10,10 @@ export function KnowledgePage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
+      <div className="pghead-np lav">
         <div>
-          <Eyebrow brand>Me · Tudás</Eyebrow>
-          <PageTitle className="mt-sm">Knowledge graph</PageTitle>
+          <div className="over">Me · Tudás</div>
+          <h1>Tudásgráf</h1>
         </div>
       </div>
 
@@ -26,13 +25,12 @@ export function KnowledgePage() {
             padding: 16,
             position: 'relative',
             overflow: 'hidden',
-            background: 'linear-gradient(135deg, var(--surface-1) 0%, rgba(94, 234, 212, 0.05) 100%)',
-            borderColor: 'var(--border-brand)',
+            background: 'linear-gradient(180deg, var(--wash-lav) 0%, var(--surface-1) 65%)',
           }}
         >
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="col">
-              <Eyebrow brand>Élő mindmap · növekvő</Eyebrow>
+              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Élő mindmap · növekvő</span>
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, marginTop: 6, lineHeight: 1.1 }}>
                 {`${facts.length} tudás · ${edges.length} kapcsolat`}
               </div>
@@ -48,7 +46,7 @@ export function KnowledgePage() {
       <div style={{ padding: '0 24px 32px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
           <Eyebrow>Kategóriánként</Eyebrow>
-          <Eyebrow brand>{facts.length}</Eyebrow>
+          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{facts.length}</span>
         </div>
         <div className="col gap-md">
           {FACT_CATEGORIES.map(([cat, label]) => {

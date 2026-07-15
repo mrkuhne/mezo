@@ -23,7 +23,7 @@ interface GoalReceptProps {
 // Verdict → HU label + tone color. feasible = calm/brand, with-warnings = warning,
 // aggressive = error. The banner border/background derive from this one color.
 const VERDICT: Record<Feasibility['verdict'], { label: string; color: string }> = {
-  feasible: { label: 'Reális', color: 'var(--brand-glow)' },
+  feasible: { label: 'Reális', color: 'var(--sage-deep)' },
   'feasible-with-warnings': { label: 'Reális, figyelmeztetésekkel', color: 'var(--warning)' },
   aggressive: { label: 'Agresszív', color: 'var(--error)' },
 }
@@ -37,8 +37,8 @@ function SectionLabel({ tag }: { tag: string }) {
       <span
         className="tag"
         style={{
-          fontFamily: 'var(--ff-mono)',
-          fontSize: 8,
+          fontSize: 10,
+          fontWeight: 700,
           letterSpacing: '.06em',
           padding: '1px 6px',
           border: '1px solid var(--border-subtle)',
@@ -65,7 +65,7 @@ function VerdictBanner({ feasibility }: { feasibility: Feasibility }) {
     >
       <div className="row" style={{ alignItems: 'center', gap: 7 }}>
         <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flex: '0 0 auto' }} />
-        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 700, color }}>{label}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color }}>{label}</span>
       </div>
       {feasibility.notes.length > 0 && (
         <ul style={{ margin: '6px 0 0', padding: '0 0 0 13px', listStyle: 'disc' }}>
@@ -83,11 +83,11 @@ function VerdictBanner({ feasibility }: { feasibility: Feasibility }) {
 function SegmentMetric({ value, unit, label }: { value: string; unit: string; label: string }) {
   return (
     <div className="col" style={{ gap: 1 }}>
-      <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>
+      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
         {value}
         <span style={{ fontSize: 8, color: 'var(--text-tertiary)', marginLeft: 2 }}>{unit}</span>
       </span>
-      <span className="label-mono" style={{ fontSize: 7, color: 'var(--text-tertiary)' }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
     </div>
   )
 }
@@ -96,11 +96,11 @@ function SegmentCard({ segment }: { segment: Segment }) {
   return (
     <div
       className="card notch-4"
-      style={{ padding: '10px 11px', background: 'rgba(94, 234, 212, 0.03)', borderColor: 'var(--border-subtle)' }}
+      style={{ padding: '10px 11px', background: 'var(--wash-sage)', borderColor: 'var(--border-subtle)' }}
     >
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{segment.label}</span>
-        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)' }}>
+        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-tertiary)' }}>
           W{segment.fromWeek}–{segment.toWeek}
         </span>
       </div>
@@ -127,8 +127,8 @@ function GuardPill({ color, children }: { color: string; children: React.ReactNo
         display: 'inline-flex',
         alignItems: 'center',
         gap: 5,
-        fontFamily: 'var(--ff-mono)',
         fontSize: 9,
+        fontWeight: 700,
         padding: '3px 8px',
         borderRadius: 3,
         border: `1px solid color-mix(in srgb, ${color} 35%, transparent)`,
@@ -144,9 +144,9 @@ function GuardPill({ color, children }: { color: string; children: React.ReactNo
 
 function GuardRow({ guardStatus }: { guardStatus: GuardStatus }) {
   const { strength, muscle } = guardStatus
-  const strengthColor = strength.breached ? 'var(--error)' : 'var(--brand-glow)'
+  const strengthColor = strength.breached ? 'var(--error)' : 'var(--sage-deep)'
   const muscleColor =
-    muscle.belowMaintenanceMuscles.length > 0 || !muscle.rateWithinCap ? 'var(--warning)' : 'var(--brand-glow)'
+    muscle.belowMaintenanceMuscles.length > 0 || !muscle.rateWithinCap ? 'var(--warning)' : 'var(--sage-deep)'
   return (
     <div style={{ marginTop: 8 }}>
       <div className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
@@ -188,7 +188,7 @@ export function GoalRecept({ prescription, onEvaluate, evaluating }: GoalReceptP
         <SectionLabel tag="G5 · motor" />
         <div
           className="card notch-4"
-          style={{ padding: '12px 13px', background: 'rgba(94, 234, 212, 0.04)' }}
+          style={{ padding: '12px 13px', background: 'var(--wash-sage)' }}
         >
           <p style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--text-secondary)', margin: '0 0 10px' }}>
             Még nincs recept — futtasd a motort, és a blokkhatárok mentén szakaszokra bontja a kalóriát, fehérjét és alvást.
@@ -198,7 +198,7 @@ export function GoalRecept({ prescription, onEvaluate, evaluating }: GoalReceptP
             className="chip"
             onClick={onEvaluate}
             disabled={evaluating}
-            style={{ borderColor: 'var(--border-brand)', color: 'var(--brand-glow)' }}
+            style={{ borderColor: 'transparent', background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
           >
             {evaluating ? 'Számolás…' : '⚡ Értékeld a célt'}
           </button>

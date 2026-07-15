@@ -7,6 +7,17 @@ const SELECT_STYLE = {
   fontSize: 16,
 } as const
 
+// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
+// Smaller variant (9px/.04em) matching the row-label idiom used alongside time
+// anchors elsewhere in Me (see EditGoalSheet's Napi ritmus row labels).
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 9,
+  fontWeight: 800,
+  letterSpacing: '.04em',
+  textTransform: 'uppercase',
+  color: 'var(--faint)',
+}
+
 export function TimePicker({
   label,
   val,
@@ -21,7 +32,7 @@ export function TimePicker({
   const [h, m] = val.split(':')
   return (
     <div className="col" style={{ alignItems: 'center' }}>
-      <span className="label-mono" style={{ fontSize: 9 }}>{label}</span>
+      <span style={SECTION_LABEL}>{label}</span>
       <div className="row gap-xs mt-sm">
         <select
           aria-label={`${label} óra`}

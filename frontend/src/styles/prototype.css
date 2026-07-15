@@ -1499,6 +1499,11 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
   --wash-lav: rgba(155,143,196,.16);
 }
 
+/* ===== Napív S7 — Me accent vocabulary (spec §4.6) ===== */
+.pghead-np.lav .over { color: var(--lav-deep); }
+:root { --amber-deep: #9A6A12; }
+:root[data-theme="dark"] { --amber-deep: #E3B565; }
+
 /* ===== Napív kcal gauge (Fuel Mai, spec §4.4) ===== */
 .gauge { position: relative; display: flex; flex-direction: column; align-items: center; }
 .gauge .big { position: absolute; top: 56px; text-align: center; }
@@ -1532,3 +1537,46 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .mac .bar { flex: 1; height: 11px; border-radius: 999px; background: var(--warm); overflow: hidden; }
 .mac .bar i { display: block; height: 100%; border-radius: 999px; }
 .mac .v { width: 78px; text-align: right; font-size: 11.5px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ink); }
+
+/* ===== Napív Me identity header (spec §4.6) ===== */
+.mehead { display: flex; align-items: center; gap: 14px; padding: 14px 24px 0; }
+.mehead .avatar { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(140deg, #EEEBF6, #E2DCF0); color: var(--lav-deep); font-family: var(--ff-display); font-weight: 800; font-size: 22px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px var(--surface), 0 0 0 5.5px var(--lav), 0 10px 22px rgba(122,109,168,.25); flex-shrink: 0; }
+.mehead .t1 { font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -.3px; color: var(--ink); }
+.mehead .t2 { font-size: 12.5px; color: var(--sub); font-weight: 600; margin-top: 1px; }
+:root[data-theme="dark"] .mehead .avatar { background: linear-gradient(140deg, rgba(155,143,196,.25), rgba(122,109,168,.25)); }
+
+/* ===== Napív goal mini-track (Profil, spec §4.6) — .track reused by the Cél hero ===== */
+.goalmini { display: block; width: 100%; text-align: left; padding: 17px; cursor: pointer; font: inherit; }
+.goalmini .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.goalmini .t { font-size: 14px; font-weight: 800; color: var(--ink); }
+.goalmini .pct { font-size: 12px; color: var(--sage-deep); font-weight: 800; white-space: nowrap; }
+.track { position: relative; height: 13px; border-radius: 999px; background: var(--warm); margin-top: 13px; }
+.track .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: linear-gradient(90deg, var(--sage), var(--amber)); }
+.track .dot { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 21px; height: 21px; border-radius: 50%; background: var(--surface); box-shadow: 0 2px 8px rgba(43,33,24,.28); border: 3px solid var(--sage-deep); }
+.track-l { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); font-weight: 800; margin-top: 9px; }
+@media (prefers-reduced-motion: no-preference) {
+  .track .fill { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .3s var(--np-ease-ios) forwards; }
+}
+
+/* ===== Napív biometria + growth summary cards (Profil, spec §4.6) ===== */
+.biocard .bhd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
+.biocard .bhd h3 { font-size: 14.5px; font-weight: 800; color: var(--ink); }
+.biocard .bhd button { border: 0; background: none; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; color: var(--lav-deep); }
+.biogrid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px 14px; }
+.bio .k { font-size: 10px; color: var(--faint); font-weight: 800; letter-spacing: .4px; text-transform: uppercase; }
+.bio .v { font-size: 17px; font-weight: 800; font-family: var(--ff-display); margin-top: 2px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.bio .v small { font-size: 11px; color: var(--sub); font-weight: 700; }
+.tdee { display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid var(--line); margin-top: 14px; padding-top: 13px; }
+.tdee .k { font-size: 12px; font-weight: 700; color: var(--sub); }
+.tdee .v { font-family: var(--ff-display); font-size: 20px; font-weight: 800; color: var(--sage-deep); }
+.growth2 .hd { display: flex; justify-content: space-between; align-items: center; }
+.growth2 .hd .t { font-size: 14px; font-weight: 800; color: var(--ink); }
+.growth2 .hd .xp { background: var(--wash-amber); color: var(--amber-deep); font-size: 11px; font-weight: 800; border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+.skl { display: flex; align-items: center; gap: 9px; margin-top: 11px; }
+.skl .k { flex: 0 0 112px; font-size: 12.5px; font-weight: 700; color: var(--sub); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.skl .bar { flex: 1; height: 9px; border-radius: 999px; background: var(--warm); overflow: hidden; }
+.skl .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lav), #B7A8E0); }
+.skl .lv { width: 36px; text-align: right; font-size: 12px; font-weight: 800; color: var(--lav-deep); }
+@media (prefers-reduced-motion: no-preference) {
+  .skl .bar i { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .45s var(--np-ease-ios) forwards; }
+}

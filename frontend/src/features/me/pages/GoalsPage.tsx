@@ -1,13 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { GhostState } from '@/shared/ui/GhostState'
 import { useGoal, useGoalActions, useWeight, useBiometricProfile } from '@/data/hooks'
-import type { GoalResponse } from '@/data/me/goalApi'
 import { huMonthDay } from '@/shared/lib/dates'
+import { hu1 } from '@/shared/lib/huNum'
 import { GoalStat } from '@/features/me/components/GoalStat'
 import { GoalTimeline } from '@/features/me/components/GoalTimeline'
 import { GoalRecept } from '@/features/me/components/GoalRecept'
@@ -15,20 +14,8 @@ import { GoalPlanSlots } from '@/features/me/components/GoalPlanSlots'
 import { EditGoalSheet } from '@/features/me/sheets/EditGoalSheet'
 import { GoalGate } from '@/features/me/components/GoalGate'
 import GoalsSkeleton from '@/features/me/pages/GoalsSkeleton'
+import { TRAJECTORY_LABEL, GUARD_LABEL } from '@/features/me/logic/goalLabels'
 // LinkedMesoCard was the per-row card the GoalTimeline lane view replaced in G4b.
-
-// Contract-native trajectory + guard labels — the hero reads these straight off
-// the raw GoalResponse (G4b Decision C: window/trajectory/guards/weights no longer
-// pass through the toGoal back-compat mapper).
-const TRAJECTORY_LABEL: Record<GoalResponse['trajectory'], string> = {
-  cut: 'Fogyás',
-  bulk: 'Hízás',
-  maintain: 'Maintenance',
-}
-const GUARD_LABEL: Record<string, string> = {
-  strength: 'Erő-gard',
-  muscle: 'Izom-gard',
-}
 
 export function GoalsPage() {
   const navigate = useNavigate()
@@ -63,10 +50,10 @@ export function GoalsPage() {
   if (!goal || !goalResponse) {
     return (
       <>
-        <div className="page-header">
+        <div className="pghead-np lav">
           <div>
-            <Eyebrow brand>Me · Cél</Eyebrow>
-            <PageTitle className="mt-sm">Hosszú cél</PageTitle>
+            <div className="over">Me · Cél</div>
+            <h1>Hosszú cél</h1>
           </div>
         </div>
         <div style={{ padding: '8px 24px 16px' }}>
@@ -84,10 +71,12 @@ export function GoalsPage() {
     )
   }
 
+  // Signed math so bulk still lands in 0..100; maintain (totalRange 0) hides the
+  // track entirely — mirrors GoalMiniCard's exact contract (review fix, Task 5).
   const progressed = goal.startWeight - goal.currentWeight
   const remaining = goal.currentWeight - goal.targetWeight
   const totalRange = goal.startWeight - goal.targetWeight
-  const progressPct = Math.min(100, (progressed / totalRange) * 100)
+  const progressPct = totalRange !== 0 ? Math.min(100, Math.max(0, (progressed / totalRange) * 100)) : 0
 
   // Hero reads the raw contract directly (Decision C): trajectory/guards/window.
   const targetWeightKg = goalResponse.targetWeightKg ?? goalResponse.startWeightKg
@@ -96,12 +85,17 @@ export function GoalsPage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
+      <div className="pghead-np lav">
         <div>
-          <Eyebrow brand>Me · Goals</Eyebrow>
-          <PageTitle className="mt-sm">Hosszú cél</PageTitle>
+          <div className="over">Me · Cél</div>
+          <h1>Hosszú cél</h1>
         </div>
-        <button type="button" className="chip" onClick={startNewGoal}>
+        <button
+          type="button"
+          className="pgact-np np-press"
+          onClick={startNewGoal}
+          style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
+        >
           <Icon name="plus" size={12} /> Új cél
         </button>
       </div>
@@ -116,137 +110,105 @@ export function GoalsPage() {
             width: '100%',
             textAlign: 'left',
             cursor: 'pointer',
-            background: 'linear-gradient(180deg, rgba(94, 234, 212, 0.06) 0%, var(--surface-1) 100%)',
-            borderColor: 'var(--border-brand)',
-            position: 'relative',
-            overflow: 'hidden',
           }}
         >
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--brand-glow)' }} />
-          <div
-            style={{
-              position: 'absolute',
-              right: -50,
-              top: -50,
-              width: 180,
-              height: 180,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(94, 234, 212, 0.12), transparent 70%)',
-            }}
-          />
-          <div style={{ position: 'relative' }}>
-            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div className="col">
-                <Eyebrow brand>{TRAJECTORY_LABEL[goalResponse.trajectory]} · aktív</Eyebrow>
-                <Display size="lg" className="mt-sm">{goalResponse.title}</Display>
-                <span className="text-secondary mt-sm" style={{ fontSize: 12, fontFamily: 'var(--ff-mono)' }}>
-                  {huMonthDay(goalResponse.startDate)} → {huMonthDay(goalResponse.targetDate)}
-                </span>
-                {guards.length > 0 && (
-                  <div className="row gap-sm mt-sm" style={{ flexWrap: 'wrap' }}>
-                    {guards.map((g) => (
-                      <span
-                        key={g}
-                        className="chip"
-                        style={{ fontSize: 9, padding: '2px 7px', color: 'var(--brand-glow)', borderColor: 'var(--border-brand)' }}
-                      >
-                        {GUARD_LABEL[g] ?? g}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <Icon name="settings" size={16} color="var(--text-tertiary)" />
-            </div>
-
-            {/* Weight track */}
-            <div className="mt-lg">
-              <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8, alignItems: 'baseline' }}>
-                <div className="col">
-                  <span className="label-mono" style={{ fontSize: 8 }}>Most</span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--ff-display)',
-                      fontSize: 32,
-                      fontWeight: 600,
-                      color: 'var(--brand-glow)',
-                      lineHeight: 1,
-                      marginTop: 2,
-                      textShadow: '0 0 16px rgba(94, 234, 212, 0.4)',
-                    }}
-                  >
-                    {goal.currentWeight}
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 3 }}>
-                      kg
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div className="col">
+              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+                {TRAJECTORY_LABEL[goalResponse.trajectory]} · aktív
+              </span>
+              <Display size="lg" className="mt-sm">{goalResponse.title}</Display>
+              <span className="text-secondary mt-sm" style={{ fontSize: 12 }}>
+                {huMonthDay(goalResponse.startDate)} → {huMonthDay(goalResponse.targetDate)}
+              </span>
+              {guards.length > 0 && (
+                <div className="row gap-sm mt-sm" style={{ flexWrap: 'wrap' }}>
+                  {guards.map((g) => (
+                    <span
+                      key={g}
+                      className="chip"
+                      style={{ fontSize: 9, padding: '2px 7px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }}
+                    >
+                      {GUARD_LABEL[g] ?? g}
                     </span>
-                  </span>
+                  ))}
                 </div>
-                <div className="col" style={{ alignItems: 'flex-end' }}>
-                  <span className="label-mono" style={{ fontSize: 8 }}>Cél</span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--ff-display)',
-                      fontSize: 20,
-                      color: 'var(--text-secondary)',
-                      lineHeight: 1,
-                      marginTop: 2,
-                    }}
-                  >
-                    {targetWeightKg}
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>
-                      kg
-                    </span>
-                  </span>
-                </div>
-              </div>
-              <div style={{ position: 'relative', height: 6, background: 'var(--surface-2)' }}>
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: progressPct + '%',
-                    background: 'linear-gradient(90deg, var(--brand-core), var(--brand-glow))',
-                  }}
-                />
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: `calc(${progressPct}% - 1px)`,
-                    top: -3,
-                    bottom: -3,
-                    width: 2,
-                    background: 'var(--brand-glow)',
-                    boxShadow: '0 0 8px var(--brand-glow)',
-                  }}
-                />
-              </div>
-              <div className="row mt-sm" style={{ justifyContent: 'space-between' }}>
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                  {goalResponse.startWeightKg} kg · start
-                </span>
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
-                  −{progressed.toFixed(1)} kg · {progressPct.toFixed(0)}%
-                </span>
-              </div>
+              )}
             </div>
-
-            {/* Stats — only backend-derived figures: remaining kg (weight-log derived)
-                and the real EWMA 4-week rate. */}
-            <div className="row gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
-              <GoalStat label="Hátra" val={remaining.toFixed(1)} unit="kg" />
-              <GoalStat label="Tempó" val={String(weightTrends.last4w.weeklyRate)} unit="kg/hét" highlight />
-            </div>
-
-            {/* Identity */}
-            <p
-              className="text-secondary mt-md"
-              style={{ fontSize: 12, fontStyle: 'italic', lineHeight: 1.5, paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}
-            >
-              "{goal.identityFrame}"
-            </p>
+            <Icon name="settings" size={16} color="var(--text-tertiary)" />
           </div>
+
+          {/* Weight track — shared .track/.fill/.dot/.track-l vocabulary (Task 3),
+              same idiom as the Profil GoalMiniCard's mini-track. */}
+          <div className="mt-lg">
+            <div className="row" style={{ justifyContent: 'space-between', marginBottom: 8, alignItems: 'baseline' }}>
+              <div className="col">
+                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Most</span>
+                <span
+                  style={{
+                    fontFamily: 'var(--ff-display)',
+                    fontSize: 32,
+                    fontWeight: 600,
+                    color: 'var(--ink)',
+                    lineHeight: 1,
+                    marginTop: 2,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {goal.currentWeight}
+                  <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 3 }}>
+                    kg
+                  </span>
+                </span>
+              </div>
+              <div className="col" style={{ alignItems: 'flex-end' }}>
+                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Cél</span>
+                <span
+                  style={{
+                    fontFamily: 'var(--ff-display)',
+                    fontSize: 20,
+                    color: 'var(--text-secondary)',
+                    lineHeight: 1,
+                    marginTop: 2,
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {targetWeightKg}
+                  <span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>
+                    kg
+                  </span>
+                </span>
+              </div>
+            </div>
+            {totalRange !== 0 && (
+              <>
+                <div className="track">
+                  <div className="fill" style={{ width: `${progressPct}%` }} />
+                  <div className="dot" style={{ left: `${progressPct}%` }} />
+                </div>
+                <div className="track-l">
+                  <span>{hu1(goal.startWeight)}</span>
+                  <span style={{ color: 'var(--sage-deep)' }}>{hu1(goal.currentWeight)} most</span>
+                  <span>{hu1(goal.targetWeight)} cél</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Stats — only backend-derived figures: remaining kg (weight-log derived)
+              and the real EWMA 4-week rate. */}
+          <div className="row gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
+            <GoalStat label="Hátra" val={remaining.toFixed(1)} unit="kg" />
+            <GoalStat label="Tempó" val={String(weightTrends.last4w.weeklyRate)} unit="kg/hét" highlight />
+          </div>
+
+          {/* Identity */}
+          <p
+            className="text-secondary mt-md"
+            style={{ fontSize: 12, fontStyle: 'italic', lineHeight: 1.5, paddingTop: 10, borderTop: '1px solid var(--border-subtle)' }}
+          >
+            "{goal.identityFrame}"
+          </p>
         </div>
       </div>
 

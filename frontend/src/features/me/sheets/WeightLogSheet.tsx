@@ -3,6 +3,15 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import type { WeightLogInput } from '@/data/types'
 
+// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '.1em',
+  textTransform: 'uppercase',
+  color: 'var(--faint)',
+}
+
 export function WeightLogSheet({
   onClose,
   onSave,
@@ -26,15 +35,15 @@ export function WeightLogSheet({
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <span className="eyebrow brand">Súly log · reggel</span>
+              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Súly log · reggel</span>
               <div id="weight-log-title" className="h-display size-md" style={{ marginTop: 4 }}>Mi a számunk ma?</div>
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
           <div className="card notch-12" style={{ padding: 18, marginBottom: 14 }}>
             <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, color: 'var(--brand-glow)', lineHeight: 1, textShadow: '0 0 24px rgba(94, 234, 212, 0.4)' }}>{val.toFixed(1)}</span>
-              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 14, color: 'var(--text-tertiary)' }}>kg</span>
+              <span style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{val.toFixed(1)}</span>
+              <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>kg</span>
             </div>
             <div className="row gap-sm mt-lg" style={{ justifyContent: 'center' }}>
               <button onClick={() => setVal(v => +(v - 0.1).toFixed(1))} className="chip" style={{ padding: '8px 14px' }}><Icon name="minus" size={12} /> 0.1</button>
@@ -44,16 +53,16 @@ export function WeightLogSheet({
             </div>
           </div>
           <div className="col gap-sm">
-            <span className="label-mono">Egy mondat · opcionális</span>
+            <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
             <div className="card notch-4" style={{ padding: 10 }}>
               <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
                 placeholder='pl. "vasárnap reggel · folyadékvesztés" · "Reta D1 reggel"'
                 style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
             </div>
           </div>
-          <div className="card notch-4 mt-lg" style={{ padding: 10, background: 'rgba(94, 234, 212, 0.03)' }}>
+          <div className="card notch-4 mt-lg" style={{ padding: 10, background: 'var(--wash-lav)' }}>
             <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-              <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+              <Icon name="sparkle" size={11} color="var(--lav-deep)" />
               <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, flex: 1 }}>
                 {val < currentWeight - 0.5 ? 'Nagy nap — a 7-napos átlagba viszont csak részben mehet bele. Memo a vasárnapi mérésekhez.' :
                  val > currentWeight + 0.5 ? 'Magas érték — gondolj a vízsúly-kalibrálásra. Volleyball + magas só napon ez normális.' :
