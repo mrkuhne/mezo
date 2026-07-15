@@ -1,16 +1,12 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { afterEach, beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, describe, vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import { GoalMiniCard } from '@/features/me/components/GoalMiniCard'
 import { QueryWrapper } from '@/test/queryWrapper'
-
-// Mirrors GoalsPage.test.tsx's "mock mode (demo goal)" pin — the concrete
-// numbers below (81.4 / 78.6 / 73.0) come from the static mock seed in
-// src/data/me/goals.ts, so pinning mock mode keeps the assertions deterministic
-// regardless of the ambient VITE_USE_MOCK default.
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-afterEach(() => vi.unstubAllEnvs())
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 // Render inside a small route tree with a probe element at /me/goals, so the
 // tap-through test can assert real navigation (not a mocked useNavigate) —
@@ -28,22 +24,62 @@ function renderMini() {
   )
 }
 
-test('renders trajectory, title and the remaining-kg line', async () => {
-  renderMini()
-  await waitFor(() => expect(screen.getByText(/🎯/)).toBeInTheDocument())
-  expect(screen.getByText(/% ·/)).toHaveTextContent(/kg hátra/)
+// The card tests assert Phase-1 mock goal data (concrete numbers 81.4 / 78.6 /
+// 73.0 from the static seed in src/data/me/goals.ts), so pin mock mode
+// explicitly — mirrors GoalsPage.test.tsx's "mock mode (demo goal)" describe.
+describe('mock mode (demo goal)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('renders trajectory, title and the remaining-kg line', async () => {
+    renderMini()
+    await waitFor(() => expect(screen.getByText(/🎯/)).toBeInTheDocument())
+    expect(screen.getByText(/% ·/)).toHaveTextContent(/kg hátra/)
+  })
+
+  test('renders the start / most / cél track labels', async () => {
+    renderMini()
+    await waitFor(() => expect(screen.getByText(/most$/)).toBeInTheDocument())
+    expect(screen.getByText(/cél$/)).toBeInTheDocument()
+    expect(document.querySelector('.goalmini .track .fill')).not.toBeNull()
+  })
+
+  test('taps through to /me/goals', async () => {
+    renderMini()
+    await waitFor(() => expect(screen.getByText(/🎯/)).toBeInTheDocument())
+    await userEvent.click(screen.getByRole('button', { name: /Cél oldal megnyitása/ }))
+    expect(await screen.findByTestId('goals-probe')).toBeInTheDocument()
+  })
 })
 
-test('renders the start / most / cél track labels', async () => {
-  renderMini()
-  await waitFor(() => expect(screen.getByText(/most$/)).toBeInTheDocument())
-  expect(screen.getByText(/cél$/)).toBeInTheDocument()
-  expect(document.querySelector('.goalmini .track .fill')).not.toBeNull()
-})
+// Binding constraint: the card must render null (not a broken/partial card)
+// both while the active-goal query is unresolved AND when real mode has no
+// active goal — the real-mode cold window must never flash on Profil.
+describe('real mode', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
 
-test('taps through to /me/goals', async () => {
-  renderMini()
-  await waitFor(() => expect(screen.getByText(/🎯/)).toBeInTheDocument())
-  await userEvent.click(screen.getByRole('button', { name: /Cél oldal megnyitása/ }))
-  expect(await screen.findByTestId('goals-probe')).toBeInTheDocument()
+  test('renders nothing while the active-goal query is pending', () => {
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => new Promise(() => {})), // never resolves
+    )
+    renderMini()
+    expect(document.querySelector('.goalmini')).toBeNull()
+  })
+
+  test('renders nothing when there is no active goal', async () => {
+    const calls: string[] = []
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => {
+        calls.push('goals')
+        return HttpResponse.json([])
+      }),
+    )
+    renderMini()
+    // Wait for the ['goals'] query to actually resolve (empty list) before
+    // asserting absence — otherwise the assertion could trivially pass while
+    // still pending.
+    await waitFor(() => expect(calls).toEqual(['goals']))
+    expect(document.querySelector('.goalmini')).toBeNull()
+  })
 })
