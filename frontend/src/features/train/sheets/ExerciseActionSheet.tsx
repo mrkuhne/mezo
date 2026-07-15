@@ -1,13 +1,14 @@
 // ============================================================
 // Mezo · ExerciseActionSheet — per-exercise "⋯" action menu (active workout).
-// Built on the shared Sheet primitive. Hosts the FOUR active-workout-v2
-// actions: ↕ Áthelyezés · ⊘ Kihagyás · ＋ Szett · ✎ Jegyzet.
+// Built on the shared Sheet primitive. Hosts the active-workout-v2 actions:
+// ↕ Áthelyezés · ⊘ Kihagyás · ＋ Szett · ✎ Jegyzet · ✓ Edzés befejezése…
+// (the last is the early-finish entry point — lands on the WorkoutSummary
+// closing screen, mezo-cd8s).
 //
-// Slice 3 (F1) wires ONLY Áthelyezés (reorder of the remaining exercises,
-// via the shared SortableList). The other three rows are entry points wired
-// to optional handler props — each is rendered but `disabled` until its
-// handler is provided by a later slice (Skip / Add-set / Note → 4/5/6).
-// Reorder is client-only / ephemeral: it only re-orders session.order.
+// Áthelyezés reorders the remaining exercises via the shared SortableList
+// (client-only / ephemeral: it only re-orders session.order). Every other
+// row is wired to an optional handler prop and is `disabled` until its
+// handler is provided.
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -25,6 +26,8 @@ interface ExerciseActionSheetProps {
   onSkip?: () => void
   onAddSet?: () => void
   onEditNote?: () => void
+  /** Early finish — lands the session on the WorkoutSummary (closing) screen. */
+  onFinishWorkout?: () => void
   /** Toggles the note row label (Jegyzet vs. Jegyzet szerkesztése). */
   hasNote?: boolean
   onClose: () => void
@@ -75,6 +78,7 @@ export function ExerciseActionSheet({
   onSkip,
   onAddSet,
   onEditNote,
+  onFinishWorkout,
   hasNote,
   onClose,
 }: ExerciseActionSheetProps) {
@@ -139,6 +143,7 @@ export function ExerciseActionSheet({
                 onClick={fire(onEditNote)}
                 disabled={!onEditNote}
               />
+              <ActionRow icon="check" label="Edzés befejezése…" onClick={fire(onFinishWorkout)} disabled={!onFinishWorkout} />
             </div>
           </>
         )

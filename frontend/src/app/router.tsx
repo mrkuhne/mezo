@@ -9,6 +9,7 @@ import { RunningPage } from '@/features/train/pages/RunningPage'
 import { ExercisesPage } from '@/features/train/pages/ExercisesPage'
 import { MesocycleLibraryPage } from '@/features/train/pages/MesocycleLibraryPage'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
+import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
 import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
 import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
@@ -60,6 +61,7 @@ export const routes: RouteObject[] = [
         ],
       },
       { path: 'train/session', element: <ActiveWorkoutPage /> },
+      { path: 'train/review/:workoutId', element: <WorkoutReviewPage /> },
       { path: 'train/mesocycles/new', element: <MesocyclePlannerPage /> },
       { path: 'train/mesocycles/:id', element: <MesocycleBuilderPage /> },
       { path: 'train/futas/:id', element: <RunningBlockBuilderPage /> },

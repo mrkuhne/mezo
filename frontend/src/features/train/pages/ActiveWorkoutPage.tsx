@@ -1,15 +1,18 @@
 // ============================================================
 // Mezo · ActiveWorkoutPage — full-screen active-workout mode
-// (sibling route /train/session, NO sub-nav). Three-phase state machine:
+// (sibling route /train/session, NO sub-nav). Four-phase state machine:
 //   prep    → niggle pre-flag · challenges · warmup · exercise list · CTA
 //   active  → per-set logging (weight/reps/RIR), Múlt hét comparison,
 //             set dots, today's set history, PR toast + feedback debrief
-//   complete→ WorkoutComplete celebration / recap
+//   summary → explicit-finish WorkoutSummary (closing): stats + challenge
+//             outcomes + recap; "Edzés lezárása ✓" is the ONLY finish trigger
+//   complete→ the same WorkoutSummary read-only (post-finish, set lines)
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainSection).
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { useChallengeActions, useChallenges, useTrain } from '@/data/hooks'
 import { localDateString } from '@/shared/lib/dates'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
@@ -20,12 +23,13 @@ import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInst
 import {
   type Session,
   addExtraSet,
-  advance,
   completeSet as completeSetModel,
   currentExerciseId,
   effectiveSetCount,
   makeSession,
   mergePlan,
+  nextSetIdx,
+  nextUnfinishedAfter,
   prescribedAt,
   seedFromOpen,
   skipExercise as skipExerciseModel,
@@ -39,12 +43,13 @@ import { SetStepper } from '@/features/train/components/SetStepper'
 import { VideoDemo, youTubeId } from '@/features/train/components/VideoDemo'
 import { PRToast, type PRState } from '@/features/train/components/PRToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
-import { WorkoutComplete } from '@/features/train/components/WorkoutComplete'
+import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
+import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
 import { ChallengesCarousel } from '@/features/train/components/ChallengesCarousel'
 import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet'
+import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/sheets/ExerciseOverviewSheet'
 
-type Phase = 'prep' | 'active' | 'complete'
-type CompletedSets = Record<string, LastWeekSet[]>
+type Phase = 'prep' | 'active' | 'summary' | 'complete'
 type Side = 'L' | 'B' | 'R'
 
 const WARMUP_ROWS = [
@@ -67,7 +72,7 @@ const PR_TOAST_MS = 4500
 // — a conditional early return between hook calls would break the hook order
 // now that `workout` is query-driven (T2).
 export function ActiveWorkoutPage() {
-  const { workout, activeMeso, todaySession, workoutPending, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
+  const { workout, activeMeso, todaySession, completedTodayWorkout, workoutPending, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises } = useTrain()
   // A hard reload lands here with the queries still loading — redirecting now
   // would kill the resume flow (live-smoke catch). Show the generic skeleton
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
@@ -76,6 +81,12 @@ export function ActiveWorkoutPage() {
   if (workoutPending) return <ScreenSkeleton />
   // T0 clean slate: never render the session without a workout (and at least one exercise).
   if (!workout || workout.exercises.length === 0 || !activeMeso) return <Navigate to="/train" replace />
+  // Completed today + nothing open → the session is over; review instead of restart
+  // (spec 2026-07-15 gating — the prep screen must be unreachable, challenges included).
+  // Mock mode has no completedTodayWorkout (always null), so this never fires there.
+  if (completedTodayWorkout && !todaySession?.openWorkout) {
+    return <Navigate to={`/train/review/${completedTodayWorkout.id}`} replace />
+  }
   return (
     <ActiveWorkoutSession
       workout={workout}
@@ -101,7 +112,7 @@ interface SessionProps {
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
-  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void }) => void
+  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
 }
 
@@ -116,6 +127,7 @@ function ActiveWorkoutSession({
 }: SessionProps) {
   const W = workout
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const { startRest, clearRest } = useLiveActivity()
   // Exiting the session (Bezárás / back / Mentés — all route through here) must not
   // leave a rest ticking in the shell's Dynamic Island after the user has left.
@@ -141,6 +153,9 @@ function ActiveWorkoutSession({
 
   const [phase, setPhase] = useState<Phase>(initialPhase)
   const [session, setSession] = useState<Session>(initialSession)
+  // Free navigation (spec 2026-07-15): the VIEWED exercise is the logging target.
+  // Seeds from the linear resume point; Task 7's nav UI drives setViewedId.
+  const [viewedId, setViewedId] = useState<string>(() => currentExerciseId(initialSession))
   const [weight, setWeight] = useState(startPrefill.weight)
   const [reps, setReps] = useState(startPrefill.reps)
   const [rir, setRir] = useState(startPrefill.rir)
@@ -154,14 +169,20 @@ function ActiveWorkoutSession({
   // recap's "PR" framing (replaces the old 105 kg demo scan). Captured here so it
   // survives after the level-up overlay (showLevelUp's host) is dismissed.
   const [hadPrFromSignal, setHadPrFromSignal] = useState(false)
+  // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA.
+  const [finishPending, setFinishPending] = useState(false)
   const { showLevelUp } = useLevelUp()
   // The just-finished exercise pinned for the debrief modal (and the active card
-  // it overlays): `currentExerciseId` jumps to the NEXT exercise the moment the
-  // last set is logged, so we keep an explicit feedback target until it resolves.
+  // it overlays): once resolved, the view advances to the next exercise, so we keep
+  // an explicit feedback target that overrides `viewedId` until the debrief closes.
   const [feedbackEx, setFeedbackEx] = useState<LoggedWorkoutExercise | null>(null)
   const [niggleConfirmed, setNiggleConfirmed] = useState(false)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
   const [actionSheetOpen, setActionSheetOpen] = useState(false)
+  // Free navigation (spec 2026-07-15): the header counter opens a jump-to overview.
+  const [overviewOpen, setOverviewOpen] = useState(false)
+  // Swipe on the excard: a large horizontal drag jumps to the neighbour exercise.
+  const swipeStart = useRef<number | null>(null)
   // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
   const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
   // F4 durable per-exercise note: the edit sheet's open flag + a per-exercise
@@ -178,10 +199,10 @@ function ActiveWorkoutSession({
   }, [showPR])
 
   // The rest Live-Activity must not survive past this session: clear it once the
-  // recap phase is reached, and on unmount (mid-workout navigation away, e.g. a
-  // deep-link change) as a final safety net.
+  // summary/recap phase is reached, and on unmount (mid-workout navigation away,
+  // e.g. a deep-link change) as a final safety net.
   useEffect(() => {
-    if (phase === 'complete') clearRest()
+    if (phase === 'complete' || phase === 'summary') clearRest()
   }, [phase, clearRest])
   useEffect(() => () => clearRest(), [clearRest])
 
@@ -194,10 +215,16 @@ function ActiveWorkoutSession({
     setSession((s) => mergePlan(s, W.exercises))
   }, [W.exercises])
 
-  // On-screen exercise: the pinned feedback target while debriefing, else the
-  // model's derived current exercise. Drives the active card, dots, history & PR.
-  const current = feedbackEx ?? W.exercises.find((e) => e.id === currentExerciseId(session)) ?? W.exercises[0]
+  // On-screen exercise: the pinned feedback target while debriefing, else the FREELY
+  // NAVIGATED viewed exercise (the logging target — spec 2026-07-15 free navigation).
+  const current = feedbackEx ?? W.exercises.find((e) => e.id === viewedId) ?? W.exercises[0]
   const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
+  // Free navigation jump (pager / dots / swipe / overview): moves the VIEWED (logging)
+  // exercise. No-ops while a debrief is open — the pinned feedback target wins then.
+  const jumpTo = (id: string | undefined | null) => { if (id && !feedbackEx) setViewedId(id) }
+  // Per-exercise cursor: the next set index to log for the on-screen exercise
+  // (derived from its logged count — replaces the old scalar session.setIdx).
+  const cursor = nextSetIdx(session, current.id)
   // Only genuinely load-less exercises (plyo) hide the kg stepper. A null target
   // weight ALSO happens on a first-ever workout (no history, no anchor) — there the
   // user must still enter a starting weight, so we must NOT hide the stepper then.
@@ -206,7 +233,7 @@ function ActiveWorkoutSession({
   const warmupCount = (session.prescribed[current.id] ?? []).filter((p) => p.kind === 'warmup').length
   // The current set's prescription drives the card's kind tag + the RIR row: a warmup
   // set is signalled explicitly and logs NO RIR (effort tracking is working-set-only).
-  const currentTarget = prescribedAt(session, current.id, session.setIdx)
+  const currentTarget = prescribedAt(session, current.id, cursor)
   const isWarmupSet = currentTarget?.kind === 'warmup'
   // Effective note for the on-screen exercise: a just-saved local override wins,
   // else the backend/mock note, else empty (drives the pill + the editor prefill).
@@ -220,8 +247,8 @@ function ActiveWorkoutSession({
   // it falls back to the lastWeek-based prefill. This is the single prefill
   // source — the feedback/skip advance handlers no longer set the inputs by hand.
   useEffect(() => {
-    const t = prescribedAt(session, current.id, session.setIdx)
-    const prev = (session.logged[current.id] ?? [])[session.setIdx - 1]
+    const t = prescribedAt(session, current.id, cursor)
+    const prev = (session.logged[current.id] ?? [])[cursor - 1]
     const p = prefill(current)
     if (t?.kind === 'warmup') {
       // Warmups follow the engine ramp; a null target inherits the previous
@@ -232,14 +259,14 @@ function ActiveWorkoutSession({
     } else {
       // Working sets: the just-logged WORKING set (never a warmup) wins over the
       // static engine target; the engine seeds only the first working set.
-      const prevWorking = session.setIdx > warmupCount ? prev : undefined
+      const prevWorking = cursor > warmupCount ? prev : undefined
       setWeight(prevWorking?.weight ?? t?.targetWeightKg ?? prev?.weight ?? p.weight)
       setReps(t?.targetReps ?? prevWorking?.reps ?? p.reps)
       setRir(t?.targetRIR ?? prevWorking?.rir ?? p.rir)
     }
     // Reset only on set-index / exercise transitions — NOT on extra-set or note changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current.id, session.setIdx])
+  }, [current.id, cursor])
   // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
   // and the live session/day list (or honest []) in real. Accept/dismiss is a
   // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
@@ -268,6 +295,27 @@ function ActiveWorkoutSession({
     }
   }
 
+  // Summary rows (used by both the closing 'summary' and read-only 'complete' phases).
+  const summaryExercises: SummaryExercise[] = W.exercises.map((e) => ({
+    id: e.id,
+    name: e.name,
+    plannedSets: effectiveSetCount(session, e.id),
+    sets: session.logged[e.id] ?? [],
+    skipped: session.skipped.includes(e.id),
+  }))
+  // Challenge rows: dismissed/undecided -> skippelted; accepted -> live server outcome when
+  // resolved, else the FE preview over the session's logged sets (pre-finish).
+  const summaryChallenges: SummaryChallenge[] = challenges.map((c) => {
+    const accepted = acceptedMap[c.id]
+    const resolved = c.status === 'hit' || c.status === 'miss' || c.status === 'inconclusive'
+    const state = !accepted && !resolved
+      ? 'skipped' as const
+      : resolved
+        ? (c.status as 'hit' | 'miss' | 'inconclusive')
+        : evaluateChallenge(c, session.logged[c.exerciseId] ?? [])
+    return { id: c.id, typeLabel: c.typeLabel, exercise: c.exercise, target: c.target, state, detail: c.outcome ?? undefined }
+  })
+
   // Mock mode has no todaySession — "Kezdjük el" keeps the Phase-1 local behavior.
   const beginWorkout = () => {
     if (!todaySession) {
@@ -285,8 +333,8 @@ function ActiveWorkoutSession({
   const completeSet = () => {
     const finishing = current // the exercise being logged right now
     const finishingIdx = W.exercises.findIndex((e) => e.id === finishing.id)
-    const wasSetIdx = session.setIdx // pre-update cursor (for the PR trigger + persisted setIndex)
-    const next = completeSetModel(session, { weight, reps, rir })
+    const wasSetIdx = nextSetIdx(session, finishing.id) // pre-update cursor (for the PR trigger + persisted setIndex)
+    const next = completeSetModel(session, finishing.id, { weight, reps, rir })
     setSession(next)
     if (workoutId) {
       const kind = prescribedAt(session, finishing.id, wasSetIdx)?.kind ?? 'working'
@@ -322,7 +370,7 @@ function ActiveWorkoutSession({
     } else {
       startRest({
         seconds: restSecondsFor(current.type),
-        next: session.setIdx + 1 < currentSetCount ? current.name : (nextEx?.name ?? null),
+        next: wasSetIdx + 1 < currentSetCount ? current.name : (nextEx?.name ?? null),
       })
     }
   }
@@ -332,20 +380,28 @@ function ActiveWorkoutSession({
     if (workoutId && feedbackEx) saveWorkoutFeedback(workoutId, [{ exerciseId: feedbackEx.id, ...vals }])
   }
 
-  // Finish the workout and present the gamified level-up. Real mode POSTs with the
-  // instance id; mock has no instance (workoutId null) but the mock finish mutation
-  // still returns a seeded LevelUpResult so the prototype shows the overlay. The
-  // overlay (the global LevelUpProvider host) portals OVER the WorkoutComplete recap
-  // and is dismissed on its Tovább CTA, revealing the recap. Switch-off / no-levelUp
-  // (real `levelUp` absent) simply shows the recap with no overlay.
+  // Finish the workout (the ONLY completion trigger — the summary's "Edzés lezárása ✓"
+  // CTA) and present the gamified level-up. Real mode POSTs with the instance id; mock
+  // has no instance (workoutId null → 'mock' sentinel) but the mock finish mutation
+  // still returns a seeded LevelUpResult so the prototype shows the overlay. The overlay
+  // (the global LevelUpProvider host) portals OVER the closed summary and is dismissed on
+  // its Tovább CTA, revealing it. Switch-off / no-levelUp (real `levelUp` absent) simply
+  // flips to the closed summary with no overlay. On success the server re-evaluates the
+  // challenges lazily on the next list read, so we invalidate them (real only).
   const finishAndCelebrate = () => {
+    setFinishPending(true)
     finishWorkout(workoutId ?? 'mock', {
       onSuccess: (r) => {
         if (r?.levelUp) {
           setHadPrFromSignal(r.levelUp.levelUps.includes('max_strength'))
           showLevelUp(r.levelUp)
         }
+        if (!isMock) qc.invalidateQueries({ queryKey: ['challenges', templateSessionId, localToday] })
+        setPhase('complete')
       },
+      // Reset the pending flag on BOTH success and failure — a failed finish POST must
+      // re-enable the "Edzés lezárása ✓" CTA so it can be retried (never stuck disabled).
+      onSettled: () => setFinishPending(false),
     })
   }
 
@@ -359,12 +415,15 @@ function ActiveWorkoutSession({
       (e) => session.skipped.includes(e.id) || (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id),
     )
     if (!allDone) {
-      // The prefill effect (keyed on the derived current exercise) resets the
-      // logging inputs once the advanced session re-renders.
-      setSession(advance(session))
+      // Free navigation: point the viewed exercise at the next unfinished one after
+      // the just-debriefed exercise (wraps around). The prefill effect (keyed on
+      // current.id + cursor) resets the logging inputs once the view moves.
+      const nextId = feedbackEx ? nextUnfinishedAfter(session, feedbackEx.id) : nextUnfinishedAfter(session, current.id)
+      if (nextId) setViewedId(nextId)
     } else {
-      finishAndCelebrate()
-      setPhase('complete')
+      // Explicit finish (spec 2026-07-15): land on the summary; finishing is now the
+      // user's "Edzés lezárása ✓" tap, not an implicit side effect of the last debrief.
+      setPhase('summary')
     }
   }
 
@@ -375,19 +434,23 @@ function ActiveWorkoutSession({
     // Abandoning the current exercise must not leave the island counting down
     // toward it (final-review fix, mezo-8141 — Ride-along A).
     clearRest()
-    const exId = currentExerciseId(session)
+    const exId = current.id // skip the VIEWED exercise (free navigation)
     if (workoutId) skipExercise(workoutId, exId)
     const afterSkip = skipExerciseModel(session, exId)
     const allDone = W.exercises.every(
       (e) => afterSkip.skipped.includes(e.id) || (afterSkip.logged[e.id]?.length ?? 0) >= effectiveSetCount(afterSkip, e.id),
     )
     if (allDone) {
-      finishAndCelebrate()
+      // Skipping the last unresolved exercise ends the workout — land on the summary
+      // (explicit finish); the "Edzés lezárása ✓" CTA there drives finishWorkout.
       setSession(afterSkip)
-      setPhase('complete')
+      setPhase('summary')
     } else {
-      // The prefill effect resets the inputs from the next exercise's target.
-      setSession(advance(afterSkip))
+      // Move the view to the next unfinished exercise; the prefill effect resets
+      // the inputs from its target once the view moves.
+      const nextId = nextUnfinishedAfter(afterSkip, exId)
+      setSession(afterSkip)
+      if (nextId) setViewedId(nextId)
     }
   }
 
@@ -557,19 +620,27 @@ function ActiveWorkoutSession({
     )
   }
 
-  // ---------- COMPLETE ----------
-  if (phase === 'complete') {
-    // WorkoutComplete is index-keyed (unchanged) — adapt the exerciseId-keyed
-    // session into its `ex{i}` shape at the boundary.
-    const completedByIdx: CompletedSets = Object.fromEntries(
-      W.exercises.map((e, i) => ['ex' + i, session.logged[e.id] ?? []]),
-    )
-    // Real PR framing now comes from the progression signal (a max_strength
-    // level-up) rather than the old 105 kg session scan; the mid-workout PR
-    // toast (showPR) is unchanged.
-    const hadPR = !!showPR || hadPrFromSignal
+  // ---------- SUMMARY (closing) / COMPLETE (closed) ----------
+  // Both render the WorkoutSummary: 'summary' is the pre-finish closing screen whose
+  // "Edzés lezárása ✓" CTA drives finishWorkout; 'complete' is the same layout read-only
+  // (set lines) after the finish POST resolves. Real PR framing comes from the progression
+  // signal (a max_strength level-up); the mid-workout PR toast (showPR) is unchanged.
+  if (phase === 'summary' || phase === 'complete') {
+    const closing = phase === 'summary'
     return (
-      <WorkoutComplete workout={W} completedSets={completedByIdx} hadPR={hadPR} onExit={onExit} skippedExerciseIds={session.skipped} />
+      <WorkoutSummary
+        title={W.title}
+        eyebrow={closing ? `Edzés vége · ${W.title}` : 'Lezárva · ma'}
+        mode={closing ? 'closing' : 'closed'}
+        exercises={summaryExercises}
+        challenges={summaryChallenges}
+        hadPR={!!showPR || hadPrFromSignal}
+        showSetLines={!closing}
+        onFinish={finishAndCelebrate}
+        finishPending={finishPending}
+        onBack={() => setPhase('active')}
+        onExit={onExit}
+      />
     )
   }
 
@@ -578,20 +649,13 @@ function ActiveWorkoutSession({
   const doneSets = Object.values(session.logged).reduce((a, arr) => a + arr.length, 0)
   const activeChallenge = challenges.find((c) => c.exerciseId === current.id && acceptedMap[c.id])
   const currentSetCount = effectiveSetCount(session, current.id)
-  // Order-position (not W.exercises' fixed array index) cutoff for the header dots:
-  // the ⋯ sheet's reorder mutates session.order, not the static exercise array, so
-  // "done" must derive from position there — otherwise a reorder that moves an
-  // untouched exercise BEHIND the current one renders it as falsely done (final-
-  // review fix, mezo-8141 — Finding 1).
-  const orderPos = (id: string) => session.order.indexOf(id)
 
-  // Reorderable segment for the ⋯ action sheet: the done + current exercises
-  // stay FIXED; only the FUTURE exercises (after the current one in session.order)
-  // can be reordered. Reorder is client-only / ephemeral — it just replaces
-  // session.order, never persists.
+  // Reorderable segment for the ⋯ action sheet: the exercises up to and including
+  // the VIEWED one stay FIXED; only the ones after it in session.order can be
+  // reordered. Reorder is client-only / ephemeral — it just replaces session.order,
+  // never persists.
   const remaining = (() => {
-    const currentId = currentExerciseId(session)
-    const ci = session.order.indexOf(currentId)
+    const ci = session.order.indexOf(current.id)
     return session.order.slice(ci + 1).map((id) => {
       const e = W.exercises.find((x) => x.id === id)!
       return { id, label: e.name }
@@ -599,14 +663,28 @@ function ActiveWorkoutSession({
   })()
   const handleReorder = (newRemaining: string[]) =>
     setSession((s) => {
-      // Recompute fixed segment from the latest session to avoid a stale closure.
-      const ci = s.order.indexOf(currentExerciseId(s))
+      // Fixed segment anchors on the viewed exercise (from the render closure).
+      const ci = s.order.indexOf(current.id)
       const fixed = s.order.slice(0, ci + 1)
       return { ...s, order: [...fixed, ...newRemaining] }
     })
-  // Presentational "Következő" row below the excard — the next exercise in
-  // session.order (post-reorder), or null on the last exercise.
-  const nextEx = remaining[0] ? W.exercises.find((e) => e.id === remaining[0].id) ?? null : null
+  // Two-way pager (spec 2026-07-15, mockup "B · pager-sáv"): plain order-neighbours
+  // of the viewed exercise — browsing is free, so it does NOT skip done ones; the
+  // list edges disable the ends. (Replaces the old one-way `remaining[0]` next row.)
+  const viewedPos = session.order.indexOf(current.id)
+  const prevEx = viewedPos > 0 ? W.exercises.find((e) => e.id === session.order[viewedPos - 1]) ?? null : null
+  const nextEx = viewedPos < session.order.length - 1 ? W.exercises.find((e) => e.id === session.order[viewedPos + 1]) ?? null : null
+  // Overview rows for the jump sheet — every exercise with its live resolved state.
+  const overviewRows: OverviewExercise[] = session.order.map((id) => {
+    const e = W.exercises.find((x) => x.id === id)!
+    const done = session.logged[id]?.length ?? 0
+    const total = effectiveSetCount(session, id)
+    const state = session.skipped.includes(id) ? 'skipped' as const
+      : done >= total ? 'done' as const
+      : done > 0 ? 'progress' as const
+      : 'todo' as const
+    return { id, name: e.name, state, done, total }
+  })
 
   // F2 "Minden hétre": persist the extra set to the TEMPLATE by bumping this
   // exercise's set count in its meso day and reusing the day-exercises PUT. The
@@ -649,11 +727,11 @@ function ActiveWorkoutSession({
           onReorder={handleReorder}
           onSkip={handleSkip}
           onAddSet={() => {
-            const id = currentExerciseId(session)
-            setSession((s) => addExtraSet(s, currentExerciseId(s)))
-            setAddSetPrompt({ exerciseId: id })
+            setSession((s) => addExtraSet(s, current.id))
+            setAddSetPrompt({ exerciseId: current.id })
           }}
           onEditNote={() => setNoteEditOpen(true)}
+          onFinishWorkout={() => setPhase('summary')}
           hasNote={!!effectiveNote}
           onClose={() => setActionSheetOpen(false)}
         />
@@ -666,6 +744,14 @@ function ActiveWorkoutSession({
             saveExerciseNote(current.id, text)
             setLocalNotes((prev) => ({ ...prev, [current.id]: text }))
           }}
+        />
+      )}
+      {overviewOpen && (
+        <ExerciseOverviewSheet
+          exercises={overviewRows}
+          currentId={current.id}
+          onJump={jumpTo}
+          onClose={() => setOverviewOpen(false)}
         />
       )}
       {addSetPrompt && (
@@ -713,25 +799,28 @@ function ActiveWorkoutSession({
             dots, and the ⋯ actions chip, all in one sticky row (mezo-8141). */}
         <div className="wk-top np-anim" style={{ '--i': 0 } as React.CSSProperties}>
           <button type="button" className="back np-press" aria-label="Vissza" onClick={onExit}>‹</button>
-          <div className="tt">
+          {/* Counter is now a button — tapping it opens the jump-to overview sheet
+              (spec 2026-07-15 free navigation). ▾ signals the drop-down affordance. */}
+          <button type="button" className="tt" aria-label="Gyakorlatlista" disabled={!!feedbackEx} onClick={() => setOverviewOpen(true)} style={{ textAlign: 'left' }}>
             <div className="t1">{W.title}</div>
-            <div className="t2">{currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
-          </div>
-          <div className="exdots" aria-hidden="true">
-            {W.exercises.map((e) => (
-              <i
-                key={e.id}
-                className={
-                  session.skipped.includes(e.id)
-                    ? 'skp'
-                    : orderPos(e.id) < orderPos(current.id)
-                      ? 'don'
-                      : e.id === current.id
-                        ? 'cur'
-                        : undefined
-                }
-              />
-            ))}
+            <div className="t2">▾ {currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
+          </button>
+          <div className="exdots">
+            {W.exercises.map((e) => {
+              // Resolved-state classing (free navigation): a fully-logged or skipped
+              // exercise is done/skipped regardless of order; the viewed one is current.
+              const resolved = session.skipped.includes(e.id)
+                ? 'skp'
+                : (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id)
+                  ? 'don'
+                  : undefined
+              // Dots are tappable (free navigation) — each jumps to its exercise.
+              return (
+                <button key={e.id} type="button" aria-label={`Ugrás: ${e.name}`} onClick={() => jumpTo(e.id)} style={{ padding: 2, lineHeight: 0 }}>
+                  <i className={e.id === current.id ? 'cur' : resolved} />
+                </button>
+              )
+            })}
           </div>
           <button
             type="button"
@@ -757,7 +846,20 @@ function ActiveWorkoutSession({
         {/* Execution card — Napív §4.5: challenge banner, exo/name/prev, video +
             note pill, set-dots, giant steppers, RIR/Side pills, Szett kész ✓
             (mezo-8141). Replaces the old eyebrow/Múlt-hét-hero/tool-row layout. */}
-        <div className="excard np-anim" style={{ '--i': 1 } as React.CSSProperties}>
+        <div
+          className="excard np-anim"
+          style={{ '--i': 1 } as React.CSSProperties}
+          // Swipe navigation (free nav): only large horizontal drags fire, so taps on
+          // the inner steppers/buttons are ignored. Left = next, right = previous.
+          onPointerDown={(e) => { swipeStart.current = e.clientX }}
+          onPointerUp={(e) => {
+            if (swipeStart.current == null) return
+            const dx = e.clientX - swipeStart.current
+            swipeStart.current = null
+            if (dx <= -60) jumpTo(nextEx?.id)
+            else if (dx >= 60) jumpTo(prevEx?.id)
+          }}
+        >
           {activeChallenge && (
             <div className="warmstrip">
               <Icon name="sparkle" size={14} color="var(--coral)" />
@@ -812,14 +914,14 @@ function ActiveWorkoutSession({
           <div className="setdots">
             {Array.from({ length: currentSetCount }, (_, i) => {
               const warm = prescribedAt(session, current.id, i)?.kind === 'warmup'
-              const cls = i < session.setIdx ? 'sd don' : i === session.setIdx ? 'sd cur' : 'sd'
+              const cls = i < cursor ? 'sd don' : i === cursor ? 'sd cur' : 'sd'
               // An F2-added set (index at/past the exercise's planned baseline)
               // gets a distinct dashed marker while still pending — restored in
               // the final-review fix (mezo-8141 — Finding 2), gone since S5.
               const extra = i >= (session.planned[current.id] ?? 0)
               return (
                 <div key={i} className={cls + (warm ? ' wu' : '') + (extra && cls === 'sd' ? ' extra' : '')}>
-                  {i < session.setIdx ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
+                  {i < cursor ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
                 </div>
               )
             })}
@@ -839,8 +941,8 @@ function ActiveWorkoutSession({
                 }}
               >
                 {isWarmupSet
-                  ? `Bemelegítő · B${session.setIdx + 1}`
-                  : `Working · ${session.setIdx + 1 - warmupCount}/${currentSetCount - warmupCount}`}
+                  ? `Bemelegítő · B${cursor + 1}`
+                  : `Working · ${cursor + 1 - warmupCount}/${currentSetCount - warmupCount}`}
               </span>
             </div>
           )}
@@ -892,17 +994,23 @@ function ActiveWorkoutSession({
           </button>
         </div>
 
-        {/* Next-exercise preview — presentational, derived from the reorderable
-            `remaining` segment (post-reorder order). */}
-        {nextEx && (
-          <div className="nextex">
-            <div>
-              <div className="k">Következő</div>
-              <div className="n">{nextEx.name} — {effectiveSetCount(session, nextEx.id)} × {nextEx.repMin}-{nextEx.repMax}</div>
-            </div>
-            <span className="chev" aria-hidden="true">›</span>
-          </div>
-        )}
+        {/* Two-way pager bar (mockup B) — big tap targets, neighbour name + live n/m. */}
+        <div className="pagerbar">
+          <button type="button" className="pg" disabled={!prevEx} aria-label={prevEx ? `Előző: ${prevEx.name}` : 'Előző'} onClick={() => jumpTo(prevEx?.id)}>
+            <span className="ar" aria-hidden="true">‹</span>
+            <span className="lbl">
+              <span className="k">Előző</span>
+              <span className="n">{prevEx ? `${prevEx.name} · ${(session.logged[prevEx.id]?.length ?? 0)}/${effectiveSetCount(session, prevEx.id)}` : '—'}</span>
+            </span>
+          </button>
+          <button type="button" className="pg next" disabled={!nextEx} aria-label={nextEx ? `Következő: ${nextEx.name}` : 'Következő'} onClick={() => jumpTo(nextEx?.id)}>
+            <span className="lbl">
+              <span className="k">Következő</span>
+              <span className="n">{nextEx ? `${nextEx.name} · ${(session.logged[nextEx.id]?.length ?? 0)}/${effectiveSetCount(session, nextEx.id)}` : '—'}</span>
+            </span>
+            <span className="ar" aria-hidden="true">›</span>
+          </button>
+        </div>
 
         {/* Engine rationale — rendered whenever the engine returns one, INDEPENDENT
             of lastWeek: a first-ever workout (no lastWeek) still surfaces its
@@ -927,7 +1035,7 @@ function ActiveWorkoutSession({
               const kindLabel = warm ? 'Bemel.' : 'Working'
               const accent = warm ? 'var(--warning)' : 'var(--coral)'
               const actual = session.logged[current.id]?.[i]
-              const isDone = i < session.setIdx
+              const isDone = i < cursor
 
               // A read-only row — target for pending sets, logged actuals for done ones.
               const w = isDone ? actual?.weight : t?.targetWeightKg
@@ -950,8 +1058,14 @@ function ActiveWorkoutSession({
                     {r ?? '—'}
                   </span>
                   <span style={{ flex: 1 }} />
+                  {/* Logged working sets show their ACTUAL RIR (user fix 1); warmups log none. */}
                   {isDone ? (
-                    <Icon name="check" size={13} color="var(--coral)" />
+                    <span className="row gap-xs" style={{ alignItems: 'center' }}>
+                      {!warm && (
+                        <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? '–'}</span>
+                      )}
+                      <Icon name="check" size={13} color="var(--coral)" />
+                    </span>
                   ) : warm ? null : (
                     <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>
                   )}

@@ -21,7 +21,7 @@ import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import GymSkeleton from '@/features/train/pages/GymSkeleton'
 
 export function GymPage() {
-  const { activeMeso, gymSlots, saveGymSchedule, workoutPending } = useTrain()
+  const { activeMeso, gymSlots, saveGymSchedule, workoutPending, completedTodayWorkout } = useTrain()
   const navigate = useNavigate()
   const [openDay, setOpenDay] = useState<MesoDay | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
@@ -124,7 +124,13 @@ export function GymPage() {
         </div>
       </div>
 
-      {openDay && <GymDaySheet day={openDay} onClose={() => setOpenDay(null)} />}
+      {openDay && (
+        <GymDaySheet
+          day={openDay}
+          completedWorkoutId={completedTodayWorkout?.id ?? null}
+          onClose={() => setOpenDay(null)}
+        />
+      )}
       {scheduleOpen && (
         <GymScheduleSheet
           slots={gymSlots}

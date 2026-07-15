@@ -543,3 +543,31 @@ export const SPLITS: SplitOption[] = [
   { label: 'Láb+Plyo / Felső', days: [4], best: 'erohipertrofia' },
   { label: 'Custom split', days: [3, 4, 5, 6], best: null },
 ]
+
+// Done-day review fixture (mock mode) — lets /train/review/:id render offline.
+// Each ExerciseSetResponse carries the required `skipped` flag (contract: default
+// false, but the generated type keeps it required).
+export const workoutDetailMock = {
+  id: 'wd-mock-1',
+  templateSessionId: 'ts-mock-1',
+  date: new Date().toISOString().slice(0, 10),
+  status: 'completed',
+  title: 'Pull Day',
+  dayLabel: 'Hét',
+  durationEst: 62,
+  exercises: [
+    {
+      exerciseId: 'ex0', name: 'Chest Supported Row', muscle: 'hát', type: 'compound',
+      warmupSets: 2, workingSets: 3, repMin: 6, repMax: 9, targetRIR: 1, skipped: false,
+      sets: [
+        { id: 's1', exerciseId: 'ex0', setIndex: 0, weightKg: 60, reps: 10, kind: 'warmup', skipped: false },
+        { id: 's2', exerciseId: 'ex0', setIndex: 1, weightKg: 80, reps: 8, rir: 2, kind: 'working', skipped: false },
+        { id: 's3', exerciseId: 'ex0', setIndex: 2, weightKg: 85, reps: 8, rir: 1, kind: 'working', skipped: false },
+      ],
+    },
+    {
+      exerciseId: 'ex1', name: 'Lat Pulldown', muscle: 'hát', type: 'compound',
+      warmupSets: 1, workingSets: 3, repMin: 8, repMax: 12, targetRIR: 1, skipped: true, sets: [],
+    },
+  ],
+} satisfies import('@/data/train/trainApi').WorkoutDetailResponse

@@ -352,18 +352,25 @@ evaluator**. Design of record:
   target-field validation (PR needs weight+reps, Depth needs `targetRir`, Volume needs `targetSets`;
   missing ⇒ DROP — unevaluatable), pattern-copied-or-null confidence, model-selected `refs` by index,
   capped at `max-per-workout` (default 3). Structured targets required (decision, §9); no fabricated
-  confidence/refs.
+  confidence/refs. **Generation guard (`mezo-cd8s`)** — the lazy prep-read never generates once the
+  day's instance is **`completed`** (`ProactiveChallengeService.instanceCompleted` via
+  `findFirstByCreatedByAndTemplateSessionIdAndDateOrderByCreatedAtDesc`): a finished workout is over,
+  so no new proposal appears post-hoc.
 - **`ChallengeOutcomeEvaluator`** (NEW, set-level, LLM-free — **not** the shared `MetricWindowEvaluator`)
   — for each `accepted` challenge whose day has a done/past instance: reads the logged `exercise_set`
   rows FK'd to the **template** exercise (no template→instance mapping — sets attach directly to the
   template exercise, `WorkoutService.java:204`), then PR = ∃ set ≥ target weight AND reps · Depth =
   last-set RIR ≤ target · Volume = logged-set count ≥ target → `hit`/`miss`; **no logged sets ⇒
-  `inconclusive`** (`outcome_good null`, never a fabricated miss).
+  `inconclusive`** (`outcome_good null`, never a fabricated miss). A **completed** instance with no
+  logged sets resolves `inconclusive` **immediately** (`mezo-cd8s`) — it never waits out the day; only
+  an in-progress/not-started instance today is left `accepted`.
 - **The write path (L2)** — `GET /api/proactive/challenge?templateSessionId=&date=` (lazy generate +
   lazy resolve; `200 []` = honest, never 404) + `POST /api/proactive/challenge/{id}/decision
   {decision: accept|dismiss}` (fetch-owned-or-404 → **proposed-state guard 409
   `PROACTIVE_CHALLENGE_NOT_PROPOSED`** → mutate). **No `propose` endpoint** (unlike experiments —
-  challenges are generated implicitly by the prep-read).
+  challenges are generated implicitly by the prep-read). `ChallengeResponse` carries the structured
+  targets on the wire — `targetWeightKg?`/`targetReps?`/`targetSets?`/`targetRir?` (additive nullable,
+  `mezo-cd8s`), MapStruct-mapped by name from the entity — feeding the FE pre-finish outcome preview.
 - **One cron** — `ChallengeJob.runOutcome` (`challenge.outcome-cron`, daily 06:25) is an **outcome
   backstop only** (resolves accepted challenges whose day passed even if the user never re-opened);
   third switch `CHALLENGE_JOB_SWITCH = mezo.techcore.cron.challenge-job.enabled`. No propose cron.
