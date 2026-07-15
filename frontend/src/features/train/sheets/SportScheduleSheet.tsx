@@ -75,7 +75,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
           {/* Header */}
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>Sport · heti terv</span>
+              <span className="eyebrow" style={{ color: 'var(--rose)' }}>Sport · heti terv</span>
               <div style={{ marginTop: 4 }}>
                 <Display size="md">
                   <span role="heading" aria-level={2} id="sport-schedule-title">Heti rend</span>
@@ -93,7 +93,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
               <div key={day} className="card notch-4" style={{ padding: 10 }}>
                 <span
                   className="label-mono"
-                  style={{ color: days[di].length ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
+                  style={{ color: days[di].length ? 'var(--rose)' : 'var(--text-tertiary)' }}
                 >
                   {day}
                 </span>
@@ -113,9 +113,9 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                               onClick={() => patch(di, si, { sport: k, ...(k !== 'volleyball' ? { kind: 'training' as const } : {}) })}
                               style={{
                                 padding: '6px 8px', fontSize: 9,
-                                color: d.sport === k ? 'var(--cat-tendency)' : 'var(--text-tertiary)',
+                                color: d.sport === k ? 'var(--rose)' : 'var(--text-tertiary)',
                                 borderColor: d.sport === k
-                                  ? 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)'
+                                  ? 'color-mix(in srgb, var(--rose) 40%, transparent)'
                                   : 'var(--border-subtle)',
                               }}
                             >
@@ -149,7 +149,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                                   aria-pressed={d.kind === 'training'}
                                   aria-label={`${slotName} edzés`}
                                   onClick={() => patch(di, si, { kind: 'training' })}
-                                  style={{ fontSize: 9, color: d.kind === 'training' ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
+                                  style={{ fontSize: 9, color: d.kind === 'training' ? 'var(--rose)' : 'var(--text-tertiary)' }}
                                 >
                                   edzés
                                 </button>
@@ -159,7 +159,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                                   aria-pressed={d.kind === 'match'}
                                   aria-label={`${slotName} meccs`}
                                   onClick={() => patch(di, si, { kind: 'match' })}
-                                  style={{ fontSize: 9, color: d.kind === 'match' ? 'var(--cat-tendency)' : 'var(--text-tertiary)' }}
+                                  style={{ fontSize: 9, color: d.kind === 'match' ? 'var(--rose)' : 'var(--text-tertiary)' }}
                                 >
                                   meccs
                                 </button>

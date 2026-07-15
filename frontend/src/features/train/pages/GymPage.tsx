@@ -83,7 +83,7 @@ export function GymPage() {
               <Icon name="today" size={12} /> Időpontok
             </button>
           )}
-          <span className="label-mono brand" style={{ fontSize: 9 }}>
+          <span className="label-mono" style={{ fontSize: 9 }}>
             W{activeMeso.currentWeek} / {activeMeso.weeks}
           </span>
         </div>

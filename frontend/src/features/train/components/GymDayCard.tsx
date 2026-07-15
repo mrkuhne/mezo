@@ -53,7 +53,7 @@ export function GymDayCard({ day, onOpen }: GymDayCardProps) {
           >
             {day.day}
           </span>
-          {isToday && <span className="label-mono brand mt-xs" style={{ fontSize: 8 }}>MA</span>}
+          {isToday && <span className="label-mono mt-xs" style={{ fontSize: 8 }}>MA</span>}
         </div>
 
         <div className="col flex-1" style={{ minWidth: 0 }}>

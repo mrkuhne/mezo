@@ -75,7 +75,7 @@ export function MesocycleBuilderPage() {
           <h1>{meso.title}</h1>
         </div>
       </div>
-      <div style={{ padding: '4px 24px 4px' }}>
+      <div style={{ padding: '6px 24px 4px' }}>
         <span className="text-secondary" style={{ fontSize: 13, lineHeight: 1.5 }}>
           {meso.goal}
         </span>

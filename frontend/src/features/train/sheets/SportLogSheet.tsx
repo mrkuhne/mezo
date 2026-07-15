@@ -156,7 +156,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
           {/* Header */}
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--cat-tendency)' }}>
+              <span className="eyebrow" style={{ color: 'var(--rose)' }}>
                 Sport log · {SPORT_LABELS[kind]}
               </span>
               <div id="sport-log-title" style={{ marginTop: 4 }}>
@@ -181,9 +181,9 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
                   className="flex-1 notch-4"
                   style={{
                     padding: '10px',
-                    background: active ? 'color-mix(in srgb, var(--cat-tendency) 8%, transparent)' : 'var(--surface-1)',
-                    border: `1px solid ${active ? 'color-mix(in srgb, var(--cat-tendency) 40%, transparent)' : 'var(--border-subtle)'}`,
-                    color: active ? 'var(--cat-tendency)' : 'var(--text-secondary)',
+                    background: active ? 'color-mix(in srgb, var(--rose) 8%, transparent)' : 'var(--surface-1)',
+                    border: `1px solid ${active ? 'color-mix(in srgb, var(--rose) 40%, transparent)' : 'var(--border-subtle)'}`,
+                    color: active ? 'var(--rose)' : 'var(--text-secondary)',
                     fontFamily: 'var(--ff-mono)',
                     fontSize: 10,
                     fontWeight: 600,

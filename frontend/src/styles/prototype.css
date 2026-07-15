@@ -1366,7 +1366,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .dayrow .sess .s { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink); background: none; border: 0; padding: 0; text-align: left; font-family: inherit; width: 100%; cursor: inherit; }
 .dayrow .sess .s .meta { color: var(--faint); font-weight: 600; font-size: 11.5px; }
 .dayrow .chev { color: var(--faint); }
-.dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); }
+.dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); cursor: pointer; }
 .dayrow.today .chev { color: var(--coral-deep); }
 .dayrow.rest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
 .dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
