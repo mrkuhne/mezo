@@ -4,27 +4,15 @@ import { MemoryRouter } from 'react-router-dom'
 import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { QueryWrapper } from '@/test/queryWrapper'
 
-function renderProfile(onOpenSettings = () => {}) {
+function renderProfile() {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/me']}>
-        <ProfilePage onOpenSettings={onOpenSettings} />
+        <ProfilePage />
       </MemoryRouter>
     </QueryWrapper>,
   )
 }
-
-test('renders the Profil header', () => {
-  renderProfile()
-  expect(screen.getByRole('heading', { level: 1, name: 'Profil' })).toBeInTheDocument()
-})
-
-test('gear chip calls onOpenSettings', async () => {
-  const onOpenSettings = vi.fn()
-  renderProfile(onOpenSettings)
-  await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))
-  expect(onOpenSettings).toHaveBeenCalledTimes(1)
-})
 
 test('renders the Biometria card with the derived base-TDEE line', async () => {
   renderProfile()
