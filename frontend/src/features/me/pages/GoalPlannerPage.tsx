@@ -200,7 +200,7 @@ function GoalWizard() {
                         {t.label}
                       </span>
                       <span
-                        style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)', marginTop: 2 }}
+                        style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)', marginTop: 2 }}
                       >
                         {t.sub}
                       </span>
@@ -446,7 +446,7 @@ function Step1({
             → a simple tartás note; otherwise the backend-derived pace + verdict. */}
         {trajectory === 'maintain' ? (
           <div className="card notch-8" style={{ padding: 13 }}>
-            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)' }}>
               ≈ Tartás — nincs súlyváltozási tempó.
             </span>
           </div>
@@ -517,7 +517,7 @@ function FeasibilityPanel({
           %BW / hét
         </span>
         <span
-          style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: accent }}
+          style={{ marginLeft: 'auto', fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', color: accent }}
         >
           {label}
         </span>

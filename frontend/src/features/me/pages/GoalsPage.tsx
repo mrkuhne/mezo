@@ -71,10 +71,12 @@ export function GoalsPage() {
     )
   }
 
+  // Signed math so bulk still lands in 0..100; maintain (totalRange 0) hides the
+  // track entirely — mirrors GoalMiniCard's exact contract (review fix, Task 5).
   const progressed = goal.startWeight - goal.currentWeight
   const remaining = goal.currentWeight - goal.targetWeight
   const totalRange = goal.startWeight - goal.targetWeight
-  const progressPct = Math.min(100, (progressed / totalRange) * 100)
+  const progressPct = totalRange !== 0 ? Math.min(100, Math.max(0, (progressed / totalRange) * 100)) : 0
 
   // Hero reads the raw contract directly (Decision C): trajectory/guards/window.
   const targetWeightKg = goalResponse.targetWeightKg ?? goalResponse.startWeightKg
@@ -178,15 +180,19 @@ export function GoalsPage() {
                 </span>
               </div>
             </div>
-            <div className="track">
-              <div className="fill" style={{ width: `${progressPct}%` }} />
-              <div className="dot" style={{ left: `${progressPct}%` }} />
-            </div>
-            <div className="track-l">
-              <span>{hu1(goal.startWeight)}</span>
-              <span style={{ color: 'var(--sage-deep)' }}>{hu1(goal.currentWeight)} most</span>
-              <span>{hu1(goal.targetWeight)} cél</span>
-            </div>
+            {totalRange !== 0 && (
+              <>
+                <div className="track">
+                  <div className="fill" style={{ width: `${progressPct}%` }} />
+                  <div className="dot" style={{ left: `${progressPct}%` }} />
+                </div>
+                <div className="track-l">
+                  <span>{hu1(goal.startWeight)}</span>
+                  <span style={{ color: 'var(--sage-deep)' }}>{hu1(goal.currentWeight)} most</span>
+                  <span>{hu1(goal.targetWeight)} cél</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Stats — only backend-derived figures: remaining kg (weight-log derived)

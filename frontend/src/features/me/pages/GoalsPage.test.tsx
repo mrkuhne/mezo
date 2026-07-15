@@ -200,6 +200,25 @@ describe('real mode (active goal + timeline)', () => {
     // but the POST was made — that's the contract this test guards.
   })
 
+  // Maintain-trajectory goal (review fix, Task 5): no targetWeightKg → toGoal falls
+  // back targetWeight = startWeight → totalRange = 0. The hero must mirror
+  // GoalMiniCard's guard: render WITHOUT the shared .track (a zero-range track is
+  // meaningless) and leak no NaN/Infinity into the DOM.
+  test('maintain goal (zero range) renders the hero without the .track and without NaN', async () => {
+    const { targetWeightKg: _omit, ...rest } = GOAL
+    const MAINTAIN_GOAL = { ...rest, trajectory: 'maintain' }
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([MAINTAIN_GOAL])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+    )
+    const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+    expect(await screen.findByText('Nyári cut')).toBeInTheDocument() // hero rendered
+    expect(container.querySelector('.track')).toBeNull()
+    expect(container.querySelector('.track-l')).toBeNull()
+    expect(container.innerHTML).not.toMatch(/NaN|Infinity/)
+  })
+
   test('the manage sheet Archiválás archives the goal, then closes', async () => {
     useGoalHandlers()
     const calls: string[] = []

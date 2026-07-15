@@ -11,7 +11,7 @@ export function GoalStat({
 }) {
   return (
     <div className="col flex-1">
-      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
+      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
         {label}
       </span>
       <span

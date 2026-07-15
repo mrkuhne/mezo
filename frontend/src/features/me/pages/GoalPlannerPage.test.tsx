@@ -46,6 +46,10 @@ test('own header: pghead-np lav over + h1; primary CTA is the coral np-cta pill'
   expect(screen.getByText('Me · Új cél')).toBeInTheDocument()
   expect(screen.getByText('Mit építünk?')).toBeInTheDocument() // current h1 unchanged
   expect(screen.getByRole('button', { name: /tovább/i })).toHaveClass('np-cta', 'np-press')
+  // The final step's save CTA carries the same coral pill classes.
+  fireEvent.click(screen.getByRole('button', { name: /fogyás/i }))
+  fireEvent.click(screen.getByRole('button', { name: /tovább/i }))
+  expect(screen.getByRole('button', { name: /létrehozása \+ aktiválás/i })).toHaveClass('np-cta', 'np-press')
 })
 
 test('GoalPlannerPage is a 2-step wizard (no third step) ending on the cél step', async () => {

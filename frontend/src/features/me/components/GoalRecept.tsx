@@ -37,7 +37,7 @@ function SectionLabel({ tag }: { tag: string }) {
       <span
         className="tag"
         style={{
-          fontSize: 8,
+          fontSize: 10,
           fontWeight: 700,
           letterSpacing: '.06em',
           padding: '1px 6px',
@@ -87,7 +87,7 @@ function SegmentMetric({ value, unit, label }: { value: string; unit: string; la
         {value}
         <span style={{ fontSize: 8, color: 'var(--text-tertiary)', marginLeft: 2 }}>{unit}</span>
       </span>
-      <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
+      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
     </div>
   )
 }
@@ -198,7 +198,7 @@ export function GoalRecept({ prescription, onEvaluate, evaluating }: GoalReceptP
             className="chip"
             onClick={onEvaluate}
             disabled={evaluating}
-            style={{ borderColor: 'transparent', background: 'var(--surface-1)', color: 'var(--sage-deep)' }}
+            style={{ borderColor: 'transparent', background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
           >
             {evaluating ? 'Számolás…' : '⚡ Értékeld a célt'}
           </button>

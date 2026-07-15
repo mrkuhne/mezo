@@ -76,7 +76,7 @@ function Slot({
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="col">
           <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{title}</span>
-          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>{caption}</span>
+          <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>{caption}</span>
         </div>
         <button
           type="button"
