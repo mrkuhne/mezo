@@ -5090,7 +5090,6 @@ components:
         - setIndex
         - weightKg
         - reps
-        - rir
       properties:
         exerciseId:
           type: string
@@ -5111,6 +5110,10 @@ components:
           type: integer
           minimum: 0
           maximum: 5
+          nullable: true
+          description: >-
+            Omitted for warmup sets — effort tracking applies to working sets
+            only
         side:
           type: string
           pattern: '^[LBR]$'

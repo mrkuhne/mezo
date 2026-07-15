@@ -61,16 +61,16 @@ public class SetRecommendationService {
         }
 
         List<PrescribedSet> sets = new ArrayList<>();
-        if (base != null) {
-            for (int i = 0; i < ex.getWarmupSets(); i++) {
-                HypertrophyProperties.Ramp r = props.warmupRamp().get(Math.min(i, props.warmupRamp().size() - 1));
-                sets.add(PrescribedSet.builder()
-                    .kind(PrescribedSet.KindEnum.WARMUP)
-                    .targetWeightKg(roundClamp(base.multiply(BigDecimal.valueOf(r.pct()))))
-                    .targetReps(Math.max(1, (int) Math.round(ex.getRepMax() * r.repsFactor())))
-                    .targetRIR(null)
-                    .build());
-            }
+        // Warmup rows are emitted even with no base weight (first session, no anchor): the FE
+        // relies on them to label B1/B2 and to suppress RIR — only the target weight stays null.
+        for (int i = 0; i < ex.getWarmupSets(); i++) {
+            HypertrophyProperties.Ramp r = props.warmupRamp().get(Math.min(i, props.warmupRamp().size() - 1));
+            sets.add(PrescribedSet.builder()
+                .kind(PrescribedSet.KindEnum.WARMUP)
+                .targetWeightKg(base == null ? null : roundClamp(base.multiply(BigDecimal.valueOf(r.pct()))))
+                .targetReps(Math.max(1, (int) Math.round(ex.getRepMax() * r.repsFactor())))
+                .targetRIR(null)
+                .build());
         }
         for (int j = 0; j < ex.getWorkingSets(); j++) {
             sets.add(PrescribedSet.builder()

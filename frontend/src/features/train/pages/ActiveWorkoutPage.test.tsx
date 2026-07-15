@@ -268,6 +268,123 @@ test('mock mode: warmup sets render up-front as amber "Bemel." rows (spec §6)',
   expect(screen.getAllByText('Bemel.')).toHaveLength(2)
 })
 
+// ---- warmup vs working distinction on the logging card (mezo-eerq) ----
+
+test('mock mode: a warmup set shows the Bemelegítő tag and hides the RIR row', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1 set 1 is a warmup (B1): amber kind tag on the card, no RIR selector.
+  expect(await screen.findByText('Bemelegítő · B1')).toBeInTheDocument()
+  expect(screen.queryByText('RIR')).not.toBeInTheDocument() // the rirrow label
+  expect(screen.queryByRole('button', { name: 'RIR 0' })).not.toBeInTheDocument()
+})
+
+test('mock mode: a working set shows the Working tag and the RIR row', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // B1
+  await user.click(screen.getByText('Szett kész ✓')) // B2
+  expect(await screen.findByText('Working · 1/3')).toBeInTheDocument()
+  expect(screen.getByText('RIR')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'RIR 0' })).toBeInTheDocument()
+})
+
+test('mock mode: a deviated working-set weight carries into the next working set', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓')) // B1 (52.5)
+  await user.click(screen.getByText('Szett kész ✓')) // B2 (77.5)
+  await screen.findByText('Working · 1/3')
+  expect(container.querySelector('.steprow')).toHaveTextContent('105') // engine seeds working 1
+  await user.click(screen.getByRole('button', { name: 'Súly növelése' })) // 105 -> 107.5
+  await user.click(screen.getByText('Szett kész ✓')) // log working 1 at 107.5
+  await screen.findByText('Working · 2/3')
+  // The next working set inherits the deviated 107.5, not the static 105 target.
+  expect(container.querySelector('.steprow')).toHaveTextContent('107,5')
+})
+
+test('real mode: null engine targets never reset the weight — the next set inherits it', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  // First-ever session, no anchor: every prescribed target weight is null (the engine
+  // still emits the warmup rows — backend mezo-eerq).
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          lastWeek: null,
+          rationale: 'Első alkalom — add meg a súlyt',
+          warmupSets: 1, workingSets: 2, repMin: 8, repMax: 10,
+          prescribedSets: [
+            { kind: 'warmup', targetWeightKg: null, targetReps: 10, targetRIR: null },
+            { kind: 'working', targetWeightKg: null, targetReps: 10, targetRIR: 1 },
+            { kind: 'working', targetWeightKg: null, targetReps: 10, targetRIR: 1 },
+          ],
+        },
+      ],
+    },
+    calls,
+  )
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await screen.findByRole('button', { name: 'Súly növelése' })
+  // B1 prefills 0 (nothing to inherit yet) — hand-enter 7.5 kg (3 × +2.5).
+  await user.click(screen.getByRole('button', { name: 'Súly növelése' }))
+  await user.click(screen.getByRole('button', { name: 'Súly növelése' }))
+  await user.click(screen.getByRole('button', { name: 'Súly növelése' }))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await waitFor(() => expect(calls).toContain('set:w-1:e-1:0:7.5'))
+  // The working set inherits the hand-entered 7.5 instead of resetting to 0.
+  expect(container.querySelector('.steprow')).toHaveTextContent('7,5')
+})
+
+test('real mode: a warmup set posts without rir, a working set posts with it', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    {
+      ...REAL_TODAY,
+      exercises: [
+        {
+          ...REAL_TODAY.exercises[0],
+          warmupSets: 1, workingSets: 1, repMin: 8, repMax: 10,
+          prescribedSets: [
+            { kind: 'warmup', targetWeightKg: 52.5, targetReps: 10, targetRIR: null },
+            { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 1 },
+          ],
+        },
+      ],
+    },
+    calls,
+  )
+  const bodies: Record<string, unknown>[] = []
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/sets`, async ({ request }) => {
+      const body = (await request.json()) as Record<string, unknown>
+      bodies.push(body)
+      return HttpResponse.json({ id: 'st-' + body.setIndex, exerciseId: body.exerciseId, setIndex: body.setIndex }, { status: 201 })
+    }),
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(screen.getByText('Szett kész ✓')) // B1 — warmup, no RIR logged
+  await user.click(screen.getByText('Szett kész ✓')) // working set (opens the debrief)
+  await waitFor(() => expect(bodies).toHaveLength(2))
+  expect(bodies[0].kind).toBe('warmup')
+  expect(bodies[0]).not.toHaveProperty('rir')
+  expect(bodies[1].kind).toBe('working')
+  expect(bodies[1].rir).toBe(1) // the prescribed working RIR target
+})
+
 test('logging a PR-weight third set on the first exercise fires the PR toast', async () => {
   const user = userEvent.setup()
   setup()
