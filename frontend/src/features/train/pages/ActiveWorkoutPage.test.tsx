@@ -774,6 +774,32 @@ test('real mode: the last set debrief persists feedback and finish fires', async
   expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument() // closed summary
 })
 
+test('real mode: a failed finish POST re-enables the "Edzés lezárása ✓" CTA (not stuck disabled)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], workingSets: 1 }] },
+    calls,
+  )
+  // Override the finish endpoint to fail (500). Mutations don't retry (QueryWrapper),
+  // so the mutation settles once → onSettled must re-enable the CTA (finishPending false).
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/finish`, () => new HttpResponse(null, { status: 500 })),
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(screen.getByText('Szett kész ✓')) // only set -> FeedbackModal
+  await user.click(await screen.findByText('Edzés vége →')) // debrief -> closing summary
+  await user.click(await screen.findByRole('button', { name: /Edzés lezárása/ }))
+  // The finish POST fails; the CTA must become enabled again so the user can retry
+  // (regression guard for the reset living only in onSuccess — mezo-cd8s).
+  await waitFor(() => expect(screen.getByRole('button', { name: /Edzés lezárása/ })).toBeEnabled())
+  // Still on the closing summary — never advanced to the read-only closed view.
+  expect(screen.getByText(/Edzés vége ·/)).toBeInTheDocument()
+})
+
 test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts with setIndex 1', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []

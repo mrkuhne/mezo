@@ -242,7 +242,7 @@ type TrainData = {
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
-  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void }) => void
+  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
   logSportSession: (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
   saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
@@ -496,8 +496,8 @@ export function useTrain(): TrainData {
     [feedbackMutation],
   )
   const finishWorkout = useCallback(
-    (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void }) =>
-      finishMutation.mutate(workoutId, { onSuccess: (r) => opts?.onSuccess?.(r) }),
+    (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) =>
+      finishMutation.mutate(workoutId, { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }),
     [finishMutation],
   )
   const logSportSession = useCallback(

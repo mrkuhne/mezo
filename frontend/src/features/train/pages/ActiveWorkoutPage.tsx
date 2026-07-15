@@ -106,7 +106,7 @@ interface SessionProps {
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
-  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void }) => void
+  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
 }
 
@@ -392,8 +392,10 @@ function ActiveWorkoutSession({
         }
         if (!isMock) qc.invalidateQueries({ queryKey: ['challenges', templateSessionId, localToday] })
         setPhase('complete')
-        setFinishPending(false)
       },
+      // Reset the pending flag on BOTH success and failure — a failed finish POST must
+      // re-enable the "Edzés lezárása ✓" CTA so it can be retried (never stuck disabled).
+      onSettled: () => setFinishPending(false),
     })
   }
 
