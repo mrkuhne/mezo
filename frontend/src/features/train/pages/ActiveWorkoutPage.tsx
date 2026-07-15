@@ -8,7 +8,7 @@
 // Every exit (Bezárás / back / Mentés) navigates back to /train.
 // Ported from prototype train.jsx (the active-workout TrainSection).
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useChallengeActions, useChallenges, useTrain } from '@/data/hooks'
 import { localDateString } from '@/shared/lib/dates'
@@ -43,6 +43,7 @@ import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/she
 import { WorkoutComplete } from '@/features/train/components/WorkoutComplete'
 import { ChallengesCarousel } from '@/features/train/components/ChallengesCarousel'
 import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet'
+import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/sheets/ExerciseOverviewSheet'
 
 type Phase = 'prep' | 'active' | 'complete'
 type CompletedSets = Record<string, LastWeekSet[]>
@@ -166,6 +167,10 @@ function ActiveWorkoutSession({
   const [niggleConfirmed, setNiggleConfirmed] = useState(false)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
   const [actionSheetOpen, setActionSheetOpen] = useState(false)
+  // Free navigation (spec 2026-07-15): the header counter opens a jump-to overview.
+  const [overviewOpen, setOverviewOpen] = useState(false)
+  // Swipe on the excard: a large horizontal drag jumps to the neighbour exercise.
+  const swipeStart = useRef<number | null>(null)
   // After "＋ Szett" we offer to persist the bumped set count to the template (F2).
   const [addSetPrompt, setAddSetPrompt] = useState<{ exerciseId: string } | null>(null)
   // F4 durable per-exercise note: the edit sheet's open flag + a per-exercise
@@ -202,6 +207,9 @@ function ActiveWorkoutSession({
   // NAVIGATED viewed exercise (the logging target — spec 2026-07-15 free navigation).
   const current = feedbackEx ?? W.exercises.find((e) => e.id === viewedId) ?? W.exercises[0]
   const currentIdx = W.exercises.findIndex((e) => e.id === current.id)
+  // Free navigation jump (pager / dots / swipe / overview): moves the VIEWED (logging)
+  // exercise. No-ops while a debrief is open — the pinned feedback target wins then.
+  const jumpTo = (id: string | undefined | null) => { if (id && !feedbackEx) setViewedId(id) }
   // Per-exercise cursor: the next set index to log for the on-screen exercise
   // (derived from its logged count — replaces the old scalar session.setIdx).
   const cursor = nextSetIdx(session, current.id)
@@ -609,9 +617,23 @@ function ActiveWorkoutSession({
       const fixed = s.order.slice(0, ci + 1)
       return { ...s, order: [...fixed, ...newRemaining] }
     })
-  // Presentational "Következő" row below the excard — the next exercise in
-  // session.order (post-reorder), or null on the last exercise.
-  const nextEx = remaining[0] ? W.exercises.find((e) => e.id === remaining[0].id) ?? null : null
+  // Two-way pager (spec 2026-07-15, mockup "B · pager-sáv"): plain order-neighbours
+  // of the viewed exercise — browsing is free, so it does NOT skip done ones; the
+  // list edges disable the ends. (Replaces the old one-way `remaining[0]` next row.)
+  const viewedPos = session.order.indexOf(current.id)
+  const prevEx = viewedPos > 0 ? W.exercises.find((e) => e.id === session.order[viewedPos - 1]) ?? null : null
+  const nextEx = viewedPos < session.order.length - 1 ? W.exercises.find((e) => e.id === session.order[viewedPos + 1]) ?? null : null
+  // Overview rows for the jump sheet — every exercise with its live resolved state.
+  const overviewRows: OverviewExercise[] = session.order.map((id) => {
+    const e = W.exercises.find((x) => x.id === id)!
+    const done = session.logged[id]?.length ?? 0
+    const total = effectiveSetCount(session, id)
+    const state = session.skipped.includes(id) ? 'skipped' as const
+      : done >= total ? 'done' as const
+      : done > 0 ? 'progress' as const
+      : 'todo' as const
+    return { id, name: e.name, state, done, total }
+  })
 
   // F2 "Minden hétre": persist the extra set to the TEMPLATE by bumping this
   // exercise's set count in its meso day and reusing the day-exercises PUT. The
@@ -672,6 +694,14 @@ function ActiveWorkoutSession({
           }}
         />
       )}
+      {overviewOpen && (
+        <ExerciseOverviewSheet
+          exercises={overviewRows}
+          currentId={current.id}
+          onJump={(id) => setViewedId(id)}
+          onClose={() => setOverviewOpen(false)}
+        />
+      )}
       {addSetPrompt && (
         <Sheet onClose={() => setAddSetPrompt(null)} labelledBy="add-set-prompt-title" className="sheet-nested">
           {(close) => (
@@ -717,11 +747,13 @@ function ActiveWorkoutSession({
             dots, and the ⋯ actions chip, all in one sticky row (mezo-8141). */}
         <div className="wk-top np-anim" style={{ '--i': 0 } as React.CSSProperties}>
           <button type="button" className="back np-press" aria-label="Vissza" onClick={onExit}>‹</button>
-          <div className="tt">
+          {/* Counter is now a button — tapping it opens the jump-to overview sheet
+              (spec 2026-07-15 free navigation). ▾ signals the drop-down affordance. */}
+          <button type="button" className="tt" aria-label="Gyakorlatlista" onClick={() => setOverviewOpen(true)} style={{ textAlign: 'left' }}>
             <div className="t1">{W.title}</div>
-            <div className="t2">{currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
-          </div>
-          <div className="exdots" aria-hidden="true">
+            <div className="t2">▾ {currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
+          </button>
+          <div className="exdots">
             {W.exercises.map((e) => {
               // Resolved-state classing (free navigation): a fully-logged or skipped
               // exercise is done/skipped regardless of order; the viewed one is current.
@@ -730,7 +762,12 @@ function ActiveWorkoutSession({
                 : (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id)
                   ? 'don'
                   : undefined
-              return <i key={e.id} className={e.id === current.id ? 'cur' : resolved} />
+              // Dots are tappable (free navigation) — each jumps to its exercise.
+              return (
+                <button key={e.id} type="button" aria-label={`Ugrás: ${e.name}`} onClick={() => jumpTo(e.id)} style={{ padding: 2, lineHeight: 0 }}>
+                  <i className={e.id === current.id ? 'cur' : resolved} />
+                </button>
+              )
             })}
           </div>
           <button
@@ -757,7 +794,20 @@ function ActiveWorkoutSession({
         {/* Execution card — Napív §4.5: challenge banner, exo/name/prev, video +
             note pill, set-dots, giant steppers, RIR/Side pills, Szett kész ✓
             (mezo-8141). Replaces the old eyebrow/Múlt-hét-hero/tool-row layout. */}
-        <div className="excard np-anim" style={{ '--i': 1 } as React.CSSProperties}>
+        <div
+          className="excard np-anim"
+          style={{ '--i': 1 } as React.CSSProperties}
+          // Swipe navigation (free nav): only large horizontal drags fire, so taps on
+          // the inner steppers/buttons are ignored. Left = next, right = previous.
+          onPointerDown={(e) => { swipeStart.current = e.clientX }}
+          onPointerUp={(e) => {
+            if (swipeStart.current == null) return
+            const dx = e.clientX - swipeStart.current
+            swipeStart.current = null
+            if (dx <= -60) jumpTo(nextEx?.id)
+            else if (dx >= 60) jumpTo(prevEx?.id)
+          }}
+        >
           {activeChallenge && (
             <div className="warmstrip">
               <Icon name="sparkle" size={14} color="var(--coral)" />
@@ -892,17 +942,23 @@ function ActiveWorkoutSession({
           </button>
         </div>
 
-        {/* Next-exercise preview — presentational, derived from the reorderable
-            `remaining` segment (post-reorder order). */}
-        {nextEx && (
-          <div className="nextex">
-            <div>
-              <div className="k">Következő</div>
-              <div className="n">{nextEx.name} — {effectiveSetCount(session, nextEx.id)} × {nextEx.repMin}-{nextEx.repMax}</div>
-            </div>
-            <span className="chev" aria-hidden="true">›</span>
-          </div>
-        )}
+        {/* Two-way pager bar (mockup B) — big tap targets, neighbour name + live n/m. */}
+        <div className="pagerbar">
+          <button type="button" className="pg" disabled={!prevEx} aria-label={prevEx ? `Előző: ${prevEx.name}` : 'Előző'} onClick={() => jumpTo(prevEx?.id)}>
+            <span className="ar" aria-hidden="true">‹</span>
+            <span className="lbl">
+              <span className="k">Előző</span>
+              <span className="n">{prevEx ? `${prevEx.name} · ${(session.logged[prevEx.id]?.length ?? 0)}/${effectiveSetCount(session, prevEx.id)}` : '—'}</span>
+            </span>
+          </button>
+          <button type="button" className="pg next" disabled={!nextEx} aria-label={nextEx ? `Következő: ${nextEx.name}` : 'Következő'} onClick={() => jumpTo(nextEx?.id)}>
+            <span className="lbl">
+              <span className="k">Következő</span>
+              <span className="n">{nextEx ? `${nextEx.name} · ${(session.logged[nextEx.id]?.length ?? 0)}/${effectiveSetCount(session, nextEx.id)}` : '—'}</span>
+            </span>
+            <span className="ar" aria-hidden="true">›</span>
+          </button>
+        </div>
 
         {/* Engine rationale — rendered whenever the engine returns one, INDEPENDENT
             of lastWeek: a first-ever workout (no lastWeek) still surfaces its

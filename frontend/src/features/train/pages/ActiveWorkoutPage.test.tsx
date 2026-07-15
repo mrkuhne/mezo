@@ -97,7 +97,8 @@ test('the wk-top header shows the workout title, the gyakorlat/szett counter, an
   await user.click(screen.getByText(/Kezdjük el/))
   expect(container.querySelector('.wk-top .t1')).toHaveTextContent('Pull Day')
   // currentIdx=0, 5 exercises, 0 sets logged yet, 22 total planned sets (5+5+4+4+4).
-  expect(screen.getByText('1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
+  // The counter is now a ▾ overview-trigger button (Task 7 free navigation).
+  expect(screen.getByText('▾ 1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
   expect(container.querySelectorAll('.exdots i')).toHaveLength(5)
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Gyakorlat műveletek' })).toBeInTheDocument()
@@ -107,11 +108,11 @@ test('completing a set advances the set-dot cursor and the header counter', asyn
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  expect(screen.getByText('1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
+  expect(screen.getByText('▾ 1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
   expect(container.querySelectorAll('.setdots .sd.don')).toHaveLength(0)
   await user.click(screen.getByText('Szett kész ✓'))
   expect(container.querySelectorAll('.setdots .sd.don')).toHaveLength(1)
-  expect(screen.getByText('1/5 gyakorlat · 1/22 szett')).toBeInTheDocument()
+  expect(screen.getByText('▾ 1/5 gyakorlat · 1/22 szett')).toBeInTheDocument()
 })
 
 // ---- rest wiring: "Szett kész ✓" starts the island rest (mezo-8141) ----
@@ -1100,4 +1101,28 @@ test('a logged working set shows its RIR chip in the read-only set list', async 
   const rows = container.querySelectorAll('.col.gap-sm .row.gap-sm')
   const doneWorking = Array.from(rows).find((r) => r.textContent?.includes('Working') && r.textContent?.includes('RIR 1'))
   expect(doneWorking).toBeTruthy()
+})
+
+// ---- Task 7: free exercise navigation (pager bar, overview sheet, tappable dots) ----
+
+test('the pager bar navigates to the next and previous exercise', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelector('.excard h2')).toHaveTextContent('Chest Supported Row')
+  await user.click(screen.getByRole('button', { name: /Következő/ }))
+  expect(container.querySelector('.excard h2')).not.toHaveTextContent('Chest Supported Row')
+  await user.click(screen.getByRole('button', { name: /Előző/ }))
+  expect(container.querySelector('.excard h2')).toHaveTextContent('Chest Supported Row')
+})
+
+test('the header counter opens the exercise overview and a row jump switches the card', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlatlista' }))
+  // jump to the LAST exercise from the list (mock plan has 5)
+  const rows = screen.getAllByRole('button', { name: /ugrás/i })
+  await user.click(rows[rows.length - 1])
+  expect(container.querySelector('.excard h2')).not.toHaveTextContent('Chest Supported Row')
 })
