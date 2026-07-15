@@ -16,8 +16,8 @@ function GrowthRow({ label, value }: { label: string; value: string }) {
 export function GrowthWeekCard({ growth }: { growth: WeeklyGrowth | null }) {
   const empty = !growth || (growth.questClosed === 0 && growth.lifeXp === 0 && growth.activities === 0)
   return (
-    <div className="card notch-12" style={{ padding: 18 }}>
-      <span className="eyebrow brand">Growth — heti</span>
+    <div className="card" style={{ padding: 18 }}>
+      <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Growth — heti</span>
       {empty ? (
         <p className="text-tertiary" style={{ fontSize: 13, marginTop: 8, lineHeight: 1.5 }}>
           Még nincs growth-adat ezen a héten.
