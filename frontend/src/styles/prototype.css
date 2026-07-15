@@ -1538,3 +1538,16 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .mehead .t1 { font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -.3px; color: var(--ink); }
 .mehead .t2 { font-size: 12.5px; color: var(--sub); font-weight: 600; margin-top: 1px; }
 :root[data-theme="dark"] .mehead .avatar { background: linear-gradient(140deg, rgba(155,143,196,.25), rgba(122,109,168,.25)); }
+
+/* ===== Napív goal mini-track (Profil, spec §4.6) — .track reused by the Cél hero ===== */
+.goalmini { display: block; width: 100%; text-align: left; padding: 17px; cursor: pointer; font: inherit; }
+.goalmini .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.goalmini .t { font-size: 14px; font-weight: 800; color: var(--ink); }
+.goalmini .pct { font-size: 12px; color: var(--sage-deep); font-weight: 800; white-space: nowrap; }
+.track { position: relative; height: 13px; border-radius: 999px; background: var(--warm); margin-top: 13px; }
+.track .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: linear-gradient(90deg, var(--sage), var(--amber)); }
+.track .dot { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 21px; height: 21px; border-radius: 50%; background: var(--surface); box-shadow: 0 2px 8px rgba(43,33,24,.28); border: 3px solid var(--sage-deep); }
+.track-l { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); font-weight: 800; margin-top: 9px; }
+@media (prefers-reduced-motion: no-preference) {
+  .track .fill { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .3s var(--np-ease-ios) forwards; }
+}

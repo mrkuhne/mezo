@@ -6,7 +6,6 @@ import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { GhostState } from '@/shared/ui/GhostState'
 import { useGoal, useGoalActions, useWeight, useBiometricProfile } from '@/data/hooks'
-import type { GoalResponse } from '@/data/me/goalApi'
 import { huMonthDay } from '@/shared/lib/dates'
 import { GoalStat } from '@/features/me/components/GoalStat'
 import { GoalTimeline } from '@/features/me/components/GoalTimeline'
@@ -15,20 +14,8 @@ import { GoalPlanSlots } from '@/features/me/components/GoalPlanSlots'
 import { EditGoalSheet } from '@/features/me/sheets/EditGoalSheet'
 import { GoalGate } from '@/features/me/components/GoalGate'
 import GoalsSkeleton from '@/features/me/pages/GoalsSkeleton'
+import { TRAJECTORY_LABEL, GUARD_LABEL } from '@/features/me/logic/goalLabels'
 // LinkedMesoCard was the per-row card the GoalTimeline lane view replaced in G4b.
-
-// Contract-native trajectory + guard labels — the hero reads these straight off
-// the raw GoalResponse (G4b Decision C: window/trajectory/guards/weights no longer
-// pass through the toGoal back-compat mapper).
-const TRAJECTORY_LABEL: Record<GoalResponse['trajectory'], string> = {
-  cut: 'Fogyás',
-  bulk: 'Hízás',
-  maintain: 'Maintenance',
-}
-const GUARD_LABEL: Record<string, string> = {
-  strength: 'Erő-gard',
-  muscle: 'Izom-gard',
-}
 
 export function GoalsPage() {
   const navigate = useNavigate()

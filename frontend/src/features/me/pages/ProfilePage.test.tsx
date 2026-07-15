@@ -21,6 +21,16 @@ test('renders the Biometria card with the derived base-TDEE line', async () => {
   expect(screen.getByText(/≈2960/)).toBeInTheDocument()
 })
 
+test('renders the goal mini-track first, before the Biometria card (spec §4.6 order)', async () => {
+  renderProfile()
+  await waitFor(() => expect(screen.getByText('Biometria')).toBeInTheDocument())
+  const goalmini = document.querySelector('.goalmini')
+  const biometria = screen.getByText('Biometria')
+  expect(goalmini).not.toBeNull()
+  // goalmini precedes the Biometria heading in DOM order → Node.DOCUMENT_POSITION_FOLLOWING set.
+  expect(goalmini!.compareDocumentPosition(biometria) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+})
+
 test('renders the consolidated Growth summary card below biometrics (radars retired)', async () => {
   renderProfile()
   // The three profile radar/level cards were consolidated into GrowthSummaryCard,
