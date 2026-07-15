@@ -45,19 +45,19 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 
 **Route:** `/insights` (`frontend/src/app/TabBar.tsx:10`, icon `insights`). Shell + 7 sub-tabs wired in `frontend/src/app/router.tsx:76-87` from `INSIGHTS_TABS` (`frontend/src/features/insights/pages/tabs.ts`):
 
-| Sub-tab | Route | Label (verbatim) | View | Real mode |
-|---|---|---|---|---|
-| patterns | `/insights` (index) | `Patterns` | `PatternsPage` | shown |
-| weekly | `/insights/weekly` | `Weekly` | `WeeklyPage` | shown |
-| memoir | `/insights/memoir` | `Memoir` | `MemoirPage` | **shown** → real (W2) |
-| knowledge | `/insights/knowledge` | `Knowledge` | `KnowledgeListPage` | shown |
-| chat | `/insights/chat` | `Chat` | `ChatPage` | shown |
-| predictions | `/insights/predictions` | `Predictions` | `PredictionsPage` | **real** (P1) |
-| experiments | `/insights/experiments` | `Experiments` | `ExperimentsPage` | **real** (P2) |
+| Sub-tab | Route | Pill label (verbatim) | h1 title | View | Real mode |
+|---|---|---|---|---|---|
+| patterns | `/insights` (index) | `Minták` | `Minták` | `PatternsPage` | shown |
+| weekly | `/insights/weekly` | `Heti` | `Heti riport` | `WeeklyPage` | shown |
+| memoir | `/insights/memoir` | `Memoár` | `Memoár` | `MemoirPage` | **shown** → real (W2) |
+| knowledge | `/insights/knowledge` | `Tudástár` | `Tudástár` | `KnowledgeListPage` | shown |
+| chat | `/insights/chat` | `Chat` | `Chat` | `ChatPage` | shown |
+| predictions | `/insights/predictions` | `Előrejelzések` | `Előrejelzések` | `PredictionsPage` | **real** (P1) |
+| experiments | `/insights/experiments` | `Kísérletek` | `Kísérletek` | `ExperimentsPage` | **real** (P2) |
 
-**Honest surface (mezo-t16y.1 · proactive W2):** the Phase-3+ demo tabs carried only hand-authored demo fiction, so **in real mode the sub-nav hid them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; `InsightsSubNav` maps that instead of `INSIGHTS_TABS`). **Memoir left `PHASE3_TAB_IDS` at W2 (`mezo-h4wp.4`), Predictions at P1 (`mezo-h4wp.7`), and Experiments at P2 (`mezo-h4wp.8`)** — the set is now **EMPTY**, so `visibleInsightsTabs()` returns all seven tabs in both modes. No `PhaseTeaserCard` ghost is reachable any more; every tab renders real data or an honest null-state. (The `PhaseTeaserCard` component survives only as the pattern for any future Phase-gated surface.)
+**Honest surface (mezo-t16y.1 · proactive W2):** the Phase-3+ demo tabs carried only hand-authored demo fiction, so **in real mode the sub-nav hid them** (`visibleInsightsTabs()` in `tabs.ts` filters `PHASE3_TAB_IDS` when `!isMockMode()`; `InsightsSubNav` maps that instead of `INSIGHTS_TABS`). **Memoir left `PHASE3_TAB_IDS` at W2 (`mezo-h4wp.4`), Predictions at P1 (`mezo-h4wp.7`), and Experiments at P2 (`mezo-h4wp.8`)** — the set is now **EMPTY**, so `visibleInsightsTabs()` returns all seven tabs in both modes. No `PhaseTeaserCard` ghost is reachable any more; every tab renders real data or an honest null-state. (The `PhaseTeaserCard` component was **deleted** in the Napív S8 shell migration once it had no reachable consumer — the un-ghost/ghost-guard recipe lives on only in git history.)
 
-The shell `InsightsSection` (`frontend/src/features/insights/pages/InsightsSection.tsx`) renders a `page-header` (`Eyebrow brand "Insights"` + `PageTitle` tracking the active tab's label, derived from `pathname.split('/')[2]`), a **decorative, handler-less** settings `chip` (`aria-label="Insights beállítások"`), the sticky `InsightsSubNav` (`aria-label="Insights alnavigáció"`), and an `<Outlet/>`.
+The shell `InsightsSection` (`frontend/src/features/insights/pages/InsightsSection.tsx`) renders the Napív `.pghead-np.lav` page-head (over-line `Insights` + `h1` = the active tab's `title`, derived from `pathname.split('/')[2]`), then the sticky `InsightsSubNav` (`aria-label="Insights alnavigáció"`), then an `<Outlet/>` (padding unchanged). **Napív S8 (`mezo-8141`, `mezo-mifi`):** Insights was the last domain still on the legacy `.subnav` idiom — it migrated onto `.np-pills`/`.np-pill` with `--pill-accent: var(--lav)` + `--pill-accent-strong: var(--lav-deep)`, and the whole `.subnav`/`.subnav-item` CSS was retired. The prototype's **decorative, handler-less settings chip was dropped** (dead chrome with no handler, per the S6 PacingCard precedent).
 
 ### 2.1 Patterns (`pages/PatternsPage.tsx`) — **real dual-mode since companion V3.1**
 Default tab — the pattern-engine Inbox ([`companion.md`](companion.md) §1 V3.1). Reads
@@ -300,7 +300,7 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
 - **Weekly hook (dual-mode):** `data/insights/weeklyHooks.test.tsx` — real-mode composition/null-state cases + (W1) `weeklySuggestion` served from the GET / kept null on the default 404 (MSW `/api/proactive/weekly-suggestion` defaults to 404) + (E3) `growthWeek` from the MSW default honest-zeros. Card: `components/GrowthWeekCard.test.tsx` (E3 — renders the rows on data, the honest empty line on a zero/null week).
 - **Memoir hook (dual-mode, W2):** `data/insights/memoirHooks.test.tsx` (3) — real mode maps the server memoir with a derived `Hét N …` week label (anniversaryNote null, mode live); returns null memoir on the default 404; mock returns the seed + anniversaryNote without fetching (MSW `/api/proactive/memoir` defaults to 404).
 - **`ChatPage.test` gotcha** (documented in-file): `userEvent.type` deadlocks under `vi.useFakeTimers()`; the test uses `fireEvent.change` + `fireEvent.keyDown` and `vi.advanceTimersByTime(1300)` to exercise the 1200 ms canned-reply timer.
-- **Nav/shell:** `insights.nav.test.tsx` (real: lands on Patterns, Weekly/Memoir/Predictions/**Experiments** links all work → their null-states; mock: Memoir navigation renders the demo), `InsightsSubNav.test.tsx` (**both describes = all 7 tabs since P2 — nothing hidden**); plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark.
+- **Nav/shell:** `insights.nav.test.tsx` (real: lands on `Minták`, `Heti`/`Memoár`/`Előrejelzések`/**`Kísérletek`** links all work → their null-states; mock: `Memoár` navigation renders the demo), `InsightsSubNav.test.tsx` (**both describes = all 7 `.np-pill`s since P2 — nothing hidden**); plus app-level `src/app/navigation.test.tsx` / `TabBar.test.tsx` assert the Insights tab + `aria-label="Insights alnavigáció"` landmark.
 - **No ghost pages remain (since P2):** every page test now has a `(mock mode)` + `(real mode)` describe asserting real data / the honest null-state — no test asserts a `hamarosan` teaser any more. `ExperimentsPage.test.tsx` real-mode: an MSW proposed row renders `◇ Javaslat` + Elfogadom/Elvetem and clicking Elfogadom POSTs the decision; the default empty array shows the still-learning null-state. `experimentsHooks.test.tsx` mirrors the P1 `predictionsHooks.test.tsx` idiom (maps a wire row, `[]` default, mock no-fetch). Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
 
 **Commands** (run from `frontend/`):
@@ -324,7 +324,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **Weekly's REVIEW is real by CLIENT-SIDE composition, its SUGGESTION by the proactive backend (D′ `mezo-t16y.1` + W1 `mezo-h4wp.3`):** `useWeekly` composes the review (score + items) from existing fuel/train/biometrics reads — cheaper than an Insights backend and honest (real numbers or the „tanulom" null-state, never fabricated). The **score formula is deterministic + documented** (§4); its constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) are FE `const`s to **promote to backend config** — same trajectory as `MIN_PATTERN_CONFIDENCE`. **W1 did NOT promote them** (kept them FE consts to stay in scope; a small follow-up bd issue owns the promotion — the proactive epic files it). **Known simplification:** both weeks use the CURRENT schedules for `trainPlanned` (no historical schedule read, §3). **`weeklySuggestion` is now LIVE in real mode (W1)** — the generated plan prose from `GET /api/proactive/weekly-suggestion` (404→null→the honest placeholder); it is no longer the honest-null-only path. The review composition still adds only one Train op (`listWorkouts`, §4) and no Insights endpoint/table; the suggestion endpoint is proactive-owned ([`proactive.md`](proactive.md)).
 - **`useKnowledge` is shared across Insights + Me tabs** (§5.1) — co-design any knowledge backend for both.
 - **Cross-domain pattern IDs** (`P2`/`P3`) are referenced as mock copy in Sleep/Fuel/Train/Goals — making them real requires a shared pattern-engine service with stable IDs (§5.4).
-- **Inert affordances:** the settings chip, "+ Új kísérlet javasol Mezo", the Weekly "Elfogad/Hangoljuk" pair and the **Memoir reactions + "Memoir archive →" footer + anniversary card** (all still handler-less/unpersisted — but since **W1/W2** they are **hidden in live mode** `mode !== 'mock'`, shown only over the mock seed; false-affordance rule), mic button — all handler-less.
+- **Inert affordances:** "+ Új kísérlet javasol Mezo", the Weekly "Elfogad/Hangoljuk" pair and the **Memoir reactions + "Memoir archive →" footer + anniversary card** (all still handler-less/unpersisted — but since **W1/W2** they are **hidden in live mode** `mode !== 'mock'`, shown only over the mock seed; false-affordance rule), mic button — all handler-less.
 - **Honest surface (mezo-t16y.1 · W2 · P1 · P2 — now COMPLETE):** the Phase-3+ demo tabs were hidden from the sub-nav (`visibleInsightsTabs()` filtering `PHASE3_TAB_IDS`) until each got real data — Memoir at W2, Predictions at P1, **Experiments at P2**. `PHASE3_TAB_IDS` is now **empty**: no tab is hidden, no `PhaseTeaserCard` ghost is reachable, every tab renders real data or an honest null-state. The un-ghost recipe (drop the `PHASE3_TAB_IDS` entry, remove the page guard, render real + honest null-state, keep unpersisted extras mock-only) is preserved in the git history of the four un-ghost commits should a future Phase-gated tab need it.
 
 ---
@@ -332,13 +332,12 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 ## 10. Key files
 
 **Feature (`frontend/src/features/insights/`):**
-- `InsightsSection.tsx` — shell (header + subnav + outlet)
-- `InsightsSubNav.tsx` — sticky nav (`NavLink`), maps `visibleInsightsTabs()` (7 in mock, **5 in real** since W2)
-- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/end) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2; all 7 tabs visible in both modes)
+- `InsightsSection.tsx` — shell (`.pghead-np.lav` head + `.np-pills` sub-nav + outlet)
+- `InsightsSubNav.tsx` — sticky `.np-pills` nav (`NavLink` → `.np-pill.on`, lav accent), maps `visibleInsightsTabs()` (all 7 in both modes)
+- `tabs.ts` — `INSIGHTS_TABS` (id/to/label/**title**/end) + `visibleInsightsTabs()` (`PHASE3_TAB_IDS` now **EMPTY** — memoir left at W2, predictions at P1, experiments at P2; all 7 tabs visible in both modes)
 - `pages/PatternsPage.tsx · WeeklyPage.tsx · MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the 7 sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
 - `data/insights/experimentsApi.ts` + `experimentsHooks.ts` — **P2** the Experiments consumer (`useExperiments()` → `GET /api/proactive/experiment`; `useExperimentActions()` → the decision/propose mutations)
 - `data/insights/predictionsApi.ts` + `predictionsHooks.ts` — **P1** the Predictions consumer (`usePredictions()` → `GET /api/proactive/prediction`, list; `[]`→still-learning null-state)
-- `components/PhaseTeaserCard.tsx` — honest "hamarosan" ghost for hidden Phase-3 tabs (direct-URL guard)
 - `components/PatternCard.tsx` — critique grid + thinking disclosure + confirm/monitor/reject
 - `components/GrowthWeekCard.tsx` — **E3** the Weekly "Growth — heti" card (quests/LIFE XP/activities/savings + honest empty line); growth domain in [`growth.md`](growth.md)
 - `components/ChatMessage.tsx` — chat bubble + tool/ref rows

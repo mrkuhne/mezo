@@ -218,13 +218,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   scroll-behavior: smooth;
   position: relative;
 }
-/* When a Train sub-nav is rendered above the screen-content, push content down */
-.screen-content.with-subnav,
-[class*="screen-content"]:has(+ .train-subnav),
-.screen-content {
-  /* default base; component-level offset below */
-}
-
 /* Sticky page chrome (breadcrumb/back rows) — pins below the fake status bar
    while the content scrolls under it, like native app navigation chrome. */
 .sticky-top {
@@ -756,33 +749,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 @keyframes node-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
-}
-
-/* Subnav */
-.subnav {
-  display: flex;
-  gap: 4px;
-  padding: 0 24px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  position: relative;
-  -webkit-mask-image: linear-gradient(to right, black 92%, transparent);
-  mask-image: linear-gradient(to right, black 92%, transparent);
-}
-.subnav::-webkit-scrollbar { display: none; }
-.subnav-item {
-  flex-shrink: 0;
-  padding: 8px 12px;
-  font-family: var(--ff-mono);
-  font-size: 10px; font-weight: 600;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--text-tertiary);
-  border-bottom: 2px solid transparent;
-  white-space: nowrap;
-}
-.subnav-item.active {
-  color: var(--brand-glow);
-  border-bottom-color: var(--brand-glow);
 }
 
 /* Pattern card critique mini-bars */
@@ -1347,7 +1313,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .np-pills::-webkit-scrollbar { display: none; }
 .np-pill { flex-shrink: 0; border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--sub); background: rgba(255,255,255,.75); border: 1px solid rgba(43,33,24,.05); white-space: nowrap; }
 :root[data-theme="dark"] .np-pill { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.08); }
-.np-pill.on { color: #fff; border-color: transparent; background: var(--pill-accent, var(--coral)); }
+.np-pill.on { color: #fff; border-color: transparent; background: var(--pill-accent-strong, var(--pill-accent, var(--coral))); }
 
 /* ===== Napív page head (pgheadrow — Train sub-pages; Fuel/Me adopt later) ===== */
 .pghead-np { display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 24px 0; }

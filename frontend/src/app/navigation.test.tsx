@@ -17,9 +17,9 @@ test('redirects / to Today', () => {
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
   await userEvent.click(screen.getByLabelText('Insights'))
-  // Insights shell: the brand eyebrow is the stable landmark; the page title is
-  // dynamic per active sub-view (the index sub-view renders "Patterns").
-  expect(screen.getByRole('heading', { level: 1, name: /patterns/i })).toBeInTheDocument()
+  // Insights shell: the pghead over-line is the stable landmark; the page title is
+  // dynamic per active sub-view (the index sub-view renders "Minták").
+  expect(screen.getByRole('heading', { level: 1, name: /minták/i })).toBeInTheDocument()
   expect(screen.getByLabelText('Insights alnavigáció')).toBeInTheDocument()
 })
 test('Me screen theme toggle flips data-theme', async () => {
