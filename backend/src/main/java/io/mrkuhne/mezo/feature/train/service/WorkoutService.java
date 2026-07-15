@@ -83,8 +83,16 @@ public class WorkoutService {
     // exists ONLY when mezo.feature.closing-block.enabled=true (mirrors hypertrophyGate).
     private final ClosingBlockService closingBlockService;
     private final ObjectProvider<ClosingBlockGate> closingBlockGate;
+    // Session flow fix (mezo-cd8s): lazily settle abandoned instances at the top of getToday — its
+    // own @Transactional bean (getToday is a read), always on (no feature gate).
+    private final WorkoutAutoCloseService workoutAutoCloseService;
 
     public WorkoutTodayResponse getToday(UUID createdBy) {
+        // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
+        // after this, only a today-dated instance can be 'active', so the open-instance
+        // lookup below can never resurrect last week's abandoned session. Runs before the
+        // meso lookup so stale instances settle even when there is no active meso.
+        workoutAutoCloseService.autoCloseStale(createdBy);
         WorkoutTodayResponse empty = new WorkoutTodayResponse();
         empty.setWeekDoneDates(List.of());
         MesocycleEntity activeMeso = mesocycleRepository

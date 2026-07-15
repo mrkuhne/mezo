@@ -515,15 +515,18 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
             trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
         ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
         LocalDate monday = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1L);
-        // (a) in-week ACTIVE instance with a logged set -> still not done (only completed counts)
-        WorkoutSessionEntity inWeek = trainPopulator.createWorkoutInstance(user, template, monday, "active");
-        trainPopulator.createLoggedSet(user, exercise.getId(), inWeek.getId(), 0, "90.0", 8, 2);
+        // (a) TODAY's ACTIVE instance with a logged set -> still not done (only completed counts).
+        // Must be today-dated: getToday's lazy auto-close (mezo-cd8s) settles PAST active instances,
+        // so only a today-dated one can still be 'active' when done-dates are computed.
+        WorkoutSessionEntity todayActive =
+            trainPopulator.createWorkoutInstance(user, template, LocalDate.now(), "active");
+        trainPopulator.createLoggedSet(user, exercise.getId(), todayActive.getId(), 0, "90.0", 8, 2);
         // (b) last week's COMPLETED instance -> out of this Mon–Sun window
         trainPopulator.createWorkoutInstance(user, template, monday.minusDays(1), "completed");
 
         WorkoutTodayResponse today = workoutService.getToday(user);
 
-        assertThat(today.getWeekDoneDates()).doesNotContain(monday); // active instance excluded
+        assertThat(today.getWeekDoneDates()).doesNotContain(LocalDate.now()); // active instance excluded
         assertThat(today.getWeekDoneDates()).doesNotContain(monday.minusDays(1)); // out-of-week excluded
     }
 

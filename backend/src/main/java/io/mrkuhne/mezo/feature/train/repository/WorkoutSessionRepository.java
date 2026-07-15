@@ -75,4 +75,8 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
           AND s.date IS NOT NULL
         """)
     List<LocalDate> findInstanceDates(@Param("createdBy") UUID createdBy);
+
+    /** The owner's ACTIVE instances dated strictly before a day — the lazy auto-close scan set. */
+    List<WorkoutSessionEntity> findByCreatedByAndStatusAndDateBeforeAndTemplateSessionIdIsNotNull(
+        UUID createdBy, String status, LocalDate date);
 }
