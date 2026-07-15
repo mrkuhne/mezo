@@ -794,6 +794,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .np-twinkle { animation: mezo-twinkle 2.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .np-twinkle { animation: none; } }
+/* Shared soft-pulse dot (typing indicator, live-system dot, planner loader) — reduce-guarded.
+   Dominant duration 1.2s; the 2s live-system dot overrides via inline animationDuration, and the
+   staggered dot rows keep their per-index inline animationDelay (the guard still kills the name). */
+.np-pulse { animation: pulse-soft 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .np-pulse { animation: none; } }
 
 /* ============================================================
    Progression level-up overlay (P5, mezo-te8k) — ported from

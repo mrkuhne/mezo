@@ -14,12 +14,13 @@ function ThinkingDots() {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
+              className="np-pulse"
               style={{
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
                 background: 'var(--lav-deep)',
-                animation: `pulse-soft 1.2s ease-in-out infinite ${i * 0.2}s`,
+                animationDelay: `${i * 0.2}s`,
               }}
             />
           ))}
