@@ -3,7 +3,8 @@
 // Ports the approved mockup's `.cyc` strip (gyogyszer-a-szellos.html) to the real
 // design system: one notch-4 cell per cycle day, tinted by phase, the current day
 // outlined. The mockup's `--err/--glow/--warn` phase colors map to the real tokens
-// (peak → --error, stable → --brand-glow, trough → --warning) via PHASE_TINT.
+// (peak → --error, stable → --sage, trough → --warning) via PHASE_TINT — the 'stable'
+// entry moved off brand-teal onto sage with the rest of Kamra/Gyógyszer (Task 7, mezo-8141).
 //
 // Presentational only — takes the derived MedicationCycle.week (built by the hook /
 // backend, current cell flagged) and renders it. Semantic <ul>/<li> so the view's
@@ -15,7 +16,7 @@ import type { MedicationCycleCell } from '@/data/types'
 // color-mix recipes from the mockup (.peak/.stab/.trou backgrounds + lightened text).
 const PHASE_TINT: Record<string, { glyph: string; token: string }> = {
   peak: { glyph: 'P', token: 'var(--error)' },
-  stable: { glyph: 'S', token: 'var(--brand-glow)' },
+  stable: { glyph: 'S', token: 'var(--sage)' },
   trough: { glyph: 'T', token: 'var(--warning)' },
 }
 

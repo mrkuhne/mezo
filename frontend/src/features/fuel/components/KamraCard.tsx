@@ -7,14 +7,14 @@ import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 // a 44px stock slot, Antonio name + source/brand meta, a macro line (food) or protocol (supp), and a
 // right-aligned kcal/dose. Notched-chamfer (notch-12) card; supplement/stim get a left inset tint.
 const KIND_TINT: Record<string, string> = {
-  food: 'var(--brand-glow)',
+  food: 'var(--sage)',
   supplement: 'var(--info)',
   stim: 'var(--cat-tendency)',
   med: 'var(--error)',
 }
 
 export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: PantryItem) => void }) {
-  const tint = KIND_TINT[item.kind] ?? 'var(--brand-glow)'
+  const tint = KIND_TINT[item.kind] ?? 'var(--sage)'
   const isSupp = item.kind !== 'food'
 
   const stock = item.stock

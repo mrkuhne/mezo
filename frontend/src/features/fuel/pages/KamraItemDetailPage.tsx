@@ -15,7 +15,6 @@ import type { IngredientStock, PantryItem, PantryItemInput } from '@/data/types'
 import { usePantry, usePantryActions } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
@@ -134,15 +133,20 @@ export function KamraItemDetailPage() {
   return (
     <>
       <div style={{ padding: '0 24px 32px' }}>
-        {/* Back + eyebrow */}
-        <div className="row" style={{ alignItems: 'center', gap: 12, marginBottom: 14 }}>
+        {/* Back button — own row (header-only sage re-skin, mezo-8141, per the RecipeEditorPage
+            precedent); the title hero below keeps its bespoke styling/position, just retagged h1. */}
+        <div className="row" style={{ marginBottom: 2 }}>
           <button
             onClick={() => navigate('/fuel/kamra')}
             className="notch-8"
             style={{ width: 32, height: 32, flexShrink: 0, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1 }}
             aria-label="Vissza"
           >‹</button>
-          <Eyebrow brand>Kamra · tétel</Eyebrow>
+        </div>
+        <div className="pghead-np sage" style={{ padding: '6px 0 8px' }}>
+          <div>
+            <div className="over">Fuel · Kamra</div>
+          </div>
         </div>
 
         {/* Source pill */}
@@ -151,9 +155,9 @@ export function KamraItemDetailPage() {
         </div>
 
         {/* Name */}
-        <div id="kamra-item-title" style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, textTransform: 'uppercase', lineHeight: 1, margin: '6px 0 6px' }}>
+        <h1 id="kamra-item-title" style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, textTransform: 'uppercase', lineHeight: 1, margin: '6px 0 6px' }}>
           {item.name}
-        </div>
+        </h1>
 
         {/* Category · NOVA */}
         <div className="row" style={{ alignItems: 'center', gap: 8 }}>

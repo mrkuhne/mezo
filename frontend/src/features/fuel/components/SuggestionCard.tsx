@@ -23,7 +23,7 @@ export function SuggestionCard({ sug, onAdd }: { sug: PantrySuggestion; onAdd?: 
             <SourceBadge source={sug.source} />
           </div>
           <span className="text-secondary mt-xs" style={{ fontSize: 11, lineHeight: 1.4, display: 'block' }}>
-            <Icon name="sparkle" size={9} color="var(--brand-glow)" /> {sug.reason}
+            <Icon name="sparkle" size={9} color="var(--sage-deep)" /> {sug.reason}
           </span>
         </div>
         <div className="col" style={{ alignItems: 'flex-end', flexShrink: 0 }}>

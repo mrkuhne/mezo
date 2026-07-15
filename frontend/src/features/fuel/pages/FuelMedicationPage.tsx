@@ -14,8 +14,6 @@
 import { useState } from 'react'
 import { useMedication } from '@/data/hooks'
 import { huMonthDayDow } from '@/shared/lib/dates'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { MedicationCycleBar } from '@/features/fuel/components/MedicationCycleBar'
 import { LogDoseSheet } from '@/features/fuel/sheets/LogDoseSheet'
@@ -62,12 +60,17 @@ export function FuelMedicationPage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="pghead-np sage">
         <div>
-          <Eyebrow brand>Fuel · Gyógyszer</Eyebrow>
-          <PageTitle className="mt-sm">Reta</PageTitle>
+          <div className="over">Fuel · Gyógyszer</div>
+          <h1>Reta</h1>
         </div>
-        <button onClick={() => setLogOpen(true)} className="chip brand" style={{ padding: '8px 10px' }}>
+        <button
+          type="button"
+          onClick={() => setLogOpen(true)}
+          className="pgact-np np-press"
+          style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+        >
           <Icon name="plus" size={12} /> Beadás
         </button>
       </div>
@@ -96,7 +99,7 @@ export function FuelMedicationPage() {
             data-testid="medication-phase-note"
             style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 12, textAlign: 'center' }}
           >
-            {cycle.retaDay}. nap · <b style={{ color: 'var(--brand-glow)' }}>{phaseName} fázis</b>
+            {cycle.retaDay}. nap · <b style={{ color: 'var(--sage-deep)' }}>{phaseName} fázis</b>
             {ago && <> · {ago}</>}
           </div>
         </div>

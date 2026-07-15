@@ -24,6 +24,9 @@ afterEach(() => vi.unstubAllEnvs())
 describe('FuelMedicationPage (mock mode)', () => {
   it('renders the medication name + route/cadence/dose card', () => {
     renderView()
+    // Sage Napiv header (Task 7): the .over eyebrow copy is unchanged, only the pghead-np/
+    // sage vocabulary + the "＋ Beadás" action chip's accent moved off brand-teal.
+    expect(screen.getByText('Fuel · Gyógyszer')).toBeInTheDocument()
     expect(screen.getByText('Retatrutide')).toBeInTheDocument()
     // route + cadence subtitle on the card (mockup: "subQ injekció · heti · hétfő")
     expect(screen.getByText(/subQ injekció · heti · hétfő/)).toBeInTheDocument()

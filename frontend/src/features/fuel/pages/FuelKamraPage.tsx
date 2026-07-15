@@ -23,8 +23,6 @@ import { useNavigate } from 'react-router-dom'
 import type { PantryItem } from '@/data/types'
 import { usePantry } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { StatCell } from '@/shared/ui/StatCell'
 import { KamraCard } from '@/features/fuel/components/KamraCard'
@@ -45,7 +43,7 @@ const TYPE_SWITCHER = [
 
 // Section meta keyed by kind (med folds into the 'Mind' view; rare, no switcher segment yet).
 const TYPE_META: Record<string, { label: string; color: string }> = {
-  food: { label: 'Étel', color: 'var(--brand-glow)' },
+  food: { label: 'Étel', color: 'var(--sage)' },
   supplement: { label: 'Supplement', color: 'var(--info)' },
   stim: { label: 'Stimuláns', color: 'var(--cat-tendency)' },
   med: { label: 'Gyógyszer', color: 'var(--error)' },
@@ -104,16 +102,26 @@ export function FuelKamraPage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="pghead-np sage">
         <div>
-          <Eyebrow brand>Fuel · Kamra</Eyebrow>
-          <PageTitle className="mt-sm">Polc</PageTitle>
+          <div className="over">Fuel · Kamra</div>
+          <h1>Polc</h1>
         </div>
         <div className="row gap-xs">
-          <button onClick={() => setImportOpen(true)} className="chip" style={{ padding: '8px 10px' }}>
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="pgact-np np-press"
+            style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+          >
             <Icon name="search" size={12} /> Import
           </button>
-          <button onClick={() => setAddOpen(true)} className="chip brand" style={{ padding: '8px 10px' }}>
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="pgact-np np-press"
+            style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+          >
             <Icon name="plus" size={12} /> Új tétel
           </button>
         </div>
@@ -156,7 +164,7 @@ export function FuelKamraPage() {
           {/* Stats strip */}
           <div style={{ padding: '0 24px 12px' }}>
             <div className="card notch-4 row" style={{ padding: 12, justifyContent: 'space-between' }}>
-              <StatCell label="Tételek" val={String(allItems.length)} sub="a kamrában" color="var(--brand-glow)" />
+              <StatCell label="Tételek" val={String(allItems.length)} sub="a kamrában" color="var(--sage)" />
               <StatCell label="Hozzávaló" val={String(counts.food ?? 0)} sub="étel" color="var(--info)" />
               {/* Stock stats hidden — stock tracking deferred (mezo-6nu) */}
               {SHOW_PANTRY_STOCK && (
@@ -201,7 +209,7 @@ export function FuelKamraPage() {
               style={{
                 alignItems: 'center', padding: '9px 13px',
                 fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
-                color: 'var(--brand-glow)', background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(94,234,212,0.3)',
+                color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid rgba(94,234,212,0.3)',
               }}
             >
               <Icon name="settings" size={12} /> Szűrők
@@ -226,7 +234,7 @@ export function FuelKamraPage() {
                     style={{
                       alignItems: 'center', padding: '4px 9px',
                       fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
-                      color: 'var(--brand-glow)', background: 'rgba(20,184,166,0.12)', border: '1px solid rgba(94,234,212,0.3)',
+                      color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid rgba(94,234,212,0.3)',
                     }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: meta?.color ?? 'var(--success)', flexShrink: 0 }} />
@@ -267,7 +275,7 @@ export function FuelKamraPage() {
           {suggestions.length > 0 && (
             <div style={{ padding: '0 24px 24px' }}>
               <div className="row" style={{ marginBottom: 10, alignItems: 'center', gap: 9 }}>
-                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+                <Icon name="sparkle" size={11} color="var(--sage-deep)" />
                 <span className="eyebrow">Mezo javaslatok</span>
                 <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, var(--border-subtle), transparent)' }} />
               </div>
