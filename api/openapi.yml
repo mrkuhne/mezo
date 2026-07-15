@@ -930,6 +930,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}':
+    get:
+      tags:
+        - Train
+      operationId: getWorkoutDetail
+      summary: >-
+        One workout instance with its logged sets joined onto the template day's
+        exercises — the done-day review source
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The workout detail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkoutDetailResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'Not found, not owned, or a template row'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/workouts/{id}/sets':
     post:
       tags:
@@ -4774,6 +4808,13 @@ components:
             $ref: '#/components/schemas/TodayExercise'
         openWorkout:
           $ref: '#/components/schemas/WorkoutInstanceResponse'
+        completedWorkout:
+          allOf:
+            - $ref: '#/components/schemas/WorkoutInstanceResponse'
+          description: >-
+            Today's most recent COMPLETED instance of today's template day (null
+            when none) — drives the Mai hero "Kész + Megnézem" state and the
+            session-route review redirect.
         weekDoneDates:
           type: array
           description: >-
@@ -4934,6 +4975,90 @@ components:
             - active
             - completed
             - skipped
+    WorkoutDetailResponse:
+      type: object
+      required:
+        - id
+        - templateSessionId
+        - date
+        - status
+        - title
+        - dayLabel
+        - exercises
+      properties:
+        id:
+          type: string
+          format: uuid
+        templateSessionId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - active
+            - completed
+            - skipped
+        title:
+          type: string
+          description: 'The day type, e.g. ''Pull Day'''
+        dayLabel:
+          type: string
+          description: '''Hét''..''Vas'''
+        durationEst:
+          type: integer
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkoutDetailExercise'
+    WorkoutDetailExercise:
+      type: object
+      required:
+        - exerciseId
+        - name
+        - muscle
+        - type
+        - warmupSets
+        - workingSets
+        - repMin
+        - repMax
+        - targetRIR
+        - skipped
+        - sets
+      properties:
+        exerciseId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        muscle:
+          type: string
+        type:
+          type: string
+          enum:
+            - compound
+            - isolation
+            - plyo
+        warmupSets:
+          type: integer
+        workingSets:
+          type: integer
+        repMin:
+          type: integer
+        repMax:
+          type: integer
+        targetRIR:
+          type: integer
+        skipped:
+          type: boolean
+          description: A skip-marker set exists for this exercise in this instance
+        sets:
+          type: array
+          description: 'Non-skipped logged sets, setIndex ascending'
+          items:
+            $ref: '#/components/schemas/ExerciseSetResponse'
     LevelUpResult:
       type: object
       required:

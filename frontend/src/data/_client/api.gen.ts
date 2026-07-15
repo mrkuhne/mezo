@@ -320,6 +320,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One workout instance with its logged sets joined onto the template day's exercises — the done-day review source */
+        get: operations["getWorkoutDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/workouts/{id}/sets": {
         parameters: {
             query?: never;
@@ -1968,6 +1985,8 @@ export interface components {
             durationEst?: number;
             exercises?: components["schemas"]["TodayExercise"][];
             openWorkout?: components["schemas"]["WorkoutInstanceResponse"];
+            /** @description Today's most recent COMPLETED instance of today's template day (null when none) — drives the Mai hero "Kész + Megnézem" state and the session-route review redirect. */
+            completedWorkout?: components["schemas"]["WorkoutInstanceResponse"];
             /** @description ISO dates within the current Mon–Sun week that have a COMPLETED gym workout instance (explicit finish). Drives the Mai gym done-state (today) and the weekly-row done chips (past days). Present even on rest days and when today is not a gym day. */
             weekDoneDates?: string[];
         };
@@ -2027,6 +2046,39 @@ export interface components {
             date: string;
             /** @enum {string} */
             status: "planned" | "active" | "completed" | "skipped";
+        };
+        WorkoutDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            templateSessionId: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            status: "active" | "completed" | "skipped";
+            /** @description The day type, e.g. 'Pull Day' */
+            title: string;
+            /** @description 'Hét'..'Vas' */
+            dayLabel: string;
+            durationEst?: number;
+            exercises: components["schemas"]["WorkoutDetailExercise"][];
+        };
+        WorkoutDetailExercise: {
+            /** Format: uuid */
+            exerciseId: string;
+            name: string;
+            muscle: string;
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
+            targetRIR: number;
+            /** @description A skip-marker set exists for this exercise in this instance */
+            skipped: boolean;
+            /** @description Non-skipped logged sets, setIndex ascending */
+            sets: components["schemas"]["ExerciseSetResponse"][];
         };
         LevelUpResult: {
             /** @enum {string} */
@@ -4644,6 +4696,46 @@ export interface operations {
                 };
             };
             /** @description Template day not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWorkoutDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The workout detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutDetailResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found, not owned, or a template row */
             404: {
                 headers: {
                     [name: string]: unknown;

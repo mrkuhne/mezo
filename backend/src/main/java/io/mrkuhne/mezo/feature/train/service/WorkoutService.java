@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.api.dto.LastWeekRef;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
+import io.mrkuhne.mezo.api.dto.WorkoutDetailExercise;
+import io.mrkuhne.mezo.api.dto.WorkoutDetailResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
@@ -33,6 +35,7 @@ import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -128,6 +131,10 @@ public class WorkoutService {
             .findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
                 createdBy, day.getId(), "active")
             .orElse(null);
+        WorkoutSessionEntity completedToday = workoutSessionRepository
+            .findFirstByCreatedByAndTemplateSessionIdAndStatusAndDateOrderByCreatedAtDesc(
+                createdBy, day.getId(), "completed", LocalDate.now())
+            .orElse(null);
         return WorkoutTodayResponse.builder()
             .templateSessionId(day.getId())
             .dayLabel(day.getDayLabel())
@@ -147,6 +154,7 @@ public class WorkoutService {
                 return t;
             }).toList())
             .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
+            .completedWorkout(completedToday != null ? toInstanceResponse(createdBy, completedToday) : null)
             .weekDoneDates(weekDoneDates)
             .build();
     }
@@ -183,6 +191,48 @@ public class WorkoutService {
         return workoutSessionRepository.findDoneInstancesBetween(createdBy, from, to).stream()
             .map(mapper::toWorkoutSummary)
             .toList();
+    }
+
+    /**
+     * One instance joined with its template day's exercises + this instance's logged sets —
+     * the done-day review source (spec 2026-07-15). Pure read; owned instance only (404
+     * otherwise, template rows included). Skip markers set `skipped` and are excluded from sets.
+     */
+    public WorkoutDetailResponse getWorkoutDetail(UUID createdBy, UUID workoutId) {
+        WorkoutSessionEntity instance = ownedInstanceOrThrow(createdBy, workoutId);
+        List<ExerciseEntity> exercises = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                createdBy, List.of(instance.getTemplateSessionId()));
+        Map<UUID, List<ExerciseSetEntity>> setsByExercise = exerciseSetRepository
+            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId()).stream()
+            .collect(Collectors.groupingBy(ExerciseSetEntity::getExerciseId));
+        return WorkoutDetailResponse.builder()
+            .id(instance.getId())
+            .templateSessionId(instance.getTemplateSessionId())
+            .date(instance.getDate())
+            .status(WorkoutDetailResponse.StatusEnum.fromValue(instance.getStatus()))
+            .title(instance.getType())
+            .dayLabel(instance.getDayLabel())
+            .durationEst(instance.getDurationEst())
+            .exercises(exercises.stream().map(e -> {
+                List<ExerciseSetEntity> all = setsByExercise.getOrDefault(e.getId(), List.of());
+                return WorkoutDetailExercise.builder()
+                    .exerciseId(e.getId())
+                    .name(e.getName())
+                    .muscle(e.getMuscle())
+                    .type(WorkoutDetailExercise.TypeEnum.fromValue(e.getType()))
+                    .warmupSets(e.getWarmupSets())
+                    .workingSets(e.getWorkingSets())
+                    .repMin(e.getRepMin())
+                    .repMax(e.getRepMax())
+                    .targetRIR(e.getTargetRir())
+                    .skipped(all.stream().anyMatch(ExerciseSetEntity::isSkipped))
+                    .sets(all.stream().filter(s -> !s.isSkipped())
+                        .sorted(Comparator.comparingInt(ExerciseSetEntity::getSetIndex))
+                        .map(mapper::toSetResponse).toList())
+                    .build();
+            }).toList())
+            .build();
     }
 
     /** Dates (this Mon–Sun week) with a gym instance carrying >=1 logged set — gym done-state. */
