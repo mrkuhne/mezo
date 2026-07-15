@@ -216,7 +216,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
 
           {/* Mezo observation (volleyball-specific copy) */}
           {isVolleyball && (
-            <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'rgba(94, 234, 212, 0.03)' }}>
+            <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
                 <Icon name="sparkle" size={11} color="var(--brand-glow)" />
                 <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-primary)', flex: 1 }}>

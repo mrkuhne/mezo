@@ -17,14 +17,14 @@ export { pantrySources } from '@/data/pantrySources'
 
 // === Category meta (pantry-data.js:285–295) ===
 export const pantryCategoryMeta: Record<string, PantryCategoryMeta> = {
-  protein: { label: 'Fehérje', color: '#5EEAD4' },
+  protein: { label: 'Fehérje', color: 'var(--sage)' },
   carb: { label: 'Szénhidrát', color: '#F59E0B' },
   fat: { label: 'Zsír', color: '#A78BFA' },
   veggie: { label: 'Zöldség', color: '#34D399' },
   fruit: { label: 'Gyümölcs', color: '#F472B6' },
   dairy: { label: 'Tejtermék', color: '#60A5FA' },
-  supplement: { label: 'Supplement', color: '#5EEAD4' },
-  'supplement-protein': { label: 'Whey/Protein', color: '#5EEAD4' },
+  supplement: { label: 'Supplement', color: 'var(--sage)' },
+  'supplement-protein': { label: 'Whey/Protein', color: 'var(--sage)' },
   'supplement-stim': { label: 'Stimuláns', color: '#F472B6' },
   // === Catalog category enum (imported catalog, mezo-zza) ===
   vegetables: { label: 'Zöldség', color: '#34D399' },

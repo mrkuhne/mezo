@@ -22,7 +22,7 @@ export function RecipeFitBadge({ score, size = 'card' }: RecipeFitBadgeProps) {
         position: 'absolute', top: isHero ? 10 : 9, right: isHero ? 11 : 10, zIndex: 4,
         minWidth: isHero ? 44 : 40, padding: isHero ? '6px 6px 5px' : '5px 5px 4px', textAlign: 'center',
         background: 'rgba(8,12,16,0.72)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-        boxShadow: pending ? undefined : '0 0 0 1px rgba(94,234,212,0.25), 0 6px 16px -6px rgba(20,184,166,0.5)',
+        boxShadow: pending ? undefined : '0 0 0 1px color-mix(in srgb, var(--sage) 25%, transparent), 0 6px 16px -6px color-mix(in srgb, var(--sage) 50%, transparent)',
       }}
     >
       {pending ? (

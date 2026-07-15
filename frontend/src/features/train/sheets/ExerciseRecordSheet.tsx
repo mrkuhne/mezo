@@ -76,7 +76,7 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
             className="card notch-12"
             style={{
               padding: 16, margin: '12px 0',
-              background: 'linear-gradient(180deg, rgba(94, 234, 212, 0.07) 0%, var(--surface-1) 100%)',
+              background: 'linear-gradient(180deg, color-mix(in srgb, var(--coral) 7%, transparent) 0%, var(--surface-1) 100%)',
               borderColor: 'var(--border-brand)',
             }}
           >

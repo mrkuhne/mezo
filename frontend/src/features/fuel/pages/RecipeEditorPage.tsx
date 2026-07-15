@@ -248,7 +248,7 @@ export function RecipeEditorPage() {
         </div>
 
         {/* Live total */}
-        <div className="notch-4" style={{ padding: '11px 12px', marginBottom: 12, background: 'rgba(20,184,166,0.05)', border: '1px solid var(--border-brand)' }}>
+        <div className="notch-4" style={{ padding: '11px 12px', marginBottom: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--border-brand)' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--brand-glow)' }}>MAKRÓ-ÖSSZEG</span>
             <ServingToggle value={basis} servings={servings} onChange={setBasis} />
@@ -306,7 +306,7 @@ export function RecipeEditorPage() {
         <button
           onClick={() => setPickerOpen(true)}
           className="notch-4"
-          style={{ width: '100%', padding: 11, marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)', background: 'rgba(20,184,166,0.08)', border: '1px dashed var(--border-brand)' }}
+          style={{ width: '100%', padding: 11, marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--border-brand)' }}
         >
           <Icon name="plus" size={14} /> Kamrából hozzáad
         </button>

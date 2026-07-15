@@ -62,8 +62,8 @@ export function CategoryFilterSheet({
                     alignItems: 'center', gap: 6, padding: '7px 11px',
                     fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
                     color: on ? 'var(--brand-glow)' : 'var(--text-secondary)',
-                    background: on ? 'rgba(20,184,166,0.12)' : 'var(--surface-2)',
-                    border: '1px solid ' + (on ? 'rgba(94,234,212,0.3)' : 'var(--border-subtle)'),
+                    background: on ? 'color-mix(in srgb, var(--sage) 12%, transparent)' : 'var(--surface-2)',
+                    border: '1px solid ' + (on ? 'color-mix(in srgb, var(--sage) 30%, transparent)' : 'var(--border-subtle)'),
                   }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: opt.color, flexShrink: 0 }} />

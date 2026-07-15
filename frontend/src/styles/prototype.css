@@ -163,8 +163,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   box-shadow:
     0 0 0 2px #0a0a0a inset,
     0 0 0 8px #1a1a1a,
-    0 40px 100px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(94, 234, 212, 0.04);
+    0 40px 100px rgba(0, 0, 0, 0.8);
   flex-shrink: 0;
 }
 .phone-screen {
@@ -272,7 +271,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   position: relative;
 }
 .tab-item.active { color: var(--brand-glow); }
-.tab-item.active svg { filter: drop-shadow(0 0 6px rgba(94, 234, 212, 0.4)); }
 .tab-item svg { width: 24px; height: 24px; transition: all 0.2s ease; }
 .tab-item .tab-dot {
   position: absolute; top: 2px;
@@ -421,7 +419,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .chip.brand {
   color: var(--brand-glow);
   border-color: var(--border-brand);
-  background: rgba(94, 234, 212, 0.06);
+  background: color-mix(in srgb, var(--coral) 6%, transparent);
 }
 .chip.warning {
   color: var(--warning);
@@ -445,7 +443,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .toolchip.read    { color: var(--brand-glow); border-color: var(--border-brand); }
 .toolchip.compute { color: var(--warning); border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.05); }
-.toolchip.write   { color: var(--brand-glow); border-color: var(--brand-glow); background: rgba(94, 234, 212, 0.08); }
+.toolchip.write   { color: var(--brand-glow); border-color: var(--brand-glow); background: color-mix(in srgb, var(--coral) 8%, transparent); }
 
 /* CTA */
 .cta-primary {
@@ -555,7 +553,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   padding: 14px 16px;
   background: var(--brand-primary);
   color: var(--text-inverse);
-  box-shadow: 0 12px 40px rgba(20, 184, 166, 0.5);
+  box-shadow: 0 12px 40px rgba(43, 33, 24, 0.5);
 }
 
 /* Brand glyph (M = mesocycle wave) */
@@ -642,15 +640,15 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .set-dot.warm.done { background: var(--warning); border-color: var(--warning); }
 .set-dot.active {
   border-color: var(--brand-glow);
-  box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 20%, transparent);
   animation: pulse-soft 1.5s ease-in-out infinite;
 }
 @keyframes pulse-soft {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.2); }
-  50% { box-shadow: 0 0 0 6px rgba(94, 234, 212, 0.1); }
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 20%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--coral) 10%, transparent); }
 }
 
-/* Loading skeleton — light teal sweep over a surface-2 block. */
+/* Loading skeleton — light coral (brand-accent) sweep over a surface-2 block. */
 .sk {
   position: relative;
   overflow: hidden;
@@ -662,7 +660,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.10), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--coral) 10%, transparent), transparent);
   animation: mezo-shimmer 1.5s infinite;
 }
 @keyframes mezo-shimmer { 100% { transform: translateX(100%); } }
@@ -710,9 +708,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .rir-cell.active {
   color: var(--brand-glow);
-  background: rgba(94, 234, 212, 0.1);
+  background: color-mix(in srgb, var(--coral) 10%, transparent);
   border-color: var(--brand-glow);
-  box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--coral) 20%, transparent);
 }
 
 /* Macro bar */
@@ -1131,6 +1129,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --lav: #9B8FC4;        --lav-deep: #7A6DA8;
   --rose: #E27A8B;
   --sky: #6FA7D8;
+  --cta-g1: #FF7A55; --cta-g2: #FF5B36;   /* primary CTA gradient stops */
   --np-shadow-card: 0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
   --np-shadow-row: 0 8px 20px rgba(43,33,24,.05);
   --np-ease-ios: cubic-bezier(.32,.72,0,1);
@@ -1153,6 +1152,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --sage: #8FB49A; --sage-deep: #A9C79A;
   --lav: #AB9FD2; --lav-deep: #B9ACD9;
   --rose: #E98D9D; --sky: #7FB2DE;
+  --cta-g1: #FF8A66; --cta-g2: #FF6B47;   /* primary CTA gradient stops (Pulse) */
 
   --np-shadow-card: 0 2px 4px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
   --np-shadow-row: 0 8px 20px rgba(0,0,0,.3);
@@ -1266,11 +1266,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* ===== Napív greeting header (Today greeting, spec §3.3) ===== */
 .greet { padding: 8px 24px 0; }
 .greet-day { font-size: 12.5px; font-weight: 700; color: var(--coral-deep); letter-spacing: .4px; text-transform: uppercase; }
-[data-day="reggel"] .greet-day { color: #B2690F; }
+[data-day="reggel"] .greet-day { color: var(--amber-deep); }
 [data-day="este"] .greet-day { color: var(--lav-deep); }
 .greet h1 { font-family: var(--ff-display); font-size: 26px; font-weight: 700; letter-spacing: -.3px; margin-top: 2px; color: var(--ink); }
 .greet h1 em { font-style: normal; color: var(--coral); }
-[data-day="reggel"] .greet h1 em { color: #E8890C; }
+[data-day="reggel"] .greet h1 em { color: var(--amber); }
 [data-day="este"] .greet h1 em { color: var(--lav-deep); }
 
 /* ===== Napív Today hero ===== */
@@ -1281,18 +1281,15 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .h2row { display: flex; align-items: center; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
 .h2row h2 { font-family: var(--ff-display); font-size: 29px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); }
 .typetag { display: inline-block; border-radius: 999px; padding: 5px 11px; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
-.typetag-gym { background: #FFEDE6; color: var(--coral-deep); }
-.typetag-sport { background: #FBE9EC; color: #B14B5E; }
-.typetag-run { background: #E7F0F8; color: #3E6E9E; }
-:root[data-theme="dark"] .typetag-gym { background: rgba(255,107,74,.16); }
-:root[data-theme="dark"] .typetag-sport { background: rgba(226,122,139,.16); }
-:root[data-theme="dark"] .typetag-run { background: rgba(111,167,216,.16); }
+.typetag-gym { background: var(--wash-gym); color: var(--tag-gym); }
+.typetag-sport { background: var(--wash-sport); color: var(--tag-sport); }
+.typetag-run { background: var(--wash-run); color: var(--tag-run); }
 .np-hero-meta { font-size: 13.5px; color: var(--sub); margin-top: 4px; }
 .np-hero-meta b { color: var(--ink); font-weight: 700; }
 .warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
 :root[data-theme="dark"] .warmstrip { color: #E8B36B; }
 .np-ctarow { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 1; }
-.np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px rgba(255,91,54,.35), inset 0 1px 0 rgba(255,255,255,.25); }
+.np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
 .alt-btn { width: 52px; height: 52px; border: 1.5px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--sub); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
 /* ===== Napív secondary event row (VolleyballCard — RÖPI) ===== */
@@ -1309,7 +1306,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .beat { flex: 1; border: 0; cursor: pointer; font: inherit; border-radius: 16px; padding: 9px 0 8px; text-align: center; background: var(--warm); color: var(--faint); }
 .beat .t { font-size: 10.5px; font-weight: 800; }
 .beat .v { font-size: 16px; font-weight: 800; margin-top: 1px; font-family: var(--ff-display); }
-.beat.done { background: #EAF0E3; color: var(--sage-deep); }
+.beat.done { background: var(--wash-sage); color: var(--sage-deep); }
 :root[data-theme="dark"] .beat.done { background: rgba(127,164,138,.16); }
 .beat.now { background: var(--surface); color: var(--coral-deep); box-shadow: 0 0 0 2px var(--coral), 0 6px 14px rgba(255,107,74,.22); position: relative; }
 .beat.now .v { font-size: 11px; font-weight: 800; padding-top: 4px; }
@@ -1386,7 +1383,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); }
 .dayrow.today .chev { color: var(--coral-deep); }
 .dayrow.rest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
-.dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: #EAF0E3; color: var(--sage-deep); }
+.dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
 :root[data-theme="dark"] .dayrow .done-chip { background: rgba(127,164,138,.16); }
 .dayrow .log-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
 
@@ -1465,13 +1462,13 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .excard .prev { font-size: 12.5px; color: var(--faint); font-weight: 600; margin-top: 4px; }
 .setdots { display: flex; gap: 8px; margin-top: 15px; }
 .setdots .sd { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; background: var(--warm); color: var(--faint); }
-.setdots .sd.don { background: #EAF0E3; color: var(--sage-deep); }
+.setdots .sd.don { background: var(--wash-sage); color: var(--sage-deep); }
 :root[data-theme="dark"] .setdots .sd.don { background: rgba(127,164,138,.16); }
 .setdots .sd.cur { background: var(--coral); color: #fff; box-shadow: 0 6px 14px rgba(255,107,74,.38); }
 .setdots .sd.wu:not(.don):not(.cur) { background: rgba(255,179,71,.16); color: #8F5514; }
 :root[data-theme="dark"] .setdots .sd.wu:not(.don):not(.cur) { color: #E8B36B; }
 .setdots .sd.extra:not(.don):not(.cur) { background: transparent; border: 1.5px dashed var(--coral); box-sizing: border-box; color: var(--coral-deep); }
-.donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px rgba(255,91,54,.35), inset 0 1px 0 rgba(255,255,255,.25); }
+.donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
 .nextex { display: flex; align-items: center; background: var(--surface); border-radius: 20px; padding: 13px 16px; box-shadow: var(--np-shadow-row); margin: 12px 24px 0; }
 .nextex .k { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .5px; text-transform: uppercase; }
 .nextex .n { font-size: 13px; font-weight: 700; color: var(--ink); margin-top: 2px; }
@@ -1515,7 +1512,7 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 
 /* ===== Napív fuel timeline slots (spec §4.4) ===== */
 .slot { display: flex; gap: 12px; background: var(--surface); border-radius: 20px; padding: 13px 15px; box-shadow: var(--np-shadow-row); margin-bottom: 9px; align-items: center; }
-.slot.next { box-shadow: 0 0 0 2px var(--sage), 0 10px 24px rgba(127,164,138,.2); }
+.slot.next { box-shadow: 0 0 0 2px var(--sage), 0 10px 24px color-mix(in srgb, var(--sage) 20%, transparent); }
 .slot.done { opacity: .78; }
 .slot .fav { width: 42px; height: 42px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
 .slot .tx { flex: 1; min-width: 0; }
