@@ -950,8 +950,14 @@ function ActiveWorkoutSession({
                     {r ?? '—'}
                   </span>
                   <span style={{ flex: 1 }} />
+                  {/* Logged working sets show their ACTUAL RIR (user fix 1); warmups log none. */}
                   {isDone ? (
-                    <Icon name="check" size={13} color="var(--coral)" />
+                    <span className="row gap-xs" style={{ alignItems: 'center' }}>
+                      {!warm && (
+                        <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? '–'}</span>
+                      )}
+                      <Icon name="check" size={13} color="var(--coral)" />
+                    </span>
                   ) : warm ? null : (
                     <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>
                   )}

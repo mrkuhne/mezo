@@ -1085,3 +1085,19 @@ test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + o
   expect(screen.queryByText('Vállaljuk')).not.toBeInTheDocument()
   expect(screen.queryByText('Elfogadva')).not.toBeInTheDocument()
 })
+
+test('a logged working set shows its RIR chip in the read-only set list', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1 has 2 warmups first: log 3 sets so ONE working set (index 2) is done.
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  // the current (3rd) set is a working set — select RIR 1, then log it
+  await user.click(screen.getByRole('button', { name: 'RIR 1' }))
+  await user.click(screen.getByText('Szett kész ✓'))
+  // read-only list: the DONE working row carries the logged RIR chip
+  const rows = container.querySelectorAll('.col.gap-sm .row.gap-sm')
+  const doneWorking = Array.from(rows).find((r) => r.textContent?.includes('Working') && r.textContent?.includes('RIR 1'))
+  expect(doneWorking).toBeTruthy()
+})
