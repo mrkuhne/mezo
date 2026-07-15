@@ -1493,6 +1493,11 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
   --wash-lav: rgba(155,143,196,.16);
 }
 
+/* ===== Napív S7 — Me accent vocabulary (spec §4.6) ===== */
+.pghead-np.lav .over { color: var(--lav-deep); }
+:root { --amber-deep: #9A6A12; }
+:root[data-theme="dark"] { --amber-deep: #E3B565; }
+
 /* ===== Napív kcal gauge (Fuel Mai, spec §4.4) ===== */
 .gauge { position: relative; display: flex; flex-direction: column; align-items: center; }
 .gauge .big { position: absolute; top: 56px; text-align: center; }
