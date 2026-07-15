@@ -13,6 +13,20 @@ test('renders all seven pills with verbatim labels', () => {
   }
 })
 
+test('Growth tab sits right after Profil and links to /me/growth', () => {
+  renderAt('/me')
+  const links = screen.getAllByRole('link')
+  const labels = links.map((l) => l.textContent)
+  expect(labels.slice(0, 2)).toEqual(['Profil', 'Growth'])
+  expect(screen.getByRole('link', { name: 'Growth' })).toHaveAttribute('href', '/me/growth')
+})
+
+test('MeSubNav exposes a Súly tab linking to /me/weight', () => {
+  renderAt('/me')
+  const link = screen.getByRole('link', { name: 'Súly' })
+  expect(link).toHaveAttribute('href', '/me/weight')
+})
+
 test('marks the active sub-view from the URL', () => {
   const { container } = renderAt('/me/goals')
   expect(container.querySelector('.np-pill.on')).toHaveTextContent('Cél')
@@ -20,5 +34,7 @@ test('marks the active sub-view from the URL', () => {
 
 test('Profil (index) is active only on exact /me', () => {
   const { container } = renderAt('/me/sleep')
-  expect(container.querySelector('.np-pill.on')).toHaveTextContent('Alvás')
+  const active = container.querySelector('.np-pill.on')
+  expect(active).toHaveTextContent('Alvás')
+  expect(active).not.toHaveTextContent('Profil')
 })
