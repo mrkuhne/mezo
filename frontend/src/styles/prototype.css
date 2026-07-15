@@ -116,13 +116,6 @@
   --page-glow: #17130F;
 }
 
-/* Notched chamfer clip-paths */
-.notch-4  { clip-path: none; border-radius: 12px; }
-.notch-8  { clip-path: none; border-radius: 16px; }
-.notch-12 { clip-path: none; border-radius: 20px; }
-.notch-16 { clip-path: none; border-radius: 24px; }
-.notch-tl-12, .notch-br-12 { clip-path: none; border-radius: 20px; }
-
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 
 html, body {
@@ -386,12 +379,23 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .card {
   background: var(--surface-1);
   border: 1px solid var(--card-border);
+  border-radius: 20px;
   filter: var(--card-elevation);
 }
 .card.glass {
   background: var(--surface-glass);
   backdrop-filter: blur(16px);
 }
+
+/* Corner-radius utilities (formerly notched chamfers; the shape pass turned them into
+   plain radii). Placed AFTER .card so an explicit `card notch-N` still overrides the new
+   .card base radius, and BEFORE .chip / .cta-* so those pill radii keep winning over a
+   notch on the same element — preserving every existing combined-class radius byte-for-byte. */
+.notch-4  { clip-path: none; border-radius: 12px; }
+.notch-8  { clip-path: none; border-radius: 16px; }
+.notch-12 { clip-path: none; border-radius: 20px; }
+.notch-16 { clip-path: none; border-radius: 24px; }
+.notch-tl-12, .notch-br-12 { clip-path: none; border-radius: 20px; }
 
 /* Chip / tag */
 .chip {
