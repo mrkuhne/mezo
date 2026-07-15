@@ -204,26 +204,38 @@ function ActiveWorkoutSession({
   const weightless = current.type === 'plyo'
   // Warmups come first in the prescribed list; used to label rows (B1.. vs working 1..).
   const warmupCount = (session.prescribed[current.id] ?? []).filter((p) => p.kind === 'warmup').length
+  // The current set's prescription drives the card's kind tag + the RIR row: a warmup
+  // set is signalled explicitly and logs NO RIR (effort tracking is working-set-only).
+  const currentTarget = prescribedAt(session, current.id, session.setIdx)
+  const isWarmupSet = currentTarget?.kind === 'warmup'
   // Effective note for the on-screen exercise: a just-saved local override wins,
   // else the backend/mock note, else empty (drives the pill + the editor prefill).
   const effectiveNote = localNotes[current.id] ?? current.note ?? ''
 
-  // Pre-fill the logging panel for the current set from the prescribed target
-  // (weight/reps/RIR). Re-runs on every set advance and exercise change; with no
-  // prescription it falls back to the lastWeek-based prefill so first-session /
-  // no-engine days keep their prior behavior. This is the single prefill source —
-  // the feedback/skip advance handlers no longer set the inputs by hand.
+  // Pre-fill the logging panel for the current set. Weight inherits within the
+  // exercise (mezo-eerq): a null engine target (first session, no anchor) or a
+  // mid-session deviation must never reset a hand-entered load — the previous
+  // logged set wins over a static working target, and only the warmup ramp
+  // (per-set distinct targets) overrides inheritance. With no prescription at all
+  // it falls back to the lastWeek-based prefill. This is the single prefill
+  // source — the feedback/skip advance handlers no longer set the inputs by hand.
   useEffect(() => {
     const t = prescribedAt(session, current.id, session.setIdx)
-    if (t) {
-      setWeight(t.targetWeightKg ?? 0)
+    const prev = (session.logged[current.id] ?? [])[session.setIdx - 1]
+    const p = prefill(current)
+    if (t?.kind === 'warmup') {
+      // Warmups follow the engine ramp; a null target inherits the previous
+      // warmup's hand-entered weight instead of resetting to 0.
+      setWeight(t.targetWeightKg ?? prev?.weight ?? p.weight)
       setReps(t.targetReps)
       setRir(t.targetRIR ?? 0)
     } else {
-      const p = prefill(current)
-      setWeight(p.weight)
-      setReps(p.reps)
-      setRir(p.rir)
+      // Working sets: the just-logged WORKING set (never a warmup) wins over the
+      // static engine target; the engine seeds only the first working set.
+      const prevWorking = session.setIdx > warmupCount ? prev : undefined
+      setWeight(prevWorking?.weight ?? t?.targetWeightKg ?? prev?.weight ?? p.weight)
+      setReps(t?.targetReps ?? prevWorking?.reps ?? p.reps)
+      setRir(t?.targetRIR ?? prevWorking?.rir ?? p.rir)
     }
     // Reset only on set-index / exercise transitions — NOT on extra-set or note changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -277,11 +289,14 @@ function ActiveWorkoutSession({
     const next = completeSetModel(session, { weight, reps, rir })
     setSession(next)
     if (workoutId) {
+      const kind = prescribedAt(session, finishing.id, wasSetIdx)?.kind ?? 'working'
       logSet(workoutId, {
         exerciseId: finishing.id, setIndex: wasSetIdx,
         // Plyo / bodyweight sets carry no load.
-        weightKg: weightless ? 0 : weight, reps, rir,
-        kind: prescribedAt(session, finishing.id, wasSetIdx)?.kind ?? 'working',
+        weightKg: weightless ? 0 : weight, reps,
+        // Warmup sets log no RIR — effort tracking applies to working sets only.
+        ...(kind === 'warmup' ? {} : { rir }),
+        kind,
         ...(side ? { side } : {}), ...(note.trim() ? { note: note.trim() } : {}),
       })
     }
@@ -810,6 +825,26 @@ function ActiveWorkoutSession({
             })}
           </div>
 
+          {/* Current-set kind tag (mezo-eerq): the logging surface itself says
+              warmup vs working — the tiny set-dot label alone was missed. */}
+          {currentTarget && (
+            <div className="row mt-sm" style={{ justifyContent: 'center' }}>
+              <span
+                className="stag"
+                style={{
+                  fontSize: 10,
+                  padding: '4px 10px',
+                  background: `color-mix(in srgb, ${isWarmupSet ? 'var(--warning)' : 'var(--coral)'} 14%, transparent)`,
+                  color: isWarmupSet ? 'var(--warning)' : 'var(--coral-deep)',
+                }}
+              >
+                {isWarmupSet
+                  ? `Bemelegítő · B${session.setIdx + 1}`
+                  : `Working · ${session.setIdx + 1 - warmupCount}/${currentSetCount - warmupCount}`}
+              </span>
+            </div>
+          )}
+
           {/* Giant steppers — the single logging surface (spec §4.5). Only
               genuinely load-less exercises (plyo) hide the kg stepper. */}
           <div className="steprow">
@@ -819,14 +854,17 @@ function ActiveWorkoutSession({
             <SetStepper label="Ismétlés" value={reps} step={1} integer min={1} max={100} onChange={setReps} />
           </div>
 
-          <div className="rirrow">
-            <span className="rk">RIR</span>
-            {[0, 1, 2, 3].map((n) => (
-              <button key={n} type="button" aria-pressed={rir === n} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
-                {n}
-              </button>
-            ))}
-          </div>
+          {/* No RIR on a warmup set — effort tracking is working-set-only (mezo-eerq). */}
+          {!isWarmupSet && (
+            <div className="rirrow">
+              <span className="rk">RIR</span>
+              {[0, 1, 2, 3].map((n) => (
+                <button key={n} type="button" aria-pressed={rir === n} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
           {current.type === 'isolation' && (
             <div className="rirrow">
               <span className="rk">Side</span>
@@ -914,7 +952,7 @@ function ActiveWorkoutSession({
                   <span style={{ flex: 1 }} />
                   {isDone ? (
                     <Icon name="check" size={13} color="var(--coral)" />
-                  ) : (
+                  ) : warm ? null : (
                     <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {rr ?? current.targetRIR}</span>
                   )}
                 </div>

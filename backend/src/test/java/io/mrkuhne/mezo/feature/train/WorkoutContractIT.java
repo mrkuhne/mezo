@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
+import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
@@ -134,6 +135,30 @@ class WorkoutContractIT extends ApiIntegrationTest {
         String body = postForBody("/api/train/workouts/" + started.getId() + "/sets",
             invalid, headers, HttpStatus.BAD_REQUEST, String.class);
         assertHasFieldError(body, "reps", "VALIDATION_REQUIRED_FIELD");
+    }
+
+    @Test
+    void testLogWorkoutSet_shouldAcceptMissingRir_whenWarmupSet() {
+        UUID owner = ownerId();
+        WorkoutSessionEntity template = templateDayForToday(owner);
+        ExerciseEntity exercise = trainPopulator.createExercise(owner, template.getId(), "Row", 0);
+        HttpHeaders headers = ownerAuthHeaders();
+        WorkoutInstanceResponse started = postForBody("/api/train/workouts",
+            start(template), headers, HttpStatus.CREATED, WorkoutInstanceResponse.class);
+
+        // Warmup sets carry no RIR (mezo-eerq) — rir is optional in the contract.
+        SetLogRequest warmup = SetLogRequest.builder().exerciseId(exercise.getId()).setIndex(0)
+            .weightKg(new BigDecimal("52.5")).reps(10).build();
+        warmup.setKind("warmup");
+        postForBody("/api/train/workouts/" + started.getId() + "/sets",
+            warmup, headers, HttpStatus.CREATED, String.class);
+
+        WorkoutInstanceResponse finished = postForBody(
+            "/api/train/workouts/" + started.getId() + "/finish",
+            null, headers, HttpStatus.OK, WorkoutInstanceResponse.class);
+        assertThat(finished.getSets()).hasSize(1);
+        assertThat(finished.getSets().get(0).getKind()).isEqualTo(ExerciseSetResponse.KindEnum.WARMUP);
+        assertThat(finished.getSets().get(0).getRir()).isNull();
     }
 
     @Test

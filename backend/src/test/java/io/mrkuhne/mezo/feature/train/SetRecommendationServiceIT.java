@@ -52,10 +52,16 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
 
         Prescription p = svc.prescribe(owner, ex, day.getId());
 
-        // base==null suppresses warmups → exactly the 3 working sets (warmupSets=2 dropped)
-        assertThat(p.sets()).hasSize(3);
-        assertThat(p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING))
-            .allSatisfy(s -> assertThat(s.getTargetWeightKg()).isNull());
+        // base==null must NOT suppress warmups (mezo-eerq): the FE needs the warmup rows to label
+        // B1/B2 and hide RIR — they simply carry a null target weight, like the working sets.
+        assertThat(p.sets()).hasSize(5);
+        assertThat(p.sets()).allSatisfy(s -> assertThat(s.getTargetWeightKg()).isNull());
+        var warm = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WARMUP).toList();
+        assertThat(warm).hasSize(2);
+        // reps still ramp off repMax (8): 1.0 -> 8, 0.5 -> 4; warmups never carry a RIR target
+        assertThat(warm.get(0).getTargetReps()).isEqualTo(8);
+        assertThat(warm.get(1).getTargetReps()).isEqualTo(4);
+        assertThat(warm).allSatisfy(s -> assertThat(s.getTargetRIR()).isNull());
     }
 
     @Test

@@ -2096,7 +2096,8 @@ export interface components {
             setIndex: number;
             weightKg: number;
             reps: number;
-            rir: number;
+            /** @description Omitted for warmup sets — effort tracking applies to working sets only */
+            rir?: number | null;
             side?: string;
             note?: string;
             /** @description warmup|working — defaults to working server-side when omitted */
