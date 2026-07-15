@@ -1,6 +1,4 @@
 import { useState } from 'react'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { Icon } from '@/shared/ui/Icon'
 import { usePeople } from '@/data/hooks'
 import { PersonCard } from '@/features/me/components/PersonCard'
@@ -37,15 +35,16 @@ export function PeoplePage() {
   return (
     <>
       {/* Header */}
-      <div className="page-header">
+      <div className="pghead-np lav">
         <div>
-          <Eyebrow brand>Me · Emberek</Eyebrow>
-          <PageTitle className="mt-sm">Kapcsolatok</PageTitle>
+          <div className="over">Me · Emberek</div>
+          <h1>Kapcsolatok</h1>
         </div>
         <button
-          className="chip"
-          style={{ padding: '8px 10px' }}
+          type="button"
+          className="pgact-np np-press"
           onClick={() => { setPrechosen(undefined); setLogOpen(true) }}
+          style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
         >
           <Icon name="mic" size={12} /> Log
         </button>
@@ -53,9 +52,9 @@ export function PeoplePage() {
 
       {/* People grid */}
       <div style={{ padding: '0 24px 16px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
-          <Eyebrow>Aktív kör · {people.length}</Eyebrow>
-          <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>tap → részletek</span>
+        <div className="secthead-np">
+          <h3>Aktív kör · {people.length}</h3>
+          <span>tap → részletek</span>
         </div>
         <div className="col gap-sm">
           {people.map(p => (
@@ -66,15 +65,17 @@ export function PeoplePage() {
 
       {/* Mentions feed */}
       <div style={{ padding: '0 24px 16px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12, alignItems: 'baseline' }}>
-          <Eyebrow>Mit naplóztam · friss</Eyebrow>
+        <div className="secthead-np">
+          <h3>Mit naplóztam · friss</h3>
           <div className="row gap-xs">
             {FILTERS.map(f => (
               <button
                 key={f.id}
                 onClick={() => setFilter(f.id)}
-                className={'chip' + (filter === f.id ? ' brand' : '')}
-                style={{ fontSize: 9, padding: '3px 8px' }}
+                className="chip"
+                style={filter === f.id
+                  ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
+                  : { fontSize: 9, padding: '3px 8px' }}
               >
                 {f.label}
               </button>

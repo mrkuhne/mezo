@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { useAchievements, useActivityHistory, useProgressionProfile, useQuestHistory } from '@/data/hooks'
 import { SkillBandCard, type SkillRowVM } from '@/features/me/components/SkillBandCard'
 import { GrowthJournalCard } from '@/features/me/components/GrowthJournalCard'
@@ -55,10 +54,10 @@ export function GrowthPage() {
 
   return (
     <>
-      <div className="page-header">
+      <div className="pghead-np lav">
         <div>
-          <Eyebrow brand>Me</Eyebrow>
-          <PageTitle className="mt-sm">Growth</PageTitle>
+          <div className="over">Me · Growth</div>
+          <h1>Growth</h1>
         </div>
       </div>
       <div style={{ padding: '8px 24px 24px' }}>
@@ -95,7 +94,7 @@ export function GrowthPage() {
                 footer={typeof savings === 'number' && savings > 0 ? (
                   <div className="row" style={{ justifyContent: 'space-between', marginTop: 11, paddingTop: 9, borderTop: '1px solid var(--border-subtle)' }}>
                     <span className="text-secondary" style={{ fontSize: 12 }}>Megtakarítás (30 nap)</span>
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)' }}>{fmt(savings)} Ft</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--sage-deep)' }}>{fmt(savings)} Ft</span>
                   </div>
                 ) : undefined}
               />
@@ -122,7 +121,7 @@ export function GrowthPage() {
 function HeroStat({ value, label }: { value: string; label: string }) {
   return (
     <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 4, padding: '11px 6px 9px', textAlign: 'center' }}>
-      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 23, color: 'var(--brand-glow)' }}>{value}</div>
+      <div style={{ fontFamily: 'var(--ff-display)', fontSize: 23, color: 'var(--lav-deep)' }}>{value}</div>
       <div className="eyebrow" style={{ marginTop: 3 }}>{label}</div>
     </div>
   )
@@ -132,10 +131,9 @@ function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void
   return (
     <button role="tab" aria-selected={on} onClick={onClick}
       className="notch-4"
-      style={{ flex: 1, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', padding: '7px 0', borderRadius: 3,
-        color: on ? 'var(--brand-glow)' : 'var(--text-tertiary)',
-        background: on ? 'var(--surface-3)' : 'transparent',
-        boxShadow: on ? 'inset 0 0 0 1px var(--border-brand)' : 'none' }}>
+      style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', padding: '7px 0', borderRadius: 3,
+        color: on ? 'var(--lav-deep)' : 'var(--text-tertiary)',
+        background: on ? 'var(--wash-lav)' : 'transparent' }}>
       {children}
     </button>
   )

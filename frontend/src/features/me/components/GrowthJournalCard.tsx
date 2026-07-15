@@ -7,9 +7,8 @@ const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 export function GrowthJournalCard({ days, summary }: { days: JournalDay[]; summary: string }) {
   return (
     <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'linear-gradient(var(--brand-core), var(--brand-primary))' }} />
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="eyebrow brand">Utolsó 30 nap</span>
+        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Utolsó 30 nap</span>
         <span className="chip notch-4">{summary}</span>
       </div>
       {days.length === 0 && (
@@ -21,12 +20,12 @@ export function GrowthJournalCard({ days, summary }: { days: JournalDay[]; summa
         <div key={d.date} style={{ marginTop: 12 }}>
           <div className="row" style={{ justifyContent: 'space-between', paddingBottom: 5, borderBottom: '1px solid var(--border-subtle)' }}>
             <span className="eyebrow">{d.label}</span>
-            <span className="eyebrow">+{d.xpTotal} XP</span>
+            <span className="eyebrow" style={{ color: 'var(--amber-deep)' }}>+{d.xpTotal} XP</span>
           </div>
           {d.entries.map((e) =>
             e.kind === 'quest' ? (
               <div key={`q-${e.quest.id}`} className="row" style={{ gap: 9, alignItems: 'flex-start', paddingTop: 7, opacity: e.quest.status === 'expired' ? 0.6 : 1 }}>
-                <span style={{ width: 15, textAlign: 'center', color: e.quest.status === 'completed' ? 'var(--success)' : 'var(--text-quaternary)' }}>
+                <span style={{ width: 15, textAlign: 'center', color: e.quest.status === 'completed' ? 'var(--sage-deep)' : 'var(--text-quaternary)' }}>
                   {e.quest.status === 'completed' ? '✓' : '—'}
                 </span>
                 <span style={{ flex: 1, fontSize: 12, lineHeight: 1.35 }}>
@@ -37,13 +36,13 @@ export function GrowthJournalCard({ days, summary }: { days: JournalDay[]; summa
                     {e.quest.status === 'expired' ? ' · csendben lejárt' : ''}
                   </span>
                 </span>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: e.quest.status === 'completed' ? 'var(--brand-glow)' : 'var(--text-quaternary)' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: e.quest.status === 'completed' ? 'var(--amber-deep)' : 'var(--text-quaternary)' }}>
                   {e.quest.status === 'completed' ? `+${e.quest.xp}` : '0'}
                 </span>
               </div>
             ) : (
               <div key={`a-${e.activity.id}`} className="row" style={{ gap: 9, alignItems: 'flex-start', paddingTop: 7 }}>
-                <span style={{ width: 15, textAlign: 'center', color: 'var(--brand-glow)' }}>✎</span>
+                <span style={{ width: 15, textAlign: 'center', color: 'var(--lav-deep)' }}>✎</span>
                 <span style={{ flex: 1, fontSize: 12, lineHeight: 1.35 }}>
                   {e.activity.text}
                   <span className="text-tertiary" style={{ display: 'block', fontSize: 10 }}>
@@ -52,7 +51,7 @@ export function GrowthJournalCard({ days, summary }: { days: JournalDay[]; summa
                     {typeof e.activity.amountHuf === 'number' && e.activity.amountHuf > 0 ? ` · ${fmt(e.activity.amountHuf)} Ft` : ''}
                   </span>
                 </span>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: e.activity.xpAwarded > 0 ? 'var(--brand-glow)' : 'var(--text-quaternary)' }}>
+                <span style={{ fontSize: 10, fontWeight: 700, color: e.activity.xpAwarded > 0 ? 'var(--amber-deep)' : 'var(--text-quaternary)' }}>
                   {e.activity.xpAwarded > 0 ? `+${e.activity.xpAwarded}` : '0'}
                 </span>
               </div>

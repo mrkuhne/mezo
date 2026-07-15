@@ -18,18 +18,19 @@ function sourceIconFor(source: MentionSource): IconName {
   }
 }
 
+/** Napiv row card (mezo-8141 Task 7) — no left accent bar; the affect tone color
+ * still rings the mini-avatar and tints the time label. */
 export function MentionRow({ mention, person }: { mention: Mention; person?: PersonEntry }) {
   const tone = affectColor(mention.tone)
   const sourceIcon = sourceIconFor(mention.source)
 
   return (
-    <div className="card notch-4" style={{ padding: 12, position: 'relative', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: tone }} />
-      <div className="row gap-sm" style={{ alignItems: 'flex-start', paddingLeft: 6 }}>
+    <div style={{ background: 'var(--surface)', borderRadius: 16, boxShadow: 'var(--np-shadow-row)', padding: 12 }}>
+      <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
         {/* Time gutter */}
         <div className="col" style={{ alignItems: 'flex-start', width: 60, flexShrink: 0, paddingTop: 1 }}>
-          <span className="label-mono" style={{ fontSize: 9, color: tone, lineHeight: 1.1 }}>{mention.timeLabel}</span>
-          <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)', marginTop: 2 }}>{mention.dayLabel}</span>
+          <span style={{ fontSize: 9, fontWeight: 800, color: tone, lineHeight: 1.1 }}>{mention.timeLabel}</span>
+          <span className="text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>{mention.dayLabel}</span>
         </div>
 
         {/* Body */}
@@ -58,21 +59,21 @@ export function MentionRow({ mention, person }: { mention: Mention; person?: Per
               <Icon name={sourceIcon} size={10} color="var(--text-tertiary)" />
               <span
                 className="text-tertiary"
-                style={{ fontSize: 9, fontFamily: 'var(--ff-mono)', textTransform: 'uppercase', letterSpacing: '0.08em' }}
+                style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em' }}
               >
                 {mention.source}{mention.duration_s ? ` · ${mention.duration_s}s` : ''}
               </span>
             </div>
             {mention.flagged && (
               <span
-                className="label-mono"
                 style={{
                   fontSize: 8,
+                  fontWeight: 800,
                   color: 'var(--warning)',
                   marginLeft: 'auto',
-                  background: 'rgba(245, 158, 11, 0.08)',
+                  background: 'var(--wash-amber)',
                   padding: '2px 5px',
-                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  borderRadius: 4,
                 }}
               >
                 FIGYELEM
@@ -84,7 +85,7 @@ export function MentionRow({ mention, person }: { mention: Mention; person?: Per
           </p>
           {mention.tiedTo && (
             <div className="row gap-xs mt-sm" style={{ alignItems: 'center' }}>
-              <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>kapcsolódik</span>
+              <span style={{ fontSize: 8, fontWeight: 800, color: 'var(--text-tertiary)' }}>kapcsolódik</span>
               <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>{mention.tiedTo.label}</span>
             </div>
           )}
