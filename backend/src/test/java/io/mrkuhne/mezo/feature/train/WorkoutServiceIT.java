@@ -323,7 +323,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testFindDoneDates_shouldIncludeInstance_whenRealSetLoggedAlongsideSkip() {
+    void testFindDoneDates_shouldIncludeInstance_whenFinishedAfterLoggingRealSet() {
         UUID user = databasePopulator.populateUser("workout@test.local");
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
         WorkoutSessionEntity template =
@@ -331,9 +331,11 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         ExerciseEntity skipped = trainPopulator.createExercise(user, template.getId(), "Row", 0);
         ExerciseEntity logged = trainPopulator.createExercise(user, template.getId(), "Pulldown", 1);
         WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
-        // a skip marker AND a real logged set on the same instance — the positive es.skipped=false branch
         workoutService.skipExercise(user, started.getId(), skipped.getId());
         workoutService.logSet(user, started.getId(), setRequest(logged, 0, "100", 8, 1));
+        // done = EXPLICITLY FINISHED (spec 2026-07-15): finishing (status→completed) flips the
+        // gym done-state; the logged/skipped sets no longer decide it on their own.
+        workoutService.finishWorkout(user, started.getId());
 
         WorkoutTodayResponse today = workoutService.getToday(user);
 
@@ -341,14 +343,14 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testFindDoneDates_shouldExcludeSkipOnlyInstance_whenNoRealSetLogged() {
+    void testFindDoneDates_shouldExcludeInstance_whenActiveNotFinished() {
         UUID user = databasePopulator.populateUser("workout@test.local");
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
         WorkoutSessionEntity template =
             trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
         ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
         WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
-        // ONLY a skip marker — no real logged set — must not flip the gym done-state.
+        // started + a skip marker but NOT finished — an unclosed instance must not be done.
         workoutService.skipExercise(user, started.getId(), exercise.getId());
 
         WorkoutTodayResponse today = workoutService.getToday(user);
@@ -489,15 +491,15 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetToday_shouldMarkTodayDone_whenInstanceHasLoggedSet() {
+    void testGetToday_shouldMarkTodayDone_whenInstanceCompleted() {
         UUID user = databasePopulator.populateUser("workout@test.local");
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
         WorkoutSessionEntity template =
             trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
         ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
-        // an ACTIVE (not finished) instance today with one logged set — "any logged set" counts
+        // a COMPLETED (explicitly finished) instance today — the only thing that counts as done now
         WorkoutSessionEntity instance =
-            trainPopulator.createWorkoutInstance(user, template, LocalDate.now(), "active");
+            trainPopulator.createWorkoutInstance(user, template, LocalDate.now(), "completed");
         trainPopulator.createLoggedSet(user, exercise.getId(), instance.getId(), 0, "100.0", 8, 2);
 
         WorkoutTodayResponse today = workoutService.getToday(user);
@@ -506,23 +508,22 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetToday_shouldExcludeInstancesFromDoneDates_whenSetlessOrOutOfWeek() {
+    void testGetToday_shouldExcludeInstancesFromDoneDates_whenActiveOrOutOfWeek() {
         UUID user = databasePopulator.populateUser("workout@test.local");
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "T2 meso", "active");
         WorkoutSessionEntity template =
             trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Pull Day", 0, "planned");
         ExerciseEntity exercise = trainPopulator.createExercise(user, template.getId(), "Row", 0);
         LocalDate monday = LocalDate.now().minusDays(LocalDate.now().getDayOfWeek().getValue() - 1L);
-        // (a) in-week instance with NO logged sets -> not done
-        trainPopulator.createWorkoutInstance(user, template, monday, "active");
-        // (b) last week's instance WITH a set -> out of this Mon–Sun window
-        WorkoutSessionEntity lastWeek =
-            trainPopulator.createWorkoutInstance(user, template, monday.minusDays(1), "completed");
-        trainPopulator.createLoggedSet(user, exercise.getId(), lastWeek.getId(), 0, "90.0", 8, 2);
+        // (a) in-week ACTIVE instance with a logged set -> still not done (only completed counts)
+        WorkoutSessionEntity inWeek = trainPopulator.createWorkoutInstance(user, template, monday, "active");
+        trainPopulator.createLoggedSet(user, exercise.getId(), inWeek.getId(), 0, "90.0", 8, 2);
+        // (b) last week's COMPLETED instance -> out of this Mon–Sun window
+        trainPopulator.createWorkoutInstance(user, template, monday.minusDays(1), "completed");
 
         WorkoutTodayResponse today = workoutService.getToday(user);
 
-        assertThat(today.getWeekDoneDates()).doesNotContain(monday); // setless instance excluded
+        assertThat(today.getWeekDoneDates()).doesNotContain(monday); // active instance excluded
         assertThat(today.getWeekDoneDates()).doesNotContain(monday.minusDays(1)); // out-of-week excluded
     }
 

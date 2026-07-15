@@ -33,34 +33,31 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
 
     /**
      * Distinct dates of the owner's gym workout INSTANCES (templateSessionId not null) within
-     * [from, to] that carry at least one logged set — the "gym done that day" signal driving the
-     * Mai done-state. Status-agnostic on purpose (any logged set counts, finished or not).
-     * Skip markers (es.skipped = true) are NOT logged sets, so a skip-only instance stays not-done.
+     * [from, to] with status 'completed' — the "gym done that day" signal driving the Mai
+     * done-state. Done = EXPLICITLY FINISHED (spec 2026-07-15): a started-but-unclosed
+     * instance (any number of logged sets) is NOT done; the lazy auto-close settles stale ones.
      */
     @Query("""
         SELECT DISTINCT s.date FROM WorkoutSessionEntity s
         WHERE s.createdBy = :createdBy
           AND s.templateSessionId IS NOT NULL
           AND s.date BETWEEN :from AND :to
-          AND EXISTS (SELECT 1 FROM ExerciseSetEntity es
-                      WHERE es.workoutSessionId = s.id AND es.skipped = false)
+          AND s.status = 'completed'
         """)
     List<LocalDate> findDoneInstanceDates(
         @Param("createdBy") UUID createdBy, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
     /**
-     * The owner's gym workout INSTANCES (templateSessionId not null) within [from, to] that carry
-     * at least one logged set — {@link #findDoneInstanceDates} returning the entities instead of
-     * dates, for the companion get_recent_workouts tool (V0.5). Plain finder, no companion
-     * dependency; same status-agnostic + skip-marker semantics.
+     * The owner's COMPLETED gym workout instances within [from, to] —
+     * {@link #findDoneInstanceDates} returning the entities instead of dates (companion
+     * get_recent_workouts + Insights listWorkouts). Same completed-only semantics.
      */
     @Query("""
         SELECT s FROM WorkoutSessionEntity s
         WHERE s.createdBy = :createdBy
           AND s.templateSessionId IS NOT NULL
           AND s.date BETWEEN :from AND :to
-          AND EXISTS (SELECT 1 FROM ExerciseSetEntity es
-                      WHERE es.workoutSessionId = s.id AND es.skipped = false)
+          AND s.status = 'completed'
         ORDER BY s.date ASC
         """)
     List<WorkoutSessionEntity> findDoneInstancesBetween(

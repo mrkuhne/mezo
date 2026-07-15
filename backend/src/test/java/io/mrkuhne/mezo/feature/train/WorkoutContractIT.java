@@ -302,7 +302,7 @@ class WorkoutContractIT extends ApiIntegrationTest {
         trainPopulator.createLoggedSet(owner, exercise.getId(), inRange.getId(), 0, "100", 8, 1);
         WorkoutSessionEntity outOfRange = trainPopulator.createWorkoutInstance(owner, template, LocalDate.of(2026, 6, 29), "completed");
         trainPopulator.createLoggedSet(owner, exercise.getId(), outOfRange.getId(), 0, "100", 8, 1);
-        trainPopulator.createWorkoutInstance(owner, template, LocalDate.of(2026, 6, 23), "planned"); // no sets -> excluded
+        trainPopulator.createWorkoutInstance(owner, template, LocalDate.of(2026, 6, 23), "planned"); // not completed -> excluded
 
         List<WorkoutSummaryResponse> result = getForList(
             "/api/train/workouts?from=2026-06-22&to=2026-06-28",

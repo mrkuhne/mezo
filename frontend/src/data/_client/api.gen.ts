@@ -309,7 +309,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Workout instances with logged work (≥1 non-skipped set) in the inclusive date range — same "done" semantics as weekDoneDates */
+        /** Completed workout instances in the inclusive date range — same "done = explicitly finished" semantics as weekDoneDates */
         get: operations["listWorkouts"];
         put?: never;
         /** Start (or resume) a workout instance for a template day — an open instance is returned, never duplicated */
@@ -1968,7 +1968,7 @@ export interface components {
             durationEst?: number;
             exercises?: components["schemas"]["TodayExercise"][];
             openWorkout?: components["schemas"]["WorkoutInstanceResponse"];
-            /** @description ISO dates within the current Mon–Sun week that have a gym workout instance with >=1 logged set. Drives the Mai gym done-state (today) and the weekly-row done chips (past days). Present even on rest days and when today is not a gym day. */
+            /** @description ISO dates within the current Mon–Sun week that have a COMPLETED gym workout instance (explicit finish). Drives the Mai gym done-state (today) and the weekly-row done chips (past days). Present even on rest days and when today is not a gym day. */
             weekDoneDates?: string[];
         };
         TodayExercise: {
