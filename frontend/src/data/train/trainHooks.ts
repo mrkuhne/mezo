@@ -225,6 +225,8 @@ type TrainData = {
   exerciseLibrary: ExerciseLibraryItem[]
   exerciseRecords: ExerciseRecordResponse[]
   todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
+  /** Today's COMPLETED instance of today's template day (real mode) — drives the Kész/Megnézem hero + the session-route review redirect. */
+  completedTodayWorkout: WorkoutInstanceResponse | null
   /** ISO dates (this Mon–Sun week) with a logged gym workout — drives the Mai gym done-state. Real mode only. */
   gymDoneDates: string[]
   /** True while the meso//today queries are still loading (real mode) — guards must not redirect yet. */
@@ -545,6 +547,7 @@ export function useTrain(): TrainData {
     todaySession: !mock && todayData?.templateSessionId
       ? { templateSessionId: todayData.templateSessionId, openWorkout: todayData.openWorkout ?? null }
       : null,
+    completedTodayWorkout: mock ? null : (todayData?.completedWorkout ?? null),
     // Gym done-state dates: real mode reads them from /today (computed server-side);
     // mock mode has no persisted instances, so the gym never flips to done offline.
     gymDoneDates: mock ? [] : (todayData?.weekDoneDates ?? []),

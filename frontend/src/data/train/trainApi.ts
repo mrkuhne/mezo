@@ -30,6 +30,8 @@ export type LevelUpGain = components['schemas']['LevelUpGain']
 export type LevelUpPerk = components['schemas']['LevelUpPerk']
 export type LevelUpRobustness = components['schemas']['LevelUpRobustness']
 export type WorkoutSummaryResponse = components['schemas']['WorkoutSummaryResponse']
+export type WorkoutDetailResponse = components['schemas']['WorkoutDetailResponse']
+export type WorkoutDetailExercise = components['schemas']['WorkoutDetailExercise']
 
 export const trainApi = {
   mesocycles: (): Promise<MesocycleResponse[]> => apiFetch<MesocycleResponse[]>('/api/train/mesocycles'),
@@ -49,6 +51,8 @@ export const trainApi = {
     apiFetch<WorkoutTodayResponse>('/api/train/workouts/today'),
   listWorkouts: (from: string, to: string): Promise<WorkoutSummaryResponse[]> =>
     apiFetch<WorkoutSummaryResponse[]>(`/api/train/workouts?from=${from}&to=${to}`),
+  getWorkout: (id: string): Promise<WorkoutDetailResponse> =>
+    apiFetch<WorkoutDetailResponse>(`/api/train/workouts/${id}`),
   startWorkout: (templateSessionId: string): Promise<WorkoutInstanceResponse> =>
     apiFetch<WorkoutInstanceResponse>('/api/train/workouts', {
       method: 'POST',

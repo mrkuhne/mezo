@@ -23,6 +23,7 @@ export { useStack, useProtocol, useStackActions, useProtocolActions, useStackCon
 export { useTrain } from '@/data/train/trainHooks'
 export { useChallenges, useChallengeActions } from '@/data/train/challengeHooks'
 export { useRunning } from '@/data/train/runningHooks'
+export { useWorkoutDetail, useWeekWorkouts } from '@/data/train/workoutDetailHooks'
 export { useWeight } from '@/data/me/weightHooks'
 export { usePantry, usePantryActions } from '@/data/fuel/pantryHooks'
 export { useRecipes, useRecipeActions } from '@/data/fuel/recipeHooks'
