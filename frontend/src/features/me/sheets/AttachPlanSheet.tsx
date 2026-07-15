@@ -1,10 +1,17 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
-import { LabelMono } from '@/shared/ui/LabelMono'
 import { Icon } from '@/shared/ui/Icon'
 import { useGoal, useGoalActions, useTrain, useRunning } from '@/data/hooks'
+
+// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
+const SECTION_LABEL: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 800,
+  letterSpacing: '.1em',
+  textTransform: 'uppercase',
+  color: 'var(--faint)',
+}
 
 // Attach-an-existing-plan picker (G4b hub). Opened from a GoalPlanSlots "＋ Csatolj
 // meglévőt" CTA for a given plan type. Lists the user's owned mesocycles
@@ -58,7 +65,7 @@ export function AttachPlanSheet({
         <div className="col" style={{ padding: '4px 4px 8px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <Eyebrow brand>Csatolj meglévőt</Eyebrow>
+              <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Csatolj meglévőt</span>
               <div id="attach-plan-title"><Display size="md">{TITLE[planType]}</Display></div>
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close}><Icon name="x" size={12} /></button>
@@ -71,7 +78,7 @@ export function AttachPlanSheet({
           ) : (
             <>
               <div className="col gap-sm">
-                <LabelMono>Válassz tervet</LabelMono>
+                <span style={SECTION_LABEL}>Válassz tervet</span>
                 {candidates.map((c) => {
                   const active = c.id === selectedId
                   return (
@@ -85,15 +92,14 @@ export function AttachPlanSheet({
                         padding: '11px 14px',
                         textAlign: 'left',
                         cursor: 'pointer',
-                        borderColor: active ? 'var(--border-brand)' : 'var(--border-subtle)',
-                        background: active ? 'rgba(94, 234, 212, 0.06)' : 'var(--surface-1)',
+                        borderColor: active ? 'var(--lav-deep)' : 'var(--border-subtle)',
+                        background: active ? 'var(--wash-lav)' : 'var(--surface-1)',
                       }}
                     >
                       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{c.title}</span>
                         <span
-                          className="label-mono"
-                          style={{ fontSize: 9, color: 'var(--text-tertiary)' }}
+                          style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}
                         >
                           {c.weeks} hét
                         </span>
@@ -104,7 +110,7 @@ export function AttachPlanSheet({
               </div>
 
               <div className="col gap-sm mt-lg">
-                <LabelMono>Kezdő hét</LabelMono>
+                <span style={SECTION_LABEL}>Kezdő hét</span>
                 <input
                   type="number"
                   aria-label="Kezdő hét"
@@ -118,8 +124,9 @@ export function AttachPlanSheet({
                   className="card notch-4"
                   style={{
                     padding: '11px 14px',
-                    fontFamily: 'var(--ff-mono)',
                     fontSize: 14,
+                    fontWeight: 700,
+                    fontVariantNumeric: 'tabular-nums',
                     color: 'var(--text-primary)',
                     background: 'var(--surface-1)',
                     border: '1px solid var(--border-subtle)',

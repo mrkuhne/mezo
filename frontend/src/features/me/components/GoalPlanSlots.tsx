@@ -33,14 +33,14 @@ export function GoalPlanSlots({ goalId }: { goalId: string }) {
         <Slot
           title="Mesociklus"
           caption="gym · az ablakra kalibrálva"
-          accent="var(--brand-glow)"
+          accent="var(--coral)"
           onPlan={() => navigate('/train/mesocycles/new')}
           onAttach={() => setAttach('mesocycle')}
         />
         <Slot
           title="Futóblokk"
           caption="opcionális · mozog a mesóval"
-          accent="var(--info)"
+          accent="var(--sky)"
           onPlan={planRunningBlock}
           onAttach={() => setAttach('running_block')}
         />
@@ -76,7 +76,7 @@ function Slot({
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="col">
           <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{title}</span>
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{caption}</span>
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>{caption}</span>
         </div>
         <button
           type="button"
@@ -85,9 +85,8 @@ function Slot({
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
-            fontFamily: 'var(--ff-mono)',
             fontSize: 11,
-            fontWeight: 600,
+            fontWeight: 700,
             color: accent,
           }}
         >
@@ -102,8 +101,8 @@ function Slot({
             background: 'transparent',
             border: 'none',
             cursor: 'pointer',
-            fontFamily: 'var(--ff-mono)',
             fontSize: 9,
+            fontWeight: 700,
             color: 'var(--text-secondary)',
             textDecoration: 'underline',
             padding: 0,

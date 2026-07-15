@@ -121,14 +121,13 @@ function GoalWizard() {
           className="row gap-sm"
           onClick={() => (step > 0 ? setStep(step - 1) : backToGoals())}
         >
-          <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
           <span className="eyebrow">{step === 0 ? 'Cél' : STEP_TITLES[step - 1]}</span>
         </button>
       </div>
 
-      {/* Header */}
+      {/* Step progress — earlier segments tappable to jump back */}
       <div style={{ padding: '6px 24px 0' }}>
-        {/* Step progress — earlier segments tappable to jump back */}
         <div className="row gap-xs" style={{ marginBottom: 14 }}>
           {Array.from({ length: STEP_COUNT }, (_, i) => (
             <button
@@ -141,8 +140,7 @@ function GoalWizard() {
               style={{
                 flex: 1,
                 height: 3,
-                background: i <= step ? 'var(--brand-glow)' : 'var(--surface-2)',
-                boxShadow: i === step ? '0 0 6px var(--brand-glow)' : 'none',
+                background: i <= step ? 'var(--lav)' : 'var(--surface-2)',
                 transition: 'all 0.3s ease',
                 padding: 0,
                 cursor: i < step ? 'pointer' : 'default',
@@ -151,10 +149,17 @@ function GoalWizard() {
           ))}
         </div>
 
-        <span className="eyebrow brand">
+        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
           {String(step + 1).padStart(2, '0')} / {String(STEP_COUNT).padStart(2, '0')}
         </span>
-        <div className="page-title mt-sm">{STEP_TITLES[step]}</div>
+      </div>
+
+      {/* Own header (outside MeSection chrome, spec §4.6 / Task 5) */}
+      <div className="pghead-np lav">
+        <div>
+          <div className="over">Me · Új cél</div>
+          <h1>{STEP_TITLES[step]}</h1>
+        </div>
       </div>
 
       {step === 0 && (
@@ -176,27 +181,26 @@ function GoalWizard() {
                     textAlign: 'left',
                     width: '100%',
                     background: sel
-                      ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)'
+                      ? 'color-mix(in srgb, var(--lav-deep) 8%, transparent)'
                       : 'var(--surface-1)',
-                    borderColor: sel ? 'var(--border-brand)' : 'var(--border-subtle)',
+                    borderColor: sel ? 'var(--lav-deep)' : 'var(--border-subtle)',
                   }}
                 >
                   <div className="row gap-md" style={{ alignItems: 'center' }}>
-                    <Icon name={t.icon} size={18} color={sel ? 'var(--brand-glow)' : 'var(--text-secondary)'} />
+                    <Icon name={t.icon} size={18} color={sel ? 'var(--lav-deep)' : 'var(--text-secondary)'} />
                     <div className="col">
                       <span
                         style={{
                           fontFamily: 'var(--ff-display)',
                           fontSize: 15,
                           fontWeight: 600,
-                          color: sel ? 'var(--brand-glow)' : 'var(--text-primary)',
+                          color: sel ? 'var(--lav-deep)' : 'var(--text-primary)',
                         }}
                       >
                         {t.label}
                       </span>
                       <span
-                        className="label-mono"
-                        style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 2 }}
+                        style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)', marginTop: 2 }}
                       >
                         {t.sub}
                       </span>
@@ -222,10 +226,10 @@ function GoalWizard() {
                   style={{
                     padding: '8px 11px',
                     background: on
-                      ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)'
+                      ? 'color-mix(in srgb, var(--lav-deep) 8%, transparent)'
                       : 'var(--surface-1)',
-                    borderColor: on ? 'var(--border-brand)' : 'var(--border-subtle)',
-                    color: on ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                    borderColor: on ? 'var(--lav-deep)' : 'var(--border-subtle)',
+                    color: on ? 'var(--lav-deep)' : 'var(--text-secondary)',
                   }}
                 >
                   {on ? '✓ ' : ''}
@@ -274,7 +278,7 @@ function GoalWizard() {
             )}
             <button
               type="button"
-              className="cta-primary notch-8"
+              className="np-cta np-press"
               disabled={!canNext}
               style={{
                 flex: step > 0 ? 2 : 1,
@@ -291,7 +295,7 @@ function GoalWizard() {
           <div className="col gap-sm">
             <button
               type="button"
-              className="cta-primary notch-8"
+              className="np-cta np-press"
               disabled={pending}
               style={{ padding: 14, opacity: pending ? 0.5 : 1 }}
               onClick={() => save(true)}
@@ -349,7 +353,7 @@ function Step1({
 }) {
   const field = (label: string, input: ReactNode) => (
     <div className="col gap-sm">
-      <span className="label-mono">{label}</span>
+      <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
       <div className="card notch-4" style={{ padding: 10 }}>
         {input}
       </div>
@@ -442,7 +446,7 @@ function Step1({
             → a simple tartás note; otherwise the backend-derived pace + verdict. */}
         {trajectory === 'maintain' ? (
           <div className="card notch-8" style={{ padding: 13 }}>
-            <span className="label-mono" style={{ color: 'var(--text-tertiary)' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-tertiary)' }}>
               ≈ Tartás — nincs súlyváltozási tempó.
             </span>
           </div>
@@ -491,7 +495,7 @@ function FeasibilityPanel({
   onAccept: (dateIso: string) => void
 }) {
   const ok = preview.withinSafeBand
-  const accent = ok ? 'var(--brand-glow)' : 'var(--warning)'
+  const accent = ok ? 'var(--sage-deep)' : 'var(--warning)'
   const withWarnings = ok && preview.verdict === 'feasible-with-warnings'
   const label = ok ? (withWarnings ? '✓ Reális · figyelővel' : '✓ Reális') : '⚠ Agresszív'
   return (
@@ -500,21 +504,20 @@ function FeasibilityPanel({
       style={{
         padding: '13px 14px',
         background: ok
-          ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)'
+          ? 'color-mix(in srgb, var(--sage-deep) 8%, transparent)'
           : 'rgba(245,158,11,.06)',
-        borderColor: ok ? 'var(--border-brand)' : 'color-mix(in srgb, var(--warning) 42%, transparent)',
+        borderColor: ok ? 'var(--sage-deep)' : 'color-mix(in srgb, var(--warning) 42%, transparent)',
       }}
     >
       <div className="row" style={{ alignItems: 'baseline', gap: 7 }}>
-        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, lineHeight: 1, color: accent }}>
+        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, lineHeight: 1, color: accent, fontVariantNumeric: 'tabular-nums' }}>
           {hu1(preview.derivedRatePctPerWeek)}
         </span>
-        <span className="label-mono" style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)' }}>
           %BW / hét
         </span>
         <span
-          className="label-mono"
-          style={{ marginLeft: 'auto', fontSize: 9, letterSpacing: '0.1em', color: accent }}
+          style={{ marginLeft: 'auto', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: accent }}
         >
           {label}
         </span>
@@ -545,9 +548,8 @@ function FeasibilityPanel({
             marginTop: 11,
             width: '100%',
             padding: 9,
-            fontFamily: 'var(--ff-mono)',
             fontSize: 11,
-            fontWeight: 600,
+            fontWeight: 700,
             letterSpacing: '0.04em',
             background: 'rgba(245,158,11,.12)',
             border: '1px solid color-mix(in srgb, var(--warning) 55%, transparent)',

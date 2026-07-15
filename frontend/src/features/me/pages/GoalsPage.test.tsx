@@ -101,6 +101,25 @@ describe('mock mode (demo goal)', () => {
     expect(screen.queryByText('7 nap')).not.toBeInTheDocument() // trend cells moved to /me/weight
   })
 
+  // Napiv re-skin (Task 5, mezo-8141): own header is `.pghead-np lav` (over "Me ·
+  // Cél" / h1 "Hosszú cél"), the "Új cél" chip is a `.pgact-np np-press` pill, and
+  // the hero's weight progress reuses the shared `.track/.fill/.dot/.track-l`
+  // vocabulary (Task 3) instead of a bespoke bar.
+  test('own header: pghead-np lav over + h1 + pgact-np action chip', () => {
+    const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+    expect(container.querySelector('.pghead-np.lav')).toBeInTheDocument()
+    expect(screen.getByText('Me · Cél')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Hosszú cél' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Új cél/ })).toHaveClass('pgact-np', 'np-press')
+  })
+
+  test('hero reuses the shared .track/.fill/.dot/.track-l progress vocabulary', () => {
+    const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+    expect(container.querySelector('.track .fill')).toBeInTheDocument()
+    expect(container.querySelector('.track .dot')).toBeInTheDocument()
+    expect(container.querySelector('.track-l')).toBeInTheDocument()
+  })
+
   test('renders the timeline lane (not the old linked-meso cards)', () => {
     render(<GoalsPage />, { wrapper: Wrapper })
     // The GoalTimeline gym lane + a positioned plan bar replace the old cards.
@@ -262,6 +281,20 @@ describe('real mode (no goal)', () => {
     expect(screen.getByRole('button', { name: /Új cél/ })).toBeInTheDocument()
     // the mock placeholder hero must NOT appear
     expect(screen.queryByText('Fogyás · Nyári forma')).not.toBeInTheDocument()
+  })
+
+  // Napiv re-skin (Task 5): the empty-state branch gets the same `.pghead-np lav`
+  // header as the active-goal branch (binding rule — BOTH branches).
+  test('empty state also gets the pghead-np lav own header', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+    )
+    const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+    await screen.findByText(/Még nincs aktív célod/)
+    expect(container.querySelector('.pghead-np.lav')).toBeInTheDocument()
+    expect(screen.getByText('Me · Cél')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1, name: 'Hosszú cél' })).toBeInTheDocument()
   })
 })
 

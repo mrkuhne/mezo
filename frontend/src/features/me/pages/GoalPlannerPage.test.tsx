@@ -30,6 +30,24 @@ test('GoalPlannerPage step 0 picks a trajectory and a guard', async () => {
   expect(screen.getByRole('button', { name: /tovább/i })).toBeEnabled()
 })
 
+// Napiv re-skin (Task 5, mezo-8141): the wizard renders OUTSIDE MeSection so it
+// owns its own `.pghead-np lav` head (over "Me · Új cél", current h1 unchanged),
+// and its primary CTA (Tovább →) uses the shared Napiv coral CTA pill (`.np-cta`).
+test('own header: pghead-np lav over + h1; primary CTA is the coral np-cta pill', async () => {
+  const { container } = render(
+    <QueryWrapper>
+      <MemoryRouter>
+        <GoalPlannerPage />
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  await waitForWizard()
+  expect(container.querySelector('.pghead-np.lav')).toBeInTheDocument()
+  expect(screen.getByText('Me · Új cél')).toBeInTheDocument()
+  expect(screen.getByText('Mit építünk?')).toBeInTheDocument() // current h1 unchanged
+  expect(screen.getByRole('button', { name: /tovább/i })).toHaveClass('np-cta', 'np-press')
+})
+
 test('GoalPlannerPage is a 2-step wizard (no third step) ending on the cél step', async () => {
   render(
     <QueryWrapper>

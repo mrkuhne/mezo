@@ -37,9 +37,8 @@ const BAR_BASE: React.CSSProperties = {
   justifyContent: 'space-between',
   gap: 6,
   padding: '0 8px',
-  fontFamily: 'var(--ff-mono)',
   fontSize: 9,
-  fontWeight: 600,
+  fontWeight: 700,
   whiteSpace: 'nowrap',
   overflow: 'hidden',
 }
@@ -51,8 +50,8 @@ function LaneLabel({ eyebrow, tag, tagColor }: { eyebrow: string; tag: string; t
       <span
         className="tag"
         style={{
-          fontFamily: 'var(--ff-mono)',
           fontSize: 8,
+          fontWeight: 700,
           letterSpacing: '.06em',
           padding: '1px 6px',
           border: '1px solid var(--border-subtle)',
@@ -98,8 +97,8 @@ function PlanBar({
             border: 'none',
             cursor: 'pointer',
             color: 'inherit',
-            fontFamily: 'var(--ff-mono)',
             fontSize: 11,
+            fontWeight: 700,
             lineHeight: 1,
             padding: 0,
             opacity: 0.7,
@@ -133,8 +132,8 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
             data-testid={`ruler-week-${w}`}
             style={{
               textAlign: 'center',
-              fontFamily: 'var(--ff-mono)',
               fontSize: 8,
+              fontWeight: 700,
               color: 'var(--text-quaternary)',
               padding: '2px 0',
             }}
@@ -151,8 +150,8 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
           <PlanBar
             key={link.id}
             link={link}
-            fill="linear-gradient(90deg, var(--brand-core), var(--brand-glow))"
-            textColor="#04231f"
+            fill="linear-gradient(90deg, var(--tag-gym), var(--coral))"
+            textColor="#fff"
             onDetach={onDetach}
           />
         ))}
@@ -162,14 +161,14 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
             style={{
               height: 24,
               gridColumn: gridColumn(gap.fromWeek, gap.toWeek),
-              border: '1px dashed var(--warning)',
+              border: '1px dashed var(--amber-deep)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontFamily: 'var(--ff-mono)',
               fontSize: 10,
-              color: 'var(--warning)',
-              background: 'rgba(245, 158, 11, 0.06)',
+              fontWeight: 700,
+              color: 'var(--amber-deep)',
+              background: 'var(--wash-amber)',
             }}
           >
             ⚠ W{gap.fromWeek}–{gap.toWeek} fedezetlen
@@ -190,8 +189,8 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontFamily: 'var(--ff-mono)',
               fontSize: 8,
+              fontWeight: 700,
               letterSpacing: '.14em',
               textTransform: 'uppercase',
               color: 'var(--text-tertiary)',
@@ -205,8 +204,8 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
             <PlanBar
               key={link.id}
               link={link}
-              fill="linear-gradient(90deg, #3b82f6, var(--info))"
-              textColor="#04122b"
+              fill="linear-gradient(90deg, var(--tag-run), var(--sky))"
+              textColor="#fff"
               onDetach={onDetach}
             />
           ))
@@ -214,7 +213,7 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
       </div>
 
       {/* VOLLEYBALL LANE — constant ambient band spanning the whole window, read-only */}
-      <LaneLabel eyebrow="Röplabda" tag="ambient · konstans" tagColor="var(--cat-tendency)" />
+      <LaneLabel eyebrow="Röplabda" tag="ambient · konstans" tagColor="var(--tag-sport)" />
       <div style={TRACK_STYLE(weeks)}>
         <div
           style={{
@@ -224,12 +223,11 @@ export function GoalTimeline({ timeline, onDetach, ambient }: GoalTimelineProps)
             display: 'flex',
             alignItems: 'center',
             padding: '0 9px',
-            fontFamily: 'var(--ff-mono)',
             fontSize: 9,
-            fontWeight: 600,
-            background: 'color-mix(in srgb, var(--cat-tendency) 16%, transparent)',
-            color: 'var(--cat-tendency)',
-            border: '1px solid color-mix(in srgb, var(--cat-tendency) 30%, transparent)',
+            fontWeight: 700,
+            background: 'var(--wash-sport)',
+            color: 'var(--tag-sport)',
+            border: '1px solid color-mix(in srgb, var(--tag-sport) 30%, transparent)',
           }}
         >
           {ambientBandText}

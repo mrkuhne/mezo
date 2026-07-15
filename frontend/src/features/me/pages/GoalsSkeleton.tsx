@@ -7,9 +7,9 @@ import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 export default function GoalsSkeleton() {
   return (
     <div role="status" aria-label="Betöltés…">
-      <div className="page-header">
+      <div className="pghead-np lav">
         <div className="col gap-xs"><Skeleton width={70} height={11} /><Skeleton width={120} height={20} /></div>
-        <Skeleton width={64} height={24} radius={8} />
+        <Skeleton width={64} height={24} radius={999} />
       </div>
       {/* Goal hero — eyebrow + title + window, a wide weight-track block, 2 stats */}
       <div style={{ padding: '0 24px 16px' }}>
@@ -19,13 +19,13 @@ export default function GoalsSkeleton() {
             <Skeleton width="65%" height={22} />
             <Skeleton width={130} height={11} />
           </div>
-          {/* Weight track */}
+          {/* Weight track — mirrors the shared .track pill (Task 3/5), not the old 6px bar */}
           <div className="mt-lg col gap-sm">
             <div className="row gap-md" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
               <Skeleton width={70} height={34} />
               <Skeleton width={50} height={22} />
             </div>
-            <Skeleton width="100%" height={6} radius={3} />
+            <Skeleton width="100%" height={13} radius={999} />
             <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
               <Skeleton width={80} height={9} /><Skeleton width={70} height={9} />
             </div>
