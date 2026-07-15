@@ -44,7 +44,7 @@ test('AI-score button opens the score sheet for a scored meal', async () => {
   await userEvent.click(aiButtons[0])
   expect(onOpenScore).toHaveBeenCalled()
 })
-test('threads onLogMeal through to a suggestion slot title', async () => {
+test('threads onLogMeal through the suggestion slot\'s Logolás pill', async () => {
   const onLogMeal = vi.fn()
   const slots: FuelSlot[] = [
     { time: '08:00', kind: 'meal', label: 'Reggeli', state: 'pending', mealName: 'Zabkása', suggestedRecipeId: 'r1', kcal: 480, p: 30, c: 55, f: 12 },
