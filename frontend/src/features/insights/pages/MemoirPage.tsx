@@ -21,8 +21,8 @@ export function MemoirPage() {
   if (memoir == null) {
     return (
       <div className="col gap-md">
-        <div className="card notch-12" style={{ padding: 16 }}>
-          <span className="eyebrow brand">Heti memoir</span>
+        <div className="card" style={{ padding: 16 }}>
+          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Heti memoir</span>
           <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
             Az első memoir a hét zárásakor készül el.
           </p>
@@ -33,13 +33,13 @@ export function MemoirPage() {
 
   return (
     <div className="col gap-md">
-      <div className="memoir-card notch-12" style={{ padding: 22, position: 'relative', overflow: 'hidden' }}>
+      <div className="card memoir-card" style={{ padding: 22, position: 'relative', overflow: 'hidden' }}>
         <div
-          style={{ position: 'absolute', right: -40, top: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, rgba(94, 234, 212, 0.15), transparent 70%)' }}
+          style={{ position: 'absolute', right: -40, top: -40, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle, color-mix(in srgb, var(--lav) 16%, transparent), transparent 70%)' }}
         />
         <div className="row gap-sm">
-          <Icon name="bookmark" size={14} color="var(--brand-glow)" />
-          <span className="eyebrow brand">Heti memoir · {memoir.week}</span>
+          <Icon name="bookmark" size={14} color="var(--lav-deep)" />
+          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Heti memoir · {memoir.week}</span>
         </div>
         <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1.15, marginTop: 12, color: 'var(--text-primary)' }}>
           {memoir.title}
@@ -59,10 +59,10 @@ export function MemoirPage() {
               👍 Like
             </button>
             <button type="button" onClick={() => toggle('love')} className={cn('chip', reactions.love && 'brand')} style={{ padding: '8px 12px' }}>
-              <Icon name="heart" size={12} color={reactions.love ? 'var(--brand-glow)' : undefined} /> Love
+              <Icon name="heart" size={12} color={reactions.love ? 'var(--coral)' : undefined} /> Love
             </button>
             <button type="button" onClick={() => toggle('save')} className={cn('chip', reactions.save && 'brand')} style={{ padding: '8px 12px' }}>
-              <Icon name="bookmark" size={12} color={reactions.save ? 'var(--brand-glow)' : undefined} /> Save
+              <Icon name="bookmark" size={12} color={reactions.save ? 'var(--coral)' : undefined} /> Save
             </button>
             <button type="button" onClick={() => toggle('dismiss')} className="chip" style={{ padding: '8px 12px', opacity: reactions.dismiss ? 0.5 : 1 }}>
               <Icon name="x" size={12} /> Dismiss
@@ -72,10 +72,10 @@ export function MemoirPage() {
       </div>
 
       {mode === 'mock' ? (
-        <div className="card notch-12" style={{ padding: 16, borderColor: 'rgba(94, 234, 212, 0.3)', background: 'rgba(94, 234, 212, 0.03)' }}>
+        <div className="card" style={{ padding: 16, borderColor: 'color-mix(in srgb, var(--lav) 32%, transparent)', background: 'var(--wash-lav)' }}>
           <div className="row gap-sm">
-            <Icon name="sparkle" size={14} color="var(--brand-glow)" />
-            <span className="eyebrow brand">Évforduló · 1 hónap</span>
+            <Icon name="sparkle" size={14} color="var(--lav-deep)" />
+            <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Évforduló · 1 hónap</span>
           </div>
           <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>{anniversaryNote}</p>
         </div>
@@ -84,7 +84,7 @@ export function MemoirPage() {
       {mode === 'mock' ? (
         <div className="row gap-sm" style={{ justifyContent: 'center', marginTop: 8 }}>
           <span className="eyebrow text-tertiary">Memoir archive · 17 darab</span>
-          <span className="eyebrow brand">→</span>
+          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>→</span>
         </div>
       ) : null}
     </div>

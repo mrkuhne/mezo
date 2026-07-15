@@ -1,5 +1,4 @@
 import { Icon } from '@/shared/ui/Icon'
-import { cn } from '@/shared/lib/cn'
 import { usePredictions } from '@/data/hooks'
 import type { Prediction } from '@/data/types'
 
@@ -18,7 +17,7 @@ export function PredictionsPage() {
 
   if (predictions.length === 0) {
     return (
-      <div className="card notch-12" style={{ padding: 18, textAlign: 'center' }}>
+      <div className="card" style={{ padding: 18, textAlign: 'center' }}>
         <span className="eyebrow text-tertiary">tanulom</span>
         <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
           Az első predikciók a megerősített mintákból készülnek — a minta-motor még tanul.
@@ -35,9 +34,12 @@ export function PredictionsPage() {
       </div>
 
       {predictions.map((p) => (
-        <div key={p.id} className="card notch-12" style={{ padding: 14 }}>
+        <div key={p.id} className="card" style={{ padding: 14 }}>
           <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className={cn('chip', p.status === 'validated' && 'brand')} style={{ fontSize: 9 }}>
+            <span
+              className="chip"
+              style={{ fontSize: 9, ...(p.status === 'validated' ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)' } : {}) }}
+            >
               {p.status === 'validated' ? '✓ Validated' : p.status === 'missed' ? '✗ Missed' : '◐ Pending'}
             </span>
             <span className="label-mono" style={{ fontSize: 9 }}>{p.date}</span>
@@ -51,7 +53,7 @@ export function PredictionsPage() {
                 <div className="bar" style={{ flex: 1, marginRight: 12 }}>
                   <div className="bar-fill glow" style={{ width: `${p.confidence * 100}%` }} />
                 </div>
-                <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>{(p.confidence * 100).toFixed(0)}%</span>
+                <span className="label-mono" style={{ fontSize: 10, color: 'var(--lav-deep)' }}>{(p.confidence * 100).toFixed(0)}%</span>
               </>
             ) : (
               <span className="label-mono" style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>tanulom</span>

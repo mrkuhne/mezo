@@ -13,7 +13,7 @@ function CandidateCard({ candidate, onDecide }: {
   const color = factCategoryColor(candidate.category)
 
   return (
-    <div className="card notch-4" style={{ padding: 12, position: 'relative', borderColor: 'var(--border-brand)' }}>
+    <div className="card" style={{ padding: 12, position: 'relative', borderColor: 'var(--line)' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color }} />
       <div className="col gap-sm" style={{ paddingLeft: 8 }}>
         <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{candidate.text}</span>
@@ -40,7 +40,7 @@ function CandidateCard({ candidate, onDecide }: {
           </div>
         ) : (
           <div className="row gap-sm">
-            <button className="chip" onClick={() => onDecide('accept')} style={{ fontSize: 11, color: 'var(--brand)' }}>
+            <button className="chip" onClick={() => onDecide('accept')} style={{ fontSize: 11, color: 'var(--lav-deep)' }}>
               Elfogad
             </button>
             <button className="chip" onClick={() => setRefining(true)} style={{ fontSize: 11 }}>
@@ -63,7 +63,7 @@ export function KnowledgeListPage() {
   if (degraded) {
     return (
       <div className="col gap-md">
-        <div className="card notch-4" style={{ padding: 14 }}>
+        <div className="card" style={{ padding: 14 }}>
           <span className="text-secondary" style={{ fontSize: 12, lineHeight: 1.5 }}>
             A társ jelenleg nincs bekapcsolva — a tudástár most nem elérhető.
           </span>
@@ -76,12 +76,12 @@ export function KnowledgeListPage() {
     <div className="col gap-md">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span className="eyebrow">Tudás · {facts.length} fact</span>
-        <span className="eyebrow brand">{activeCount} aktív promptban</span>
+        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{activeCount} aktív promptban</span>
       </div>
 
       {candidates.length > 0 && (
         <div className="col gap-sm">
-          <span className="eyebrow" style={{ color: 'var(--brand)' }}>
+          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
             Jóváhagyásra vár · {candidates.length}
           </span>
           {candidates.map((c) => (
@@ -98,7 +98,7 @@ export function KnowledgeListPage() {
         {facts.map((f) => {
           const color = factCategoryColor(f.category)
           return (
-            <div key={f.id} className="card notch-4" style={{ padding: 12, opacity: f.active ? 1 : 0.5, position: 'relative' }}>
+            <div key={f.id} className="card" style={{ padding: 12, opacity: f.active ? 1 : 0.5, position: 'relative' }}>
               <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: color }} />
               <div className="row gap-sm" style={{ paddingLeft: 8, alignItems: 'center' }}>
                 <div className="col flex-1">
