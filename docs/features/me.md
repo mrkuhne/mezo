@@ -336,7 +336,7 @@ cd frontend && VITE_USE_MOCK=true pnpm test     # mock
 - `frontend/src/features/me/pages/MeSubNav.tsx:4-12` — `Profil`/`Growth`/`Cél`/`Súly`/`Alvás`/`Emberek`/`Tudás` sub-nav (`SUBNAV`; Growth added `mezo-rmhr`)
 - `frontend/src/features/me/pages/{ProfilePage,GrowthPage,GoalsPage,WeightPage,SleepPage,PeoplePage,KnowledgePage}.tsx` — the seven views (`GrowthPage` = the XP-universe page: hero trio + segmented Skillek/Napló/Kitüntetések, `mezo-rmhr`; `GoalsPage` = goal/strategy + `+ Új cél` entry; `WeightPage` = daily weight log + trend, G2)
 - `frontend/src/features/me/pages/GoalPlannerPage.tsx` — the 2-step goal-creation wizard (G4a; reshaped to 2 steps + the live `FeasibilityPanel` in G6 `mezo-06n`; `Step1` + `FeasibilityPanel` co-located), route `/me/goals/new`
-- `frontend/src/app/router.tsx:38-41,90-106` — Me routes (`growth`→`GrowthPage`, `goals`→`GoalsPage`, `weight`→`WeightPage`) + the sibling `me/goals/new`→`GoalPlannerPage` + `ProfileRoute` wrapper
+- `frontend/src/app/router.tsx:99-111` — Me routes under `MeSection` (`index`→`ProfilePage` mounted directly — the `ProfileRoute` wrapper + `MeOutletContext` were removed in S7, `mezo-8141`) + the sibling `me/goals/new`→`GoalPlannerPage`
 
 **Frontend — sheets & components**
 - `frontend/src/features/me/{WeightLogSheet,EditGoalSheet,AttachPlanSheet,SleepLogSheet,PersonLogSheet,PersonDetailSheet,SettingsSheet}.tsx` — log/detail/settings sheets (`AttachPlanSheet` = G4b attach picker: owned-plan list + start-week → `attachPlan`)
