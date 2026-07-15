@@ -9,16 +9,18 @@ export interface SkillRowVM {
   xp: number
 }
 
+// Normalise hu-HU's NBSP / narrow-NBSP thousands separators to a plain space.
+const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 const clampPct = (v: number) => Math.min(100, Math.max(0, v))
 
 /**
  * One skill band (LIFE / Atlétikus / Izom) as a full meter-row list — Growth page Skillek tab.
  * Re-skinned (Napiv, mezo-8141 Task 7): reuses the `.skl` row idiom introduced for
- * GrowthSummaryCard's top-3 preview (Task 4) verbatim — name + `.bar i` width driven by
- * `progressPct` + `.lv` level readout. Per-row cumulative XP is no longer rendered here
- * (the `.skl` vocabulary has no XP slot); the aggregate stays visible via each band's
- * header chip (e.g. "8 skill · 1 085 XP"). `xp` stays on `SkillRowVM` — callers still
- * compute it, only this list's markup stopped displaying it.
+ * GrowthSummaryCard's top-3 preview (Task 4) — name + `.bar i` width driven by
+ * `progressPct` + `.lv` level readout — plus one SkillBandCard-local extension: a
+ * right-aligned per-row cumulative-XP readout after `.lv` ("no functionality lost" rule;
+ * the shared `.skl`/`.bar`/`.lv` classes are untouched, so GrowthSummaryCard's top-3
+ * preview on Profil keeps its original three-slot shape).
  */
 export function SkillBandCard({ eyebrow, chip, rows, footer }: {
   eyebrow: string
@@ -45,6 +47,7 @@ export function SkillBandCard({ eyebrow, chip, rows, footer }: {
                 <i style={{ width: `${pct}%` }} />
               </div>
               <span className="lv">Lv {r.level}</span>
+              <span style={{ width: 44, textAlign: 'right', fontSize: 10, fontWeight: 700, color: 'var(--faint)', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.xp)}</span>
             </div>
           )
         })}

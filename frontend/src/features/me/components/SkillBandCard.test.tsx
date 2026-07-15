@@ -7,7 +7,7 @@ const rows: SkillRowVM[] = [
   { key: 'b', icon: '💰', name: 'Pénzügyek', level: 1, progressPct: 55, xp: 1085 },
 ]
 
-test('renders each row with its name, level and a progressPct-wide .skl bar (Task 4 idiom reuse)', () => {
+test('renders each row with its name, level, formatted XP and a progressPct-wide .skl bar (Task 4 idiom reuse)', () => {
   const { container } = render(<SkillBandCard eyebrow="LIFE" chip="8 skill" rows={rows} />)
   expect(screen.getByText('LIFE')).toBeInTheDocument()
   expect(screen.getByText('8 skill')).toBeInTheDocument()
@@ -15,6 +15,8 @@ test('renders each row with its name, level and a progressPct-wide .skl bar (Tas
   expect(screen.getByText('Pénzügyek')).toBeInTheDocument()
   expect(screen.getByText('Lv 3')).toBeInTheDocument()
   expect(screen.getByText('Lv 1')).toBeInTheDocument()
+  expect(screen.getByText('320')).toBeInTheDocument()
+  expect(screen.getByText('1085')).toBeInTheDocument() // 4-digit hu-HU stays ungrouped
   const rowsEl = container.querySelectorAll('.skl')
   expect(rowsEl).toHaveLength(2)
   expect((rowsEl[0].querySelector('.bar i') as HTMLElement).style.width).toBe('40%')
