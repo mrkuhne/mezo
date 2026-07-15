@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.ChallengeResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.ChallengeRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -26,6 +27,7 @@ import org.springframework.test.context.ActiveProfiles;
 class ProactiveApiChallengeIT extends ApiIntegrationTest {
 
     @Autowired private ChallengePopulator challengePopulator;
+    @Autowired private ChallengeRepository challengeRepository;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
@@ -79,6 +81,24 @@ class ProactiveApiChallengeIT extends ApiIntegrationTest {
         assertThat(c.getTypeLabel()).isEqualTo("PR-attempt");
         assertThat(c.getTarget()).isNotBlank();
         assertThat(c.getExercise()).isEqualTo("Chest Supported Row");
+        // Structured targets ride the wire alongside the display string (FE outcome preview).
+        assertThat(c.getTargetWeightKg()).isNotNull();
+        assertThat(c.getTargetReps()).isNotNull();
+    }
+
+    @Test
+    void testGetChallenges_shouldNotGenerate_whenTodayInstanceCompleted() {
+        WorkoutSessionEntity session = seedTemplateWithHistory(ownerId());
+        // The template has logged-set history (lazy propose WOULD fire), but today's instance is
+        // already 'completed' — the workout is over, so no new challenge may be generated.
+        trainPopulator.createWorkoutInstance(ownerId(), session, LocalDate.now(), "completed");
+
+        List<ChallengeResponse> challenges = getForList(
+                challengeUri(session.getId(), LocalDate.now()), ownerAuthHeaders(), HttpStatus.OK, ChallengeResponse.class);
+
+        assertThat(challenges).isEmpty();
+        assertThat(challengeRepository.findByCreatedByAndTemplateSessionIdAndWorkoutDateOrderByGeneratedAtAsc(
+                ownerId(), session.getId(), LocalDate.now())).isEmpty();   // the lazy generator did NOT run
     }
 
     @Test

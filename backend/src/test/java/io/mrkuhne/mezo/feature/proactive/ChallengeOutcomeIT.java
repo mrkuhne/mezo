@@ -185,6 +185,25 @@ class ChallengeOutcomeIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testEvaluate_shouldResolveInconclusive_whenInstanceCompletedWithNoLoggedSets() {
+        UUID user = userPopulator.createUser("chl-today-done-empty@test.local").getId();
+        Plan plan = plantTemplate(user);
+        // Completion unlocks same-day resolution: today's instance is 'completed' but the target
+        // exercise carries NO logged sets → resolve inconclusive NOW, not wait out the day.
+        trainPopulator.createWorkoutInstance(user, plan.template(), TODAY, "completed");
+        ChallengeEntity c = challengePopulator.challengePr(
+            user, plan.templateSessionId(), TODAY, plan.exerciseId(), ChallengeEntity.STATUS_ACCEPTED, "80.00", 8);
+
+        boolean transitioned = evaluator.evaluate(c, TODAY);
+
+        assertThat(transitioned).isTrue();
+        ChallengeEntity r = reload(c);
+        assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_INCONCLUSIVE);
+        assertThat(r.getOutcomeGood()).isNull();
+        assertThat(r.getOutcome()).contains("Nem értékelhető");
+    }
+
+    @Test
     void testEvaluate_shouldStayAccepted_whenTodaysWorkoutNotLoggedYet() {
         UUID user = userPopulator.createUser("chl-today@test.local").getId();
         Plan plan = plantTemplate(user);

@@ -3513,6 +3513,14 @@ export interface components {
             status: string;
             /** @description Code-derived display string of the structured target */
             target: string;
+            /** @description Structured target — kg (PR type only); feeds the FE pre-finish outcome preview */
+            targetWeightKg?: number | null;
+            /** @description Structured target — reps (PR type only) */
+            targetReps?: number | null;
+            /** @description Structured target — set count (Volume type only) */
+            targetSets?: number | null;
+            /** @description Structured target — RIR ceiling (Depth type only) */
+            targetRir?: number | null;
             /** @description Pattern-copied; null = "tanulom" (never fabricated) */
             confidence?: number | null;
             /** @description low | mid */

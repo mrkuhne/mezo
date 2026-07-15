@@ -8791,6 +8791,24 @@ components:
         target:
           type: string
           description: Code-derived display string of the structured target
+        targetWeightKg:
+          type: number
+          nullable: true
+          description: >-
+            Structured target — kg (PR type only); feeds the FE pre-finish
+            outcome preview
+        targetReps:
+          type: integer
+          nullable: true
+          description: Structured target — reps (PR type only)
+        targetSets:
+          type: integer
+          nullable: true
+          description: Structured target — set count (Volume type only)
+        targetRir:
+          type: integer
+          nullable: true
+          description: Structured target — RIR ceiling (Depth type only)
         confidence:
           type: number
           nullable: true
