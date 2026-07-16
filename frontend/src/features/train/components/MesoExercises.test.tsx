@@ -48,8 +48,9 @@ test('picking an exercise appends it to the open day', async () => {
   await renderExercisesView()
   await userEvent.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
   const dialog = screen.getByRole('dialog')
-  // Pick the first library row (Chest Supported Row) from the picker.
+  // Pick the library row — the picker now stays open for multi-add, so close it explicitly.
   await userEvent.click(within(dialog).getByText('Hip Thrust'))
+  await userEvent.click(within(dialog).getByRole('button', { name: /^Kész/ }))
   // The Sheet dismisses with a slide-down animation, so it unmounts async.
   await waitFor(() => expect(screen.queryByText('Mit pakolunk be?')).not.toBeInTheDocument())
   // The new exercise now appears in the day list.

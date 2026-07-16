@@ -151,6 +151,8 @@ test('custom split: empty nameable days, the user picks the exercises', async ()
   // the add affordance opens the picker and the pick lands in the day
   await user.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
   await user.click(screen.getByText('Hip Thrust'))
+  // the picker now stays open for multi-add, so close it explicitly.
+  await user.click(screen.getByRole('button', { name: /^Kész/ }))
   await waitFor(() => expect(screen.queryByText('Mit pakolunk be?')).not.toBeInTheDocument())
   expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Láb nap/ })).toHaveTextContent(/1 gyakorlat/)
