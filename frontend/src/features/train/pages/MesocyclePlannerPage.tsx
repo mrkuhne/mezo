@@ -955,7 +955,7 @@ function Step4Recipe({ program, onAdd, onRemove, onChange, onReorder }: {
           <div className="col flex-1">
             <span className="eyebrow brand">Set & rep · hangolás</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
-              <SafeMarkdown text="Válts napot a tabokkal, tappolj a gyakorlaton a recepthez. **A Mezo defaultjai csak kiindulópont — bármit átírhatsz.**" />
+              <SafeMarkdown text="Válts napot a tabokkal — a recept a steppereken állítható. **A Mezo defaultjai csak kiindulópont, bármit átírhatsz.**" />
             </p>
           </div>
         </div>

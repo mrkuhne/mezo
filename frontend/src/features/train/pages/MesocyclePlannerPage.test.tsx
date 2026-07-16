@@ -234,16 +234,17 @@ test('Set & rep step: day tabs, recipe editing, edits survive the 4↔5 round-tr
   expect(screen.getByText('Mennyit és hányszor?')).toBeInTheDocument()
   // save buttons live here now
   expect(screen.getByRole('button', { name: /Hozzáad mint tervezett/i })).toBeInTheDocument()
-  // a day tab is preselected; expand the first exercise row and bump Working
-  const row = screen.getAllByRole('button', { name: / · recept$/ })[0]
-  const summaryBefore = row.textContent
-  await user.click(row)
-  await user.click(screen.getByRole('button', { name: 'Working növelése' }))
-  expect(screen.getAllByRole('button', { name: / · recept$/ })[0].textContent).not.toBe(summaryBefore)
+  // a day tab is preselected; the always-visible steppers bump the day set count.
+  // Generated names are dynamic, so target the first Working stepper by regex.
+  const daySummary = () => screen.getByText(/gyakorlat · \d+ szet/).textContent
+  const before = daySummary()
+  await user.click(screen.getAllByRole('button', { name: /· Working növelése$/ })[0])
+  const after = daySummary()
+  expect(after).not.toBe(before)
   // round-trip back to Gyakorlatok (via the progress segment — the terminal
   // step has no Vissza button) and forward: no regeneration, edit kept
   await user.click(screen.getByRole('button', { name: '4. lépés · Gyakorlatok' }))
   expect(screen.getByText(/A te blokkod/i)).toBeInTheDocument()
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  expect(screen.getAllByRole('button', { name: / · recept$/ })[0].textContent).not.toBe(summaryBefore)
+  expect(daySummary()).toBe(after)
 })

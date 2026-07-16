@@ -2,8 +2,8 @@
 // Mezo · MesoExercises (builder · Gyakorlatok) — the weekly exercise editor.
 // Seeds LOCAL day-state from meso.days (deep-ish copy so edits never mutate the
 // module const), renders an intro card with live totals, the shared
-// day-tabbed MesoDayTabsEditor (switch days via tabs, tap a row for its recipe),
-// and a footer set-volume summary. Add/remove/change/reorder all mutate the
+// day-tabbed MesoDayTabsEditor (switch days via tabs, tune the recipe on the
+// always-visible steppers), and a footer set-volume summary. Add/remove/change/reorder all mutate the
 // local state only (Phase-1 UI) and fire a background full-list PUT when the day
 // carries a real row id. The exercise picker (ExercisePickerSheet) opens for the
 // active day and appends to that day's list.
@@ -70,7 +70,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
 
   const introBody =
     `**${totalExercises} gyakorlat · ${trainingDays} edzésnap.** ` +
-    'Válts napot a tabokkal · tap a gyakorlaton a recepthez · plusz/törlés/drag-rendezés.'
+    'Válts napot a tabokkal · állítsd a receptet a steppereken · plusz/törlés/drag-rendezés.'
 
   const removeExercise = (dayKey: string, exId: string) => {
     const next = days.map((d) => {

@@ -40,17 +40,16 @@ test('off-day tab shows the rest note, no add CTA', async () => {
   expect(screen.queryByRole('button', { name: /Gyakorlat hozzáadása/ })).not.toBeInTheDocument()
 })
 
-test('row tap expands the recipe panel and steppers fire patches', async () => {
+test('steppers are always visible and fire patches', async () => {
   const onChange = vi.fn()
   render(<MesoDayTabsEditor days={DAYS} {...noop} onChange={onChange} />)
-  expect(screen.queryByRole('button', { name: 'Working növelése' })).not.toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: 'Row · recept' }))
-  await userEvent.click(screen.getByRole('button', { name: 'Working növelése' }))
+  // No expand/collapse — the name-scoped steppers are visible from the start.
+  await userEvent.click(screen.getByRole('button', { name: 'Row · Working növelése' }))
   expect(onChange).toHaveBeenCalledWith('Sze', 'c', { workingSets: 4 })
-  await userEvent.click(screen.getByRole('button', { name: 'RIR növelése' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Row · RIR növelése' }))
   expect(onChange).toHaveBeenCalledWith('Sze', 'c', { targetRIR: 1 })
   // anchor: from auto, + starts at 20
-  await userEvent.click(screen.getByRole('button', { name: 'Kiinduló súly növelése' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Row · Kiinduló súly növelése' }))
   expect(onChange).toHaveBeenCalledWith('Sze', 'c', { anchorWeightKg: 20 })
 })
 

@@ -81,6 +81,9 @@ interface MesoDayTabsEditorProps {
   `AnchorStepper` "Kiinduló kg" tile** (2.5 kg steps, `auto` when unset) — today's builder
   inline editor has six tiles, and dropping the anchor would regress `mezo-anm4`. Each stepper
   tap fires `onChange(dayKey, exId, patch)`. Remove ✕ stays on the row.
+  - **Amendment (user feedback during visual verify):** no expand/collapse — the compact
+    stepper grid is always visible and the summary mono line is dropped; stepper aria-labels are
+    name-scoped (`${ex.name} · <field> növelése`) to stay unique across the always-open rows.
 - **Off-day content:** rest note + inert "Edzéssé alakít" chip (parity with today).
 - `RecipeStepper` moves out of `ExerciseEditRow` into this file as a private sub-component.
 
