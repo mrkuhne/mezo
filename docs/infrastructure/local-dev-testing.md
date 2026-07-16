@@ -41,6 +41,61 @@ The **frontend** vitest suite has none of this (no Docker, light JVM-less runtim
   ```
   Foreground focused runs complete; long **background full-suite** runs are the ones that get killed.
 
+## Visual regression gate (two-platform Playwright goldens)
+
+The frontend has a **self-baselined visual harness** at `frontend/tests/visual/` (`visual.spec.ts` +
+`playwright.config.ts`) — **14 key screens × 2 themes = 28 `toHaveScreenshot` goldens**. It boots the
+app in **mock mode** on a dedicated port (4318, no backend needed) so the seeds are static, and
+pixel-compares each screen against a committed golden. This is a fast, JVM-less gate (unlike the
+backend suite above) — it runs fine locally.
+
+**Two-platform golden model.** Playwright names goldens per-platform, and darwin vs linux font
+rendering differs by a few sub-pixels, so the harness commits **both** sets under
+`visual.spec.ts-snapshots/`:
+
+- **darwin goldens** (`*-darwin.png`) — read by **local** runs on the Mac.
+- **linux goldens** (`*-linux.png`) — read by the **CI** `test-visual` job (`ci.yml`), which runs on
+  `ubuntu-latest`.
+
+Each platform only ever reads its own goldens, so the two sets never collide; you regenerate whichever
+platform a change affects.
+
+**Commands:**
+
+| What | Command | Regenerates |
+|---|---|---|
+| Compare (local) | `cd frontend && pnpm test:visual` | — (read-only) |
+| Re-baseline (local) | `cd frontend && pnpm test:visual:update` | darwin goldens |
+| Re-baseline (CI/linux) | `gh workflow run update-visual-baselines.yml -r <branch>` | linux goldens |
+
+The **`update-visual-baselines.yml`** workflow (`workflow_dispatch`) regenerates the linux goldens on
+the dispatched ref on a clean `ubuntu-latest`, then pushes them back as a bot commit — so you never
+hand-generate linux PNGs on a non-linux box.
+
+**When to re-baseline:** whenever a change **intentionally moves pixels** (a redesign, a token tweak, a
+new/changed screen). Update **both** platforms in the same change — `pnpm test:visual:update` locally
+for darwin, then `gh workflow run update-visual-baselines.yml -r <branch>` for linux (or let CI's red
+`test-visual` remind you to). An *unintended* diff is a real regression — investigate, don't
+re-baseline it away.
+
+**Determinism levers** (all must hold or the shots flake — identical on both platforms):
+
+- **Frozen clock** `2026-05-21T13:42` (délután), set *before* `goto` — pins the daypart-derived sky
+  tint + greeting and matches the StatusBar's hardcoded 13:42.
+- **Theme** via a `localStorage['mezo-theme']` init script *before* `goto` — the pre-paint
+  `index.html` script then stamps `data-theme`.
+- **Reduced motion** via `contextOptions.reducedMotion: 'reduce'` + Playwright's default
+  `animations: 'disabled'` — no in-flight transitions.
+- **Self-hosted fonts** (Bricolage + Jakarta, no network) + a `document.fonts.ready` wait — the pixel
+  compare runs on real font metrics, not fallbacks.
+- **Pinned timezone** `timezoneId: 'Europe/Budapest'` — a UTC runner would otherwise shift the
+  frozen-clock daypart derivation away from the goldens.
+
+**On failure:** the CI `test-visual` job uploads a **`visual-diffs`** artifact (retention 7 days)
+containing the `actual` / `expected` / `diff` PNG trio per failing screen — download it from the run's
+Summary to see exactly what moved. Locally, the same trio lands in
+`frontend/tests/visual/test-results/`.
+
 ## Running the FULL suite locally without a RAM upgrade
 
 RAM upgrade is not an option, so reduce the footprint instead. In rough order of effectiveness:
