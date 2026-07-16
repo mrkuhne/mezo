@@ -3,7 +3,9 @@ import { defineConfig, devices } from '@playwright/test'
 /**
  * Visual baseline harness — self-baselined `toHaveScreenshot` goldens.
  *
- * LOCAL-ONLY (darwin baselines committed under `visual.spec.ts-snapshots/`).
+ * TWO-PLATFORM goldens under `visual.spec.ts-snapshots/`: darwin (local runs,
+ * `pnpm test:visual:update`) + linux (the CI `test-visual` gate; regenerate via
+ * `gh workflow run update-visual-baselines.yml -r <branch>`, mezo-uz4g).
  * Runs against mock mode on a dedicated port (4318) so no backend is needed and
  * the seeds are static/deterministic. Uses the Chromium already cached by the
  * pinned Playwright version — do NOT `playwright install` new browsers.
@@ -20,6 +22,10 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     viewport: { width: 440, height: 956 },
     deviceScaleFactor: 2,
+    // Pin the timezone so the frozen-clock daypart derivation (see visual.spec.ts)
+    // resolves identically on every machine — a CI runner in UTC would otherwise
+    // shift the daypart-derived sky tint + greeting away from the darwin goldens.
+    timezoneId: 'Europe/Budapest',
     // Pinned Playwright (1.60) does not promote `reducedMotion` to a top-level
     // `use` option — it lives on the context. This makes the app's
     // `@media (prefers-reduced-motion: reduce)` rules take effect (they set
