@@ -12,6 +12,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Extend the default precache globs (js/css/html/ico/png/svg) with woff2 so
+      // the self-hosted brand fonts (public/fonts/*.woff2) are precached — the app
+      // then renders Bricolage + Jakarta offline instead of falling back to system.
+      workbox: { globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'] },
       manifest: {
         name: 'Mezo',
         short_name: 'Mezo',

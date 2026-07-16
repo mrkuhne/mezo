@@ -20,6 +20,10 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     viewport: { width: 440, height: 956 },
     deviceScaleFactor: 2,
+    // Pin the timezone so the frozen-clock daypart derivation (see visual.spec.ts)
+    // resolves identically on every machine — a CI runner in UTC would otherwise
+    // shift the daypart-derived sky tint + greeting away from the darwin goldens.
+    timezoneId: 'Europe/Budapest',
     // Pinned Playwright (1.60) does not promote `reducedMotion` to a top-level
     // `use` option — it lives on the context. This makes the app's
     // `@media (prefers-reduced-motion: reduce)` rules take effect (they set
