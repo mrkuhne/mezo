@@ -10,6 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:visual": "playwright test --config tests/visual/playwright.config.ts",
+    "test:visual:update": "playwright test --config tests/visual/playwright.config.ts --update-snapshots",
     "generate:api": "openapi-typescript ../api/openapi.yml -o src/data/_client/api.gen.ts"
   },
   "keywords": [],
