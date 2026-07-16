@@ -1,0 +1,52 @@
+name: update-visual-baselines
+
+# Regenerates the Playwright visual goldens for THIS runner's platform (linux)
+# and pushes them back to the dispatched ref as a bot commit. Run it against a
+# feature branch whenever a change legitimately moves pixels:
+#   gh workflow run update-visual-baselines.yml -r <branch>
+# Local darwin goldens are regenerated separately via `pnpm test:visual:update`.
+# See docs/infrastructure/local-dev-testing.md (mezo-uz4g).
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install chromium --with-deps
+      - run: pnpm test:visual:update
+      - name: Commit regenerated linux goldens
+        working-directory: .
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/tests/visual/*-snapshots/*-linux.png
+          if git diff --cached --quiet; then
+            echo "no golden changes"
+            exit 0
+          fi
+          git commit -m "chore(visual): regenerate linux baselines (mezo-uz4g)"
+          git push
