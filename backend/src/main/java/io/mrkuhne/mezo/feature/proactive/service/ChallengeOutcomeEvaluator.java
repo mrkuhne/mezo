@@ -20,8 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Deterministic, LLM-free set-level outcome evaluation for accepted workout challenges. hit/miss from
  * the logged sets of the target exercise in the day's instance; inconclusive (outcome_good=null) when
- * the day passed with no logged sets — never a fabricated miss. A today challenge with no logged sets
- * yet is left untouched (still accepted).
+ * the instance is completed (or the day passed) with no logged sets — never a fabricated miss. A today
+ * challenge whose instance is still in progress (or not started) is left untouched (still accepted).
  */
 @Service
 @RequiredArgsConstructor
@@ -64,7 +64,8 @@ public class ChallengeOutcomeEvaluator {
                 .stream().filter(s -> !s.isSkipped() && s.getReps() != null).toList())
             .orElse(List.of());
         if (logged.isEmpty()) {
-            if (!dayPassed) { return false; }                        // today, not logged yet — leave accepted
+            // Reachable only when instanceDone || dayPassed (earlier gate). A completed instance with
+            // no logged sets resolves inconclusive NOW — it never waits out the day (spec 2026-07-15).
             c.setStatus(ChallengeEntity.STATUS_INCONCLUSIVE);
             c.setOutcome("Nem értékelhető — nem lett logolva.");
             c.setOutcomeGood(null);

@@ -675,6 +675,11 @@ export interface Challenge {
   status?: ChallengeStatus     // absent in the Phase-1 mock seed (treated as proposed)
   outcome?: string
   outcomeGood?: boolean
+  // Structured targets (live wire; mock seed may omit) — feed the pre-finish outcome preview.
+  targetWeightKg?: number | null
+  targetReps?: number | null
+  targetSets?: number | null
+  targetRir?: number | null
 }
 export interface WorkoutPlan {
   title: string

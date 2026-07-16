@@ -1,5 +1,5 @@
-import { render, screen, within } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { expect, it, test, vi } from 'vitest'
 import { WeeklyDayRow } from '@/features/train/components/WeeklyDayRow'
 
 test('renders the morning run before the evening gym and shows the run time', () => {
@@ -59,6 +59,43 @@ test('today volleyball row shows the "log" chip, or the done chip once logged', 
   )
   expect(screen.getByText('kész')).toBeInTheDocument()
   expect(screen.queryByText('log')).not.toBeInTheDocument()
+})
+
+it('a done gym day is tappable and calls onReviewGym (not onStartGym)', () => {
+  const onReviewGym = vi.fn()
+  const onStartGym = vi.fn()
+  render(
+    <WeeklyDayRow
+      agenda={{
+        day: 'Hét', date: '2026-06-15', isToday: false,
+        gym: { day: 'Hét', active: true, time: '18:30', duration: null, type: 'Plyo Power' } as never,
+        sport: [], running: [],
+      }}
+      gymLogged
+      onReviewGym={onReviewGym}
+      onStartGym={onStartGym}
+    />,
+  )
+  // the done (kész) gym row is now a tap target → opens the review, never the start flow
+  expect(screen.getByText('kész')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button'))
+  expect(onReviewGym).toHaveBeenCalledTimes(1)
+  expect(onStartGym).not.toHaveBeenCalled()
+})
+
+it('shows the folyamatban chip when gymInProgress', () => {
+  render(
+    <WeeklyDayRow
+      agenda={{
+        day: 'Hét', isToday: true,
+        gym: { day: 'Hét', active: true, time: '18:30', duration: null, type: 'Plyo Power' } as never,
+        sport: [], running: [],
+      }}
+      gymInProgress
+      onStartGym={() => {}}
+    />,
+  )
+  expect(screen.getByText('folyamatban')).toBeInTheDocument()
 })
 
 test('an empty day renders a dashed rest row with the Pihenőnap copy', () => {

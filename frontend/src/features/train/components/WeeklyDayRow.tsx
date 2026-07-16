@@ -27,12 +27,16 @@ interface WeeklyDayRowProps {
   isSportLogged?: (s: VolleyballSession) => boolean
   /** This day's prescribed run (by key) has a logged session ⇒ show the done chip. */
   isRunLogged?: (key: string) => boolean
+  /** Today's gym instance is open (started, unfinished) — shows the folyamatban chip. */
+  gymInProgress?: boolean
   onStartGym: () => void
+  /** A completed (non-today or today) gym day was tapped — open its review. */
+  onReviewGym?: () => void
   onLogSport?: (s: VolleyballSession) => void
   onLogRun?: (s: RunPrescribedSession) => void
 }
 
-export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, onStartGym, onLogSport, onLogRun }: WeeklyDayRowProps) {
+export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gymInProgress, onStartGym, onReviewGym, onLogSport, onLogRun }: WeeklyDayRowProps) {
   const { day, isToday } = agenda
   // Time-ordered flat session list — gym/volleyball/running interleave by
   // time-of-day so a morning run renders above an evening gym (untimed last).
@@ -60,12 +64,15 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, on
             // GymScheduleDay) — repeating it here disambiguates same-time/duration gym
             // days from each other AND from the TrainTodayPage hero's own `time · Xp` line.
             const meta = [gym.time, gym.duration ? `${gym.duration}p` : null, gym.type].filter(Boolean).join(' · ')
+            // A completed (kész) gym day — today OR a past day — opens its review;
+            // today's not-yet-logged row starts the session; other days are inert.
             return (
-              <button key="gym" type="button" className="s" onClick={isToday ? onStartGym : undefined}>
+              <button key="gym" type="button" className="s" onClick={gymLogged ? onReviewGym : isToday ? onStartGym : undefined}>
                 <span className="stag stag-gym">GYM</span>
                 {isToday ? <b>{gym.type}</b> : gym.type}
                 <span className="meta">{meta}</span>
                 {gymLogged && <span className="done-chip">kész</span>}
+                {!gymLogged && gymInProgress && isToday && <span className="log-chip stag-gym">folyamatban</span>}
               </button>
             )
           }

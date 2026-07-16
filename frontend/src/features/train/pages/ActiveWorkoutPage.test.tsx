@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
@@ -97,7 +97,8 @@ test('the wk-top header shows the workout title, the gyakorlat/szett counter, an
   await user.click(screen.getByText(/Kezdjük el/))
   expect(container.querySelector('.wk-top .t1')).toHaveTextContent('Pull Day')
   // currentIdx=0, 5 exercises, 0 sets logged yet, 22 total planned sets (5+5+4+4+4).
-  expect(screen.getByText('1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
+  // The counter is now a ▾ overview-trigger button (Task 7 free navigation).
+  expect(screen.getByText('▾ 1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
   expect(container.querySelectorAll('.exdots i')).toHaveLength(5)
   expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Gyakorlat műveletek' })).toBeInTheDocument()
@@ -107,11 +108,11 @@ test('completing a set advances the set-dot cursor and the header counter', asyn
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  expect(screen.getByText('1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
+  expect(screen.getByText('▾ 1/5 gyakorlat · 0/22 szett')).toBeInTheDocument()
   expect(container.querySelectorAll('.setdots .sd.don')).toHaveLength(0)
   await user.click(screen.getByText('Szett kész ✓'))
   expect(container.querySelectorAll('.setdots .sd.don')).toHaveLength(1)
-  expect(screen.getByText('1/5 gyakorlat · 1/22 szett')).toBeInTheDocument()
+  expect(screen.getByText('▾ 1/5 gyakorlat · 1/22 szett')).toBeInTheDocument()
 })
 
 // ---- rest wiring: "Szett kész ✓" starts the island rest (mezo-8141) ----
@@ -171,7 +172,7 @@ test('mock mode: a new rest replaces (does not stack with) an already-live one',
   expect(screen.getByText('Pihenő')).toBeInTheDocument()
 })
 
-test('mock mode: finishing the workout (phase -> complete) clears a live rest', async () => {
+test('mock mode: reaching the summary screen (workout end) clears a live rest', async () => {
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
@@ -190,9 +191,11 @@ test('mock mode: finishing the workout (phase -> complete) clears a live rest', 
     await user.click(cta)
     if (ex < 3) await waitFor(() => expect(document.querySelector('.setdots .sd.don')).toBeNull())
   }
-  // The workout is finished (phase -> complete) — any leftover live rest is cleared.
+  // The last debrief lands on the summary (phase -> summary) — any leftover live rest
+  // is cleared (the closing summary's eyebrow reads "Edzés vége · <title>"). The clear
+  // is effect-driven (phase -> summary), so wait for the island re-render to flush.
   expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument()
-  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  await waitFor(() => expect(container.querySelector('.dynamic-island.live')).toBeNull())
 })
 
 test('mock mode: unmounting the workout session clears a live rest', async () => {
@@ -479,7 +482,7 @@ test('a skipped exercise is marked "kihagyva" in the recap', async () => {
   await user.click(screen.getByText('Kihagyás'))
   expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
   // Drive the remaining 4 exercises to completion (each: log every set, then
-  // resolve the debrief). The last debrief CTA reads "Edzés vége →" and finishes.
+  // resolve the debrief). The last debrief CTA reads "Edzés vége →" and lands on the summary.
   for (let ex = 0; ex < 4; ex++) {
     await completeExerciseSets(user)
     const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
@@ -487,7 +490,7 @@ test('a skipped exercise is marked "kihagyva" in the recap', async () => {
     // Wait for the next exercise's fresh set-dots (no done sets yet) before looping.
     if (ex < 3) await waitFor(() => expect(document.querySelector('.setdots .sd.don')).toBeNull())
   }
-  // WorkoutComplete recap: the skipped first exercise reads "kihagyva".
+  // Summary recap: the skipped first exercise reads "kihagyva".
   expect(await screen.findByText('kihagyva')).toBeInTheDocument()
 })
 
@@ -510,12 +513,12 @@ test('a skipped exercise dot shows as dashed (skp class), not solid done (don cl
   expect(dots[1]).toHaveClass('cur')
 })
 
-test('shows the level-up overlay on finish, then reveals the recap on Tovább (mock)', async () => {
+test('summary → Edzés lezárása shows the level-up overlay, then the closed summary on Tovább (mock)', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
   // Skip ex0, then drive the remaining 4 exercises to completion — the last
-  // debrief CTA finishes the workout (the proven mock finish path).
+  // debrief lands on the closing summary (no auto-finish).
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Kihagyás'))
   await screen.findByText('Lat Pulldown · Pronated')
@@ -525,16 +528,39 @@ test('shows the level-up overlay on finish, then reveals the recap on Tovább (m
     await user.click(cta)
     if (ex < 3) await waitFor(() => expect(document.querySelector('.setdots .sd.don')).toBeNull())
   }
-  // Mock finish returns the seeded gym fixture → the level-up overlay shows over the recap.
+  // New flow: the last debrief lands on the summary; the explicit CTA finishes.
+  expect(await screen.findByText('Mai mérleg')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: /Edzés lezárása/ }))
+  // Mock finish returns the seeded gym fixture → the level-up overlay shows over the closed summary.
   const dialog = await screen.findByRole('dialog', { name: 'Szintlépés' })
   expect(within(dialog).getByText(/KLASSZIK KONDI/)).toBeInTheDocument()
   await user.click(within(dialog).getByRole('button', { name: /Tovább/ }))
   expect(screen.queryByRole('dialog', { name: 'Szintlépés' })).not.toBeInTheDocument()
-  // The WorkoutComplete recap is revealed underneath.
-  expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument()
-  // The gym fixture has a max_strength level-up → the recap's PR framing derives
+  // The read-only closed summary is revealed underneath.
+  expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument()
+  // The gym fixture has a max_strength level-up → the summary's PR framing derives
   // from the real signal (hadPrFromSignal), not the old 105 kg demo scan.
-  expect(screen.getByText('Megdöntöttük.')).toBeInTheDocument()
+  expect(screen.getByText(/Pull Day · PR/)).toBeInTheDocument()
+})
+
+test('the ⋯ menu offers early finish and it lands on the summary screen', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Edzés befejezése…'))
+  expect(screen.getByText('Mai mérleg')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Edzés lezárása/ })).toBeInTheDocument()
+})
+
+test('leaving the summary via Vissza az edzéshez resumes the active phase without finishing', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
+  await user.click(screen.getByText('Edzés befejezése…'))
+  await user.click(screen.getByText('← Vissza az edzéshez'))
+  expect(screen.getByText('Szett kész ✓')).toBeInTheDocument()
 })
 
 // ---- F4 note: durable per-exercise note pill + editor (mock-mode) ----
@@ -742,8 +768,36 @@ test('real mode: the last set debrief persists feedback and finish fires', async
   await user.click(screen.getByText('Szett kész ✓')) // only set -> FeedbackModal
   await user.click(await screen.findByText('Edzés vége →'))
   await waitFor(() => expect(calls).toContain('feedback:w-1'))
+  // New flow: the debrief lands on the summary; finish fires only on the explicit CTA.
+  await user.click(await screen.findByRole('button', { name: /Edzés lezárása/ }))
   await waitFor(() => expect(calls).toContain('finish:w-1'))
-  expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument() // WorkoutComplete
+  expect(await screen.findByText(/Lezárva · ma/)).toBeInTheDocument() // closed summary
+})
+
+test('real mode: a failed finish POST re-enables the "Edzés lezárása ✓" CTA (not stuck disabled)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(
+    { ...REAL_TODAY, exercises: [{ ...REAL_TODAY.exercises[0], workingSets: 1 }] },
+    calls,
+  )
+  // Override the finish endpoint to fail (500). Mutations don't retry (QueryWrapper),
+  // so the mutation settles once → onSettled must re-enable the CTA (finishPending false).
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/finish`, () => new HttpResponse(null, { status: 500 })),
+  )
+  const user = userEvent.setup()
+  setup()
+  await user.click(await screen.findByText(/Kezdjük el/))
+  await waitFor(() => expect(calls).toContain('start:d-1'))
+  await user.click(screen.getByText('Szett kész ✓')) // only set -> FeedbackModal
+  await user.click(await screen.findByText('Edzés vége →')) // debrief -> closing summary
+  await user.click(await screen.findByRole('button', { name: /Edzés lezárása/ }))
+  // The finish POST fails; the CTA must become enabled again so the user can retry
+  // (regression guard for the reset living only in onSuccess — mezo-cd8s).
+  await waitFor(() => expect(screen.getByRole('button', { name: /Edzés lezárása/ })).toBeEnabled())
+  // Still on the closing summary — never advanced to the read-only closed view.
+  expect(screen.getByText(/Edzés vége ·/)).toBeInTheDocument()
 })
 
 test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts with setIndex 1', async () => {
@@ -987,6 +1041,41 @@ test('real mode: add-set "Csak ma" fires no template PUT', async () => {
   expect(puts).toHaveLength(0)
 })
 
+// --- done-day gating: the session route redirects to the review (mezo-cd8s) ---
+// A completed today instance with nothing open means the workout is over; the prep
+// screen must be unreachable — the guard redirects /train/session to the review.
+test('real mode: a completed today instance redirects the session route to the review', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([REAL_MESO])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'd-1', dayLabel: 'Ma', title: 'Pull Day', durationEst: 0,
+        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', warmupSets: 0, workingSets: 2, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', lastWeek: null }],
+        openWorkout: null,
+        completedWorkout: { id: 'w-done', templateSessionId: 'd-1', date: '2026-06-12', status: 'completed', sets: [] },
+      }),
+    ),
+  )
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/train/session']}>
+        <LevelUpProvider>
+          <LiveActivityProvider>
+            <Routes>
+              <Route path="/train/session" element={<ActiveWorkoutPage />} />
+              <Route path="/train/review/:workoutId" element={<div>REVIEW PROBE</div>} />
+            </Routes>
+          </LiveActivityProvider>
+        </LevelUpProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  expect(await screen.findByText('REVIEW PROBE')).toBeInTheDocument()
+  expect(screen.queryByText(/Kezdjük el/)).toBeNull()
+})
+
 // --- loading skeleton (mezo-f2z) ---------------------------------------------
 // Real mode renders the generic ScreenSkeleton (role="status") while the
 // meso + today queries are unresolved (workoutPending = !mock && (mesoPending ||
@@ -1084,4 +1173,55 @@ test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + o
   // the workout is decided → the accept/skip row is hidden
   expect(screen.queryByText('Vállaljuk')).not.toBeInTheDocument()
   expect(screen.queryByText('Elfogadva')).not.toBeInTheDocument()
+})
+
+test('a logged working set shows its RIR chip in the read-only set list', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // ex1 has 2 warmups first: log 3 sets so ONE working set (index 2) is done.
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByText('Szett kész ✓'))
+  // the current (3rd) set is a working set — select RIR 1, then log it
+  await user.click(screen.getByRole('button', { name: 'RIR 1' }))
+  await user.click(screen.getByText('Szett kész ✓'))
+  // read-only list: the DONE working row carries the logged RIR chip
+  const rows = container.querySelectorAll('.col.gap-sm .row.gap-sm')
+  const doneWorking = Array.from(rows).find((r) => r.textContent?.includes('Working') && r.textContent?.includes('RIR 1'))
+  expect(doneWorking).toBeTruthy()
+})
+
+// ---- Task 7: free exercise navigation (pager bar, overview sheet, tappable dots) ----
+
+test('the pager bar navigates to the next and previous exercise', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  expect(container.querySelector('.excard h2')).toHaveTextContent('Chest Supported Row')
+  await user.click(screen.getByRole('button', { name: /Következő/ }))
+  expect(container.querySelector('.excard h2')).not.toHaveTextContent('Chest Supported Row')
+  await user.click(screen.getByRole('button', { name: /Előző/ }))
+  expect(container.querySelector('.excard h2')).toHaveTextContent('Chest Supported Row')
+})
+
+test('the header counter opens the exercise overview and a row jump switches the card', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByRole('button', { name: 'Gyakorlatlista' }))
+  // jump to the LAST exercise from the list (mock plan has 5)
+  const rows = screen.getAllByRole('button', { name: /ugrás/i })
+  await user.click(rows[rows.length - 1])
+  expect(container.querySelector('.excard h2')).not.toHaveTextContent('Chest Supported Row')
+})
+
+test('the header counter is disabled while a debrief modal is open (jumps must no-op)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  // Log every set of the first exercise → the debrief pins feedbackEx.
+  await completeExerciseSets(user)
+  expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
+  // Parity with the ⋯ actions button: the overview trigger is inert during a debrief.
+  expect(screen.getByRole('button', { name: 'Gyakorlatlista' })).toBeDisabled()
 })

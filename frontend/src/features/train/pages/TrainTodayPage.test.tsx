@@ -257,7 +257,7 @@ test('real mode: saving the volleyball log flips the hero to done (the reported 
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
-test('real mode: gym logged today ⇒ hero flips to done (Kész + logged summary, no start CTA)', async () => {
+test('real mode: a completed today instance renders the Kész hero with Megnézem', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(
     http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
@@ -268,14 +268,52 @@ test('real mode: gym logged today ⇒ hero flips to done (Kész + logged summary
         templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
         exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
         openWorkout: null,
-        // server says today's gym workout has a logged set — the hero must reflect it
+        // a completed instance of today's day — the hero must show the Kész/Megnézem review CTA
+        completedWorkout: {
+          id: 'w-done', templateSessionId: 'd-1', date: localDateString(), status: 'completed',
+          sets: [
+            { id: 's1', exerciseId: 'e-1', setIndex: 0, weightKg: 100, reps: 8, rir: 1, skipped: false },
+            { id: 's2', exerciseId: 'e-1', setIndex: 1, weightKg: 100, reps: 8, rir: 1, skipped: false },
+            { id: 's3', exerciseId: 'e-1', setIndex: 2, weightKg: 100, reps: 8, rir: 1, skipped: false },
+          ],
+        },
         weekDoneDates: [localDateString()],
       }),
     ),
   )
   renderView()
-  expect(await screen.findByText(/Mai edzés logolva/)).toBeInTheDocument()
-  expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
+  // done-state hero: the Kész + Megnézem review button (3 non-skipped sets), no start CTA
+  expect(await screen.findByRole('button', { name: /Megnézem/ })).toBeInTheDocument()
+  expect(screen.getByText(/Kész · 3 szett — Megnézem →/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Indítsuk →' })).not.toBeInTheDocument()
+})
+
+test('real mode: an open instance renders the Folyamatban hero with Folytassuk', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(todayLabel())])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'd-1', dayLabel: todayLabel(), title: 'Pull Day', durationEst: 0,
+        exercises: [{ id: 'e-1', name: 'Row', muscle: 'back', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound' }],
+        // an open (active, unfinished) instance with two logged sets — hero flips to in-progress
+        openWorkout: {
+          id: 'w-open', templateSessionId: 'd-1', date: localDateString(), status: 'active',
+          sets: [
+            { id: 's1', exerciseId: 'e-1', setIndex: 0, weightKg: 100, reps: 8, rir: 1, skipped: false },
+            { id: 's2', exerciseId: 'e-1', setIndex: 1, weightKg: 100, reps: 8, rir: 1, skipped: false },
+          ],
+        },
+      }),
+    ),
+  )
+  renderView()
+  expect(await screen.findByText('● Folyamatban')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Folytassuk/ })).toBeInTheDocument()
+  expect(screen.getByText(/Folytassuk → · 2 szett kész/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Indítsuk →' })).not.toBeInTheDocument()
 })
 
 test('real mode: prescribed run logged today ⇒ run hero flips to the done summary, not the log CTA', async () => {

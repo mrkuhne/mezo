@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.ChallengeResponse;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
 import io.mrkuhne.mezo.feature.proactive.repository.ChallengeRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -19,8 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The workout-challenge write + read path (proactive P2, bd mezo-hbwi): the session/day card read
- * (lazy first proposal when none exist for TODAY; lazy outcome resolution of accepted rows once the
- * instance is done; dismissed excluded — {@code []} is the honest empty, never 404) and the L2
+ * (lazy first proposal when none exist for TODAY and the day's instance isn't already completed;
+ * lazy outcome resolution of accepted rows once the instance is done; dismissed excluded —
+ * {@code []} is the honest empty, never 404) and the L2
  * accept/dismiss decision. Decision mirrors {@link ProactiveExperimentService#decide}
  * (fetch-owned-or-404 → proposed-state guard (409) → mutate → saveAndFlush).
  */
@@ -37,13 +39,15 @@ public class ProactiveChallengeService {
     private final ChallengeGenerator generator;
     private final ChallengeOutcomeEvaluator outcomeEvaluator;
     private final ProactiveMapper mapper;
+    private final WorkoutSessionRepository workoutSessionRepository;
 
     @Transactional
     public List<ChallengeResponse> getChallenges(UUID userId, UUID templateSessionId, LocalDate date) {
         List<ChallengeEntity> rows = challengeRepository
                 .findByCreatedByAndTemplateSessionIdAndWorkoutDateOrderByGeneratedAtAsc(
                         userId, templateSessionId, date);
-        if (rows.isEmpty() && date.equals(LocalDate.now())) {
+        if (rows.isEmpty() && date.equals(LocalDate.now())
+                && !instanceCompleted(userId, templateSessionId, date)) {
             rows = generator.generate(userId, templateSessionId, date);   // lazy first proposal
         }
         LocalDate today = LocalDate.now();
@@ -73,5 +77,14 @@ public class ProactiveChallengeService {
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
         return mapper.toChallengeResponse(challengeRepository.saveAndFlush(c));
+    }
+
+    /** A completed instance for the day means the workout is over — never propose new challenges. */
+    private boolean instanceCompleted(UUID userId, UUID templateSessionId, LocalDate date) {
+        return workoutSessionRepository
+            .findFirstByCreatedByAndTemplateSessionIdAndDateOrderByCreatedAtDesc(
+                userId, templateSessionId, date)
+            .map(w -> "completed".equals(w.getStatus()))
+            .orElse(false);
     }
 }

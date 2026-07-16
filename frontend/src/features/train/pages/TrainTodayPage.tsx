@@ -7,7 +7,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain, useRunning } from '@/data/hooks'
+import { useTrain, useRunning, useWeekWorkouts } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
@@ -28,8 +28,11 @@ import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, type SportKind } from '
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
 export function TrainTodayPage() {
-  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending } = useTrain()
+  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending, todaySession, completedTodayWorkout } = useTrain()
   const { activeRunningBlock, runSessions, logRunSession, runningPending } = useRunning()
+  // Completed workout summaries for this Mon–Sun week — maps each done day's ISO
+  // date to its instance id so a weekly gym row can open the review (real mode).
+  const { workouts: weekWorkouts } = useWeekWorkouts()
   const navigate = useNavigate()
   const { showLevelUp } = useLevelUp()
   const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
@@ -123,8 +126,11 @@ export function TrainTodayPage() {
     sport.sessions.find((s) => s.sport === k && s.date === todayHu) ?? null
   const sportDoneOn = (iso: string | undefined, k: SportKind) =>
     Boolean(iso) && sport.sessions.some((s) => s.sport === k && s.date === huMonthDayDow(iso!))
-  // Gym done-state: today's date is in the server-computed set of this week's logged-set dates.
-  const loggedGym = gymDoneDates.includes(localDateString())
+  // Weekly-row review taps: a completed instance per day → its id, so a kész gym
+  // row opens /train/review/{id} (real mode; mock has no persisted instances).
+  const workoutIdByDate = Object.fromEntries(
+    weekWorkouts.filter((w) => w.status === 'completed').map((w) => [w.date, w.id]),
+  )
   const runLoggedFor = (key: string) =>
     runSessions.find(
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
@@ -156,9 +162,27 @@ export function TrainTodayPage() {
           const gym = item.gym
           if (!workout) return null
           const gymEyebrow = `MA ${gym.time ?? ''} · ${currentPhase}`
+          // Three-state gating (spec 2026-07-15): a completed instance wins (Kész ·
+          // Megnézem review), else an open instance (● Folyamatban · Folytassuk),
+          // else the fresh start CTA. `completedTodayWorkout`/`todaySession` are real-
+          // mode only (both null in mock → Indítsuk, byte-identical to Phase 1).
+          const gymInProgress = Boolean(todaySession?.openWorkout && !completedTodayWorkout)
           return (
             <section key="hero-gym" className="trainhero np-anim">
-              <div className="trainhero-over">{gymEyebrow}</div>
+              <div className="trainhero-over">
+                {gymEyebrow}
+                {gymInProgress && (
+                  <span
+                    className="chip notch-4"
+                    style={{
+                      marginLeft: 8, fontSize: 9, color: 'var(--warning)',
+                      borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)',
+                    }}
+                  >
+                    ● Folyamatban
+                  </span>
+                )}
+              </div>
               <div className="h2row">
                 <h2>{workout.title}</h2>
                 <span className="typetag typetag-gym">🏋️ GYM</span>
@@ -169,20 +193,29 @@ export function TrainTodayPage() {
                 {workout.durationEst > 0 && <span className="chip-np">~{workout.durationEst} perc</span>}
                 {gym.type && <span className="chip-np">{gym.type}</span>}
               </div>
-              {loggedGym ? (
-                // Done-state: a muted summary in place of the start CTA (re-entry/edit is the
-                // active-workout-v2 follow-up; gym sessions have no in-place edit sheet yet).
-                <div
+              {completedTodayWorkout ? (
+                // Done-state: the workout is over (no restart until next week) — the CTA
+                // opens the read-only review of the completed instance.
+                <button
+                  type="button"
+                  onClick={() => navigate(`/train/review/${completedTodayWorkout.id}`)}
                   className="row notch-4 mt-md"
                   style={{
-                    justifyContent: 'center', gap: 6, padding: '10px 12px',
+                    width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
                     background: 'rgba(52, 211, 153, 0.08)',
                     border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
                     color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
                   }}
                 >
                   <Icon name="check" size={12} />
-                  <span>Mai edzés logolva</span>
+                  <span>Kész · {completedTodayWorkout.sets.filter((s) => !s.skipped).length} szett — Megnézem →</span>
+                </button>
+              ) : todaySession?.openWorkout ? (
+                // In-progress: an open instance exists — resume it (count the logged sets).
+                <div className="np-ctarow">
+                  <button type="button" className="np-cta np-press" onClick={openSession}>
+                    Folytassuk → · {todaySession.openWorkout.sets.filter((s) => !s.skipped).length} szett kész
+                  </button>
                 </div>
               ) : (
                 <div className="np-ctarow">
@@ -350,9 +383,11 @@ export function TrainTodayPage() {
               key={a.day}
               agenda={a}
               gymLogged={Boolean(a.date) && gymDoneDates.includes(a.date!)}
+              gymInProgress={Boolean(a.isToday && todaySession?.openWorkout)}
               isSportLogged={(s) => sportDoneOn(a.date, sportOf(s))}
               isRunLogged={(key) => Boolean(runLoggedFor(key))}
               onStartGym={openSession}
+              onReviewGym={workoutIdByDate[a.date!] ? () => navigate(`/train/review/${workoutIdByDate[a.date!]}`) : undefined}
               onLogSport={(s) => setSportLogSport(sportOf(s))}
               onLogRun={(s) => setRunLogCtx({
                 blockId: activeRunningBlock!.id,

@@ -309,11 +309,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Workout instances with logged work (≥1 non-skipped set) in the inclusive date range — same "done" semantics as weekDoneDates */
+        /** Completed workout instances in the inclusive date range — same "done = explicitly finished" semantics as weekDoneDates */
         get: operations["listWorkouts"];
         put?: never;
         /** Start (or resume) a workout instance for a template day — an open instance is returned, never duplicated */
         post: operations["startWorkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/workouts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One workout instance with its logged sets joined onto the template day's exercises — the done-day review source */
+        get: operations["getWorkoutDetail"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1968,7 +1985,9 @@ export interface components {
             durationEst?: number;
             exercises?: components["schemas"]["TodayExercise"][];
             openWorkout?: components["schemas"]["WorkoutInstanceResponse"];
-            /** @description ISO dates within the current Mon–Sun week that have a gym workout instance with >=1 logged set. Drives the Mai gym done-state (today) and the weekly-row done chips (past days). Present even on rest days and when today is not a gym day. */
+            /** @description Today's most recent COMPLETED instance of today's template day (null when none) — drives the Mai hero "Kész + Megnézem" state and the session-route review redirect. */
+            completedWorkout?: components["schemas"]["WorkoutInstanceResponse"];
+            /** @description ISO dates within the current Mon–Sun week that have a COMPLETED gym workout instance (explicit finish). Drives the Mai gym done-state (today) and the weekly-row done chips (past days). Present even on rest days and when today is not a gym day. */
             weekDoneDates?: string[];
         };
         TodayExercise: {
@@ -2027,6 +2046,39 @@ export interface components {
             date: string;
             /** @enum {string} */
             status: "planned" | "active" | "completed" | "skipped";
+        };
+        WorkoutDetailResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            templateSessionId: string;
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            status: "active" | "completed" | "skipped";
+            /** @description The day type, e.g. 'Pull Day' */
+            title: string;
+            /** @description 'Hét'..'Vas' */
+            dayLabel: string;
+            durationEst?: number;
+            exercises: components["schemas"]["WorkoutDetailExercise"][];
+        };
+        WorkoutDetailExercise: {
+            /** Format: uuid */
+            exerciseId: string;
+            name: string;
+            muscle: string;
+            /** @enum {string} */
+            type: "compound" | "isolation" | "plyo";
+            warmupSets: number;
+            workingSets: number;
+            repMin: number;
+            repMax: number;
+            targetRIR: number;
+            /** @description A skip-marker set exists for this exercise in this instance */
+            skipped: boolean;
+            /** @description Non-skipped logged sets, setIndex ascending */
+            sets: components["schemas"]["ExerciseSetResponse"][];
         };
         LevelUpResult: {
             /** @enum {string} */
@@ -3461,6 +3513,14 @@ export interface components {
             status: string;
             /** @description Code-derived display string of the structured target */
             target: string;
+            /** @description Structured target — kg (PR type only); feeds the FE pre-finish outcome preview */
+            targetWeightKg?: number | null;
+            /** @description Structured target — reps (PR type only) */
+            targetReps?: number | null;
+            /** @description Structured target — set count (Volume type only) */
+            targetSets?: number | null;
+            /** @description Structured target — RIR ceiling (Depth type only) */
+            targetRir?: number | null;
             /** @description Pattern-copied; null = "tanulom" (never fabricated) */
             confidence?: number | null;
             /** @description low | mid */
@@ -4644,6 +4704,46 @@ export interface operations {
                 };
             };
             /** @description Template day not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWorkoutDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The workout detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkoutDetailResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found, not owned, or a template row */
             404: {
                 headers: {
                     [name: string]: unknown;
