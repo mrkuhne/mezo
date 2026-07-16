@@ -69,8 +69,10 @@ test('the wizard persists the mesocycle in real mode and lands on the library', 
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   // step 2 -> step 3
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  // step 3: wait out the 600ms generate delay, then save as planned
+  // step 3: wait out the 600ms generate delay
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  // step 3 -> step 4 (Set & rep): the save buttons live here now
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: /Hozzáad mint tervezett/i }))
 
   await waitFor(() => expect(posted).not.toBeNull())
@@ -151,6 +153,8 @@ test('custom split: empty nameable days, the user picks the exercises', async ()
   // the add affordance opens the picker and the pick lands in the day
   await user.click(screen.getByRole('button', { name: /Gyakorlat hozzáadása/ }))
   await user.click(screen.getByText('Hip Thrust'))
+  // the picker now stays open for multi-add, so close it explicitly.
+  await user.click(screen.getByRole('button', { name: /^Kész/ }))
   await waitFor(() => expect(screen.queryByText('Mit pakolunk be?')).not.toBeInTheDocument())
   expect(screen.getByText('Hip Thrust')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Láb nap/ })).toHaveTextContent(/1 gyakorlat/)
@@ -174,4 +178,73 @@ test('manually picked weekdays survive a day-count change', async () => {
   expect(screen.getByRole('button', { name: 'Tovább →' })).toBeDisabled()
   await user.click(screen.getByRole('button', { name: 'Hét' })) // remove one
   expect(screen.getByRole('button', { name: 'Tovább →' })).toBeEnabled()
+})
+
+test('program edits survive a step round-trip when inputs are unchanged', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> program review
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  // the auto-expand lands in a second commit — wait for the rows before counting
+  // (findAll: the expanded day has several rows, so a singular findBy would throw)
+  await screen.findAllByRole('button', { name: 'Eltávolítás' })
+  // remove the first exercise of the auto-expanded day
+  const removeButtons = screen.getAllByRole('button', { name: 'Eltávolítás' })
+  const countBefore = removeButtons.length
+  await user.click(removeButtons[0])
+  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(countBefore - 1)
+  // back to step 2 (the review step has no Vissza button — use the tappable
+  // progress segment) and forward again — NO regeneration, edit preserved
+  await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  expect(screen.queryByText('A Mezo összerakja a programot…')).not.toBeInTheDocument()
+  await screen.findAllByRole('button', { name: 'Eltávolítás' })
+  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(countBefore - 1)
+})
+
+test('changing an input regenerates the program', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
+  // swap a weekday: Pén off, Szo on → signature changes
+  await user.click(screen.getByRole('button', { name: 'Pén' }))
+  await user.click(screen.getByRole('button', { name: 'Szo' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  expect(screen.getByText('A Mezo összerakja a programot…')).toBeInTheDocument()
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+})
+
+test('Set & rep step: day tabs, recipe editing, edits survive the 4↔5 round-trip', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Gyakorlatok
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Set & rep
+  expect(screen.getByText('Mennyit és hányszor?')).toBeInTheDocument()
+  // save buttons live here now
+  expect(screen.getByRole('button', { name: /Hozzáad mint tervezett/i })).toBeInTheDocument()
+  // a day tab is preselected; the always-visible steppers bump the day set count.
+  // Generated names are dynamic, so target the first Working stepper by regex.
+  const daySummary = () => screen.getByText(/gyakorlat · \d+ szet/).textContent
+  const before = daySummary()
+  await user.click(screen.getAllByRole('button', { name: /· Working növelése$/ })[0])
+  const after = daySummary()
+  expect(after).not.toBe(before)
+  // round-trip back to Gyakorlatok (via the progress segment — the terminal
+  // step has no Vissza button) and forward: no regeneration, edit kept
+  await user.click(screen.getByRole('button', { name: '4. lépés · Gyakorlatok' }))
+  expect(screen.getByText(/A te blokkod/i)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  expect(daySummary()).toBe(after)
 })

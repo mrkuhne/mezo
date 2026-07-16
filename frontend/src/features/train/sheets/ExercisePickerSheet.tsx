@@ -2,12 +2,14 @@
 // Mezo · ExercisePickerSheet — bottom sheet for adding an exercise to a
 // builder day. Search input + horizontal muscle-filter chips + a filtered
 // list from the exercise library (name · muscle label · type, a 5-bar STIM
-// meter, and a + affordance). Picking calls onPick(item) and closes.
+// meter, and a + affordance). The sheet stays open across picks for
+// multi-add: each pick calls onPick(item), bumps a live counter and flashes
+// the picked row; the sheet only dismisses via Kész / ✕ / backdrop / Escape.
 // Wraps the shared Sheet (render-fn child) so the X button dismisses with
 // the same slide-down as the backdrop.
 // Ported from prototype mesocycles.jsx ExercisePickerSheet.
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
 
@@ -21,12 +23,20 @@ import { VideoDemo } from '@/features/train/components/VideoDemo'
 interface ExercisePickerSheetProps {
   onClose: () => void
   onPick: (item: ExerciseLibraryItem) => void
+  /** Context line for the header, e.g. "Csü · Pull" — which day receives the picks. */
+  dayLabel?: string
 }
 
-export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProps) {
+export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePickerSheetProps) {
   const { exerciseLibrary } = useTrain()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
+  // Multi-add: the sheet stays open across picks; count + a short per-row flash
+  // give the feedback the auto-close used to provide.
+  const [addedCount, setAddedCount] = useState(0)
+  const [flashId, setFlashId] = useState<string | null>(null)
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current) }, [])
 
   const muscles = MUSCLE_FILTERS
 
@@ -42,7 +52,7 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
         <>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
             <div className="col">
-              <span className="eyebrow brand">Gyakorlat választás</span>
+              <span className="eyebrow brand">Gyakorlat választás{dayLabel ? ` · ${dayLabel}` : ''}</span>
               <div
                 id="exercise-picker-title"
                 style={{
@@ -56,10 +66,20 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
               >
                 Mit pakolunk be?
               </div>
+              {addedCount > 0 && (
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', marginTop: 4 }}>
+                  {addedCount} hozzáadva
+                </span>
+              )}
             </div>
-            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
-              <Icon name="x" size={12} />
-            </button>
+            <div className="row gap-xs">
+              <button className="chip brand" onClick={close} style={{ fontSize: 9, padding: '6px 10px' }}>
+                Kész{addedCount > 0 ? ` · ${addedCount}` : ''}
+              </button>
+              <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+                <Icon name="x" size={12} />
+              </button>
+            </div>
           </div>
 
           {/* Search */}
@@ -101,10 +121,19 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
                 <button
                   onClick={() => {
                     onPick(e)
-                    close()
+                    setAddedCount((c) => c + 1)
+                    setFlashId(e.id)
+                    if (flashTimer.current) clearTimeout(flashTimer.current)
+                    flashTimer.current = setTimeout(() => setFlashId(null), 900)
                   }}
                   className="card row"
-                  style={{ padding: 12, alignItems: 'center', textAlign: 'left', width: '100%' }}
+                  style={{
+                    padding: 12,
+                    alignItems: 'center',
+                    textAlign: 'left',
+                    width: '100%',
+                    borderColor: flashId === e.id ? 'var(--line)' : undefined,
+                  }}
                 >
                   <div className="col flex-1">
                     <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{e.name}</span>
@@ -134,7 +163,13 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
                       ))}
                     </div>
                   </div>
-                  <Icon name="plus" size={16} color="var(--coral)" />
+                  {flashId === e.id ? (
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', flexShrink: 0 }}>
+                      Hozzáadva ✓
+                    </span>
+                  ) : (
+                    <Icon name="plus" size={16} color="var(--coral)" />
+                  )}
                 </button>
                 {/* Inline demo video — sibling of the row button so its toggle never triggers onPick */}
                 <VideoDemo url={e.videoUrl} />
