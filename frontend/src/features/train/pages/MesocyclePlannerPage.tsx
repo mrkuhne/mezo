@@ -1,13 +1,13 @@
 // ============================================================
-// Mezo · MesocyclePlannerPage — 4-step AI-guided new-mesocycle planner.
+// Mezo · MesocyclePlannerPage — 5-step AI-guided new-mesocycle planner.
 // Full-screen sibling route (/train/mesocycles/new): own back-button header,
-// 4-segment progress bar, eyebrow brand step counter, per-step page title and
-// footer nav. The planner does NOT persist — both step-3 save actions just
-// navigate back to the library.
+// 5-segment progress bar, eyebrow brand step counter, per-step page title and
+// footer nav. The terminal step (4) hosts the two save actions.
 //   Step 0 · Cél             → goal preset picker (prefills the rest)
 //   Step 1 · Hossz + fázisok → name / start / length / phase-curve editor
 //   Step 2 · Split + napok   → split picker + days-per-week
-//   Step 3 · Áttekintés      → generateProgram review (collapsible days)
+//   Step 3 · Gyakorlatok     → generateProgram review (collapsible days)
+//   Step 4 · Set & rep       → day-tabbed recipe editor (MesoDayTabsEditor) + save
 // Ported from prototype meso-planner.jsx MesocyclePlannerPage + its step parts.
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
@@ -24,9 +24,10 @@ import { addWeeks, defaultWeekdays, generateProgram, getSeason, GOAL_HINTS, step
 import type { PlannerDay } from '@/features/train/logic/planner'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 import { PlannerDaySection } from '@/features/train/components/PlannerDaySection'
+import { MesoDayTabsEditor } from '@/features/train/components/MesoDayTabsEditor'
 import { MiniStat } from '@/features/train/components/MiniStat'
 
-const STEP_COUNT = 4
+const STEP_COUNT = 5
 const PHASES: MesoPhase[] = ['MEV', 'MAV', 'MRV', 'Deload']
 const BRAND_TINT = 'color-mix(in srgb, var(--brand-glow) 6%, transparent)'
 const BRAND_TINT_STRONG = 'color-mix(in srgb, var(--brand-glow) 12%, transparent)'
@@ -35,7 +36,8 @@ const PAGE_TITLES = [
   'Mit szeretnénk építeni?',
   'Mennyi időnk van?',
   'Hogyan osszuk be?',
-  'AI program · áttekintés',
+  'AI program · gyakorlatok',
+  'Mennyit és hányszor?',
 ] as const
 
 export function MesocyclePlannerPage() {
@@ -198,7 +200,7 @@ export function MesocyclePlannerPage() {
 
   const canNext =
     (step === 0 && !!goal) || (step === 1 && weeks > 0)
-    || (step === 2 && selectedDays.length === days) || step === 3
+    || (step === 2 && selectedDays.length === days) || (step === 3 && !!program) || step === 4
 
   const handleBack = () => {
     if (step > 0) setStep(step - 1)
@@ -286,20 +288,27 @@ export function MesocyclePlannerPage() {
           goal={goal}
           name={name}
           weeks={weeks}
-          split={split}
           days={days}
           program={program}
           onAdd={addExercise}
           onRemove={removeExercise}
           onReorder={reorderExercises}
           onRename={renameDay}
-          onUpdate={updateExercise}
+        />
+      )}
+      {step === 4 && (
+        <Step4Recipe
+          program={program}
+          onAdd={addExercise}
+          onRemove={removeExercise}
+          onChange={updateExercise}
+          onReorder={reorderExercises}
         />
       )}
 
       {/* Nav */}
       <div style={{ padding: '16px 24px 32px' }}>
-        {step < 3 && (
+        {step < 4 && (
           <div className="row gap-sm">
             {step > 0 && (
               <button
@@ -327,7 +336,7 @@ export function MesocyclePlannerPage() {
             </button>
           </div>
         )}
-        {step === 3 && (
+        {step === 4 && (
           <div className="col gap-sm">
             <button
               type="button"
@@ -783,16 +792,12 @@ function Step3Program({
   goal: GoalPreset | null
   name: string
   weeks: number
-  // `split` + `onUpdate` are part of the prop contract Task 5's recipe editor
-  // consumes; threaded from the page but not read in this step's body yet.
-  split: SplitOption | null
   days: number
   program: PlannerDay[] | null
   onAdd: (dayName: string, item: ExerciseLibraryItem) => void
   onRemove: (dayName: string, exId: string) => void
   onReorder: (dayName: string, ids: string[]) => void
   onRename: (dayName: string, name: string) => void
-  onUpdate: (dayName: string, exId: string, patch: Partial<GymExercise>) => void
 }) {
   const firstTrainingDay = (p: PlannerDay[] | null) =>
     p?.find((d) => d.type !== 'Rest' && d.type !== 'Volleyball')?.day ?? null
@@ -921,6 +926,53 @@ function Step3Program({
         <ExercisePickerSheet
           dayLabel={(() => {
             const d = program?.find((x) => x.day === pickerDay)
+            return d ? `${d.day} · ${d.type}` : undefined
+          })()}
+          onClose={() => setPickerDay(null)}
+          onPick={(item) => onAdd(pickerDay, item)}
+        />
+      )}
+    </div>
+  )
+}
+
+// === Step 4 (index): Set & rep tuning on the day-tabbed recipe editor ===
+function Step4Recipe({ program, onAdd, onRemove, onChange, onReorder }: {
+  program: PlannerDay[] | null
+  onAdd: (dayName: string, item: ExerciseLibraryItem) => void
+  onRemove: (dayName: string, exId: string) => void
+  onChange: (dayName: string, exId: string, patch: Partial<GymExercise>) => void
+  onReorder: (dayName: string, ids: string[]) => void
+}) {
+  const [pickerDay, setPickerDay] = useState<string | null>(null)
+  if (!program) return null // canNext gates entry on a generated program
+
+  return (
+    <div style={{ padding: '8px 24px' }}>
+      <div className="card notch-4" style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)', marginBottom: 14 }}>
+        <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
+          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <div className="col flex-1">
+            <span className="eyebrow brand">Set & rep · hangolás</span>
+            <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
+              <SafeMarkdown text="Válts napot a tabokkal, tappolj a gyakorlaton a recepthez. **A Mezo defaultjai csak kiindulópont — bármit átírhatsz.**" />
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <MesoDayTabsEditor
+        days={program}
+        onAddClick={setPickerDay}
+        onRemove={onRemove}
+        onChange={onChange}
+        onReorder={onReorder}
+      />
+
+      {pickerDay && (
+        <ExercisePickerSheet
+          dayLabel={(() => {
+            const d = program.find((x) => x.day === pickerDay)
             return d ? `${d.day} · ${d.type}` : undefined
           })()}
           onClose={() => setPickerDay(null)}

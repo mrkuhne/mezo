@@ -23,8 +23,8 @@ describe('getSeason', () => {
 })
 
 describe('stepLabels', () => {
-  test('is the verbatim 4-step label list', () => {
-    expect(stepLabels).toEqual(['Cél', 'Hossz + fázisok', 'Split + napok', 'Áttekintés'])
+  test('is the verbatim 5-step label list', () => {
+    expect(stepLabels).toEqual(['Cél', 'Hossz + fázisok', 'Split + napok', 'Gyakorlatok', 'Set & rep'])
   })
 })
 

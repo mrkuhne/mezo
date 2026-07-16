@@ -69,8 +69,10 @@ test('the wizard persists the mesocycle in real mode and lands on the library', 
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   // step 2 -> step 3
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
-  // step 3: wait out the 600ms generate delay, then save as planned
+  // step 3: wait out the 600ms generate delay
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  // step 3 -> step 4 (Set & rep): the save buttons live here now
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: /Hozzáad mint tervezett/i }))
 
   await waitFor(() => expect(posted).not.toBeNull())
@@ -186,6 +188,9 @@ test('program edits survive a step round-trip when inputs are unchanged', async 
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> program review
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  // the auto-expand lands in a second commit — wait for the rows before counting
+  // (findAll: the expanded day has several rows, so a singular findBy would throw)
+  await screen.findAllByRole('button', { name: 'Eltávolítás' })
   // remove the first exercise of the auto-expanded day
   const removeButtons = screen.getAllByRole('button', { name: 'Eltávolítás' })
   const countBefore = removeButtons.length
@@ -196,6 +201,7 @@ test('program edits survive a step round-trip when inputs are unchanged', async 
   await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   expect(screen.queryByText('A Mezo összerakja a programot…')).not.toBeInTheDocument()
+  await screen.findAllByRole('button', { name: 'Eltávolítás' })
   expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(countBefore - 1)
 })
 
@@ -214,4 +220,30 @@ test('changing an input regenerates the program', async () => {
   await user.click(screen.getByRole('button', { name: 'Tovább →' }))
   expect(screen.getByText('A Mezo összerakja a programot…')).toBeInTheDocument()
   await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+})
+
+test('Set & rep step: day tabs, recipe editing, edits survive the 4↔5 round-trip', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Gyakorlatok
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> Set & rep
+  expect(screen.getByText('Mennyit és hányszor?')).toBeInTheDocument()
+  // save buttons live here now
+  expect(screen.getByRole('button', { name: /Hozzáad mint tervezett/i })).toBeInTheDocument()
+  // a day tab is preselected; expand the first exercise row and bump Working
+  const row = screen.getAllByRole('button', { name: / · recept$/ })[0]
+  const summaryBefore = row.textContent
+  await user.click(row)
+  await user.click(screen.getByRole('button', { name: 'Working növelése' }))
+  expect(screen.getAllByRole('button', { name: / · recept$/ })[0].textContent).not.toBe(summaryBefore)
+  // round-trip back to Gyakorlatok (via the progress segment — the terminal
+  // step has no Vissza button) and forward: no regeneration, edit kept
+  await user.click(screen.getByRole('button', { name: '4. lépés · Gyakorlatok' }))
+  expect(screen.getByText(/A te blokkod/i)).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  expect(screen.getAllByRole('button', { name: / · recept$/ })[0].textContent).not.toBe(summaryBefore)
 })

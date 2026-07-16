@@ -1,7 +1,7 @@
 // ============================================================
-// Mezo · Mesocycle Planner helpers (4-step AI planner)
+// Mezo · Mesocycle Planner helpers (5-step AI planner)
 // Ported verbatim from prototype meso-planner.jsx:
-//   - stepLabels (the 4-step state-machine labels)
+//   - stepLabels (the 5-step state-machine labels)
 //   - GOAL_HINTS (per-goal "Mezo javasolja" copy, keyed by goal id)
 //   - SCHEMES (per-goal compound/isolation rep/RIR/set schemes)
 //   - addWeeks (HU month math), getSeason (Tavasz/Nyár/Ősz/Tél)
@@ -13,7 +13,7 @@ import { DAY_ORDER } from '@/data/train/train'
 import type { ExerciseKind, GymExercise, MesoDay, GoalPreset, SplitOption } from '@/data/types'
 
 // --- step labels (meso-planner.jsx:135) ---
-export const stepLabels = ['Cél', 'Hossz + fázisok', 'Split + napok', 'Áttekintés'] as const
+export const stepLabels = ['Cél', 'Hossz + fázisok', 'Split + napok', 'Gyakorlatok', 'Set & rep'] as const
 
 // --- per-goal "Mezo javasolja" hint copy (meso-planner.jsx:405-409), verbatim ---
 export const GOAL_HINTS: Record<string, string> = {
