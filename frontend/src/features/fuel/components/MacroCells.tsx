@@ -12,7 +12,7 @@ export interface MacroCellsProps {
 }
 
 const CELLS = [
-  { key: 'kcal' as const, label: 'kcal', color: 'var(--brand-glow)' },
+  { key: 'kcal' as const, label: 'kcal', color: 'var(--coral)' },
   { key: 'p' as const, label: 'Prot', color: 'var(--success)' },
   { key: 'c' as const, label: 'Carb', color: 'var(--text-primary)' },
   { key: 'f' as const, label: 'Fat', color: 'var(--text-primary)' },

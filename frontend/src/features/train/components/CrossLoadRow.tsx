@@ -59,7 +59,7 @@ export function CrossLoadRow({ item }: CrossLoadRowProps) {
           className="label-mono"
           style={{
             fontSize: 11,
-            color: item.warning ? 'var(--warning)' : 'var(--brand-glow)',
+            color: item.warning ? 'var(--warning)' : 'var(--coral)',
             whiteSpace: 'nowrap',
             marginLeft: 12,
           }}

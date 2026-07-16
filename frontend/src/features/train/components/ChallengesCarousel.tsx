@@ -68,9 +68,9 @@ export function ChallengesCarousel({
                 height: 6,
                 borderRadius: 3,
                 background: accepted[c.id]
-                  ? 'var(--brand-glow)'
+                  ? 'var(--coral)'
                   : i === activeIdx
-                    ? 'var(--brand-primary)'
+                    ? 'var(--coral)'
                     : 'var(--border-strong)',
                 transition: 'all 0.25s ease',
                 border: 'none',

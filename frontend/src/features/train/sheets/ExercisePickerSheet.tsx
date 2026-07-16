@@ -118,7 +118,7 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
                     </div>
                   </div>
                   <div className="col" style={{ alignItems: 'flex-end', marginRight: 12 }}>
-                    <span className="label-mono" style={{ fontSize: 8, color: 'var(--brand-glow)' }}>
+                    <span className="label-mono" style={{ fontSize: 8, color: 'var(--coral)' }}>
                       STIM
                     </span>
                     <div className="row gap-xs mt-xs">
@@ -128,13 +128,13 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
                           style={{
                             width: 4,
                             height: 8,
-                            background: n / 5 <= e.stim ? 'var(--brand-glow)' : 'var(--surface-2)',
+                            background: n / 5 <= e.stim ? 'var(--coral)' : 'var(--surface-2)',
                           }}
                         />
                       ))}
                     </div>
                   </div>
-                  <Icon name="plus" size={16} color="var(--brand-glow)" />
+                  <Icon name="plus" size={16} color="var(--coral)" />
                 </button>
                 {/* Inline demo video — sibling of the row button so its toggle never triggers onPick */}
                 <VideoDemo url={e.videoUrl} />

@@ -24,7 +24,7 @@ export const CHECKIN_DIMS: CheckinDim[] = [
     id: 'energy',
     label: 'Energia',
     sub: 'Mennyi van benned ebben a pillanatban',
-    color: 'var(--brand-glow)',
+    color: 'var(--coral)',
     lowLabel: 'Üres',
     highLabel: 'Tele',
   },
@@ -110,9 +110,9 @@ export function CheckInSheet({
         {[0, 1, 2, 3, 4].map(i => (
           <div key={i} style={{
             flex: 1, height: 3,
-            background: i <= step ? 'var(--brand-glow)' : 'var(--surface-2)',
+            background: i <= step ? 'var(--coral)' : 'var(--surface-2)',
             transition: 'background 0.3s ease',
-            boxShadow: i === step ? '0 0 6px var(--brand-glow)' : 'none',
+            boxShadow: i === step ? '0 0 6px var(--coral)' : 'none',
           }} />
         ))}
       </div>
@@ -313,12 +313,12 @@ function CheckInObservation({ values }: { values: CheckinValues; slot?: CheckinS
     }
   }, [values])
 
-  const accent = obs.tone === 'concern' ? 'var(--warning)' : obs.tone === 'good' ? 'var(--brand-glow)' : 'var(--text-secondary)'
+  const accent = obs.tone === 'concern' ? 'var(--warning)' : obs.tone === 'good' ? 'var(--coral)' : 'var(--text-secondary)'
   return (
     <div className="card" style={{
       padding: 12,
       background: obs.tone === 'good' ? 'color-mix(in srgb, var(--coral) 5%, transparent)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.05)' : 'var(--surface-1)',
-      borderColor: obs.tone === 'good' ? 'var(--border-brand)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.25)' : 'var(--border-subtle)',
+      borderColor: obs.tone === 'good' ? 'var(--line)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.25)' : 'var(--border-subtle)',
     }}>
       <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
         <Icon name="sparkle" size={12} color={accent} />

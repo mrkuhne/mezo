@@ -151,7 +151,7 @@ export function FuelKamraPage() {
                     key={t.id}
                     onClick={() => setTypeFilter(t.id)}
                     className="rad-16 col flex-1"
-                    style={{ alignItems: 'center', padding: '9px 0 8px', background: active ? 'var(--brand-primary)' : 'transparent' }}
+                    style={{ alignItems: 'center', padding: '9px 0 8px', background: active ? 'var(--coral)' : 'transparent' }}
                   >
                     <span style={{ fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 600, letterSpacing: '0.02em', color: active ? 'var(--text-inverse)' : 'var(--text-secondary)' }}>{t.label}</span>
                     <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, marginTop: 3, color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)' }}>{counts[t.id] ?? 0}</span>
@@ -214,7 +214,7 @@ export function FuelKamraPage() {
             >
               <Icon name="settings" size={12} /> Szűrők
               {categoryFilter.length > 0 && (
-                <span style={{ background: 'var(--brand-primary)', color: 'var(--text-inverse)', fontSize: 9, padding: '0 5px', borderRadius: 8 }}>
+                <span style={{ background: 'var(--coral)', color: 'var(--text-inverse)', fontSize: 9, padding: '0 5px', borderRadius: 8 }}>
                   {categoryFilter.length}
                 </span>
               )}

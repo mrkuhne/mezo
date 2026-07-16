@@ -77,7 +77,7 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
             style={{
               padding: 16, margin: '12px 0',
               background: 'linear-gradient(180deg, color-mix(in srgb, var(--coral) 7%, transparent) 0%, var(--surface-1) 100%)',
-              borderColor: 'var(--border-brand)',
+              borderColor: 'var(--line)',
             }}
           >
             <span className="eyebrow brand">{r.bestSet ? 'Legjobb szett' : 'Összes rep'}</span>
@@ -130,7 +130,7 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
                     }}
                   >
                     <span className="label-mono" style={{ fontSize: 12 }}>{num(rr.weightKg!)} kg</span>
-                    <span className="label-mono" style={{ fontSize: 11, color: 'var(--brand-glow)' }}>{rr.reps} REP</span>
+                    <span className="label-mono" style={{ fontSize: 11, color: 'var(--coral)' }}>{rr.reps} REP</span>
                     <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>{huMonthDay(rr.date)}</span>
                   </div>
                 ))}
@@ -151,8 +151,8 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
                     style={{
                       flex: 1,
                       height: `${Math.max(18, Math.round(((s.weightKg ?? s.reps) / maxRecent) * 100))}%`,
-                      background: 'color-mix(in srgb, var(--brand-glow) 30%, transparent)',
-                      borderTop: '2px solid var(--brand-glow)',
+                      background: 'color-mix(in srgb, var(--coral) 30%, transparent)',
+                      borderTop: '2px solid var(--coral)',
                     }}
                   />
                 ))}

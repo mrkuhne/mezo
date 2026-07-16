@@ -33,19 +33,19 @@ export function RecipeLogsList({ logs, baselineScore }: { logs?: RecipeLog[]; ba
             <div className="col" style={{ alignItems: 'flex-end' }}>
               {l.score ? (
                 <>
-                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, color: 'var(--brand-glow)', lineHeight: 1, fontWeight: 600 }}>
+                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, color: 'var(--coral)', lineHeight: 1, fontWeight: 600 }}>
                     {(l.score * 100).toFixed(0)}
                   </span>
                   <span className="label-mono" style={{
                     fontSize: 9,
-                    color: delta > 0 ? 'var(--brand-glow)' : delta < 0 ? 'var(--warning)' : 'var(--text-tertiary)',
+                    color: delta > 0 ? 'var(--coral)' : delta < 0 ? 'var(--warning)' : 'var(--text-tertiary)',
                     marginTop: 2,
                   }}>
                     {delta > 0 ? '+' : ''}{(delta * 100).toFixed(0)} vs baseline
                   </span>
                 </>
               ) : (
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                   <Icon name="sparkle" size={12} /> pending
                 </span>
               )}

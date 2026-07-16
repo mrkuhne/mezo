@@ -28,8 +28,8 @@ import { MiniStat } from '@/features/train/components/MiniStat'
 
 const STEP_COUNT = 4
 const PHASES: MesoPhase[] = ['MEV', 'MAV', 'MRV', 'Deload']
-const BRAND_TINT = 'color-mix(in srgb, var(--brand-glow) 6%, transparent)'
-const BRAND_TINT_STRONG = 'color-mix(in srgb, var(--brand-glow) 12%, transparent)'
+const CORAL_TINT = 'color-mix(in srgb, var(--coral) 6%, transparent)'
+const CORAL_TINT_STRONG = 'color-mix(in srgb, var(--coral) 12%, transparent)'
 
 const PAGE_TITLES = [
   'Mit szeretnénk építeni?',
@@ -160,8 +160,8 @@ export function MesocyclePlannerPage() {
               style={{
                 flex: 1,
                 height: 3,
-                background: i <= step ? 'var(--brand-glow)' : 'var(--surface-2)',
-                boxShadow: i === step ? '0 0 6px var(--brand-glow)' : 'none',
+                background: i <= step ? 'var(--coral)' : 'var(--surface-2)',
+                boxShadow: i === step ? '0 0 6px var(--coral)' : 'none',
                 transition: 'all 0.3s ease',
                 padding: 0,
                 cursor: i < step ? 'pointer' : 'default',
@@ -299,8 +299,8 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                 padding: 14,
                 textAlign: 'left',
                 width: '100%',
-                background: selected ? BRAND_TINT : 'var(--surface-1)',
-                borderColor: selected ? 'var(--border-brand)' : 'var(--border-subtle)',
+                background: selected ? CORAL_TINT : 'var(--surface-1)',
+                borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -313,7 +313,7 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                   style={{
                     width: 36,
                     height: 36,
-                    background: BRAND_TINT,
+                    background: CORAL_TINT,
                     border: `1px solid ${selected ? g.color : 'var(--border-subtle)'}`,
                     display: 'flex',
                     alignItems: 'center',
@@ -454,7 +454,7 @@ function Step1Length({
       <div className="col gap-sm mt-xl">
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span className="label-mono">Hossz</span>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, color: 'var(--brand-glow)' }}>
+          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, color: 'var(--coral)' }}>
             {weeks} <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--text-tertiary)' }}>hét</span>
           </span>
         </div>
@@ -470,13 +470,13 @@ function Step1Length({
                 className="flex-1 rad-12"
                 style={{
                   padding: '10px 0',
-                  background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
+                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
+                  color: active ? 'var(--coral)' : 'var(--text-secondary)',
                   fontFamily: 'var(--ff-display)',
                   fontSize: 14,
                   fontWeight: 600,
-                  boxShadow: active ? 'inset 0 0 0 1px color-mix(in srgb, var(--brand-glow) 20%, transparent)' : 'none',
+                  boxShadow: active ? 'inset 0 0 0 1px color-mix(in srgb, var(--coral) 20%, transparent)' : 'none',
                 }}
               >
                 {w}
@@ -524,9 +524,9 @@ function Step1Length({
       </div>
 
       {/* Mezo hint */}
-      <div className="card mt-lg" style={{ padding: 12, background: BRAND_TINT }}>
+      <div className="card mt-lg" style={{ padding: 12, background: CORAL_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo javasolja</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
@@ -576,15 +576,15 @@ function Step2Split({
                 padding: 14,
                 textAlign: 'left',
                 width: '100%',
-                background: selected ? BRAND_TINT : 'var(--surface-1)',
-                borderColor: selected ? 'var(--border-brand)' : 'var(--border-subtle)',
+                background: selected ? CORAL_TINT : 'var(--surface-1)',
+                borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
               }}
             >
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                 <div className="col">
                   <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{s.label}</span>
                   {s.best === goal?.id && goal && (
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)', marginTop: 2 }}>
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', marginTop: 2 }}>
                       ★ Mezo ajánlja {goal.label}-hez
                     </span>
                   )}
@@ -613,9 +613,9 @@ function Step2Split({
                 className="flex-1 rad-12"
                 style={{
                   padding: '12px 0',
-                  background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
+                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
+                  color: active ? 'var(--coral)' : 'var(--text-secondary)',
                   fontFamily: 'var(--ff-display)',
                   fontSize: 16,
                   fontWeight: 600,
@@ -635,7 +635,7 @@ function Step2Split({
           <span className="label-mono">Melyik napokon?</span>
           <span
             className="label-mono"
-            style={{ fontSize: 9, color: selectedDays.length === days ? 'var(--brand-glow)' : 'var(--warning)' }}
+            style={{ fontSize: 9, color: selectedDays.length === days ? 'var(--coral)' : 'var(--warning)' }}
           >
             {selectedDays.length}/{days}
           </span>
@@ -652,9 +652,9 @@ function Step2Split({
                 className="flex-1 rad-12"
                 style={{
                   padding: '10px 0',
-                  background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--brand-glow)' : 'var(--text-tertiary)',
+                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
+                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
+                  color: active ? 'var(--coral)' : 'var(--text-tertiary)',
                   fontFamily: 'var(--ff-mono)',
                   fontSize: 10,
                   fontWeight: 600,
@@ -675,9 +675,9 @@ function Step2Split({
       </div>
 
       {/* Exercise auto-fill option */}
-      <div className="card mt-xl" style={{ padding: 14, background: BRAND_TINT }}>
+      <div className="card mt-xl" style={{ padding: 14, background: CORAL_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Gyakorlatok · automatikusan</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
@@ -741,7 +741,7 @@ function Step3Program({
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                background: 'var(--brand-glow)',
+                background: 'var(--coral)',
                 animationDelay: `${i * 0.2}s`,
               }}
             />
@@ -811,14 +811,14 @@ function Step3Program({
         className="card"
         style={{
           padding: 14,
-          background: 'linear-gradient(180deg, color-mix(in srgb, var(--brand-glow) 6%, transparent) 0%, var(--surface-1) 100%)',
-          borderColor: 'var(--border-brand)',
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--coral) 6%, transparent) 0%, var(--surface-1) 100%)',
+          borderColor: 'var(--line)',
           position: 'relative',
           overflow: 'hidden',
           marginBottom: 14,
         }}
       >
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: goal?.color ?? 'var(--brand-glow)' }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: goal?.color ?? 'var(--coral)' }} />
         <div style={{ position: 'relative' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="col">
@@ -838,9 +838,9 @@ function Step3Program({
       </div>
 
       {/* AI hint */}
-      <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)', marginBottom: 14 }}>
+      <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)', marginBottom: 14 }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo · ezt raktam össze</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>

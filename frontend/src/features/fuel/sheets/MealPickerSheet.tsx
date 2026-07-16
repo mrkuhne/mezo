@@ -32,7 +32,7 @@ function perServing(r: Recipe) {
 
 function RecipeRow({ r, onPick }: { r: Recipe; onPick: () => void }) {
   return (
-    <div className="card" style={{ padding: '11px 12px', borderLeft: '2px solid var(--brand-glow)' }}>
+    <div className="card" style={{ padding: '11px 12px', borderLeft: '2px solid var(--coral)' }}>
       <div className="row" style={{ alignItems: 'center', gap: 8 }}>
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
@@ -44,7 +44,7 @@ function RecipeRow({ r, onPick }: { r: Recipe; onPick: () => void }) {
           </span>
         </div>
         <button onClick={onPick} aria-label={r.name + ' hozzáadása'} className="rad-12"
-          style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--brand-glow)' }}>
+          style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--coral)' }}>
           <Icon name="plus" size={14} />
         </button>
       </div>
@@ -66,7 +66,7 @@ function PantryRow({ ing, onPick }: { ing: Ingredient; onPick: () => void }) {
           </span>
         </div>
         <button onClick={onPick} aria-label={ing.name + ' hozzáadása'} className="rad-12"
-          style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--brand-glow)' }}>
+          style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--coral)' }}>
           <Icon name="plus" size={14} />
         </button>
       </div>

@@ -43,7 +43,7 @@ export const gymSchedule: GymScheduleDay[] = [
 
 // fuel-plan.jsx WeeklySupplementGrid schedule (406–416)
 export const weeklySupplements: WeeklySupplementRow[] = [
-  { name: 'Kreatin', dose: '5g', days: [1, 1, 1, 1, 1, 1, 1], color: 'var(--brand-glow)' },
+  { name: 'Kreatin', dose: '5g', days: [1, 1, 1, 1, 1, 1, 1], color: 'var(--coral)' },
   { name: 'D3 + K2', dose: '4000IU', days: [1, 1, 1, 1, 1, 1, 1], color: 'var(--info)' },
   { name: 'Magnézium', dose: '300mg', days: [1, 1, 1, 1, 1, 1, 1], color: 'var(--cat-preference)' },
   { name: 'Omega-3', dose: '2g', days: [1, 1, 1, 1, 1, 1, 1], color: 'var(--cat-physiology)' },
@@ -65,7 +65,7 @@ export const recurringPatterns: RecurringPattern[] = [
   },
   {
     icon: 'fuel',
-    color: 'var(--brand-glow)',
+    color: 'var(--coral)',
     title: 'Reggeli gym (Mon-Pén 07:30)',
     detail:
       'Pre-workout snack 06:15-20-kor · banán + 20g whey · gyors-szénhidrát. Post-workout reggeli 09:00-09:15 (Túrós zabkása vagy tojásrántotta) — slow-release glikogén-pótlás.',
@@ -120,7 +120,7 @@ export const replanScenarios: ReplanScenario[] = [
     title: 'Gym csúszik · késik a busz',
     detail: '07:30 → 08:30 gym indítás',
     icon: 'train',
-    color: 'var(--brand-glow)',
+    color: 'var(--coral)',
     cascades: [
       { system: 'Fuel', impact: 'AAKG-stack 07:50', detail: 'T-40 visszaszámolva · pre-snack 07:20' },
       { system: 'Fuel', impact: 'Reggeli 10:15', detail: 'Post-workout slot tolva · ebéd 13:30-ra' },

@@ -165,9 +165,9 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
                     className="flex-1 rad-12"
                     style={{
                       padding: '10px',
-                      background: active ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)' : 'var(--surface-1)',
-                      border: `1px solid ${active ? 'color-mix(in srgb, var(--brand-glow) 40%, transparent)' : 'var(--border-subtle)'}`,
-                      color: active ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                      background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
+                      border: `1px solid ${active ? 'color-mix(in srgb, var(--coral) 40%, transparent)' : 'var(--border-subtle)'}`,
+                      color: active ? 'var(--coral)' : 'var(--text-secondary)',
                       fontFamily: 'var(--ff-mono)',
                       fontSize: 10,
                       fontWeight: 600,

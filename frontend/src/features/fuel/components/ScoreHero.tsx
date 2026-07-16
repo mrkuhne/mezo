@@ -12,7 +12,7 @@ export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scor
       <div className="row" style={{ gap: 16, alignItems: 'center' }}>
         {/* Ring */}
         <div style={{ flexShrink: 0 }}>
-          <ScoreRing pct={meal.score ?? 0} size={96} stroke={5} label={scorePct.toFixed(0)} labelColor="var(--brand-glow)" sublabel="/100" />
+          <ScoreRing pct={meal.score ?? 0} size={96} stroke={5} label={scorePct.toFixed(0)} labelColor="var(--coral)" sublabel="/100" />
         </div>
 
         {/* Meta */}
@@ -34,7 +34,7 @@ export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scor
             <div className="flex-1" style={{ maxWidth: 80 }}>
               <ProgressBar value={confidence * 100} />
             </div>
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+            <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
               {(confidence * 100).toFixed(0)}%
             </span>
           </div>

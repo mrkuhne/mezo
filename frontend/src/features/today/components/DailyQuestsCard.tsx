@@ -43,7 +43,7 @@ export function DailyQuestsCard() {
       {quests.map(q => (
         <div key={q.id} className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '6px 0' }}>
           <span style={{
-            color: q.status === 'completed' ? 'var(--success)' : 'var(--brand-glow)',
+            color: q.status === 'completed' ? 'var(--success)' : 'var(--coral)',
             opacity: q.status === 'expired' ? 0.4 : 1,
             width: 14, textAlign: 'center',
           }}>

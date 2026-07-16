@@ -27,16 +27,16 @@ export function RecipeFitBadge({ score, size = 'card' }: RecipeFitBadgeProps) {
     >
       {pending ? (
         <>
-          <div className="np-twinkle" style={{ color: 'var(--brand-glow)', display: 'flex', justifyContent: 'center' }}>
+          <div className="np-twinkle" style={{ color: 'var(--coral)', display: 'flex', justifyContent: 'center' }}>
             <Icon name="sparkle" size={isHero ? 18 : 16} />
           </div>
-          <div className="label-mono" style={{ fontSize: 6.5, letterSpacing: '0.16em', color: 'var(--brand-glow)', opacity: 0.8, marginTop: 3 }}>
+          <div className="label-mono" style={{ fontSize: 6.5, letterSpacing: '0.16em', color: 'var(--coral)', opacity: 0.8, marginTop: 3 }}>
             Mezo
           </div>
         </>
       ) : (
         <>
-          <div style={{ fontFamily: 'var(--ff-display)', fontSize: isHero ? 22 : 18, fontWeight: 600, lineHeight: 1, color: 'var(--brand-glow)' }}>
+          <div style={{ fontFamily: 'var(--ff-display)', fontSize: isHero ? 22 : 18, fontWeight: 600, lineHeight: 1, color: 'var(--coral)' }}>
             {Math.round(score * 100)}
           </div>
           <div className="label-mono" style={{ fontSize: 6.5, letterSpacing: '0.16em', color: 'var(--text-tertiary)', marginTop: 3 }}>

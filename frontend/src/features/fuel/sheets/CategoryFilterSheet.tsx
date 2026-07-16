@@ -42,7 +42,7 @@ export function CategoryFilterSheet({
             <button
               onClick={() => setDraft([])}
               className="label-mono"
-              style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: draft.length ? 'var(--brand-glow)' : 'var(--text-tertiary)' }}
+              style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: draft.length ? 'var(--coral)' : 'var(--text-tertiary)' }}
               disabled={!draft.length}
             >
               {draft.length} kiválasztva · törlés
@@ -61,14 +61,14 @@ export function CategoryFilterSheet({
                   style={{
                     alignItems: 'center', gap: 6, padding: '7px 11px',
                     fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
-                    color: on ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                    color: on ? 'var(--coral)' : 'var(--text-secondary)',
                     background: on ? 'color-mix(in srgb, var(--sage) 12%, transparent)' : 'var(--surface-2)',
                     border: '1px solid ' + (on ? 'color-mix(in srgb, var(--sage) 30%, transparent)' : 'var(--border-subtle)'),
                   }}
                 >
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: opt.color, flexShrink: 0 }} />
                   {opt.label}
-                  <span style={{ fontSize: 9, color: on ? 'var(--brand-glow)' : 'var(--text-tertiary)' }}>{opt.count}</span>
+                  <span style={{ fontSize: 9, color: on ? 'var(--coral)' : 'var(--text-tertiary)' }}>{opt.count}</span>
                 </button>
               )
             })}

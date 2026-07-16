@@ -17,7 +17,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 
 // Per-system accent colors (port: fuel-stack.jsx ~613).
 const SYSTEM_COLOR: Record<ReplanCascade['system'], string> = {
-  Fuel: 'var(--brand-glow)',
+  Fuel: 'var(--coral)',
   Train: 'var(--cat-physiology)',
   Sleep: 'var(--cat-preference)',
   Insights: 'var(--cat-tendency)',
@@ -80,9 +80,9 @@ export function ReplanSheet({
                         alignItems: 'center',
                         gap: 10,
                         background: selected
-                          ? 'color-mix(in srgb, var(--brand-glow) 6%, transparent)'
+                          ? 'color-mix(in srgb, var(--coral) 6%, transparent)'
                           : 'var(--surface-1)',
-                        borderColor: selected ? 'var(--border-brand)' : 'var(--border-subtle)',
+                        borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
                         borderLeft: '2px solid ' + s.color,
                       }}
                     >
@@ -202,12 +202,12 @@ export function ReplanSheet({
                 className="card"
                 style={{
                   padding: 18,
-                  background: 'color-mix(in srgb, var(--brand-glow) 6%, transparent)',
-                  borderColor: 'var(--border-brand)',
+                  background: 'color-mix(in srgb, var(--coral) 6%, transparent)',
+                  borderColor: 'var(--line)',
                   textAlign: 'center',
                 }}
               >
-                <Icon name="sparkle" size={20} color="var(--brand-glow)" />
+                <Icon name="sparkle" size={20} color="var(--coral)" />
                 <div
                   style={{
                     fontFamily: 'var(--ff-display)',

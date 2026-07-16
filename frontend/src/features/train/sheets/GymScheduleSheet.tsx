@@ -65,7 +65,7 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <span
                     className="label-mono"
-                    style={{ width: 36, color: times[i] ? 'var(--brand-glow)' : 'var(--text-tertiary)' }}
+                    style={{ width: 36, color: times[i] ? 'var(--coral)' : 'var(--text-tertiary)' }}
                   >
                     {day}
                   </span>

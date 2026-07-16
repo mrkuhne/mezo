@@ -76,13 +76,13 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
-                    background: 'var(--brand-glow)',
-                    boxShadow: '0 0 6px var(--brand-glow)',
+                    background: 'var(--coral)',
+                    boxShadow: '0 0 6px var(--coral)',
                     animationDuration: '2s',
                   }}
                 />
                 <div className="col" style={{ alignItems: 'flex-start' }}>
-                  <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+                  <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
                     Élő rendszer · 4 nappal ezelőtt frissítve
                   </span>
                   <span
@@ -100,7 +100,7 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
           {showHistory && (
             <div
               className="card mt-sm"
-              style={{ padding: 14, background: 'var(--surface-2)', borderColor: 'var(--border-brand)' }}
+              style={{ padding: 14, background: 'var(--surface-2)', borderColor: 'var(--line)' }}
             >
               <Eyebrow brand>Utolsó futás · {recompute.lastRun}</Eyebrow>
               <p className="text-tertiary" style={{ fontSize: 11, marginTop: 4, lineHeight: 1.45 }}>
@@ -112,7 +112,7 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
                     <Icon
                       name={c.warning ? 'warning' : 'sparkle'}
                       size={11}
-                      color={c.warning ? 'var(--warning)' : 'var(--brand-glow)'}
+                      color={c.warning ? 'var(--warning)' : 'var(--coral)'}
                     />
                     <div className="col flex-1">
                       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -121,7 +121,7 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
                         </span>
                         <span
                           className="label-mono"
-                          style={{ fontSize: 10, color: c.warning ? 'var(--warning)' : 'var(--brand-glow)' }}
+                          style={{ fontSize: 10, color: c.warning ? 'var(--warning)' : 'var(--coral)' }}
                         >
                           {c.change}
                         </span>
@@ -150,12 +150,12 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
           className="card"
           style={{
             padding: 12,
-            background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)',
+            background: 'color-mix(in srgb, var(--coral) 3%, transparent)',
             marginBottom: 14,
           }}
         >
           <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-            <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+            <Icon name="sparkle" size={12} color="var(--coral)" />
             <div className="col flex-1">
               <Eyebrow brand>Honnan jönnek a számok?</Eyebrow>
               <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
@@ -176,10 +176,10 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
       <div style={{ padding: '16px 24px' }}>
         <div
           className="card"
-          style={{ padding: 14, background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)' }}
+          style={{ padding: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)' }}
         >
           <div className="row gap-sm">
-            <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+            <Icon name="sparkle" size={12} color="var(--coral)" />
             <div className="col flex-1">
               <Eyebrow brand>Mezo · javaslat</Eyebrow>
               <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>

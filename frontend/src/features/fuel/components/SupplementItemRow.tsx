@@ -13,7 +13,7 @@ export function SupplementItemRow({ item }: { item: SlotItem }) {
       style={{
         padding: '8px 10px',
         background: item.done ? 'transparent' : 'var(--surface-2)',
-        border: '1px solid ' + (item.primary && !item.done ? 'var(--border-brand)' : 'var(--border-subtle)'),
+        border: '1px solid ' + (item.primary && !item.done ? 'var(--line)' : 'var(--border-subtle)'),
         alignItems: 'center',
       }}
     >
@@ -22,8 +22,8 @@ export function SupplementItemRow({ item }: { item: SlotItem }) {
           width: 18,
           height: 18,
           borderRadius: '50%',
-          background: item.done ? 'var(--brand-primary)' : 'transparent',
-          border: '1.5px solid ' + (item.done ? 'var(--brand-glow)' : 'var(--border-strong)'),
+          background: item.done ? 'var(--coral)' : 'transparent',
+          border: '1.5px solid ' + (item.done ? 'var(--coral)' : 'var(--border-strong)'),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

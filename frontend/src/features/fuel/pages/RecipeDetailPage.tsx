@@ -170,7 +170,7 @@ export function RecipeDetailPage() {
       {/* Hozzávalók */}
       <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 10px' }}>
         <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>HOZZÁVALÓK</span>
-        <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>{recipe.ingredients.length}</span>
+        <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>{recipe.ingredients.length}</span>
         <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
       </div>
       <div className="col gap-sm" style={{ marginBottom: 16 }}>
@@ -201,7 +201,7 @@ export function RecipeDetailPage() {
       {/* Logok — today's logs of this recipe (mezo-cki) */}
       <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 10px' }}>
         <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>LOGOK</span>
-        {logs.length > 0 && <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>{logs.length}</span>}
+        {logs.length > 0 && <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>{logs.length}</span>}
         <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
       </div>
       <div style={{ marginBottom: 16 }}>
@@ -212,12 +212,12 @@ export function RecipeDetailPage() {
           only the prose/Reta-phase reasoning layer remains Phase-3 (P8). */}
       <div
         className="rad-20"
-        style={{ margin: '16px 0', padding: '18px 16px', textAlign: 'center', background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px dashed var(--border-brand)' }}
+        style={{ margin: '16px 0', padding: '18px 16px', textAlign: 'center', background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px dashed var(--line)' }}
       >
-        <div className="np-twinkle" style={{ color: 'var(--brand-glow)', display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+        <div className="np-twinkle" style={{ color: 'var(--coral)', display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
           <Icon name="sparkle" size={26} />
         </div>
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600, textTransform: 'uppercase', color: 'var(--brand-glow)', marginBottom: 6 }}>
+        <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600, textTransform: 'uppercase', color: 'var(--coral)', marginBottom: 6 }}>
           Mezo-fit · indoklás hamarosan
         </div>
         <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.55, maxWidth: 260, margin: '0 auto' }}>

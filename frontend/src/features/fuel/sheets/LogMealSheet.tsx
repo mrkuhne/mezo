@@ -164,7 +164,7 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
             {/* Tételek */}
             <div className="row" style={{ alignItems: 'center', gap: 9, margin: '13px 2px 9px' }}>
               <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>TÉTELEK</span>
-              <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--brand-glow)' }}>{lines.length}</span>
+              <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--coral)' }}>{lines.length}</span>
               <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
             </div>
 
@@ -176,18 +176,18 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
 
             <div className="col gap-sm">
               {resolved.map(({ l, meta }) => (
-                <div key={l.key} className="card" style={{ padding: '11px 12px', borderLeft: '2px solid ' + (meta.tag === 'recept' ? 'var(--brand-glow)' : PANTRY_ACCENT) }}>
+                <div key={l.key} className="card" style={{ padding: '11px 12px', borderLeft: '2px solid ' + (meta.tag === 'recept' ? 'var(--coral)' : PANTRY_ACCENT) }}>
                   <div className="row" style={{ alignItems: 'center', gap: 9 }}>
                     <div className="row gap-xs flex-1" style={{ minWidth: 0, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{meta.name}</span>
                       <span className="label-mono" style={{ fontSize: 7.5, fontWeight: 700, padding: '2px 6px', textTransform: 'uppercase',
                         background: meta.tag === 'recept' ? 'color-mix(in srgb, var(--sage) 16%, transparent)' : 'rgba(251,191,36,0.16)',
-                        color: meta.tag === 'recept' ? 'var(--brand-glow)' : PANTRY_ACCENT }}>{meta.tag}</span>
+                        color: meta.tag === 'recept' ? 'var(--coral)' : PANTRY_ACCENT }}>{meta.tag}</span>
                     </div>
                     <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', display: 'inline-flex' }}>
-                      <button onClick={() => bump(l.key, -meta.step)} aria-label={`${meta.name} csökkentés`} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 14 }}>−</button>
+                      <button onClick={() => bump(l.key, -meta.step)} aria-label={`${meta.name} csökkentés`} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }}>−</button>
                       <span style={{ minWidth: 30, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{l.amount}</span>
-                      <button onClick={() => bump(l.key, meta.step)} aria-label={`${meta.name} növelés`} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 14 }}>+</button>
+                      <button onClick={() => bump(l.key, meta.step)} aria-label={`${meta.name} növelés`} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }}>+</button>
                       <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', padding: '0 6px 0 1px' }}>{l.unit}</span>
                     </div>
                     <button onClick={() => removeLine(l.key)} aria-label={`${meta.name} eltávolítás`} style={{ padding: 3, color: 'var(--text-tertiary)', flexShrink: 0 }}>
@@ -202,25 +202,25 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
             </div>
 
             <button onClick={() => setPickerOpen(true)} className="rad-12"
-              style={{ width: '100%', padding: 11, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--border-brand)' }}>
+              style={{ width: '100%', padding: 11, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--coral)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--line)' }}>
               <Icon name="plus" size={14} /> Receptből / Kamrából hozzáad
             </button>
 
             {/* Live total + daily context */}
-            <div className="rad-12" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--border-brand)' }}>
+            <div className="rad-12" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--line)' }}>
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9 }}>
-                <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--brand-glow)' }}>EZ AZ ÉTKEZÉS</span>
+                <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--coral)' }}>EZ AZ ÉTKEZÉS</span>
                 <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>{lines.length} tétel</span>
               </div>
               <MacroCells macros={total} size="md" />
               <div style={{ marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
                 <div className="row" style={{ justifyContent: 'space-between', fontFamily: 'var(--ff-mono)', fontSize: 8.5, color: 'var(--text-tertiary)', marginBottom: 5 }}>
-                  <span>Mai nap eddig <b style={{ color: 'var(--text-secondary)' }}>{fuel.consumed.kcal}</b> <span style={{ color: 'var(--brand-glow)' }}>+{total.kcal}</span> = <b style={{ color: 'var(--text-secondary)' }}>{after}</b></span>
+                  <span>Mai nap eddig <b style={{ color: 'var(--text-secondary)' }}>{fuel.consumed.kcal}</b> <span style={{ color: 'var(--coral)' }}>+{total.kcal}</span> = <b style={{ color: 'var(--text-secondary)' }}>{after}</b></span>
                   <span>cél <b style={{ color: 'var(--text-secondary)' }}>{fuel.targets.kcal}</b> kcal</span>
                 </div>
                 <div style={{ height: 5, background: 'var(--surface-2)', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: nowPct + '%', background: 'var(--text-tertiary)' }} />
-                  <div style={{ position: 'absolute', left: nowPct + '%', top: 0, bottom: 0, width: addPct + '%', background: 'var(--brand-glow)' }} />
+                  <div style={{ position: 'absolute', left: nowPct + '%', top: 0, bottom: 0, width: addPct + '%', background: 'var(--coral)' }} />
                 </div>
               </div>
             </div>

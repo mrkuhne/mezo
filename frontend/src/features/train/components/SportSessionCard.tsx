@@ -20,7 +20,7 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
     intensityScore >= 8
       ? 'var(--warning)'
       : intensityScore >= 7
-        ? 'var(--brand-glow)'
+        ? 'var(--coral)'
         : 'var(--text-secondary)'
 
   return (

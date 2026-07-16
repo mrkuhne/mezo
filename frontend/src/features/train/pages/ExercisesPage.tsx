@@ -45,7 +45,7 @@ function RecordRow({ record, rank, onOpen }: {
     <button className="card row" onClick={onOpen}
       style={{ padding: 12, alignItems: 'center', textAlign: 'left', width: '100%' }}>
       {rank != null && (
-        <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)', width: 22, flexShrink: 0 }}>
+        <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)', width: 22, flexShrink: 0 }}>
           {String(rank).padStart(2, '0')}
         </span>
       )}
@@ -83,12 +83,12 @@ function GhostRow({ item }: { item: ExerciseLibraryItem }) {
         </span>
       </div>
       <div className="col" style={{ alignItems: 'flex-end' }}>
-        <span className="label-mono" style={{ fontSize: 8, color: 'var(--brand-glow)' }}>STIM</span>
+        <span className="label-mono" style={{ fontSize: 8, color: 'var(--coral)' }}>STIM</span>
         <div className="row gap-xs mt-xs">
           {[1, 2, 3, 4, 5].map((n) => (
             <div key={n} style={{
               width: 4, height: 8,
-              background: n / 5 <= item.stim ? 'var(--brand-glow)' : 'var(--surface-2)',
+              background: n / 5 <= item.stim ? 'var(--coral)' : 'var(--surface-2)',
             }} />
           ))}
         </div>

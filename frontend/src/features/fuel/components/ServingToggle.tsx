@@ -32,7 +32,7 @@ export function ServingToggle({ value, servings, onChange }: ServingToggleProps)
               fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em',
               fontWeight: active ? 600 : 400,
               color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)',
-              background: active ? 'var(--brand-primary)' : 'transparent',
+              background: active ? 'var(--coral)' : 'transparent',
             }}
           >
             {s.label(servings)}

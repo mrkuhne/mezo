@@ -55,7 +55,7 @@ function PickerRow({ ing, added, onPick }: { ing: PickableIngredient; added: boo
             disabled
             aria-label={ing.name + ' hozzáadva'}
             className="rad-12"
-            style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-2)', color: 'var(--brand-glow)', opacity: 0.55, cursor: 'default' }}
+            style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-2)', color: 'var(--coral)', opacity: 0.55, cursor: 'default' }}
           >
             <Icon name="check" size={14} />
           </button>
@@ -64,7 +64,7 @@ function PickerRow({ ing, added, onPick }: { ing: PickableIngredient; added: boo
             onClick={onPick}
             aria-label={ing.name + ' hozzáadása'}
             className="rad-12"
-            style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--brand-glow)' }}
+            style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--coral)' }}
           >
             <Icon name="plus" size={14} />
           </button>

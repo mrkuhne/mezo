@@ -52,9 +52,9 @@ function contributionOf(line: DraftLine, ing: Ingredient | undefined) {
 function Stepper({ value, unit, onChange, min = 0 }: { value: number; unit: string; onChange: (v: number) => void; min?: number }) {
   return (
     <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', display: 'inline-flex' }}>
-      <button onClick={() => onChange(Math.max(min, value - 1))} style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 16 }} aria-label="Csökkentés">−</button>
+      <button onClick={() => onChange(Math.max(min, value - 1))} style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 16 }} aria-label="Csökkentés">−</button>
       <span style={{ minWidth: 36, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{value}</span>
-      <button onClick={() => onChange(value + 1)} style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 16 }} aria-label="Növelés">+</button>
+      <button onClick={() => onChange(value + 1)} style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 16 }} aria-label="Növelés">+</button>
       <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', padding: '0 8px 0 2px' }}>{unit}</span>
     </div>
   )
@@ -248,9 +248,9 @@ export function RecipeEditorPage() {
         </div>
 
         {/* Live total */}
-        <div className="rad-12" style={{ padding: '11px 12px', marginBottom: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--border-brand)' }}>
+        <div className="rad-12" style={{ padding: '11px 12px', marginBottom: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--line)' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-            <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--brand-glow)' }}>MAKRÓ-ÖSSZEG</span>
+            <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--coral)' }}>MAKRÓ-ÖSSZEG</span>
             <ServingToggle value={basis} servings={servings} onChange={setBasis} />
           </div>
           <MacroCells macros={shownTotal} size="md" />
@@ -262,7 +262,7 @@ export function RecipeEditorPage() {
         {/* Hozzávalók */}
         <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 10px' }}>
           <span className="label-mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>HOZZÁVALÓK</span>
-          <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--brand-glow)' }}>{lines.length}</span>
+          <span className="label-mono" style={{ fontSize: 9.5, color: 'var(--coral)' }}>{lines.length}</span>
           <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
         </div>
 
@@ -287,9 +287,9 @@ export function RecipeEditorPage() {
                   {ing?.brand && <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{ing.brand}</span>}
                 </div>
                 <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', display: 'inline-flex' }}>
-                  <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: Math.max(0, p.amount - 10) } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} csökkentés`}>−</button>
+                  <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: Math.max(0, p.amount - 10) } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} csökkentés`}>−</button>
                   <AmountField value={line.amount} onChange={n => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: n } : p))} label={`${ing?.name ?? 'tétel'} mennyiség`} />
-                  <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: p.amount + 10 } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--brand-glow)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} növelés`}>+</button>
+                  <button onClick={() => setLines(prev => prev.map((p, idx) => idx === i ? { ...p, amount: p.amount + 10 } : p))} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }} aria-label={`${ing?.name ?? 'tétel'} növelés`}>+</button>
                   <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', padding: '0 6px 0 1px' }}>{line.unit}</span>
                 </div>
                 <button onClick={() => setLines(prev => prev.filter((_, idx) => idx !== i))} aria-label="Eltávolítás" style={{ padding: 3, color: 'var(--text-tertiary)', flexShrink: 0 }}>
@@ -306,7 +306,7 @@ export function RecipeEditorPage() {
         <button
           onClick={() => setPickerOpen(true)}
           className="rad-12"
-          style={{ width: '100%', padding: 11, marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--border-brand)' }}
+          style={{ width: '100%', padding: 11, marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--coral)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--line)' }}
         >
           <Icon name="plus" size={14} /> Kamrából hozzáad
         </button>

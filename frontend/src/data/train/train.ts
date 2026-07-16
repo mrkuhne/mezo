@@ -18,17 +18,17 @@ export const DAY_ORDER = ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'] a
 
 // Cross-load system labels (sport.jsx SYSTEM_LABELS): label + token colour + icon name
 export const SYSTEM_LABELS: Record<string, { label: string; color: string; icon: IconName }> = {
-  Train: { label: 'Edzés', color: 'var(--brand-glow)', icon: 'train' },
-  Fuel: { label: 'Étkezés', color: 'var(--info, var(--brand-primary))', icon: 'fuel' },
+  Train: { label: 'Edzés', color: 'var(--coral)', icon: 'train' },
+  Fuel: { label: 'Étkezés', color: 'var(--info, var(--coral))', icon: 'fuel' },
   Sleep: { label: 'Alvás', color: 'var(--cat-preference)', icon: 'today' },
   Weight: { label: 'Súly', color: 'var(--text-secondary)', icon: 'me' },
   Insights: { label: 'Patterns', color: 'var(--cat-physiology)', icon: 'insights' },
 }
 
 export const MESOCYCLE_PHASE_COLORS: Record<MesoPhase, string> = {
-  MEV: 'var(--brand-deep, var(--brand-primary))',
-  MAV: 'var(--brand-primary)',
-  MRV: 'var(--brand-glow)',
+  MEV: 'var(--coral-deep, var(--coral))',
+  MAV: 'var(--coral)',
+  MRV: 'var(--coral)',
   Deload: 'var(--text-tertiary)',
 }
 // Bar heights per phase, used by the phase-curve mini bars (small variant).
@@ -528,12 +528,12 @@ export const exerciseLibrary: ExerciseLibraryItem[] = [
 
 // --- planner presets (meso-planner.jsx GOAL_PRESETS + SPLITS) ---
 export const GOAL_PRESETS: GoalPreset[] = [
-  { id: 'hypertrophy', label: 'Hypertrophy', sub: 'Izomtömeg építés', defaultWeeks: 6, split: 'Pull / Push / Legs', days: 5, style: 'RP', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], color: 'var(--brand-glow)', icon: 'train', description: 'Volumen-driven · MAV/MRV progresszió · klasszikus RP hypertrophy blokk' },
-  { id: 'strength', label: 'Strength', sub: '1RM növelés', defaultWeeks: 7, split: 'Upper / Lower', days: 4, style: 'Linear', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'], color: 'var(--info, var(--brand-primary))', icon: 'train', description: 'Intenzitás-driven · 3-6 reps · alacsonyabb volumen · hosszabb pihenő' },
+  { id: 'hypertrophy', label: 'Hypertrophy', sub: 'Izomtömeg építés', defaultWeeks: 6, split: 'Pull / Push / Legs', days: 5, style: 'RP', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], color: 'var(--coral)', icon: 'train', description: 'Volumen-driven · MAV/MRV progresszió · klasszikus RP hypertrophy blokk' },
+  { id: 'strength', label: 'Strength', sub: '1RM növelés', defaultWeeks: 7, split: 'Upper / Lower', days: 4, style: 'Linear', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'], color: 'var(--info, var(--coral))', icon: 'train', description: 'Intenzitás-driven · 3-6 reps · alacsonyabb volumen · hosszabb pihenő' },
   { id: 'cut-prep', label: 'Pre-cut prep', sub: 'Karbantartás · zsírvesztés előtt', defaultWeeks: 3, split: 'Full body', days: 4, style: 'Maintenance', phaseTemplate: ['MAV', 'MAV', 'MAV'], color: 'var(--warning)', icon: 'fuel', description: 'Volumen-tartás · izom-megőrzés · deficit nélkül' },
   { id: 'recovery', label: 'Recovery', sub: 'Niggle után · újraépítés', defaultWeeks: 4, split: 'Custom', days: 3, style: 'Rehab', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV'], color: 'var(--anchor-accent, var(--cat-preference))', icon: 'anchor', description: 'Isoláció-fokú · alacsony fatigue · niggle-aware substitúció' },
   { id: 'sport', label: 'Sport-specific', sub: 'Volleyball-driven blokk', defaultWeeks: 5, split: 'Upper / Lower / Sport', days: 5, style: 'Conjugate', phaseTemplate: ['MEV', 'MAV', 'MAV', 'MRV', 'Deload'], color: 'var(--cat-tendency)', icon: 'today', description: 'Vertikális teljesítmény · vállstabilitás · plyo-integráció' },
-  { id: 'erohipertrofia', label: 'Erő-Hipertrófia', sub: '6-8 rep · failure', defaultWeeks: 6, split: 'Láb+Plyo / Felső', days: 4, style: 'RP', phaseTemplate: ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'], color: 'var(--brand-glow)', icon: 'train', description: 'Kevés gyakorlat · 6-8 rep RIR 0 · plyo-vezérelt láb + felső' },
+  { id: 'erohipertrofia', label: 'Erő-Hipertrófia', sub: '6-8 rep · failure', defaultWeeks: 6, split: 'Láb+Plyo / Felső', days: 4, style: 'RP', phaseTemplate: ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'], color: 'var(--coral)', icon: 'train', description: 'Kevés gyakorlat · 6-8 rep RIR 0 · plyo-vezérelt láb + felső' },
 ]
 export const SPLITS: SplitOption[] = [
   { label: 'Pull / Push / Legs', days: [4, 5, 6], best: 'hypertrophy' },

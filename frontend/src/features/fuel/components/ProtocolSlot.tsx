@@ -19,7 +19,7 @@ export function ProtocolSlot({
       className="card"
       style={{
         padding: 0,
-        borderColor: slot.primary ? 'var(--border-brand)' : 'var(--border-subtle)',
+        borderColor: slot.primary ? 'var(--line)' : 'var(--border-subtle)',
         background: slot.primary ? 'var(--wash-sage)' : 'var(--surface-1)',
       }}
     >

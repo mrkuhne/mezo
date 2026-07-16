@@ -99,7 +99,7 @@ describe('fromResponse', () => {
     expect(meal.breakdown!.summary).toBeNull()
     expect(meal.breakdown!.dimensions.map(d => d.id)).toEqual(['macro', 'nova', 'context']) // degraded micro dropped
     expect(meal.breakdown!.dimensions[0]).toMatchObject({
-      id: 'macro', color: 'var(--brand-glow)',
+      id: 'macro', color: 'var(--coral)',
       macroRatio: { p: 27, c: 47, f: 26 }, kcalShareOfDay: 27.1,
     })
     const nova = meal.breakdown!.dimensions[1]

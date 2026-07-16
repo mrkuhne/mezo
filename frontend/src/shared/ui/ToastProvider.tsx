@@ -12,7 +12,7 @@ const AUTO_HIDE_MS = 3200
 const KIND_BG: Record<ToastMessage['kind'], string> = {
   error: 'var(--error)',
   success: 'var(--success)',
-  info: 'var(--brand-primary)',
+  info: 'var(--coral)',
 }
 
 const ToastContext = createContext<{ show: (t: ToastMessage) => void }>({

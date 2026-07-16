@@ -90,7 +90,7 @@ export function MesocycleLibraryPage() {
               textAlign: 'center',
               background: 'transparent',
               borderStyle: 'dashed',
-              color: 'var(--brand-glow)',
+              color: 'var(--coral)',
               fontFamily: 'var(--ff-mono)',
               fontSize: 11,
               letterSpacing: '0.14em',

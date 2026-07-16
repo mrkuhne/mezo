@@ -32,7 +32,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
               <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
                 {MUSCLE_LABELS[ex.muscle] ?? ex.muscle}
               </span>
-              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--brand-glow)' }}>
+              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--coral)' }}>
                 {ex.warmupSets} bem · {ex.workingSets} work · {ex.repMin}-{ex.repMax} · RIR {ex.targetRIR}
                 {ex.anchorWeightKg != null ? ` · ${ex.anchorWeightKg} kg` : ' · auto'}
               </span>
@@ -106,9 +106,9 @@ function RecipeStepper({ label, value, min, max, onChange }: {
         <span style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600 }}>{value}</span>
         <div className="row gap-xs">
           <button type="button" aria-label={`${label} csökkentése`} onClick={() => onChange(clamp(value - 1))}
-            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>−</button>
+            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--coral)' }}>−</button>
           <button type="button" aria-label={`${label} növelése`} onClick={() => onChange(clamp(value + 1))}
-            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>+</button>
+            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--coral)' }}>+</button>
         </div>
       </div>
     </div>
@@ -141,9 +141,9 @@ function AnchorStepper({ value, onChange }: {
         </span>
         <div className="row gap-xs">
           <button type="button" aria-label="Kiinduló súly csökkentése" onClick={dec}
-            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>−</button>
+            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--coral)' }}>−</button>
           <button type="button" aria-label="Kiinduló súly növelése" onClick={inc}
-            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>+</button>
+            style={{ width: 22, height: 22, background: 'var(--surface-1)', border: '1px solid var(--border-strong)', color: 'var(--coral)' }}>+</button>
         </div>
       </div>
     </div>

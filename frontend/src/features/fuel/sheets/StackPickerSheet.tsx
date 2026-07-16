@@ -27,7 +27,7 @@ function rowColor(s: SupplementStashItem): string {
   if (s.caffeine) return 'var(--warning)'
   if (s.type === 'stimulant') return 'var(--cat-tendency)'
   if (s.type === 'medication') return 'var(--error)'
-  return 'var(--brand-glow)'
+  return 'var(--coral)'
 }
 
 export function StackPickerSheet({

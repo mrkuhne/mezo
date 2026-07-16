@@ -13,7 +13,7 @@ function colorFor(p: MesoPhase): string {
   return p === 'MEV'
     ? 'var(--text-tertiary)'
     : p === 'MAV'
-      ? 'var(--brand-glow)'
+      ? 'var(--coral)'
       : p === 'MRV'
         ? 'var(--warning)'
         : p === 'Deload'

@@ -136,7 +136,7 @@ export function FuelStackPage() {
           style={{
             padding: 14,
             background: 'var(--wash-sage)',
-            borderColor: 'var(--border-brand)',
+            borderColor: 'var(--line)',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -274,7 +274,7 @@ export function FuelStackPage() {
             right: 24,
             padding: '12px 14px',
             background: 'var(--surface-2)',
-            border: '1px solid var(--border-brand)',
+            border: '1px solid var(--line)',
             boxShadow: '0 12px 24px color-mix(in srgb, #000000 50%, transparent)',
             zIndex: 50,
           }}

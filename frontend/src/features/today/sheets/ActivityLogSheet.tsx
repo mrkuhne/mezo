@@ -66,7 +66,7 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           {quest && phase === 'compose' && (
             <div className="card" style={{ padding: 12, marginBottom: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+                <Icon name="sparkle" size={11} color="var(--coral)" />
                 <div className="col" style={{ flex: 1, gap: 3 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.4 }}>{quest.title}</span>
                   <span className="text-tertiary" style={{ fontSize: 11 }}>+{quest.xp} XP a teljesítésért</span>

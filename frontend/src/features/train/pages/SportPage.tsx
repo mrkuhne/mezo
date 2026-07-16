@@ -149,7 +149,7 @@ export function SportPage() {
               className="row gap-sm mt-md"
               style={{ padding: '8px 10px', background: 'var(--surface-2)', alignItems: 'flex-start' }}
             >
-              <Icon name="sparkle" size={10} color="var(--brand-glow)" />
+              <Icon name="sparkle" size={10} color="var(--coral)" />
               <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
                 <SafeMarkdown text={RPE_EXPLAINER} />
               </span>
@@ -337,7 +337,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
 
       <div className="card mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Heti ritmus · független</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
@@ -403,7 +403,7 @@ function SportCrossloadView({ crossLoad }: { crossLoad: CrossLoadRowData[] }) {
         style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)', marginBottom: 14 }}
       >
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo · keresztrendszer hatások</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>

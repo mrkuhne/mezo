@@ -78,7 +78,7 @@ export function FuelRecipesPage() {
                 key={f.id}
                 onClick={() => setFilter(f.id)}
                 className="rad-16 col flex-1"
-                style={{ alignItems: 'center', padding: '8px 0 7px', background: active ? 'var(--brand-primary)' : 'transparent', boxShadow: active ? '0 8px 18px -8px color-mix(in srgb, var(--sage) 60%, transparent)' : undefined }}
+                style={{ alignItems: 'center', padding: '8px 0 7px', background: active ? 'var(--coral)' : 'transparent', boxShadow: active ? '0 8px 18px -8px color-mix(in srgb, var(--sage) 60%, transparent)' : undefined }}
               >
                 <span style={{ fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase', lineHeight: 1, color: active ? 'var(--text-inverse)' : 'var(--text-secondary)' }}>{f.label}</span>
                 <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, marginTop: 3, color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)' }}>{countFor(recipes, f.id)}</span>

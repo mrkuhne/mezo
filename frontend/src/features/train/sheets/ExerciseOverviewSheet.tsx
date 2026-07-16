@@ -52,7 +52,7 @@ export function ExerciseOverviewSheet({
                 style={{
                   padding: '11px 12px', alignItems: 'center', width: '100%', textAlign: 'left',
                   background: e.id === currentId ? 'color-mix(in srgb, var(--coral) 6%, transparent)' : 'var(--surface-1)',
-                  borderColor: e.id === currentId ? 'var(--border-brand)' : 'var(--border-subtle)',
+                  borderColor: e.id === currentId ? 'var(--line)' : 'var(--border-subtle)',
                 }}
               >
                 <span

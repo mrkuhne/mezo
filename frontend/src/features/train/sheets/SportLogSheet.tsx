@@ -203,7 +203,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
             {isVolleyball
               ? <NumberStep label="Setek · összesen" val={sets} step={1} max={50} onChange={setSets} />
               : <NumberStep label="Körök · összesen" val={rounds} step={1} min={1} max={50} onChange={setRounds} />}
-            <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--brand-glow)" />
+            <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--coral)" />
             {isVolleyball && (
               <ScaleRow
                 label="Váll terhelés"
@@ -218,7 +218,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
           {isVolleyball && (
             <div className="card mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+                <Icon name="sparkle" size={11} color="var(--coral)" />
                 <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-primary)', flex: 1 }}>
                   {shoulder >= 7 && 'Váll terhelés magas — Overhead Press helyett Cable variánssal a következő Push Day-en. '}
                   {rpe >= 7.5 && 'Magas RPE · ma 21:30 előtt vacsorát zárjuk az alvás-impact miatt. '}

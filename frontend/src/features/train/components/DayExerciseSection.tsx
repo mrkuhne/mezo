@@ -32,8 +32,8 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
       style={{
         padding: 0,
         overflow: 'hidden',
-        borderColor: day.current ? 'var(--border-brand)' : 'var(--border-subtle)',
-        background: day.current ? 'color-mix(in srgb, var(--brand-glow) 4%, transparent)' : 'var(--surface-1)',
+        borderColor: day.current ? 'var(--line)' : 'var(--border-subtle)',
+        background: day.current ? 'color-mix(in srgb, var(--coral) 4%, transparent)' : 'var(--surface-1)',
         position: 'relative',
         clipPath: 'polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px)',
       }}
@@ -41,7 +41,7 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
       {day.current && (
         <div
           aria-hidden="true"
-          style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-glow)', zIndex: 1 }}
+          style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--coral)', zIndex: 1 }}
         />
       )}
 
@@ -63,7 +63,7 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
         <div className="col" style={{ width: 36, alignItems: 'flex-start' }}>
           <span
             className="label-mono"
-            style={{ fontSize: 10, color: day.current ? 'var(--brand-glow)' : 'var(--text-tertiary)' }}
+            style={{ fontSize: 10, color: day.current ? 'var(--coral)' : 'var(--text-tertiary)' }}
           >
             {day.day}
           </span>
@@ -121,8 +121,8 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
               width: '100%',
               background: 'transparent',
               borderStyle: 'dashed',
-              borderColor: 'var(--border-brand)',
-              color: 'var(--brand-glow)',
+              borderColor: 'var(--line)',
+              color: 'var(--coral)',
               fontFamily: 'var(--ff-mono)',
               fontSize: 10,
               letterSpacing: '0.14em',

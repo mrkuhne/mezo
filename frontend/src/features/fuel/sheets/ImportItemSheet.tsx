@@ -136,16 +136,16 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
           {phase === 'searching' && (
             <div className="card" style={{
               padding: 24, textAlign: 'center',
-              background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)',
-              borderColor: 'var(--border-brand)',
+              background: 'color-mix(in srgb, var(--coral) 4%, transparent)',
+              borderColor: 'var(--line)',
             }}>
-              <Icon name="search" size={20} color="var(--brand-glow)" />
+              <Icon name="search" size={20} color="var(--coral)" />
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
                 Keresés <SourceBadge source="openfoodfacts" size="lg" />
               </div>
               <div className="np-twinkle" style={{
                 width: 12, height: 12, borderRadius: '50%', margin: '16px auto 0',
-                border: '1.5px solid var(--brand-glow)',
+                border: '1.5px solid var(--coral)',
               }} />
             </div>
           )}
@@ -169,8 +169,8 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                       className="card"
                       style={{
                         padding: '10px 12px', textAlign: 'left', width: '100%', cursor: 'pointer',
-                        background: picked === i ? 'color-mix(in srgb, var(--brand-glow) 6%, transparent)' : 'var(--surface-1)',
-                        borderColor: picked === i ? 'var(--border-brand)' : 'var(--border-subtle)',
+                        background: picked === i ? 'color-mix(in srgb, var(--coral) 6%, transparent)' : 'var(--surface-1)',
+                        borderColor: picked === i ? 'var(--line)' : 'var(--border-subtle)',
                       }}
                     >
                       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
@@ -181,7 +181,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                           </span>
                         </div>
                         <div className="row gap-sm" style={{ alignItems: 'center', flexShrink: 0 }}>
-                          <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
+                          <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>
                             {r.kcal ?? '—'} kcal
                           </span>
                           {r.nova != null && <NovaDot nova={r.nova} />}
@@ -195,8 +195,8 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
               {picked != null && results[picked] && (
                 <div className="card" style={{
                   padding: 14, marginBottom: 12,
-                  background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)',
-                  borderColor: 'var(--border-brand)',
+                  background: 'color-mix(in srgb, var(--coral) 4%, transparent)',
+                  borderColor: 'var(--line)',
                 }}>
                   <Eyebrow brand>Polcra kerül · /{results[picked].per}{results[picked].unit}</Eyebrow>
                   <div className="card" style={{ padding: '8px 10px', margin: '10px 0' }}>
@@ -222,7 +222,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                     </select>
                   </div>
                   <div className="card row" style={{ padding: 10, justifyContent: 'space-between', background: 'var(--surface-1)' }}>
-                    <StatCell label={`kcal / ${results[picked].per}${results[picked].unit}`} val={String(results[picked].kcal ?? '—')} sub="" color="var(--brand-glow)" />
+                    <StatCell label={`kcal / ${results[picked].per}${results[picked].unit}`} val={String(results[picked].kcal ?? '—')} sub="" color="var(--coral)" />
                     <StatCell label="P" val={(results[picked].proteinG ?? '—') + 'g'} sub="" color="var(--cat-physiology)" />
                     <StatCell label="C" val={(results[picked].carbsG ?? '—') + 'g'} sub="" color="var(--warning)" />
                     <StatCell label="F" val={(results[picked].fatG ?? '—') + 'g'} sub="" color="var(--cat-preference)" />

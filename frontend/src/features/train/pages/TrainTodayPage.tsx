@@ -406,7 +406,7 @@ export function TrainTodayPage() {
       <div style={{ padding: '0 24px 32px' }}>
         <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)' }}>
           <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-            <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+            <Icon name="sparkle" size={12} color="var(--coral)" />
             <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', flex: 1 }}>
               A gym a mesociklus szerint, a sport (röpi/cross/TRX) recurring · független. A két ütemterv együtt-mozgatja a
               pacing-et, alvás-onsetet és a vacsora-időt.

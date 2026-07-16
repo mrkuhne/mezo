@@ -45,11 +45,11 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
           {b.summary && (
             <div className="card" style={{
               padding: 12, marginTop: 14,
-              background: 'color-mix(in srgb, var(--brand-glow) 5%, transparent)',
-              borderColor: 'var(--border-brand)',
+              background: 'color-mix(in srgb, var(--coral) 5%, transparent)',
+              borderColor: 'var(--line)',
             }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+                <Icon name="sparkle" size={12} color="var(--coral)" />
                 <div className="col flex-1">
                   <Eyebrow brand>Mezo · olvasat</Eyebrow>
                   <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
