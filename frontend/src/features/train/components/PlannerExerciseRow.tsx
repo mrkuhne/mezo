@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · PlannerExerciseRow — one exercise row in the planner's program
 // review (step 3). Name + muscle + set/rep/RIR scheme, optional niggle warning,
-// settings + remove (✕) affordances. The row is rendered as a SortableList item,
+// remove (✕) affordance. The row is rendered as a SortableList item,
 // which supplies the real drag grip + ▲▼ reorder controls.
 // Ported from prototype meso-planner.jsx PlannerExerciseRow.
 // ============================================================
@@ -30,9 +30,6 @@ export function PlannerExerciseRow({ ex, onRemove }: { ex: GymExercise; onRemove
           )}
         </div>
         <div className="row gap-xs" style={{ flexShrink: 0 }}>
-          <button type="button" className="chip" aria-label="Beállítások" style={{ padding: '5px 7px' }}>
-            <Icon name="settings" size={10} />
-          </button>
           <button type="button" onClick={onRemove} className="chip" aria-label="Eltávolítás" style={{ padding: '5px 7px' }}>
             <Icon name="x" size={10} />
           </button>
