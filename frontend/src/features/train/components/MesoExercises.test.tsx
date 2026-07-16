@@ -29,12 +29,19 @@ async function renderExercisesView() {
   await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
 }
 
-test('Gyakorlatok view shows the weekly intro and day sections', async () => {
+test('Gyakorlatok view shows the intro, day tabs and the current day content', async () => {
   await renderExercisesView()
   expect(screen.getByText('Heti gyakorlat-terv')).toBeInTheDocument()
   expect(screen.getByText('Heti szet-volumen')).toBeInTheDocument()
-  // The current Csü Pull day renders its type.
-  expect(screen.getByText('Pull')).toBeInTheDocument()
+  // current day (Csü · Pull) is the default active tab → its content shows
+  expect(screen.getByRole('button', { name: 'Csü · Pull' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+})
+
+test('tab switch shows another day', async () => {
+  await renderExercisesView()
+  await userEvent.click(screen.getByRole('button', { name: 'Hét · Push' }))
+  expect(screen.getByText('Barbell Bench Press')).toBeInTheDocument()
 })
 
 test('+ Gyakorlat hozzáadása opens the exercise picker', async () => {
@@ -134,4 +141,33 @@ test('reordering a day exercise via ▲ persists the new order (PUT) in real mod
   await userEvent.click(await screen.findByRole('button', { name: 'Lat Pulldown feljebb' }))
   await waitFor(() => expect(puts).toHaveLength(1))
   expect(puts[0].body.map((e) => e.name)).toEqual(['Lat Pulldown', 'Chest Supported Row'])
+})
+
+test('recipe stepper change persists the day list (PUT) in real mode', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const puts: { body: { name: string; workingSets: number }[] }[] = []
+  const MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000aa'
+  const DAY_ID = 'c6f3a0e2-0000-4000-8000-0000000000bb'
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([{
+      id: MESO_ID, title: 'Valódi blokk', shortTitle: 'Valódi', status: 'active',
+      startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6, currentWeek: 1,
+      split: 'PPL', style: 'RP', phaseCurve: ['MEV'],
+      days: [{ id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 1, current: true,
+        exercises: [{ id: 'e-1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2,
+          workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' }] }],
+    }])),
+    http.put(`${API_BASE}/api/train/mesocycles/:id/days/:dayId/exercises`, async ({ request }) => {
+      puts.push({ body: (await request.json()) as { name: string; workingSets: number }[] })
+      return HttpResponse.json({ id: DAY_ID, day: 'Csü', type: 'Pull', muscle: 'back', exerciseCount: 1, exercises: [] })
+    }),
+  )
+  const router = createMemoryRouter(routes, { initialEntries: [`/train/mesocycles/${MESO_ID}`] })
+  render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument())
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlatok' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'Chest Supported Row · recept' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Working növelése' }))
+  await waitFor(() => expect(puts).toHaveLength(1))
+  expect(puts[0].body[0].workingSets).toBe(5)
 })

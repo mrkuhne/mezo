@@ -1,12 +1,12 @@
 // ============================================================
 // Mezo · MesoExercises (builder · Gyakorlatok) — the weekly exercise editor.
 // Seeds LOCAL day-state from meso.days (deep-ish copy so edits never mutate the
-// module const), renders an intro card with live totals, one collapsible
-// DayExerciseSection per day, and a footer set-volume summary. Add/remove/pick
-// all mutate the local state only (no persistence in Phase 1). The exercise
-// picker (ExercisePickerSheet) opens per-day and appends to that day's list.
-// Reorder is wired via the shared SortableList primitive (grip drag + ▲▼);
-// each reorder mutates local state and fires the same full-list PUT as add/remove.
+// module const), renders an intro card with live totals, the shared
+// day-tabbed MesoDayTabsEditor (switch days via tabs, tap a row for its recipe),
+// and a footer set-volume summary. Add/remove/change/reorder all mutate the
+// local state only (Phase-1 UI) and fire a background full-list PUT when the day
+// carries a real row id. The exercise picker (ExercisePickerSheet) opens for the
+// active day and appends to that day's list.
 // Ported from prototype mesocycles.jsx MesoExercises.
 // ============================================================
 import { useState } from 'react'
@@ -15,7 +15,7 @@ import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
-import { DayExerciseSection } from '@/features/train/components/DayExerciseSection'
+import { MesoDayTabsEditor } from '@/features/train/components/MesoDayTabsEditor'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
 // Deep-ish clone of the meso days so local edits never mutate the data-layer
@@ -27,7 +27,7 @@ function seedDays(days: MesoDay[]): MesoDay[] {
 // Sensible recipe defaults when promoting a library pick into a planned exercise.
 function libraryToGymExercise(item: ExerciseLibraryItem): MesoDay['exercises'][number] {
   return {
-    id: `${item.id}-${Date.now()}`,
+    id: `${item.id}-${crypto.randomUUID()}`,
     name: item.name,
     muscle: item.muscle,
     warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0,
@@ -54,11 +54,6 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
   }
   // The day (by `day` key) whose picker is open, or null when closed.
   const [pickerDay, setPickerDay] = useState<string | null>(null)
-  const [expandedDay, setExpandedDay] = useState<string | null>(() => {
-    const seeded = meso.days ?? []
-    const current = seeded.find((d) => d.current)
-    return current?.day ?? seeded.find((d) => d.exerciseCount > 0)?.day ?? seeded[0]?.day ?? null
-  })
 
   // Planned / archived mesos have no day plan yet.
   if (!meso.days || meso.days.length === 0) {
@@ -75,7 +70,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
 
   const introBody =
     `**${totalExercises} gyakorlat · ${trainingDays} edzésnap.** ` +
-    'Tappold a napot kibontáshoz · plusz/cserélj/törölj gyakorlatot · drag-rendezés.'
+    'Válts napot a tabokkal · tap a gyakorlaton a recepthez · plusz/törlés/drag-rendezés.'
 
   const removeExercise = (dayKey: string, exId: string) => {
     const next = days.map((d) => {
@@ -139,21 +134,14 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
           </div>
         </div>
 
-        {/* Per-day sections */}
-        <div className="col gap-sm">
-          {days.map((d) => (
-            <DayExerciseSection
-              key={d.day}
-              day={d}
-              expanded={expandedDay === d.day}
-              onToggle={() => setExpandedDay((cur) => (cur === d.day ? null : d.day))}
-              onAdd={() => setPickerDay(d.day)}
-              onRemoveExercise={(exId) => removeExercise(d.day, exId)}
-              onChangeExercise={(exId, patch) => updateExercise(d.day, exId, patch)}
-              onReorderExercises={(ids) => reorderExercises(d.day, ids)}
-            />
-          ))}
-        </div>
+        {/* Day-tabbed exercise + recipe editor */}
+        <MesoDayTabsEditor
+          days={days}
+          onAddClick={setPickerDay}
+          onRemove={removeExercise}
+          onChange={updateExercise}
+          onReorder={reorderExercises}
+        />
       </div>
 
       {/* Weekly volume summary */}
@@ -173,6 +161,10 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
 
       {pickerDay && (
         <ExercisePickerSheet
+          dayLabel={(() => {
+            const d = days.find((x) => x.day === pickerDay)
+            return d ? `${d.day} · ${d.type}` : undefined
+          })()}
           onClose={() => setPickerDay(null)}
           onPick={(item) => addExercise(pickerDay, item)}
         />
