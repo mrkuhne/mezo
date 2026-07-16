@@ -4,6 +4,7 @@ import { useGoalCreation, useWeight, useFeasibilityPreview, useBiometricProfile 
 import { Icon, type IconName } from '@/shared/ui/Icon'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { huMonthDay } from '@/shared/lib/dates'
+import { hu1 } from '@/shared/lib/huNum'
 import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/data/me/goalApi'
 
 type Trajectory = 'cut' | 'bulk' | 'maintain'
@@ -362,10 +363,9 @@ function Step1({
   const numStyle = { width: '100%', fontSize: 14, color: 'var(--text-primary)' } as const
   const dateStyle = { width: '100%', fontSize: 13, color: 'var(--text-primary)', colorScheme: 'dark' } as const
 
-  // HU decimals use a comma. The weeks/kg summary mirrors the backend's derivation
-  // basis (Δkg over the window in calendar weeks) so the panel narrates the same
-  // quantities the pace is built from.
-  const hu1 = (n: number) => n.toFixed(1).replace('.', ',')
+  // The weeks/kg summary mirrors the backend's derivation basis (Δkg over the
+  // window in calendar weeks) so the panel narrates the same quantities the pace
+  // is built from. HU decimals via the shared hu1 (comma, trailing ",0" stripped).
   const deltaKg = Math.abs(startWeight - targetWeight)
   const weeks = Math.max(
     1,
@@ -455,7 +455,6 @@ function Step1({
             preview={preview}
             deltaKg={deltaKg}
             weeks={weeks}
-            hu1={hu1}
             onAccept={d => setTargetDateIso(d)}
           />
         ) : null}
@@ -485,13 +484,11 @@ function FeasibilityPanel({
   preview,
   deltaKg,
   weeks,
-  hu1,
   onAccept,
 }: {
   preview: FeasibilityPreviewResponse
   deltaKg: number
   weeks: number
-  hu1: (n: number) => string
   onAccept: (dateIso: string) => void
 }) {
   const ok = preview.withinSafeBand

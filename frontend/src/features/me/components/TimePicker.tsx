@@ -7,9 +7,9 @@ const SELECT_STYLE = {
   fontSize: 16,
 } as const
 
-// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
-// Smaller variant (9px/.04em) matching the row-label idiom used alongside time
-// anchors elsewhere in Me (see EditGoalSheet's Napi ritmus row labels).
+// Deliberate SMALLER variant (9px/.04em) of the shared SECTION_LABEL idiom — kept
+// LOCAL (not hoisted to @/shared/ui/sectionLabel) because it matches the row-label
+// idiom used alongside time anchors elsewhere in Me (see EditGoalSheet's Napi ritmus row labels).
 const SECTION_LABEL: React.CSSProperties = {
   fontSize: 9,
   fontWeight: 800,

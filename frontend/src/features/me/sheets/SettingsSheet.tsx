@@ -7,16 +7,8 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { Toggle } from '@/shared/ui/Toggle'
+import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { useTheme } from '@/app/ThemeProvider'
-
-// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
-const SECTION_LABEL: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: 'var(--faint)',
-}
 
 export function SettingsSheet({ onClose }: { onClose: () => void }) {
   const { theme, toggle } = useTheme()

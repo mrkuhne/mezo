@@ -336,6 +336,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - `Cta.tsx` / `Chip.tsx` / `ToolChip.tsx` / `ToolChipRow.tsx` — buttons & chips.
 - `ProgressBar.tsx` / `ScoreRing.tsx` / `RetaPhaseBar.tsx` / `Toggle.tsx` — indicators/controls.
 - `QuickStat.tsx` / `StatCell.tsx` / `RefTag.tsx` — domain-flavored badges/stats kept shared (multi-feature or domain-free). `NovaDot`/`SourceBadge` were relocated to `frontend/src/features/fuel/components/` — they import `@/data/{nova,pantrySources}` and are used only by Fuel, so they are feature-coupled, not shared primitives.
+- `sectionLabel.ts` — `SECTION_LABEL`, the Napiv section-label caption style const (11px / 800 / `.1em` / uppercase / `--faint`); a pure `CSSProperties` object (no JSX) hoisted out of 8 identical me-sheet locals in `mezo-mifi` S8. Domain-free, so it lives here rather than in a feature.
 
 **App shell** (`frontend/src/app/`)
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell.

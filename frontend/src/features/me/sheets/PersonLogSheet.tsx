@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
+import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { affectColor } from '@/data/me/people'
 import type { Affect, MentionLogInput, PersonEntry } from '@/data/types'
 
@@ -10,15 +11,6 @@ const TONES: [Affect, string][] = [
   ['mixed', 'Vegyes'],
   ['negative', 'Nehéz'],
 ]
-
-// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
-const SECTION_LABEL: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: 'var(--faint)',
-}
 
 export function PersonLogSheet({
   onClose,

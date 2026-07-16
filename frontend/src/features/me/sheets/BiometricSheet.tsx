@@ -4,15 +4,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { useBiometricActions } from '@/data/hooks'
 import type { BiometricProfileResponse, BiometricProfileUpsertRequest } from '@/data/me/biometricProfileApi'
 import { ACTIVITY_LEVELS, type ActivityLevel } from '@/features/me/logic/biometricFields'
-
-// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
-const SECTION_LABEL: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: 'var(--faint)',
-}
+import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 
 // Biometric editor sheet (G6, mezo-06n). Opened from the Profile Biometria card
 // (both the populated card and the empty-state prompt). Edits the single

@@ -20,7 +20,7 @@ export function GoalMiniCard() {
       <span className="sr-only">Cél oldal megnyitása — </span>
       <div className="row1">
         <div className="t">🎯 {TRAJECTORY_LABEL[goalResponse.trajectory]} · {goalResponse.title}</div>
-        <div className="pct">{Math.round(p)}% · {hu1(remaining)} kg hátra</div>
+        <div className="pct">{total !== 0 ? `${Math.round(p)}% · ${hu1(remaining)} kg hátra` : 'tartás'}</div>
       </div>
       {total !== 0 && (
         <>
