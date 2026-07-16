@@ -94,7 +94,7 @@ export function SportPage() {
           <GhostState lines={3} message="A statisztikáid az első logolt session után jelennek meg." />
         ) : (
         <div
-          className="card notch-12"
+          className="card"
           style={{
             padding: 18,
             background:
@@ -169,7 +169,7 @@ export function SportPage() {
               type="button"
               aria-pressed={active}
               onClick={() => setView(v.id)}
-              className="flex-1 notch-4"
+              className="flex-1 rad-12"
               style={{
                 padding: '10px',
                 background: active ? 'var(--wash-sport)' : 'var(--surface-1)',
@@ -238,7 +238,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span className="eyebrow">Heti ritmus · {schedule.weeklyHours}h</span>
         {onEdit && (
-          <button type="button" className="chip notch-4" onClick={onEdit} style={{ padding: '4px 8px', fontSize: 9 }}>
+          <button type="button" className="chip" onClick={onEdit} style={{ padding: '4px 8px', fontSize: 9 }}>
             Szerkesztés
           </button>
         )}
@@ -335,7 +335,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
         })}
       </div>
 
-      <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
+      <div className="card mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <Icon name="sparkle" size={12} color="var(--brand-glow)" />
           <div className="col flex-1">
@@ -399,7 +399,7 @@ function SportCrossloadView({ crossLoad }: { crossLoad: CrossLoadRowData[] }) {
   return (
     <div style={{ padding: '8px 24px 16px' }}>
       <div
-        className="card notch-4"
+        className="card"
         style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)', marginBottom: 14 }}
       >
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>

@@ -479,7 +479,7 @@ function ActiveWorkoutSession({
         {niggleActive && W.niggleWarning && !niggleConfirmed && (
           <div style={{ padding: '16px 24px' }}>
             <div
-              className="card notch-12"
+              className="card"
               style={{
                 padding: 16,
                 background: AMBER_TINT_6,
@@ -501,7 +501,7 @@ function ActiveWorkoutSession({
               <div className="row gap-sm mt-md">
                 <button
                   type="button"
-                  className="cta-ghost notch-4"
+                  className="cta-ghost"
                   style={{ fontSize: 10 }}
                   onClick={() => setNiggleConfirmed(true)}
                 >
@@ -771,7 +771,7 @@ function ActiveWorkoutSession({
               <div className="col gap-sm" style={{ marginTop: 16 }}>
                 <button
                   type="button"
-                  className="cta-primary notch-8"
+                  className="cta-primary"
                   style={{ padding: '12px 18px', fontSize: 14 }}
                   onClick={() => {
                     writeExtraSetToTemplate(addSetPrompt.exerciseId)
@@ -782,7 +782,7 @@ function ActiveWorkoutSession({
                 </button>
                 <button
                   type="button"
-                  className="cta-ghost notch-4"
+                  className="cta-ghost"
                   style={{ padding: 12, fontSize: 13 }}
                   onClick={close}
                 >
@@ -1123,7 +1123,7 @@ function NoteEditSheet({
           <div className="col gap-sm" style={{ marginTop: 16 }}>
             <button
               type="button"
-              className="cta-primary notch-8"
+              className="cta-primary"
               style={{ padding: '12px 18px', fontSize: 14 }}
               onClick={() => {
                 onSave(text.trim())
@@ -1132,7 +1132,7 @@ function NoteEditSheet({
             >
               Mentés
             </button>
-            <button type="button" className="cta-ghost notch-4" style={{ padding: 12, fontSize: 13 }} onClick={close}>
+            <button type="button" className="cta-ghost" style={{ padding: 12, fontSize: 13 }} onClick={close}>
               Mégse
             </button>
           </div>

@@ -16,7 +16,7 @@ export function ProtocolSlot({
 }) {
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{
         padding: 0,
         borderColor: slot.primary ? 'var(--border-brand)' : 'var(--border-subtle)',

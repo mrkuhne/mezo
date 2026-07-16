@@ -7,7 +7,7 @@ export function MealMatchRow({ match }: { match: MealMatch }) {
   const r = useRecipes().recipes.find(rec => rec.id === match.recipeId)
   if (!r) return null
   return (
-    <div className="card notch-4 row" style={{ padding: '10px 12px', alignItems: 'center', gap: 10 }}>
+    <div className="card row" style={{ padding: '10px 12px', alignItems: 'center', gap: 10 }}>
       <div
         className="col"
         style={{

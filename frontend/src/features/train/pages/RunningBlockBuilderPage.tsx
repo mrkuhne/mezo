@@ -86,7 +86,7 @@ export function RunningBlockBuilderPage() {
           Ez a futóterv nem található.
         </p>
         <div className="mt-lg">
-          <CtaGhost className="notch-4" onClick={backToList}>
+          <CtaGhost onClick={backToList}>
             ← Futás
           </CtaGhost>
         </div>
@@ -162,18 +162,18 @@ export function RunningBlockBuilderPage() {
           {Array.from({ length: draft.weeks || 1 }, (_, i) => i + 1).map((w) => {
             const active = w === clampedWeek
             return (
-              <button key={w} type="button" aria-pressed={active} onClick={() => setSelectedWeek(w)} className="notch-4"
+              <button key={w} type="button" aria-pressed={active} onClick={() => setSelectedWeek(w)} className="rad-12"
                 style={{ minWidth: 38, padding: '8px 10px', background: active ? 'color-mix(in srgb, var(--sky) 8%, transparent)' : 'var(--surface-1)', border: `1px solid ${active ? 'color-mix(in srgb, var(--sky) 40%, transparent)' : 'var(--border-subtle)'}`, color: active ? RUN : 'var(--text-secondary)', fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em' }}>
                 {w}
               </button>
             )
           })}
           {(draft.weeks || 1) > 1 && (
-            <button type="button" aria-label="Utolsó hét eltávolítása" onClick={removeWeek} className="notch-4"
+            <button type="button" aria-label="Utolsó hét eltávolítása" onClick={removeWeek} className="rad-12"
               style={{ minWidth: 38, padding: '8px 10px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>−</button>
           )}
           {(draft.weeks || 1) < 8 && (
-            <button type="button" aria-label="Hét hozzáadása" onClick={addWeekToDraft} className="notch-4"
+            <button type="button" aria-label="Hét hozzáadása" onClick={addWeekToDraft} className="rad-12"
               style={{ minWidth: 38, padding: '8px 10px', background: 'transparent', border: '1px dashed color-mix(in srgb, var(--sky) 45%, transparent)', color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 14 }}>＋</button>
           )}
         </div>
@@ -191,12 +191,12 @@ export function RunningBlockBuilderPage() {
       {/* Single status CTA */}
       <div className="col gap-sm" style={{ padding: '16px 24px 32px' }}>
         {block.status === 'planned' && (
-          <CtaPrimary className="notch-8" onClick={() => { activateRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
+          <CtaPrimary onClick={() => { activateRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
             <Icon name="check" size={16} /> Aktiválás · {block.startDate}
           </CtaPrimary>
         )}
         {block.status === 'active' && (
-          <CtaGhost className="notch-4" style={{ padding: 12, borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
+          <CtaGhost style={{ padding: 12, borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
             onClick={() => { closeRunningBlock(block.id); backToList() }} disabled={runningMutationPending}>
             Lezárás
           </CtaGhost>
@@ -211,9 +211,9 @@ function OverflowMenu({ onDuplicate, onDelete }: { onDuplicate: () => void; onDe
   return (
     <div style={{ position: 'relative' }}>
       <button type="button" aria-label="További műveletek" aria-expanded={open} onClick={() => setOpen((o) => !o)}
-        className="notch-4" style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 16 }}>⋯</button>
+        className="rad-12" style={{ width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 16 }}>⋯</button>
       {open && (
-        <div className="card notch-4" style={{ position: 'absolute', right: 0, top: 40, zIndex: 20, minWidth: 150, background: 'var(--surface-3)', border: '1px solid var(--border-strong)' }}>
+        <div className="card" style={{ position: 'absolute', right: 0, top: 40, zIndex: 20, minWidth: 150, background: 'var(--surface-3)', border: '1px solid var(--border-strong)' }}>
           <button type="button" onClick={() => { setOpen(false); onDuplicate() }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', fontSize: 13, color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)' }}>Duplikálás</button>
           <button type="button" onClick={() => { setOpen(false); onDelete() }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '11px 14px', fontSize: 13, color: 'var(--error)' }}>Törlés</button>
         </div>

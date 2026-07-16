@@ -3,7 +3,7 @@
 // Thin TrainSection shell ⇒ this view owns its own .pghead-np (over
 // `Edzés · Futás`, title `Intervallum`) and a 3-button view-switcher:
 // E heti edzés · Napló · Tervek. Mirrors SportPage's DNA (own header, hero
-// .card.notch-12 with left accent strip + radial glow + <Display>, ghost
+// .card with left accent strip + radial glow + <Display>, ghost
 // states) using the Napiv --tag-run/--wash-run sky vocabulary (running
 // accent) and a stag-run FUTÁS type tag on session rows/cards.
 // Ported from the approved mockups futas-app-faithful.html (week landing)
@@ -97,7 +97,7 @@ export function RunningPage() {
               type="button"
               aria-pressed={active}
               onClick={() => setView(v.id)}
-              className="flex-1 notch-4"
+              className="flex-1 rad-12"
               style={{
                 padding: '10px',
                 background: active ? 'var(--wash-run)' : 'var(--surface-1)',
@@ -154,7 +154,7 @@ function RunWeekView({ block, pending, onLog }: { block: RunningBlockResponse | 
     <div style={{ padding: '0 24px 16px' }}>
       {/* Hero */}
       <div
-        className="card notch-12"
+        className="card"
         style={{
           padding: 18,
           background:
@@ -317,7 +317,7 @@ function RunLogCard({ session }: { session: RunSessionLogResponse }) {
   if (session.hrRecoverySec != null) chips.push(`${session.hrRecoverySec}mp pulzus`)
 
   return (
-    <div className="card notch-4" style={{ padding: '13px 14px' }}>
+    <div className="card" style={{ padding: '13px 14px' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="row" style={{ alignItems: 'center', gap: 10 }}>
           <span className="stag stag-run">FUTÁS</span>
@@ -418,7 +418,7 @@ function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; on
       tabIndex={0}
       onClick={() => onOpen(block.id)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(block.id) } }}
-      className="card notch-12"
+      className="card"
       style={{
         padding: 16,
         position: 'relative',
@@ -462,7 +462,7 @@ function RunCompactBlockCard({ block, onOpen }: { block: RunningBlockResponse; o
       tabIndex={0}
       onClick={() => onOpen(block.id)}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(block.id) } }}
-      className="card notch-4"
+      className="card"
       style={{ padding: 14, opacity: isArchived ? 0.7 : 1, cursor: 'pointer' }}
     >
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>

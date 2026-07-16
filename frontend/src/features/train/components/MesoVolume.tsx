@@ -59,7 +59,7 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
             aria-expanded={showHistory}
             aria-label={showHistory ? 'Recompute napló bezárása' : 'Recompute napló kibontása'}
             onClick={() => setShowHistory((v) => !v)}
-            className="card notch-4"
+            className="card"
             style={{
               padding: '10px 14px',
               width: '100%',
@@ -99,7 +99,7 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
 
           {showHistory && (
             <div
-              className="card notch-4 mt-sm"
+              className="card mt-sm"
               style={{ padding: 14, background: 'var(--surface-2)', borderColor: 'var(--border-brand)' }}
             >
               <Eyebrow brand>Utolsó futás · {recompute.lastRun}</Eyebrow>
@@ -147,7 +147,7 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
       {/* Provenance intro + per-muscle bars */}
       <div style={{ padding: '12px 24px' }}>
         <div
-          className="card notch-4"
+          className="card"
           style={{
             padding: 12,
             background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)',
@@ -175,7 +175,7 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
       {/* AI suggestion */}
       <div style={{ padding: '16px 24px' }}>
         <div
-          className="card notch-4"
+          className="card"
           style={{ padding: 14, background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)' }}
         >
           <div className="row gap-sm">

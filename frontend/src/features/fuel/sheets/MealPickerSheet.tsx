@@ -32,7 +32,7 @@ function perServing(r: Recipe) {
 
 function RecipeRow({ r, onPick }: { r: Recipe; onPick: () => void }) {
   return (
-    <div className="card notch-4" style={{ padding: '11px 12px', borderLeft: '2px solid var(--brand-glow)' }}>
+    <div className="card" style={{ padding: '11px 12px', borderLeft: '2px solid var(--brand-glow)' }}>
       <div className="row" style={{ alignItems: 'center', gap: 8 }}>
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
@@ -43,7 +43,7 @@ function RecipeRow({ r, onPick }: { r: Recipe; onPick: () => void }) {
             {r.ingredients.length} hozzávaló · adag
           </span>
         </div>
-        <button onClick={onPick} aria-label={r.name + ' hozzáadása'} className="notch-4"
+        <button onClick={onPick} aria-label={r.name + ' hozzáadása'} className="rad-12"
           style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--brand-glow)' }}>
           <Icon name="plus" size={14} />
         </button>
@@ -57,7 +57,7 @@ function PantryRow({ ing, onPick }: { ing: Ingredient; onPick: () => void }) {
   const { categoryMeta } = usePantry()
   const catColor = categoryMeta[ing.category]?.color ?? 'var(--text-secondary)'
   return (
-    <div className="card notch-4" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor }}>
+    <div className="card" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor }}>
       <div className="row" style={{ alignItems: 'center', gap: 8 }}>
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--text-primary)' }}>{ing.name}</span>
@@ -65,7 +65,7 @@ function PantryRow({ ing, onPick }: { ing: Ingredient; onPick: () => void }) {
             {ing.brand}{ing.nova ? ` · NOVA ${ing.nova}` : ''}
           </span>
         </div>
-        <button onClick={onPick} aria-label={ing.name + ' hozzáadása'} className="notch-4"
+        <button onClick={onPick} aria-label={ing.name + ' hozzáadása'} className="rad-12"
           style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--brand-glow)' }}>
           <Icon name="plus" size={14} />
         </button>

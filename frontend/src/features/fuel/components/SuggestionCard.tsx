@@ -8,7 +8,7 @@ import { Icon } from '@/shared/ui/Icon'
 export function SuggestionCard({ sug, onAdd }: { sug: PantrySuggestion; onAdd?: () => void }) {
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{
         padding: 12,
         background: 'var(--surface-1)',

@@ -9,7 +9,7 @@ import { Icon } from '@/shared/ui/Icon'
 export function RecipeLogsList({ logs, baselineScore }: { logs?: RecipeLog[]; baselineScore: number }) {
   if (!logs || logs.length === 0) {
     return (
-      <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
+      <div className="card" style={{ padding: 20, textAlign: 'center' }}>
         <span className="text-tertiary" style={{ fontSize: 12 }}>Még nem logoltad ezt a receptet ezen a héten.</span>
         <p className="text-tertiary mt-sm" style={{ fontSize: 11, lineHeight: 1.5 }}>
           Amint logolod a mai étkezésekbe, a Mezo kontextusra futtatja és látod itt a tényleges score-okat.
@@ -24,7 +24,7 @@ export function RecipeLogsList({ logs, baselineScore }: { logs?: RecipeLog[]; ba
         // the fallback for mock logs whose baseline is still the pending null → 0.
         const delta = baselineScore > 0 && l.score ? l.score - baselineScore : l.delta
         return (
-        <div key={i} className="card notch-4" style={{ padding: '10px 12px' }}>
+        <div key={i} className="card" style={{ padding: '10px 12px' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="col">
               <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{l.slot}</span>
@@ -61,7 +61,7 @@ export function RecipeLogsList({ logs, baselineScore }: { logs?: RecipeLog[]; ba
         )
       })}
 
-      <div className="card notch-4" style={{ padding: 10, background: 'var(--surface-1)', borderStyle: 'dashed', marginTop: 6 }}>
+      <div className="card" style={{ padding: 10, background: 'var(--surface-1)', borderStyle: 'dashed', marginTop: 6 }}>
         <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>
           Csak a mai naptári logok látszanak itt. Heti / havi nézet az Insights tabon.
         </span>

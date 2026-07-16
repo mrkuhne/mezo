@@ -29,7 +29,7 @@ export function RunLogSheet({ ctx, onClose, onSave }: {
               <span className="eyebrow" style={{ color: 'var(--sky)' }}>Futás log · {ctx.label}</span>
               <div id="run-log-title" style={{ marginTop: 4 }}><Display size="md">Hogy ment?</Display></div>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -45,8 +45,8 @@ export function RunLogSheet({ ctx, onClose, onSave }: {
             </div>
           </div>
           <div className="row gap-sm mt-lg">
-            <CtaGhost className="notch-4 flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="notch-4 flex-1" disabled={saving} onClick={() => {
+            <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
+            <CtaPrimary className="flex-1" disabled={saving} onClick={() => {
               const body: RunSessionLogRequest = {
                 blockId: ctx.blockId, weekNumber: ctx.weekNumber, sessionKey: ctx.sessionKey, date: isoToday,
                 completedRounds: ctx.isSprint ? rounds : null, rpeActual: rpe, hrRecoverySec: hr,

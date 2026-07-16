@@ -8,7 +8,7 @@ import { ProgressBar } from '@/shared/ui/ProgressBar'
 
 export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scorePct: number; confidence: number }) {
   return (
-    <div className="card notch-12" style={{ padding: 16 }}>
+    <div className="card" style={{ padding: 16 }}>
       <div className="row" style={{ gap: 16, alignItems: 'center' }}>
         {/* Ring */}
         <div style={{ flexShrink: 0 }}>

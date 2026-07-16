@@ -10,7 +10,7 @@ import { Icon } from '@/shared/ui/Icon'
 
 export function PlannerExerciseRow({ ex, onRemove }: { ex: GymExercise; onRemove: () => void }) {
   return (
-    <div className="card notch-4" style={{ padding: '10px 12px', background: 'var(--surface-2)' }}>
+    <div className="card" style={{ padding: '10px 12px', background: 'var(--surface-2)' }}>
       <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.3 }}>{ex.name}</span>

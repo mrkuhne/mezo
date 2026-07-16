@@ -96,7 +96,7 @@ export function StackPickerSheet({
                 <button
                   key={s.id}
                   onClick={() => onToggle(s.id)}
-                  className="card notch-4 row"
+                  className="card row"
                   style={{
                     padding: '10px 12px',
                     width: '100%',

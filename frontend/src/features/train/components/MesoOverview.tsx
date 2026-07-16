@@ -24,7 +24,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
     <div className="col">
       {/* Phase curve hero */}
       <div style={{ padding: '12px 24px' }}>
-        <div className="card notch-12" style={{ padding: 18 }}>
+        <div className="card" style={{ padding: 18 }}>
           <div
             className="row gap-sm flex-wrap"
             style={{ justifyContent: 'space-between', alignItems: 'center' }}
@@ -81,7 +81,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
                 type="button"
                 aria-label={`${d.type} · ${d.day}`}
                 onClick={() => setSelectedDay(d)}
-                className="card notch-4 row"
+                className="card row"
                 style={{
                   padding: 12,
                   alignItems: 'center',

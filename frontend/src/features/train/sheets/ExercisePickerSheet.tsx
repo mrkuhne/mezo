@@ -57,14 +57,14 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
                 Mit pakolunk be?
               </div>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
 
           {/* Search */}
           <div
-            className="card notch-4"
+            className="card"
             style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}
           >
             <Icon name="search" size={14} color="var(--text-tertiary)" />
@@ -86,7 +86,7 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
                 key={m}
                 onClick={() => setFilter(m)}
                 aria-pressed={filter === m}
-                className={cn('chip', 'notch-4', filter === m && 'brand')}
+                className={cn('chip', filter === m && 'brand')}
                 style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
               >
                 {FILTER_LABELS[m] ?? MUSCLE_LABELS[m] ?? m}
@@ -103,7 +103,7 @@ export function ExercisePickerSheet({ onClose, onPick }: ExercisePickerSheetProp
                     onPick(e)
                     close()
                   }}
-                  className="card notch-4 row"
+                  className="card row"
                   style={{ padding: 12, alignItems: 'center', textAlign: 'left', width: '100%' }}
                 >
                   <div className="col flex-1">

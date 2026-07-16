@@ -5,7 +5,7 @@ import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 
 // Direction A (kamra-mockup-v3-A): the design-system .meal-card anatomy applied to a pantry item —
 // a 44px stock slot, Antonio name + source/brand meta, a macro line (food) or protocol (supp), and a
-// right-aligned kcal/dose. Notched-chamfer (notch-12) card; supplement/stim get a left inset tint.
+// right-aligned kcal/dose. Rounded (rad-20) card; supplement/stim get a left inset tint.
 const KIND_TINT: Record<string, string> = {
   food: 'var(--sage)',
   supplement: 'var(--info)',
@@ -27,7 +27,7 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
   return (
     <button
       onClick={() => onOpen(item)}
-      className="notch-12 row"
+      className="rad-20 row"
       style={{
         padding: 16,
         textAlign: 'left',

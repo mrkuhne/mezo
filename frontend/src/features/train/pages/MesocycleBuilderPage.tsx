@@ -40,7 +40,7 @@ export function MesocycleBuilderPage() {
           Ez a mesociklus nem található.
         </p>
         <div className="mt-lg">
-          <CtaGhost className="notch-4" onClick={backToLibrary}>
+          <CtaGhost onClick={backToLibrary}>
             ← Mesociklusok
           </CtaGhost>
         </div>
@@ -91,7 +91,7 @@ export function MesocycleBuilderPage() {
               type="button"
               aria-pressed={active}
               onClick={() => setView(v.id)}
-              className="flex-1 notch-4"
+              className="flex-1 rad-12"
               style={{
                 padding: '10px',
                 background: active ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)' : 'var(--surface-1)',
@@ -119,11 +119,10 @@ export function MesocycleBuilderPage() {
         {meso.status === 'active' && (
           <div className="col gap-sm">
             {/* "Heti terv másolása" stays inert — out of T1 scope (copy-week lands later). */}
-            <CtaGhost className="notch-4" style={{ padding: 12 }}>
+            <CtaGhost style={{ padding: 12 }}>
               Heti terv másolása
             </CtaGhost>
             <CtaGhost
-              className="notch-4"
               style={{ padding: 12, borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
               onClick={() => closeMesocycle(meso.id)}
               disabled={mesoMutationPending}
@@ -134,7 +133,6 @@ export function MesocycleBuilderPage() {
         )}
         {meso.status === 'planned' && (
           <CtaPrimary
-            className="notch-8"
             onClick={() => activateMesocycle(meso.id)}
             disabled={mesoMutationPending}
           >

@@ -57,7 +57,7 @@ export function ReplanSheet({
                 {phase === 'applied' ? 'Mai timeline újraszámolva' : 'Válassz scenario-t · látod a cascade-et'}
               </span>
             </div>
-            <button className="chip notch-4" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -72,7 +72,7 @@ export function ReplanSheet({
                     <button
                       key={s.id}
                       onClick={() => setScenarioId(s.id)}
-                      className="card notch-4 row"
+                      className="card row"
                       style={{
                         padding: '10px 12px',
                         width: '100%',
@@ -112,7 +112,7 @@ export function ReplanSheet({
 
               {/* Cascade preview */}
               <div
-                className="card notch-12"
+                className="card"
                 style={{
                   padding: 14,
                   background:
@@ -186,10 +186,10 @@ export function ReplanSheet({
 
               {/* Actions */}
               <div className="row gap-sm mt-lg">
-                <button className="cta-ghost notch-4 flex-1" onClick={close}>
+                <button className="cta-ghost flex-1" onClick={close}>
                   Mégse · marad a régi
                 </button>
-                <button className="cta-primary notch-4 flex-1" onClick={() => setPhase('applied')}>
+                <button className="cta-primary flex-1" onClick={() => setPhase('applied')}>
                   <Icon name="check" size={14} /> Alkalmazom
                 </button>
               </div>
@@ -199,7 +199,7 @@ export function ReplanSheet({
           {phase === 'applied' && (
             <>
               <div
-                className="card notch-12"
+                className="card"
                 style={{
                   padding: 18,
                   background: 'color-mix(in srgb, var(--brand-glow) 6%, transparent)',
@@ -231,7 +231,7 @@ export function ReplanSheet({
                 </div>
               </div>
 
-              <button className="cta-primary notch-4 mt-lg" onClick={close}>
+              <button className="cta-primary mt-lg" onClick={close}>
                 <Icon name="check" size={14} /> Megnézem
               </button>
             </>

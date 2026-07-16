@@ -72,12 +72,12 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
           <div className="row gap-sm" style={{ alignItems: 'center' }}>
             <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{day.type}</span>
             {day.current && (
-              <span className="chip brand notch-4" style={{ fontSize: 9, padding: '2px 6px' }}>
+              <span className="chip brand" style={{ fontSize: 9, padding: '2px 6px' }}>
                 MA
               </span>
             )}
             {!isTraining && (
-              <span className="chip notch-4" style={{ fontSize: 9, padding: '2px 6px', color: 'var(--text-tertiary)' }}>
+              <span className="chip" style={{ fontSize: 9, padding: '2px 6px', color: 'var(--text-tertiary)' }}>
                 off
               </span>
             )}
@@ -115,7 +115,7 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
           {/* Add-exercise CTA */}
           <button
             onClick={onAdd}
-            className="card notch-4 mt-md"
+            className="card mt-md"
             style={{
               padding: 12,
               width: '100%',
@@ -148,7 +148,7 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
               {day.note || 'Pihenőnap'}
             </span>
             {/* Edzéssé alakít — inert in Phase 1 (visual affordance only) */}
-            <button className="chip notch-4" style={{ fontSize: 9, padding: '4px 8px' }}>
+            <button className="chip" style={{ fontSize: 9, padding: '4px 8px' }}>
               <Icon name="plus" size={10} /> Edzéssé alakít
             </button>
           </div>

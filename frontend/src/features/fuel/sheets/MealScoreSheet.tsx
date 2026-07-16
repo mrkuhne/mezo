@@ -33,7 +33,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                 {meal.slot}
               </span>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -43,7 +43,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
 
           {/* Mezo summary — deterministic v0 ships summary:null (P8 prose), the card hides honestly */}
           {b.summary && (
-            <div className="card notch-4" style={{
+            <div className="card" style={{
               padding: 12, marginTop: 14,
               background: 'color-mix(in srgb, var(--brand-glow) 5%, transparent)',
               borderColor: 'var(--border-brand)',
@@ -78,7 +78,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                 <Eyebrow className="text-warning">Lehetne jobb</Eyebrow>
                 <Eyebrow className="text-tertiary">{b.improve.length}</Eyebrow>
               </div>
-              <div className="card notch-4" style={{ padding: 4 }}>
+              <div className="card" style={{ padding: 4 }}>
                 {b.improve.map((it, i) => (
                   <div key={i} className="row gap-sm" style={{
                     padding: '10px 12px',

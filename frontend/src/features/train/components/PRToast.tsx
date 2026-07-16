@@ -13,7 +13,7 @@ export interface PRState {
 export function PRToast({ pr }: { pr: PRState }) {
   return (
     <div
-      className="toast notch-12"
+      className="toast rad-20"
       role="status"
       style={{
         background: 'linear-gradient(135deg, #FF7A55, #FF5B36)',

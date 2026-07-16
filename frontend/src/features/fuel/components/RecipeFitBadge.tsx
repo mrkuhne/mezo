@@ -17,7 +17,7 @@ export function RecipeFitBadge({ score, size = 'card' }: RecipeFitBadgeProps) {
   const pending = score == null
   return (
     <div
-      className="notch-8"
+      className="rad-16"
       style={{
         position: 'absolute', top: isHero ? 10 : 9, right: isHero ? 11 : 10, zIndex: 4,
         minWidth: isHero ? 44 : 40, padding: isHero ? '6px 6px 5px' : '5px 5px 4px', textAlign: 'center',

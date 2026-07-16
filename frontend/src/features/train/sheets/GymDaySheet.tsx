@@ -50,7 +50,7 @@ export function GymDaySheet({ day, completedWorkoutId, onClose }: GymDaySheetPro
                 {day.exerciseCount} gyakorlat · {totalSets} szet · {MUSCLE_LABELS[day.muscle] ?? day.muscle}
               </span>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -82,7 +82,7 @@ export function GymDaySheet({ day, completedWorkoutId, onClose }: GymDaySheetPro
               <Icon name="train" size={14} /> Indítsuk · most
             </CtaPrimary>
           ) : (
-            <div className="card notch-4" style={{ padding: 12, textAlign: 'center', background: 'var(--surface-1)' }}>
+            <div className="card" style={{ padding: 12, textAlign: 'center', background: 'var(--surface-1)' }}>
               <span className="text-tertiary" style={{ fontSize: 11 }}>
                 Nézet-mód · csak a mai napot lehet indítani
               </span>

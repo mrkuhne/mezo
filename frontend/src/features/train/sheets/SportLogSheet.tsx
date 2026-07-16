@@ -52,7 +52,7 @@ export function NumberStep({
           {val}
         </span>
       </div>
-      <div className="stepper notch-4">
+      <div className="stepper rad-12">
         <button
           type="button"
           aria-label={`${label} csökkentése`}
@@ -163,7 +163,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
                 <Display size="md">Hogy ment?</Display>
               </div>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -178,7 +178,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setKind(k)}
-                  className="flex-1 notch-4"
+                  className="flex-1 rad-12"
                   style={{
                     padding: '10px',
                     background: active ? 'color-mix(in srgb, var(--rose) 8%, transparent)' : 'var(--surface-1)',
@@ -216,7 +216,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
 
           {/* Mezo observation (volleyball-specific copy) */}
           {isVolleyball && (
-            <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
+            <div className="card mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
                 <Icon name="sparkle" size={11} color="var(--brand-glow)" />
                 <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-primary)', flex: 1 }}>
@@ -231,11 +231,11 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
-            <CtaGhost className="notch-4 flex-1" onClick={close}>
+            <CtaGhost className="flex-1" onClick={close}>
               Mégse
             </CtaGhost>
             <CtaPrimary
-              className="notch-4 flex-1"
+              className="flex-1"
               disabled={saving}
               onClick={() => {
                 // date/time default to "now" server-side — the sheet captures effort only.

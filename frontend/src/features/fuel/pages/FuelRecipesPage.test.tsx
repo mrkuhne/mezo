@@ -69,7 +69,7 @@ test('tapping a card navigates to the detail route', async () => {
   const firstName = screen.getAllByText(/.+/).find(() => true)
   // click the first recipe card by its visible name (Antonio overlay) — use the
   // first card button.
-  const cards = screen.getAllByRole('button').filter(b => b.className.includes('notch-16'))
+  const cards = screen.getAllByRole('button').filter(b => b.className.includes('rad-24'))
   await userEvent.click(cards[0])
   expect(screen.getByTestId('location').textContent).toMatch(/^\/fuel\/recipes\/.+/)
   void firstName

@@ -78,7 +78,7 @@ export function FuelMedicationPage() {
       {/* Medication card — name · current dose, route · cadence, the cycle strip, the phase note. */}
       <div style={{ padding: '0 24px 8px' }}>
         <div
-          className="card notch-10"
+          className="card"
           style={{ padding: '18px 18px 16px', borderLeft: '2px solid var(--error)' }}
         >
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
@@ -113,7 +113,7 @@ export function FuelMedicationPage() {
         </div>
 
         {doses.length === 0 ? (
-          <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
+          <div className="card" style={{ padding: 20, textAlign: 'center' }}>
             <span className="text-tertiary" style={{ fontSize: 12 }}>Még nincs rögzített beadás.</span>
           </div>
         ) : (
@@ -121,7 +121,7 @@ export function FuelMedicationPage() {
             {doses.map(dose => (
               <li
                 key={dose.id}
-                className="card notch-8 row"
+                className="card row"
                 style={{ padding: '14px 16px', justifyContent: 'space-between', alignItems: 'center' }}
               >
                 <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>

@@ -31,7 +31,7 @@ export function RecipeIngredientRow({ item }: { item: RecipeIngredientItem }) {
   }
 
   return (
-    <div className="card notch-4" style={{
+    <div className="card" style={{
       padding: '10px 12px',
       borderLeft: '2px solid ' + catColor,
     }}>

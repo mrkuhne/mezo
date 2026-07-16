@@ -125,7 +125,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
       <div style={{ padding: '12px 24px' }}>
         {/* Intro card */}
         <div
-          className="card notch-4"
+          className="card"
           style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)', marginBottom: 14 }}
         >
           <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
@@ -158,7 +158,7 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
 
       {/* Weekly volume summary */}
       <div style={{ padding: '16px 24px' }}>
-        <div className="card notch-4" style={{ padding: 14 }}>
+        <div className="card" style={{ padding: 14 }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <Eyebrow>Heti szet-volumen</Eyebrow>
             <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>

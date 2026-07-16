@@ -64,7 +64,7 @@ function SessionCard({ session, structure, weekNumber, onStructure, children }: 
   children: React.ReactNode
 }) {
   return (
-    <div className="card notch-4 col" style={{ padding: 12, gap: 9, position: 'relative' }}>
+    <div className="card col" style={{ padding: 12, gap: 9, position: 'relative' }}>
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: RUN }} />
       <span className="label-mono" style={{ color: RUN }}>{session.label}</span>
 

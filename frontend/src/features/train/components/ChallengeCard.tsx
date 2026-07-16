@@ -50,7 +50,7 @@ export function ChallengeCard({
 
   return (
     <div
-      className="card notch-12"
+      className="card"
       style={{
         padding: 16,
         background: rewardSkin
@@ -204,7 +204,7 @@ export function ChallengeCard({
               type="button"
               onClick={onToggle}
               aria-pressed={accepted}
-              className="flex-1 notch-4"
+              className="flex-1 rad-12"
               style={{
                 padding: '12px',
                 background: accepted ? 'var(--brand-primary)' : 'transparent',

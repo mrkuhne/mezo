@@ -27,10 +27,10 @@ const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, 
 function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
   return (
     <div className="row gap-xs" style={{ justifyContent: 'flex-end' }}>
-      <button className="chip notch-4" aria-label="Gyakorlat szerkesztése" onClick={onEdit} style={{ padding: '4px 8px' }}>
+      <button className="chip" aria-label="Gyakorlat szerkesztése" onClick={onEdit} style={{ padding: '4px 8px' }}>
         <Icon name="pencil" size={12} />
       </button>
-      <button className="chip notch-4" aria-label="Gyakorlat törlése" onClick={onDelete} style={{ padding: '4px 8px' }}>
+      <button className="chip" aria-label="Gyakorlat törlése" onClick={onDelete} style={{ padding: '4px 8px' }}>
         <Icon name="trash" size={12} color="var(--warning)" />
       </button>
     </div>
@@ -42,7 +42,7 @@ function RecordRow({ record, rank, onOpen }: {
 }) {
   const r = record
   return (
-    <button className="card notch-4 row" onClick={onOpen}
+    <button className="card row" onClick={onOpen}
       style={{ padding: 12, alignItems: 'center', textAlign: 'left', width: '100%' }}>
       {rank != null && (
         <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)', width: 22, flexShrink: 0 }}>
@@ -63,7 +63,7 @@ function RecordRow({ record, rank, onOpen }: {
           {r.bestSet ? 'LEGJOBB SZETT' : 'ÖSSZES REP'}
         </span>
       </div>
-      <span className={cn('chip', 'notch-4', r.bestE1rm && 'brand')} style={{ fontSize: 9, marginLeft: 12, flexShrink: 0 }}>
+      <span className={cn('chip', r.bestE1rm && 'brand')} style={{ fontSize: 9, marginLeft: 12, flexShrink: 0 }}>
         {r.bestE1rm ? `e1RM ${num(r.bestE1rm.value)}` : r.type.toUpperCase()}
       </span>
     </button>
@@ -148,7 +148,7 @@ export function ExercisesPage() {
 
       <div style={{ padding: '0 24px 8px' }}>
         {/* Search */}
-        <div className="card notch-4" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div className="card" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <Icon name="search" size={14} color="var(--text-tertiary)" />
           <input
             placeholder="Keresés · pl. bench, squat, row"
@@ -164,7 +164,7 @@ export function ExercisesPage() {
               key={m}
               onClick={() => setFilter(m)}
               aria-pressed={filter === m}
-              className={cn('chip', 'notch-4', filter === m && 'brand')}
+              className={cn('chip', filter === m && 'brand')}
               style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
             >
               {FILTER_LABELS[m] ?? MUSCLE_LABELS[m] ?? m}

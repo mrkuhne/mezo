@@ -169,14 +169,14 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
             </div>
 
             {lines.length === 0 && (
-              <div className="card notch-4" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
+              <div className="card" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
                 <span className="text-tertiary" style={{ fontSize: 11 }}>Még nincs tétel. Adj hozzá Receptből vagy a Kamrából.</span>
               </div>
             )}
 
             <div className="col gap-sm">
               {resolved.map(({ l, meta }) => (
-                <div key={l.key} className="card notch-4" style={{ padding: '11px 12px', borderLeft: '2px solid ' + (meta.tag === 'recept' ? 'var(--brand-glow)' : PANTRY_ACCENT) }}>
+                <div key={l.key} className="card" style={{ padding: '11px 12px', borderLeft: '2px solid ' + (meta.tag === 'recept' ? 'var(--brand-glow)' : PANTRY_ACCENT) }}>
                   <div className="row" style={{ alignItems: 'center', gap: 9 }}>
                     <div className="row gap-xs flex-1" style={{ minWidth: 0, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{meta.name}</span>
@@ -201,13 +201,13 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
               ))}
             </div>
 
-            <button onClick={() => setPickerOpen(true)} className="notch-4"
+            <button onClick={() => setPickerOpen(true)} className="rad-12"
               style={{ width: '100%', padding: 11, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--border-brand)' }}>
               <Icon name="plus" size={14} /> Receptből / Kamrából hozzáad
             </button>
 
             {/* Live total + daily context */}
-            <div className="notch-4" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--border-brand)' }}>
+            <div className="rad-12" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--border-brand)' }}>
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9 }}>
                 <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--brand-glow)' }}>EZ AZ ÉTKEZÉS</span>
                 <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>{lines.length} tétel</span>
@@ -226,8 +226,8 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
             </div>
 
             <div className="row gap-sm" style={{ marginTop: 14 }}>
-              <button className="cta-ghost notch-4" onClick={close} style={{ flex: 1 }}>Mégse</button>
-              <button className="cta-primary notch-4" disabled={!canSave} onClick={() => save(close)} style={{ flex: 1.8 }}>
+              <button className="cta-ghost" onClick={close} style={{ flex: 1 }}>Mégse</button>
+              <button className="cta-primary" disabled={!canSave} onClick={() => save(close)} style={{ flex: 1.8 }}>
                 <Icon name="check" size={15} /> Logolás a mai naphoz
               </button>
             </div>

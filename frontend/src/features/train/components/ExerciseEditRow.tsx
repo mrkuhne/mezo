@@ -23,7 +23,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
   const [showEditor, setShowEditor] = useState(false)
 
   return (
-    <div className="card notch-4" style={{ padding: 0, background: 'var(--surface-2)' }}>
+    <div className="card" style={{ padding: 0, background: 'var(--surface-2)' }}>
       <div style={{ padding: '10px 12px' }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <div className="col flex-1" style={{ minWidth: 0 }}>
@@ -49,7 +49,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
               onClick={() => setShowEditor((v) => !v)}
               aria-expanded={showEditor}
               aria-label={showEditor ? 'Szerkesztő bezárása' : 'Szerkesztő'}
-              className="chip notch-4"
+              className="chip"
               style={{ padding: '5px 7px' }}
             >
               <Icon name="settings" size={10} />
@@ -57,7 +57,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
             <button
               onClick={onRemove}
               aria-label={`${ex.name} törlése`}
-              className="chip notch-4"
+              className="chip"
               style={{ padding: '5px 7px' }}
             >
               <Icon name="x" size={10} />

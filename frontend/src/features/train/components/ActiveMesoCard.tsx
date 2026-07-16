@@ -29,7 +29,7 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="card notch-12"
+      className="card"
       style={{
         padding: 0,
         width: '100%',

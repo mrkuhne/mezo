@@ -17,7 +17,7 @@ interface GymExRowProps {
 export function GymExRow({ ex, idx }: GymExRowProps) {
   const typeColor = ex.type === 'compound' ? 'var(--brand-glow)' : 'var(--cat-preference)'
   return (
-    <div className="card notch-4" style={{ padding: '12px 14px', borderLeft: `2px solid ${typeColor}` }}>
+    <div className="card" style={{ padding: '12px 14px', borderLeft: `2px solid ${typeColor}` }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>

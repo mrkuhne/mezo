@@ -5,7 +5,7 @@ import type { WeeklySupplementRow } from '@/data/types'
 // fuel-plan.jsx WeeklySupplementGrid (402–460)
 export function WeeklySupplementGrid({ rows }: { rows: WeeklySupplementRow[] }) {
   return (
-    <div className="card notch-4" style={{ padding: 12 }}>
+    <div className="card" style={{ padding: 12 }}>
       <div className="row" style={{ marginBottom: 8 }}>
         <span style={{ width: 100 }} />
         <div className="row flex-1" style={{ gap: 4 }}>

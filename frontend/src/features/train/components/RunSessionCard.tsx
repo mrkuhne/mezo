@@ -76,7 +76,7 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
 
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{ padding: 0, overflow: 'hidden', position: 'relative' }}
     >
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: RUN }} />

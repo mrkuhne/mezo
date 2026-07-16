@@ -173,7 +173,7 @@ export function TrainTodayPage() {
                 {gymEyebrow}
                 {gymInProgress && (
                   <span
-                    className="chip notch-4"
+                    className="chip"
                     style={{
                       marginLeft: 8, fontSize: 9, color: 'var(--warning)',
                       borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)',
@@ -199,7 +199,7 @@ export function TrainTodayPage() {
                 <button
                   type="button"
                   onClick={() => navigate(`/train/review/${completedTodayWorkout.id}`)}
-                  className="row notch-4 mt-md"
+                  className="row rad-12 mt-md"
                   style={{
                     width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
                     background: 'rgba(52, 211, 153, 0.08)',
@@ -244,7 +244,7 @@ export function TrainTodayPage() {
                     </span>
                   </div>
                   <span
-                    className="chip notch-4"
+                    className="chip"
                     style={{
                       fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
                       color: logged ? 'var(--success)' : 'var(--tag-sport)',
@@ -258,7 +258,7 @@ export function TrainTodayPage() {
                   <button
                     type="button"
                     onClick={() => setSportLogSport(k)}
-                    className="row notch-4 mt-md"
+                    className="row rad-12 mt-md"
                     style={{
                       width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
                       background: 'rgba(52, 211, 153, 0.08)',
@@ -275,7 +275,7 @@ export function TrainTodayPage() {
                   </button>
                 ) : (
                   <CtaGhost
-                    className="notch-4 mt-md"
+                    className="rad-12 mt-md"
                     onClick={() => setSportLogSport(k)}
                     style={{ borderColor: 'color-mix(in srgb, var(--tag-sport) 40%, transparent)', color: 'var(--tag-sport)' }}
                   >
@@ -303,7 +303,7 @@ export function TrainTodayPage() {
                   </span>
                 </div>
                 <span
-                  className="chip notch-4"
+                  className="chip"
                   style={{
                     fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
                     color: rl ? 'var(--success)' : 'var(--tag-run)',
@@ -324,7 +324,7 @@ export function TrainTodayPage() {
                     isSprint: s.kind === 'sprint',
                     defaultRounds: s.rounds ?? undefined,
                   })}
-                  className="row notch-4 mt-md"
+                  className="row rad-12 mt-md"
                   style={{
                     width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
                     background: 'rgba(52, 211, 153, 0.08)',
@@ -337,7 +337,7 @@ export function TrainTodayPage() {
                 </button>
               ) : (
                 <CtaGhost
-                  className="notch-4 mt-md"
+                  className="rad-12 mt-md"
                   onClick={() => setRunLogCtx({
                     blockId: activeRunningBlock!.id,
                     weekNumber: activeRunningBlock!.currentWeek,
@@ -359,7 +359,7 @@ export function TrainTodayPage() {
       {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
       {!today?.gym && !today?.sport.length && todayRuns.length === 0 && (
         <div style={{ padding: '0 24px 12px' }}>
-          <div className="card notch-12" style={{ padding: 18 }}>
+          <div className="card" style={{ padding: 18 }}>
             <span className="eyebrow">Ma pihenőnap</span>
             <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               Nincs tervezett edzés mára — a heti rended lent találod.
@@ -404,7 +404,7 @@ export function TrainTodayPage() {
 
       {/* Note */}
       <div style={{ padding: '0 24px 32px' }}>
-        <div className="card notch-4" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)' }}>
+        <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)' }}>
           <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
             <Icon name="sparkle" size={12} color="var(--brand-glow)" />
             <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', flex: 1 }}>

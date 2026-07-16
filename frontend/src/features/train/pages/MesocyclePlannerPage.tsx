@@ -227,7 +227,7 @@ export function MesocyclePlannerPage() {
             {step > 0 && (
               <button
                 type="button"
-                className="cta-ghost notch-4 flex-1"
+                className="cta-ghost flex-1"
                 style={{ padding: 14 }}
                 onClick={() => setStep(step - 1)}
               >
@@ -236,7 +236,7 @@ export function MesocyclePlannerPage() {
             )}
             <button
               type="button"
-              className="cta-primary notch-8"
+              className="cta-primary"
               disabled={!canNext}
               style={{
                 flex: step > 0 ? 2 : 1,
@@ -254,7 +254,7 @@ export function MesocyclePlannerPage() {
           <div className="col gap-sm">
             <button
               type="button"
-              className="cta-primary notch-8"
+              className="cta-primary"
               onClick={() => saveMesocycle('planned')}
               disabled={mesoMutationPending || !program}
               style={{ padding: 14, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
@@ -264,7 +264,7 @@ export function MesocyclePlannerPage() {
             </button>
             <button
               type="button"
-              className="cta-ghost notch-4"
+              className="cta-ghost"
               style={{ padding: 12, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
               onClick={() => saveMesocycle('active')}
               disabled={mesoMutationPending || !program}
@@ -294,7 +294,7 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
               key={g.id}
               type="button"
               onClick={() => onSelect(g)}
-              className="card notch-8"
+              className="card"
               style={{
                 padding: 14,
                 textAlign: 'left',
@@ -417,7 +417,7 @@ function Step1Length({
       <div className="col gap-md">
         <div className="col gap-sm">
           <span className="label-mono">Mesociklus neve</span>
-          <div className="card notch-4" style={{ padding: 10 }}>
+          <div className="card" style={{ padding: 10 }}>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -431,7 +431,7 @@ function Step1Length({
         <div className="row gap-sm">
           <div className="col gap-sm flex-1">
             <span className="label-mono">Kezdés</span>
-            <div className="card notch-4 row" style={{ padding: '6px 12px', alignItems: 'center' }}>
+            <div className="card row" style={{ padding: '6px 12px', alignItems: 'center' }}>
               <input
                 type="date"
                 value={startDateIso}
@@ -443,7 +443,7 @@ function Step1Length({
           </div>
           <div className="col gap-sm flex-1">
             <span className="label-mono">Vége</span>
-            <div className="card notch-4 row" style={{ padding: '10px 12px', alignItems: 'center', opacity: 0.6 }}>
+            <div className="card row" style={{ padding: '10px 12px', alignItems: 'center', opacity: 0.6 }}>
               <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>{addWeeks(startDate, weeks)}</span>
             </div>
           </div>
@@ -467,7 +467,7 @@ function Step1Length({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setWeeks(w)}
-                className="flex-1 notch-4"
+                className="flex-1 rad-12"
                 style={{
                   padding: '10px 0',
                   background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
@@ -494,7 +494,7 @@ function Step1Length({
             <Icon name="sparkle" size={10} /> Mezo reset
           </button>
         </div>
-        <div className="card notch-12" style={{ padding: 14 }}>
+        <div className="card" style={{ padding: 14 }}>
           <div className="row gap-xs" style={{ height: 70, alignItems: 'flex-end' }}>
             {phaseCurve.map((p, i) => (
               <div key={i} className="col flex-1" style={{ alignItems: 'center', gap: 4 }}>
@@ -524,7 +524,7 @@ function Step1Length({
       </div>
 
       {/* Mezo hint */}
-      <div className="card notch-4 mt-lg" style={{ padding: 12, background: BRAND_TINT }}>
+      <div className="card mt-lg" style={{ padding: 12, background: BRAND_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <Icon name="sparkle" size={12} color="var(--brand-glow)" />
           <div className="col flex-1">
@@ -571,7 +571,7 @@ function Step2Split({
               key={s.label}
               type="button"
               onClick={() => setSplit(s)}
-              className="card notch-4"
+              className="card"
               style={{
                 padding: 14,
                 textAlign: 'left',
@@ -610,7 +610,7 @@ function Step2Split({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setDays(d)}
-                className="flex-1 notch-4"
+                className="flex-1 rad-12"
                 style={{
                   padding: '12px 0',
                   background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
@@ -649,7 +649,7 @@ function Step2Split({
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleDay(d)}
-                className="flex-1 notch-4"
+                className="flex-1 rad-12"
                 style={{
                   padding: '10px 0',
                   background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
@@ -675,7 +675,7 @@ function Step2Split({
       </div>
 
       {/* Exercise auto-fill option */}
-      <div className="card notch-4 mt-xl" style={{ padding: 14, background: BRAND_TINT }}>
+      <div className="card mt-xl" style={{ padding: 14, background: BRAND_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <Icon name="sparkle" size={12} color="var(--brand-glow)" />
           <div className="col flex-1">
@@ -808,7 +808,7 @@ function Step3Program({
     <div style={{ padding: '8px 24px' }}>
       {/* Summary header */}
       <div
-        className="card notch-12"
+        className="card"
         style={{
           padding: 14,
           background: 'linear-gradient(180deg, color-mix(in srgb, var(--brand-glow) 6%, transparent) 0%, var(--surface-1) 100%)',
@@ -838,7 +838,7 @@ function Step3Program({
       </div>
 
       {/* AI hint */}
-      <div className="card notch-4" style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)', marginBottom: 14 }}>
+      <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)', marginBottom: 14 }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <Icon name="sparkle" size={12} color="var(--brand-glow)" />
           <div className="col flex-1">

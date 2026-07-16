@@ -84,7 +84,7 @@ export function MesocycleLibraryPage() {
           <button
             type="button"
             onClick={openPlanner}
-            className="card notch-4"
+            className="card"
             style={{
               padding: 16,
               textAlign: 'center',

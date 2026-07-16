@@ -51,7 +51,7 @@ function byBasis(v: number, basis: ServingBasis, servings: number) {
 
 function MacroHeroCell({ value, label, accent }: { value: number; label: string; accent?: boolean }) {
   return (
-    <div className="notch-8" style={{ textAlign: 'center', padding: '10px 2px', background: 'var(--surface-glass)' }}>
+    <div className="rad-16" style={{ textAlign: 'center', padding: '10px 2px', background: 'var(--surface-glass)' }}>
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1, color: accent ? 'var(--success)' : 'var(--text-primary)' }}>{value}</div>
       <div className="label-mono" style={{ fontSize: 8, letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginTop: 5 }}>{label}</div>
     </div>
@@ -84,11 +84,11 @@ export function RecipeDetailPage() {
       <div style={{ padding: '0 24px' }}>
         <button
           onClick={() => navigate('/fuel/recipes')}
-          className="notch-8"
+          className="rad-16"
           style={{ width: 32, height: 32, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1, marginBottom: 14 }}
           aria-label="Vissza"
         >‹</button>
-        <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
+        <div className="card" style={{ padding: 20, textAlign: 'center' }}>
           <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen recept.</span>
         </div>
       </div>
@@ -111,7 +111,7 @@ export function RecipeDetailPage() {
       <div className="row" style={{ alignItems: 'center', justifyContent: 'space-between', padding: '6px 0 12px' }}>
         <button
           onClick={() => navigate('/fuel/recipes')}
-          className="notch-8"
+          className="rad-16"
           style={{ width: 34, height: 34, display: 'grid', placeItems: 'center', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1 }}
           aria-label="Vissza"
         >‹</button>
@@ -122,7 +122,7 @@ export function RecipeDetailPage() {
       {/* Hero — image band on top (no text overlay); name/meta live on the card
           surface below it (var(--ink)/var(--faint) — Napiv de-darkening, mezo-8141:
           the retired dark-media text tokens). */}
-      <div className="notch-16" style={{ position: 'relative', marginBottom: 14, overflow: 'hidden', background: 'var(--surface-1)' }}>
+      <div className="rad-24" style={{ position: 'relative', marginBottom: 14, overflow: 'hidden', background: 'var(--surface-1)' }}>
         <div style={{ position: 'relative', height: 150, background: 'linear-gradient(135deg,#16323a,#0f2027)' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg,rgba(255,255,255,0.025) 0 16px,rgba(255,255,255,0) 16px 32px)' }} />
           <div className="row gap-xs" style={{ position: 'absolute', top: 11, left: 12, zIndex: 3, alignItems: 'center' }}>
@@ -160,7 +160,7 @@ export function RecipeDetailPage() {
           { v: String(recipe.novaDominant), l: 'NOVA', c: NOVA_COLOR[recipe.novaDominant] },
           { v: String(recipe.ingredients.length), l: 'Hozzáv.', c: undefined },
         ].map(m => (
-          <div key={m.l} className="notch-4" style={{ textAlign: 'center', padding: '9px 2px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}>
+          <div key={m.l} className="rad-12" style={{ textAlign: 'center', padding: '9px 2px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}>
             <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, fontWeight: 600, color: m.c ?? 'var(--text-primary)' }}>{m.v}</div>
             <div className="label-mono" style={{ fontSize: 7, letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginTop: 3 }}>{m.l}</div>
           </div>
@@ -177,7 +177,7 @@ export function RecipeDetailPage() {
         {recipe.ingredients.map((line, i) => {
           const src = sourceOf(line.refId)
           return (
-            <div key={i} className="card notch-4" style={{ padding: '10px 12px', borderLeft: '2px solid ' + catColor(ingredients.find(ii => ii.id === line.refId)?.category ?? '') }}>
+            <div key={i} className="card" style={{ padding: '10px 12px', borderLeft: '2px solid ' + catColor(ingredients.find(ii => ii.id === line.refId)?.category ?? '') }}>
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div className="col flex-1" style={{ minWidth: 0 }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{line.name}</span>
@@ -211,7 +211,7 @@ export function RecipeDetailPage() {
       {/* Mezo-fit reasoning deferral — the NUMERIC fit is live (deterministic v0, mezo-yta);
           only the prose/Reta-phase reasoning layer remains Phase-3 (P8). */}
       <div
-        className="notch-12"
+        className="rad-20"
         style={{ margin: '16px 0', padding: '18px 16px', textAlign: 'center', background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px dashed var(--border-brand)' }}
       >
         <div className="np-twinkle" style={{ color: 'var(--brand-glow)', display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
@@ -227,17 +227,17 @@ export function RecipeDetailPage() {
       </div>
 
       {/* Actions */}
-      <button className="cta-primary notch-4" onClick={() => setLogOpen(true)} style={{ marginBottom: 9 }}>
+      <button className="cta-primary" onClick={() => setLogOpen(true)} style={{ marginBottom: 9 }}>
         <Icon name="plus" size={14} /> Mai étkezéshez
       </button>
       <div className="row gap-sm">
-        <button className="cta-ghost notch-4" onClick={toggleStar} style={{ flex: 1 }}>
+        <button className="cta-ghost" onClick={toggleStar} style={{ flex: 1 }}>
           <Icon name="bookmark" size={12} /> {recipe.starred ? 'Csillag le' : 'Csillag'}
         </button>
-        <button className="cta-ghost notch-4" onClick={() => navigate(`/fuel/recipes/${recipe.id}/edit`)} style={{ flex: 1.4 }}>
+        <button className="cta-ghost" onClick={() => navigate(`/fuel/recipes/${recipe.id}/edit`)} style={{ flex: 1.4 }}>
           <Icon name="settings" size={12} /> Szerkesztés
         </button>
-        <button className="cta-ghost notch-4" onClick={del} style={{ flex: 1, color: 'var(--error)', borderColor: 'rgba(244,63,94,0.25)' }} aria-label="Törlés">
+        <button className="cta-ghost" onClick={del} style={{ flex: 1, color: 'var(--error)', borderColor: 'rgba(244,63,94,0.25)' }} aria-label="Törlés">
           <Icon name="x" size={12} /> Törlés
         </button>
       </div>

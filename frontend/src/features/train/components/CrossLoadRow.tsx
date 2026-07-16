@@ -18,7 +18,7 @@ export function CrossLoadRow({ item }: CrossLoadRowProps) {
   const sys = SYSTEM_LABELS[item.system] ?? { ...FALLBACK, label: item.system }
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{
         padding: 14,
         borderColor: item.warning ? 'color-mix(in srgb, var(--warning) 30%, transparent)' : 'var(--border-subtle)',

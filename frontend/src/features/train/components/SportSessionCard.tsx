@@ -24,7 +24,7 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
         : 'var(--text-secondary)'
 
   return (
-    <div className="card notch-4" style={{ padding: 14 }}>
+    <div className="card" style={{ padding: 14 }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div className="col flex-1">
           <span className="row gap-sm" style={{ alignItems: 'center' }}>

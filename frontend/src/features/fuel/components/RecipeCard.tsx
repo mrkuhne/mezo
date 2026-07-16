@@ -20,7 +20,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
     <button
       onClick={() => onOpen(recipe)}
       aria-label={recipe.name}
-      className="notch-16"
+      className="rad-24"
       style={{ position: 'relative', width: '100%', textAlign: 'left', background: 'var(--surface-1)', overflow: 'hidden', marginBottom: 0 }}
     >
       {/* Image band */}

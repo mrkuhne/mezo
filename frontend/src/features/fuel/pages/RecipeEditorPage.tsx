@@ -125,7 +125,7 @@ export function RecipeEditorPage() {
   if (isEditMode && !editing) {
     return (
       <div style={{ padding: '0 24px' }}>
-        <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
+        <div className="card" style={{ padding: 20, textAlign: 'center' }}>
           <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen recept.</span>
         </div>
       </div>
@@ -194,7 +194,7 @@ export function RecipeEditorPage() {
         <div className="row" style={{ padding: '6px 0 0' }}>
           <button
             onClick={() => navigate(-1)}
-            className="notch-8"
+            className="rad-16"
             style={{ width: 34, height: 34, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1 }}
             aria-label="Vissza"
           >‹</button>
@@ -207,7 +207,7 @@ export function RecipeEditorPage() {
         </div>
 
         {/* Név */}
-        <div className="card notch-4" style={{ padding: '10px 12px', marginBottom: 9 }}>
+        <div className="card" style={{ padding: '10px 12px', marginBottom: 9 }}>
           <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>NÉV</span>
           <input
             value={name}
@@ -219,7 +219,7 @@ export function RecipeEditorPage() {
         </div>
 
         {/* Slot + csillag */}
-        <div className="card notch-4" style={{ padding: '10px 12px', marginBottom: 9 }}>
+        <div className="card" style={{ padding: '10px 12px', marginBottom: 9 }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>SLOT</span>
             <button onClick={() => setStarred(s => !s)} className="chip" style={{ padding: '4px 8px', color: starred ? 'var(--warning)' : 'var(--text-tertiary)' }} aria-label="Csillag">
@@ -237,18 +237,18 @@ export function RecipeEditorPage() {
 
         {/* Adag & idő */}
         <div className="row gap-sm" style={{ marginBottom: 9 }}>
-          <div className="card notch-4 flex-1" style={{ padding: '10px 12px' }}>
+          <div className="card flex-1" style={{ padding: '10px 12px' }}>
             <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>ADAG</span>
             <div style={{ marginTop: 6 }}><Stepper value={servings} unit="adag" min={1} onChange={setServings} /></div>
           </div>
-          <div className="card notch-4 flex-1" style={{ padding: '10px 12px' }}>
+          <div className="card flex-1" style={{ padding: '10px 12px' }}>
             <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>ELŐ + FŐZÉS</span>
             <div style={{ marginTop: 6 }}><Stepper value={mins} unit="perc" min={0} onChange={setMins} /></div>
           </div>
         </div>
 
         {/* Live total */}
-        <div className="notch-4" style={{ padding: '11px 12px', marginBottom: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--border-brand)' }}>
+        <div className="rad-12" style={{ padding: '11px 12px', marginBottom: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--border-brand)' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--brand-glow)' }}>MAKRÓ-ÖSSZEG</span>
             <ServingToggle value={basis} servings={servings} onChange={setBasis} />
@@ -268,12 +268,12 @@ export function RecipeEditorPage() {
 
         <div className="col gap-sm" style={{ marginBottom: 3 }}>
           {lines.length === 0 && (
-            <div className="card notch-4" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
+            <div className="card" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
               <span className="text-tertiary" style={{ fontSize: 11 }}>Még nincs hozzávaló. Nyomd a Kamrából hozzáad gombot.</span>
             </div>
           )}
           {resolved.map(({ line, ing }, i) => (
-            <div key={i} className="card notch-4" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor(ing?.category) }}>
+            <div key={i} className="card" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor(ing?.category) }}>
               <div className="row" style={{ alignItems: 'center', gap: 10 }}>
                 <div className="col flex-1" style={{ minWidth: 0 }}>
                   <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
@@ -305,7 +305,7 @@ export function RecipeEditorPage() {
 
         <button
           onClick={() => setPickerOpen(true)}
-          className="notch-4"
+          className="rad-12"
           style={{ width: '100%', padding: 11, marginTop: 3, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--border-brand)' }}
         >
           <Icon name="plus" size={14} /> Kamrából hozzáad
@@ -338,8 +338,8 @@ export function RecipeEditorPage() {
           over the recipe content, which used to clip the last rows (mezo-3vu4). */}
       {createPortal(
         <div className="recipe-save-bar">
-          <button className="cta-ghost notch-4" onClick={() => navigate(-1)} style={{ flex: 1 }}>Mégse</button>
-          <button className="cta-primary notch-4" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
+          <button className="cta-ghost" onClick={() => navigate(-1)} style={{ flex: 1 }}>Mégse</button>
+          <button className="cta-primary" disabled={!canSave} onClick={save} style={{ flex: 1.8 }}>
             <Icon name="check" size={15} /> Mentés
           </button>
         </div>,

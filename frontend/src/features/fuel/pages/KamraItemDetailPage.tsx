@@ -6,7 +6,7 @@
 //
 // Layout (docs/design/kamra-detail-edit-v1.html · phone 2), chamfer chrome:
 //   back (‹) + eyebrow → source pill → big Antonio name → category · NOVA →
-//   Makrók (4 notch-4 cells) → Tápanyag (4 notch-4 cells) → Készlet · ár →
+//   Makrók (4 card cells) → Tápanyag (4 card cells) → Készlet · ár →
 //   actions (Logolás → opens LogMealSheet pre-filled, Szerkesztés, Törlés).
 // ============================================================
 import { useState } from 'react'
@@ -61,10 +61,10 @@ export function inputFromItem(item: PantryItem): PantryItemInput {
   return base
 }
 
-// A single notch-4 nutrition/stock cell: label on top, value below.
+// A single card nutrition/stock cell: label on top, value below.
 function Cell({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
-    <div className="card notch-4 col" style={{ padding: 8, gap: 2, alignItems: 'flex-start' }}>
+    <div className="card col" style={{ padding: 8, gap: 2, alignItems: 'flex-start' }}>
       <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>{label}</span>
       <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 15, fontWeight: 600, color: color ?? 'var(--text-primary)' }}>{value}</span>
     </div>
@@ -98,11 +98,11 @@ export function KamraItemDetailPage() {
       <div style={{ padding: '0 24px' }}>
         <button
           onClick={() => navigate('/fuel/kamra')}
-          className="notch-8"
+          className="rad-16"
           style={{ width: 32, height: 32, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1, marginBottom: 14 }}
           aria-label="Vissza"
         >‹</button>
-        <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
+        <div className="card" style={{ padding: 20, textAlign: 'center' }}>
           <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen tétel.</span>
         </div>
       </div>
@@ -138,7 +138,7 @@ export function KamraItemDetailPage() {
         <div className="row" style={{ marginBottom: 2 }}>
           <button
             onClick={() => navigate('/fuel/kamra')}
-            className="notch-8"
+            className="rad-16"
             style={{ width: 32, height: 32, flexShrink: 0, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1 }}
             aria-label="Vissza"
           >‹</button>
@@ -212,16 +212,16 @@ export function KamraItemDetailPage() {
 
         {/* Actions */}
         <div style={{ marginTop: 16 }}>
-          <button className="cta-primary notch-4" onClick={() => setLogOpen(true)}>
+          <button className="cta-primary" onClick={() => setLogOpen(true)}>
             <Icon name="plus" size={14} /> Logolás · mai étkezésbe
           </button>
         </div>
         <div className="row gap-sm" style={{ marginTop: 8 }}>
-          <button className="cta-ghost notch-4 flex-1" onClick={() => setEditOpen(true)}>
+          <button className="cta-ghost flex-1" onClick={() => setEditOpen(true)}>
             <Icon name="settings" size={12} /> Szerkesztés
           </button>
           <button
-            className="cta-ghost notch-4 flex-1"
+            className="cta-ghost flex-1"
             onClick={remove}
             style={{ color: 'var(--warning)', borderColor: 'rgba(245,158,11,0.3)' }}
           >

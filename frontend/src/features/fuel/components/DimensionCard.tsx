@@ -16,7 +16,7 @@ export function DimensionCard({ dim }: { dim: MealDimension }) {
   const contribution = (dim.score * dim.weight * 100).toFixed(1)
 
   return (
-    <div className="card notch-12" style={{ padding: 14 }}>
+    <div className="card" style={{ padding: 14 }}>
       {/* Header row */}
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
         <div className="col flex-1">

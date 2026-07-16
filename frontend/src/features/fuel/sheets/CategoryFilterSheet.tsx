@@ -57,7 +57,7 @@ export function CategoryFilterSheet({
                   key={opt.key}
                   onClick={() => toggle(opt.key)}
                   aria-pressed={on}
-                  className="notch-8 row"
+                  className="rad-16 row"
                   style={{
                     alignItems: 'center', gap: 6, padding: '7px 11px',
                     fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
@@ -78,7 +78,7 @@ export function CategoryFilterSheet({
           </div>
 
           <button
-            className="cta-primary notch-4"
+            className="cta-primary"
             style={{ marginTop: 16 }}
             onClick={() => { onApply(draft); close() }}
           >

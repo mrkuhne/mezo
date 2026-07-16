@@ -172,7 +172,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
 
       {expanded && (
         <div
-          className="card notch-4 mt-sm"
+          className="card mt-sm"
           style={{ padding: 14, background: 'var(--surface-2)', borderColor: 'var(--border-brand)' }}
         >
           {/* 01 · Baseline */}

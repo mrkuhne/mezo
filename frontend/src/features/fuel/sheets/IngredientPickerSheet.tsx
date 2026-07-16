@@ -38,7 +38,7 @@ function PickerRow({ ing, added, onPick }: { ing: PickableIngredient; added: boo
   const { categoryMeta } = usePantry()
   const catColor = categoryMeta[ing.category]?.color ?? 'var(--text-secondary)'
   return (
-    <div className="card notch-4" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor }}>
+    <div className="card" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor }}>
       <div className="row" style={{ alignItems: 'center', gap: 8 }}>
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <div className="row gap-xs" style={{ alignItems: 'center', flexWrap: 'wrap' }}>
@@ -54,7 +54,7 @@ function PickerRow({ ing, added, onPick }: { ing: PickableIngredient; added: boo
           <button
             disabled
             aria-label={ing.name + ' hozzáadva'}
-            className="notch-4"
+            className="rad-12"
             style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'var(--surface-2)', color: 'var(--brand-glow)', opacity: 0.55, cursor: 'default' }}
           >
             <Icon name="check" size={14} />
@@ -63,7 +63,7 @@ function PickerRow({ ing, added, onPick }: { ing: PickableIngredient; added: boo
           <button
             onClick={onPick}
             aria-label={ing.name + ' hozzáadása'}
-            className="notch-4"
+            className="rad-12"
             style={{ width: 28, height: 28, flexShrink: 0, display: 'grid', placeItems: 'center', background: 'color-mix(in srgb, var(--sage) 14%, transparent)', color: 'var(--brand-glow)' }}
           >
             <Icon name="plus" size={14} />

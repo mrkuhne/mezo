@@ -94,7 +94,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
 
           {phase === 'input' && (
             <>
-              <div className="card notch-4" style={{ padding: '10px 12px', marginBottom: 10 }}>
+              <div className="card" style={{ padding: '10px 12px', marginBottom: 10 }}>
                 <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Terméknév vagy vonalkód</span>
                 <input
                   value={query}
@@ -109,7 +109,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                 <p style={{ fontSize: 11, color: 'var(--error)', marginBottom: 10 }}>{error}</p>
               )}
 
-              <div className="card notch-4" style={{ padding: 12, marginBottom: 14, background: 'var(--surface-1)' }}>
+              <div className="card" style={{ padding: 12, marginBottom: 14, background: 'var(--surface-1)' }}>
                 <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>HAMAROSAN · gyors-import</span>
                 <div className="row gap-xs mt-sm flex-wrap">
                   <button className="chip" disabled style={{ fontSize: 9, padding: '6px 10px', opacity: 0.5 }}>
@@ -125,8 +125,8 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
               </div>
 
               <div className="row gap-sm">
-                <button className="cta-ghost notch-4 flex-1" onClick={close}>Mégse</button>
-                <button className="cta-primary notch-4 flex-1" onClick={() => void search()} disabled={query.trim().length < 2}>
+                <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+                <button className="cta-primary flex-1" onClick={() => void search()} disabled={query.trim().length < 2}>
                   <Icon name="search" size={14} /> Keresés
                 </button>
               </div>
@@ -134,7 +134,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
           )}
 
           {phase === 'searching' && (
-            <div className="card notch-12" style={{
+            <div className="card" style={{
               padding: 24, textAlign: 'center',
               background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)',
               borderColor: 'var(--border-brand)',
@@ -153,7 +153,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
           {phase === 'preview' && (
             <>
               {results.length === 0 && (
-                <div className="card notch-4" style={{ padding: 14, marginBottom: 12, textAlign: 'center' }}>
+                <div className="card" style={{ padding: 14, marginBottom: 12, textAlign: 'center' }}>
                   <span className="text-secondary" style={{ fontSize: 12 }}>
                     Nincs találat erre: „{query}" — próbáld pontosabb névvel vagy vonalkóddal.
                   </span>
@@ -166,7 +166,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                     <button
                       key={`${r.barcode ?? r.name}-${i}`}
                       onClick={() => pick(i)}
-                      className="card notch-4"
+                      className="card"
                       style={{
                         padding: '10px 12px', textAlign: 'left', width: '100%', cursor: 'pointer',
                         background: picked === i ? 'color-mix(in srgb, var(--brand-glow) 6%, transparent)' : 'var(--surface-1)',
@@ -193,13 +193,13 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
               )}
 
               {picked != null && results[picked] && (
-                <div className="card notch-4" style={{
+                <div className="card" style={{
                   padding: 14, marginBottom: 12,
                   background: 'color-mix(in srgb, var(--brand-glow) 4%, transparent)',
                   borderColor: 'var(--border-brand)',
                 }}>
                   <Eyebrow brand>Polcra kerül · /{results[picked].per}{results[picked].unit}</Eyebrow>
-                  <div className="card notch-4" style={{ padding: '8px 10px', margin: '10px 0' }}>
+                  <div className="card" style={{ padding: '8px 10px', margin: '10px 0' }}>
                     <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Név</span>
                     <input
                       value={name}
@@ -208,7 +208,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                       style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 2, width: '100%' }}
                     />
                   </div>
-                  <div className="card notch-4" style={{ padding: '8px 10px', marginBottom: 10 }}>
+                  <div className="card" style={{ padding: '8px 10px', marginBottom: 10 }}>
                     <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Kategória</span>
                     <select
                       value={category}
@@ -221,7 +221,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                       ))}
                     </select>
                   </div>
-                  <div className="card notch-4 row" style={{ padding: 10, justifyContent: 'space-between', background: 'var(--surface-1)' }}>
+                  <div className="card row" style={{ padding: 10, justifyContent: 'space-between', background: 'var(--surface-1)' }}>
                     <StatCell label={`kcal / ${results[picked].per}${results[picked].unit}`} val={String(results[picked].kcal ?? '—')} sub="" color="var(--brand-glow)" />
                     <StatCell label="P" val={(results[picked].proteinG ?? '—') + 'g'} sub="" color="var(--cat-physiology)" />
                     <StatCell label="C" val={(results[picked].carbsG ?? '—') + 'g'} sub="" color="var(--warning)" />
@@ -231,9 +231,9 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
               )}
 
               <div className="row gap-sm">
-                <button className="cta-ghost notch-4 flex-1" onClick={() => setPhase('input')}>Vissza</button>
+                <button className="cta-ghost flex-1" onClick={() => setPhase('input')}>Vissza</button>
                 <button
-                  className="cta-primary notch-4 flex-1"
+                  className="cta-primary flex-1"
                   onClick={() => void save(close)}
                   disabled={picked == null || saving}
                 >

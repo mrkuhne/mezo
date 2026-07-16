@@ -19,7 +19,7 @@ export function RecipeIngredientList({ items }: { items: RecipeIngredientItem[] 
         {items.map((it, i) => <RecipeIngredientRow key={i} item={it} />)}
       </div>
 
-      <div className="card notch-4" style={{ padding: 12, background: 'var(--surface-1)' }}>
+      <div className="card" style={{ padding: 12, background: 'var(--surface-1)' }}>
         <Eyebrow className="text-tertiary">Honnan jönnek</Eyebrow>
         <div className="row gap-sm mt-sm flex-wrap">
           {sources.map(s => (
