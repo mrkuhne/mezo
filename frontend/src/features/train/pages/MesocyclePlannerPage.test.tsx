@@ -177,3 +177,41 @@ test('manually picked weekdays survive a day-count change', async () => {
   await user.click(screen.getByRole('button', { name: 'Hét' })) // remove one
   expect(screen.getByRole('button', { name: 'Tovább →' })).toBeEnabled()
 })
+
+test('program edits survive a step round-trip when inputs are unchanged', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> program review
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  // remove the first exercise of the auto-expanded day
+  const removeButtons = screen.getAllByRole('button', { name: 'Eltávolítás' })
+  const countBefore = removeButtons.length
+  await user.click(removeButtons[0])
+  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(countBefore - 1)
+  // back to step 2 (the review step has no Vissza button — use the tappable
+  // progress segment) and forward again — NO regeneration, edit preserved
+  await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  expect(screen.queryByText('A Mezo összerakja a programot…')).not.toBeInTheDocument()
+  expect(screen.getAllByRole('button', { name: 'Eltávolítás' })).toHaveLength(countBefore - 1)
+})
+
+test('changing an input regenerates the program', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+  await user.click(screen.getByRole('button', { name: '3. lépés · Split + napok' }))
+  // swap a weekday: Pén off, Szo on → signature changes
+  await user.click(screen.getByRole('button', { name: 'Pén' }))
+  await user.click(screen.getByRole('button', { name: 'Szo' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  expect(screen.getByText('A Mezo összerakja a programot…')).toBeInTheDocument()
+  await screen.findByText(/A te blokkod/i, undefined, { timeout: 3000 })
+})

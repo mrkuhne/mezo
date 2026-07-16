@@ -10,10 +10,10 @@
 //   Step 3 · Áttekintés      → generateProgram review (collapsible days)
 // Ported from prototype meso-planner.jsx MesocyclePlannerPage + its step parts.
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
-import type { ExerciseLibraryItem, GoalPreset, MesoPhase, SplitOption } from '@/data/types'
+import type { ExerciseLibraryItem, GoalPreset, GymExercise, MesoPhase, SplitOption } from '@/data/types'
 import type { MesocycleCreateRequest } from '@/data/train/trainApi'
 import { huMonthDay } from '@/shared/lib/dates'
 import { DAY_ORDER, GOAL_PRESETS, SPLITS, MESOCYCLE_PHASE_COLORS } from '@/data/train/train'
@@ -59,6 +59,80 @@ export function MesocyclePlannerPage() {
   const [daysTouched, setDaysTouched] = useState(false)
   // Lifted from Step3 so the terminal save buttons can read the reviewed/edited program.
   const [program, setProgram] = useState<PlannerDay[] | null>(null)
+
+  // Program generation lives at page level behind an input-signature guard so
+  // step round-trips never wipe user edits; only real input changes regenerate.
+  const generatedFor = useRef<string | null>(null)
+  const programSignature = `${goal?.id ?? ''}|${split?.label ?? ''}|${days}|${selectedDays.join(',')}`
+  useEffect(() => {
+    if (step < 3) return
+    if (generatedFor.current === programSignature) return
+    setProgram(null)
+    const timer = setTimeout(() => {
+      generatedFor.current = programSignature
+      setProgram(generateProgram({ goal, split, days, weekdays: selectedDays, niggle: 'shoulder' }))
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [step, programSignature, goal, split, days, selectedDays])
+
+  // --- draft mutations (lifted from Step3 so Task 5's recipe editor reuses them) ---
+  // No PUT — the whole draft is saved at the end; each helper is keyed by day name.
+  const removeExercise = (dayName: string, exId: string) => {
+    setProgram((prev) =>
+      (prev ?? []).map((d) =>
+        d.day === dayName
+          ? { ...d, exercises: d.exercises.filter((e) => e.id !== exId), exerciseCount: d.exercises.filter((e) => e.id !== exId).length }
+          : d,
+      ),
+    )
+  }
+
+  // Draft-only reorder: maps the day's exercises into the new id order.
+  const reorderExercises = (dayName: string, ids: string[]) => {
+    setProgram((prev) =>
+      (prev ?? []).map((d) => {
+        if (d.day !== dayName) return d
+        const byId = new Map(d.exercises.map((e) => [e.id, e]))
+        const exercises = ids.map((id) => byId.get(id)).filter(Boolean) as typeof d.exercises
+        return { ...d, exercises }
+      }),
+    )
+  }
+
+  // Custom-split days are user-named (mezo-9wv); the day key stays, only the label changes.
+  const renameDay = (dayName: string, name: string) => {
+    setProgram((prev) =>
+      (prev ?? []).map((d) => (d.day === dayName ? { ...d, type: name } : d)),
+    )
+  }
+
+  const addExercise = (dayName: string, item: ExerciseLibraryItem) => {
+    setProgram((prev) =>
+      (prev ?? []).map((d) => {
+        if (d.day !== dayName) return d
+        const exercises = [
+          ...d.exercises,
+          {
+            id: `${item.id}-${crypto.randomUUID()}`, name: item.name, muscle: item.muscle, type: item.type,
+            warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0,
+            ...(item.catalogId ? { catalogId: item.catalogId } : {}),
+          },
+        ]
+        return { ...d, exercises, exerciseCount: exercises.length }
+      }),
+    )
+  }
+
+  // Applies a recipe patch (warmup/working/rep-range/RIR/anchor) to one exercise.
+  const updateExercise = (dayName: string, exId: string, patch: Partial<GymExercise>) => {
+    setProgram((prev) =>
+      (prev ?? []).map((d) =>
+        d.day === dayName
+          ? { ...d, exercises: d.exercises.map((e) => (e.id === exId ? { ...e, ...patch } : e)) }
+          : d,
+      ),
+    )
+  }
 
   const backToLibrary = () => navigate('/train/mesocycles')
 
@@ -214,9 +288,12 @@ export function MesocyclePlannerPage() {
           weeks={weeks}
           split={split}
           days={days}
-          weekdays={selectedDays}
           program={program}
-          setProgram={setProgram}
+          onAdd={addExercise}
+          onRemove={removeExercise}
+          onReorder={reorderExercises}
+          onRename={renameDay}
+          onUpdate={updateExercise}
         />
       )}
 
@@ -696,38 +773,42 @@ function Step3Program({
   goal,
   name,
   weeks,
-  split,
   days,
-  weekdays,
   program,
-  setProgram,
+  onAdd,
+  onRemove,
+  onReorder,
+  onRename,
 }: {
   goal: GoalPreset | null
   name: string
   weeks: number
+  // `split` + `onUpdate` are part of the prop contract Task 5's recipe editor
+  // consumes; threaded from the page but not read in this step's body yet.
   split: SplitOption | null
   days: number
-  weekdays: string[]
   program: PlannerDay[] | null
-  setProgram: (v: PlannerDay[] | null | ((prev: PlannerDay[] | null) => PlannerDay[] | null)) => void
+  onAdd: (dayName: string, item: ExerciseLibraryItem) => void
+  onRemove: (dayName: string, exId: string) => void
+  onReorder: (dayName: string, ids: string[]) => void
+  onRename: (dayName: string, name: string) => void
+  onUpdate: (dayName: string, exId: string, patch: Partial<GymExercise>) => void
 }) {
-  const [expandedDay, setExpandedDay] = useState<string | null>(null)
+  const firstTrainingDay = (p: PlannerDay[] | null) =>
+    p?.find((d) => d.type !== 'Rest' && d.type !== 'Volleyball')?.day ?? null
+  const [expandedDay, setExpandedDay] = useState<string | null>(() => firstTrainingDay(program))
   const [pickerDay, setPickerDay] = useState<string | null>(null)
 
-  // Brief loading state, then generate the program (re-run if inputs change).
-  // The first training day auto-expands ONCE per generation, right here — a
-  // standalone "expand when null" effect would re-open every user collapse (mezo-xnq).
+  // Auto-expand exactly once per generation: when program arrives (null → data)
+  // while mounted. Edits change array identity but never re-open a collapsed day (mezo-xnq).
+  const hadProgram = useRef(program !== null)
   useEffect(() => {
-    setProgram(null)
-    setExpandedDay(null)
-    const timer = setTimeout(() => {
-      const prog = generateProgram({ goal, split, days, weekdays, niggle: 'shoulder' })
-      setProgram(prog)
-      // type-based: a custom day starts with 0 exercises but is still the day to open
-      setExpandedDay(prog.find((d) => d.type !== 'Rest' && d.type !== 'Volleyball')?.day ?? null)
-    }, 600)
-    return () => clearTimeout(timer)
-  }, [goal, split, days, weekdays])
+    if (program && !hadProgram.current) {
+      hadProgram.current = true
+      setExpandedDay(firstTrainingDay(program))
+    }
+    if (!program) hadProgram.current = false
+  }, [program])
 
   if (!program) {
     return (
@@ -755,53 +836,6 @@ function Step3Program({
 
   const totalExercises = program.reduce((a, d) => a + (d.exerciseCount || 0), 0)
   const totalSets = program.reduce((a, d) => a + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
-
-  const removeExercise = (dayName: string, exId: string) => {
-    setProgram((prev) =>
-      (prev ?? []).map((d) =>
-        d.day === dayName
-          ? { ...d, exercises: d.exercises.filter((e) => e.id !== exId), exerciseCount: d.exercises.filter((e) => e.id !== exId).length }
-          : d,
-      ),
-    )
-  }
-
-  // Draft-only reorder: maps the day's exercises into the new id order and
-  // updates local program state. No PUT — the whole draft is saved at the end.
-  const reorderExercises = (dayName: string, ids: string[]) => {
-    setProgram((prev) =>
-      (prev ?? []).map((d) => {
-        if (d.day !== dayName) return d
-        const byId = new Map(d.exercises.map((e) => [e.id, e]))
-        const exercises = ids.map((id) => byId.get(id)).filter(Boolean) as typeof d.exercises
-        return { ...d, exercises }
-      }),
-    )
-  }
-
-  // Custom-split days are user-named (mezo-9wv); the day key stays, only the label changes.
-  const renameDay = (dayName: string, name: string) => {
-    setProgram((prev) =>
-      (prev ?? []).map((d) => (d.day === dayName ? { ...d, type: name } : d)),
-    )
-  }
-
-  const addExercise = (dayName: string, item: ExerciseLibraryItem) => {
-    setProgram((prev) =>
-      (prev ?? []).map((d) => {
-        if (d.day !== dayName) return d
-        const exercises = [
-          ...d.exercises,
-          {
-            id: `${item.id}-${Date.now()}`, name: item.name, muscle: item.muscle, type: item.type,
-            warmupSets: 2, workingSets: 3, repMin: 6, repMax: 8, targetRIR: 0,
-            ...(item.catalogId ? { catalogId: item.catalogId } : {}),
-          },
-        ]
-        return { ...d, exercises, exerciseCount: exercises.length }
-      }),
-    )
-  }
 
   return (
     <div style={{ padding: '8px 24px' }}>
@@ -859,10 +893,10 @@ function Step3Program({
             day={d}
             expanded={expandedDay === d.day}
             onToggle={() => setExpandedDay((cur) => (cur === d.day ? null : d.day))}
-            onRemove={(exId) => removeExercise(d.day, exId)}
-            onReorder={(ids) => reorderExercises(d.day, ids)}
+            onRemove={(exId) => onRemove(d.day, exId)}
+            onReorder={(ids) => onReorder(d.day, ids)}
             onAdd={() => setPickerDay(d.day)}
-            onRename={d.muscle === 'custom' ? (name) => renameDay(d.day, name) : undefined}
+            onRename={d.muscle === 'custom' ? (name) => onRename(d.day, name) : undefined}
           />
         ))}
       </div>
@@ -885,8 +919,12 @@ function Step3Program({
 
       {pickerDay && (
         <ExercisePickerSheet
+          dayLabel={(() => {
+            const d = program?.find((x) => x.day === pickerDay)
+            return d ? `${d.day} · ${d.type}` : undefined
+          })()}
           onClose={() => setPickerDay(null)}
-          onPick={(item) => addExercise(pickerDay, item)}
+          onPick={(item) => onAdd(pickerDay, item)}
         />
       )}
     </div>
