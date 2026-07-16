@@ -22,9 +22,9 @@ export function MemoirPage() {
     return (
       <div className="col gap-md">
         <div className="card" style={{ padding: 16 }}>
-          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Heti memoir</span>
+          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Heti memoár</span>
           <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
-            Az első memoir a hét zárásakor készül el.
+            Az első memoár a hét zárásakor készül el.
           </p>
         </div>
       </div>
@@ -39,7 +39,7 @@ export function MemoirPage() {
         />
         <div className="row gap-sm">
           <Icon name="bookmark" size={14} color="var(--lav-deep)" />
-          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Heti memoir · {memoir.week}</span>
+          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Heti memoár · {memoir.week}</span>
         </div>
         <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1.15, marginTop: 12, color: 'var(--text-primary)' }}>
           {memoir.title}

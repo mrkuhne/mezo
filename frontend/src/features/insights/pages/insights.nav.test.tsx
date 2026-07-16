@@ -29,7 +29,7 @@ describe('insights nav (real mode default)', () => {
     // Memoár is un-ghosted at W2 — the link is visible and navigates to the honest placeholder.
     await userEvent.click(screen.getByRole('link', { name: 'Memoár' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Memoár' })).toBeInTheDocument()
-    expect(await screen.findByText('Az első memoir a hét zárásakor készül el.')).toBeInTheDocument()
+    expect(await screen.findByText('Az első memoár a hét zárásakor készül el.')).toBeInTheDocument()
     // Előrejelzések is un-ghosted at P1 — visible and navigates to the honest still-learning state.
     await userEvent.click(screen.getByRole('link', { name: 'Előrejelzések' }))
     expect(screen.getByRole('heading', { level: 1, name: 'Előrejelzések' })).toBeInTheDocument()

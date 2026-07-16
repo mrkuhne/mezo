@@ -14,7 +14,7 @@ describe('MemoirPage (mock mode)', () => {
 
   test('renders the memoir card, anchors, anniversary card and archive footer', () => {
     renderPage()
-    expect(screen.getByText('Heti memoir · Hét 20 · 2026 · Máj 11-17')).toBeInTheDocument()
+    expect(screen.getByText('Heti memoár · Hét 20 · 2026 · Máj 11-17')).toBeInTheDocument()
     expect(screen.getByText('Egy hét amikor a tested megtanult várni')).toBeInTheDocument()
     // RefTag renders "[PR] Chest Row 102.5 × 9"; RTL normalizes &nbsp; to a space, so this matches.
     // If it ever doesn't, fall back to: screen.getByText(/Chest Row 102\.5 × 9/)
@@ -60,7 +60,7 @@ describe('MemoirPage (real mode)', () => {
 
   test('renders the honest készül placeholder on the default 404, not the demo fiction', async () => {
     renderPage()
-    expect(await screen.findByText('Az első memoir a hét zárásakor készül el.')).toBeInTheDocument()
+    expect(await screen.findByText('Az első memoár a hét zárásakor készül el.')).toBeInTheDocument()
     await waitFor(() =>
       expect(screen.queryByText('Egy hét amikor a tested megtanult várni')).not.toBeInTheDocument(),
     )
