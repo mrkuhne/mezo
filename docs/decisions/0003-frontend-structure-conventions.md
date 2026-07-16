@@ -81,3 +81,12 @@ every step, and `pnpm parity` is the visual no-op proof.
 - **Not adopted:** a top-level route-mirroring `pages/` tree (rejected in favor of
   feature-cohesion — pages live inside each feature); per-feature public `index.ts` barrels
   (rejected for cycle/tree-shaking reasons).
+
+## Addendum (2026-07-15, `mezo-mifi`)
+
+The `pnpm parity` "visual no-op proof" referenced above (Decision + Consequences) was
+**retired** with the old-prototype pixel-parity harness during the Napív redesign
+(`mezo-8141`, 2026-07-13). Its role is now served by the self-baselined Playwright
+visual-regression harness (`frontend/tests/visual/`, `pnpm test:visual`) — see
+[`_platform-design-system.md`](../features/_platform-design-system.md) §8. The reorg
+decision itself is unchanged; only the named verification command moved.

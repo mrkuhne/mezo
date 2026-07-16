@@ -179,7 +179,7 @@ export function ReplanSheet({
               {/* Tool transparency + confidence */}
               <div className="row gap-xs flex-wrap" style={{ marginTop: 12, alignItems: 'center' }}>
                 <ToolChipRow tools={scenario.tools} />
-                <span className="label-mono brand" style={{ fontSize: 9, marginLeft: 'auto' }}>
+                <span className="label-mono" style={{ fontSize: 9, marginLeft: 'auto' }}>
                   conf {(scenario.confidence * 100).toFixed(0)}%
                 </span>
               </div>

@@ -1,4 +1,4 @@
-export function ScoreRing({ pct, size = 56, stroke = 4, color = 'var(--brand-glow)', label, labelColor = 'var(--text-primary)', sublabel }:
+export function ScoreRing({ pct, size = 56, stroke = 4, color = 'var(--sage)', label, labelColor = 'var(--text-primary)', sublabel }:
   { pct: number; size?: number; stroke?: number; color?: string; label?: string; labelColor?: string; sublabel?: string }) {
   const r = size / 2 - stroke
   const c = 2 * Math.PI * r

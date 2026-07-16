@@ -13,7 +13,7 @@ const SUBNAV: Array<{ to: string; label: string; end?: boolean }> = [
 
 export function MeSubNav() {
   return (
-    <nav className="np-pills" aria-label="Me alnavigáció" style={{ '--pill-accent': 'var(--lav)' } as React.CSSProperties}>
+    <nav className="np-pills" aria-label="Me alnavigáció" style={{ '--pill-accent': 'var(--lav)', '--pill-accent-strong': 'var(--lav-deep)' } as React.CSSProperties}>
       {SUBNAV.map(({ to, label, end }) => (
         <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('np-pill np-press', isActive && 'on')}>
           {label}

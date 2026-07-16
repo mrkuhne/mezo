@@ -109,3 +109,25 @@ test('an empty day renders a dashed rest row with the Pihenőnap copy', () => {
   expect(container.querySelector('.dayrow.rest')).toBeInTheDocument()
   expect(screen.queryByRole('button')).not.toBeInTheDocument()
 })
+
+test('the chevron affordance renders only on a day with content, never on a rest row', () => {
+  const { container: withContent } = render(
+    <WeeklyDayRow
+      agenda={{
+        day: 'Kedd', isToday: false,
+        gym: { day: 'Kedd', active: true, time: '18:30', duration: null, type: 'Plyo Power' } as never,
+        sport: [], running: [],
+      }}
+      onStartGym={() => {}} onLogSport={() => {}}
+    />,
+  )
+  expect(withContent.querySelector('.chev')).toBeInTheDocument()
+
+  const { container: rest } = render(
+    <WeeklyDayRow
+      agenda={{ day: 'Szo', isToday: false, gym: null, sport: [], running: [] }}
+      onStartGym={() => {}} onLogSport={() => {}}
+    />,
+  )
+  expect(rest.querySelector('.chev')).not.toBeInTheDocument()
+})

@@ -1,12 +1,18 @@
 /* ===== Mezo prototype · Design tokens (Deep Current v2) ===== */
 
 :root {
-  /* Brand · legacy teal (screens still on Deep Current use these until S3–S7) */
-  --brand-deep: #064E5B;
-  --brand-core: #0E7C7B;
-  --brand-primary: #0E7C7B;
-  --brand-glow: #0E7C7B;
-  --brand-tint: #E6F7F4;
+  /* Legacy Deep-Current tokens — re-pointed onto the Napív palette (S8, spec §3.1:
+     "domain-accent mapping replaces --cat-* 1:1, brand-teal→coral as default accent").
+     Kept as aliases so un-migrated call sites render in-family; new code uses Napív tokens.
+     Alias architecture (single explanation, applies to every legacy token below): each alias
+     points at a Napív token. That Napív token is themed — light here in :root, dark in the
+     Pulse block — so the alias follows the theme automatically. This is why the dark override
+     block for these legacy tokens is EMPTY: overriding them would break the swap. */
+  --brand-deep: var(--coral-deep);
+  --brand-core: var(--coral-deep);
+  --brand-primary: var(--coral);
+  --brand-glow: var(--coral);
+  --brand-tint: var(--wash-gym);
 
   /* Canvas / surfaces — warmed to Napív */
   --canvas: #FBF6EF;
@@ -17,7 +23,7 @@
 
   --border-subtle: rgba(43, 33, 24, 0.08);
   --border-strong: rgba(43, 33, 24, 0.18);
-  --border-brand: rgba(14, 124, 123, 0.40);
+  --border-brand: var(--line);
 
   /* Text — warm ink */
   --text-primary: #2B2118;
@@ -26,27 +32,27 @@
   --text-quaternary: #A5978A;
   --text-inverse: #FFFFFF;
 
-  /* Semantic — AA on white */
-  --success: #047857;
-  --warning: #B45309;
-  --error: #BE123C;
-  --info: #1D4ED8;
+  /* Semantic — re-pointed onto Napív (aliases; error stays a literal red) */
+  --success: var(--sage-deep);
+  --warning: var(--amber-deep);
+  --error: #D9534F;              /* stays a true red; Napív has no error hue */
+  --info: var(--sky);
 
-  /* Pattern category palette — deepened */
-  --cat-physiology: #1D4ED8;
-  --cat-preference: #6D28D9;
-  --cat-trigger:    #B45309;
-  --cat-response:   #047857;
-  --cat-tendency:   #BE185D;
-  --cat-goal-state: #0E7C7B;
+  /* Pattern category palette — re-pointed onto Napív domain accents (1:1, spec §3.1) */
+  --cat-physiology: var(--sky);
+  --cat-preference: var(--lav-deep);
+  --cat-trigger:    var(--amber-deep);
+  --cat-response:   var(--sage-deep);
+  --cat-tendency:   var(--rose);
+  --cat-goal-state: var(--coral-deep);
 
-  --tool-read:    rgba(14, 124, 123, 0.55);
-  --tool-compute: var(--warning);
-  --tool-write:   var(--brand-glow);
+  --tool-read:    var(--lav);
+  --tool-compute: var(--amber-deep);
+  --tool-write:   var(--coral);
 
-  /* Reta phase gradient stops (unchanged) */
-  --reta-d1: #5EEAD4; --reta-d2: #14B8A6; --reta-d3: #F59E0B; --reta-d4: #F59E0B;
-  --reta-d5: #D97757; --reta-d6: #6B7280; --reta-d7: #4B5563;
+  /* Reta phase gradient stops — sage→amber ramp (light gradient, shared by both themes) */
+  --reta-d1: #7FA48A; --reta-d2: #8FAC7E; --reta-d3: #A3B272; --reta-d4: #BCB466;
+  --reta-d5: #D6B25B; --reta-d6: #EBB250; --reta-d7: #FFB347;   /* sage→amber ramp */
 
   /* AnchorMode (light, warmer) */
   --anchor-canvas:  #FBF4EC;
@@ -74,63 +80,41 @@
   --page-glow: #F0EBE2;
 }
 
-/* ===== Dark theme (opt-in; Pulse warm-graphite lands fully in S8 — until then legacy navy) ===== */
+/* ===== Dark theme — Pulse (warm graphite; spec §3.1 dark direction B, S8) =====
+   Only literal canvas/surface/ink/border/error values are overridden here. Every legacy
+   token that became a :root alias (--brand-*, --cat-*, --info, --success, --warning,
+   --tool-*, --border-brand, --reta-*) is intentionally ABSENT — it resolves against the
+   dark Napív accents (defined in the Pulse accents block below). That is the palette swap. */
 :root[data-theme="dark"] {
-  --brand-deep: #064E5B;
-  --brand-core: #0E7C7B;
-  --brand-primary: #14B8A6;
-  --brand-glow: #5EEAD4;
-  --brand-tint: #CCFBF1;
+  --canvas: #191614;
+  --surface-1: #221E1B;
+  --surface-2: #2A2521;
+  --surface-3: #332D27;
+  --surface-glass: rgba(245, 239, 230, 0.05);
 
-  --canvas: #0A0F14;
-  --surface-1: #121A22;
-  --surface-2: #1A242E;
-  --surface-3: #232F3B;
-  --surface-glass: rgba(255, 255, 255, 0.04);
+  --border-subtle: rgba(245, 239, 230, 0.07);
+  --border-strong: rgba(245, 239, 230, 0.14);
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.12);
-  --border-brand: rgba(94, 234, 212, 0.35);
+  --text-primary: #F5EFE6;
+  --text-secondary: #B7A899;
+  --text-tertiary: #8A7A6A;
+  --text-quaternary: #5E5348;
+  --text-inverse: #191614;
 
-  --text-primary: #ECECF1;
-  --text-secondary: #9CA3AF;
-  --text-tertiary: #6B7280;
-  --text-quaternary: #4B5563;
-  --text-inverse: #0A0F14;
+  --error: #F08A85;
 
-  --success: #34D399;
-  --warning: #F59E0B;
-  --error: #F43F5E;
-  --info: #60A5FA;
-
-  --cat-physiology: #60A5FA;
-  --cat-preference: #A78BFA;
-  --cat-trigger:    #F59E0B;
-  --cat-response:   #34D399;
-  --cat-tendency:   #F472B6;
-  --cat-goal-state: #5EEAD4;
-
-  --tool-read:    rgba(94, 234, 212, 0.4);
-  --tool-compute: var(--warning);
-  --tool-write:   var(--brand-glow);
-
+  /* AnchorMode (kept: --anchor-accent has JS consumers — VulnerabilityCard, train.ts) */
   --anchor-canvas:  #14110E;
   --anchor-surface: #1F1915;
   --anchor-accent:  #D97757;
   --anchor-text:    #E8DDD3;
 
-  --page-bg: #050709;
+  /* Page/card literals — warm-graphite tuned (previously cool navy) */
+  --page-bg: #100D0B;
   --card-elevation: none;
   --card-border: var(--border-subtle);
-  --page-glow: #0c1218;
+  --page-glow: #17130F;
 }
-
-/* Notched chamfer clip-paths */
-.notch-4  { clip-path: none; border-radius: 12px; }
-.notch-8  { clip-path: none; border-radius: 16px; }
-.notch-12 { clip-path: none; border-radius: 20px; }
-.notch-16 { clip-path: none; border-radius: 24px; }
-.notch-tl-12, .notch-br-12 { clip-path: none; border-radius: 20px; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
 
@@ -172,8 +156,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   box-shadow:
     0 0 0 2px #0a0a0a inset,
     0 0 0 8px #1a1a1a,
-    0 40px 100px rgba(0, 0, 0, 0.8),
-    0 0 0 1px rgba(94, 234, 212, 0.04);
+    0 40px 100px rgba(0, 0, 0, 0.8);
   flex-shrink: 0;
 }
 .phone-screen {
@@ -228,13 +211,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   scroll-behavior: smooth;
   position: relative;
 }
-/* When a Train sub-nav is rendered above the screen-content, push content down */
-.screen-content.with-subnav,
-[class*="screen-content"]:has(+ .train-subnav),
-.screen-content {
-  /* default base; component-level offset below */
-}
-
 /* Sticky page chrome (breadcrumb/back rows) — pins below the fake status bar
    while the content scrolls under it, like native app navigation chrome. */
 .sticky-top {
@@ -281,7 +257,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   position: relative;
 }
 .tab-item.active { color: var(--brand-glow); }
-.tab-item.active svg { filter: drop-shadow(0 0 6px rgba(94, 234, 212, 0.4)); }
 .tab-item svg { width: 24px; height: 24px; transition: all 0.2s ease; }
 .tab-item .tab-dot {
   position: absolute; top: 2px;
@@ -293,8 +268,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
    anchors to the device viewport like .sheet — floating just above the tab bar,
-   NOT scrolling with (or clipping) the recipe content. Opaque var(--canvas) to
-   match .tab-bar (the old translucent blur leaked + broke light theme, mezo-ci5). */
+   NOT scrolling with (or clipping) the recipe content. Opaque var(--canvas):
+   the old translucent blur leaked + broke light theme (mezo-ci5). */
 .recipe-save-bar {
   position: absolute;
   left: 0; right: 0;
@@ -361,25 +336,23 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 
 /* ============== Common ============== */
 .eyebrow {
-  font-family: var(--ff-mono);
-  font-size: 10px; font-weight: 600;
-  letter-spacing: 0.22em; text-transform: uppercase;
-  color: var(--text-tertiary);
+  font: 800 10px/1 var(--ff-body);
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--faint);
   white-space: nowrap;
 }
-.eyebrow.brand { color: var(--brand-glow); }
+.eyebrow.brand { color: var(--coral-deep); }
 .label-mono {
-  font-family: var(--ff-mono);
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--text-secondary);
+  font: 700 11px/1.2 var(--ff-body);
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .h-display {
   font-family: var(--ff-display);
-  font-weight: 600;
-  letter-spacing: 0.005em;
-  text-transform: uppercase;
+  font-weight: 800;
+  letter-spacing: -0.4px;
   line-height: 1.05;
   color: var(--text-primary);
 }
@@ -390,9 +363,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 
 .page-title {
   font-family: var(--ff-display);
-  font-size: 30px; font-weight: 600;
-  letter-spacing: 0.005em;
-  text-transform: uppercase;
+  font-size: 30px; font-weight: 800;
+  letter-spacing: -0.5px;
   line-height: 1.15;
   color: var(--text-primary);
   text-wrap: balance;
@@ -407,6 +379,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .card {
   background: var(--surface-1);
   border: 1px solid var(--card-border);
+  border-radius: 20px;
   filter: var(--card-elevation);
 }
 .card.glass {
@@ -414,23 +387,33 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   backdrop-filter: blur(16px);
 }
 
+/* Corner-radius utilities (formerly notched chamfers; the shape pass turned them into
+   plain radii). Placed AFTER .card so an explicit `card notch-N` still overrides the new
+   .card base radius, and BEFORE .chip / .cta-* so those pill radii keep winning over a
+   notch on the same element — preserving every existing combined-class radius byte-for-byte. */
+.notch-4  { clip-path: none; border-radius: 12px; }
+.notch-8  { clip-path: none; border-radius: 16px; }
+.notch-12 { clip-path: none; border-radius: 20px; }
+.notch-16 { clip-path: none; border-radius: 24px; }
+.notch-tl-12, .notch-br-12 { clip-path: none; border-radius: 20px; }
+
 /* Chip / tag */
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 10px;
-  font-family: var(--ff-mono);
-  font-size: 10px; font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-family: var(--ff-body);
+  font-size: 11px; font-weight: 700;
   color: var(--text-secondary);
-  background: var(--surface-2);
-  border: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+  border: 1px solid var(--line);
   white-space: nowrap;
 }
 .toolchip { white-space: nowrap; }
 .chip.brand {
-  color: var(--brand-glow);
-  border-color: var(--border-brand);
-  background: rgba(94, 234, 212, 0.06);
+  background: var(--wash-gym);
+  border-color: var(--coral);
+  color: var(--coral-deep);
 }
 .chip.warning {
   color: var(--warning);
@@ -452,33 +435,35 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
 }
-.toolchip.read    { color: var(--brand-glow); border-color: var(--border-brand); }
+.toolchip.read    { color: var(--lav); border-color: color-mix(in srgb, var(--lav) 32%, transparent); background: color-mix(in srgb, var(--lav) 8%, transparent); }
 .toolchip.compute { color: var(--warning); border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.05); }
-.toolchip.write   { color: var(--brand-glow); border-color: var(--brand-glow); background: rgba(94, 234, 212, 0.08); }
+.toolchip.write   { color: var(--coral); border-color: color-mix(in srgb, var(--coral) 32%, transparent); background: color-mix(in srgb, var(--coral) 8%, transparent); }
 
 /* CTA */
 .cta-primary {
   width: 100%;
   padding: 16px 20px;
-  background: var(--brand-primary);
-  color: var(--text-inverse);
-  font-family: var(--ff-display);
-  font-size: 16px; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase;
+  background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2));
+  color: #fff;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--cta-g2) 35%, transparent);
+  font-family: var(--ff-body);
+  font-size: 16px; font-weight: 700;
   display: inline-flex; align-items: center; justify-content: center; gap: 12px;
   transition: all 0.15s ease;
   white-space: nowrap;
 }
-.cta-primary:hover { background: var(--brand-glow); }
+.cta-primary:hover { filter: brightness(1.05); }
 .cta-primary:active { transform: scale(0.98); }
 
 .cta-ghost {
   padding: 12px 16px;
-  border: 1px solid var(--border-strong);
-  color: var(--text-primary);
-  font-family: var(--ff-mono);
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 0.16em; text-transform: uppercase;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--warm);
+  color: var(--ink);
+  font-family: var(--ff-body);
+  font-size: 11px; font-weight: 700;
 }
 
 /* Progress bar */
@@ -564,7 +549,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   padding: 14px 16px;
   background: var(--brand-primary);
   color: var(--text-inverse);
-  box-shadow: 0 12px 40px rgba(20, 184, 166, 0.5);
+  box-shadow: 0 12px 40px rgba(43, 33, 24, 0.5);
 }
 
 /* Brand glyph (M = mesocycle wave) */
@@ -605,39 +590,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .reta-seg.past { opacity: 0.4; }
 
-/* Check-in strip */
-.checkin-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 0 24px;
-}
-.checkin-slot {
-  position: relative;
-  padding: 10px 8px;
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
-  text-align: center;
-}
-.checkin-slot.done { background: rgba(94, 234, 212, 0.06); border-color: var(--border-brand); }
-.checkin-slot.now { border-color: var(--brand-primary); box-shadow: 0 0 0 1px var(--brand-primary); }
-.checkin-slot.skipped { opacity: 0.4; }
-.checkin-slot .time {
-  font-family: var(--ff-mono);
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
-}
-.checkin-slot.done .time { color: var(--brand-glow); }
-.checkin-slot .ico {
-  font-family: var(--ff-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  color: var(--text-tertiary);
-  margin-top: 3px;
-  text-transform: uppercase;
-}
-
 /* Set dots */
 .set-dots { display: flex; gap: 6px; }
 .set-dot {
@@ -651,15 +603,16 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .set-dot.warm.done { background: var(--warning); border-color: var(--warning); }
 .set-dot.active {
   border-color: var(--brand-glow);
-  box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.2);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 20%, transparent);
   animation: pulse-soft 1.5s ease-in-out infinite;
 }
 @keyframes pulse-soft {
-  0%, 100% { box-shadow: 0 0 0 3px rgba(94, 234, 212, 0.2); }
-  50% { box-shadow: 0 0 0 6px rgba(94, 234, 212, 0.1); }
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 20%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--coral) 10%, transparent); }
 }
+@media (prefers-reduced-motion: reduce) { .set-dot.active { animation: none; } }
 
-/* Loading skeleton — light teal sweep over a surface-2 block. */
+/* Loading skeleton — light coral (brand-accent) sweep over a surface-2 block. */
 .sk {
   position: relative;
   overflow: hidden;
@@ -671,7 +624,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
-  background: linear-gradient(90deg, transparent, rgba(94, 234, 212, 0.10), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--coral) 10%, transparent), transparent);
   animation: mezo-shimmer 1.5s infinite;
 }
 @keyframes mezo-shimmer { 100% { transform: translateX(100%); } }
@@ -719,9 +672,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .rir-cell.active {
   color: var(--brand-glow);
-  background: rgba(94, 234, 212, 0.1);
+  background: color-mix(in srgb, var(--coral) 10%, transparent);
   border-color: var(--brand-glow);
-  box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--coral) 20%, transparent);
 }
 
 /* Macro bar */
@@ -769,33 +722,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   0%, 100% { opacity: 1; }
   50% { opacity: 0.6; }
 }
-
-/* Subnav */
-.subnav {
-  display: flex;
-  gap: 4px;
-  padding: 0 24px 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  position: relative;
-  -webkit-mask-image: linear-gradient(to right, black 92%, transparent);
-  mask-image: linear-gradient(to right, black 92%, transparent);
-}
-.subnav::-webkit-scrollbar { display: none; }
-.subnav-item {
-  flex-shrink: 0;
-  padding: 8px 12px;
-  font-family: var(--ff-mono);
-  font-size: 10px; font-weight: 600;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--text-tertiary);
-  border-bottom: 2px solid transparent;
-  white-space: nowrap;
-}
-.subnav-item.active {
-  color: var(--brand-glow);
-  border-bottom-color: var(--brand-glow);
-}
+@media (prefers-reduced-motion: reduce) { .graph-node-pulse { animation: none; } }
 
 /* Pattern card critique mini-bars */
 .critique-grid {
@@ -832,6 +759,13 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   0%, 100% { opacity: 0.45; transform: scale(0.9); }
   50% { opacity: 1; transform: scale(1.08); }
 }
+.np-twinkle { animation: mezo-twinkle 2.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .np-twinkle { animation: none; } }
+/* Shared soft-pulse dot (typing indicator, live-system dot, planner loader) — reduce-guarded.
+   Dominant duration 1.2s; the 2s live-system dot overrides via inline animationDuration, and the
+   staggered dot rows keep their per-index inline animationDelay (the guard still kills the name). */
+.np-pulse { animation: pulse-soft 1.2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .np-pulse { animation: none; } }
 
 /* ============================================================
    Progression level-up overlay (P5, mezo-te8k) — ported from
@@ -1016,7 +950,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .lu-perk .lu-pk-ic { font-size: 15px; color: var(--warning); }
 .lu-perk .lu-pk-tx { flex: 1; font-size: 11.5px; color: var(--text-secondary); line-height: 1.4; }
 .lu-perk .lu-pk-tx b { color: var(--warning); font-weight: 600; font-family: var(--ff-display); font-size: 13px; letter-spacing: 0.02em; }
-.lu-perk .lu-pk-tx .lu-eff { color: var(--brand-tint); }
+.lu-perk .lu-pk-tx .lu-eff { color: var(--coral-deep); } /* was --brand-tint: a wash-as-text misuse, unreadable on Pulse graphite */
 
 .lu-growgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; text-align: left; }
 .lu-gcell { background: var(--surface-1); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 8px 10px; }
@@ -1140,21 +1074,31 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --lav: #9B8FC4;        --lav-deep: #7A6DA8;
   --rose: #E27A8B;
   --sky: #6FA7D8;
+  --cta-g1: #FF7A55; --cta-g2: #FF5B36;   /* primary CTA gradient stops */
   --np-shadow-card: 0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
   --np-shadow-row: 0 8px 20px rgba(43,33,24,.05);
   --np-ease-ios: cubic-bezier(.32,.72,0,1);
   --np-ease-spring: cubic-bezier(.34,1.4,.44,1);
 }
 
-/* Dark placeholders (spec §7 S1): keep the Napív-token consumers legible on the legacy
-   navy dark until the Pulse dark pass (S8) designs real values. Accents unchanged. */
+/* Pulse dark (spec §7 S8): warm-graphite neutrals + accents lifted for the graphite canvas.
+   Neutrals mirror the legacy surface/text scale in Block A; accents stay in-family but glow. */
 :root[data-theme="dark"] {
-  --surface: #121A22;
-  --warm: #1A242E;
-  --line: rgba(255, 255, 255, 0.08);
-  --ink: #ECECF1;
-  --sub: #9CA3AF;
-  --faint: #6B7280;
+  --surface: #221E1B;
+  --warm: #2A2521;
+  --line: rgba(245, 239, 230, 0.08);
+  --ink: #F5EFE6;
+  --sub: #B7A899;
+  --faint: #8A7A6A;
+
+  /* Pulse accents — same family, lifted for the graphite canvas */
+  --coral: #FF7E5C; --coral-deep: #F0966B;
+  --amber: #FFBE60; /* --amber-deep dark already exists (S7, #E3B565) */
+  --sage: #8FB49A; --sage-deep: #A9C79A;
+  --lav: #AB9FD2; --lav-deep: #B9ACD9;
+  --rose: #E98D9D; --sky: #7FB2DE;
+  --cta-g1: #FF8A66; --cta-g2: #FF6B47;   /* primary CTA gradient stops (Pulse) */
+
   --np-shadow-card: 0 2px 4px rgba(0,0,0,.3), 0 12px 30px rgba(0,0,0,.35);
   --np-shadow-row: 0 8px 20px rgba(0,0,0,.3);
 }
@@ -1184,6 +1128,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   box-shadow: 0 12px 26px rgba(255,107,74,.5), inset 0 1.5px 0 rgba(255,255,255,.35);
   cursor: pointer;
 }
+/* Center + FAB soft glow pulse (spec §3.5) — motion only under no-preference. */
+@keyframes np-fabglow { 0%,100% { box-shadow: 0 6px 18px color-mix(in srgb, var(--cta-g2) 35%, transparent); }
+  50% { box-shadow: 0 8px 28px color-mix(in srgb, var(--cta-g2) 55%, transparent); } }
+@media (prefers-reduced-motion: no-preference) { .tab-fab { animation: np-fabglow 3.2s ease-in-out infinite; } }
 .quicklog { padding: 4px 6px 10px; }
 .quicklog h2 { font-family: var(--ff-display); font-size: 19px; font-weight: 800; }
 .quicklog-sub { font-size: 12px; color: var(--faint); font-weight: 600; margin-top: 2px; }
@@ -1225,12 +1173,16 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: radial-gradient(440px 310px at 82% 2%, rgba(155,143,196,.4), transparent 72%),
               linear-gradient(180deg, #E2D9EF, #F0E9E9 62%, transparent);
 }
-/* Dark theme keeps its own canvas — daypart tints are a light-theme device until the
-   Pulse dark pass (S8) designs night variants. The sky dim below still applies. */
+/* Dark theme keeps its own canvas (graphite) — the daypart tint on the canvas stays a
+   light-theme device. The S8 Pulse pass (mezo-8141) designs the night sky variants below:
+   the canvas stays graphite; only the faint sky band glows per daypart. */
 :root[data-theme="dark"] .phone-screen[data-day] { background: var(--canvas); }
-/* Dark theme: the sky dims until the Pulse dark pass (S8) designs its own night variants. */
-:root[data-theme="dark"] .sky { opacity: .18; }
-/* AnchorMode: rough days mute the atmosphere (full anchor remap landed with Today in S3, mezo-8141). */
+/* Pulse night skies — canvas stays graphite; only the sky band glows faintly */
+:root[data-theme="dark"] .sky { opacity: .5; }
+:root[data-theme="dark"] .phone-screen[data-day="reggel"] .sky { background: radial-gradient(60% 40% at 18% 0%, rgba(255,179,71,.10), transparent 70%); }
+:root[data-theme="dark"] .phone-screen[data-day="delutan"] .sky { background: radial-gradient(60% 40% at 50% 0%, rgba(245,239,230,.06), transparent 70%); }
+:root[data-theme="dark"] .phone-screen[data-day="este"] .sky { background: radial-gradient(60% 40% at 82% 0%, rgba(155,143,196,.12), transparent 70%); }
+/* AnchorMode: rough days mute the atmosphere — the S3 restyle dropped the dedicated anchor canvas skin, so anchor now only dims the daypart sky (mezo-8141). */
 .phone-screen.anchor .sky { opacity: .35; filter: saturate(.6); }
 
 /* ===== Napív motion vocabulary (spec §3.5) ===== */
@@ -1267,11 +1219,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* ===== Napív greeting header (Today greeting, spec §3.3) ===== */
 .greet { padding: 8px 24px 0; }
 .greet-day { font-size: 12.5px; font-weight: 700; color: var(--coral-deep); letter-spacing: .4px; text-transform: uppercase; }
-[data-day="reggel"] .greet-day { color: #B2690F; }
+[data-day="reggel"] .greet-day { color: var(--amber-deep); }
 [data-day="este"] .greet-day { color: var(--lav-deep); }
 .greet h1 { font-family: var(--ff-display); font-size: 26px; font-weight: 700; letter-spacing: -.3px; margin-top: 2px; color: var(--ink); }
 .greet h1 em { font-style: normal; color: var(--coral); }
-[data-day="reggel"] .greet h1 em { color: #E8890C; }
+[data-day="reggel"] .greet h1 em { color: var(--amber); }
 [data-day="este"] .greet h1 em { color: var(--lav-deep); }
 
 /* ===== Napív Today hero ===== */
@@ -1282,18 +1234,15 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .h2row { display: flex; align-items: center; gap: 10px; margin-top: 7px; flex-wrap: wrap; }
 .h2row h2 { font-family: var(--ff-display); font-size: 29px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); }
 .typetag { display: inline-block; border-radius: 999px; padding: 5px 11px; font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; }
-.typetag-gym { background: #FFEDE6; color: var(--coral-deep); }
-.typetag-sport { background: #FBE9EC; color: #B14B5E; }
-.typetag-run { background: #E7F0F8; color: #3E6E9E; }
-:root[data-theme="dark"] .typetag-gym { background: rgba(255,107,74,.16); }
-:root[data-theme="dark"] .typetag-sport { background: rgba(226,122,139,.16); }
-:root[data-theme="dark"] .typetag-run { background: rgba(111,167,216,.16); }
+.typetag-gym { background: var(--wash-gym); color: var(--tag-gym); }
+.typetag-sport { background: var(--wash-sport); color: var(--tag-sport); }
+.typetag-run { background: var(--wash-run); color: var(--tag-run); }
 .np-hero-meta { font-size: 13.5px; color: var(--sub); margin-top: 4px; }
 .np-hero-meta b { color: var(--ink); font-weight: 700; }
 .warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
 :root[data-theme="dark"] .warmstrip { color: #E8B36B; }
 .np-ctarow { display: flex; gap: 10px; margin-top: 14px; position: relative; z-index: 1; }
-.np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px rgba(255,91,54,.35), inset 0 1px 0 rgba(255,255,255,.25); }
+.np-cta { flex: 1; border: 0; cursor: pointer; font: inherit; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 15px 0; text-align: center; font-weight: 800; font-size: 15.5px; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
 .alt-btn { width: 52px; height: 52px; border: 1.5px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--sub); font-size: 17px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
 /* ===== Napív secondary event row (VolleyballCard — RÖPI) ===== */
@@ -1310,7 +1259,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .beat { flex: 1; border: 0; cursor: pointer; font: inherit; border-radius: 16px; padding: 9px 0 8px; text-align: center; background: var(--warm); color: var(--faint); }
 .beat .t { font-size: 10.5px; font-weight: 800; }
 .beat .v { font-size: 16px; font-weight: 800; margin-top: 1px; font-family: var(--ff-display); }
-.beat.done { background: #EAF0E3; color: var(--sage-deep); }
+.beat.done { background: var(--wash-sage); color: var(--sage-deep); }
 :root[data-theme="dark"] .beat.done { background: rgba(127,164,138,.16); }
 .beat.now { background: var(--surface); color: var(--coral-deep); box-shadow: 0 0 0 2px var(--coral), 0 6px 14px rgba(255,107,74,.22); position: relative; }
 .beat.now .v { font-size: 11px; font-weight: 800; padding-top: 4px; }
@@ -1344,6 +1293,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --wash-gym: rgba(255,107,74,.16);
   --wash-sport: rgba(226,122,139,.16);
   --wash-run: rgba(111,167,216,.16);
+  --tag-gym: #F0966B; --tag-sport: #E9A3AE; --tag-run: #9CC0E4;
 }
 
 /* ===== Napív pill sub-nav (spec §4.3; Fuel/Me adopt later via --pill-accent) ===== */
@@ -1351,7 +1301,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .np-pills::-webkit-scrollbar { display: none; }
 .np-pill { flex-shrink: 0; border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--sub); background: rgba(255,255,255,.75); border: 1px solid rgba(43,33,24,.05); white-space: nowrap; }
 :root[data-theme="dark"] .np-pill { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.08); }
-.np-pill.on { color: #fff; border-color: transparent; background: var(--pill-accent, var(--coral)); }
+.np-pill.on { color: #fff; border-color: transparent; background: var(--pill-accent-strong, var(--pill-accent, var(--coral))); }
 
 /* ===== Napív page head (pgheadrow — Train sub-pages; Fuel/Me adopt later) ===== */
 .pghead-np { display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 24px 0; }
@@ -1383,10 +1333,10 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .dayrow .sess .s { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink); background: none; border: 0; padding: 0; text-align: left; font-family: inherit; width: 100%; cursor: inherit; }
 .dayrow .sess .s .meta { color: var(--faint); font-weight: 600; font-size: 11.5px; }
 .dayrow .chev { color: var(--faint); }
-.dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); }
+.dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); cursor: pointer; }
 .dayrow.today .chev { color: var(--coral-deep); }
 .dayrow.rest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
-.dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: #EAF0E3; color: var(--sage-deep); }
+.dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
 :root[data-theme="dark"] .dayrow .done-chip { background: rgba(127,164,138,.16); }
 .dayrow .log-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
 
@@ -1467,13 +1417,13 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .excard .prev { font-size: 12.5px; color: var(--faint); font-weight: 600; margin-top: 4px; }
 .setdots { display: flex; gap: 8px; margin-top: 15px; }
 .setdots .sd { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; background: var(--warm); color: var(--faint); }
-.setdots .sd.don { background: #EAF0E3; color: var(--sage-deep); }
+.setdots .sd.don { background: var(--wash-sage); color: var(--sage-deep); }
 :root[data-theme="dark"] .setdots .sd.don { background: rgba(127,164,138,.16); }
 .setdots .sd.cur { background: var(--coral); color: #fff; box-shadow: 0 6px 14px rgba(255,107,74,.38); }
 .setdots .sd.wu:not(.don):not(.cur) { background: rgba(255,179,71,.16); color: #8F5514; }
 :root[data-theme="dark"] .setdots .sd.wu:not(.don):not(.cur) { color: #E8B36B; }
 .setdots .sd.extra:not(.don):not(.cur) { background: transparent; border: 1.5px dashed var(--coral); box-sizing: border-box; color: var(--coral-deep); }
-.donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px rgba(255,91,54,.35), inset 0 1px 0 rgba(255,255,255,.25); }
+.donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
 /* Active workout · two-way pager bar (spec 2026-07-15, mockup B) — replaces the
    old one-way .nextex row. Big tap targets; ends disable at the list edges. */
 .pagerbar { display: flex; gap: 8px; margin: 10px 24px 6px; }
@@ -1523,7 +1473,7 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 
 /* ===== Napív fuel timeline slots (spec §4.4) ===== */
 .slot { display: flex; gap: 12px; background: var(--surface); border-radius: 20px; padding: 13px 15px; box-shadow: var(--np-shadow-row); margin-bottom: 9px; align-items: center; }
-.slot.next { box-shadow: 0 0 0 2px var(--sage), 0 10px 24px rgba(127,164,138,.2); }
+.slot.next { box-shadow: 0 0 0 2px var(--sage), 0 10px 24px color-mix(in srgb, var(--sage) 20%, transparent); }
 .slot.done { opacity: .78; }
 .slot .fav { width: 42px; height: 42px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
 .slot .tx { flex: 1; min-width: 0; }

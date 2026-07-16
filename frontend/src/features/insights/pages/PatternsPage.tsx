@@ -11,7 +11,7 @@ export function PatternsPage() {
 
   if (degraded) {
     return (
-      <div className="card notch-8" style={{ padding: 16, textAlign: 'center' }}>
+      <div className="card" style={{ padding: 16, textAlign: 'center' }}>
         <p className="text-tertiary" style={{ fontSize: 12 }}>
           A minta-motor most nem elérhető — a felismert minták itt jelennek majd meg.
         </p>
@@ -31,19 +31,19 @@ export function PatternsPage() {
       ))}
 
       {patterns.length === 0 && !isPending && (
-        <div className="card notch-8" style={{ padding: 16, textAlign: 'center' }}>
+        <div className="card" style={{ padding: 16, textAlign: 'center' }}>
           <p className="text-tertiary" style={{ fontSize: 12 }}>
             Még nincs felismert minta — az éjszakai elemzés magától tölti, ahogy gyűlnek a napok.
           </p>
         </div>
       )}
 
-      <div className="card notch-4 mt-md" style={{ padding: 14, background: 'rgba(94, 234, 212, 0.03)' }}>
-        <div className="eyebrow brand">Recently confirmed · L3</div>
+      <div className="card mt-md" style={{ padding: 14, background: 'var(--wash-lav)' }}>
+        <div className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Recently confirmed · L3</div>
         <div className="col gap-sm mt-md">
           {recentlyConfirmed.map((t, i) => (
             <div key={i} className="row gap-sm">
-              <Icon name="check" size={14} color="var(--brand-glow)" />
+              <Icon name="check" size={14} color="var(--lav-deep)" />
               <span style={{ fontSize: 12, color: 'var(--text-primary)' }}>{t}</span>
             </div>
           ))}

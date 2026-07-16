@@ -822,12 +822,13 @@ function Step3Program({
           {[0, 1, 2].map((i) => (
             <div
               key={i}
+              className="np-pulse"
               style={{
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
                 background: 'var(--brand-glow)',
-                animation: `pulse-soft 1.2s ease-in-out infinite ${i * 0.2}s`,
+                animationDelay: `${i * 0.2}s`,
               }}
             />
           ))}

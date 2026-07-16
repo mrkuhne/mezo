@@ -22,7 +22,7 @@ export function WorkoutTeaser({
       <div className="np-hero-eyebrow"><span className="dotp" />Következő · ma {time ?? '—'}</div>
       <div className="h2row">
         <h2>{workout.title}</h2>
-        <span className="typetag typetag-gym">🏋️ Gym · hipertrófia</span>
+        <span className="typetag typetag-gym">🏋️ Gym{workout.tag ? ` · ${workout.tag}` : ''}</span>
       </div>
       <div className="np-hero-meta">
         <b>{workout.exercises.length} gyakorlat · ~{workout.durationEst} perc</b>

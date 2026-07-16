@@ -60,7 +60,7 @@ export function SportPage() {
   const week = sport.week
 
   // Venue = the most frequent slot location (schedule-derived; the mock fixture
-  // yields the same 'BVSC csarnok' string the prototype hardcoded — parity-safe).
+  // yields the same 'BVSC csarnok' string the prototype hardcoded).
   const venue = (() => {
     const counts = new Map<string, number>()
     for (const s of volleyball?.sessions ?? []) if (s.court) counts.set(s.court, (counts.get(s.court) ?? 0) + 1)
@@ -335,7 +335,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
         })}
       </div>
 
-      <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'rgba(94, 234, 212, 0.03)' }}>
+      <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <Icon name="sparkle" size={12} color="var(--brand-glow)" />
           <div className="col flex-1">
@@ -400,7 +400,7 @@ function SportCrossloadView({ crossLoad }: { crossLoad: CrossLoadRowData[] }) {
     <div style={{ padding: '8px 24px 16px' }}>
       <div
         className="card notch-4"
-        style={{ padding: 12, background: 'rgba(94, 234, 212, 0.03)', marginBottom: 14 }}
+        style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)', marginBottom: 14 }}
       >
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
           <Icon name="sparkle" size={12} color="var(--brand-glow)" />

@@ -35,8 +35,11 @@ export function weeklyLoad(agenda: Pick<WeeklyAgendaDay, 'gym' | 'sport' | 'runn
 
   const runs = agenda.flatMap((a) => a.running)
   if (runs.length) {
-    const kind = runs.some((r) => r.kind === 'sprint') ? 'sprint' : 'piramis'
-    tiles.push({ kind: 'run', label: 'Futás', icon: '🏃', value: `${runs.length}× · ${kind}` })
+    // Headline the week's dominant running style by intensity (sprint > pyramid > steady).
+    // steady is a real API kind — map it to 'tempó' instead of collapsing it into 'piramis'.
+    const kinds = new Set(runs.map((r) => r.kind))
+    const kindLabel = kinds.has('sprint') ? 'sprint' : kinds.has('pyramid') ? 'piramis' : 'tempó'
+    tiles.push({ kind: 'run', label: 'Futás', icon: '🏃', value: `${runs.length}× · ${kindLabel}` })
   }
 
   return tiles

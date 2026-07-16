@@ -15,7 +15,6 @@ import { EditGoalSheet } from '@/features/me/sheets/EditGoalSheet'
 import { GoalGate } from '@/features/me/components/GoalGate'
 import GoalsSkeleton from '@/features/me/pages/GoalsSkeleton'
 import { TRAJECTORY_LABEL, GUARD_LABEL } from '@/features/me/logic/goalLabels'
-// LinkedMesoCard was the per-row card the GoalTimeline lane view replaced in G4b.
 
 export function GoalsPage() {
   const navigate = useNavigate()
@@ -198,7 +197,7 @@ export function GoalsPage() {
           {/* Stats — only backend-derived figures: remaining kg (weight-log derived)
               and the real EWMA 4-week rate. */}
           <div className="row gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
-            <GoalStat label="Hátra" val={remaining.toFixed(1)} unit="kg" />
+            <GoalStat label="Hátra" val={hu1(remaining)} unit="kg" />
             <GoalStat label="Tempó" val={String(weightTrends.last4w.weeklyRate)} unit="kg/hét" highlight />
           </div>
 

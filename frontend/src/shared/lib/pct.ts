@@ -6,3 +6,7 @@
  * total must use this instead of a raw `(a / b) * 100`, which would render "NaN%".
  */
 export const pct = (a: number, b: number): number => (b > 0 ? Math.min(100, (a / b) * 100) : 0)
+
+/** Clamp an already-computed percentage into [0, 100] — for bar/fill widths driven
+ * by a server-supplied progressPct that could over/undershoot the track. */
+export const clampPct = (v: number): number => Math.min(100, Math.max(0, v))

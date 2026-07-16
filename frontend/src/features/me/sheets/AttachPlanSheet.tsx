@@ -3,15 +3,7 @@ import { Sheet } from '@/shared/ui/Sheet'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { useGoal, useGoalActions, useTrain, useRunning } from '@/data/hooks'
-
-// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
-const SECTION_LABEL: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: 'var(--faint)',
-}
+import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 
 // Attach-an-existing-plan picker (G4b hub). Opened from a GoalPlanSlots "＋ Csatolj
 // meglévőt" CTA for a given plan type. Lists the user's owned mesocycles

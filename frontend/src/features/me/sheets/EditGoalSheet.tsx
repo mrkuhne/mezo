@@ -2,19 +2,11 @@ import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
+import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { useGoalActions } from '@/data/hooks'
 import { FieldRow } from '@/features/me/components/FieldRow'
 import type { GoalResponse } from '@/data/me/goalApi'
 import type { Goal } from '@/data/types'
-
-// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
-const SECTION_LABEL: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: 'var(--faint)',
-}
 
 // Goal manage sheet (G4b). Opened from the GoalsPage hero. Shows the read-only
 // goal fields, an editable "Napi ritmus" day-planner section (Fuel P5), plus the

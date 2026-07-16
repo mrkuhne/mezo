@@ -209,7 +209,7 @@ export function FuelKamraPage() {
               style={{
                 alignItems: 'center', padding: '9px 13px',
                 fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
-                color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid rgba(94,234,212,0.3)',
+                color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid color-mix(in srgb, var(--sage) 30%, transparent)',
               }}
             >
               <Icon name="settings" size={12} /> Szűrők
@@ -234,7 +234,7 @@ export function FuelKamraPage() {
                     style={{
                       alignItems: 'center', padding: '4px 9px',
                       fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
-                      color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid rgba(94,234,212,0.3)',
+                      color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid color-mix(in srgb, var(--sage) 30%, transparent)',
                     }}
                   >
                     <span style={{ width: 6, height: 6, borderRadius: '50%', background: meta?.color ?? 'var(--success)', flexShrink: 0 }} />

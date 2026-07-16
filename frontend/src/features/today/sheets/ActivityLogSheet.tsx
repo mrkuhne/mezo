@@ -64,7 +64,7 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           </div>
 
           {quest && phase === 'compose' && (
-            <div className="card notch-4" style={{ padding: 12, marginBottom: 14, background: 'rgba(94, 234, 212, 0.04)', borderColor: 'rgba(94, 234, 212, 0.3)' }}>
+            <div className="card notch-4" style={{ padding: 12, marginBottom: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
                 <Icon name="sparkle" size={11} color="var(--brand-glow)" />
                 <div className="col" style={{ flex: 1, gap: 3 }}>
@@ -112,7 +112,7 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           {phase === 'done' && result && (
             <>
               <div className="col gap-sm">
-                <div className="card notch-4" style={{ padding: 14, background: 'rgba(94, 234, 212, 0.04)', borderColor: 'rgba(94, 234, 212, 0.3)' }}>
+                <div className="card notch-4" style={{ padding: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
                   <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 14, fontWeight: 600 }}>{doneMeta ? `${doneMeta.icon} ${doneMeta.name}` : result.entry.text}</span>
                     <span className="chip notch-4" style={{ whiteSpace: 'nowrap' }}>+{result.entry.xpAwarded} XP</span>

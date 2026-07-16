@@ -6,7 +6,7 @@ import { Skeleton, SkeletonCard, SkeletonText } from '@/shared/ui/Skeleton'
 // ActiveWorkoutPage). A header line + a couple of card placeholders, under a
 // single role="status" landmark so tests/AT can detect the loading state.
 // Inert in mock mode: the views only mount it while their query is pending,
-// and mock seeds resolve synchronously (no skeleton flash → Playwright parity).
+// and mock seeds resolve synchronously (no skeleton flash).
 export function ScreenSkeleton() {
   return (
     <div role="status" aria-label="Betöltés…">

@@ -143,9 +143,9 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
                 Keresés <SourceBadge source="openfoodfacts" size="lg" />
               </div>
-              <div style={{
+              <div className="np-twinkle" style={{
                 width: 12, height: 12, borderRadius: '50%', margin: '16px auto 0',
-                border: '1.5px solid var(--brand-glow)', animation: 'pulse 1.2s ease-in-out infinite',
+                border: '1.5px solid var(--brand-glow)',
               }} />
             </div>
           )}

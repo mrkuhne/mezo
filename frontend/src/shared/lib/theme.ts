@@ -4,7 +4,7 @@ export const DEFAULT_THEME: Theme = 'light'
 
 /** Browser/PWA chrome color per theme — keep in sync with --canvas in prototype.css
     and with the static meta in index.html / manifest in vite.config.ts. */
-const THEME_COLOR: Record<Theme, string> = { light: '#FBF6EF', dark: '#0A0F14' }
+const THEME_COLOR: Record<Theme, string> = { light: '#FBF6EF', dark: '#191614' }
 
 export function readStoredTheme(): Theme | null {
   try {

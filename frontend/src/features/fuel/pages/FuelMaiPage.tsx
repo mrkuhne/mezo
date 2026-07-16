@@ -18,9 +18,9 @@ import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 // gauge card (KcalGauge + fuelchips + macro soft bars) → aistrip (PacingCard) → timeline
 // (secthead-np + protocol meta + FuelTimeline, unchanged mount) → NEW water .slot →
 // micronutrients. The retired context-strip card's gym/vb data lives on in the timeline's
-// workout/sport blocks; its coffee/kitchen cells moved into .fuelchips. MacroHero unmounted
-// here (kcal → gauge, macro cells → .macror, water → the water slot) — file kept, S8 decides
-// deletion once its last consumer (this page) drops it; see task-4 report for the orphan check.
+// workout/sport blocks; its coffee/kitchen cells moved into .fuelchips. The old MacroHero card
+// is gone (kcal → gauge, macro cells → .macror, water → the water slot); it was deleted in S8
+// once this page (its last consumer) dropped it.
 export function FuelMaiPage() {
   const { fuel } = useFuelDay()
   const { plan, getScoredMeal } = useFuelTimeline()
@@ -79,10 +79,10 @@ export function FuelMaiPage() {
           <KcalGauge consumed={fuel.consumed.kcal} target={fuel.targets.kcal} />
 
           <div className="fuelchips">
-            <span className="chx" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}>
+            <span className="chx" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)', cursor: 'default' }}>
               kávé cutoff {plan.caffeineCutoff}
             </span>
-            <span className="chx" style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}>
+            <span className="chx" style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)', cursor: 'default' }}>
               konyha zár {plan.kitchenClose}
             </span>
           </div>

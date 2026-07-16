@@ -39,7 +39,7 @@ export function RecommendationCard({ rec }: { rec: StackRecommendation }) {
             className="row gap-md mt-sm"
             style={{ alignItems: 'center', paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}
           >
-            <span className="label-mono brand" style={{ fontSize: 9 }}>
+            <span className="label-mono" style={{ fontSize: 9 }}>
               <Icon name="sparkle" size={9} /> {rec.metric}
             </span>
             <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>

@@ -284,7 +284,7 @@ test('GoalPlannerPage renders the wizard for a complete-profile user (real mode,
 // --- loading skeleton (mezo-f2z) ---------------------------------------------
 // Real mode renders the generic ScreenSkeleton (role="status") while the
 // biometric-profile query is unresolved; mock mode seeds the profile
-// synchronously (initialData) → isLoading is false → no skeleton flashes (parity).
+// synchronously (initialData) → isLoading is false → no skeleton flashes (mock has no loading frame).
 describe('GoalPlannerPage (real mode, pending)', () => {
   afterEach(() => vi.unstubAllEnvs())
   it('shows the skeleton while the biometric-profile query is unresolved', async () => {

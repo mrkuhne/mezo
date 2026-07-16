@@ -8,18 +8,19 @@ const SUBTITLE = { mock: 'demo beszélgetés', live: 'Gemini · élő' } as cons
 function ThinkingDots() {
   return (
     <div className="col gap-sm" style={{ alignSelf: 'flex-start', maxWidth: '85%' }}>
-      <span className="eyebrow brand">Mezo</span>
-      <div className="card notch-12" style={{ padding: 14 }}>
+      <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo</span>
+      <div className="card" style={{ padding: 14 }}>
         <div className="row gap-xs">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
+              className="np-pulse"
               style={{
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
-                background: 'var(--brand-glow)',
-                animation: `pulse-soft 1.2s ease-in-out infinite ${i * 0.2}s`,
+                background: 'var(--lav-deep)',
+                animationDelay: `${i * 0.2}s`,
               }}
             />
           ))}
@@ -45,7 +46,7 @@ export function ChatPage() {
     <div className="col gap-md">
       <div className="row gap-sm" style={{ justifyContent: 'space-between' }}>
         <div className="col">
-          <span className="eyebrow brand">Mezo · társ</span>
+          <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo · társ</span>
           <span className="text-tertiary" style={{ fontSize: 11, fontFamily: 'var(--ff-mono)' }}>
             {degraded ? 'a társ most nem elérhető' : SUBTITLE[mode]}
           </span>
@@ -53,7 +54,7 @@ export function ChatPage() {
       </div>
 
       {degraded && (
-        <div className="card notch-12" style={{ padding: 14 }}>
+        <div className="card" style={{ padding: 14 }}>
           <p style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.5 }}>
             A társ jelenleg nincs bekapcsolva — a beszélgetés nem elérhető. A napló, az edzés és a
             Fuel változatlanul működik.
@@ -72,13 +73,13 @@ export function ChatPage() {
           <ChatMessage m={{ role: 'assistant', ts: 'most', text: turn.draft }} />
         )}
         {error && (
-          <div className="card notch-12" style={{ padding: 14, alignSelf: 'flex-start', maxWidth: '85%' }}>
+          <div className="card" style={{ padding: 14, alignSelf: 'flex-start', maxWidth: '85%' }}>
             <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{error}</p>
           </div>
         )}
       </div>
 
-      <div className="card notch-12" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="card" style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
         <button type="button" className="chip" style={{ padding: 8 }} aria-label="Hangbevitel">
           <Icon name="mic" size={14} />
         </button>
@@ -92,10 +93,10 @@ export function ChatPage() {
         />
         <button
           type="button"
-          className="chip brand"
+          className="chip"
           onClick={submit}
           disabled={degraded}
-          style={{ padding: 8 }}
+          style={{ padding: 8, background: 'var(--wash-lav)', borderColor: 'var(--lav-deep)', color: 'var(--lav-deep)' }}
           aria-label="Küldés"
         >
           <Icon name="send" size={14} />

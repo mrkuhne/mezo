@@ -10,16 +10,16 @@ describe('InsightsSubNav (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders all seven sub-nav items with verbatim labels', () => {
+  test('renders all seven pills with verbatim labels', () => {
     renderAt('/insights')
-    for (const label of ['Patterns', 'Weekly', 'Memoir', 'Knowledge', 'Chat', 'Predictions', 'Experiments']) {
+    for (const label of ['Minták', 'Heti', 'Memoár', 'Tudástár', 'Chat', 'Előrejelzések', 'Kísérletek']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
     }
   })
 
   test('marks the active sub-view from the URL', () => {
     const { container } = renderAt('/insights/memoir')
-    expect(container.querySelector('.subnav-item.active')).toHaveTextContent('Memoir')
+    expect(container.querySelector('.np-pill.on')).toHaveTextContent('Memoár')
   })
 })
 
@@ -29,13 +29,13 @@ describe('InsightsSubNav (real mode)', () => {
 
   test('shows all seven tabs — nothing hidden (Experiments un-ghosted at P2)', () => {
     renderAt('/insights')
-    for (const label of ['Patterns', 'Weekly', 'Memoir', 'Knowledge', 'Chat', 'Predictions', 'Experiments']) {
+    for (const label of ['Minták', 'Heti', 'Memoár', 'Tudástár', 'Chat', 'Előrejelzések', 'Kísérletek']) {
       expect(screen.getByRole('link', { name: label })).toBeInTheDocument()
     }
   })
 
-  test('Patterns (index) is active only on exact /insights', () => {
+  test('Minták (index) is active only on exact /insights', () => {
     const { container } = renderAt('/insights/chat')
-    expect(container.querySelector('.subnav-item.active')).toHaveTextContent('Chat')
+    expect(container.querySelector('.np-pill.on')).toHaveTextContent('Chat')
   })
 })

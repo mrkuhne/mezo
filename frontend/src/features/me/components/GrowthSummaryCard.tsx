@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
+import { clampPct } from '@/shared/lib/pct'
 import type { ProgressionProfileResponse, SkillLevel } from '@/data/progression/progressionApi'
 import { ATHLETIC_META, LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { MUSCLE_LABELS } from '@/data/train/train'
@@ -73,7 +74,7 @@ export function GrowthSummaryCard({ profile }: { profile: ProgressionProfileResp
                 <span>{m.name}</span>
               </span>
               <div className="bar">
-                <i style={{ width: `${s.progressPct}%` }} />
+                <i style={{ width: `${clampPct(s.progressPct)}%` }} />
               </div>
               <span className="lv">Lv {s.level}</span>
             </div>

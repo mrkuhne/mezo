@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · RunWeekStrip — the N-segment week progress strip for a running
-// block (reta-bar idiom). past = dim --info, now = glowing --info, future =
+// block (reta-bar idiom). past = dim --tag-run, now = glowing --tag-run, future =
 // faint surface-2. Presentational; mirrors the .wkstrip markup in the Futás
 // mockups. Used by RunningPage's hero cards.
 // ============================================================

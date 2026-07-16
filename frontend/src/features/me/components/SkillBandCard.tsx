@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { clampPct } from '@/shared/lib/pct'
 
 export interface SkillRowVM {
   key: string
@@ -11,7 +12,6 @@ export interface SkillRowVM {
 
 // Normalise hu-HU's NBSP / narrow-NBSP thousands separators to a plain space.
 const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
-const clampPct = (v: number) => Math.min(100, Math.max(0, v))
 
 /**
  * One skill band (LIFE / Atlétikus / Izom) as a full meter-row list — Growth page Skillek tab.

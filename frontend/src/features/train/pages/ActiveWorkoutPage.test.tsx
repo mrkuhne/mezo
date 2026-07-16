@@ -1079,7 +1079,7 @@ test('real mode: a completed today instance redirects the session route to the r
 // --- loading skeleton (mezo-f2z) ---------------------------------------------
 // Real mode renders the generic ScreenSkeleton (role="status") while the
 // meso + today queries are unresolved (workoutPending = !mock && (mesoPending ||
-// todayPending)); mock seeds → workoutPending is false → no skeleton (parity).
+// todayPending)); mock seeds → workoutPending is false → no skeleton (mock has no loading frame).
 describe('ActiveWorkoutPage (real mode, pending)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
