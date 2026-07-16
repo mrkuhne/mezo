@@ -7,7 +7,7 @@
 // ============================================================
 import type { MesoPhase } from '@/data/types'
 
-// Prototype train-views.jsx `colorFor`: MEV→tertiary, MAV→brand-glow,
+// Prototype train-views.jsx `colorFor`: MEV→tertiary, MAV→coral (ex brand-glow),
 // MRV→warning, Deload→cat-preference (fallback text-secondary).
 function colorFor(p: MesoPhase): string {
   return p === 'MEV'

@@ -22,7 +22,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 
-// Accent colour per stash item: caffeine wins, then type, then brand-glow.
+// Accent colour per stash item: caffeine wins, then type, then the coral accent.
 function rowColor(s: SupplementStashItem): string {
   if (s.caffeine) return 'var(--warning)'
   if (s.type === 'stimulant') return 'var(--cat-tendency)'

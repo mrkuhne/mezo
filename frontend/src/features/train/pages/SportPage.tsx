@@ -5,7 +5,7 @@
 // Ported from prototype sport.jsx (SportPage + SportWeekView +
 // SportLogView + SportCrossloadView). All sport rose accents use the
 // Napiv --tag-sport/--wash-sport tokens (rose vocabulary); the faint teal
-// brand-glow card tints follow the existing Insights/Fuel slice convention.
+// Coral card tints follow the existing Insights/Fuel slice convention.
 // ============================================================
 import { useState } from 'react'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'

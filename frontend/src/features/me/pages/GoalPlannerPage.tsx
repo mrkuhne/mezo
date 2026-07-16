@@ -475,7 +475,7 @@ function Step1({
 }
 
 // The cél step's live feasibility panel (mockup goal-wizard-v2.html). Two states:
-// withinSafeBand → brand-tinted "X,Y %BW/hét · ✓ Reális" + a kg/weeks summary;
+// withinSafeBand → coral-tinted "X,Y %BW/hét · ✓ Reális" + a kg/weeks summary;
 // otherwise (aggressive) → warning-tinted "X,Y %BW/hét · ⚠ Agresszív" + the
 // "↦ Reális dátum: <date> — Elfogadom" action that bumps the cél-dátum to the
 // cap-paced suggestion (re-previews → flips to feasible). The CTA itself stays

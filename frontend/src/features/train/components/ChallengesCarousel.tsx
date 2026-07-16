@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · ChallengesCarousel — pre-workout L2 decisions. The companion
 // proposes low-stakes micro-experiments; the user approves/skips freely.
-// Scroll-snap carousel + dot pager (accepted dots get brand-glow).
+// Scroll-snap carousel + dot pager (accepted dots get the coral glow).
 // Ported from prototype challenges.jsx.
 // ============================================================
 import { useRef, useState, type UIEvent } from 'react'

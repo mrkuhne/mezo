@@ -736,7 +736,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   border: 1px solid var(--line);
 }
 
-/* Brand-glow accent strip */
+/* Coral accent strip */
 .accent-strip {
   position: absolute;
   left: 0; top: 0; bottom: 0;
