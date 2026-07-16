@@ -6,6 +6,8 @@ test('renders the day line with reta day and the daypart greeting', () => {
   render(<GreetingHeader today={today} user={user} retaDay={3} now={new Date('2026-07-13T14:00:00')} />)
   expect(screen.getByText(content => content.includes('Reta D3'))).toBeInTheDocument()
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('jó napod lesz.')
+  // The greeting interpolates the user's name (afternoon variant: "Szia <name> — ...").
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(user.name)
 })
 
 test('morning and evening greetings follow the daypart', () => {

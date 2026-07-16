@@ -58,8 +58,8 @@ export function SlotCard({
 
   return (
     <div className={`slot${isDone ? ' done' : ''}${isNow ? ' next' : ''}`}>
-      <span className="fav" role="img" aria-label={meta.label} style={{ background: FAV_WASH[slot.kind] }}>
-        {FAV_EMOJI[slot.kind]}
+      <span className="fav" role="img" aria-label={meta.label} style={{ background: FAV_WASH[slot.kind] ?? FAV_WASH.meal }}>
+        {FAV_EMOJI[slot.kind] ?? FAV_EMOJI.meal}
       </span>
 
       <div className="tx">

@@ -22,6 +22,19 @@ test('clicking bővebben expands to the full card: confidence, bold via <strong>
   expect(screen.getByRole('button', { name: 'összecsuk' })).toBeInTheDocument()
 })
 
+test('összecsuk collapses the expanded card back to the clamped preview', () => {
+  const b = resolveBriefing('good')
+  const { container } = render(<BriefingCard briefing={b} />)
+  fireEvent.click(screen.getByRole('button', { name: 'bővebben' }))
+  expect(screen.getByRole('button', { name: 'összecsuk' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'összecsuk' }))
+  // Back to the collapsed state: bővebben returns, the refs row and confidence chip are gone.
+  expect(screen.getByRole('button', { name: 'bővebben' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'összecsuk' })).not.toBeInTheDocument()
+  expect(container.querySelectorAll('.toolchip').length).toBe(0)
+  expect(screen.queryByText(/Confidence/)).not.toBeInTheDocument()
+})
+
 test('expanded: generated briefing with no demo label and no confidence chip', () => {
   const generated = {
     eyebrow: 'Reggeli briefing · Reta nap 3',

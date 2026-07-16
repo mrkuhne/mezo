@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Napív")
 type: feature-platform
 status: done
-updated: 2026-07-15
+updated: 2026-07-16
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -194,7 +194,7 @@ The design system is consumed by **every** feature; the seams are the imports fr
 | **Icon set ↔ TabBar / every view** | The `IconName` union (`Icon.tsx:7`) is the contract. `TabBar`'s `LEFT`/`RIGHT` tab arrays map tab ids → `IconName` (`today/train` · `fuel/me` — `TabBar.tsx:6–13`); the center FAB uses `'plus'`. Adding a glyph = extend the `IconName` union **and** add a `case` in `Icon.tsx`. Recent additions: `pencil` + `trash` (edit/delete affordances, for the Train catalog-authoring sheet — `mezo-52zg`). |
 | **ToolChip ↔ AI-surfacing views** | `Tool { type: 'read' \| 'compute' \| 'write'; name; args? }` (exported from `ToolChip.tsx`) is the cross-feature type, consumed by Train cross-load, Fuel, and Insights to show the AI's tool calls. Mock today; real in Phase 3. |
 | **NovaDot / SourceBadge ↔ Fuel** | _Consume_ `NovaGroup`/`NovaMeta` (`data/nova.ts`) and `PantrySourceKey`/`PantrySourceMeta` (`data/pantrySources.ts`) — the Fuel domain's food-provenance vocabulary. |
-| **ScoreRing / MacroRow ↔ Fuel** | `ScoreHero`, `MacroHero`, `RecipeDetailSheet` _consume_ them for meal scores/macros (`{ pct, label }` and `{ macros, per? }`). |
+| **ScoreRing ↔ Fuel** | `ScoreHero`, `RecipeDetailSheet` _consume_ it for meal scores (`{ pct, label }`). |
 | **RetaPhaseBar ↔ Today/Train** | _Consumes_ a `day` index derived from the retatrutide cycle (mock); colors come from `--reta-d1..d7`. |
 | **GhostState ↔ Train (real mode)** | Train is the only domain in real mode today; its views (`SportPage`, `RunningPage`, GYM…) ghost-guard with `GhostState` when the backend is empty. This is the visible seam between the design system and the dual-mode data layer (`isMockMode()`, `@/data/_client/mode`). |
 | **App shell ↔ Train (rest Live-Activity, Napiv S5, `mezo-8141`)** | `AppLayout.tsx` mounts `LiveActivityProvider` (wraps `PhoneFrame`) and hides `TabBar` on `/train/session`; `PhoneFrame` mounts `DynamicIsland`, which _consumes_ `useLiveActivityOptional()`. `ActiveWorkoutPage` (Train) is the only feature that ever calls `useLiveActivity().startRest`/`clearRest`. Crossing type: `RestActivity {endsAt, total, next}` — full behavior in [train.md](train.md) §2/§9. |
@@ -335,7 +335,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - `Eyebrow.tsx` / `LabelMono.tsx` / `PageTitle.tsx` / `Display.tsx` — typography.
 - `Cta.tsx` / `Chip.tsx` / `ToolChip.tsx` / `ToolChipRow.tsx` — buttons & chips.
 - `ProgressBar.tsx` / `ScoreRing.tsx` / `RetaPhaseBar.tsx` / `Toggle.tsx` — indicators/controls.
-- `MacroRow.tsx` / `QuickStat.tsx` / `StatCell.tsx` / `RefTag.tsx` — domain-flavored badges/stats kept shared (multi-feature or domain-free). `NovaDot`/`SourceBadge` were relocated to `frontend/src/features/fuel/components/` — they import `@/data/{nova,pantrySources}` and are used only by Fuel, so they are feature-coupled, not shared primitives.
+- `QuickStat.tsx` / `StatCell.tsx` / `RefTag.tsx` — domain-flavored badges/stats kept shared (multi-feature or domain-free). `NovaDot`/`SourceBadge` were relocated to `frontend/src/features/fuel/components/` — they import `@/data/{nova,pantrySources}` and are used only by Fuel, so they are feature-coupled, not shared primitives.
 
 **App shell** (`frontend/src/app/`)
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell.

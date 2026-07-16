@@ -590,39 +590,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 .reta-seg.past { opacity: 0.4; }
 
-/* Check-in strip */
-.checkin-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  padding: 0 24px;
-}
-.checkin-slot {
-  position: relative;
-  padding: 10px 8px;
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
-  text-align: center;
-}
-.checkin-slot.done { background: rgba(94, 234, 212, 0.06); border-color: var(--border-brand); }
-.checkin-slot.now { border-color: var(--brand-primary); box-shadow: 0 0 0 1px var(--brand-primary); }
-.checkin-slot.skipped { opacity: 0.4; }
-.checkin-slot .time {
-  font-family: var(--ff-mono);
-  font-size: 11px; font-weight: 600;
-  letter-spacing: 0.08em;
-  color: var(--text-secondary);
-}
-.checkin-slot.done .time { color: var(--brand-glow); }
-.checkin-slot .ico {
-  font-family: var(--ff-mono);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  color: var(--text-tertiary);
-  margin-top: 3px;
-  text-transform: uppercase;
-}
-
 /* Set dots */
 .set-dots { display: flex; gap: 6px; }
 .set-dot {
