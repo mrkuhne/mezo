@@ -397,6 +397,12 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .notch-16 { clip-path: none; border-radius: 24px; }
 .notch-tl-12, .notch-br-12 { clip-path: none; border-radius: 20px; }
 
+/* Napív inset radii — successors of the retired notch-* tokens for non-card elements (mezo-x3x0) */
+.rad-12 { border-radius: 12px; }
+.rad-16 { border-radius: 16px; }
+.rad-20 { border-radius: 20px; }
+.rad-24 { border-radius: 24px; }
+
 /* Chip / tag */
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
