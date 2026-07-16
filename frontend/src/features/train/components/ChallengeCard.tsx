@@ -12,8 +12,8 @@ import { ToolChip } from '@/shared/ui/ToolChip'
 
 const TYPE_COLOR: Record<ChallengeType, string> = {
   PR: 'var(--brand-glow)',
-  Depth: 'var(--cat-tendency)',
-  Volume: 'var(--info)',
+  Depth: 'var(--rose)',
+  Volume: 'var(--sky)',
   Tempo: 'var(--cat-preference)',
 }
 

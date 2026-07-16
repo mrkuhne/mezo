@@ -120,7 +120,7 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
         })}
       </div>
 
-      <span className="chev" aria-hidden="true">›</span>
+      {hasContent && <span className="chev" aria-hidden="true">›</span>}
     </div>
   )
 }

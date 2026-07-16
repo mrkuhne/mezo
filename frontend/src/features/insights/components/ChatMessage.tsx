@@ -7,7 +7,7 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
     return (
       <div style={{ alignSelf: 'flex-end', maxWidth: '80%' }}>
         <div
-          className="card notch-12"
+          className="card"
           style={{ padding: '10px 14px', background: 'var(--surface-2)', borderColor: 'var(--border-subtle)' }}
         >
           <p style={{ fontSize: 13, color: 'var(--text-primary)' }}>{m.text}</p>
@@ -30,7 +30,7 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
   return (
     <div className="col gap-sm" style={{ alignSelf: 'flex-start', maxWidth: '92%', width: '92%' }}>
       <div className="row gap-sm">
-        <span className="eyebrow brand">Mezo</span>
+        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo</span>
         <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)' }}>
           {m.ts}
         </span>
@@ -45,7 +45,7 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
         )}
       </div>
       {m.tools && <ToolChipRow tools={m.tools} />}
-      <div className="card notch-12" style={{ padding: 14 }}>
+      <div className="card" style={{ padding: 14 }}>
         <p style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.55 }}>{m.text}</p>
         {m.refs && (
           <div

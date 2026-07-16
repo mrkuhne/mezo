@@ -4,8 +4,8 @@ beforeAll(() => {
   // jsdom doesn't run @import; inject the raw variable blocks the test asserts on.
   const style = document.createElement('style')
   style.textContent = `
-    :root { --canvas:#FBF6EF; --surface-1:#FFFFFF; --brand-glow:#0E7C7B; }
-    :root[data-theme="dark"] { --canvas:#0A0F14; --surface-1:#121A22; --brand-glow:#5EEAD4; }
+    :root { --canvas:#FBF6EF; --surface-1:#FFFFFF; --brand-glow:#FF6B4A; }
+    :root[data-theme="dark"] { --canvas:#0A0F14; --surface-1:#121A22; --brand-glow:#FF7E5C; }
   `
   document.head.appendChild(style)
 })

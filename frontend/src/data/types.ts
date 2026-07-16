@@ -92,7 +92,7 @@ export interface FuelSummary { name: string; when: string; state: 'done' | 'pend
 export interface FuelDay {
   targets: MacroSet; consumed: MacroSet
   meals: FuelMeal[]
-  pacing: { eyebrow: string; msg: string }
+  pacing: { msg: string }
   micronutrients: Micronutrient[]
   supplements: FuelSummary[]
 }
@@ -153,9 +153,7 @@ export interface TodayMeta { dayLabel: string; dateLabel: string; workoutType: s
 /** The workout teaser's prediction line — demo copy in mock mode; real predictions are a later epic (null hides the row). */
 export interface WorkoutPrediction { confidence: number; label: string }
 /** One cell of the Today quick-stats row ("Most"). */
-export interface QuickStatItem { label: string; value: string; unit: string; delta: string }
-/** The Insights teaser card content — null hides the card (no pattern / degraded). */
-export interface InsightsTeaserItem { eyebrow: string; text: string }
+export interface QuickStatItem { label: string; value: string; unit: string }
 export interface UserMeta {
   weekInMeso: number
   dayInWeek: number

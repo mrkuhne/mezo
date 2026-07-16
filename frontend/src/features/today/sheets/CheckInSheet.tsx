@@ -317,7 +317,7 @@ function CheckInObservation({ values }: { values: CheckinValues; slot?: CheckinS
   return (
     <div className="card notch-4" style={{
       padding: 12,
-      background: obs.tone === 'good' ? 'rgba(94, 234, 212, 0.05)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.05)' : 'var(--surface-1)',
+      background: obs.tone === 'good' ? 'color-mix(in srgb, var(--coral) 5%, transparent)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.05)' : 'var(--surface-1)',
       borderColor: obs.tone === 'good' ? 'var(--border-brand)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.25)' : 'var(--border-subtle)',
     }}>
       <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>

@@ -1,7 +1,7 @@
 // Aggregate FE↔data boundary. Every consumer imports its hooks from '@/data/hooks';
 // the implementations live in the per-domain hook modules — this file only re-exports,
 // so consumer import paths and the dual-mode contract stay stable.
-export { useTodayScenario, resolveBriefing, useToday, useFuelPreview, useQuickStats, useInsightsTeaser } from '@/data/today/todayHooks'
+export { useTodayScenario, resolveBriefing, useToday, useFuelPreview, useQuickStats } from '@/data/today/todayHooks'
 export { useCheckins } from '@/data/today/checkinHooks'
 export { useBriefing } from '@/data/today/briefingHooks'
 export { useCompanionNote } from '@/data/today/heartbeatHooks'

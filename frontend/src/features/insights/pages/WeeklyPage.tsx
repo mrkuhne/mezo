@@ -15,10 +15,10 @@ export function WeeklyPage() {
 
   return (
     <div className="col gap-md">
-      <div className="card notch-12" style={{ padding: 18 }}>
+      <div className="card" style={{ padding: 18 }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div className="col">
-            <span className="eyebrow brand">{weekly.title}</span>
+            <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{weekly.title}</span>
             {weekly.score != null ? (
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, lineHeight: 1, marginTop: 8 }}>
                 {weekly.score}
@@ -59,14 +59,14 @@ export function WeeklyPage() {
         </div>
       </div>
 
-      <div className="card notch-4" style={{ padding: 14 }}>
-        <span className="eyebrow brand">Mezo · heti tervjavaslat</span>
+      <div className="card" style={{ padding: 14 }}>
+        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo · heti tervjavaslat</span>
         {weeklySuggestion != null ? (
           <>
             <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-primary)', lineHeight: 1.5 }}>{weeklySuggestion}</p>
             {mode === 'mock' ? (
               <div className="row gap-sm mt-md">
-                <button type="button" className="cta-ghost notch-4" style={{ fontSize: 10 }}>Elfogad</button>
+                <button type="button" className="cta-ghost" style={{ fontSize: 10 }}>Elfogad</button>
                 <button type="button" className="chip" style={{ fontSize: 9 }}>Hangoljuk</button>
               </div>
             ) : null}

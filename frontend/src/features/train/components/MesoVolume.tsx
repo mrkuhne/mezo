@@ -71,13 +71,14 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="row gap-sm">
                 <div
+                  className="np-pulse"
                   style={{
                     width: 8,
                     height: 8,
                     borderRadius: '50%',
                     background: 'var(--brand-glow)',
                     boxShadow: '0 0 6px var(--brand-glow)',
-                    animation: 'pulse-soft 2s ease-in-out infinite',
+                    animationDuration: '2s',
                   }}
                 />
                 <div className="col" style={{ alignItems: 'flex-start' }}>

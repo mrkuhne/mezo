@@ -181,7 +181,7 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
                     <div className="row gap-xs flex-1" style={{ minWidth: 0, alignItems: 'center', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{meta.name}</span>
                       <span className="label-mono" style={{ fontSize: 7.5, fontWeight: 700, padding: '2px 6px', textTransform: 'uppercase',
-                        background: meta.tag === 'recept' ? 'rgba(20,184,166,0.16)' : 'rgba(251,191,36,0.16)',
+                        background: meta.tag === 'recept' ? 'color-mix(in srgb, var(--sage) 16%, transparent)' : 'rgba(251,191,36,0.16)',
                         color: meta.tag === 'recept' ? 'var(--brand-glow)' : PANTRY_ACCENT }}>{meta.tag}</span>
                     </div>
                     <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', display: 'inline-flex' }}>
@@ -202,12 +202,12 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
             </div>
 
             <button onClick={() => setPickerOpen(true)} className="notch-4"
-              style={{ width: '100%', padding: 11, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)', background: 'rgba(20,184,166,0.08)', border: '1px dashed var(--border-brand)' }}>
+              style={{ width: '100%', padding: 11, marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, fontSize: 12, fontWeight: 600, color: 'var(--brand-glow)', background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--border-brand)' }}>
               <Icon name="plus" size={14} /> Receptből / Kamrából hozzáad
             </button>
 
             {/* Live total + daily context */}
-            <div className="notch-4" style={{ padding: '11px 12px', marginTop: 12, background: 'rgba(20,184,166,0.05)', border: '1px solid var(--border-brand)' }}>
+            <div className="notch-4" style={{ padding: '11px 12px', marginTop: 12, background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px solid var(--border-brand)' }}>
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 9 }}>
                 <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--brand-glow)' }}>EZ AZ ÉTKEZÉS</span>
                 <span className="label-mono" style={{ fontSize: 8.5, color: 'var(--text-tertiary)' }}>{lines.length} tétel</span>

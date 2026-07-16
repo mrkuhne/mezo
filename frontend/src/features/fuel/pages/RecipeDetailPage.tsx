@@ -212,9 +212,9 @@ export function RecipeDetailPage() {
           only the prose/Reta-phase reasoning layer remains Phase-3 (P8). */}
       <div
         className="notch-12"
-        style={{ margin: '16px 0', padding: '18px 16px', textAlign: 'center', background: 'rgba(20,184,166,0.05)', border: '1px dashed var(--border-brand)' }}
+        style={{ margin: '16px 0', padding: '18px 16px', textAlign: 'center', background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px dashed var(--border-brand)' }}
       >
-        <div style={{ color: 'var(--brand-glow)', display: 'flex', justifyContent: 'center', marginBottom: 10, animation: 'mezo-twinkle 2.2s ease-in-out infinite' }}>
+        <div className="np-twinkle" style={{ color: 'var(--brand-glow)', display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
           <Icon name="sparkle" size={26} />
         </div>
         <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600, textTransform: 'uppercase', color: 'var(--brand-glow)', marginBottom: 6 }}>

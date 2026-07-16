@@ -110,7 +110,7 @@ export function FuelPlanPage() {
           <div className="card notch-4" style={{ padding: 14 }}>
             <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
               <Eyebrow>Reta cycle · 7 nap</Eyebrow>
-              <span className="label-mono brand" style={{ fontSize: 9 }}>
+              <span className="label-mono" style={{ fontSize: 9 }}>
                 D{retaDay} · ma
               </span>
             </div>

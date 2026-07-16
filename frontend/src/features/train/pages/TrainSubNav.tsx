@@ -4,7 +4,7 @@ import { TRAIN_TABS } from '@/features/train/pages/tabs'
 
 export function TrainSubNav() {
   return (
-    <nav className="np-pills" aria-label="Train alnavigáció">
+    <nav className="np-pills" aria-label="Train alnavigáció" style={{ '--pill-accent-strong': 'var(--coral-deep)' } as React.CSSProperties}>
       {TRAIN_TABS.map(({ to, label, end }) => (
         <NavLink
           key={to}

@@ -15,7 +15,7 @@ function statusLabel(s: PatternRowStatus): string | null {
 }
 
 function critiqueColor(v: number): string {
-  return v > 0.8 ? 'var(--success)' : v > 0.7 ? 'var(--brand-primary)' : 'var(--warning)'
+  return v > 0.8 ? 'var(--success)' : v > 0.7 ? 'var(--lav-deep)' : 'var(--warning)'
 }
 
 export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?: (d: PatternStatus) => void }) {
@@ -25,7 +25,7 @@ export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?
   const badge = statusLabel(status)
 
   return (
-    <div className="card notch-12" style={{ padding: 16, position: 'relative', overflow: 'hidden' }}>
+    <div className="card" style={{ padding: 16, position: 'relative', overflow: 'hidden' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: catColor }} />
 
       <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -40,7 +40,7 @@ export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?
             {pattern.confidence != null ? `conf ${(pattern.confidence * 100).toFixed(0)}%` : 'tanulom'}
           </span>
         </div>
-        {badge && <span className="chip brand" style={{ fontSize: 9 }}>{badge}</span>}
+        {badge && <span className="chip" style={{ fontSize: 9, background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}>{badge}</span>}
       </div>
 
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 17, marginTop: 10, lineHeight: 1.2, color: 'var(--text-primary)' }}>
@@ -76,14 +76,14 @@ export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?
 
       {pattern.thinking && (
         <>
-          <button type="button" onClick={() => setExpanded((v) => !v)} className="row gap-sm mt-md" style={{ color: 'var(--brand-glow)' }}>
+          <button type="button" onClick={() => setExpanded((v) => !v)} className="row gap-sm mt-md" style={{ color: 'var(--lav-deep)' }}>
             <span className="label-mono" style={{ fontSize: 10 }}>AI gondolatmenete</span>
-            <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={12} color="var(--brand-glow)" />
+            <Icon name={expanded ? 'chevron-up' : 'chevron-down'} size={12} color="var(--lav-deep)" />
           </button>
           {expanded && (
             <p
               className="text-secondary mt-sm"
-              style={{ fontSize: 12, lineHeight: 1.5, padding: '10px 12px', background: 'var(--surface-2)', borderLeft: '2px solid var(--brand-glow)' }}
+              style={{ fontSize: 12, lineHeight: 1.5, padding: '10px 12px', background: 'var(--surface-2)', borderLeft: '2px solid var(--lav-deep)' }}
             >
               {pattern.thinking}
             </p>
@@ -95,7 +95,7 @@ export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?
         <button
           type="button"
           onClick={() => onDecide?.('confirm')}
-          className="cta-ghost notch-4 flex-1"
+          className="cta-ghost flex-1"
           style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'confirmed' ? 'rgba(52, 211, 153, 0.1)' : 'transparent', borderColor: status === 'confirmed' ? 'var(--success)' : 'var(--border-strong)' }}
         >
           <Icon name="check" size={12} color={status === 'confirmed' ? 'var(--success)' : undefined} /> Confirm
@@ -103,7 +103,7 @@ export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?
         <button
           type="button"
           onClick={() => onDecide?.('monitor')}
-          className="cta-ghost notch-4 flex-1"
+          className="cta-ghost flex-1"
           style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'monitoring' ? 'rgba(245, 158, 11, 0.1)' : 'transparent', borderColor: status === 'monitoring' ? 'var(--warning)' : 'var(--border-strong)' }}
         >
           Monitor
@@ -111,7 +111,7 @@ export function PatternCard({ pattern, onDecide }: { pattern: Pattern; onDecide?
         <button
           type="button"
           onClick={() => onDecide?.('reject')}
-          className="cta-ghost notch-4 flex-1"
+          className="cta-ghost flex-1"
           style={{ justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 6, padding: 10, background: status === 'rejected' ? 'rgba(244, 63, 94, 0.1)' : 'transparent', borderColor: status === 'rejected' ? 'var(--error)' : 'var(--border-strong)' }}
         >
           Reject

@@ -1,15 +1,7 @@
 import { Icon } from '@/shared/ui/Icon'
+import { SECTION_LABEL as CAPTION } from '@/shared/ui/sectionLabel'
 import type { WeightEntry, WeightTrends, Goal } from '@/data/types'
 import { changeFromStart, latestValue, progressPct, etaWeeks, isImprovement, fmtSigned } from '@/features/me/logic/weightStats'
-
-// Jakarta section-label idiom (Napiv, replaces the retired mono `label-mono` class).
-const CAPTION: React.CSSProperties = {
-  fontSize: 11,
-  fontWeight: 800,
-  letterSpacing: '.1em',
-  textTransform: 'uppercase',
-  color: 'var(--faint)',
-}
 
 export function WeightHero({ log, weightTrends, goal, onLog }: {
   log: WeightEntry[]

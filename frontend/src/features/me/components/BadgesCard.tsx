@@ -13,7 +13,6 @@ export function BadgesCard({ badges }: { badges: GrowthBadge[] }) {
         {badges.map((b) => (
           <div key={b.key} style={{
             background: b.achieved ? 'var(--wash-sage)' : 'var(--surface-2)',
-            border: `1px solid ${b.achieved ? 'var(--sage)' : 'var(--border-subtle)'}`,
             borderRadius: 4, padding: '10px 6px 8px', textAlign: 'center' }}>
             <div style={{ fontSize: 19 }}>{b.icon}</div>
             <div style={{ fontSize: 9.5, fontWeight: 600, marginTop: 4, lineHeight: 1.25 }}>{b.name}</div>

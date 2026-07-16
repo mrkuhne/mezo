@@ -26,7 +26,7 @@ export function RunLogSheet({ ctx, onClose, onSave }: {
         <>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
             <div className="col">
-              <span className="eyebrow" style={{ color: 'var(--info)' }}>Futás log · {ctx.label}</span>
+              <span className="eyebrow" style={{ color: 'var(--sky)' }}>Futás log · {ctx.label}</span>
               <div id="run-log-title" style={{ marginTop: 4 }}><Display size="md">Hogy ment?</Display></div>
             </div>
             <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
@@ -34,8 +34,8 @@ export function RunLogSheet({ ctx, onClose, onSave }: {
             </button>
           </div>
           <div className="col gap-md">
-            {ctx.isSprint && <NumberStep label="Teljesített körök" val={rounds} step={1} min={0} max={30} onChange={setRounds} color="var(--info)" />}
-            <ScaleRow label="RPE · érzékelt nehézség" val={rpe} onChange={setRpe} color="var(--info)" />
+            {ctx.isSprint && <NumberStep label="Teljesített körök" val={rounds} step={1} min={0} max={30} onChange={setRounds} color="var(--sky)" />}
+            <ScaleRow label="RPE · érzékelt nehézség" val={rpe} onChange={setRpe} color="var(--sky)" />
             <NumberStep label="Pulzus-megnyugvás · mp" val={hr} step={5} min={0} max={300} onChange={setHr} />
             <div className="col gap-sm">
               <span className="label-mono">Jegyzet</span>

@@ -21,7 +21,7 @@ export function Toggle({
         border: 'none',
         cursor: 'pointer',
         borderRadius: 999,
-        background: on ? 'var(--brand-core)' : 'var(--surface-3)',
+        background: on ? 'var(--sage)' : 'var(--surface-3)',
         transition: 'background 0.2s ease',
         padding: 0,
       }}

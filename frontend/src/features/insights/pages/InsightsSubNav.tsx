@@ -5,17 +5,12 @@ import { visibleInsightsTabs } from '@/features/insights/pages/tabs'
 export function InsightsSubNav() {
   return (
     <nav
-      className="subnav"
+      className="np-pills"
       aria-label="Insights alnavigáció"
-      style={{ position: 'sticky', top: 0, background: 'var(--canvas)', zIndex: 5, paddingTop: 8 }}
+      style={{ '--pill-accent': 'var(--lav)', '--pill-accent-strong': 'var(--lav-deep)' } as React.CSSProperties}
     >
       {visibleInsightsTabs().map(({ to, label, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={({ isActive }) => cn('subnav-item', isActive && 'active')}
-        >
+        <NavLink key={to} to={to} end={end} className={({ isActive }) => cn('np-pill np-press', isActive && 'on')}>
           {label}
         </NavLink>
       ))}

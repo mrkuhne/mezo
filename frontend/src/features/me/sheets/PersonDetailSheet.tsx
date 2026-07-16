@@ -68,15 +68,12 @@ export function PersonDetailSheet({
             <span className="eyebrow" style={{ marginBottom: 8, display: 'block' }}>Friss említések · {mentions.length}</span>
             <div className="col gap-sm">
               {mentions.slice(0, 5).map(m => (
-                <div key={m.id} className="card notch-4" style={{ padding: 10, position: 'relative' }}>
-                  <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: affectColor(m.tone) }} />
-                  <div style={{ paddingLeft: 8 }}>
-                    <div className="row gap-xs" style={{ alignItems: 'center' }}>
-                      <Icon name={m.source === 'voice' ? 'mic' : m.source === 'chip' ? 'check' : 'send'} size={10} color="var(--text-tertiary)" />
-                      <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)' }}>{m.dayLabel} · {m.timeLabel}</span>
-                    </div>
-                    <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, marginTop: 4, fontStyle: 'italic' }}>"{m.excerpt}"</p>
+                <div key={m.id} className="card notch-4" style={{ padding: 10 }}>
+                  <div className="row gap-xs" style={{ alignItems: 'center' }}>
+                    <Icon name={m.source === 'voice' ? 'mic' : m.source === 'chip' ? 'check' : 'send'} size={10} color="var(--text-tertiary)" />
+                    <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)' }}>{m.dayLabel} · {m.timeLabel}</span>
                   </div>
+                  <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, marginTop: 4, fontStyle: 'italic' }}>"{m.excerpt}"</p>
                 </div>
               ))}
             </div>

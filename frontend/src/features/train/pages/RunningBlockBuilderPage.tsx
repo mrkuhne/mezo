@@ -5,7 +5,7 @@
 // (Duplikálás / Törlés), editable title + goal, a 1–8 add/remove week row
 // driving the RunWeekEditor, and a single status-dependent bottom CTA
 // (Aktiválás | Lezárás). Edits auto-save (debounced) and flush on back.
-// Accent --info. Mirrors MesocycleBuilderPage's shell.
+// Accent --sky. Mirrors MesocycleBuilderPage's shell.
 // ============================================================
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -16,7 +16,7 @@ import { RunWeekEditor } from '@/features/train/components/RunWeekEditor'
 import { toUpsert, duplicateDraft, addWeek, removeLastWeek } from '@/data/train/runningDraft'
 import type { RunningBlockUpsertRequest } from '@/data/train/runningApi'
 
-const RUN = 'var(--info)'
+const RUN = 'var(--sky)'
 
 const fieldStyle: React.CSSProperties = {
   background: 'var(--surface-2)',
@@ -123,7 +123,7 @@ export function RunningBlockBuilderPage() {
         <div>
           <div className="over">Edzés · Futás</div>
         </div>
-        <div className="row gap-md" style={{ alignItems: 'center' }}>
+        <div className="row gap-md">
           <span className="label-mono" style={{ fontSize: 9, color: dirty ? 'var(--text-tertiary)' : 'var(--success)' }}>
             {runningMutationPending ? 'Mentés…' : dirty ? 'Nem mentve' : '✓ Mentve'}
           </span>
@@ -163,7 +163,7 @@ export function RunningBlockBuilderPage() {
             const active = w === clampedWeek
             return (
               <button key={w} type="button" aria-pressed={active} onClick={() => setSelectedWeek(w)} className="notch-4"
-                style={{ minWidth: 38, padding: '8px 10px', background: active ? 'color-mix(in srgb, var(--info) 8%, transparent)' : 'var(--surface-1)', border: `1px solid ${active ? 'color-mix(in srgb, var(--info) 40%, transparent)' : 'var(--border-subtle)'}`, color: active ? RUN : 'var(--text-secondary)', fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em' }}>
+                style={{ minWidth: 38, padding: '8px 10px', background: active ? 'color-mix(in srgb, var(--sky) 8%, transparent)' : 'var(--surface-1)', border: `1px solid ${active ? 'color-mix(in srgb, var(--sky) 40%, transparent)' : 'var(--border-subtle)'}`, color: active ? RUN : 'var(--text-secondary)', fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em' }}>
                 {w}
               </button>
             )
@@ -174,7 +174,7 @@ export function RunningBlockBuilderPage() {
           )}
           {(draft.weeks || 1) < 8 && (
             <button type="button" aria-label="Hét hozzáadása" onClick={addWeekToDraft} className="notch-4"
-              style={{ minWidth: 38, padding: '8px 10px', background: 'transparent', border: '1px dashed color-mix(in srgb, var(--info) 45%, transparent)', color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 14 }}>＋</button>
+              style={{ minWidth: 38, padding: '8px 10px', background: 'transparent', border: '1px dashed color-mix(in srgb, var(--sky) 45%, transparent)', color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 14 }}>＋</button>
           )}
         </div>
       </div>

@@ -185,7 +185,7 @@ export function FuelStackPage() {
           {/* Real active protocol → its real confidence; v0 ghost → no fabricated precision (mezo-t16y.4).
               Mock keeps the prototype literal via the seed protocol (v3, conf 0.86). */}
           {protocol.version > 0 && (
-            <span className="label-mono brand" style={{ fontSize: 9 }}>conf {protocol.confidence.toFixed(2)}</span>
+            <span className="label-mono" style={{ fontSize: 9 }}>conf {protocol.confidence.toFixed(2)}</span>
           )}
         </div>
         <div className="col gap-sm">
@@ -282,7 +282,7 @@ export function FuelStackPage() {
           <div className="row gap-sm" style={{ alignItems: 'center' }}>
             <Icon name="sparkle" size={14} color="var(--sage-deep)" />
             <div className="col flex-1">
-              <span className="label-mono brand" style={{ fontSize: 9 }}>
+              <span className="label-mono" style={{ fontSize: 9 }}>
                 Protokoll · v{appliedVersion} aktív
               </span>
               <span style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>

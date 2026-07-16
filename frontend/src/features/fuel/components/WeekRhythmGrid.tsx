@@ -41,7 +41,7 @@ function WeekDayRow({ gym, vb }: { gym: GymScheduleDay; vb: VolleyballSession | 
         </span>
         {isToday && (
           <span
-            className="label-mono brand"
+            className="label-mono"
             style={{ fontSize: 7, marginTop: 2, letterSpacing: '0.1em' }}
           >
             MA

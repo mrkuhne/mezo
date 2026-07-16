@@ -136,7 +136,12 @@ export function ExercisesPage() {
           <div className="over">Edzés · Gyakorlatok</div>
           <h1>Gyakorlatok</h1>
         </div>
-        <button className="chip notch-4 brand" onClick={() => setCatalog({})} style={{ padding: '8px 12px' }}>
+        <button
+          type="button"
+          onClick={() => setCatalog({})}
+          className="pgact-np np-press"
+          style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
+        >
           <Icon name="plus" size={12} /> Új gyakorlat
         </button>
       </div>

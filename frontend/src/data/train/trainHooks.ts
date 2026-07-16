@@ -262,7 +262,7 @@ export function useTrain(): TrainData {
     queryKey: ['train', 'mesocycles'],
     queryFn: mock ? async () => mesocycles : () => trainApi.mesocycles().then(rs => rs.map(toMesocycle)),
     // Mock mode seeds synchronously so the first render matches the Phase-1
-    // static return exactly (parity + component tests). Real mode loads.
+    // static return exactly (the visual baselines + component tests). Real mode loads.
     initialData: mock ? mesocycles : undefined,
   })
   // Week stats derive from the RAW ISO-dated responses (the mapped sessions carry

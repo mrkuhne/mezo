@@ -83,3 +83,36 @@ describe('real mode', () => {
     expect(document.querySelector('.goalmini')).toBeNull()
   })
 })
+
+// Maintain goal (startWeight === targetWeight → total 0): the header must render a
+// "tartás" caption, NOT "0% · X kg hátra" (which reads as a stalled cut). The track
+// is already hidden for total 0; this drains the leftover percent/hátra pair. (#22)
+describe('maintain goal (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  // startWeightKg === targetWeightKg → total 0 regardless of the latest weight entry.
+  const maintainGoal = {
+    id: 'goal-maintain',
+    title: 'Tartás · Nyári forma',
+    trajectory: 'maintain',
+    guards: [],
+    status: 'active',
+    startDate: '2026-04-01',
+    targetDate: '2026-08-15',
+    startWeightKg: 80,
+    targetWeightKg: 80,
+    rateTargetPctPerWeek: 0,
+  }
+
+  test('renders a "tartás" caption instead of the percent/hátra pair', async () => {
+    server.use(http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([maintainGoal])))
+    renderMini()
+    await waitFor(() => expect(screen.getByText(/🎯/)).toBeInTheDocument())
+    expect(screen.getByText('tartás')).toBeInTheDocument()
+    expect(screen.queryByText(/% ·/)).toBeNull()
+    expect(screen.queryByText(/kg hátra/)).toBeNull()
+    // The progress track stays hidden for a maintain goal.
+    expect(document.querySelector('.goalmini .track')).toBeNull()
+  })
+})

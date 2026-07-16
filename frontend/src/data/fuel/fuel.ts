@@ -339,7 +339,6 @@ export const fuelDay: FuelDay = {
     },
   ],
   pacing: {
-    eyebrow: 'Pacing · 13:42',
     msg: '59%-on vagyunk a napi kcal célból, és a tegnapi átlag ebben az időben 53% volt. Reta D3 miatt az étvágy ma még felül van — érdemes a vacsorát egy órával előrébb hozni.',
   },
   micronutrients: [
