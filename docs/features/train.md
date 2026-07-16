@@ -266,6 +266,7 @@ Both modes and both layers must stay green.
   VITE_USE_MOCK=true pnpm test       # MOCK mode — both must be green
   pnpm build
   ```
+- **Visual baselines (S8, `mezo-mifi`):** the `train` and `train/gym` screens are among the 14 self-baselined goldens in `frontend/tests/visual/` (both themes; `pnpm test:visual`) — harness mechanics in [_platform-design-system.md](_platform-design-system.md) §8.
 - **Backend (integration-first, `@SpringBootTest` + Postgres, AssertJ, populators — `docs/references/testing_standards.md`, `integration_test_framework.md`):** service ITs `TrainServiceIT`, `WorkoutServiceIT`, `SportServiceIT`, `ExerciseRecordServiceIT`, `ExerciseCatalogLoaderIT`, `ProvenanceRoundTripIT` (the typed-jsonb risk item), `TrainSeedDataIT`; HTTP contract ITs `TrainContractIT`, `WorkoutContractIT`, `SportContractIT`, `GymScheduleContractIT` (gym-schedule GET/PUT round-trip, replace-all, ownership isolation, 401), `RunningContractIT`, `ExerciseCatalogContractIT`, `ExerciseRecordContractIT`. Populators: `support/populator/TrainPopulator.java`, `RunningPopulator.java`.
   ```bash
   cd backend

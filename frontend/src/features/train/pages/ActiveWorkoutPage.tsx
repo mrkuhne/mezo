@@ -72,7 +72,7 @@ export function ActiveWorkoutPage() {
   // would kill the resume flow (live-smoke catch). Show the generic skeleton
   // until loaded (was `return null` — mezo-f2z). `workoutPending` is already
   // `!mock`-gated (false in mock, synchronous seed), so no skeleton flashes in
-  // mock mode (Playwright parity).
+  // mock mode.
   if (workoutPending) return <ScreenSkeleton />
   // T0 clean slate: never render the session without a workout (and at least one exercise).
   if (!workout || workout.exercises.length === 0 || !activeMeso) return <Navigate to="/train" replace />

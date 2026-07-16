@@ -64,7 +64,7 @@ There are **no UI screens for this layer itself** — it is invisible plumbing. 
 1. A view mounts → calls `useX()` → in real mode TanStack Query fetches via `apiFetch` (with a silently-bootstrapped owner JWT) → renders the data, or a `GhostState` skeleton while pending / when the backend is empty.
 2. The user logs something (weight, sleep, a check-in, a set, a run session) → the hook's mutator fires → real mode POSTs and `invalidateQueries` (UI refetches server truth); mock mode patches the cache optimistically.
 
-The one developer-facing "flow" is the **mode toggle**: run with `VITE_USE_MOCK=true` for a backend-free app (parity/demo), or `false` (the configured default in `frontend/.env.example`) to hit the real API on `:8090`.
+The one developer-facing "flow" is the **mode toggle**: run with `VITE_USE_MOCK=true` for a backend-free app (the visual baselines / demo), or `false` (the configured default in `frontend/.env.example`) to hit the real API on `:8090`.
 
 ## 4. Architecture & data flow
 
@@ -109,7 +109,7 @@ const mock = isMockMode()
 const { data: weightLog = [] } = useQuery({
   queryKey: ['weightLog'],
   queryFn: mock ? async () => initialWeightLog : weightApi.list,
-  // Mock seeds SYNCHRONOUSLY so the first render matches Phase-1 useState (parity + tests).
+  // Mock seeds SYNCHRONOUSLY so the first render matches Phase-1 useState (the visual baselines + tests).
   initialData: mock ? initialWeightLog : undefined,
 })
 // G5 (mezo-g1u): the trend is now REAL in real mode — a SECOND query on its own key.
@@ -136,7 +136,7 @@ const mutation = useMutation({
 })
 ```
 
-`initialData` in mock mode means the query is never "pending" — the first render already has data, matching the old Phase-1 synchronous `useState`. This is what keeps parity screenshots and component tests green. In real mode `initialData` is `undefined`, so the query loads and the view must ghost-guard.
+`initialData` in mock mode means the query is never "pending" — the first render already has data, matching the old Phase-1 synchronous `useState`. This is what keeps the visual baselines and component tests green. In real mode `initialData` is `undefined`, so the query loads and the view must ghost-guard.
 
 **`useDualQuery` (`frontend/src/data/useDualQuery.ts`) — the sanctioned dual-mode read recipe (mezo-0xl).** It bakes the whole pattern AND the "no static fallback in real mode" rule into one helper: `useDualQuery({ queryKey, mockData, realFetch, realEmpty, realStaleTime? })` does `initialData: mock ? mockData : undefined`, `queryFn: mock ? () => mockData : realFetch`, `staleTime: mock ? Infinity : realStaleTime`, and returns `data: q.data ?? (mock ? mockData : realEmpty)`. The load-bearing detail is the `realEmpty` fallback: in real mode, while the query is unresolved, the hook returns `realEmpty` — **never the mock seed.** This closes the `const { data = mockSeed } = useQuery(...)` footgun (the destructuring default fires for the entire real-mode loading window, flashing the Phase-1 demo seed onto a live user's screen — the mezo-yew / mezo-0xl bug class). All four formerly-leaking dual-mode reads (`usePantry` → `realEmpty {ingredients:[],stash:[]}`, `useRecipes` → `[]`, `useFuelDay` → a zero `FuelDay`, `useWeight`'s `weightTrends` arm → a zero trend) now go through it; the already-safe hooks (`= []`, `?? null`, `isPending`) were left as-is. A guard test (`frontend/src/data/dualMode.guard.test.ts`) fails the build if the leaky `{ data = seed } = useQuery` default reappears in any `src/data` hook — so new dual-mode hooks must use `useDualQuery` (or an empty-literal default), not the seed-default. (Consumer corollary: a zero `realEmpty` can momentarily divide by zero, so percent math uses the shared `pct(a,b)` helper (`frontend/src/shared/lib/pct.ts`) that guards `b===0 → 0`; the `KcalGauge`/`.macror` bars and the `LogMealSheet` daily-context bar use it instead of a raw `a/b*100` that would render `NaN%`.)
 
@@ -239,7 +239,7 @@ Cleanest reference: `docs/superpowers/specs/2026-06-14-train-running-slice-desig
 - **Mode in tests**: real-mode tests use `vi.stubEnv('VITE_USE_MOCK','false')` (NOT `vi.mock` of the api module — "so the real `apiFetch`/MSW path is exercised", `trainHooks.test.tsx`); mock-mode tests stub `'true'`. `mode.ts` is deliberately a function called *inside* hook bodies (never at module scope) so `vi.stubEnv` works per-case.
 - **Representative tests**: `data/me/weightHooks.test.tsx` (renamed from `goalsHooks.test.tsx` — real GET + POST→invalidate→list-grows round-trip), `data/me/goalHooks.test.tsx` (G1 — real `GET /api/goals` via MSW, picks the active goal, asserts the `toGoal` mapping; G3 — real `GET /api/goals/:id/timeline` builds `linkedMesocycles` + `goal.mesocycles` from the links), `data/today/checkinHooks.test.tsx` (real: server-row hydration + local update + exactly-one POST, `buildDaySlots` wall-clock derivation; mock: local update + zero fetches), `data/today/todayHooks.test.tsx` (mock byte-parity + real Train-fixture composition), `data/train/trainHooks.test.tsx` (real-mode meso/sport/catalog/records via MSW + mock no-op assertions), `data/hooks.test.tsx` (`useTodayScenario` param parsing + `useCheckins` local update). Train/Running view tests under `features/train/pages/*.test.tsx` exercise both modes incl. ghost states.
 
-**The dual-test mandate** (`CLAUDE.md` Build & Test): every change must be green in **both** `pnpm test` (real default) and `VITE_USE_MOCK=true pnpm test` (mock); parity screenshots run mock-mode.
+**The dual-test mandate** (`CLAUDE.md` Build & Test): every change must be green in **both** `pnpm test` (real default) and `VITE_USE_MOCK=true pnpm test` (mock); the visual baselines run mock-mode.
 
 ```bash
 cd frontend
@@ -251,8 +251,8 @@ pnpm build                      # tsc -b && vite build
 ## 9. Decisions, gotchas & deferred
 
 - **Decision (spec, not a numbered ADR)**: TanStack Query as the FE data layer with hook signatures unchanged; `VITE_USE_MOCK` keeps not-yet-wired hooks on mock so the app runs end-to-end between slices (`docs/superpowers/specs/2026-06-10-phase2-backend-design.md` §3, decision `mezo-gqi`). The only numbered ADR is `docs/decisions/0001-deploy-on-k3s-argocd-learning-track.md` (unrelated). **This doc is the durable home for the dual-mode rationale.**
-- **Code default = mock, configured default = real**: `mode.ts` reads `VITE_USE_MOCK !== 'false'` so a *missing* env var never breaks parity/dev. **But** `frontend/.env.example` ships `VITE_USE_MOCK=false`, and `CLAUDE.md` says dev runs REAL by default (backend on `:8090`). The code default and the configured default diverge — the example env makes real mode the working default; mock is the deliberate fallback for parity/demos.
-- **Gotcha — synchronous `initialData` parity**: mock mode must use `initialData` (not just `queryFn`) so the first render is synchronous and matches Phase-1 `useState`; otherwise parity/component tests would catch a loading frame.
+- **Code default = mock, configured default = real**: `mode.ts` reads `VITE_USE_MOCK !== 'false'` so a *missing* env var never breaks the visual baselines or dev. **But** `frontend/.env.example` ships `VITE_USE_MOCK=false`, and `CLAUDE.md` says dev runs REAL by default (backend on `:8090`). The code default and the configured default diverge — the example env makes real mode the working default; mock is the deliberate fallback for the visual baselines/demos.
+- **Gotcha — synchronous `initialData` parity**: mock mode must use `initialData` (not just `queryFn`) so the first render is synchronous and matches Phase-1 `useState`; otherwise the visual baselines/component tests would catch a loading frame.
 - **Gotcha — domain vs contract type drift**: `sleepApi` `as SleepEntry[]` papers over nullability (open bd issue to normalize). New hooks should prefer the Running idiom (generated types as the view model) to avoid this entirely.
 - **Gotcha — token in module scope**: the JWT lives in a `let` in `data/_client/api.ts`, lost on reload; `QueryProvider` re-bootstraps on every mount. No refresh/expiry handling (single-user, fine for now).
 - **Gotcha — `useCheckins` real-mode write has no rollback of the optimistic layer**: a failed save toasts (global mutation cache) + `console.error`s but the slot stays optimistically "done" until the next `['checkins', date]` refetch reconciles it.
