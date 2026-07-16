@@ -57,7 +57,7 @@ export function EditGoalSheet({
 
             <div className="col gap-sm mt-md">
               <span style={SECTION_LABEL}>Identity frame</span>
-              <div className="card notch-4" style={{ padding: 12 }}>
+              <div className="card" style={{ padding: 12 }}>
                 <p style={{ fontSize: 12, color: 'var(--text-primary)', fontStyle: 'italic', lineHeight: 1.5 }}>
                   "{goal.identityFrame}"
                 </p>
@@ -137,7 +137,7 @@ export function EditGoalSheet({
 
             <button
               type="button"
-              className="cta-primary notch-4"
+              className="cta-primary"
               disabled={pending}
               style={{ opacity: pending ? 0.5 : 1 }}
               onClick={() => savePlanner(goalId, goalResponse, { mealsPerDay, wakeTime, bedTime }).then(close)}
@@ -151,7 +151,7 @@ export function EditGoalSheet({
             <span style={SECTION_LABEL}>Cél kezelése</span>
             <button
               type="button"
-              className="cta-ghost notch-4"
+              className="cta-ghost"
               disabled={pending}
               onClick={() => archive(goalId).then(close)}
             >
@@ -162,7 +162,7 @@ export function EditGoalSheet({
               <div className="row gap-sm">
                 <button
                   type="button"
-                  className="cta-ghost notch-4 flex-1"
+                  className="cta-ghost flex-1"
                   disabled={pending}
                   onClick={() => setConfirmingDelete(false)}
                 >
@@ -170,7 +170,7 @@ export function EditGoalSheet({
                 </button>
                 <button
                   type="button"
-                  className="cta-primary notch-4 flex-1"
+                  className="cta-primary flex-1"
                   disabled={pending}
                   style={{ background: 'var(--error)', borderColor: 'var(--error)', color: '#fff' }}
                   onClick={() => remove(goalId).then(close)}
@@ -181,7 +181,7 @@ export function EditGoalSheet({
             ) : (
               <button
                 type="button"
-                className="cta-ghost notch-4"
+                className="cta-ghost"
                 disabled={pending}
                 style={{ borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
                 onClick={() => setConfirmingDelete(true)}
@@ -192,7 +192,7 @@ export function EditGoalSheet({
           </div>
 
           <div className="row gap-sm mt-lg">
-            <button className="cta-ghost notch-4 flex-1" onClick={close}>Kész</button>
+            <button className="cta-ghost flex-1" onClick={close}>Kész</button>
           </div>
         </div>
       )}

@@ -31,14 +31,14 @@ test('renders both plan slots (Mesociklus + Futóblokk), volleyball is not a slo
 
 test('Mesociklus ＋ Tervezd navigates to the meso planner', async () => {
   render(<GoalPlanSlots goalId="goal-cut-2026" />, { wrapper: Wrapper })
-  const mesoSlot = screen.getByText('Mesociklus').closest('.notch-8') as HTMLElement
+  const mesoSlot = screen.getByText('Mesociklus').closest('.rad-16') as HTMLElement
   await userEvent.click(within(mesoSlot).getByRole('button', { name: /Tervezd/ }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/new')
 })
 
 test('Futóblokk ＋ Tervezd creates a block then navigates to its builder', async () => {
   render(<GoalPlanSlots goalId="goal-cut-2026" />, { wrapper: Wrapper })
-  const runSlot = screen.getByText('Futóblokk').closest('.notch-8') as HTMLElement
+  const runSlot = screen.getByText('Futóblokk').closest('.rad-16') as HTMLElement
   await userEvent.click(within(runSlot).getByRole('button', { name: /Tervezd/ }))
   // create-then-navigate: the new block's :id route, not a /new route.
   await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/^\/train\/futas\//)))
@@ -46,7 +46,7 @@ test('Futóblokk ＋ Tervezd creates a block then navigates to its builder', asy
 
 test('＋ Csatolj meglévőt opens the AttachPlanSheet for the mesocycle slot', async () => {
   render(<GoalPlanSlots goalId="goal-cut-2026" />, { wrapper: Wrapper })
-  const mesoSlot = screen.getByText('Mesociklus').closest('.notch-8') as HTMLElement
+  const mesoSlot = screen.getByText('Mesociklus').closest('.rad-16') as HTMLElement
   await userEvent.click(within(mesoSlot).getByRole('button', { name: '＋ Csatolj meglévőt' }))
   // The attach sheet's title for the mesocycle type appears.
   expect(await screen.findByText('Mesociklus csatolása')).toBeInTheDocument()

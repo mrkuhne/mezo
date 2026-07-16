@@ -17,7 +17,7 @@ export function MiniStat({ label, val, highlight = false }: { label: string; val
           fontWeight: 600,
           marginTop: 2,
           lineHeight: 1,
-          color: highlight ? 'var(--brand-glow)' : 'var(--text-primary)',
+          color: highlight ? 'var(--coral)' : 'var(--text-primary)',
         }}
       >
         {val}

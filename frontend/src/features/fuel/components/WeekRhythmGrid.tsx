@@ -26,7 +26,7 @@ function WeekDayRow({ gym, vb }: { gym: GymScheduleDay; vb: VolleyballSession | 
   const kitchenPct = pctFromTime(kitchenClose)
   const coffeePct = pctFromTime('14:00')
 
-  const dayColor = isToday ? 'var(--brand-glow)' : 'var(--text-secondary)'
+  const dayColor = isToday ? 'var(--coral)' : 'var(--text-secondary)'
   const isRest = !gym.active && !vb
 
   return (
@@ -56,12 +56,12 @@ function WeekDayRow({ gym, vb }: { gym: GymScheduleDay; vb: VolleyballSession | 
           style={{
             height: 18,
             background: isToday
-              ? 'color-mix(in srgb, var(--brand-glow) 5%, transparent)'
+              ? 'color-mix(in srgb, var(--coral) 5%, transparent)'
               : 'var(--surface-2)',
             border:
               '1px solid ' +
               (isToday
-                ? 'color-mix(in srgb, var(--brand-glow) 20%, transparent)'
+                ? 'color-mix(in srgb, var(--coral) 20%, transparent)'
                 : 'var(--border-subtle)'),
             position: 'relative',
             borderRadius: 2,
@@ -119,10 +119,10 @@ function WeekDayRow({ gym, vb }: { gym: GymScheduleDay; vb: VolleyballSession | 
                 width: Math.max(2, gymWidth) + '%',
                 top: 2,
                 bottom: 2,
-                background: 'var(--brand-glow)',
+                background: 'var(--coral)',
                 boxShadow: isToday
-                  ? '0 0 8px color-mix(in srgb, var(--brand-glow) 50%, transparent)'
-                  : '0 0 3px color-mix(in srgb, var(--brand-glow) 20%, transparent)',
+                  ? '0 0 8px color-mix(in srgb, var(--coral) 50%, transparent)'
+                  : '0 0 3px color-mix(in srgb, var(--coral) 20%, transparent)',
                 borderRadius: 1,
               }}
               title={gym.type + ' · ' + gym.time + ' · ' + gym.duration + 'p'}
@@ -155,7 +155,6 @@ function WeekDayRow({ gym, vb }: { gym: GymScheduleDay; vb: VolleyballSession | 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 9,
                 color: 'var(--text-quaternary)',
                 letterSpacing: '0.1em',
@@ -170,7 +169,7 @@ function WeekDayRow({ gym, vb }: { gym: GymScheduleDay; vb: VolleyballSession | 
       {/* Right-side compact summary */}
       <div className="col" style={{ width: 56, alignItems: 'flex-end', flexShrink: 0, gap: 1 }}>
         {gym.active && gym.time != null && (
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+          <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
             {gym.time}
           </span>
         )}
@@ -227,7 +226,7 @@ export function WeekRhythmGrid({
                   left: ((h - 6) / 16) * 100 + '%',
                   transform:
                     i === 0 ? 'translateX(0)' : i === 4 ? 'translateX(-100%)' : 'translateX(-50%)',
-                  fontFamily: 'var(--ff-mono)',
+                  fontVariantNumeric: 'tabular-nums',
                   fontSize: 8,
                   color: 'var(--text-quaternary)',
                   letterSpacing: '0.06em',
@@ -253,7 +252,6 @@ export function WeekRhythmGrid({
           style={{
             paddingTop: 10,
             borderTop: '1px solid var(--border-subtle)',
-            fontFamily: 'var(--ff-mono)',
             fontSize: 9,
             color: 'var(--text-tertiary)',
             flexWrap: 'wrap',
@@ -261,7 +259,7 @@ export function WeekRhythmGrid({
         >
           <div className="row gap-xs" style={{ alignItems: 'center' }}>
             <span
-              style={{ width: 12, height: 6, background: 'var(--brand-glow)', borderRadius: 1 }}
+              style={{ width: 12, height: 6, background: 'var(--coral)', borderRadius: 1 }}
             />
             <span>gym</span>
           </div>

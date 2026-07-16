@@ -65,7 +65,7 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onReorder
             )}
           </div>
           {isTraining && (
-            <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}>
+            <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
               {day.exercises.length > 0
                 ? `${day.exercises.length} gyakorlat · ${setCount} szet`
                 : 'Üres nap · adj hozzá gyakorlatot'}
@@ -84,7 +84,7 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onReorder
         <div style={{ padding: '0 14px 14px' }}>
           <div style={{ height: 1, background: 'var(--border-subtle)', marginBottom: 10 }} />
           {onRename && (
-            <div className="card notch-4 row" style={{ padding: '8px 10px', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <div className="card row" style={{ padding: '8px 10px', alignItems: 'center', gap: 8, marginBottom: 10 }}>
               <span className="label-mono text-tertiary" style={{ fontSize: 9, flexShrink: 0 }}>Nap neve</span>
               <input
                 aria-label="Nap neve"
@@ -102,15 +102,14 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onReorder
           <button
             type="button"
             onClick={onAdd}
-            className="card notch-4 mt-md"
+            className="card mt-md"
             style={{
               padding: 10,
               width: '100%',
               background: 'transparent',
               borderStyle: 'dashed',
-              borderColor: 'var(--border-brand)',
-              color: 'var(--brand-glow)',
-              fontFamily: 'var(--ff-mono)',
+              borderColor: 'var(--line)',
+              color: 'var(--coral)',
               fontSize: 10,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',

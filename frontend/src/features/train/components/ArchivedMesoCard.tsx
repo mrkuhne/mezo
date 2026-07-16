@@ -16,7 +16,7 @@ export function ArchivedMesoCard({ meso, onOpen }: ArchivedMesoCardProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="card notch-4"
+      className="card"
       style={{ padding: 14, width: '100%', textAlign: 'left', opacity: 0.7 }}
     >
       <div className="row" style={{ justifyContent: 'space-between' }}>

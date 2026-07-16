@@ -29,8 +29,8 @@ import { MiniStat } from '@/features/train/components/MiniStat'
 
 const STEP_COUNT = 5
 const PHASES: MesoPhase[] = ['MEV', 'MAV', 'MRV', 'Deload']
-const BRAND_TINT = 'color-mix(in srgb, var(--brand-glow) 6%, transparent)'
-const BRAND_TINT_STRONG = 'color-mix(in srgb, var(--brand-glow) 12%, transparent)'
+const CORAL_TINT = 'color-mix(in srgb, var(--coral) 6%, transparent)'
+const CORAL_TINT_STRONG = 'color-mix(in srgb, var(--coral) 12%, transparent)'
 
 const PAGE_TITLES = [
   'Mit szeretnénk építeni?',
@@ -216,7 +216,7 @@ export function MesocyclePlannerPage() {
       {/* Breadcrumb — pinned below the status bar like native nav chrome */}
       <div className="sticky-top" style={{ padding: '8px 24px' }}>
         <button type="button" className="row gap-sm" onClick={handleBack}>
-          <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
           <span className="eyebrow">{backLabel}</span>
         </button>
       </div>
@@ -236,8 +236,8 @@ export function MesocyclePlannerPage() {
               style={{
                 flex: 1,
                 height: 3,
-                background: i <= step ? 'var(--brand-glow)' : 'var(--surface-2)',
-                boxShadow: i === step ? '0 0 6px var(--brand-glow)' : 'none',
+                background: i <= step ? 'var(--coral)' : 'var(--surface-2)',
+                boxShadow: i === step ? '0 0 6px var(--coral)' : 'none',
                 transition: 'all 0.3s ease',
                 padding: 0,
                 cursor: i < step ? 'pointer' : 'default',
@@ -313,7 +313,7 @@ export function MesocyclePlannerPage() {
             {step > 0 && (
               <button
                 type="button"
-                className="cta-ghost notch-4 flex-1"
+                className="cta-ghost flex-1"
                 style={{ padding: 14 }}
                 onClick={() => setStep(step - 1)}
               >
@@ -322,7 +322,7 @@ export function MesocyclePlannerPage() {
             )}
             <button
               type="button"
-              className="cta-primary notch-8"
+              className="cta-primary"
               disabled={!canNext}
               style={{
                 flex: step > 0 ? 2 : 1,
@@ -340,7 +340,7 @@ export function MesocyclePlannerPage() {
           <div className="col gap-sm">
             <button
               type="button"
-              className="cta-primary notch-8"
+              className="cta-primary"
               onClick={() => saveMesocycle('planned')}
               disabled={mesoMutationPending || !program}
               style={{ padding: 14, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
@@ -350,7 +350,7 @@ export function MesocyclePlannerPage() {
             </button>
             <button
               type="button"
-              className="cta-ghost notch-4"
+              className="cta-ghost"
               style={{ padding: 12, opacity: mesoMutationPending || !program ? 0.5 : 1 }}
               onClick={() => saveMesocycle('active')}
               disabled={mesoMutationPending || !program}
@@ -380,13 +380,13 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
               key={g.id}
               type="button"
               onClick={() => onSelect(g)}
-              className="card notch-8"
+              className="card"
               style={{
                 padding: 14,
                 textAlign: 'left',
                 width: '100%',
-                background: selected ? BRAND_TINT : 'var(--surface-1)',
-                borderColor: selected ? 'var(--border-brand)' : 'var(--border-subtle)',
+                background: selected ? CORAL_TINT : 'var(--surface-1)',
+                borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
                 position: 'relative',
                 overflow: 'hidden',
               }}
@@ -399,7 +399,7 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                   style={{
                     width: 36,
                     height: 36,
-                    background: BRAND_TINT,
+                    background: CORAL_TINT,
                     border: `1px solid ${selected ? g.color : 'var(--border-subtle)'}`,
                     display: 'flex',
                     alignItems: 'center',
@@ -421,7 +421,7 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                       {g.defaultWeeks} hét
                     </span>
                   </div>
-                  <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2, fontFamily: 'var(--ff-mono)' }}>
+                  <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
                     {g.sub}
                   </span>
                   {selected && (
@@ -503,7 +503,7 @@ function Step1Length({
       <div className="col gap-md">
         <div className="col gap-sm">
           <span className="label-mono">Mesociklus neve</span>
-          <div className="card notch-4" style={{ padding: 10 }}>
+          <div className="card" style={{ padding: 10 }}>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -517,7 +517,7 @@ function Step1Length({
         <div className="row gap-sm">
           <div className="col gap-sm flex-1">
             <span className="label-mono">Kezdés</span>
-            <div className="card notch-4 row" style={{ padding: '6px 12px', alignItems: 'center' }}>
+            <div className="card row" style={{ padding: '6px 12px', alignItems: 'center' }}>
               <input
                 type="date"
                 value={startDateIso}
@@ -529,7 +529,7 @@ function Step1Length({
           </div>
           <div className="col gap-sm flex-1">
             <span className="label-mono">Vége</span>
-            <div className="card notch-4 row" style={{ padding: '10px 12px', alignItems: 'center', opacity: 0.6 }}>
+            <div className="card row" style={{ padding: '10px 12px', alignItems: 'center', opacity: 0.6 }}>
               <span style={{ fontSize: 13, color: 'var(--text-secondary)', flex: 1 }}>{addWeeks(startDate, weeks)}</span>
             </div>
           </div>
@@ -540,8 +540,8 @@ function Step1Length({
       <div className="col gap-sm mt-xl">
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span className="label-mono">Hossz</span>
-          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, color: 'var(--brand-glow)' }}>
-            {weeks} <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--text-tertiary)' }}>hét</span>
+          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, color: 'var(--coral)' }}>
+            {weeks} <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>hét</span>
           </span>
         </div>
         <div className="row gap-xs">
@@ -553,16 +553,16 @@ function Step1Length({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setWeeks(w)}
-                className="flex-1 notch-4"
+                className="flex-1 rad-12"
                 style={{
                   padding: '10px 0',
-                  background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
+                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
+                  color: active ? 'var(--coral)' : 'var(--text-secondary)',
                   fontFamily: 'var(--ff-display)',
                   fontSize: 14,
                   fontWeight: 600,
-                  boxShadow: active ? 'inset 0 0 0 1px color-mix(in srgb, var(--brand-glow) 20%, transparent)' : 'none',
+                  boxShadow: active ? 'inset 0 0 0 1px color-mix(in srgb, var(--coral) 20%, transparent)' : 'none',
                 }}
               >
                 {w}
@@ -580,7 +580,7 @@ function Step1Length({
             <Icon name="sparkle" size={10} /> Mezo reset
           </button>
         </div>
-        <div className="card notch-12" style={{ padding: 14 }}>
+        <div className="card" style={{ padding: 14 }}>
           <div className="row gap-xs" style={{ height: 70, alignItems: 'flex-end' }}>
             {phaseCurve.map((p, i) => (
               <div key={i} className="col flex-1" style={{ alignItems: 'center', gap: 4 }}>
@@ -610,9 +610,9 @@ function Step1Length({
       </div>
 
       {/* Mezo hint */}
-      <div className="card notch-4 mt-lg" style={{ padding: 12, background: BRAND_TINT }}>
+      <div className="card mt-lg" style={{ padding: 12, background: CORAL_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo javasolja</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
@@ -657,20 +657,20 @@ function Step2Split({
               key={s.label}
               type="button"
               onClick={() => setSplit(s)}
-              className="card notch-4"
+              className="card"
               style={{
                 padding: 14,
                 textAlign: 'left',
                 width: '100%',
-                background: selected ? BRAND_TINT : 'var(--surface-1)',
-                borderColor: selected ? 'var(--border-brand)' : 'var(--border-subtle)',
+                background: selected ? CORAL_TINT : 'var(--surface-1)',
+                borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
               }}
             >
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                 <div className="col">
                   <span style={{ fontSize: 14, color: 'var(--text-primary)' }}>{s.label}</span>
                   {s.best === goal?.id && goal && (
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)', marginTop: 2 }}>
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', marginTop: 2 }}>
                       ★ Mezo ajánlja {goal.label}-hez
                     </span>
                   )}
@@ -696,19 +696,19 @@ function Step2Split({
                 type="button"
                 aria-pressed={active}
                 onClick={() => setDays(d)}
-                className="flex-1 notch-4"
+                className="flex-1 rad-12"
                 style={{
                   padding: '12px 0',
-                  background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--brand-glow)' : 'var(--text-secondary)',
+                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
+                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
+                  color: active ? 'var(--coral)' : 'var(--text-secondary)',
                   fontFamily: 'var(--ff-display)',
                   fontSize: 16,
                   fontWeight: 600,
                 }}
               >
                 {d}
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>×</span>
+                <span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>×</span>
               </button>
             )
           })}
@@ -721,7 +721,7 @@ function Step2Split({
           <span className="label-mono">Melyik napokon?</span>
           <span
             className="label-mono"
-            style={{ fontSize: 9, color: selectedDays.length === days ? 'var(--brand-glow)' : 'var(--warning)' }}
+            style={{ fontSize: 9, color: selectedDays.length === days ? 'var(--coral)' : 'var(--warning)' }}
           >
             {selectedDays.length}/{days}
           </span>
@@ -735,13 +735,12 @@ function Step2Split({
                 type="button"
                 aria-pressed={active}
                 onClick={() => toggleDay(d)}
-                className="flex-1 notch-4"
+                className="flex-1 rad-12"
                 style={{
                   padding: '10px 0',
-                  background: active ? BRAND_TINT_STRONG : 'var(--surface-1)',
-                  border: `1px solid ${active ? 'var(--brand-glow)' : 'var(--border-subtle)'}`,
-                  color: active ? 'var(--brand-glow)' : 'var(--text-tertiary)',
-                  fontFamily: 'var(--ff-mono)',
+                  background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
+                  border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
+                  color: active ? 'var(--coral)' : 'var(--text-tertiary)',
                   fontSize: 10,
                   fontWeight: 600,
                   letterSpacing: '0.06em',
@@ -761,9 +760,9 @@ function Step2Split({
       </div>
 
       {/* Exercise auto-fill option */}
-      <div className="card notch-4 mt-xl" style={{ padding: 14, background: BRAND_TINT }}>
+      <div className="card mt-xl" style={{ padding: 14, background: CORAL_TINT }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Gyakorlatok · automatikusan</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
@@ -827,7 +826,7 @@ function Step3Program({
                 width: 8,
                 height: 8,
                 borderRadius: '50%',
-                background: 'var(--brand-glow)',
+                background: 'var(--coral)',
                 animationDelay: `${i * 0.2}s`,
               }}
             />
@@ -847,17 +846,17 @@ function Step3Program({
     <div style={{ padding: '8px 24px' }}>
       {/* Summary header */}
       <div
-        className="card notch-12"
+        className="card"
         style={{
           padding: 14,
-          background: 'linear-gradient(180deg, color-mix(in srgb, var(--brand-glow) 6%, transparent) 0%, var(--surface-1) 100%)',
-          borderColor: 'var(--border-brand)',
+          background: 'linear-gradient(180deg, color-mix(in srgb, var(--coral) 6%, transparent) 0%, var(--surface-1) 100%)',
+          borderColor: 'var(--line)',
           position: 'relative',
           overflow: 'hidden',
           marginBottom: 14,
         }}
       >
-        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: goal?.color ?? 'var(--brand-glow)' }} />
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: goal?.color ?? 'var(--coral)' }} />
         <div style={{ position: 'relative' }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div className="col">
@@ -877,9 +876,9 @@ function Step3Program({
       </div>
 
       {/* AI hint */}
-      <div className="card notch-4" style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)', marginBottom: 14 }}>
+      <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)', marginBottom: 14 }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo · ezt raktam össze</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
@@ -950,9 +949,9 @@ function Step4Recipe({ program, onAdd, onRemove, onChange, onReorder }: {
 
   return (
     <div style={{ padding: '8px 24px' }}>
-      <div className="card notch-4" style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)', marginBottom: 14 }}>
+      <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)', marginBottom: 14 }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Set & rep · hangolás</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>

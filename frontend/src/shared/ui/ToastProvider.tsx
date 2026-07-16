@@ -12,7 +12,7 @@ const AUTO_HIDE_MS = 3200
 const KIND_BG: Record<ToastMessage['kind'], string> = {
   error: 'var(--error)',
   success: 'var(--success)',
-  info: 'var(--brand-primary)',
+  info: 'var(--coral)',
 }
 
 const ToastContext = createContext<{ show: (t: ToastMessage) => void }>({
@@ -52,7 +52,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="toast notch-12"
+          className="toast rad-20"
           data-kind={toast.kind}
           style={{ background: KIND_BG[toast.kind] }}
         >

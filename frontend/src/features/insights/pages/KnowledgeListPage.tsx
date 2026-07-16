@@ -105,7 +105,7 @@ export function KnowledgeListPage() {
                   <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{f.text}</span>
                   <div className="row gap-sm mt-sm">
                     <span className="label-mono" style={{ fontSize: 9, color }}>{factCategoryLabel(f.category)}</span>
-                    <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>×{f.reinforced} reinforced</span>
+                    <span className="text-tertiary" style={{ fontSize: 10, fontVariantNumeric: 'tabular-nums' }}>×{f.reinforced} reinforced</span>
                     {f.patternTitle && (
                       <span className="chip" style={{ fontSize: 9 }} title={f.patternTitle}>minta: {f.patternTitle}</span>
                     )}

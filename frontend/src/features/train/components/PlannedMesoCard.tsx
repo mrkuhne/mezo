@@ -19,7 +19,7 @@ export function PlannedMesoCard({ meso, onOpen }: PlannedMesoCardProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="card notch-8"
+      className="card"
       style={{ padding: 16, width: '100%', textAlign: 'left', borderStyle: 'dashed' }}
     >
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>

@@ -70,19 +70,18 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
                 width: 14,
                 height: 14,
                 borderRadius: '50%',
-                border: `1px solid ${expanded ? 'var(--brand-glow)' : 'var(--border-strong)'}`,
+                border: `1px solid ${expanded ? 'var(--coral)' : 'var(--border-strong)'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: expanded ? 'var(--brand-glow)' : 'var(--text-tertiary)',
+                color: expanded ? 'var(--coral)' : 'var(--text-tertiary)',
                 fontSize: 9,
-                fontFamily: 'var(--ff-mono)',
               }}
             >
               ?
             </span>
           </div>
-          <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
+          <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>
             {current} szet · most
           </span>
         </div>
@@ -99,7 +98,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
               top: 0,
               bottom: 0,
               width: `${mevPct}%`,
-              background: 'color-mix(in srgb, var(--brand-glow) 8%, transparent)',
+              background: 'color-mix(in srgb, var(--coral) 8%, transparent)',
             }}
           />
           <div
@@ -109,7 +108,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
               top: 0,
               bottom: 0,
               width: `${mavPct - mevPct}%`,
-              background: 'color-mix(in srgb, var(--brand-glow) 18%, transparent)',
+              background: 'color-mix(in srgb, var(--coral) 18%, transparent)',
             }}
           />
           <div
@@ -119,7 +118,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
               top: 0,
               bottom: 0,
               width: `${100 - mavPct}%`,
-              background: 'color-mix(in srgb, var(--brand-glow) 28%, transparent)',
+              background: 'color-mix(in srgb, var(--coral) 28%, transparent)',
             }}
           />
           <div
@@ -129,8 +128,8 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
               top: -2,
               bottom: -2,
               width: 4,
-              background: 'var(--brand-glow)',
-              boxShadow: '0 0 8px var(--brand-glow)',
+              background: 'var(--coral)',
+              boxShadow: '0 0 8px var(--coral)',
             }}
           />
           <div
@@ -158,7 +157,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
           className="row"
           style={{
             justifyContent: 'space-between',
-            fontFamily: 'var(--ff-mono)',
+            fontVariantNumeric: 'tabular-nums',
             fontSize: 9,
             color: 'var(--text-tertiary)',
             marginTop: 2,
@@ -172,12 +171,12 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
 
       {expanded && (
         <div
-          className="card notch-4 mt-sm"
-          style={{ padding: 14, background: 'var(--surface-2)', borderColor: 'var(--border-brand)' }}
+          className="card mt-sm"
+          style={{ padding: 14, background: 'var(--surface-2)', borderColor: 'var(--line)' }}
         >
           {/* 01 · Baseline */}
           <div className="row gap-sm" style={{ alignItems: 'center' }}>
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+            <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
               01 · Baseline
             </span>
             <div className="bar flex-1" style={{ height: 1, background: 'var(--border-subtle)' }} />
@@ -193,7 +192,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
           {source.adjustments.length > 0 && (
             <>
               <div className="row gap-sm mt-md" style={{ alignItems: 'center' }}>
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
                   02 · Daniel-személyre szabás
                 </span>
                 <div className="bar flex-1" style={{ height: 1, background: 'var(--border-subtle)' }} />
@@ -213,7 +212,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
                         style={{
                           fontSize: 9,
                           whiteSpace: 'nowrap',
-                          color: deltaNegative ? 'var(--warning)' : 'var(--brand-glow)',
+                          color: deltaNegative ? 'var(--warning)' : 'var(--coral)',
                         }}
                       >
                         {deltaText(a.delta)}
@@ -227,7 +226,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
 
           {/* 03 · Eredő · most */}
           <div className="row gap-sm mt-md" style={{ alignItems: 'center' }}>
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+            <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
               03 · Eredő · most
             </span>
             <div className="bar flex-1" style={{ height: 1, background: 'var(--border-subtle)' }} />
@@ -263,7 +262,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
               <div className="bar" style={{ width: 80, height: 3 }}>
                 <div className="bar-fill glow" style={{ width: `${confidencePct}%` }} />
               </div>
-              <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+              <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
                 {confidencePct}%
               </span>
             </div>

@@ -31,7 +31,7 @@ export function RecipeIngredientRow({ item }: { item: RecipeIngredientItem }) {
   }
 
   return (
-    <div className="card notch-4" style={{
+    <div className="card" style={{
       padding: '10px 12px',
       borderLeft: '2px solid ' + catColor,
     }}>
@@ -44,7 +44,7 @@ export function RecipeIngredientRow({ item }: { item: RecipeIngredientItem }) {
           {item.note && (
             <span className="text-tertiary" style={{ fontSize: 10, marginTop: 3, fontStyle: 'italic' }}>{item.note}</span>
           )}
-          <div className="row gap-md mt-xs" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10 }}>
+          <div className="row gap-md mt-xs" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>
             <span style={{ color: 'var(--text-tertiary)' }}>kcal <span style={{ color: 'var(--text-primary)' }}>{m.kcal}</span></span>
             <span style={{ color: 'var(--text-tertiary)' }}>P <span style={{ color: 'var(--text-primary)' }}>{m.p}</span></span>
             <span style={{ color: 'var(--text-tertiary)' }}>C <span style={{ color: 'var(--text-primary)' }}>{m.c}</span></span>
@@ -55,7 +55,7 @@ export function RecipeIngredientRow({ item }: { item: RecipeIngredientItem }) {
           <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, color: catColor, fontWeight: 600, lineHeight: 1 }}>
             {item.amount}{item.unit === 'g' ? 'g' : item.unit === 'db' ? 'db' : item.unit}
           </span>
-          <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)', marginTop: 2 }}>
+          <span className="text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>
             {ing.brand}
           </span>
         </div>

@@ -35,7 +35,7 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
 
   const inputStyle = {
     background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-    color: 'var(--text-primary)', fontFamily: 'var(--ff-mono)', fontSize: 16,
+    color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', fontSize: 16,
     padding: '8px 10px', width: 130,
   } as const
 
@@ -53,7 +53,7 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
                 </Display>
               </div>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -61,11 +61,11 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
           {/* Day editors — one time per weekday */}
           <div className="col gap-sm">
             {DAY_ORDER.map((day, i) => (
-              <div key={day} className="card notch-4" style={{ padding: 10 }}>
+              <div key={day} className="card" style={{ padding: 10 }}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <span
                     className="label-mono"
-                    style={{ width: 36, color: times[i] ? 'var(--brand-glow)' : 'var(--text-tertiary)' }}
+                    style={{ width: 36, color: times[i] ? 'var(--coral)' : 'var(--text-tertiary)' }}
                   >
                     {day}
                   </span>
@@ -83,8 +83,8 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
-            <CtaGhost className="notch-4 flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="notch-4 flex-1" onClick={() => save(close)}>
+            <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
+            <CtaPrimary className="flex-1" onClick={() => save(close)}>
               <Icon name="check" size={14} /> Mentés
             </CtaPrimary>
           </div>

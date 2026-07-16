@@ -55,7 +55,7 @@ function VerdictBanner({ feasibility }: { feasibility: Feasibility }) {
   const { label, color } = VERDICT[feasibility.verdict]
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{
         padding: '9px 11px',
         background: `color-mix(in srgb, ${color} 7%, transparent)`,
@@ -95,7 +95,7 @@ function SegmentMetric({ value, unit, label }: { value: string; unit: string; la
 function SegmentCard({ segment }: { segment: Segment }) {
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{ padding: '10px 11px', background: 'var(--wash-sage)', borderColor: 'var(--border-subtle)' }}
     >
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
@@ -187,7 +187,7 @@ export function GoalRecept({ prescription, onEvaluate, evaluating }: GoalReceptP
       <div>
         <SectionLabel tag="G5 · motor" />
         <div
-          className="card notch-4"
+          className="card"
           style={{ padding: '12px 13px', background: 'var(--wash-sage)' }}
         >
           <p style={{ fontSize: 11, lineHeight: 1.5, color: 'var(--text-secondary)', margin: '0 0 10px' }}>

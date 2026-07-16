@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · MedicationCycleBar (Gyógyszer — the 7-cell cycle strip)
 // Ports the approved mockup's `.cyc` strip (gyogyszer-a-szellos.html) to the real
-// design system: one notch-4 cell per cycle day, tinted by phase, the current day
+// design system: one rad-12 cell per cycle day, tinted by phase, the current day
 // outlined. The mockup's `--err/--glow/--warn` phase colors map to the real tokens
 // (peak → --error, stable → --sage, trough → --warning) via PHASE_TINT — the 'stable'
 // entry moved off brand-teal onto sage with the rest of Kamra/Gyógyszer (Task 7, mezo-8141).
@@ -26,7 +26,7 @@ function Cell({ cell }: { cell: MedicationCycleCell }) {
     <li
       aria-current={cell.current ? 'true' : undefined}
       aria-label={`${cell.day}. nap · ${cell.label}`}
-      className="notch-4 col flex-1"
+      className="rad-12 col flex-1"
       style={{
         alignItems: 'center',
         padding: '9px 0 7px',
@@ -36,10 +36,10 @@ function Cell({ cell }: { cell: MedicationCycleCell }) {
         outlineOffset: cell.current ? '-1px' : undefined,
       }}
     >
-      <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, fontWeight: 600, color: tint.token }}>
+      <span style={{ fontSize: 9, fontWeight: 600, color: tint.token }}>
         {tint.glyph}
       </span>
-      <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, marginTop: 4, color: 'var(--text-tertiary)' }}>
+      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 8, marginTop: 4, color: 'var(--text-tertiary)' }}>
         {cell.day}
       </span>
     </li>

@@ -61,7 +61,7 @@ export function buildProtocol(
         dose: morningCaff.dose,
         color: 'var(--warning)',
       })
-    if (kreatin) wakeItems.push({ refId: kreatin.id, name: 'Kreatin', dose: '5g vízben', color: 'var(--brand-glow)' })
+    if (kreatin) wakeItems.push({ refId: kreatin.id, name: 'Kreatin', dose: '5g vízben', color: 'var(--coral)' })
     slots.push({
       time: wakeTime,
       window: 'wake',
@@ -88,7 +88,7 @@ export function buildProtocol(
       kind: 'pre-fuel',
       kindColor: 'var(--info)',
       relatedTo: 'T-70min gym',
-      items: [{ refId: whey.id, name: 'Whey 20g + banán', dose: '180kcal · 21P', color: 'var(--brand-glow)' }],
+      items: [{ refId: whey.id, name: 'Whey 20g + banán', dose: '180kcal · 21P', color: 'var(--coral)' }],
       reasoning:
         'Gyors-szénhidrát + komplett protein · Reta D3 reggel még magas étvágy mellett ez könnyen lemegy. Glikogén pre-loading a Pull Day-re.',
       primary: false,

@@ -316,7 +316,7 @@ export function Icon({
 }
 
 // Brand mark "M" (mesocycle wave inside)
-export function BrandGlyph({ size = 24, color = 'var(--brand-glow)' }: { size?: number; color?: string }) {
+export function BrandGlyph({ size = 24, color = 'var(--coral)' }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <path d="M3 19 V5 L8 13 L12 8 L16 13 L21 5 V19" stroke={color} strokeWidth="2"

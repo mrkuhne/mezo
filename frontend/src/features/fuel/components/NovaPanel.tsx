@@ -44,7 +44,7 @@ export function NovaPanel({ dim }: { dim: NovaDimension }) {
             }} title={`${NOVA_META[s.nova].label} · ${s.pct}%`} />
           ))}
         </div>
-        <div className="row gap-md flex-wrap" style={{ fontFamily: 'var(--ff-mono)', fontSize: 9 }}>
+        <div className="row gap-md flex-wrap" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 9 }}>
           {n.stack.filter(s => s.pct > 0).map((s, i) => (
             <div key={i} className="row gap-xs" style={{ alignItems: 'center' }}>
               <span style={{ width: 6, height: 6, borderRadius: 1, background: NOVA_META[s.nova].color }} />
@@ -64,7 +64,7 @@ export function NovaPanel({ dim }: { dim: NovaDimension }) {
             <span style={{
               width: 36, padding: '2px 0',
               textAlign: 'center',
-              fontFamily: 'var(--ff-mono)', fontSize: 9, fontWeight: 600,
+              fontVariantNumeric: 'tabular-nums', fontSize: 9, fontWeight: 600,
               color: NOVA_META[it.nova].color,
               border: '1px solid ' + NOVA_META[it.nova].color,
               borderRadius: 2,

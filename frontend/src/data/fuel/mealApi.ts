@@ -19,7 +19,7 @@ type MealScoreDimensionResponse = components['schemas']['MealScoreDimension']
 /** Presentation-only dimension colors — deliberately NOT stored in the jsonb envelope (spec D3);
  *  constant per dimension id, matching the Phase-1 mock seeds. */
 const DIMENSION_COLOR: Record<MealDimension['id'], string> = {
-  macro: 'var(--brand-glow)',
+  macro: 'var(--coral)',
   micro: 'var(--cat-physiology)',
   nova: 'var(--cat-tendency)',
   context: 'var(--cat-preference)',

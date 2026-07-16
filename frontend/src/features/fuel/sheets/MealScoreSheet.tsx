@@ -33,7 +33,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                 {meal.slot}
               </span>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -43,13 +43,13 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
 
           {/* Mezo summary — deterministic v0 ships summary:null (P8 prose), the card hides honestly */}
           {b.summary && (
-            <div className="card notch-4" style={{
+            <div className="card" style={{
               padding: 12, marginTop: 14,
-              background: 'color-mix(in srgb, var(--brand-glow) 5%, transparent)',
-              borderColor: 'var(--border-brand)',
+              background: 'color-mix(in srgb, var(--coral) 5%, transparent)',
+              borderColor: 'var(--line)',
             }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+                <Icon name="sparkle" size={12} color="var(--coral)" />
                 <div className="col flex-1">
                   <Eyebrow brand>Mezo · olvasat</Eyebrow>
                   <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
@@ -78,7 +78,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                 <Eyebrow className="text-warning">Lehetne jobb</Eyebrow>
                 <Eyebrow className="text-tertiary">{b.improve.length}</Eyebrow>
               </div>
-              <div className="card notch-4" style={{ padding: 4 }}>
+              <div className="card" style={{ padding: 4 }}>
                 {b.improve.map((it, i) => (
                   <div key={i} className="row gap-sm" style={{
                     padding: '10px 12px',
@@ -87,7 +87,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                   }}>
                     <span style={{
                       width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--warning)',
+                      fontVariantNumeric: 'tabular-nums', fontSize: 9, color: 'var(--warning)',
                       background: 'color-mix(in srgb, var(--warning) 12%, transparent)', borderRadius: 4, flexShrink: 0, marginTop: 1,
                     }}>{i + 1}</span>
                     <span style={{ fontSize: 12.5, color: 'var(--text-primary)', lineHeight: 1.45, flex: 1 }}>

@@ -37,7 +37,7 @@ export function SleepChart({
   const qualPath = data.map((d, i) => (i === 0 ? 'M' : 'L') + xFor(i) + ' ' + yForQual(d.quality)).join(' ')
 
   return (
-    <div className="card notch-12" style={{ padding: 14 }}>
+    <div className="card" style={{ padding: 14 }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: 'block' }}>
         <defs>
           <linearGradient id="sleep-bar" x1="0" y1="0" x2="0" y2="1">

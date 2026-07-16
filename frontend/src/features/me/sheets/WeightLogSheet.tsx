@@ -32,7 +32,7 @@ export function WeightLogSheet({
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
-          <div className="card notch-12" style={{ padding: 18, marginBottom: 14 }}>
+          <div className="card" style={{ padding: 18, marginBottom: 14 }}>
             <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
               <span style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{val.toFixed(1)}</span>
               <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>kg</span>
@@ -46,13 +46,13 @@ export function WeightLogSheet({
           </div>
           <div className="col gap-sm">
             <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
-            <div className="card notch-4" style={{ padding: 10 }}>
+            <div className="card" style={{ padding: 10 }}>
               <textarea value={note} onChange={e => setNote(e.target.value.slice(0, 200))}
                 placeholder='pl. "vasárnap reggel · folyadékvesztés" · "Reta D1 reggel"'
                 style={{ width: '100%', minHeight: 50, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
             </div>
           </div>
-          <div className="card notch-4 mt-lg" style={{ padding: 10, background: 'var(--wash-lav)' }}>
+          <div className="card mt-lg" style={{ padding: 10, background: 'var(--wash-lav)' }}>
             <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
               <Icon name="sparkle" size={11} color="var(--lav-deep)" />
               <p style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, flex: 1 }}>
@@ -63,8 +63,8 @@ export function WeightLogSheet({
             </div>
           </div>
           <div className="row gap-sm mt-lg">
-            <button className="cta-ghost notch-4 flex-1" onClick={close}>Mégse</button>
-            <button className="cta-primary notch-4 flex-1" onClick={() => save(close)}>
+            <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+            <button className="cta-primary flex-1" onClick={() => save(close)}>
               <Icon name="check" size={14} /> Mentés
             </button>
           </div>

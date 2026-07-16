@@ -47,7 +47,7 @@ export function ChatPage() {
       <div className="row gap-sm" style={{ justifyContent: 'space-between' }}>
         <div className="col">
           <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo · társ</span>
-          <span className="text-tertiary" style={{ fontSize: 11, fontFamily: 'var(--ff-mono)' }}>
+          <span className="text-tertiary" style={{ fontSize: 11 }}>
             {degraded ? 'a társ most nem elérhető' : SUBTITLE[mode]}
           </span>
         </div>

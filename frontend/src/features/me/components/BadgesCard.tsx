@@ -4,10 +4,10 @@ import type { GrowthBadge } from '@/data/types'
 export function BadgesCard({ badges }: { badges: GrowthBadge[] }) {
   const done = badges.filter((b) => b.achieved).length
   return (
-    <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
+    <div className="card" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Badge-ek</span>
-        <span className="chip notch-4">{done} / {badges.length} megszerezve</span>
+        <span className="chip">{done} / {badges.length} megszerezve</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 10 }}>
         {badges.map((b) => (

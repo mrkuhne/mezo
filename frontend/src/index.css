@@ -4,12 +4,6 @@
 /* Map Tailwind v4 design tokens onto the prototype's runtime CSS variables.
    `inline` => utilities emit var(--…) refs, so [data-theme="dark"] flips them live. */
 @theme inline {
-  --color-brand-deep: var(--brand-deep);
-  --color-brand-core: var(--brand-core);
-  --color-brand-primary: var(--brand-primary);
-  --color-brand-glow: var(--brand-glow);
-  --color-brand-tint: var(--brand-tint);
-
   --color-canvas: var(--canvas);
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
@@ -59,4 +53,4 @@
   --font-mono: var(--ff-mono);
 }
 
-.briefing-body strong{color:var(--brand-glow);font-weight:500}
+.briefing-body strong{color:var(--coral);font-weight:500}

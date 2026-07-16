@@ -5,7 +5,7 @@
 // Ported from prototype sport.jsx (SportPage + SportWeekView +
 // SportLogView + SportCrossloadView). All sport rose accents use the
 // Napiv --tag-sport/--wash-sport tokens (rose vocabulary); the faint teal
-// brand-glow card tints follow the existing Insights/Fuel slice convention.
+// Coral card tints follow the existing Insights/Fuel slice convention.
 // ============================================================
 import { useState } from 'react'
 import { useStickyTab } from '@/shared/hooks/useStickyTab'
@@ -94,7 +94,7 @@ export function SportPage() {
           <GhostState lines={3} message="A statisztikáid az első logolt session után jelennek meg." />
         ) : (
         <div
-          className="card notch-12"
+          className="card"
           style={{
             padding: 18,
             background:
@@ -149,7 +149,7 @@ export function SportPage() {
               className="row gap-sm mt-md"
               style={{ padding: '8px 10px', background: 'var(--surface-2)', alignItems: 'flex-start' }}
             >
-              <Icon name="sparkle" size={10} color="var(--brand-glow)" />
+              <Icon name="sparkle" size={10} color="var(--coral)" />
               <span style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
                 <SafeMarkdown text={RPE_EXPLAINER} />
               </span>
@@ -169,13 +169,12 @@ export function SportPage() {
               type="button"
               aria-pressed={active}
               onClick={() => setView(v.id)}
-              className="flex-1 notch-4"
+              className="flex-1 rad-12"
               style={{
                 padding: '10px',
                 background: active ? 'var(--wash-sport)' : 'var(--surface-1)',
                 border: `1px solid ${active ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--border-subtle)'}`,
                 color: active ? 'var(--tag-sport)' : 'var(--text-secondary)',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: '0.14em',
@@ -238,7 +237,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <span className="eyebrow">Heti ritmus · {schedule.weeklyHours}h</span>
         {onEdit && (
-          <button type="button" className="chip notch-4" onClick={onEdit} style={{ padding: '4px 8px', fontSize: 9 }}>
+          <button type="button" className="chip" onClick={onEdit} style={{ padding: '4px 8px', fontSize: 9 }}>
             Szerkesztés
           </button>
         )}
@@ -294,7 +293,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                                 <span className="stag stag-sport">{SPORT_TAGS[kind]}</span>
                               )}
                               <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.time}</span>
-                              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>
+                              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--text-tertiary)' }}>
                                 · {session.duration}p
                               </span>
                               {session.today && (
@@ -314,7 +313,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                             </div>
                             <span
                               className="text-tertiary"
-                              style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}
+                              style={{ fontSize: 10, marginTop: 2 }}
                             >
                               {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
                             </span>
@@ -335,9 +334,9 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
         })}
       </div>
 
-      <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
+      <div className="card mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Heti ritmus · független</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>
@@ -399,11 +398,11 @@ function SportCrossloadView({ crossLoad }: { crossLoad: CrossLoadRowData[] }) {
   return (
     <div style={{ padding: '8px 24px 16px' }}>
       <div
-        className="card notch-4"
+        className="card"
         style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)', marginBottom: 14 }}
       >
         <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-          <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+          <Icon name="sparkle" size={12} color="var(--coral)" />
           <div className="col flex-1">
             <span className="eyebrow brand">Mezo · keresztrendszer hatások</span>
             <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-primary)' }}>

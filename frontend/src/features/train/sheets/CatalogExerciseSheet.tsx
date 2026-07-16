@@ -42,7 +42,7 @@ function DecimalStep({ label, val, onChange }: { label: string; val: number; onC
           {val.toFixed(2)}
         </span>
       </div>
-      <div className="stepper notch-4">
+      <div className="stepper rad-12">
         <button type="button" aria-label={`${label} csökkentése`} onClick={() => onChange(round2(Math.max(0, val - 0.05)))}>
           <Icon name="minus" size={14} />
         </button>
@@ -113,7 +113,7 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
                 <Display size="md">{isEdit ? 'Gyakorlat szerkesztése' : 'Új gyakorlat'}</Display>
               </div>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -123,7 +123,7 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
             <span className="label-mono">Név</span>
             <input
               aria-label="Név"
-              className="notch-4"
+              className="rad-12"
               placeholder="pl. Cable Pull-Around"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -141,7 +141,7 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
                   type="button"
                   aria-pressed={muscle === m}
                   onClick={() => setMuscle(m)}
-                  className={cn('chip', 'notch-4', muscle === m && 'brand')}
+                  className={cn('chip', muscle === m && 'brand')}
                   style={{ fontSize: 10, padding: '6px 10px' }}
                 >
                   {MUSCLE_LABELS[m] ?? m}
@@ -162,13 +162,12 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
                     type="button"
                     aria-pressed={active}
                     onClick={() => setType(t)}
-                    className="flex-1 notch-4"
+                    className="flex-1 rad-12"
                     style={{
                       padding: '10px',
-                      background: active ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)' : 'var(--surface-1)',
-                      border: `1px solid ${active ? 'color-mix(in srgb, var(--brand-glow) 40%, transparent)' : 'var(--border-subtle)'}`,
-                      color: active ? 'var(--brand-glow)' : 'var(--text-secondary)',
-                      fontFamily: 'var(--ff-mono)',
+                      background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
+                      border: `1px solid ${active ? 'color-mix(in srgb, var(--coral) 40%, transparent)' : 'var(--border-subtle)'}`,
+                      color: active ? 'var(--coral)' : 'var(--text-secondary)',
                       fontSize: 10,
                       fontWeight: 600,
                       letterSpacing: '0.14em',
@@ -193,7 +192,7 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
             <span className="label-mono">Videó URL</span>
             <input
               aria-label="Videó URL"
-              className="notch-4"
+              className="rad-12"
               placeholder="https://youtu.be/…"
               value={videoUrl}
               onChange={(e) => setVideoUrl(e.target.value)}
@@ -203,10 +202,10 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
-            <CtaGhost className="notch-4 flex-1" onClick={close}>
+            <CtaGhost className="flex-1" onClick={close}>
               Mégse
             </CtaGhost>
-            <CtaPrimary className="notch-4 flex-1" disabled={!trimmed || saving} onClick={() => submit(close)}>
+            <CtaPrimary className="flex-1" disabled={!trimmed || saving} onClick={() => submit(close)}>
               <Icon name="check" size={14} /> Mentés
             </CtaPrimary>
           </div>

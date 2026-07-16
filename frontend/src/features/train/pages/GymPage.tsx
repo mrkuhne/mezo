@@ -91,7 +91,7 @@ export function GymPage() {
 
       {/* Meso meta */}
       <div style={{ padding: '0 24px 12px' }}>
-        <div className="card notch-12" style={{ padding: 16 }}>
+        <div className="card" style={{ padding: 16 }}>
           <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
             <GymStat label="Fázis" val={currentPhase} sub={`hét ${activeMeso.currentWeek}`} color="var(--tag-gym)" />
             <GymStat label="Split" val={splitHead} sub={splitTail ?? ''} color="var(--text-primary)" />

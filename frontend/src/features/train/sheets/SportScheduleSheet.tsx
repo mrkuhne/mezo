@@ -64,7 +64,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
 
   const inputStyle = {
     background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-    color: 'var(--text-primary)', fontFamily: 'var(--ff-mono)', fontSize: 12,
+    color: 'var(--text-primary)', fontSize: 12,
     padding: '8px 10px', width: '100%',
   } as const
 
@@ -82,7 +82,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                 </Display>
               </div>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -90,7 +90,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
           {/* Day editors */}
           <div className="col gap-sm">
             {DAY_ORDER.map((day, di) => (
-              <div key={day} className="card notch-4" style={{ padding: 10 }}>
+              <div key={day} className="card" style={{ padding: 10 }}>
                 <span
                   className="label-mono"
                   style={{ color: days[di].length ? 'var(--rose)' : 'var(--text-tertiary)' }}
@@ -101,13 +101,13 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                   {days[di].map((d, si) => {
                     const slotName = `${DAY_LABELS[day]} ${si + 1}.`
                     return (
-                      <div key={si} className="card notch-4" style={{ padding: 10, background: 'var(--surface-2)' }}>
+                      <div key={si} className="card" style={{ padding: 10, background: 'var(--surface-2)' }}>
                         <div className="row gap-xs" role="group" aria-label={`${slotName} sport`}>
                           {SPORT_KINDS.map((k) => (
                             <button
                               key={k}
                               type="button"
-                              className="chip notch-4 flex-1"
+                              className="chip flex-1"
                               aria-pressed={d.sport === k}
                               aria-label={`${slotName} ${SPORT_LABELS[k]}`}
                               onClick={() => patch(di, si, { sport: k, ...(k !== 'volleyball' ? { kind: 'training' as const } : {}) })}
@@ -124,7 +124,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                           ))}
                           <button
                             type="button"
-                            className="chip notch-4"
+                            className="chip"
                             aria-label={`${slotName} slot törlése`}
                             onClick={() => removeSlot(di, si)}
                             style={{ padding: '6px 8px' }}
@@ -145,7 +145,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                               <>
                                 <button
                                   type="button"
-                                  className="chip notch-4 flex-1"
+                                  className="chip flex-1"
                                   aria-pressed={d.kind === 'training'}
                                   aria-label={`${slotName} edzés`}
                                   onClick={() => patch(di, si, { kind: 'training' })}
@@ -155,7 +155,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                                 </button>
                                 <button
                                   type="button"
-                                  className="chip notch-4 flex-1"
+                                  className="chip flex-1"
                                   aria-pressed={d.kind === 'match'}
                                   aria-label={`${slotName} meccs`}
                                   onClick={() => patch(di, si, { kind: 'match' })}
@@ -194,7 +194,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
                   })}
                   <button
                     type="button"
-                    className="chip notch-4"
+                    className="chip"
                     aria-label={`${DAY_LABELS[day]} sport hozzáadása`}
                     onClick={() => addSlot(di)}
                     style={{ padding: '8px 10px', fontSize: 9, color: 'var(--text-secondary)' }}
@@ -208,8 +208,8 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
-            <CtaGhost className="notch-4 flex-1" onClick={close}>Mégse</CtaGhost>
-            <CtaPrimary className="notch-4 flex-1" onClick={() => { save(); close() }}>
+            <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
+            <CtaPrimary className="flex-1" onClick={() => { save(); close() }}>
               <Icon name="check" size={14} /> Mentés
             </CtaPrimary>
           </div>

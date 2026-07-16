@@ -48,11 +48,11 @@ export function ExerciseOverviewSheet({
                 type="button"
                 aria-label={`${e.name} · ugrás`}
                 onClick={() => { onJump(e.id); close() }}
-                className="card notch-4 row gap-sm"
+                className="card row gap-sm"
                 style={{
                   padding: '11px 12px', alignItems: 'center', width: '100%', textAlign: 'left',
                   background: e.id === currentId ? 'color-mix(in srgb, var(--coral) 6%, transparent)' : 'var(--surface-1)',
-                  borderColor: e.id === currentId ? 'var(--border-brand)' : 'var(--border-subtle)',
+                  borderColor: e.id === currentId ? 'var(--line)' : 'var(--border-subtle)',
                 }}
               >
                 <span

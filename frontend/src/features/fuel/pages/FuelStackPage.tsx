@@ -106,7 +106,7 @@ export function FuelStackPage() {
           load/sleep cells were Phase-1 fiction; P8 wires them live — X audit, mezo-t16y.4) */}
       {weekInMeso != null && (
       <div style={{ padding: '0 24px 12px' }}>
-        <div className="card notch-12" style={{ padding: 14 }}>
+        <div className="card" style={{ padding: 14 }}>
           <span className="eyebrow" style={{ color: 'var(--sage-deep)' }}>Mit nézek most</span>
           <div className="row gap-md mt-md" style={{ justifyContent: 'space-between', flexWrap: 'wrap' }}>
             <StatCell label="Meso" val={'W' + weekInMeso} sub={today.mesoPhase + ' · ' + mesoTitle} color="var(--sage)" />
@@ -132,11 +132,11 @@ export function FuelStackPage() {
       {/* Mezo narrative intro */}
       <div style={{ padding: '0 24px 12px' }}>
         <div
-          className="card notch-4"
+          className="card"
           style={{
             padding: 14,
             background: 'var(--wash-sage)',
-            borderColor: 'var(--border-brand)',
+            borderColor: 'var(--line)',
             position: 'relative',
             overflow: 'hidden',
           }}
@@ -162,7 +162,7 @@ export function FuelStackPage() {
       <div style={{ padding: '16px 24px 8px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
           <Eyebrow>Aktív stack · {selectedIds.length}</Eyebrow>
-          <button onClick={() => setPickerOpen(true)} className="chip brand notch-4" style={{ fontSize: 9, padding: '5px 10px' }}>
+          <button onClick={() => setPickerOpen(true)} className="chip brand" style={{ fontSize: 9, padding: '5px 10px' }}>
             <Icon name="plus" size={10} /> Hozzáadás
           </button>
         </div>
@@ -171,7 +171,7 @@ export function FuelStackPage() {
             <SelectedChip key={s.id} sup={s} onRemove={() => toggle(s.id)} />
           ))}
           {selectedItems.length === 0 && (
-            <div className="card notch-4" style={{ padding: 14, width: '100%', textAlign: 'center', borderStyle: 'dashed' }}>
+            <div className="card" style={{ padding: 14, width: '100%', textAlign: 'center', borderStyle: 'dashed' }}>
               <span className="text-tertiary" style={{ fontSize: 12 }}>Üres stack · adj hozzá a Kamrából</span>
             </div>
           )}
@@ -198,7 +198,7 @@ export function FuelStackPage() {
             />
           ))}
           {built.slots.length === 0 && (
-            <div className="card notch-4" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
+            <div className="card" style={{ padding: 14, textAlign: 'center', borderStyle: 'dashed' }}>
               <span className="text-tertiary" style={{ fontSize: 12 }}>
                 Adj hozzá itemeket a stack-be — az AI ide építi a protokollt.
               </span>
@@ -213,7 +213,7 @@ export function FuelStackPage() {
           <div className="row" style={{ marginBottom: 10 }}>
             <Eyebrow>Miért így · Mezo logika</Eyebrow>
           </div>
-          <div className="card notch-4" style={{ padding: 12 }}>
+          <div className="card" style={{ padding: 12 }}>
             <div className="col gap-sm">
               {built.reasoning.map((r, i) => (
                 <ReasoningRow key={i} reason={r} />
@@ -251,10 +251,10 @@ export function FuelStackPage() {
         </div>
 
         <div className="row gap-sm mt-lg">
-          <button className="cta-ghost notch-4 flex-1" disabled style={{ opacity: 0.5 }}>
+          <button className="cta-ghost flex-1" disabled style={{ opacity: 0.5 }}>
             <Icon name="bookmark" size={12} /> Mentés protokollként · hamarosan
           </button>
-          <button className="cta-primary notch-4 flex-1" onClick={apply}>
+          <button className="cta-primary flex-1" onClick={apply}>
             <Icon name="check" size={14} /> Bekapcsolás · ma
           </button>
         </div>
@@ -266,7 +266,7 @@ export function FuelStackPage() {
 
       {appliedVersion != null && (
         <div
-          className="toast notch-12"
+          className="toast rad-20"
           style={{
             position: 'absolute',
             bottom: 100,
@@ -274,7 +274,7 @@ export function FuelStackPage() {
             right: 24,
             padding: '12px 14px',
             background: 'var(--surface-2)',
-            border: '1px solid var(--border-brand)',
+            border: '1px solid var(--line)',
             boxShadow: '0 12px 24px color-mix(in srgb, #000000 50%, transparent)',
             zIndex: 50,
           }}

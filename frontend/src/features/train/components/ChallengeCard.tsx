@@ -11,7 +11,7 @@ import { RefTag } from '@/shared/ui/RefTag'
 import { ToolChip } from '@/shared/ui/ToolChip'
 
 const TYPE_COLOR: Record<ChallengeType, string> = {
-  PR: 'var(--brand-glow)',
+  PR: 'var(--coral)',
   Depth: 'var(--rose)',
   Volume: 'var(--sky)',
   Tempo: 'var(--cat-preference)',
@@ -40,7 +40,7 @@ export function ChallengeCard({
   onToggle: () => void
 }) {
   const c = challenge
-  const typeColor = TYPE_COLOR[c.type] ?? 'var(--brand-primary)'
+  const typeColor = TYPE_COLOR[c.type] ?? 'var(--coral)'
   const resolved = c.status != null && (RESOLVED as ReadonlyArray<string>).includes(c.status)
   const outcome = resolved ? OUTCOME[c.status as 'hit' | 'miss' | 'inconclusive'] : null
   // Reward skin (brand gradient + brand border + radial glow) is a celebratory look — reserve it
@@ -50,13 +50,13 @@ export function ChallengeCard({
 
   return (
     <div
-      className="card notch-12"
+      className="card"
       style={{
         padding: 16,
         background: rewardSkin
-          ? 'linear-gradient(180deg, color-mix(in srgb, var(--brand-glow) 6%, transparent) 0%, var(--surface-1) 100%)'
+          ? 'linear-gradient(180deg, color-mix(in srgb, var(--coral) 6%, transparent) 0%, var(--surface-1) 100%)'
           : 'var(--surface-1)',
-        borderColor: rewardSkin ? 'var(--border-brand)' : 'var(--border-subtle)',
+        borderColor: rewardSkin ? 'var(--line)' : 'var(--border-subtle)',
         position: 'relative',
         overflow: 'hidden',
         transition: 'all 0.3s ease',
@@ -82,7 +82,6 @@ export function ChallengeCard({
             <span
               style={{
                 padding: '3px 8px',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 9,
                 fontWeight: 600,
                 letterSpacing: '0.14em',
@@ -172,13 +171,13 @@ export function ChallengeCard({
             className="row gap-sm mt-md"
             style={{
               padding: '8px 10px',
-              background: 'color-mix(in srgb, var(--brand-glow) 8%, transparent)',
-              borderLeft: '2px solid var(--brand-glow)',
+              background: 'color-mix(in srgb, var(--coral) 8%, transparent)',
+              borderLeft: '2px solid var(--coral)',
             }}
           >
-            <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+            <Icon name="sparkle" size={12} color="var(--coral)" />
             <span style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.4 }}>
-              <strong style={{ color: 'var(--brand-glow)', fontWeight: 500 }}>Ha sikerül</strong> ·{' '}
+              <strong style={{ color: 'var(--coral)', fontWeight: 500 }}>Ha sikerül</strong> ·{' '}
               {c.glory}
             </span>
           </div>
@@ -204,13 +203,12 @@ export function ChallengeCard({
               type="button"
               onClick={onToggle}
               aria-pressed={accepted}
-              className="flex-1 notch-4"
+              className="flex-1 rad-12"
               style={{
                 padding: '12px',
-                background: accepted ? 'var(--brand-primary)' : 'transparent',
-                border: `1px solid ${accepted ? 'var(--brand-glow)' : 'var(--border-strong)'}`,
+                background: accepted ? 'var(--coral)' : 'transparent',
+                border: `1px solid ${accepted ? 'var(--coral)' : 'var(--border-strong)'}`,
                 color: accepted ? 'var(--text-inverse)' : 'var(--text-primary)',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: '0.14em',

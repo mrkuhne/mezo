@@ -120,11 +120,11 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
       <div style={{ padding: '12px 24px' }}>
         {/* Intro card */}
         <div
-          className="card notch-4"
-          style={{ padding: 12, background: 'color-mix(in srgb, var(--brand-glow) 3%, transparent)', marginBottom: 14 }}
+          className="card"
+          style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)', marginBottom: 14 }}
         >
           <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-            <Icon name="sparkle" size={12} color="var(--brand-glow)" />
+            <Icon name="sparkle" size={12} color="var(--coral)" />
             <div className="col flex-1">
               <Eyebrow brand>Heti gyakorlat-terv</Eyebrow>
               <p style={{ fontSize: 12, marginTop: 6, lineHeight: 1.5, color: 'var(--text-secondary)' }}>
@@ -146,10 +146,10 @@ export function MesoExercises({ meso }: { meso: Mesocycle }) {
 
       {/* Weekly volume summary */}
       <div style={{ padding: '16px 24px' }}>
-        <div className="card notch-4" style={{ padding: 14 }}>
+        <div className="card" style={{ padding: 14 }}>
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <Eyebrow>Heti szet-volumen</Eyebrow>
-            <span className="label-mono" style={{ fontSize: 10, color: 'var(--brand-glow)' }}>
+            <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>
               {totalSets} szet
             </span>
           </div>

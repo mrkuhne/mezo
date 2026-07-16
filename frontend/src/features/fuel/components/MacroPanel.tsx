@@ -26,13 +26,13 @@ export function MacroPanel({ dim }: { dim: MacroDimension }) {
         display: 'flex', height: 8, borderRadius: 2, overflow: 'hidden',
         border: '1px solid var(--border-subtle)',
       }}>
-        <div style={{ width: m.p + '%', background: 'var(--brand-glow)', boxShadow: 'inset 0 0 4px color-mix(in srgb, var(--brand-glow) 30%, transparent)' }} />
+        <div style={{ width: m.p + '%', background: 'var(--coral)', boxShadow: 'inset 0 0 4px color-mix(in srgb, var(--coral) 30%, transparent)' }} />
         <div style={{ width: m.c + '%', background: 'var(--warning)' }} />
         <div style={{ width: m.f + '%', background: 'var(--cat-preference)' }} />
       </div>
       {/* Legend */}
-      <div className="row gap-md" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10 }}>
-        <MacroLegend dot="var(--brand-glow)" name="P" value={m.p + '%'} target={t.p} />
+      <div className="row gap-md" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>
+        <MacroLegend dot="var(--coral)" name="P" value={m.p + '%'} target={t.p} />
         <MacroLegend dot="var(--warning)" name="C" value={m.c + '%'} target={t.c} />
         <MacroLegend dot="var(--cat-preference)" name="F" value={m.f + '%'} target={t.f} />
       </div>
@@ -42,7 +42,7 @@ export function MacroPanel({ dim }: { dim: MacroDimension }) {
         </span>
         {dim.notes && (
           <span style={{
-            fontFamily: 'var(--ff-mono)', fontSize: 10, lineHeight: 1.4,
+            fontSize: 10, lineHeight: 1.4,
             color: 'var(--warning)',
             letterSpacing: '0.04em',
           }}>

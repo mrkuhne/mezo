@@ -41,7 +41,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children
     if (this.props.fallback) return this.props.fallback(this.reset)
     return (
-      <div className="card notch-12" style={{ padding: 18, margin: 16 }} role="alert">
+      <div className="card" style={{ padding: 18, margin: 16 }} role="alert">
         <div className="col gap-sm" style={{ alignItems: 'center', textAlign: 'center' }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
             Valami elromlott ezen a nézeten.

@@ -75,7 +75,7 @@ export function FuelMaiPage() {
 
       {/* Gauge card — kcal gauge + coffee/kitchen chips + macro soft bars */}
       <div style={{ padding: '16px 24px 12px' }}>
-        <div className="card notch-12" style={{ padding: 18 }}>
+        <div className="card" style={{ padding: 18 }}>
           <KcalGauge consumed={fuel.consumed.kcal} target={fuel.targets.kcal} />
 
           <div className="fuelchips">
@@ -182,7 +182,7 @@ export function FuelMaiPage() {
       {/* Micronutrients */}
       <div style={{ padding: '16px 24px 24px' }}>
         <div className="eyebrow" style={{ marginBottom: 12 }}>Mikrotápanyagok · heti</div>
-        <div className="card notch-4" style={{ padding: 14 }}>
+        <div className="card" style={{ padding: 14 }}>
           <div className="col gap-md">
             {fuel.micronutrients.map((n, i) => (
               <div key={i} className="row gap-md">
@@ -193,7 +193,7 @@ export function FuelMaiPage() {
                   {n.name}
                 </span>
                 <ProgressBar className="flex-1" value={n.pct} tone={n.pct < 70 ? 'warning' : 'glow'} />
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)', width: 56, textAlign: 'right' }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)', width: 56, textAlign: 'right' }}>
                   {n.pct}% · {n.target}
                 </span>
               </div>

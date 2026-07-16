@@ -19,8 +19,8 @@ export function FuelTimelinePreview() {
             <Icon name="plus" size={11} /> Log
           </button>
         </div>
-        <div className="card notch-12" style={{ padding: 14, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-glow)' }} />
+        <div className="card" style={{ padding: 14, position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--coral)' }} />
           <div className="col gap-sm" style={{ paddingLeft: 6 }}>
             {visible.map((s, i) => {
               const meta = KIND_META[s.kind]
@@ -28,8 +28,8 @@ export function FuelTimelinePreview() {
               return (
                 <div key={i} className="row gap-sm" style={{ alignItems: 'center' }}>
                   <span style={{
-                    fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600,
-                    color: isNow ? 'var(--brand-glow)' : 'var(--text-tertiary)',
+                    fontVariantNumeric: 'tabular-nums', fontSize: 11, fontWeight: 600,
+                    color: isNow ? 'var(--coral)' : 'var(--text-tertiary)',
                     width: 44, flexShrink: 0,
                   }}>{s.time}</span>
                   <div style={{
@@ -53,9 +53,9 @@ export function FuelTimelinePreview() {
 
           {nextStack && nextStack.mezoNote && (
             <div className="row gap-sm mt-md" style={{ paddingTop: 10, borderTop: '1px solid var(--border-subtle)', alignItems: 'flex-start' }}>
-              <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+              <Icon name="sparkle" size={11} color="var(--coral)" />
               <span style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5, flex: 1 }}>
-                <strong style={{ color: 'var(--brand-glow)', fontWeight: 500 }}>{nextStack.time}</strong> · {nextStack.mezoNote.split('.')[0]}.
+                <strong style={{ color: 'var(--coral)', fontWeight: 500 }}>{nextStack.time}</strong> · {nextStack.mezoNote.split('.')[0]}.
               </span>
             </div>
           )}

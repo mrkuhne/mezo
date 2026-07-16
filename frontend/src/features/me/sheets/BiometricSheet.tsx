@@ -45,7 +45,7 @@ export function BiometricSheet({
   const field = (label: ReactNode, input: ReactNode) => (
     <div className="col gap-sm">
       <span style={SECTION_LABEL}>{label}</span>
-      <div className="card notch-4" style={{ padding: 10 }}>
+      <div className="card" style={{ padding: 10 }}>
         {input}
       </div>
     </div>
@@ -78,7 +78,7 @@ export function BiometricSheet({
                     type="button"
                     aria-pressed={sex === s}
                     onClick={() => setSex(s)}
-                    className="flex-1 notch-4"
+                    className="flex-1 rad-12"
                     style={{
                       padding: '12px 0',
                       background:
@@ -143,7 +143,7 @@ export function BiometricSheet({
                       type="button"
                       aria-pressed={sel}
                       onClick={() => setActivityLevel(a.id)}
-                      className="card notch-4"
+                      className="card"
                       style={{
                         padding: '10px 12px',
                         textAlign: 'left',
@@ -174,11 +174,11 @@ export function BiometricSheet({
           </div>
 
           <div className="row gap-sm mt-lg">
-            <button className="cta-ghost notch-4 flex-1" onClick={close}>
+            <button className="cta-ghost flex-1" onClick={close}>
               Mégse
             </button>
             <button
-              className="cta-primary notch-4 flex-1"
+              className="cta-primary flex-1"
               disabled={pending}
               onClick={() => save(close)}
             >

@@ -20,11 +20,11 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
     intensityScore >= 8
       ? 'var(--warning)'
       : intensityScore >= 7
-        ? 'var(--brand-glow)'
+        ? 'var(--coral)'
         : 'var(--text-secondary)'
 
   return (
-    <div className="card notch-4" style={{ padding: 14 }}>
+    <div className="card" style={{ padding: 14 }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div className="col flex-1">
           <span className="row gap-sm" style={{ alignItems: 'center' }}>
@@ -33,7 +33,7 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
               {session.date} · {session.time}
             </span>
           </span>
-          <div className="row gap-md mt-md" style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}>
+          <div className="row gap-md mt-md" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
             <span>
               <span style={{ color: 'var(--text-tertiary)' }}>idő</span>{' '}
               <span style={{ color: 'var(--text-primary)' }}>{session.duration}p</span>

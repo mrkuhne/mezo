@@ -6,7 +6,7 @@ import { RefTag } from '@/shared/ui/RefTag'
 
 test('Chip applies variant', () => {
   render(<Chip variant="warning">NIGGLE</Chip>)
-  expect(screen.getByText('NIGGLE').className).toBe('chip warning notch-4')
+  expect(screen.getByText('NIGGLE').className).toBe('chip warning')
 })
 test('ToolChip applies tool type and shows name', () => {
   render(<ToolChip type="read" name="sleep_db" />)

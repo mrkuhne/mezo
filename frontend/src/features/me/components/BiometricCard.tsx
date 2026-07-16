@@ -40,7 +40,7 @@ export function BiometricCard({
       <button
         type="button"
         onClick={onEdit}
-        className="card notch-12"
+        className="card"
         style={{
           padding: '16px 15px',
           position: 'relative',
@@ -72,7 +72,7 @@ export function BiometricCard({
   const tdee = profile.tdeeBootstrap
 
   return (
-    <div className="card notch-12 biocard" style={{ padding: '14px 15px 13px' }}>
+    <div className="card biocard" style={{ padding: '14px 15px 13px' }}>
       <div className="bhd">
         <h3>Biometria</h3>
         <button type="button" onClick={onEdit}>

@@ -9,7 +9,7 @@ export function SelectedChip({ sup, onRemove }: { sup: SupplementStashItem; onRe
       ? 'var(--cat-tendency)'
       : sup.type === 'medication'
         ? 'var(--error)'
-        : 'var(--brand-glow)'
+        : 'var(--coral)'
   return (
     <div
       className="row gap-xs"

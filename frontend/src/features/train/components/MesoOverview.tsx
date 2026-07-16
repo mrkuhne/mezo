@@ -24,7 +24,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
     <div className="col">
       {/* Phase curve hero */}
       <div style={{ padding: '12px 24px' }}>
-        <div className="card notch-12" style={{ padding: 18 }}>
+        <div className="card" style={{ padding: 18 }}>
           <div
             className="row gap-sm flex-wrap"
             style={{ justifyContent: 'space-between', alignItems: 'center' }}
@@ -59,7 +59,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
                 <div
                   style={{ width: 6, height: 6, borderRadius: '50%', background: MESOCYCLE_PHASE_COLORS[p] }}
                 />
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)' }}>
+                <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
                   {p}
                 </span>
               </div>
@@ -81,7 +81,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
                 type="button"
                 aria-label={`${d.type} · ${d.day}`}
                 onClick={() => setSelectedDay(d)}
-                className="card notch-4 row"
+                className="card row"
                 style={{
                   padding: 12,
                   alignItems: 'center',
@@ -116,7 +116,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
                   {d.muscle && d.exerciseCount > 0 && (
                     <span
                       className="text-tertiary"
-                      style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', marginTop: 2 }}
+                      style={{ fontSize: 10, marginTop: 2 }}
                     >
                       {d.muscle} · {d.exerciseCount} gyakorlat
                     </span>
@@ -140,7 +140,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
             ))}
           </div>
         ) : (
-          <span className="text-tertiary" style={{ fontSize: 12, fontFamily: 'var(--ff-mono)' }}>
+          <span className="text-tertiary" style={{ fontSize: 12 }}>
             Heti terv még nincs összeállítva.
           </span>
         )}

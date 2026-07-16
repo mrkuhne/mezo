@@ -52,7 +52,7 @@ export function NumberStep({
           {val}
         </span>
       </div>
-      <div className="stepper notch-4">
+      <div className="stepper rad-12">
         <button
           type="button"
           aria-label={`${label} csökkentése`}
@@ -98,7 +98,7 @@ export function ScaleRow({
         <span className="label-mono">{label}</span>
         <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color, lineHeight: 1 }}>
           {val}
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 4 }}>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 4 }}>
             /10
           </span>
         </span>
@@ -163,7 +163,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
                 <Display size="md">Hogy ment?</Display>
               </div>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -178,13 +178,12 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
                   type="button"
                   aria-pressed={active}
                   onClick={() => setKind(k)}
-                  className="flex-1 notch-4"
+                  className="flex-1 rad-12"
                   style={{
                     padding: '10px',
                     background: active ? 'color-mix(in srgb, var(--rose) 8%, transparent)' : 'var(--surface-1)',
                     border: `1px solid ${active ? 'color-mix(in srgb, var(--rose) 40%, transparent)' : 'var(--border-subtle)'}`,
                     color: active ? 'var(--rose)' : 'var(--text-secondary)',
-                    fontFamily: 'var(--ff-mono)',
                     fontSize: 10,
                     fontWeight: 600,
                     letterSpacing: '0.14em',
@@ -203,7 +202,7 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
             {isVolleyball
               ? <NumberStep label="Setek · összesen" val={sets} step={1} max={50} onChange={setSets} />
               : <NumberStep label="Körök · összesen" val={rounds} step={1} min={1} max={50} onChange={setRounds} />}
-            <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--brand-glow)" />
+            <ScaleRow label="RPE · összesített nehézség" val={rpe} onChange={setRpe} color="var(--coral)" />
             {isVolleyball && (
               <ScaleRow
                 label="Váll terhelés"
@@ -216,9 +215,9 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
 
           {/* Mezo observation (volleyball-specific copy) */}
           {isVolleyball && (
-            <div className="card notch-4 mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
+            <div className="card mt-lg" style={{ padding: 12, background: 'color-mix(in srgb, var(--rose) 3%, transparent)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-                <Icon name="sparkle" size={11} color="var(--brand-glow)" />
+                <Icon name="sparkle" size={11} color="var(--coral)" />
                 <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-primary)', flex: 1 }}>
                   {shoulder >= 7 && 'Váll terhelés magas — Overhead Press helyett Cable variánssal a következő Push Day-en. '}
                   {rpe >= 7.5 && 'Magas RPE · ma 21:30 előtt vacsorát zárjuk az alvás-impact miatt. '}
@@ -231,11 +230,11 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
-            <CtaGhost className="notch-4 flex-1" onClick={close}>
+            <CtaGhost className="flex-1" onClick={close}>
               Mégse
             </CtaGhost>
             <CtaPrimary
-              className="notch-4 flex-1"
+              className="flex-1"
               disabled={saving}
               onClick={() => {
                 // date/time default to "now" server-side — the sheet captures effort only.

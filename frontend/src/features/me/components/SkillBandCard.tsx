@@ -29,10 +29,10 @@ export function SkillBandCard({ eyebrow, chip, rows, footer }: {
   footer?: ReactNode
 }) {
   return (
-    <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
+    <div className="card" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 13 }}>
         <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>{eyebrow}</span>
-        <span className="chip notch-4">{chip}</span>
+        <span className="chip">{chip}</span>
       </div>
       <div>
         {rows.map((r) => {

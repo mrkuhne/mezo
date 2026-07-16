@@ -26,7 +26,7 @@ export function GymStat({ label, val, sub, color }: GymStatProps) {
       >
         {val}
       </span>
-      <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)', marginTop: 2 }}>{sub}</span>
+      <span className="text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>{sub}</span>
     </div>
   )
 }

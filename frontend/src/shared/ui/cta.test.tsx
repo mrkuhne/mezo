@@ -7,7 +7,6 @@ test('CtaPrimary fires onClick and carries classes', async () => {
   render(<CtaPrimary onClick={onClick}>INDÍTÁS</CtaPrimary>)
   const btn = screen.getByRole('button', { name: 'INDÍTÁS' })
   expect(btn.className).toContain('cta-primary')
-  expect(btn.className).toContain('notch-8')
   await userEvent.click(btn)
   expect(onClick).toHaveBeenCalledOnce()
 })

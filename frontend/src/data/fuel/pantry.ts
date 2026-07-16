@@ -343,7 +343,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
     dimensions: [
       {
         id: 'macro', label: 'Kcal & makró arány', weight: 0.30, score: 0.92,
-        color: 'var(--brand-glow)',
+        color: 'var(--coral)',
         detail:
           'P/C/F 25/38/37%. Vacsora-profil — magas fat (omega-3-ra szándékos), elegendő carb a glikogén-pótlásra a post-workout ablakban.',
         macroRatio: { p: 25, c: 38, f: 37 },
@@ -413,7 +413,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
     dimensions: [
       {
         id: 'macro', label: 'Kcal & makró arány', weight: 0.30, score: 0.84,
-        color: 'var(--brand-glow)',
+        color: 'var(--coral)',
         detail:
           'P/C/F 30/3/67%. Extrém alacsony-carb reggeli. Edzés-nap reggelire nem ideális, rest-day-re viszont igen.',
         macroRatio: { p: 30, c: 3, f: 67 },
@@ -481,7 +481,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
     dimensions: [
       {
         id: 'macro', label: 'Kcal & makró arány', weight: 0.30, score: 0.92,
-        color: 'var(--brand-glow)',
+        color: 'var(--coral)',
         detail:
           'P/C/F 48/39/13%. Esti casein-súlyos snack. Kalória-density alacsony — Reta-cycle alatt pont a protein-target tartására.',
         macroRatio: { p: 48, c: 39, f: 13 },

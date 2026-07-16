@@ -129,7 +129,7 @@ export function FuelKamraPage() {
 
       {isEmpty ? (
         <div style={{ padding: '0 24px' }}>
-          <div className="card notch-12 col" style={{ padding: 28, alignItems: 'center', textAlign: 'center', gap: 10 }}>
+          <div className="card col" style={{ padding: 28, alignItems: 'center', textAlign: 'center', gap: 10 }}>
             <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, color: 'var(--text-primary)' }}>A kamra üres</span>
             <span className="text-tertiary" style={{ fontSize: 12, lineHeight: 1.5, maxWidth: 250 }}>
               Vedd fel az első tételt — ételt vagy supplementet —, és itt jelenik meg a leltárban.
@@ -150,11 +150,11 @@ export function FuelKamraPage() {
                   <button
                     key={t.id}
                     onClick={() => setTypeFilter(t.id)}
-                    className="notch-8 col flex-1"
-                    style={{ alignItems: 'center', padding: '9px 0 8px', background: active ? 'var(--brand-primary)' : 'transparent' }}
+                    className="rad-16 col flex-1"
+                    style={{ alignItems: 'center', padding: '9px 0 8px', background: active ? 'var(--coral)' : 'transparent' }}
                   >
                     <span style={{ fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 600, letterSpacing: '0.02em', color: active ? 'var(--text-inverse)' : 'var(--text-secondary)' }}>{t.label}</span>
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, marginTop: 3, color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)' }}>{counts[t.id] ?? 0}</span>
+                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 9, marginTop: 3, color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)' }}>{counts[t.id] ?? 0}</span>
                   </button>
                 )
               })}
@@ -163,7 +163,7 @@ export function FuelKamraPage() {
 
           {/* Stats strip */}
           <div style={{ padding: '0 24px 12px' }}>
-            <div className="card notch-4 row" style={{ padding: 12, justifyContent: 'space-between' }}>
+            <div className="card row" style={{ padding: 12, justifyContent: 'space-between' }}>
               <StatCell label="Tételek" val={String(allItems.length)} sub="a kamrában" color="var(--sage)" />
               <StatCell label="Hozzávaló" val={String(counts.food ?? 0)} sub="étel" color="var(--info)" />
               {/* Stock stats hidden — stock tracking deferred (mezo-6nu) */}
@@ -179,7 +179,7 @@ export function FuelKamraPage() {
           {/* Needs-attention strip (stock expiry — deferred, mezo-6nu) */}
           {SHOW_PANTRY_STOCK && lowExpiry > 0 && (
             <div style={{ padding: '0 24px 12px' }}>
-              <div className="notch-4" style={{ padding: '10px 14px', background: 'color-mix(in srgb, var(--warning) 7%, transparent)', borderLeft: '2px solid var(--warning)' }}>
+              <div className="rad-12" style={{ padding: '10px 14px', background: 'color-mix(in srgb, var(--warning) 7%, transparent)', borderLeft: '2px solid var(--warning)' }}>
                 <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                   <span style={{ color: 'var(--warning)', fontWeight: 600 }}>{lowExpiry} tétel hamarosan lejár</span> — nézd át a leltárt.
                 </span>
@@ -189,7 +189,7 @@ export function FuelKamraPage() {
 
           {/* Compact filter bar — search + a "Szűrők" button (badge = active filter count) */}
           <div className="row gap-sm" style={{ padding: '0 24px 8px', alignItems: 'stretch' }}>
-            <div className="notch-8 row gap-sm flex-1" style={{ padding: '9px 12px', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
+            <div className="rad-16 row gap-sm flex-1" style={{ padding: '9px 12px', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', alignItems: 'center' }}>
               <Icon name="search" size={12} color="var(--text-tertiary)" />
               <input
                 value={query}
@@ -205,16 +205,16 @@ export function FuelKamraPage() {
             </div>
             <button
               onClick={() => setFilterOpen(true)}
-              className="notch-8 row gap-xs"
+              className="rad-16 row gap-xs"
               style={{
                 alignItems: 'center', padding: '9px 13px',
-                fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
+                fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
                 color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid color-mix(in srgb, var(--sage) 30%, transparent)',
               }}
             >
               <Icon name="settings" size={12} /> Szűrők
               {categoryFilter.length > 0 && (
-                <span style={{ background: 'var(--brand-primary)', color: 'var(--text-inverse)', fontSize: 9, padding: '0 5px', borderRadius: 8 }}>
+                <span style={{ background: 'var(--coral)', color: 'var(--text-inverse)', fontSize: 9, padding: '0 5px', borderRadius: 8 }}>
                   {categoryFilter.length}
                 </span>
               )}
@@ -230,10 +230,10 @@ export function FuelKamraPage() {
                   <button
                     key={key}
                     onClick={() => setCategoryFilter(cs => cs.filter(c => c !== key))}
-                    className="notch-8 row gap-xs"
+                    className="rad-16 row gap-xs"
                     style={{
                       alignItems: 'center', padding: '4px 9px',
-                      fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
+                      fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
                       color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid color-mix(in srgb, var(--sage) 30%, transparent)',
                     }}
                   >
@@ -250,7 +250,7 @@ export function FuelKamraPage() {
           {/* Type-grouped list */}
           <div style={{ padding: '0 24px 32px' }}>
             {filtered.length === 0 && (
-              <div className="card notch-4" style={{ padding: 20, textAlign: 'center' }}>
+              <div className="card" style={{ padding: 20, textAlign: 'center' }}>
                 <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs egyező tétel.</span>
               </div>
             )}
@@ -294,7 +294,7 @@ export function FuelKamraPage() {
               </div>
               <div className="col gap-xs">
                 {imports.map(imp => (
-                  <div key={imp.id} className="card notch-4 row" style={{ padding: '10px 12px', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                  <div key={imp.id} className="card row" style={{ padding: '10px 12px', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <div className="row gap-sm" style={{ alignItems: 'center', minWidth: 0 }}>
                       <SourceBadge source={imp.source} />
                       <span style={{ fontSize: 12, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

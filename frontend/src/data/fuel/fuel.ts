@@ -34,7 +34,7 @@ export const fuelDay: FuelDay = {
             label: 'Kcal & makró arány',
             weight: 0.3,
             score: 0.94,
-            color: 'var(--brand-glow)',
+            color: 'var(--coral)',
             detail:
               'P/C/F arány 29/54/19% — pre-Pull Day ablakra textbook. Kcal a napi 18.7%-a, ez egy 4-étkezéses napon ideális reggeli-súly.',
             macroRatio: { p: 29, c: 54, f: 19 },
@@ -138,7 +138,7 @@ export const fuelDay: FuelDay = {
             label: 'Kcal & makró arány',
             weight: 0.3,
             score: 0.86,
-            color: 'var(--brand-glow)',
+            color: 'var(--coral)',
             detail:
               'P/C/F 32/41/23%. Pre-workout ablakra a C kicsit alacsony — 80g körüli szénhidrát ideálisabb lenne PR-attempt-re. De a kombó biztonságos.',
             macroRatio: { p: 32, c: 41, f: 23 },
@@ -242,7 +242,7 @@ export const fuelDay: FuelDay = {
             label: 'Kcal & makró arány',
             weight: 0.3,
             score: 0.88,
-            color: 'var(--brand-glow)',
+            color: 'var(--coral)',
             detail:
               'P/C/F 49/42/9%. Snack-re extrém protein-súlyos — pont ezt akarjuk a workout-window előtt. A 9% F szándékos (gyorsabb gyomor-ürülés).',
             macroRatio: { p: 49, c: 42, f: 9 },

@@ -52,7 +52,7 @@ export function SkeletonCard({ children, className, style }: {
   children: ReactNode; className?: string; style?: CSSProperties
 }) {
   return (
-    <div className={`card notch-12${className ? ` ${className}` : ''}`} style={{ padding: 14, ...style }}>
+    <div className={`card${className ? ` ${className}` : ''}`} style={{ padding: 14, ...style }}>
       {children}
     </div>
   )

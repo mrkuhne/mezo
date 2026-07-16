@@ -22,7 +22,7 @@ export function MicroPanel({ dim }: { dim: MicroDimension }) {
             glow={m.status === 'good'}
           />
           <span style={{
-            fontFamily: 'var(--ff-mono)', fontSize: 10,
+            fontVariantNumeric: 'tabular-nums', fontSize: 10,
             width: 56, textAlign: 'right',
             color: 'var(--text-secondary)',
           }}>{m.value}</span>

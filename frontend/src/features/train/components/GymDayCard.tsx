@@ -84,7 +84,7 @@ export function GymDayCard({ day, onOpen }: GymDayCardProps) {
             )}
           </div>
           {!isRest && (
-            <div className="row gap-md mt-xs" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10 }}>
+            <div className="row gap-md mt-xs" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10 }}>
               <span style={{ color: 'var(--text-tertiary)' }}>{day.exerciseCount} gyakorlat</span>
               <span style={{ color: 'var(--text-tertiary)' }}>· {setsCount} szet</span>
               {compoundCount > 0 && <span style={{ color: 'var(--text-tertiary)' }}>· {compoundCount} compound</span>}

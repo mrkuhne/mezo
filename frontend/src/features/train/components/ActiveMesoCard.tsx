@@ -4,8 +4,8 @@
 // goal / chevron, the phase-curve mini bars, and a Split/Stílus/Vége meta row.
 // The whole card navigates to the builder. Ported from prototype
 // mesocycles.jsx ActiveMesoCard. Brand tints use color-mix against
-// --brand-glow (matching the SportPage hero idiom); the border uses the
-// --border-brand design token.
+// --coral (matching the SportPage hero idiom); the border uses the
+// --line design token.
 // ============================================================
 import { MESOCYCLE_PHASE_COLORS } from '@/data/train/train'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
@@ -29,19 +29,19 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
     <button
       type="button"
       onClick={onOpen}
-      className="card notch-12"
+      className="card"
       style={{
         padding: 0,
         width: '100%',
         textAlign: 'left',
         overflow: 'hidden',
         background:
-          'linear-gradient(180deg, color-mix(in srgb, var(--brand-glow) 6%, transparent) 0%, var(--surface-1) 70%)',
-        borderColor: 'var(--border-brand)',
+          'linear-gradient(180deg, color-mix(in srgb, var(--coral) 6%, transparent) 0%, var(--surface-1) 70%)',
+        borderColor: 'var(--line)',
         position: 'relative',
       }}
     >
-      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--brand-glow)' }} />
+      <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: 'var(--coral)' }} />
       <span
         style={{
           position: 'absolute',
@@ -50,7 +50,7 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
           width: 180,
           height: 180,
           borderRadius: '50%',
-          background: 'radial-gradient(circle, color-mix(in srgb, var(--brand-glow) 12%, transparent), transparent 70%)',
+          background: 'radial-gradient(circle, color-mix(in srgb, var(--coral) 12%, transparent), transparent 70%)',
         }}
       />
 
@@ -67,7 +67,7 @@ export function ActiveMesoCard({ meso, onOpen }: ActiveMesoCardProps) {
               {meso.goal}
             </span>
           </div>
-          <Icon name="chevron-right" size={20} color="var(--brand-glow)" />
+          <Icon name="chevron-right" size={20} color="var(--coral)" />
         </div>
 
         {/* Phase curve */}

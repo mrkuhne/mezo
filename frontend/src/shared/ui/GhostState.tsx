@@ -10,7 +10,7 @@ export function GhostState({ message, ctaLabel, onCta, lines = 3 }: {
   lines?: number
 }) {
   return (
-    <div className="card notch-12" style={{ padding: 18 }}>
+    <div className="card" style={{ padding: 18 }}>
       <div className="col gap-sm" aria-hidden="true">
         {Array.from({ length: lines }, (_, i) => (
           <div

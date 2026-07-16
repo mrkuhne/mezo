@@ -71,11 +71,11 @@ export function GymScheduleSheet({
 
           {/* Actions */}
           <div className="row gap-sm mt-lg">
-            <button className="cta-ghost notch-4 flex-1" onClick={close}>
+            <button className="cta-ghost flex-1" onClick={close}>
               Mégse
             </button>
             <button
-              className="cta-primary notch-4 flex-1"
+              className="cta-primary flex-1"
               onClick={() => {
                 onSave(localSchedule)
                 close()
@@ -101,12 +101,12 @@ function ScheduleRow({
 }) {
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{
         padding: '10px 12px',
-        borderColor: slot.active ? 'var(--border-brand)' : 'var(--border-subtle)',
+        borderColor: slot.active ? 'var(--line)' : 'var(--border-subtle)',
         background: slot.active
-          ? 'color-mix(in srgb, var(--brand-glow) 3%, transparent)'
+          ? 'color-mix(in srgb, var(--coral) 3%, transparent)'
           : 'var(--surface-1)',
         opacity: slot.active ? 1 : 0.6,
       }}
@@ -117,7 +117,7 @@ function ScheduleRow({
           style={{
             width: 40,
             fontSize: 10,
-            color: slot.active ? 'var(--brand-glow)' : 'var(--text-tertiary)',
+            color: slot.active ? 'var(--coral)' : 'var(--text-tertiary)',
           }}
         >
           {slot.day}
@@ -142,10 +142,10 @@ function ScheduleRow({
                       style={{
                         fontSize: 9,
                         padding: '3px 6px',
-                        color: selected ? 'var(--brand-glow)' : 'var(--text-tertiary)',
-                        borderColor: selected ? 'var(--border-brand)' : 'var(--border-subtle)',
+                        color: selected ? 'var(--coral)' : 'var(--text-tertiary)',
+                        borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
                         background: selected
-                          ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)'
+                          ? 'color-mix(in srgb, var(--coral) 8%, transparent)'
                           : 'transparent',
                       }}
                     >

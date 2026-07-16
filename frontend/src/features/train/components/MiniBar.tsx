@@ -17,7 +17,7 @@ export function MiniBar({ label, val, max, color }: MiniBarProps) {
         <span className="label-mono" style={{ fontSize: 8 }}>
           {label}
         </span>
-        <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color }}>
+        <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 9, color }}>
           {val}/{max}
         </span>
       </div>
