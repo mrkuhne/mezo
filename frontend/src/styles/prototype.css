@@ -439,6 +439,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   font-family: var(--ff-mono);
   font-size: 10px; font-weight: 500;
   border: 1px solid var(--border-subtle);
+  border-radius: 12px;
   color: var(--text-secondary);
 }
 .toolchip.read    { color: var(--lav); border-color: color-mix(in srgb, var(--lav) 32%, transparent); background: color-mix(in srgb, var(--lav) 8%, transparent); }
