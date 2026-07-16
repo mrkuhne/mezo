@@ -61,7 +61,7 @@ export function MesocycleBuilderPage() {
       {/* Breadcrumb — pinned below the status bar like native nav chrome */}
       <div className="sticky-top" style={{ padding: '8px 24px' }}>
         <button type="button" onClick={backToLibrary} className="row gap-sm">
-          <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
           <span className="eyebrow">Mesociklusok</span>
         </button>
       </div>
@@ -97,7 +97,6 @@ export function MesocycleBuilderPage() {
                 background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
                 border: `1px solid ${active ? 'var(--line)' : 'var(--border-subtle)'}`,
                 color: active ? 'var(--coral)' : 'var(--text-secondary)',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: '0.14em',

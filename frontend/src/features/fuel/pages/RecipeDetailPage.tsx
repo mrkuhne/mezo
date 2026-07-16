@@ -135,7 +135,7 @@ export function RecipeDetailPage() {
           <div style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, textTransform: 'uppercase', lineHeight: 1.05, color: 'var(--ink)' }}>
             {recipe.name}
           </div>
-          <div style={{ marginTop: 6, fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em', color: 'var(--faint)' }}>
+          <div style={{ marginTop: 6, fontVariantNumeric: 'tabular-nums', fontSize: 9, letterSpacing: '0.06em', color: 'var(--faint)' }}>
             {recipe.servings} adag · {totalMins} perc · létrehozva {recipe.createdDate}
           </div>
         </div>
@@ -161,7 +161,7 @@ export function RecipeDetailPage() {
           { v: String(recipe.ingredients.length), l: 'Hozzáv.', c: undefined },
         ].map(m => (
           <div key={m.l} className="rad-12" style={{ textAlign: 'center', padding: '9px 2px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontFamily: 'var(--ff-mono)', fontSize: 13, fontWeight: 600, color: m.c ?? 'var(--text-primary)' }}>{m.v}</div>
+            <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: 600, color: m.c ?? 'var(--text-primary)' }}>{m.v}</div>
             <div className="label-mono" style={{ fontSize: 7, letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginTop: 3 }}>{m.l}</div>
           </div>
         ))}
@@ -181,12 +181,12 @@ export function RecipeDetailPage() {
               <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div className="col flex-1" style={{ minWidth: 0 }}>
                   <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{line.name}</span>
-                  <span className="row gap-xs" style={{ fontFamily: 'var(--ff-mono)', fontSize: 8.5, color: 'var(--text-tertiary)', marginTop: 3, alignItems: 'center' }}>
+                  <span className="row gap-xs" style={{ fontSize: 8.5, color: 'var(--text-tertiary)', marginTop: 3, alignItems: 'center' }}>
                     {src && <SourceBadge source={src} />}
                     {line.note && <span>· {line.note}</span>}
                   </span>
                 </div>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', flexShrink: 0 }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', flexShrink: 0 }}>
                   {line.amount}<span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 1 }}>{line.unit}</span>
                 </span>
               </div>

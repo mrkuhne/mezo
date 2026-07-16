@@ -135,7 +135,7 @@ export function WorkoutSummary({
                     {e.sets.map((s, i) => `${i + 1}: ${s.weight.toLocaleString('hu-HU')} × ${s.reps} @RIR ${s.rir}`).join(' · ')}
                   </div>
                 ) : best ? (
-                  <div className="row gap-md mt-sm" style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}>
+                  <div className="row gap-md mt-sm" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
                     <span><span style={{ color: 'var(--text-tertiary)' }}>top</span> <span style={{ color: 'var(--text-primary)' }}>{best.weight.toLocaleString('hu-HU')}kg × {best.reps}</span></span>
                     <span><span style={{ color: 'var(--text-tertiary)' }}>RIR</span> <span style={{ color: 'var(--text-primary)' }}>{best.rir}</span></span>
                   </div>

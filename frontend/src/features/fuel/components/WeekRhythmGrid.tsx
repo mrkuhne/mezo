@@ -155,7 +155,6 @@ function WeekDayRow({ gym, vb }: { gym: GymScheduleDay; vb: VolleyballSession | 
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 9,
                 color: 'var(--text-quaternary)',
                 letterSpacing: '0.1em',
@@ -227,7 +226,7 @@ export function WeekRhythmGrid({
                   left: ((h - 6) / 16) * 100 + '%',
                   transform:
                     i === 0 ? 'translateX(0)' : i === 4 ? 'translateX(-100%)' : 'translateX(-50%)',
-                  fontFamily: 'var(--ff-mono)',
+                  fontVariantNumeric: 'tabular-nums',
                   fontSize: 8,
                   color: 'var(--text-quaternary)',
                   letterSpacing: '0.06em',
@@ -253,7 +252,6 @@ export function WeekRhythmGrid({
           style={{
             paddingTop: 10,
             borderTop: '1px solid var(--border-subtle)',
-            fontFamily: 'var(--ff-mono)',
             fontSize: 9,
             color: 'var(--text-tertiary)',
             flexWrap: 'wrap',

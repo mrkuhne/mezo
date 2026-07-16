@@ -43,11 +43,11 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
         <div style={{ width: 44, flexShrink: 0, textAlign: 'center' }}>
           {stockQty !== null ? (
             <>
-              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 14, fontWeight: 600, lineHeight: 1.1, color: lowStock ? 'var(--warning)' : tint }}>{stockQty}</span>
-              <span style={{ display: 'block', fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{stockUnit}</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 600, lineHeight: 1.1, color: lowStock ? 'var(--warning)' : tint }}>{stockQty}</span>
+              <span style={{ display: 'block', fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{stockUnit}</span>
             </>
           ) : (
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--text-quaternary)' }}>—</span>
+            <span style={{ fontSize: 12, color: 'var(--text-quaternary)' }}>—</span>
           )}
         </div>
       )}
@@ -57,12 +57,12 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
         <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.05, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
         <div className="row gap-xs" style={{ alignItems: 'center', marginTop: 7 }}>
           <SourceBadge source={item.source} />
-          {item.brand && <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>{item.brand}</span>}
+          {item.brand && <span className="text-tertiary" style={{ fontSize: 10 }}>{item.brand}</span>}
           {item.caffeine && <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)' }}>koffein</span>}
         </div>
 
         {item.macros ? (
-          <div className="row" style={{ alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 9, fontFamily: 'var(--ff-mono)', fontSize: 9 }}>
+          <div className="row" style={{ alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 9, fontVariantNumeric: 'tabular-nums', fontSize: 9 }}>
             <span style={{ color: 'var(--success)', fontWeight: 600 }}>P {item.macros.p}</span>
             <span className="text-tertiary">C {item.macros.c}</span>
             <span className="text-tertiary">F {item.macros.f}</span>
@@ -78,13 +78,13 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
       <div className="col" style={{ alignItems: 'flex-end', flexShrink: 0 }}>
         {item.macros ? (
           <>
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{item.macros.kcal}</span>
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)' }}>kcal</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{item.macros.kcal}</span>
+            <span style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>kcal</span>
           </>
         ) : (
           <>
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 15, fontWeight: 600, color: tint }}>{item.dose}</span>
-            {SHOW_PANTRY_STOCK && lowStock && <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--warning)' }}>⚠ fogy</span>}
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600, color: tint }}>{item.dose}</span>
+            {SHOW_PANTRY_STOCK && lowStock && <span style={{ fontSize: 8, color: 'var(--warning)' }}>⚠ fogy</span>}
           </>
         )}
       </div>

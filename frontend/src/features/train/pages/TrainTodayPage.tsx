@@ -204,7 +204,7 @@ export function TrainTodayPage() {
                     width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
                     background: 'rgba(52, 211, 153, 0.08)',
                     border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
-                    color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
+                    color: 'var(--success)', fontSize: 11,
                   }}
                 >
                   <Icon name="check" size={12} />
@@ -263,7 +263,7 @@ export function TrainTodayPage() {
                       width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
                       background: 'rgba(52, 211, 153, 0.08)',
                       border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
-                      color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
+                      color: 'var(--success)', fontSize: 11,
                     }}
                   >
                     <Icon name="check" size={12} />
@@ -329,7 +329,7 @@ export function TrainTodayPage() {
                     width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
                     background: 'rgba(52, 211, 153, 0.08)',
                     border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
-                    color: 'var(--success)', fontSize: 11, fontFamily: 'var(--ff-mono)',
+                    color: 'var(--success)', fontSize: 11,
                   }}
                 >
                   <Icon name="check" size={12} />

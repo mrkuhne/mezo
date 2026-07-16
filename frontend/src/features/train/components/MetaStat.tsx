@@ -27,7 +27,7 @@ export function MetaStat({ label, val, sub }: MetaStatProps) {
         {val}
       </span>
       {sub ? (
-        <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}>
+        <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2 }}>
           {sub}
         </span>
       ) : null}

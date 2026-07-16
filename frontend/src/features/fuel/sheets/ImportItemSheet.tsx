@@ -101,7 +101,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') void search() }}
                   placeholder="pl. skyr · 5900512300108"
-                  style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 4, width: '100%', fontFamily: 'var(--ff-mono)' }}
+                  style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 4, width: '100%' }}
                 />
               </div>
 
@@ -176,7 +176,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                         <div className="col" style={{ minWidth: 0 }}>
                           <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{r.name}</span>
-                          <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>
+                          <span className="text-tertiary" style={{ fontSize: 10 }}>
                             {r.brand ?? '—'}{r.barcode ? ` · ${r.barcode}` : ''}
                           </span>
                         </div>

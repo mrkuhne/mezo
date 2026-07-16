@@ -135,7 +135,7 @@ export function StackPickerSheet({
                     </div>
                     <span
                       className="text-tertiary"
-                      style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}
+                      style={{ fontSize: 10 }}
                     >
                       {s.brand} · {s.dose}
                     </span>

@@ -87,7 +87,6 @@ export function CompactStepper({
         />
         <span
           style={{
-            fontFamily: 'var(--ff-mono)',
             fontSize: 10,
             color: 'var(--text-tertiary)',
             fontWeight: 500,

@@ -60,7 +60,7 @@ export function CategoryFilterSheet({
                   className="rad-16 row"
                   style={{
                     alignItems: 'center', gap: 6, padding: '7px 11px',
-                    fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
+                    fontSize: 10, letterSpacing: '0.04em', textTransform: 'uppercase',
                     color: on ? 'var(--coral)' : 'var(--text-secondary)',
                     background: on ? 'color-mix(in srgb, var(--sage) 12%, transparent)' : 'var(--surface-2)',
                     border: '1px solid ' + (on ? 'color-mix(in srgb, var(--sage) 30%, transparent)' : 'var(--border-subtle)'),

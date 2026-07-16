@@ -193,7 +193,7 @@ export function FuelMaiPage() {
                   {n.name}
                 </span>
                 <ProgressBar className="flex-1" value={n.pct} tone={n.pct < 70 ? 'warning' : 'glow'} />
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)', width: 56, textAlign: 'right' }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)', width: 56, textAlign: 'right' }}>
                   {n.pct}% · {n.target}
                 </span>
               </div>

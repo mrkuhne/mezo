@@ -24,7 +24,7 @@ export function VolleyballCard({
                 <span className="typetag typetag-sport">RÖPI</span>
                 <div className="h-display size-sm" style={{ lineHeight: 1.15 }}>Röplabda</div>
               </div>
-              <span className="text-tertiary" style={{ fontSize: 11, marginTop: 4, fontFamily: 'var(--ff-mono)' }}>{session.court} · {session.role}</span>
+              <span className="text-tertiary" style={{ fontSize: 11, marginTop: 4 }}>{session.court} · {session.role}</span>
             </div>
             <Icon name="chevron-right" size={18} color="var(--sub)" />
           </div>

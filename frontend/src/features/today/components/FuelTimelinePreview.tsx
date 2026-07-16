@@ -28,7 +28,7 @@ export function FuelTimelinePreview() {
               return (
                 <div key={i} className="row gap-sm" style={{ alignItems: 'center' }}>
                   <span style={{
-                    fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600,
+                    fontVariantNumeric: 'tabular-nums', fontSize: 11, fontWeight: 600,
                     color: isNow ? 'var(--coral)' : 'var(--text-tertiary)',
                     width: 44, flexShrink: 0,
                   }}>{s.time}</span>

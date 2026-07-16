@@ -32,7 +32,7 @@ export function ExerciseEditRow({ ex, onRemove, onChange }: ExerciseEditRowProps
               <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
                 {MUSCLE_LABELS[ex.muscle] ?? ex.muscle}
               </span>
-              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--coral)' }}>
+              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--coral)' }}>
                 {ex.warmupSets} bem · {ex.workingSets} work · {ex.repMin}-{ex.repMax} · RIR {ex.targetRIR}
                 {ex.anchorWeightKg != null ? ` · ${ex.anchorWeightKg} kg` : ' · auto'}
               </span>

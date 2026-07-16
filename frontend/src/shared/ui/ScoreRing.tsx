@@ -19,7 +19,7 @@ export function ScoreRing({ pct, size = 56, stroke = 4, color = 'var(--sage)', l
           textShadow: hasCustomLabelColor ? `0 0 14px color-mix(in srgb, ${labelColor} 40%, transparent)` : undefined }}>
           {label}
           {sublabel != null && (
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: size * 0.13,
+            <span style={{ fontSize: size * 0.13,
               color: 'var(--text-tertiary)', textShadow: 'none' }}>{sublabel}</span>
           )}
         </span>

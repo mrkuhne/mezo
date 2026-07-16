@@ -17,7 +17,7 @@ export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scor
 
         {/* Meta */}
         <div className="col flex-1" style={{ gap: 4, minWidth: 0 }}>
-          <div className="row gap-xs flex-wrap" style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}>
+          <div className="row gap-xs flex-wrap" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
             <span><span style={{ color: 'var(--text-tertiary)' }}>kcal</span> <span style={{ color: 'var(--text-primary)' }}>{meal.kcal}</span></span>
             <span style={{ color: 'var(--text-tertiary)' }}>·</span>
             <span><span style={{ color: 'var(--text-tertiary)' }}>P</span> <span style={{ color: 'var(--text-primary)' }}>{meal.p}</span></span>

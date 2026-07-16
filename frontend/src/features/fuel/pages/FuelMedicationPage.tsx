@@ -85,7 +85,7 @@ export function FuelMedicationPage() {
             <span style={{ fontFamily: 'var(--ff-display)', fontSize: 19, fontWeight: 600, color: 'var(--text-primary)' }}>
               {med.name}
             </span>
-            <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 19, fontWeight: 600, color: 'var(--error)' }}>
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 19, fontWeight: 600, color: 'var(--error)' }}>
               {med.defaultDose} {med.doseUnit}
             </span>
           </div>
@@ -127,7 +127,7 @@ export function FuelMedicationPage() {
                 <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
                   {huMonthDayDow(dose.administeredAt.slice(0, 10))}
                 </span>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 15, fontWeight: 600, color: 'var(--error)' }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600, color: 'var(--error)' }}>
                   {dose.dose} {med.doseUnit}
                 </span>
               </li>

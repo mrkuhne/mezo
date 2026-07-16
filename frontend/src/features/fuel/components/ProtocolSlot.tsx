@@ -59,7 +59,6 @@ export function ProtocolSlot({
                 padding: '1px 6px',
                 fontSize: 8,
                 fontWeight: 600,
-                fontFamily: 'var(--ff-mono)',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: slot.kindColor,

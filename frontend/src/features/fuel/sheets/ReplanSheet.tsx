@@ -52,7 +52,7 @@ export function ReplanSheet({
               </div>
               <span
                 className="text-secondary"
-                style={{ fontSize: 11.5, marginTop: 4, fontFamily: 'var(--ff-mono)' }}
+                style={{ fontSize: 11.5, marginTop: 4 }}
               >
                 {phase === 'applied' ? 'Mai timeline újraszámolva' : 'Válassz scenario-t · látod a cascade-et'}
               </span>
@@ -91,7 +91,7 @@ export function ReplanSheet({
                         <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{s.title}</span>
                         <span
                           className="text-tertiary"
-                          style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', marginTop: 2 }}
+                          style={{ fontSize: 10, marginTop: 2 }}
                         >
                           {s.detail}
                         </span>
@@ -145,7 +145,6 @@ export function ReplanSheet({
                           <span
                             style={{
                               padding: '2px 6px',
-                              fontFamily: 'var(--ff-mono)',
                               fontSize: 9,
                               fontWeight: 600,
                               color: sysColor,

@@ -22,7 +22,7 @@ export function WeeklyPage() {
             {weekly.score != null ? (
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: 56, fontWeight: 600, lineHeight: 1, marginTop: 8 }}>
                 {weekly.score}
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 16, color: 'var(--text-tertiary)', marginLeft: 6 }}>/100</span>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 16, color: 'var(--text-tertiary)', marginLeft: 6 }}>/100</span>
               </div>
             ) : (
               // The patterns-precedent honest null-state: no data yet, never a fabricated score.

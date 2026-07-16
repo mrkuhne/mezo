@@ -461,7 +461,7 @@ function ActiveWorkoutSession({
         {/* Breadcrumb — pinned below the status bar like native nav chrome (mezo-wdk) */}
         <div className="sticky-top" style={{ padding: '8px 24px' }}>
           <button className="row gap-sm" onClick={onExit}>
-            <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
             <span className="eyebrow">Vissza</span>
           </button>
         </div>
@@ -547,7 +547,7 @@ function ActiveWorkoutSession({
                   0{i + 1}
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>{w.label}</span>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)' }}>
                   {w.time}
                 </span>
               </div>
@@ -595,7 +595,7 @@ function ActiveWorkoutSession({
                         </div>
                       )}
                     </div>
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>
+                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)' }}>
                       {e.sets} × {e.repMin}-{e.repMax}
                     </span>
                   </div>
@@ -1053,7 +1053,7 @@ function ActiveWorkoutSession({
                     style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)', whiteSpace: 'nowrap', marginLeft: 4 }}
                   >
                     {w == null ? '—' : w}
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)', margin: '0 1px 0 2px' }}>kg</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-tertiary)', margin: '0 1px 0 2px' }}>kg</span>
                     <span style={{ color: 'var(--text-tertiary)', margin: '0 6px', fontWeight: 400 }}>×</span>
                     {r ?? '—'}
                   </span>

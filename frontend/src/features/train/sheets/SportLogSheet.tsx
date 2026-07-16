@@ -98,7 +98,7 @@ export function ScaleRow({
         <span className="label-mono">{label}</span>
         <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color, lineHeight: 1 }}>
           {val}
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 4 }}>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 4 }}>
             /10
           </span>
         </span>
@@ -184,7 +184,6 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
                     background: active ? 'color-mix(in srgb, var(--rose) 8%, transparent)' : 'var(--surface-1)',
                     border: `1px solid ${active ? 'color-mix(in srgb, var(--rose) 40%, transparent)' : 'var(--border-subtle)'}`,
                     color: active ? 'var(--rose)' : 'var(--text-secondary)',
-                    fontFamily: 'var(--ff-mono)',
                     fontSize: 10,
                     fontWeight: 600,
                     letterSpacing: '0.14em',

@@ -59,7 +59,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
                 <div
                   style={{ width: 6, height: 6, borderRadius: '50%', background: MESOCYCLE_PHASE_COLORS[p] }}
                 />
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)' }}>
+                <span style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
                   {p}
                 </span>
               </div>
@@ -116,7 +116,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
                   {d.muscle && d.exerciseCount > 0 && (
                     <span
                       className="text-tertiary"
-                      style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', marginTop: 2 }}
+                      style={{ fontSize: 10, marginTop: 2 }}
                     >
                       {d.muscle} · {d.exerciseCount} gyakorlat
                     </span>
@@ -140,7 +140,7 @@ export function MesoOverview({ meso, onEditDay }: { meso: Mesocycle; onEditDay?:
             ))}
           </div>
         ) : (
-          <span className="text-tertiary" style={{ fontSize: 12, fontFamily: 'var(--ff-mono)' }}>
+          <span className="text-tertiary" style={{ fontSize: 12 }}>
             Heti terv még nincs összeállítva.
           </span>
         )}

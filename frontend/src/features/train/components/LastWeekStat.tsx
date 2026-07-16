@@ -33,7 +33,6 @@ export function LastWeekStat({
         {unit && (
           <span
             style={{
-              fontFamily: 'var(--ff-mono)',
               fontSize: 10,
               color: 'var(--text-tertiary)',
               marginLeft: 3,

@@ -83,7 +83,7 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
             )}
           </div>
           {isTraining && (
-            <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}>
+            <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
               {exercises.length} gyakorlat · {totalSets} szet
             </span>
           )}
@@ -123,7 +123,6 @@ export function DayExerciseSection({ day, expanded, onToggle, onAdd, onRemoveExe
               borderStyle: 'dashed',
               borderColor: 'var(--line)',
               color: 'var(--coral)',
-              fontFamily: 'var(--ff-mono)',
               fontSize: 10,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',

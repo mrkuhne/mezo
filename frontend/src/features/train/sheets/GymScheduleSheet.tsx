@@ -35,7 +35,7 @@ export function GymScheduleSheet({ slots, onSave, onClose }: {
 
   const inputStyle = {
     background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-    color: 'var(--text-primary)', fontFamily: 'var(--ff-mono)', fontSize: 16,
+    color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', fontSize: 16,
     padding: '8px 10px', width: 130,
   } as const
 

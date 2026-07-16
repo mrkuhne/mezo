@@ -76,7 +76,6 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
                 justifyContent: 'center',
                 color: expanded ? 'var(--coral)' : 'var(--text-tertiary)',
                 fontSize: 9,
-                fontFamily: 'var(--ff-mono)',
               }}
             >
               ?
@@ -158,7 +157,7 @@ export function VolumeBar({ muscle, profile }: VolumeBarProps) {
           className="row"
           style={{
             justifyContent: 'space-between',
-            fontFamily: 'var(--ff-mono)',
+            fontVariantNumeric: 'tabular-nums',
             fontSize: 9,
             color: 'var(--text-tertiary)',
             marginTop: 2,

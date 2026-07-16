@@ -87,7 +87,7 @@ export function MesoVolume({ meso }: { meso: Mesocycle }) {
                   </span>
                   <span
                     className="text-tertiary"
-                    style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', marginTop: 2 }}
+                    style={{ fontSize: 10, marginTop: 2 }}
                   >
                     Következő recompute: {recompute.nextRun.replace('Vasárnap · ', 'vas · ')}
                   </span>

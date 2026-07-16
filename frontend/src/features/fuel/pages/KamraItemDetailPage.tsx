@@ -66,7 +66,7 @@ function Cell({ label, value, color }: { label: string; value: string; color?: s
   return (
     <div className="card col" style={{ padding: 8, gap: 2, alignItems: 'flex-start' }}>
       <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>{label}</span>
-      <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 15, fontWeight: 600, color: color ?? 'var(--text-primary)' }}>{value}</span>
+      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600, color: color ?? 'var(--text-primary)' }}>{value}</span>
     </div>
   )
 }

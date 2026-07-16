@@ -65,7 +65,7 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onReorder
             )}
           </div>
           {isTraining && (
-            <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}>
+            <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
               {day.exercises.length > 0
                 ? `${day.exercises.length} gyakorlat · ${setCount} szet`
                 : 'Üres nap · adj hozzá gyakorlatot'}
@@ -110,7 +110,6 @@ export function PlannerDaySection({ day, expanded, onToggle, onRemove, onReorder
               borderStyle: 'dashed',
               borderColor: 'var(--line)',
               color: 'var(--coral)',
-              fontFamily: 'var(--ff-mono)',
               fontSize: 10,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',

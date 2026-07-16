@@ -175,7 +175,6 @@ export function SportPage() {
                 background: active ? 'var(--wash-sport)' : 'var(--surface-1)',
                 border: `1px solid ${active ? 'color-mix(in srgb, var(--tag-sport) 40%, transparent)' : 'var(--border-subtle)'}`,
                 color: active ? 'var(--tag-sport)' : 'var(--text-secondary)',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: '0.14em',
@@ -294,7 +293,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                                 <span className="stag stag-sport">{SPORT_TAGS[kind]}</span>
                               )}
                               <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.time}</span>
-                              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)' }}>
+                              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--text-tertiary)' }}>
                                 · {session.duration}p
                               </span>
                               {session.today && (
@@ -314,7 +313,7 @@ function SportWeekView({ schedule, onEdit }: { schedule: SportSchedule['volleyba
                             </div>
                             <span
                               className="text-tertiary"
-                              style={{ fontSize: 10, marginTop: 2, fontFamily: 'var(--ff-mono)' }}
+                              style={{ fontSize: 10, marginTop: 2 }}
                             >
                               {[session.court, session.role, session.intensity].filter(Boolean).join(' · ')}
                             </span>

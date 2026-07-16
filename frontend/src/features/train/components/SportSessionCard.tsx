@@ -33,7 +33,7 @@ export function SportSessionCard({ session }: SportSessionCardProps) {
               {session.date} · {session.time}
             </span>
           </span>
-          <div className="row gap-md mt-md" style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}>
+          <div className="row gap-md mt-md" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
             <span>
               <span style={{ color: 'var(--text-tertiary)' }}>idő</span>{' '}
               <span style={{ color: 'var(--text-primary)' }}>{session.duration}p</span>

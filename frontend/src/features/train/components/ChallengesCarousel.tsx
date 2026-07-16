@@ -49,7 +49,7 @@ export function ChallengesCarousel({
           <Eyebrow brand>Mai kihívások · proposál</Eyebrow>
           <span
             className="text-tertiary"
-            style={{ fontSize: 11, marginTop: 4, fontFamily: 'var(--ff-mono)' }}
+            style={{ fontSize: 11, marginTop: 4 }}
           >
             {acceptedCount > 0
               ? `${acceptedCount} elfogadva · skip-elhető bármelyik`

@@ -103,7 +103,6 @@ export function RunningPage() {
                 background: active ? 'var(--wash-run)' : 'var(--surface-1)',
                 border: `1px solid ${active ? 'color-mix(in srgb, var(--tag-run) 40%, transparent)' : 'var(--border-subtle)'}`,
                 color: active ? RUN : 'var(--text-secondary)',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: '0.14em',
@@ -249,12 +248,11 @@ function RunStat({ val, unit, label }: { val: string; unit?: string; label: stri
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, color: 'var(--text-primary)' }}>
         {val}
         {unit && (
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 2 }}>{unit}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-tertiary)', marginLeft: 2 }}>{unit}</span>
         )}
       </div>
       <span
         style={{
-          fontFamily: 'var(--ff-mono)',
           fontSize: 9,
           fontWeight: 600,
           letterSpacing: '0.16em',
@@ -395,7 +393,6 @@ function RunStatusChip({ status }: { status: RunningBlockResponse['status'] }) {
   return (
     <span
       style={{
-        fontFamily: 'var(--ff-mono)',
         fontSize: 9,
         fontWeight: 600,
         letterSpacing: '0.14em',
@@ -443,10 +440,10 @@ function RunActiveBlockCard({ block, onOpen }: { block: RunningBlockResponse; on
       </div>
       <RunWeekStrip weeks={block.weeks} currentWeek={block.currentWeek} />
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
-        <span className="text-tertiary" style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+        <span className="text-tertiary" style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
           Hét {block.currentWeek} / {block.weeks}
         </span>
-        <span style={{ color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 9, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+        <span style={{ color: RUN, fontSize: 9, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
           Builder ▸
         </span>
       </div>
@@ -468,7 +465,7 @@ function RunCompactBlockCard({ block, onOpen }: { block: RunningBlockResponse; o
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <div className="col">
           <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{block.title}</span>
-          <span className="text-tertiary" style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 4 }}>
+          <span className="text-tertiary" style={{ fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', marginTop: 4 }}>
             {huMonthDay(block.startDate)} – {huMonthDay(block.endDate)} · {block.weeks} hét
           </span>
         </div>

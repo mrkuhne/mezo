@@ -53,7 +53,7 @@ function Stepper({ value, unit, onChange, min = 0 }: { value: number; unit: stri
   return (
     <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', display: 'inline-flex' }}>
       <button onClick={() => onChange(Math.max(min, value - 1))} style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 16 }} aria-label="Csökkentés">−</button>
-      <span style={{ minWidth: 36, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{value}</span>
+      <span style={{ minWidth: 36, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{value}</span>
       <button onClick={() => onChange(value + 1)} style={{ width: 30, height: 30, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 16 }} aria-label="Növelés">+</button>
       <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', padding: '0 8px 0 2px' }}>{unit}</span>
     </div>
@@ -86,7 +86,7 @@ function AmountField({ value, onChange, label }: { value: number; onChange: (n: 
       value={text}
       onChange={e => commit(e.target.value)}
       aria-label={label}
-      style={{ width: 42, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', background: 'transparent' }}
+      style={{ width: 42, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', background: 'transparent' }}
     />
   )
 }

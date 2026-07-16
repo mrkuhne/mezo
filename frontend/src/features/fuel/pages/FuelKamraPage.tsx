@@ -154,7 +154,7 @@ export function FuelKamraPage() {
                     style={{ alignItems: 'center', padding: '9px 0 8px', background: active ? 'var(--coral)' : 'transparent' }}
                   >
                     <span style={{ fontFamily: 'var(--ff-display)', fontSize: 14, fontWeight: 600, letterSpacing: '0.02em', color: active ? 'var(--text-inverse)' : 'var(--text-secondary)' }}>{t.label}</span>
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, marginTop: 3, color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)' }}>{counts[t.id] ?? 0}</span>
+                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 9, marginTop: 3, color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)' }}>{counts[t.id] ?? 0}</span>
                   </button>
                 )
               })}
@@ -208,7 +208,7 @@ export function FuelKamraPage() {
               className="rad-16 row gap-xs"
               style={{
                 alignItems: 'center', padding: '9px 13px',
-                fontFamily: 'var(--ff-mono)', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
+                fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase',
                 color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid color-mix(in srgb, var(--sage) 30%, transparent)',
               }}
             >
@@ -233,7 +233,7 @@ export function FuelKamraPage() {
                     className="rad-16 row gap-xs"
                     style={{
                       alignItems: 'center', padding: '4px 9px',
-                      fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
+                      fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase',
                       color: 'var(--sage-deep)', background: 'var(--wash-sage)', border: '1px solid color-mix(in srgb, var(--sage) 30%, transparent)',
                     }}
                   >

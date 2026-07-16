@@ -51,7 +51,7 @@ export function RecipeLogsList({ logs, baselineScore }: { logs?: RecipeLog[]; ba
               )}
             </div>
           </div>
-          <div className="row gap-md mt-sm" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
+          <div className="row gap-md mt-sm" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
             <span style={{ color: 'var(--text-tertiary)' }}>kcal <span style={{ color: 'var(--text-primary)' }}>{l.kcal}</span></span>
             <span style={{ color: 'var(--text-tertiary)' }}>P <span style={{ color: 'var(--text-primary)' }}>{l.p}</span></span>
             <span style={{ color: 'var(--text-tertiary)' }}>C <span style={{ color: 'var(--text-primary)' }}>{l.c}</span></span>

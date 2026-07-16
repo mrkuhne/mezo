@@ -29,7 +29,7 @@ export function ServingToggle({ value, servings, onChange }: ServingToggleProps)
             className="rad-12 flex-1"
             style={{
               padding: '7px 0', textAlign: 'center',
-              fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.06em',
+              fontVariantNumeric: 'tabular-nums', fontSize: 9, letterSpacing: '0.06em',
               fontWeight: active ? 600 : 400,
               color: active ? 'var(--text-inverse)' : 'var(--text-tertiary)',
               background: active ? 'var(--coral)' : 'transparent',

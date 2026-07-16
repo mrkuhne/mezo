@@ -23,7 +23,6 @@ export function WeekdayGrid({ value, onChange }: { value: number; onChange: (day
               background: active ? 'color-mix(in srgb, var(--sky) 12%, transparent)' : 'var(--surface-1)',
               border: `1px solid ${active ? RUN : 'var(--border-subtle)'}`,
               color: active ? RUN : 'var(--text-tertiary)',
-              fontFamily: 'var(--ff-mono)',
               fontSize: 9.5,
               fontWeight: 600,
               letterSpacing: '0.04em',

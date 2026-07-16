@@ -140,7 +140,7 @@ export function MesocyclePlannerPage() {
       {/* Breadcrumb — pinned below the status bar like native nav chrome */}
       <div className="sticky-top" style={{ padding: '8px 24px' }}>
         <button type="button" className="row gap-sm" onClick={handleBack}>
-          <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
           <span className="eyebrow">{backLabel}</span>
         </button>
       </div>
@@ -335,7 +335,7 @@ function Step0Goal({ goal, onSelect }: { goal: GoalPreset | null; onSelect: (g: 
                       {g.defaultWeeks} hét
                     </span>
                   </div>
-                  <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2, fontFamily: 'var(--ff-mono)' }}>
+                  <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
                     {g.sub}
                   </span>
                   {selected && (
@@ -455,7 +455,7 @@ function Step1Length({
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
           <span className="label-mono">Hossz</span>
           <span style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, color: 'var(--coral)' }}>
-            {weeks} <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 12, color: 'var(--text-tertiary)' }}>hét</span>
+            {weeks} <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>hét</span>
           </span>
         </div>
         <div className="row gap-xs">
@@ -622,7 +622,7 @@ function Step2Split({
                 }}
               >
                 {d}
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>×</span>
+                <span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 3 }}>×</span>
               </button>
             )
           })}
@@ -655,7 +655,6 @@ function Step2Split({
                   background: active ? CORAL_TINT_STRONG : 'var(--surface-1)',
                   border: `1px solid ${active ? 'var(--coral)' : 'var(--border-subtle)'}`,
                   color: active ? 'var(--coral)' : 'var(--text-tertiary)',
-                  fontFamily: 'var(--ff-mono)',
                   fontSize: 10,
                   fontWeight: 600,
                   letterSpacing: '0.06em',

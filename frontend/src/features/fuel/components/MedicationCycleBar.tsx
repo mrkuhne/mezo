@@ -36,10 +36,10 @@ function Cell({ cell }: { cell: MedicationCycleCell }) {
         outlineOffset: cell.current ? '-1px' : undefined,
       }}
     >
-      <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 9, fontWeight: 600, color: tint.token }}>
+      <span style={{ fontSize: 9, fontWeight: 600, color: tint.token }}>
         {tint.glyph}
       </span>
-      <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 8, marginTop: 4, color: 'var(--text-tertiary)' }}>
+      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 8, marginTop: 4, color: 'var(--text-tertiary)' }}>
         {cell.day}
       </span>
     </li>

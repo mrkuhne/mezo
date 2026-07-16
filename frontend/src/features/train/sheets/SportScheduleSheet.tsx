@@ -64,7 +64,7 @@ export function SportScheduleSheet({ initial, onSave, onClose }: {
 
   const inputStyle = {
     background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
-    color: 'var(--text-primary)', fontFamily: 'var(--ff-mono)', fontSize: 12,
+    color: 'var(--text-primary)', fontSize: 12,
     padding: '8px 10px', width: '100%',
   } as const
 

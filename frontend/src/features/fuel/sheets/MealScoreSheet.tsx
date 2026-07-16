@@ -87,7 +87,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                   }}>
                     <span style={{
                       width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontFamily: 'var(--ff-mono)', fontSize: 9, color: 'var(--warning)',
+                      fontVariantNumeric: 'tabular-nums', fontSize: 9, color: 'var(--warning)',
                       background: 'color-mix(in srgb, var(--warning) 12%, transparent)', borderRadius: 4, flexShrink: 0, marginTop: 1,
                     }}>{i + 1}</span>
                     <span style={{ fontSize: 12.5, color: 'var(--text-primary)', lineHeight: 1.45, flex: 1 }}>

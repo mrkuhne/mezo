@@ -49,7 +49,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
           {recipe.name}
         </div>
         <MacroCells macros={recipe.macros} />
-        <div className="row gap-xs flex-wrap" style={{ alignItems: 'center', marginTop: 10, fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)' }}>
+        <div className="row gap-xs flex-wrap" style={{ alignItems: 'center', marginTop: 10, fontVariantNumeric: 'tabular-nums', fontSize: 8, color: 'var(--text-tertiary)' }}>
           <span>{recipe.ingredients.length} hozzávaló</span>
           <span>·</span>
           <span>{totalMins} perc</span>

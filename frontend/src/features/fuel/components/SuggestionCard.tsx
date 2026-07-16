@@ -27,7 +27,7 @@ export function SuggestionCard({ sug, onAdd }: { sug: PantrySuggestion; onAdd?: 
           </span>
         </div>
         <div className="col" style={{ alignItems: 'flex-end', flexShrink: 0 }}>
-          <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-primary)' }}>{sug.price}</span>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-primary)' }}>{sug.price}</span>
           {onAdd && (
             <button className="chip brand" onClick={onAdd} style={{ fontSize: 9, padding: '4px 8px', marginTop: 6 }}>
               <Icon name="plus" size={9} /> Polcra

@@ -113,7 +113,7 @@ export function RunningBlockBuilderPage() {
       {/* Breadcrumb — pinned below the status bar like native nav chrome */}
       <div className="sticky-top" style={{ padding: '8px 24px' }}>
         <button type="button" onClick={backToList} className="row gap-sm">
-          <span style={{ color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
+          <span style={{ color: RUN, fontSize: 14 }}>←</span>
           <span className="eyebrow" style={{ color: RUN }}>Futás</span>
         </button>
       </div>
@@ -163,18 +163,18 @@ export function RunningBlockBuilderPage() {
             const active = w === clampedWeek
             return (
               <button key={w} type="button" aria-pressed={active} onClick={() => setSelectedWeek(w)} className="rad-12"
-                style={{ minWidth: 38, padding: '8px 10px', background: active ? 'color-mix(in srgb, var(--sky) 8%, transparent)' : 'var(--surface-1)', border: `1px solid ${active ? 'color-mix(in srgb, var(--sky) 40%, transparent)' : 'var(--border-subtle)'}`, color: active ? RUN : 'var(--text-secondary)', fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em' }}>
+                style={{ minWidth: 38, padding: '8px 10px', background: active ? 'color-mix(in srgb, var(--sky) 8%, transparent)' : 'var(--surface-1)', border: `1px solid ${active ? 'color-mix(in srgb, var(--sky) 40%, transparent)' : 'var(--border-subtle)'}`, color: active ? RUN : 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em' }}>
                 {w}
               </button>
             )
           })}
           {(draft.weeks || 1) > 1 && (
             <button type="button" aria-label="Utolsó hét eltávolítása" onClick={removeWeek} className="rad-12"
-              style={{ minWidth: 38, padding: '8px 10px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>−</button>
+              style={{ minWidth: 38, padding: '8px 10px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-tertiary)', fontSize: 14 }}>−</button>
           )}
           {(draft.weeks || 1) < 8 && (
             <button type="button" aria-label="Hét hozzáadása" onClick={addWeekToDraft} className="rad-12"
-              style={{ minWidth: 38, padding: '8px 10px', background: 'transparent', border: '1px dashed color-mix(in srgb, var(--sky) 45%, transparent)', color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 14 }}>＋</button>
+              style={{ minWidth: 38, padding: '8px 10px', background: 'transparent', border: '1px dashed color-mix(in srgb, var(--sky) 45%, transparent)', color: RUN, fontSize: 14 }}>＋</button>
           )}
         </div>
       </div>

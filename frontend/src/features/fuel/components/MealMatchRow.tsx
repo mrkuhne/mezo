@@ -25,7 +25,7 @@ export function MealMatchRow({ match }: { match: MealMatch }) {
       </div>
       <div className="col flex-1" style={{ minWidth: 0 }}>
         <span style={{ fontSize: 12.5, color: 'var(--text-primary)', fontWeight: 500 }}>{r.name}</span>
-        <span className="text-tertiary" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', marginTop: 2 }}>
+        <span className="text-tertiary" style={{ fontSize: 10, marginTop: 2 }}>
           {match.reason}
         </span>
       </div>

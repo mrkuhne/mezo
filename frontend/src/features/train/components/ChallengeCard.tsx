@@ -82,7 +82,6 @@ export function ChallengeCard({
             <span
               style={{
                 padding: '3px 8px',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 9,
                 fontWeight: 600,
                 letterSpacing: '0.14em',
@@ -210,7 +209,6 @@ export function ChallengeCard({
                 background: accepted ? 'var(--coral)' : 'transparent',
                 border: `1px solid ${accepted ? 'var(--coral)' : 'var(--border-strong)'}`,
                 color: accepted ? 'var(--text-inverse)' : 'var(--text-primary)',
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 11,
                 fontWeight: 600,
                 letterSpacing: '0.14em',

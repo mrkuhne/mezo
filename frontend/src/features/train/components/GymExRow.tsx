@@ -26,7 +26,7 @@ export function GymExRow({ ex, idx }: GymExRowProps) {
               {ex.name}
             </span>
           </div>
-          <div className="row gap-md mt-xs" style={{ fontFamily: 'var(--ff-mono)', fontSize: 10 }}>
+          <div className="row gap-md mt-xs" style={{ fontSize: 10 }}>
             <span style={{ color: typeColor }}>{ex.type}</span>
             <span style={{ color: 'var(--text-tertiary)' }}>· {ex.muscle}</span>
           </div>

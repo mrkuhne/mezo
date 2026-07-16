@@ -25,7 +25,6 @@ function Pill({ text, tone }: { text: string; tone: 'work' | 'warm' | 'rest' }) 
         display: 'inline-flex',
         alignItems: 'center',
         gap: 5,
-        fontFamily: 'var(--ff-mono)',
         fontSize: 11,
         fontWeight: 600,
         padding: '3px 8px',
@@ -86,13 +85,13 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
             <span className="stag stag-run">FUTÁS</span>
             <span className="label-mono" style={{ color: 'var(--text-primary)' }}>{dayLabel}</span>
             {session.timeOfDay && (
-              <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: RUN }}>{session.timeOfDay}</span>
+              <span style={{ fontSize: 11, color: RUN }}>{session.timeOfDay}</span>
             )}
             <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{session.label}</span>
           </div>
           <span
             style={{
-              fontFamily: 'var(--ff-mono)',
+              fontVariantNumeric: 'tabular-nums',
               fontSize: 10,
               fontWeight: 600,
               letterSpacing: '0.06em',
@@ -116,7 +115,6 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
               type="button"
               onClick={onLog}
               style={{
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: '0.14em',
@@ -133,7 +131,6 @@ export function RunSessionCard({ session, onLog }: { session: RunPrescribedSessi
           ) : (
             <span
               style={{
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: '0.14em',

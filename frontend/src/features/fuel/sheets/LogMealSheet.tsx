@@ -186,7 +186,7 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
                     </div>
                     <div className="row" style={{ alignItems: 'center', background: 'var(--surface-2)', display: 'inline-flex' }}>
                       <button onClick={() => bump(l.key, -meta.step)} aria-label={`${meta.name} csökkentés`} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }}>−</button>
-                      <span style={{ minWidth: 30, textAlign: 'center', fontFamily: 'var(--ff-mono)', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{l.amount}</span>
+                      <span style={{ minWidth: 30, textAlign: 'center', fontVariantNumeric: 'tabular-nums', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)' }}>{l.amount}</span>
                       <button onClick={() => bump(l.key, meta.step)} aria-label={`${meta.name} növelés`} style={{ width: 25, height: 28, display: 'grid', placeItems: 'center', color: 'var(--coral)', fontSize: 14 }}>+</button>
                       <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', padding: '0 6px 0 1px' }}>{l.unit}</span>
                     </div>
@@ -214,7 +214,7 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
               </div>
               <MacroCells macros={total} size="md" />
               <div style={{ marginTop: 9, paddingTop: 8, borderTop: '1px solid var(--border-subtle)' }}>
-                <div className="row" style={{ justifyContent: 'space-between', fontFamily: 'var(--ff-mono)', fontSize: 8.5, color: 'var(--text-tertiary)', marginBottom: 5 }}>
+                <div className="row" style={{ justifyContent: 'space-between', fontVariantNumeric: 'tabular-nums', fontSize: 8.5, color: 'var(--text-tertiary)', marginBottom: 5 }}>
                   <span>Mai nap eddig <b style={{ color: 'var(--text-secondary)' }}>{fuel.consumed.kcal}</b> <span style={{ color: 'var(--coral)' }}>+{total.kcal}</span> = <b style={{ color: 'var(--text-secondary)' }}>{after}</b></span>
                   <span>cél <b style={{ color: 'var(--text-secondary)' }}>{fuel.targets.kcal}</b> kcal</span>
                 </div>
