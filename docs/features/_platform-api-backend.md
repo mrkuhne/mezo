@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-07-15
+updated: 2026-07-16
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -204,7 +204,7 @@ This is the most load-bearing section — every seam, bidirectionally, with the 
 
 **Auth ↔ every protected feature (the universal seam).** `AuthService` mints the JWT with `subject = app_user.id`; `CurrentUserId` (`techcore/security/CurrentUserId.java`) reads `SecurityContextHolder`, expects a `Jwt` principal, and returns `UUID.fromString(jwt.getSubject())` (throws `AUTH_TOKEN_MISSING`/401 otherwise). This single bean is injected into every controller and feeds `OwnedEntity.createdBy`, stamped server-side on every write. `OwnerProperties` (`mezo.auth.*`) feeds both `SecurityConfig` (the HS256 JWT secret) and `OwnerSeedData`. The frontend obtains the token via `data/_client/auth.ts#bootstrapOwnerToken` → `setToken` (`data/_client/api.ts`) → injected by `apiFetch`. The test framework's `ApiIntegrationTest.ownerAuthHeaders()`, `ResetDatabase`, and `UserPopulator` all depend on the demodata owner existing → ownership/auth is the seam every other seam rides on.
 
-**Frontend hook layer ↔ data clients.** `frontend/src/data/hooks.ts` is the single FE↔data boundary; it re-exports `useTrain` from `trainHooks.ts` and `useRunning` from `runningHooks.ts` (so consumer import paths stay `@/data/hooks`). `isMockMode()` (`data/_client/mode.ts`) is the toggle. **Crossing contract:** the hook's *own* return shape (e.g. `WeightEntry`, `SleepEntry` from `frontend/src/data/types.ts`) — stable and hand-written, decoupled from the generated DTOs by the `*Api.ts` adapter layer.
+**Frontend hook layer ↔ data clients.** `frontend/src/data/hooks.ts` is the single FE↔data boundary; it re-exports `useTrain` from `trainHooks.ts` and `useRunning` from `runningHooks.ts` (so consumer import paths stay `@/data/hooks`). `isMockMode()` (`data/_client/mode.ts`) is the toggle. (The barrel dropped its dead `useInsightsTeaser` re-export in the Napív S8 cleanup, `mezo-mifi` — the hook was orphaned when Today's `InsightsTeaser` was removed; see [today.md §9](today.md).) **Crossing contract:** the hook's *own* return shape (e.g. `WeightEntry`, `SleepEntry` from `frontend/src/data/types.ts`) — stable and hand-written, decoupled from the generated DTOs by the `*Api.ts` adapter layer.
 
 **Error contract ↔ both sides.** The hand-written `techcore` `SystemMessage` (exception layer) and the generated `api.dto.SystemMessage` (wire contract from `common-schemas.yml`) are **two deliberately separate types kept field-compatible** by the contract ITs (`assertHasFieldError`/`assertHasRequestError` match on code/type/field, never resolved text). The FE has its own `SystemMessage` interface + `ApiError` in `data/_client/api.ts`. All three must agree on the field set — the contract IT is the guard.
 

@@ -268,8 +268,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 
 /* Recipe editor save/cancel bar (mezo-3vu4). Portaled into .phone-screen so it
    anchors to the device viewport like .sheet — floating just above the tab bar,
-   NOT scrolling with (or clipping) the recipe content. Opaque var(--canvas) to
-   match .tab-bar (the old translucent blur leaked + broke light theme, mezo-ci5). */
+   NOT scrolling with (or clipping) the recipe content. Opaque var(--canvas):
+   the old translucent blur leaked + broke light theme (mezo-ci5). */
 .recipe-save-bar {
   position: absolute;
   left: 0; right: 0;
@@ -1182,7 +1182,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 :root[data-theme="dark"] .phone-screen[data-day="reggel"] .sky { background: radial-gradient(60% 40% at 18% 0%, rgba(255,179,71,.10), transparent 70%); }
 :root[data-theme="dark"] .phone-screen[data-day="delutan"] .sky { background: radial-gradient(60% 40% at 50% 0%, rgba(245,239,230,.06), transparent 70%); }
 :root[data-theme="dark"] .phone-screen[data-day="este"] .sky { background: radial-gradient(60% 40% at 82% 0%, rgba(155,143,196,.12), transparent 70%); }
-/* AnchorMode: rough days mute the atmosphere (full anchor remap landed with Today in S3, mezo-8141). */
+/* AnchorMode: rough days mute the atmosphere — the S3 restyle dropped the dedicated anchor canvas skin, so anchor now only dims the daypart sky (mezo-8141). */
 .phone-screen.anchor .sky { opacity: .35; filter: saturate(.6); }
 
 /* ===== Napív motion vocabulary (spec §3.5) ===== */

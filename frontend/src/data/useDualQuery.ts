@@ -7,7 +7,7 @@ import { isMockMode } from '@/data/_client/mode'
  * mode → ghost-guard' rule").
  *
  * - **Mock mode:** seeds `mockData` SYNCHRONOUSLY via `initialData` (no loading frame —
- *   keeps Playwright parity + component tests byte-identical to Phase-1) and never
+ *   keeps component tests byte-identical to Phase-1) and never
  *   background-refetches (`staleTime: Infinity`).
  * - **Real mode:** fetches from the backend and, while the query is UNRESOLVED, returns
  *   `realEmpty` — **NEVER the mock seed.** This is what stops the Phase-1 demo seed from

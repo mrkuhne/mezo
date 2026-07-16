@@ -12,7 +12,7 @@ export function useSleep() {
     queryKey: ['sleepLog'],
     queryFn: mock ? async () => initialSleepLog : sleepApi.list,
     // Mock mode seeds synchronously so the first render matches the Phase-1
-    // useState behavior exactly (parity + component tests). Real mode loads.
+    // useState behavior exactly (the visual baselines + component tests). Real mode loads.
     initialData: mock ? initialSleepLog : undefined,
   })
   const mutation = useMutation({

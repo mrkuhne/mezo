@@ -4,8 +4,8 @@
 // non-volleyball slots always save kind 'training'.
 // Save emits the full slot list -> PUT /api/train/sport-schedule
 // (full-replace). Real-mode-only affordance: mock mode keeps the
-// Phase-1 static schedule (parity snapshot), so the editor entry
-// points are hidden there.
+// static Phase-1 schedule (a read-only seed, no write path), so the
+// editor entry points are hidden there.
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'

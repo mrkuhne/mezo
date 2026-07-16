@@ -26,10 +26,10 @@ This is the cross-cutting plumbing every feature consumes, so this doc is named 
 
 `frontend/src/data/hooks.ts` is the **single integration boundary** between every React view and the data layer. Each feature imports its data exclusively as `useX()` hooks from `@/data/hooks` (~22 hooks). Every hook can run in one of two modes, switched **per call** by `isMockMode()` (`frontend/src/data/_client/mode.ts`, which reads `VITE_USE_MOCK`):
 
-- **Mock mode**: returns the byte-identical Phase-1 static data, seeded *synchronously* via TanStack Query `initialData` (or plain `useState`), with write mutations that either no-op or emulate the server in-cache via `queryClient.setQueryData`. No backend needed — this is what the Playwright parity run and most component tests use.
+- **Mock mode**: returns the byte-identical Phase-1 static data, seeded *synchronously* via TanStack Query `initialData` (or plain `useState`), with write mutations that either no-op or emulate the server in-cache via `queryClient.setQueryData`. No backend needed — this is what most component tests (and the S8 visual-baseline harness) use.
 - **Real mode** (`VITE_USE_MOCK=false`): the *same hook signature*, but `queryFn` calls a typed REST client (`data/me/biometricsApi.ts` / `data/train/trainApi.ts` / `data/train/runningApi.ts`) over `apiFetch` (`data/_client/api.ts`) against the Spring Boot backend; mutations persist then `invalidateQueries`. **There is no static fallback in real mode** — an empty backend resolves to `null`/`[]`, and views "ghost-guard" (render a `GhostState` skeleton) instead of silently showing demo data.
 
-The **key invariant**: the public return shape of every hook is the contract. Swapping a hook from mock to real changes only the hook's internals — **no component changes** — so parity screenshots and component tests stay green through the swap.
+The **key invariant**: the public return shape of every hook is the contract. Swapping a hook from mock to real changes only the hook's internals — **no component changes** — so the visual baselines and component tests stay green through the swap.
 
 Driving design: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (§1 "Key invariant", §3 frontend integration, §5 slice map; decision `mezo-gqi`). There is **no dedicated numbered ADR** for the dual-mode pattern — this doc is its durable home.
 

@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-07-14
+updated: 2026-07-16
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -94,7 +94,7 @@ View (features/train/**)
 ```
 
 **Invariants of the seam:**
-- **Mock mode is synchronous** (`initialData` set) so the first render equals the Phase-1 static return — preserved for parity and component tests. **Real mode has NO static fallback**: an empty backend surfaces as `null`/`[]` and every view ghost-guards (the "T0 clean slate" rule, `2026-06-11-train-write-clean-slate-design.md`). The full rationale is in the comment block at `frontend/src/data/train/trainHooks.ts:166-173`.
+- **Mock mode is synchronous** (`initialData` set) so the first render equals the Phase-1 static return — preserved for the visual baselines and component tests. **Real mode has NO static fallback**: an empty backend surfaces as `null`/`[]` and every view ghost-guards (the "T0 clean slate" rule, `2026-06-11-train-write-clean-slate-design.md`). The full rationale is in the comment block at `frontend/src/data/train/trainHooks.ts:166-173`.
 - **Mode is read inside hook bodies, never at module scope** (`frontend/src/data/_client/mode.ts`), so tests stub per-case with `vi.stubEnv`.
 - Default mode is **mock** (`VITE_USE_MOCK !== 'false'`), but per `CLAUDE.md` the project runs FE in REAL mode by default in dev/test.
 - Contract types are generated: `api/feature/train/train.yml` → merged `api/openapi.yml` → FE `frontend/src/data/_client/api.gen.ts` (re-exported as named types in `trainApi.ts`/`runningApi.ts`) and BE `io.mrkuhne.mezo.api.dto.*` + the `TrainApi` interface that `TrainController` implements.

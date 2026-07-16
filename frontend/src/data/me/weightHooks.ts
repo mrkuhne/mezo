@@ -32,7 +32,7 @@ export function useWeight() {
     queryKey: ['weightLog'],
     queryFn: mock ? async () => initialWeightLog : weightApi.list,
     // Mock mode seeds synchronously so the first render matches the Phase-1
-    // useState behavior exactly (parity + component tests). Real mode loads.
+    // useState behavior exactly (the visual baselines + component tests). Real mode loads.
     initialData: mock ? initialWeightLog : undefined,
   })
   // weightTrends: mock mode -> the static literal (synchronous initialData so the

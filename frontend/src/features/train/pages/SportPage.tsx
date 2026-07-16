@@ -60,7 +60,7 @@ export function SportPage() {
   const week = sport.week
 
   // Venue = the most frequent slot location (schedule-derived; the mock fixture
-  // yields the same 'BVSC csarnok' string the prototype hardcoded — parity-safe).
+  // yields the same 'BVSC csarnok' string the prototype hardcoded).
   const venue = (() => {
     const counts = new Map<string, number>()
     for (const s of volleyball?.sessions ?? []) if (s.court) counts.set(s.court, (counts.get(s.court) ?? 0) + 1)

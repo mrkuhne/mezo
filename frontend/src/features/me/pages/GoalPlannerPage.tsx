@@ -37,8 +37,8 @@ const GUARDS: { id: Guard; label: string }[] = [
 // complete-profile user mid fetch); once loaded, an incomplete profile redirects
 // to /me/goals (where the GoalGate + "Biometria beállítása" flow lives);
 // complete → the wizard. In mock mode `useBiometricProfile` seeds the profile
-// synchronously (initialData) so `isLoading` is false → no skeleton flash
-// (Playwright parity), hence no explicit `!mock` gate is needed here (mezo-f2z).
+// synchronously (initialData) so `isLoading` is false → no skeleton flash,
+// hence no explicit `!mock` gate is needed here (mezo-f2z).
 export function GoalPlannerPage() {
   const { isComplete, isLoading } = useBiometricProfile()
   if (isLoading) return <ScreenSkeleton />
