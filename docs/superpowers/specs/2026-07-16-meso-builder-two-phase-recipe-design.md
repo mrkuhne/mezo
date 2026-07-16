@@ -26,7 +26,7 @@ Two friction points in meso exercise editing today:
 |---|---|
 | Scope | **Both surfaces** — planner wizard AND builder Gyakorlatok view |
 | Wizard shape | **New 5th step**: 4 = exercise selection (AI prefill + multi-add), 5 = set/rep tuning with day tabs; save buttons move to step 5 |
-| Editable recipe fields | **Full recipe**: warmup sets · working sets · rep min · rep max · RIR (same five as today's inline editor) |
+| Editable recipe fields | **Full recipe**: warmup sets · working sets · rep min · rep max · RIR + the nullable **Kiinduló kg** anchor (parity with today's six-tile inline editor) |
 | Builder integration | Gyakorlatok view **replaced** by the same day-tabbed editor component (one shared component, two call sites) |
 | Picker UX after pick | Sheet stays open; row flashes "✓ Hozzáadva" (~900 ms), header shows a live added-counter, sticky **Kész** button closes; duplicates remain allowed |
 | Component architecture | **One shared controlled component** (`MesoDayTabsEditor`); persistence semantics stay in the parents (wizard = in-memory draft, builder = per-change full-list PUT) |
@@ -77,8 +77,10 @@ interface MesoDayTabsEditorProps {
 - **Exercise row:** name + muscle label + recipe summary in mono + optional niggle warning; the
   **whole row toggles** an inline stepper panel (chevron affordance) — replacing the tiny
   settings chip. Panel = five `RecipeStepper` tiles (Bemelegítő 0-10 · Working 1-10 ·
-  Rep min · Rep max · RIR 0-5, min/max cross-clamped as today). Each stepper tap fires
-  `onChange(dayKey, exId, patch)`. Remove ✕ stays on the row.
+  Rep min · Rep max · RIR 0-5, min/max cross-clamped as today) **plus the nullable
+  `AnchorStepper` "Kiinduló kg" tile** (2.5 kg steps, `auto` when unset) — today's builder
+  inline editor has six tiles, and dropping the anchor would regress `mezo-anm4`. Each stepper
+  tap fires `onChange(dayKey, exId, patch)`. Remove ✕ stays on the row.
 - **Off-day content:** rest note + inert "Edzéssé alakít" chip (parity with today).
 - `RecipeStepper` moves out of `ExerciseEditRow` into this file as a private sub-component.
 
