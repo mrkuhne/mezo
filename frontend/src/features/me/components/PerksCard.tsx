@@ -3,10 +3,10 @@ import type { PerkUnlock } from '@/data/types'
 /** Unlocked perk milestones, newest first (Growth page Kitüntetések tab). */
 export function PerksCard({ perks }: { perks: PerkUnlock[] }) {
   return (
-    <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
+    <div className="card" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Perkek — mérföldkövek</span>
-        <span className="chip notch-4">{perks.length} feloldva</span>
+        <span className="chip">{perks.length} feloldva</span>
       </div>
       {perks.length === 0 && (
         <p className="text-tertiary" style={{ fontSize: 12, marginTop: 10 }}>

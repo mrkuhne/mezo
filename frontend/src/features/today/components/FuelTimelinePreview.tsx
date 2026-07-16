@@ -19,7 +19,7 @@ export function FuelTimelinePreview() {
             <Icon name="plus" size={11} /> Log
           </button>
         </div>
-        <div className="card notch-12" style={{ padding: 14, position: 'relative', overflow: 'hidden' }}>
+        <div className="card" style={{ padding: 14, position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-glow)' }} />
           <div className="col gap-sm" style={{ paddingLeft: 6 }}>
             {visible.map((s, i) => {

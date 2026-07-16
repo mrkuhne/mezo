@@ -102,7 +102,7 @@ export function GoalsPage() {
       {/* Goal hero (tap to open EditGoalSheet) */}
       <div style={{ padding: '0 24px 16px' }}>
         <div
-          className="card notch-12"
+          className="card"
           onClick={() => setSheet('goal')}
           style={{
             padding: 20,

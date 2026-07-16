@@ -80,7 +80,7 @@ function PlanBar({
 }) {
   return (
     <div
-      className="notch-4"
+      className="rad-12"
       style={{ ...BAR_BASE, gridColumn: gridColumn(link.startWeek, link.endWeek), background: fill, color: textColor }}
     >
       <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>

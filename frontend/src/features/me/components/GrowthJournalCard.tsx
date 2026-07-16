@@ -6,10 +6,10 @@ const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[  ]/g, ' ')
 /** 30-day quest+activity journal, day-grouped (Growth page Napló tab). */
 export function GrowthJournalCard({ days, summary }: { days: JournalDay[]; summary: string }) {
   return (
-    <div className="card notch-12" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
+    <div className="card" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Utolsó 30 nap</span>
-        <span className="chip notch-4">{summary}</span>
+        <span className="chip">{summary}</span>
       </div>
       {days.length === 0 && (
         <p className="text-tertiary" style={{ fontSize: 12, marginTop: 10 }}>

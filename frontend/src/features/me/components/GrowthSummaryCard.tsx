@@ -25,7 +25,7 @@ export function GrowthSummaryCard({ profile }: { profile: ProgressionProfileResp
     // button that still opens /me/growth (so the tap target is honest before any XP).
     return (
       <button
-        className="card notch-12"
+        className="card"
         onClick={() => navigate('/me/growth')}
         style={{ padding: '16px 15px', position: 'relative', overflow: 'hidden', background: 'var(--wash-lav)', textAlign: 'left', width: '100%', display: 'block' }}
       >
@@ -55,7 +55,7 @@ export function GrowthSummaryCard({ profile }: { profile: ProgressionProfileResp
   const savings = profile.savingsHuf30d
 
   return (
-    <button className="card notch-12 growth2" onClick={() => navigate('/me/growth')}
+    <button className="card growth2" onClick={() => navigate('/me/growth')}
       style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden', textAlign: 'left', width: '100%', display: 'block' }}>
       <span className="sr-only">Growth oldal megnyitása — </span>
       <div className="hd">

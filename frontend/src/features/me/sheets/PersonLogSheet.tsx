@@ -44,7 +44,7 @@ export function PersonLogSheet({
             </div>
             <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}><Icon name="x" size={12} /></button>
           </div>
-          <div className="card notch-12" style={{ padding: 18, marginBottom: 14, textAlign: 'center',
+          <div className="card" style={{ padding: 18, marginBottom: 14, textAlign: 'center',
             background: 'linear-gradient(180deg, var(--wash-lav) 0%, var(--surface-1) 100%)' }}>
             <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'var(--lav-deep)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
@@ -90,15 +90,15 @@ export function PersonLogSheet({
           </div>
           <div className="col gap-sm mt-md">
             <span style={SECTION_LABEL}>Egy mondat · opcionális</span>
-            <div className="card notch-4" style={{ padding: 10 }}>
+            <div className="card" style={{ padding: 10 }}>
               <textarea value={text} onChange={e => setText(e.target.value.slice(0, 240))}
                 placeholder='pl. "Petrával hosszú vacsi, csendben"'
                 style={{ width: '100%', minHeight: 60, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
             </div>
           </div>
           <div className="row gap-sm mt-lg">
-            <button className="cta-ghost notch-4 flex-1" onClick={close}>Mégse</button>
-            <button className="cta-primary notch-4 flex-1" onClick={() => save(close)}>
+            <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+            <button className="cta-primary flex-1" onClick={() => save(close)}>
               <Icon name="check" size={14} /> Mentés
             </button>
           </div>

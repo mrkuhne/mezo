@@ -16,7 +16,7 @@ export function GoalMiniCard() {
   const remaining = Math.abs(goal.currentWeight - goal.targetWeight)
 
   return (
-    <button type="button" className="card notch-12 goalmini np-press" onClick={() => navigate('/me/goals')}>
+    <button type="button" className="card goalmini np-press" onClick={() => navigate('/me/goals')}>
       <span className="sr-only">Cél oldal megnyitása — </span>
       <div className="row1">
         <div className="t">🎯 {TRAJECTORY_LABEL[goalResponse.trajectory]} · {goalResponse.title}</div>

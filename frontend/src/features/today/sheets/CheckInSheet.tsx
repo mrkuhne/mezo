@@ -192,11 +192,11 @@ export function CheckInSheet({
           {/* Nav */}
           <div className="row gap-sm" style={{ paddingTop: 8 }}>
             {step > 0 && (
-              <button className="cta-ghost notch-4 flex-1" style={{ padding: '10px' }} onClick={() => setStep(s => s - 1)}>
+              <button className="cta-ghost flex-1" style={{ padding: '10px' }} onClick={() => setStep(s => s - 1)}>
                 ← Vissza
               </button>
             )}
-            <button className="cta-ghost notch-4 flex-1" style={{ padding: '10px' }} onClick={() => setStep(s => s + 1)}>
+            <button className="cta-ghost flex-1" style={{ padding: '10px' }} onClick={() => setStep(s => s + 1)}>
               Kihagy →
             </button>
           </div>
@@ -225,7 +225,7 @@ export function CheckInSheet({
               <button
                 key={d.id}
                 onClick={() => setStep(CHECKIN_DIMS.findIndex(x => x.id === d.id))}
-                className="card notch-4"
+                className="card"
                 style={{ padding: 12, textAlign: 'left', background: 'var(--surface-1)' }}
               >
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
@@ -247,7 +247,7 @@ export function CheckInSheet({
               <span className="label-mono" style={{ fontSize: 9 }}>Egy mondat · opcionális</span>
               <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{note.length}/200</span>
             </div>
-            <div className="card notch-4" style={{ padding: 10, display: 'flex', gap: 8 }}>
+            <div className="card" style={{ padding: 10, display: 'flex', gap: 8 }}>
               <button className="chip" style={{ padding: '6px 8px', alignSelf: 'flex-start' }}>
                 <Icon name="mic" size={11} />
               </button>
@@ -268,7 +268,7 @@ export function CheckInSheet({
           <CheckInObservation values={values} slot={slot} />
 
           {/* Save */}
-          <button className="cta-primary notch-8" onClick={() => save(close)}>
+          <button className="cta-primary" onClick={() => save(close)}>
             <Icon name="check" size={16} />
             <span>Mentés · {slot.time}</span>
           </button>
@@ -315,7 +315,7 @@ function CheckInObservation({ values }: { values: CheckinValues; slot?: CheckinS
 
   const accent = obs.tone === 'concern' ? 'var(--warning)' : obs.tone === 'good' ? 'var(--brand-glow)' : 'var(--text-secondary)'
   return (
-    <div className="card notch-4" style={{
+    <div className="card" style={{
       padding: 12,
       background: obs.tone === 'good' ? 'color-mix(in srgb, var(--coral) 5%, transparent)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.05)' : 'var(--surface-1)',
       borderColor: obs.tone === 'good' ? 'var(--border-brand)' : obs.tone === 'concern' ? 'rgba(245, 158, 11, 0.25)' : 'var(--border-subtle)',

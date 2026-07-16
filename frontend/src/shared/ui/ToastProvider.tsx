@@ -52,7 +52,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         <div
           role="status"
           aria-live="polite"
-          className="toast notch-12"
+          className="toast rad-20"
           data-kind={toast.kind}
           style={{ background: KIND_BG[toast.kind] }}
         >

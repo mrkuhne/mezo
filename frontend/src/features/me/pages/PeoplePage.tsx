@@ -87,7 +87,7 @@ export function PeoplePage() {
             <MentionRow key={m.id} mention={m} person={people.find(p => p.id === m.person_id)} />
           ))}
           {visible.length === 0 && (
-            <div className="card notch-4" style={{ padding: 18, textAlign: 'center' }}>
+            <div className="card" style={{ padding: 18, textAlign: 'center' }}>
               <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ebben a szűrésben.</span>
             </div>
           )}

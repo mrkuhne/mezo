@@ -63,7 +63,7 @@ export function GrowthPage() {
       <div style={{ padding: '8px 24px 24px' }}>
         <div className="col gap-md">
           {/* hero trio — always visible */}
-          <div className="card notch-12" style={{ padding: '10px 12px' }}>
+          <div className="card" style={{ padding: '10px 12px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
               <HeroStat value={fmt(totalXp)} label="Össz XP" />
               <HeroStat value={disc == null ? '–' : `${disc}%`} label="Fegyelem" />
@@ -130,7 +130,7 @@ function HeroStat({ value, label }: { value: string; label: string }) {
 function SegButton({ on, onClick, children }: { on: boolean; onClick: () => void; children: string }) {
   return (
     <button role="tab" aria-selected={on} onClick={onClick}
-      className="notch-4"
+      className="rad-12"
       style={{ flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', padding: '7px 0', borderRadius: 3,
         color: on ? 'var(--lav-deep)' : 'var(--text-tertiary)',
         background: on ? 'var(--wash-lav)' : 'transparent' }}>

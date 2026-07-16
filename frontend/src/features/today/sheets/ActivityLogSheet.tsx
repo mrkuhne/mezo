@@ -64,7 +64,7 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           </div>
 
           {quest && phase === 'compose' && (
-            <div className="card notch-4" style={{ padding: 12, marginBottom: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
+            <div className="card" style={{ padding: 12, marginBottom: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
                 <Icon name="sparkle" size={11} color="var(--brand-glow)" />
                 <div className="col" style={{ flex: 1, gap: 3 }}>
@@ -78,7 +78,7 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           {phase === 'compose' && (
             <>
               <div className="col gap-sm">
-                <div className="card notch-4" style={{ padding: 10 }}>
+                <div className="card" style={{ padding: 10 }}>
                   <textarea value={text} maxLength={500} onChange={e => setText(e.target.value.slice(0, 500))}
                     placeholder="pl. Olvastam 30 percet, átraktam 50 ezret megtakarításba…"
                     style={{ width: '100%', minHeight: 90, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
@@ -86,8 +86,8 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
                 <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5 }}>Az AI besorolja, és a megfelelő LIFE skillhez írja az XP-t.</p>
               </div>
               <div className="row gap-sm mt-lg">
-                <button className="cta-ghost notch-4 flex-1" onClick={close}>Mégse</button>
-                <button className="cta-primary notch-4 flex-1" onClick={submit} disabled={!text.trim() || pending}>Naplózom</button>
+                <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+                <button className="cta-primary flex-1" onClick={submit} disabled={!text.trim() || pending}>Naplózom</button>
               </div>
             </>
           )}
@@ -95,12 +95,12 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           {phase === 'pick' && pickTarget && (
             <div className="col gap-sm">
               <span style={{ fontSize: 13, fontWeight: 600 }}>Nem egyértelmű — melyik skillhez tartozik?</span>
-              <div className="card notch-4" style={{ padding: 10 }}>
+              <div className="card" style={{ padding: 10 }}>
                 <p className="text-tertiary" style={{ fontSize: 12, fontStyle: 'italic', lineHeight: 1.45 }}>„{pickTarget.text}"</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 4 }}>
                 {LIFE_SKILLS.map(s => (
-                  <button key={s.key} className="chip notch-4" disabled={pending} onClick={() => pick(s.key)}
+                  <button key={s.key} className="chip" disabled={pending} onClick={() => pick(s.key)}
                     style={{ justifyContent: 'flex-start', cursor: 'pointer' }}>
                     {`${s.icon} ${s.name}`}
                   </button>
@@ -112,14 +112,14 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
           {phase === 'done' && result && (
             <>
               <div className="col gap-sm">
-                <div className="card notch-4" style={{ padding: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
+                <div className="card" style={{ padding: 14, background: 'color-mix(in srgb, var(--coral) 4%, transparent)', borderColor: 'color-mix(in srgb, var(--coral) 30%, transparent)' }}>
                   <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
                     <span style={{ fontSize: 14, fontWeight: 600 }}>{doneMeta ? `${doneMeta.icon} ${doneMeta.name}` : result.entry.text}</span>
-                    <span className="chip notch-4" style={{ whiteSpace: 'nowrap' }}>+{result.entry.xpAwarded} XP</span>
+                    <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{result.entry.xpAwarded} XP</span>
                   </div>
                 </div>
                 {result.completedQuest && (
-                  <div className="card notch-4" style={{ padding: 10 }}>
+                  <div className="card" style={{ padding: 10 }}>
                     <div className="row gap-sm" style={{ alignItems: 'center' }}>
                       <Icon name="check" size={12} color="var(--success)" />
                       <span style={{ fontSize: 12, lineHeight: 1.4 }}>Küldetés teljesítve: {result.completedQuest.title} (+{result.completedQuest.xp} XP)</span>
@@ -128,7 +128,7 @@ export function ActivityLogSheet({ onClose, quest, entry }: ActivityLogSheetProp
                 )}
               </div>
               <div className="row gap-sm mt-lg">
-                <button className="cta-primary notch-4 flex-1" onClick={close}>Kész</button>
+                <button className="cta-primary flex-1" onClick={close}>Kész</button>
               </div>
             </>
           )}

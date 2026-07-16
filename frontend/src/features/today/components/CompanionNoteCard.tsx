@@ -9,7 +9,7 @@ import type { CompanionNote } from '@/data/types'
 export function CompanionNoteCard({ note }: { note: CompanionNote }) {
   return (
     <div style={{ padding: '0 24px' }}>
-      <div className="card notch-12" style={{ padding: '14px 18px' }}>
+      <div className="card" style={{ padding: '14px 18px' }}>
         <Eyebrow brand>{note.kind === 'closing' ? 'Mezo · napzárás' : 'Mezo · napközbeni jegyzet'}</Eyebrow>
         <p className="text-secondary" style={{ fontSize: 13, lineHeight: 1.55, marginTop: 8 }}>
           {note.text}

@@ -176,7 +176,7 @@ function GoalWizard() {
                   key={t.id}
                   type="button"
                   onClick={() => setTrajectory(t.id)}
-                  className="card notch-8"
+                  className="card"
                   style={{
                     padding: 14,
                     textAlign: 'left',
@@ -270,7 +270,7 @@ function GoalWizard() {
             {step > 0 && (
               <button
                 type="button"
-                className="cta-ghost notch-4 flex-1"
+                className="cta-ghost flex-1"
                 style={{ padding: 14 }}
                 onClick={() => setStep(step - 1)}
               >
@@ -305,7 +305,7 @@ function GoalWizard() {
             </button>
             <button
               type="button"
-              className="cta-ghost notch-4"
+              className="cta-ghost"
               disabled={pending}
               style={{ padding: 12, opacity: pending ? 0.5 : 1 }}
               onClick={() => save(false)}
@@ -355,7 +355,7 @@ function Step1({
   const field = (label: string, input: ReactNode) => (
     <div className="col gap-sm">
       <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
-      <div className="card notch-4" style={{ padding: 10 }}>
+      <div className="card" style={{ padding: 10 }}>
         {input}
       </div>
     </div>
@@ -445,7 +445,7 @@ function Step1({
         {/* Live feasibility preview (G6, mezo-06n). maintain has no target weight
             → a simple tartás note; otherwise the backend-derived pace + verdict. */}
         {trajectory === 'maintain' ? (
-          <div className="card notch-8" style={{ padding: 13 }}>
+          <div className="card" style={{ padding: 13 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)' }}>
               ≈ Tartás — nincs súlyváltozási tempó.
             </span>
@@ -497,7 +497,7 @@ function FeasibilityPanel({
   const label = ok ? (withWarnings ? '✓ Reális · figyelővel' : '✓ Reális') : '⚠ Agresszív'
   return (
     <div
-      className="card notch-8"
+      className="card"
       style={{
         padding: '13px 14px',
         background: ok
@@ -540,7 +540,7 @@ function FeasibilityPanel({
         <button
           type="button"
           onClick={() => onAccept(preview.suggestedTargetDate!)}
-          className="notch-4"
+          className="rad-12"
           style={{
             marginTop: 11,
             width: '100%',

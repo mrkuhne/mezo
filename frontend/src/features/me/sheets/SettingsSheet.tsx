@@ -32,7 +32,7 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
 
           <div className="col gap-sm">
             <span style={SECTION_LABEL}>Téma</span>
-            <div className="card notch-4 row" style={{ justifyContent: 'space-between', padding: 14, gap: 12 }}>
+            <div className="card row" style={{ justifyContent: 'space-between', padding: 14, gap: 12 }}>
               <div className="row gap-md">
                 <span style={{
                   width: 36, height: 36, borderRadius: '50%',
