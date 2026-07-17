@@ -51,7 +51,7 @@ class CatalogVideoResolutionIT extends AbstractIntegrationTest {
         ex.setAnchorWeightKg(BigDecimal.valueOf(60));
         train.save(ex);
 
-        WorkoutTodayResponse res = workoutService.getToday(owner);
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
         // 1 created + the fix-zárás closing pair appended by the default-on closing block (mezo-z2ul)
         assertThat(res.getExercises()).hasSize(3);
@@ -68,7 +68,7 @@ class CatalogVideoResolutionIT extends AbstractIntegrationTest {
         ex.setAnchorWeightKg(BigDecimal.valueOf(20));
         train.save(ex);
 
-        WorkoutTodayResponse res = workoutService.getToday(owner);
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
         // 1 created + the fix-zárás closing pair appended by the default-on closing block (mezo-z2ul)
         assertThat(res.getExercises()).hasSize(3);

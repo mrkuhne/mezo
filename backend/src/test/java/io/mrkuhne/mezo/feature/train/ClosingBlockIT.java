@@ -38,7 +38,7 @@ class ClosingBlockIT extends AbstractIntegrationTest {
         var day = train.createTemplateDay(owner, meso.getId(), todayLabel());
         train.createExercise(owner, day.getId(), "Fekvenyomás", 0);
 
-        WorkoutTodayResponse res = workoutService.getToday(owner);
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
         List<TodayExercise> ex = res.getExercises();
         assertThat(ex).hasSize(3);
@@ -67,8 +67,8 @@ class ClosingBlockIT extends AbstractIntegrationTest {
         var day = train.createTemplateDay(owner, meso.getId(), todayLabel());
         train.createExercise(owner, day.getId(), "Fekvenyomás", 0);
 
-        workoutService.getToday(owner);
-        WorkoutTodayResponse res = workoutService.getToday(owner);
+        workoutService.getToday(owner, null);
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
         assertThat(res.getExercises()).hasSize(3);
     }
@@ -82,7 +82,7 @@ class ClosingBlockIT extends AbstractIntegrationTest {
         var otherDay = train.createTemplateDay(owner, meso.getId(), otherLabel());
         train.createExercise(owner, otherDay.getId(), "Guggolás", 0);
 
-        workoutService.getToday(owner);
+        workoutService.getToday(owner, null);
 
         List<ExerciseEntity> otherRows = exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(otherDay.getId()));
@@ -98,7 +98,7 @@ class ClosingBlockIT extends AbstractIntegrationTest {
         train.createExercise(owner, today.getId(), "Fekvenyomás", 0);
         var restDay = train.createTemplateDay(owner, meso.getId(), otherLabel());
 
-        workoutService.getToday(owner);
+        workoutService.getToday(owner, null);
 
         assertThat(exerciseRepository
             .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(owner, List.of(restDay.getId())))
@@ -113,7 +113,7 @@ class ClosingBlockIT extends AbstractIntegrationTest {
         UUID deadHangCatalogId = exerciseCatalogRepository.findBySlug("dead-hang").orElseThrow().getId();
         train.createExercise(owner, day.getId(), "Dead Hang", 0, "lats", "plyo", deadHangCatalogId);
 
-        WorkoutTodayResponse res = workoutService.getToday(owner);
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
         assertThat(res.getExercises()).extracting(TodayExercise::getName)
             .containsExactly("Dead Hang", "45° Back Extension");

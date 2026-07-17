@@ -337,7 +337,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         // gym done-state; the logged/skipped sets no longer decide it on their own.
         workoutService.finishWorkout(user, started.getId());
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getWeekDoneDates()).contains(LocalDate.now());
     }
@@ -353,7 +353,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         // started + a skip marker but NOT finished — an unclosed instance must not be done.
         workoutService.skipExercise(user, started.getId(), exercise.getId());
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getWeekDoneDates()).doesNotContain(LocalDate.now());
     }
@@ -429,7 +429,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("workout@test.local");
         trainPopulator.createMesocycle(user, "Planned only", "planned");
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getTemplateSessionId()).isNull();
         assertThat(today.getExercises()).isNullOrEmpty(); // generated model inits the list field
@@ -442,7 +442,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         // a template day exists for today but has NO exercises -> rest day
         trainPopulator.createWorkoutSession(user, meso.getId(), todayLabel(), "Rest", 0, "planned");
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getTemplateSessionId()).isNull();
     }
@@ -456,7 +456,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         trainPopulator.createExercise(user, template.getId(), "Chest Supported Row", 0);
         trainPopulator.createExercise(user, template.getId(), "Lat Pulldown", 1);
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getTemplateSessionId()).isEqualTo(template.getId());
         assertThat(today.getTitle()).isEqualTo("Pull Day");
@@ -482,7 +482,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         trainPopulator.createLoggedSet(user, exercise.getId(), lastWeekInstance.getId(), 0, "100.0", 8, 2);
         trainPopulator.createLoggedSet(user, exercise.getId(), lastWeekInstance.getId(), 1, "102.5", 9, 2);
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getExercises().get(0).getLastWeek()).isNotNull();
         assertThat(today.getExercises().get(0).getLastWeek().getWeightKg())
@@ -502,7 +502,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
             trainPopulator.createWorkoutInstance(user, template, LocalDate.now(), "completed");
         trainPopulator.createLoggedSet(user, exercise.getId(), instance.getId(), 0, "100.0", 8, 2);
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getWeekDoneDates()).contains(LocalDate.now());
     }
@@ -524,7 +524,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         // (b) last week's COMPLETED instance -> out of this Mon–Sun window
         trainPopulator.createWorkoutInstance(user, template, monday.minusDays(1), "completed");
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getWeekDoneDates()).doesNotContain(LocalDate.now()); // active instance excluded
         assertThat(today.getWeekDoneDates()).doesNotContain(monday.minusDays(1)); // out-of-week excluded
@@ -540,7 +540,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         WorkoutInstanceResponse started = workoutService.startWorkout(user, startRequest(template));
         workoutService.logSet(user, started.getId(), setRequest(exercise, 0, "100", 8, 1));
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
 
         assertThat(today.getOpenWorkout()).isNotNull();
         assertThat(today.getOpenWorkout().getId()).isEqualTo(started.getId());
@@ -559,7 +559,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        WorkoutTodayResponse today = workoutService.getToday(user);
+        WorkoutTodayResponse today = workoutService.getToday(user, null);
         assertThat(today.getExercises())
             .filteredOn(e -> exercise.getId().equals(e.getId()))
             .singleElement()
@@ -579,7 +579,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        WorkoutTodayResponse withNote = workoutService.getToday(user);
+        WorkoutTodayResponse withNote = workoutService.getToday(user, null);
         assertThat(withNote.getExercises())
             .filteredOn(e -> exercise.getId().equals(e.getId()))
             .singleElement()
@@ -590,7 +590,7 @@ class WorkoutServiceIT extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
 
-        WorkoutTodayResponse cleared = workoutService.getToday(user);
+        WorkoutTodayResponse cleared = workoutService.getToday(user, null);
         assertThat(cleared.getExercises())
             .filteredOn(e -> exercise.getId().equals(e.getId()))
             .singleElement()

@@ -292,7 +292,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Today's workout — active meso's template day, exercises with last-week refs, open instance */
+        /**
+         * Workout context for a template day — day resolution is open instance > templateSessionId param > today's weekday label
+         * @description Cross-day start (mezo-p7rp): the resolved day is (1) the template day of the user's open (active) instance when one exists — the open workout always wins, even over the param — else (2) the template day named by the optional templateSessionId query param (owned template row, else 404), else (3) the active meso's template day matching today's HU weekday label. completedWorkout is the resolved day's most recent COMPLETED instance of the current Mon–Sun week (any date) — a day already done this week reviews instead of restarting.
+         */
         get: operations["getTodayWorkout"];
         put?: never;
         post?: never;
@@ -312,7 +315,7 @@ export interface paths {
         /** Completed workout instances in the inclusive date range — same "done = explicitly finished" semantics as weekDoneDates */
         get: operations["listWorkouts"];
         put?: never;
-        /** Start (or resume) a workout instance for a template day — an open instance is returned, never duplicated */
+        /** Start (or resume) a workout instance for a template day — an open instance is returned, never duplicated; any-day start within the current week */
         post: operations["startWorkout"];
         delete?: never;
         options?: never;
@@ -2042,6 +2045,11 @@ export interface components {
         WorkoutSummaryResponse: {
             /** Format: uuid */
             id: string;
+            /**
+             * Format: uuid
+             * @description The instance's template day — maps "template day → completed instance this week" (cross-day start, mezo-p7rp)
+             */
+            templateSessionId?: string;
             /** Format: date */
             date: string;
             /** @enum {string} */
@@ -4595,14 +4603,16 @@ export interface operations {
     };
     getTodayWorkout: {
         parameters: {
-            query?: never;
+            query?: {
+                templateSessionId?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
         };
         requestBody?: never;
         responses: {
-            /** @description Today's workout context (empty object when no active meso or rest day) */
+            /** @description Workout context for the resolved day (empty object when no active meso or rest day) */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4705,6 +4715,15 @@ export interface operations {
             };
             /** @description Template day not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Another workout is open (TRAIN_WORKOUT_OPEN_ELSEWHERE) or this template day was already completed this week (TRAIN_DAY_DONE_THIS_WEEK) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -8,7 +8,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain } from '@/data/hooks'
+import { useTrain, useWeekWorkouts } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
@@ -21,7 +21,11 @@ import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import GymSkeleton from '@/features/train/pages/GymSkeleton'
 
 export function GymPage() {
-  const { activeMeso, gymSlots, saveGymSchedule, workoutPending, completedTodayWorkout } = useTrain()
+  const { activeMeso, gymSlots, saveGymSchedule, workoutPending, todaySession } = useTrain()
+  // Cross-day start (mezo-p7rp): map each template day to its completed instance of the
+  // current Mon–Sun week (any date) — drives the sheet's review state (D5). listWorkouts
+  // returns completed instances only; empty in mock.
+  const { workouts: weekWorkouts } = useWeekWorkouts()
   const navigate = useNavigate()
   const [openDay, setOpenDay] = useState<MesoDay | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
@@ -127,7 +131,14 @@ export function GymPage() {
       {openDay && (
         <GymDaySheet
           day={openDay}
-          completedWorkoutId={completedTodayWorkout?.id ?? null}
+          completedThisWeek={(() => {
+            const done = weekWorkouts.find((w) => w.templateSessionId && w.templateSessionId === openDay.id)
+            return done ? { id: done.id, date: done.date } : null
+          })()}
+          openTemplateSessionId={todaySession?.openWorkout?.templateSessionId ?? null}
+          openWorkoutTitle={
+            days.find((d) => d.id && d.id === todaySession?.openWorkout?.templateSessionId)?.type ?? null
+          }
           onClose={() => setOpenDay(null)}
         />
       )}

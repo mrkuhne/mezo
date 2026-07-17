@@ -143,8 +143,8 @@ public class TrainController implements TrainApi {
     }
 
     @Override
-    public WorkoutTodayResponse getTodayWorkout() {
-        return workoutService.getToday(currentUserId.get());
+    public WorkoutTodayResponse getTodayWorkout(UUID templateSessionId) {
+        return workoutService.getToday(currentUserId.get(), templateSessionId);
     }
 
     @Override

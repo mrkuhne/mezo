@@ -255,9 +255,13 @@ type TrainData = {
   mesoMutationPending: boolean
 }
 
-export function useTrain(): TrainData {
+export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   const mock = isMockMode()
   const qc = useQueryClient()
+  // Cross-day start (mezo-p7rp): the session route may pin a template day (?day=...).
+  // Day resolution is server-side (open instance > param > weekday label); param-less
+  // callers keep the plain today context. Mock ignores the param (static plan).
+  const workoutDay = opts?.workoutDay ?? null
   const { data: mesoData, isPending: mesoPending } = useQuery({
     queryKey: ['train', 'mesocycles'],
     queryFn: mock ? async () => mesocycles : () => trainApi.mesocycles().then(rs => rs.map(toMesocycle)),
@@ -301,9 +305,11 @@ export function useTrain(): TrainData {
     initialData: mock ? [] : undefined,
   })
   // Today's workout context — only meaningful in real mode (mock serves the static plan).
+  // The day param joins the key so a pinned-day session and the plain today context
+  // cache separately; invalidateToday's ['train','workoutToday'] prefix hits both.
   const { data: todayData, isPending: todayPending } = useQuery({
-    queryKey: ['train', 'workoutToday'],
-    queryFn: mock ? async () => null : () => trainApi.workoutToday(),
+    queryKey: ['train', 'workoutToday', workoutDay],
+    queryFn: mock ? async () => null : () => trainApi.workoutToday(workoutDay ?? undefined),
     initialData: mock ? null : undefined,
   })
 

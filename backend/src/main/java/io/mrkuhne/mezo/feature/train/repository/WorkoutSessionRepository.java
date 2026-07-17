@@ -87,4 +87,21 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
     /** The owner's ACTIVE instances dated strictly before a day — the lazy auto-close scan set. */
     List<WorkoutSessionEntity> findByCreatedByAndStatusAndDateBeforeAndTemplateSessionIdIsNotNull(
         UUID createdBy, String status, LocalDate date);
+
+    /**
+     * The owner's open instance regardless of template day (cross-day start, mezo-p7rp) — day
+     * resolution's first branch: an open workout always wins, so a deep link to another day
+     * while one runs resumes the running one. After the lazy auto-close only a today-dated
+     * instance can be 'active', and D6 allows at most one; newest wins defensively.
+     */
+    Optional<WorkoutSessionEntity> findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
+        UUID createdBy, String status);
+
+    /**
+     * A template day's most recent instance in a given status within [from, to] — the week-scoped
+     * {@code completedWorkout} (cross-day start, mezo-p7rp): a template day completed ANY day of
+     * the current Mon–Sun week reviews instead of restarting (D5).
+     */
+    Optional<WorkoutSessionEntity> findFirstByCreatedByAndTemplateSessionIdAndStatusAndDateBetweenOrderByDateDescCreatedAtDesc(
+        UUID createdBy, UUID templateSessionId, String status, LocalDate from, LocalDate to);
 }
