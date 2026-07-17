@@ -20,7 +20,7 @@ const RUN = 'var(--sky)'
 const WORK_CYCLE = [15, 30, 45, 60]
 const nextWork = (v: number) => WORK_CYCLE[(WORK_CYCLE.indexOf(v) + 1) % WORK_CYCLE.length] ?? 15
 
-const hintStyle: React.CSSProperties = { fontFamily: 'var(--ff-mono)', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }
+const hintStyle: React.CSSProperties = { fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }
 
 export function RunWeekEditor({ structure, weekNumber, onStructure }: {
   structure: RunningBlockStructureDto
@@ -64,7 +64,7 @@ function SessionCard({ session, structure, weekNumber, onStructure, children }: 
   children: React.ReactNode
 }) {
   return (
-    <div className="card notch-4 col" style={{ padding: 12, gap: 9, position: 'relative' }}>
+    <div className="card col" style={{ padding: 12, gap: 9, position: 'relative' }}>
       <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: RUN }} />
       <span className="label-mono" style={{ color: RUN }}>{session.label}</span>
 
@@ -78,7 +78,7 @@ function SessionCard({ session, structure, weekNumber, onStructure, children }: 
           aria-label={`${session.label} időpont`}
           value={session.timeOfDay ?? ''}
           onChange={(e) => onStructure(setSessionTime(structure, session.key, e.target.value))}
-          style={{ background: 'var(--surface-2)', border: '1px solid color-mix(in srgb, var(--sky) 30%, transparent)', color: RUN, fontFamily: 'var(--ff-mono)', fontSize: 13, fontWeight: 600, padding: '6px 10px' }}
+          style={{ background: 'var(--surface-2)', border: '1px solid color-mix(in srgb, var(--sky) 30%, transparent)', color: RUN, fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: 600, padding: '6px 10px' }}
         />
       </div>
 
@@ -98,12 +98,12 @@ function PyramidPills({ values, onChange }: { values: number[]; onChange: (next:
   return (
     <div className="row" style={{ gap: 6, flexWrap: 'wrap' }}>
       {values.map((v, i) => (
-        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 2, color: RUN, border: '1px solid color-mix(in srgb, var(--sky) 35%, transparent)', background: 'color-mix(in srgb, var(--sky) 8%, transparent)' }}>
+        <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontVariantNumeric: 'tabular-nums', fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 2, color: RUN, border: '1px solid color-mix(in srgb, var(--sky) 35%, transparent)', background: 'color-mix(in srgb, var(--sky) 8%, transparent)' }}>
           <button type="button" aria-label={`${v} mp szakasz váltása`} onClick={() => cycle(i)} style={{ color: 'inherit' }}>{v}</button>
           <button type="button" aria-label={`${v} mp szakasz törlése`} onClick={() => remove(i)} style={{ color: 'var(--text-tertiary)', fontSize: 11, lineHeight: 1 }}>×</button>
         </span>
       ))}
-      <button type="button" onClick={append} style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 2, color: RUN, border: '1px dashed color-mix(in srgb, var(--sky) 45%, transparent)', background: 'transparent' }}>＋ szakasz</button>
+      <button type="button" onClick={append} style={{ fontSize: 11, fontWeight: 600, padding: '5px 8px', borderRadius: 2, color: RUN, border: '1px dashed color-mix(in srgb, var(--sky) 45%, transparent)', background: 'transparent' }}>＋ szakasz</button>
     </div>
   )
 }

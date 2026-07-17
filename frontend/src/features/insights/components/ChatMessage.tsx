@@ -15,7 +15,7 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
         <span
           style={{
             fontSize: 9,
-            fontFamily: 'var(--ff-mono)',
+            fontVariantNumeric: 'tabular-nums',
             display: 'block',
             textAlign: 'right',
             marginTop: 4,
@@ -31,7 +31,7 @@ export function ChatMessage({ m }: { m: ChatMessageT }) {
     <div className="col gap-sm" style={{ alignSelf: 'flex-start', maxWidth: '92%', width: '92%' }}>
       <div className="row gap-sm">
         <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Mezo</span>
-        <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)' }}>
+        <span className="text-tertiary" style={{ fontSize: 9, fontVariantNumeric: 'tabular-nums' }}>
           {m.ts}
         </span>
         {m.degraded && (

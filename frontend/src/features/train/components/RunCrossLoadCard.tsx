@@ -7,7 +7,7 @@ import { Icon } from '@/shared/ui/Icon'
  */
 export function RunCrossLoadCard() {
   return (
-    <div className="card notch-4" style={{ padding: 12, background: 'var(--wash-run)', borderColor: 'color-mix(in srgb, var(--tag-run) 25%, transparent)' }}>
+    <div className="card" style={{ padding: 12, background: 'var(--wash-run)', borderColor: 'color-mix(in srgb, var(--tag-run) 25%, transparent)' }}>
       <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
         <Icon name="sparkle" size={12} color="var(--tag-run)" />
         <div className="col flex-1">

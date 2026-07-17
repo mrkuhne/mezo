@@ -45,7 +45,7 @@ export function DayDetailSheet({ day, meso, onClose, onEdit }: DayDetailSheetPro
                 </span>
               )}
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -59,12 +59,12 @@ export function DayDetailSheet({ day, meso, onClose, onEdit }: DayDetailSheetPro
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
-            <CtaGhost className="notch-4 flex-1" onClick={close}>
+            <CtaGhost className="flex-1" onClick={close}>
               Bezár
             </CtaGhost>
             {isTraining && (
               <CtaPrimary
-                className="notch-4 flex-1"
+                className="flex-1"
                 onClick={() => {
                   onEdit?.()
                   close()

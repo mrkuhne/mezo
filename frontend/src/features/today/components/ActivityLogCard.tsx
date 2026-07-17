@@ -19,7 +19,7 @@ export function ActivityLogCard() {
     <div className="card" style={{ margin: '8px 0', padding: '14px 16px' }}>
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', paddingBottom: 8 }}>
         <span className="eyebrow">Tevékenységnapló</span>
-        <button className="chip notch-4" onClick={() => setSheetOpen(true)} style={{ cursor: 'pointer' }}>+ Bejegyzés</button>
+        <button className="chip" onClick={() => setSheetOpen(true)} style={{ cursor: 'pointer' }}>+ Bejegyzés</button>
       </div>
 
       {entries.length === 0 ? (
@@ -30,10 +30,10 @@ export function ActivityLogCard() {
             <span style={{ width: 18, textAlign: 'center' }}>{iconFor(e.skillKey)}</span>
             <div style={{ flex: 1, minWidth: 0, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.text}</div>
             {e.xpAwarded > 0 && (
-              <span className="chip notch-4" style={{ whiteSpace: 'nowrap' }}>+{e.xpAwarded} XP</span>
+              <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{e.xpAwarded} XP</span>
             )}
             {e.skillKey === null && (
-              <button className="chip notch-4" onClick={() => setCategorizeEntry(e)} style={{ whiteSpace: 'nowrap', cursor: 'pointer' }}>Besorolás?</button>
+              <button className="chip" onClick={() => setCategorizeEntry(e)} style={{ whiteSpace: 'nowrap', cursor: 'pointer' }}>Besorolás?</button>
             )}
           </div>
         ))

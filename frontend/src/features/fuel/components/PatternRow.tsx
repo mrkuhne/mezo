@@ -4,7 +4,7 @@ import type { RecurringPattern } from '@/data/types'
 // fuel-plan.jsx PatternRow (390–400)
 export function PatternRow({ icon, color, title, detail }: RecurringPattern) {
   return (
-    <div className="card notch-4" style={{ padding: 12, borderLeft: '2px solid ' + color }}>
+    <div className="card" style={{ padding: 12, borderLeft: '2px solid ' + color }}>
       <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
         <Icon name={icon} size={12} color={color} />
         <div className="col flex-1">

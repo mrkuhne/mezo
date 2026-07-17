@@ -12,7 +12,7 @@ export interface MacroCellsProps {
 }
 
 const CELLS = [
-  { key: 'kcal' as const, label: 'kcal', color: 'var(--brand-glow)' },
+  { key: 'kcal' as const, label: 'kcal', color: 'var(--coral)' },
   { key: 'p' as const, label: 'Prot', color: 'var(--success)' },
   { key: 'c' as const, label: 'Carb', color: 'var(--text-primary)' },
   { key: 'f' as const, label: 'Fat', color: 'var(--text-primary)' },
@@ -37,10 +37,10 @@ export function MacroCells({ macros, perLabel, size = 'sm' }: MacroCellsProps) {
       {CELLS.map(c => (
         <div
           key={c.key}
-          className="notch-4"
+          className="rad-12"
           style={{ flex: 1, textAlign: 'center', padding: '6px 2px', background: 'var(--surface-glass)' }}
         >
-          <div style={{ fontFamily: 'var(--ff-mono)', fontSize: valFs, fontWeight: 600, color: c.color }}>
+          <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: valFs, fontWeight: 600, color: c.color }}>
             {macros[c.key]}
           </div>
           <div className="label-mono" style={{ fontSize: 7, letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginTop: 2 }}>

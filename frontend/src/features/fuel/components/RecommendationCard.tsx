@@ -6,7 +6,7 @@ import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 export function RecommendationCard({ rec }: { rec: StackRecommendation }) {
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{
         padding: 12,
         borderColor: 'var(--border-subtle)',
@@ -52,10 +52,10 @@ export function RecommendationCard({ rec }: { rec: StackRecommendation }) {
         </div>
       </div>
       <div className="row gap-sm mt-md">
-        <button className="cta-ghost notch-4 flex-1" style={{ fontSize: 11, padding: '6px 10px' }}>
+        <button className="cta-ghost flex-1" style={{ fontSize: 11, padding: '6px 10px' }}>
           <Icon name="plus" size={10} /> Stack-be
         </button>
-        <button className="cta-ghost notch-4 flex-1" style={{ fontSize: 11, padding: '6px 10px' }}>
+        <button className="cta-ghost flex-1" style={{ fontSize: 11, padding: '6px 10px' }}>
           <Icon name="tool" size={10} /> Részletek
         </button>
       </div>

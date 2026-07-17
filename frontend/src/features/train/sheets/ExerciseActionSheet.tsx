@@ -53,7 +53,7 @@ function ActionRow({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="card notch-4 row gap-sm"
+      className="card row gap-sm"
       style={{
         padding: '12px 14px',
         alignItems: 'center',
@@ -101,7 +101,7 @@ export function ExerciseActionSheet({
                   type="button"
                   aria-label="Vissza a műveletekhez"
                   onClick={() => setView('menu')}
-                  className="chip notch-4"
+                  className="chip"
                   style={{ padding: '6px 8px' }}
                 >
                   <Icon name="chevron-up" size={12} />

@@ -20,7 +20,7 @@ export function WeightHero({ log, weightTrends, goal, onLog }: {
 
   return (
     <div style={{ padding: '0 24px 16px' }}>
-      <div className="card notch-12" style={{ padding: '18px 18px 16px' }}>
+      <div className="card" style={{ padding: '18px 18px 16px' }}>
         <div style={{ textAlign: 'center' }}>
           <span style={CAPTION}>Induláshoz képest</span>
           <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6, marginTop: 4 }}>
@@ -65,7 +65,7 @@ export function WeightHero({ log, weightTrends, goal, onLog }: {
 
 function Stat({ value, label, color }: { value: string; label: string; color?: string }) {
   return (
-    <div className="flex-1 card notch-4" style={{ padding: 11, textAlign: 'center', background: 'var(--surface-2)' }}>
+    <div className="flex-1 card" style={{ padding: 11, textAlign: 'center', background: 'var(--surface-2)' }}>
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1, color: color ?? 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       <div style={{ ...CAPTION, marginTop: 4 }}>{label}</div>
     </div>

@@ -43,7 +43,7 @@ export function DailyQuestsCard() {
       {quests.map(q => (
         <div key={q.id} className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '6px 0' }}>
           <span style={{
-            color: q.status === 'completed' ? 'var(--success)' : 'var(--brand-glow)',
+            color: q.status === 'completed' ? 'var(--success)' : 'var(--coral)',
             opacity: q.status === 'expired' ? 0.4 : 1,
             width: 14, textAlign: 'center',
           }}>
@@ -53,10 +53,10 @@ export function DailyQuestsCard() {
             <div style={{ fontSize: 13, fontWeight: 600 }}>{q.title}</div>
             <div className="text-tertiary" style={{ fontSize: 11, paddingTop: 2 }}>{q.why}</div>
           </div>
-          <span className="chip notch-4" style={{ whiteSpace: 'nowrap' }}>+{q.xp} XP</span>
+          <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{q.xp} XP</span>
           {q.status === 'offered' && q.completionMode === 'ACTIVITY' && (
             <button
-              className="chip notch-4"
+              className="chip"
               onClick={() => setActivityQuest(q)}
               style={{ cursor: 'pointer' }}
             >
@@ -65,7 +65,7 @@ export function DailyQuestsCard() {
           )}
           {q.status === 'offered' && rerollsLeft > 0 && (
             <button
-              className="chip notch-4"
+              className="chip"
               disabled={pending}
               onClick={() => reroll(q.id)}
               style={{ cursor: 'pointer' }}

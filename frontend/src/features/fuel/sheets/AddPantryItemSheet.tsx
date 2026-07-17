@@ -37,7 +37,7 @@ const selectStyle = { ...fieldInputStyle, background: 'var(--surface-2)', border
 // A single chamfered form field card (label on top, control below).
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="card notch-4" style={{ padding: '8px 10px' }}>
+    <div className="card" style={{ padding: '8px 10px' }}>
       <label className="label-mono col" style={{ ...fieldLabelStyle, gap: 0 }}>
         {label}
         {children}
@@ -143,7 +143,7 @@ export function AddPantryItemSheet({
                 <Display size="md">{editId ? 'Tétel szerkesztése' : 'Új kamra-tétel'}</Display>
               </div>
             </div>
-            <button className="chip notch-8" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -235,10 +235,10 @@ export function AddPantryItemSheet({
 
           {/* Actions */}
           <div className="row gap-sm" style={{ marginTop: 14 }}>
-            <button className="cta-ghost notch-4 flex-1" onClick={close}>
+            <button className="cta-ghost flex-1" onClick={close}>
               Mégse
             </button>
-            <button className="cta-primary notch-4 flex-1" disabled={!name.trim()} onClick={submit}>
+            <button className="cta-primary flex-1" disabled={!name.trim()} onClick={submit}>
               <Icon name="check" size={14} /> {editId ? 'Mentés' : 'Polcra'}
             </button>
           </div>

@@ -93,7 +93,7 @@ export function GymDaySheet({ day, completedThisWeek, openTemplateSessionId, ope
                 {day.exerciseCount} gyakorlat · {totalSets} szet · {MUSCLE_LABELS[day.muscle] ?? day.muscle}
               </span>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -111,7 +111,7 @@ export function GymDaySheet({ day, completedThisWeek, openTemplateSessionId, ope
               <Icon name="train" size={14} /> Folytassuk →
             </CtaPrimary>
           ) : blocked ? (
-            <div className="card notch-4" style={{ padding: 12, textAlign: 'center', background: 'var(--surface-1)' }}>
+            <div className="card" style={{ padding: 12, textAlign: 'center', background: 'var(--surface-1)' }}>
               <span style={{ fontSize: 11, color: 'var(--brand-glow)', fontWeight: 700 }}>
                 ● Folyamatban: {openWorkoutTitle ?? 'másik edzés'}
               </span>
@@ -143,7 +143,7 @@ export function GymDaySheet({ day, completedThisWeek, openTemplateSessionId, ope
               </div>
             </>
           ) : (
-            <div className="card notch-4" style={{ padding: 12, textAlign: 'center', background: 'var(--surface-1)' }}>
+            <div className="card" style={{ padding: 12, textAlign: 'center', background: 'var(--surface-1)' }}>
               <span className="text-tertiary" style={{ fontSize: 11 }}>Pihenőnap</span>
             </div>
           )}

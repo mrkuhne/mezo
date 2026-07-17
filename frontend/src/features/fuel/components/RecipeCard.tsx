@@ -20,7 +20,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
     <button
       onClick={() => onOpen(recipe)}
       aria-label={recipe.name}
-      className="notch-16"
+      className="rad-24"
       style={{ position: 'relative', width: '100%', textAlign: 'left', background: 'var(--surface-1)', overflow: 'hidden', marginBottom: 0 }}
     >
       {/* Image band */}
@@ -49,7 +49,7 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
           {recipe.name}
         </div>
         <MacroCells macros={recipe.macros} />
-        <div className="row gap-xs flex-wrap" style={{ alignItems: 'center', marginTop: 10, fontFamily: 'var(--ff-mono)', fontSize: 8, color: 'var(--text-tertiary)' }}>
+        <div className="row gap-xs flex-wrap" style={{ alignItems: 'center', marginTop: 10, fontVariantNumeric: 'tabular-nums', fontSize: 8, color: 'var(--text-tertiary)' }}>
           <span>{recipe.ingredients.length} hozzávaló</span>
           <span>·</span>
           <span>{totalMins} perc</span>

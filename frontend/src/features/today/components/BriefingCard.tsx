@@ -16,7 +16,7 @@ export function BriefingCard({
 
   return (
     <div style={{ padding: '16px 24px' }}>
-      <div className="card notch-12" style={{ padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
+      <div className="card" style={{ padding: '16px 18px', position: 'relative', overflow: 'hidden' }}>
         <div className="accent-strip" />
         <div className="row gap-sm" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
           <Eyebrow brand>{briefing.eyebrow || 'Reggeli briefing'}</Eyebrow>

@@ -24,7 +24,7 @@ export function VideoDemo({ url }: { url: string | null | undefined }) {
     <div className="col gap-sm">
       <button
         type="button"
-        className="chip notch-4"
+        className="chip"
         style={{ fontSize: 9, alignSelf: 'flex-start' }}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}

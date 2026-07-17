@@ -18,7 +18,7 @@ export function WeightTrendChart({ log, goalResponse, period }: {
   const data = sliceByPeriod(log, period)
   if (!win || data.length < 2) {
     return (
-      <div className="card notch-12" style={{ padding: 24, textAlign: 'center' }}>
+      <div className="card" style={{ padding: 24, textAlign: 'center' }}>
         <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>Kevés mérés ehhez az ablakhoz</span>
       </div>
     )
@@ -54,7 +54,7 @@ export function WeightTrendChart({ log, goalResponse, period }: {
   const lastVal = data[data.length - 1].value
 
   return (
-    <div className="card notch-12" style={{ padding: '14px 12px 10px' }}>
+    <div className="card" style={{ padding: '14px 12px 10px' }}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
         <defs>
           <linearGradient id="wtc-area" x1="0" y1="0" x2="0" y2="1">

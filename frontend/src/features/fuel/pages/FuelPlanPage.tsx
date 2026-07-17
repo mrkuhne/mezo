@@ -58,7 +58,7 @@ export function FuelPlanPage() {
 
       {/* Weekly stats card */}
       <div style={{ padding: '0 24px 12px' }}>
-        <div className="card notch-12" style={{ padding: 16 }}>
+        <div className="card" style={{ padding: 16 }}>
           <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
             <StatCell
               label="Kcal avg"
@@ -107,7 +107,7 @@ export function FuelPlanPage() {
       {/* Reta week strip — hidden until a medication cycle exists (real-mode honest ghost) */}
       {retaWeek.length > 0 && (
         <div style={{ padding: '0 24px 12px' }}>
-          <div className="card notch-4" style={{ padding: 14 }}>
+          <div className="card" style={{ padding: 14 }}>
             <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
               <Eyebrow>Reta cycle · 7 nap</Eyebrow>
               <span className="label-mono" style={{ fontSize: 9 }}>

@@ -20,7 +20,7 @@ export function KnowledgePage() {
       {/* Summary band */}
       <div style={{ padding: '0 24px 16px' }}>
         <div
-          className="card notch-12"
+          className="card"
           style={{
             padding: 16,
             position: 'relative',

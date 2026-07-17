@@ -1,7 +1,7 @@
 // ============================================================
 // Mezo · ChallengesCarousel — pre-workout L2 decisions. The companion
 // proposes low-stakes micro-experiments; the user approves/skips freely.
-// Scroll-snap carousel + dot pager (accepted dots get brand-glow).
+// Scroll-snap carousel + dot pager (accepted dots get the coral glow).
 // Ported from prototype challenges.jsx.
 // ============================================================
 import { useRef, useState, type UIEvent } from 'react'
@@ -49,7 +49,7 @@ export function ChallengesCarousel({
           <Eyebrow brand>Mai kihívások · proposál</Eyebrow>
           <span
             className="text-tertiary"
-            style={{ fontSize: 11, marginTop: 4, fontFamily: 'var(--ff-mono)' }}
+            style={{ fontSize: 11, marginTop: 4 }}
           >
             {acceptedCount > 0
               ? `${acceptedCount} elfogadva · skip-elhető bármelyik`
@@ -68,9 +68,9 @@ export function ChallengesCarousel({
                 height: 6,
                 borderRadius: 3,
                 background: accepted[c.id]
-                  ? 'var(--brand-glow)'
+                  ? 'var(--coral)'
                   : i === activeIdx
-                    ? 'var(--brand-primary)'
+                    ? 'var(--coral)'
                     : 'var(--border-strong)',
                 transition: 'all 0.25s ease',
                 border: 'none',

@@ -48,6 +48,6 @@ test('exercise library + planner presets + label maps', () => {
   expect(MUSCLE_LABELS.chest).toBe('Mell')
   expect(DAY_LABELS.Csü).toBe('Csütörtök')
   expect(DAY_ORDER).toEqual(['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'])
-  expect(MESOCYCLE_PHASE_COLORS.MAV).toBe('var(--brand-primary)')
+  expect(MESOCYCLE_PHASE_COLORS.MAV).toBe('var(--coral)')
   expect(phaseBarHeight('MRV')).toBeGreaterThan(phaseBarHeight('MEV'))
 })

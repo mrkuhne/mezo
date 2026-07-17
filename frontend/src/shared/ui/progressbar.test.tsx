@@ -17,7 +17,7 @@ test('applies a custom color to the fill', () => {
   expect(fill.style.background).toContain('var(--cat-tendency)')
 })
 test('adds a glow box-shadow when glow + color set', () => {
-  const { container } = render(<ProgressBar value={50} color="var(--brand-glow)" glow />)
+  const { container } = render(<ProgressBar value={50} color="var(--coral)" glow />)
   const fill = container.querySelector('.bar-fill') as HTMLElement
-  expect(fill.style.boxShadow).toContain('var(--brand-glow)')
+  expect(fill.style.boxShadow).toContain('var(--coral)')
 })

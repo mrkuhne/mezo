@@ -19,7 +19,7 @@ export function FinalStat({ label, val, delta, highlight = false }: FinalStatPro
       style={{
         padding: '8px 10px',
         background: 'var(--surface-1)',
-        border: `1px solid ${highlight ? 'var(--border-brand)' : 'var(--border-subtle)'}`,
+        border: `1px solid ${highlight ? 'var(--line)' : 'var(--border-subtle)'}`,
       }}
     >
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
@@ -29,7 +29,7 @@ export function FinalStat({ label, val, delta, highlight = false }: FinalStatPro
         {delta !== 0 && (
           <span
             className="label-mono"
-            style={{ fontSize: 8, color: delta > 0 ? 'var(--brand-glow)' : 'var(--warning)' }}
+            style={{ fontSize: 8, color: delta > 0 ? 'var(--coral)' : 'var(--warning)' }}
           >
             {delta > 0 ? '+' : ''}
             {delta}
@@ -41,7 +41,7 @@ export function FinalStat({ label, val, delta, highlight = false }: FinalStatPro
           fontFamily: 'var(--ff-display)',
           fontSize: 18,
           fontWeight: 600,
-          color: highlight ? 'var(--brand-glow)' : 'var(--text-primary)',
+          color: highlight ? 'var(--coral)' : 'var(--text-primary)',
           marginTop: 2,
           lineHeight: 1,
         }}

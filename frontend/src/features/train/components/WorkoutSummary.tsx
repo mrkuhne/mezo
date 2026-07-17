@@ -35,7 +35,7 @@ const CHALLENGE_COPY: Record<SummaryChallenge['state'], { glyph: string; label: 
 
 function Stat({ label, val }: { label: string; val: string }) {
   return (
-    <div className="flex-1 card notch-4" style={{ padding: 14, textAlign: 'center', background: 'var(--surface-1)' }}>
+    <div className="flex-1 card" style={{ padding: 14, textAlign: 'center', background: 'var(--surface-1)' }}>
       <div className="label-mono" style={{ fontSize: 9 }}>{label}</div>
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, marginTop: 4, color: 'var(--text-primary)' }}>{val}</div>
     </div>
@@ -94,7 +94,7 @@ export function WorkoutSummary({
             {challenges.map((c) => {
               const copy = CHALLENGE_COPY[c.state]
               return (
-                <div key={c.id} className="card notch-4 row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
+                <div key={c.id} className="card row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
                   <span aria-hidden="true" style={{ color: copy.color, fontSize: 14, width: 20, textAlign: 'center' }}>{copy.glyph}</span>
                   <span className="col flex-1" style={{ minWidth: 0 }}>
                     <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{c.typeLabel}{c.exercise ? ` · ${c.exercise}` : ''}</span>
@@ -116,7 +116,7 @@ export function WorkoutSummary({
             const best = e.sets.reduce<LastWeekSet | null>((b, s) => (s.weight > (b?.weight ?? -1) ? s : b), null)
             const abandoned = e.sets.length === 0
             return (
-              <div key={e.id} className="card notch-4" style={{ padding: 12 }}>
+              <div key={e.id} className="card" style={{ padding: 12 }}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: 13, color: abandoned ? 'var(--text-tertiary)' : 'var(--text-primary)', flex: 1, paddingRight: 8, textDecoration: abandoned ? 'line-through' : 'none' }}>
                     {e.name}
@@ -135,7 +135,7 @@ export function WorkoutSummary({
                     {e.sets.map((s, i) => `${i + 1}: ${s.weight.toLocaleString('hu-HU')} × ${s.reps} @RIR ${s.rir}`).join(' · ')}
                   </div>
                 ) : best ? (
-                  <div className="row gap-md mt-sm" style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}>
+                  <div className="row gap-md mt-sm" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
                     <span><span style={{ color: 'var(--text-tertiary)' }}>top</span> <span style={{ color: 'var(--text-primary)' }}>{best.weight.toLocaleString('hu-HU')}kg × {best.reps}</span></span>
                     <span><span style={{ color: 'var(--text-tertiary)' }}>RIR</span> <span style={{ color: 'var(--text-primary)' }}>{best.rir}</span></span>
                   </div>
@@ -149,7 +149,7 @@ export function WorkoutSummary({
       {/* Note (presentational, as before) + actions */}
       {mode === 'closing' && (
         <div style={{ padding: '0 24px 16px' }}>
-          <div className="card notch-12" style={{ padding: 14 }}>
+          <div className="card" style={{ padding: 14 }}>
             <span className="label-mono" style={{ fontSize: 9 }}>Edzés-jegyzet · opcionális</span>
             <textarea aria-label="Edzés-jegyzet · opcionális" placeholder='pl. "pumpa brutális volt"'
               style={{ width: '100%', marginTop: 8, minHeight: 52, resize: 'none', fontSize: 13, lineHeight: 1.45 }} />
@@ -160,16 +160,16 @@ export function WorkoutSummary({
         <div className="col gap-sm">
           {mode === 'closing' ? (
             <>
-              <button className="cta-primary notch-8" disabled={finishPending} onClick={onFinish}>
+              <button className="cta-primary" disabled={finishPending} onClick={onFinish}>
                 <Icon name="check" size={16} />
                 <span>Edzés lezárása ✓</span>
               </button>
-              <button type="button" className="cta-ghost notch-4" style={{ padding: 12 }} onClick={onBack}>
+              <button type="button" className="cta-ghost" style={{ padding: 12 }} onClick={onBack}>
                 ← Vissza az edzéshez
               </button>
             </>
           ) : (
-            <button className="cta-ghost notch-4" style={{ padding: 12 }} onClick={onExit}>
+            <button className="cta-ghost" style={{ padding: 12 }} onClick={onExit}>
               ← Vissza
             </button>
           )}

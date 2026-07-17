@@ -16,10 +16,10 @@ export function ProtocolSlot({
 }) {
   return (
     <div
-      className="card notch-4"
+      className="card"
       style={{
         padding: 0,
-        borderColor: slot.primary ? 'var(--border-brand)' : 'var(--border-subtle)',
+        borderColor: slot.primary ? 'var(--line)' : 'var(--border-subtle)',
         background: slot.primary ? 'var(--wash-sage)' : 'var(--surface-1)',
       }}
     >
@@ -59,7 +59,6 @@ export function ProtocolSlot({
                 padding: '1px 6px',
                 fontSize: 8,
                 fontWeight: 600,
-                fontFamily: 'var(--ff-mono)',
                 letterSpacing: '0.12em',
                 textTransform: 'uppercase',
                 color: slot.kindColor,

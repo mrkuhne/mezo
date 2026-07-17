@@ -79,7 +79,7 @@ export function AttachPlanSheet({
                       type="button"
                       aria-pressed={active}
                       onClick={() => setSelectedId(c.id)}
-                      className="card notch-4"
+                      className="card"
                       style={{
                         padding: '11px 14px',
                         textAlign: 'left',
@@ -113,7 +113,7 @@ export function AttachPlanSheet({
                     const n = Number(e.target.value)
                     setStartWeek(Number.isNaN(n) ? 1 : Math.min(maxWeek, Math.max(1, n)))
                   }}
-                  className="card notch-4"
+                  className="card"
                   style={{
                     padding: '11px 14px',
                     fontSize: 14,
@@ -128,10 +128,10 @@ export function AttachPlanSheet({
               </div>
 
               <div className="row gap-sm mt-lg">
-                <button className="cta-ghost notch-4 flex-1" onClick={close}>Mégse</button>
+                <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
                 <button
                   type="button"
-                  className="cta-primary notch-4 flex-1"
+                  className="cta-primary flex-1"
                   disabled={!selectedId || pending}
                   onClick={() => {
                     if (!selectedId) return

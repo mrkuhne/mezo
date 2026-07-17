@@ -466,7 +466,7 @@ function ActiveWorkoutSession({
         {/* Breadcrumb — pinned below the status bar like native nav chrome (mezo-wdk) */}
         <div className="sticky-top" style={{ padding: '8px 24px' }}>
           <button className="row gap-sm" onClick={onExit}>
-            <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
             <span className="eyebrow">Vissza</span>
           </button>
         </div>
@@ -484,7 +484,7 @@ function ActiveWorkoutSession({
         {niggleActive && W.niggleWarning && !niggleConfirmed && (
           <div style={{ padding: '16px 24px' }}>
             <div
-              className="card notch-12"
+              className="card"
               style={{
                 padding: 16,
                 background: AMBER_TINT_6,
@@ -506,7 +506,7 @@ function ActiveWorkoutSession({
               <div className="row gap-sm mt-md">
                 <button
                   type="button"
-                  className="cta-ghost notch-4"
+                  className="cta-ghost"
                   style={{ fontSize: 10 }}
                   onClick={() => setNiggleConfirmed(true)}
                 >
@@ -552,7 +552,7 @@ function ActiveWorkoutSession({
                   0{i + 1}
                 </span>
                 <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>{w.label}</span>
-                <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>
+                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)' }}>
                   {w.time}
                 </span>
               </div>
@@ -600,7 +600,7 @@ function ActiveWorkoutSession({
                         </div>
                       )}
                     </div>
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 11, color: 'var(--text-tertiary)' }}>
+                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)' }}>
                       {e.sets} × {e.repMin}-{e.repMax}
                     </span>
                   </div>
@@ -776,7 +776,7 @@ function ActiveWorkoutSession({
               <div className="col gap-sm" style={{ marginTop: 16 }}>
                 <button
                   type="button"
-                  className="cta-primary notch-8"
+                  className="cta-primary"
                   style={{ padding: '12px 18px', fontSize: 14 }}
                   onClick={() => {
                     writeExtraSetToTemplate(addSetPrompt.exerciseId)
@@ -787,7 +787,7 @@ function ActiveWorkoutSession({
                 </button>
                 <button
                   type="button"
-                  className="cta-ghost notch-4"
+                  className="cta-ghost"
                   style={{ padding: 12, fontSize: 13 }}
                   onClick={close}
                 >
@@ -1058,7 +1058,7 @@ function ActiveWorkoutSession({
                     style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: isDone ? 'var(--text-primary)' : 'var(--text-secondary)', whiteSpace: 'nowrap', marginLeft: 4 }}
                   >
                     {w == null ? '—' : w}
-                    <span style={{ fontFamily: 'var(--ff-mono)', fontSize: 10, color: 'var(--text-tertiary)', margin: '0 1px 0 2px' }}>kg</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-tertiary)', margin: '0 1px 0 2px' }}>kg</span>
                     <span style={{ color: 'var(--text-tertiary)', margin: '0 6px', fontWeight: 400 }}>×</span>
                     {r ?? '—'}
                   </span>
@@ -1128,7 +1128,7 @@ function NoteEditSheet({
           <div className="col gap-sm" style={{ marginTop: 16 }}>
             <button
               type="button"
-              className="cta-primary notch-8"
+              className="cta-primary"
               style={{ padding: '12px 18px', fontSize: 14 }}
               onClick={() => {
                 onSave(text.trim())
@@ -1137,7 +1137,7 @@ function NoteEditSheet({
             >
               Mentés
             </button>
-            <button type="button" className="cta-ghost notch-4" style={{ padding: 12, fontSize: 13 }} onClick={close}>
+            <button type="button" className="cta-ghost" style={{ padding: 12, fontSize: 13 }} onClick={close}>
               Mégse
             </button>
           </div>

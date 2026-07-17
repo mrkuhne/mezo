@@ -40,7 +40,7 @@ export function MesocycleBuilderPage() {
           Ez a mesociklus nem található.
         </p>
         <div className="mt-lg">
-          <CtaGhost className="notch-4" onClick={backToLibrary}>
+          <CtaGhost onClick={backToLibrary}>
             ← Mesociklusok
           </CtaGhost>
         </div>
@@ -61,7 +61,7 @@ export function MesocycleBuilderPage() {
       {/* Breadcrumb — pinned below the status bar like native nav chrome */}
       <div className="sticky-top" style={{ padding: '8px 24px' }}>
         <button type="button" onClick={backToLibrary} className="row gap-sm">
-          <span style={{ color: 'var(--text-tertiary)', fontFamily: 'var(--ff-mono)', fontSize: 14 }}>←</span>
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
           <span className="eyebrow">Mesociklusok</span>
         </button>
       </div>
@@ -91,13 +91,12 @@ export function MesocycleBuilderPage() {
               type="button"
               aria-pressed={active}
               onClick={() => setView(v.id)}
-              className="flex-1 notch-4"
+              className="flex-1 rad-12"
               style={{
                 padding: '10px',
-                background: active ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)' : 'var(--surface-1)',
-                border: `1px solid ${active ? 'var(--border-brand)' : 'var(--border-subtle)'}`,
-                color: active ? 'var(--brand-glow)' : 'var(--text-secondary)',
-                fontFamily: 'var(--ff-mono)',
+                background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
+                border: `1px solid ${active ? 'var(--line)' : 'var(--border-subtle)'}`,
+                color: active ? 'var(--coral)' : 'var(--text-secondary)',
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: '0.14em',
@@ -119,11 +118,10 @@ export function MesocycleBuilderPage() {
         {meso.status === 'active' && (
           <div className="col gap-sm">
             {/* "Heti terv másolása" stays inert — out of T1 scope (copy-week lands later). */}
-            <CtaGhost className="notch-4" style={{ padding: 12 }}>
+            <CtaGhost style={{ padding: 12 }}>
               Heti terv másolása
             </CtaGhost>
             <CtaGhost
-              className="notch-4"
               style={{ padding: 12, borderColor: 'color-mix(in srgb, var(--error) 30%, transparent)', color: 'var(--error)' }}
               onClick={() => closeMesocycle(meso.id)}
               disabled={mesoMutationPending}
@@ -134,7 +132,6 @@ export function MesocycleBuilderPage() {
         )}
         {meso.status === 'planned' && (
           <CtaPrimary
-            className="notch-8"
             onClick={() => activateMesocycle(meso.id)}
             disabled={mesoMutationPending}
           >

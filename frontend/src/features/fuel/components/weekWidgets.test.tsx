@@ -9,7 +9,7 @@ test('PatternRow shows title + detail with accent strip', () => {
   render(
     <PatternRow
       icon="sparkle"
-      color="var(--brand-glow)"
+      color="var(--coral)"
       title="Heti minta"
       detail="részlet"
     />,

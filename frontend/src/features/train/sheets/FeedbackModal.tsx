@@ -93,11 +93,11 @@ export function FeedbackModal({
             <FeedbackRow label="Akarunk még?" options={['Kevés volt', 'Pont jó', 'Sok volt']} value={workload} onChange={setWorkload} />
           </div>
           <div className="row gap-sm mt-xl">
-            <CtaGhost className="notch-4 flex-1" onClick={close}>
+            <CtaGhost className="flex-1" onClick={close}>
               Hagyjuk
             </CtaGhost>
             <CtaPrimary
-              className="notch-4 flex-1"
+              className="flex-1"
               onClick={() => {
                 onSave?.({ pump: pump + 1, jointPain: joint + 1, workload: workload + 1 })
                 close()

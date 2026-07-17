@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test'
  *    pre-paint script in index.html sees it and stamps data-theme.
  *  - reducedMotion 'reduce' (config) + toHaveScreenshot's default animations
  *    'disabled' → no in-flight transitions.
- *  - wait for `document.fonts.ready` → Google Fonts (Bricolage + Jakarta) are in
+ *  - wait for `document.fonts.ready` → the self-hosted fonts (Bricolage + Jakarta) are in
  *    before the pixel compare, else the first paint uses fallback metrics.
  */
 const SCREENS: Array<[string, string]> = [

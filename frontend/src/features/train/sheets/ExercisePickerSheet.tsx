@@ -67,16 +67,16 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                 Mit pakolunk be?
               </div>
               {addedCount > 0 && (
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)', marginTop: 4 }}>
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', marginTop: 4 }}>
                   {addedCount} hozzáadva
                 </span>
               )}
             </div>
             <div className="row gap-xs">
-              <button className="chip brand notch-4" onClick={close} style={{ fontSize: 9, padding: '6px 10px' }}>
+              <button className="chip brand" onClick={close} style={{ fontSize: 9, padding: '6px 10px' }}>
                 Kész{addedCount > 0 ? ` · ${addedCount}` : ''}
               </button>
-              <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+              <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
                 <Icon name="x" size={12} />
               </button>
             </div>
@@ -84,7 +84,7 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
 
           {/* Search */}
           <div
-            className="card notch-4"
+            className="card"
             style={{ padding: 8, display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}
           >
             <Icon name="search" size={14} color="var(--text-tertiary)" />
@@ -106,7 +106,7 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                 key={m}
                 onClick={() => setFilter(m)}
                 aria-pressed={filter === m}
-                className={cn('chip', 'notch-4', filter === m && 'brand')}
+                className={cn('chip', filter === m && 'brand')}
                 style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
               >
                 {FILTER_LABELS[m] ?? MUSCLE_LABELS[m] ?? m}
@@ -126,13 +126,13 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                     if (flashTimer.current) clearTimeout(flashTimer.current)
                     flashTimer.current = setTimeout(() => setFlashId(null), 900)
                   }}
-                  className="card notch-4 row"
+                  className="card row"
                   style={{
                     padding: 12,
                     alignItems: 'center',
                     textAlign: 'left',
                     width: '100%',
-                    borderColor: flashId === e.id ? 'var(--border-brand)' : undefined,
+                    borderColor: flashId === e.id ? 'var(--line)' : undefined,
                   }}
                 >
                   <div className="col flex-1">
@@ -147,7 +147,7 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                     </div>
                   </div>
                   <div className="col" style={{ alignItems: 'flex-end', marginRight: 12 }}>
-                    <span className="label-mono" style={{ fontSize: 8, color: 'var(--brand-glow)' }}>
+                    <span className="label-mono" style={{ fontSize: 8, color: 'var(--coral)' }}>
                       STIM
                     </span>
                     <div className="row gap-xs mt-xs">
@@ -157,18 +157,18 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
                           style={{
                             width: 4,
                             height: 8,
-                            background: n / 5 <= e.stim ? 'var(--brand-glow)' : 'var(--surface-2)',
+                            background: n / 5 <= e.stim ? 'var(--coral)' : 'var(--surface-2)',
                           }}
                         />
                       ))}
                     </div>
                   </div>
                   {flashId === e.id ? (
-                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)', flexShrink: 0 }}>
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)', flexShrink: 0 }}>
                       Hozzáadva ✓
                     </span>
                   ) : (
-                    <Icon name="plus" size={16} color="var(--brand-glow)" />
+                    <Icon name="plus" size={16} color="var(--coral)" />
                   )}
                 </button>
                 {/* Inline demo video — sibling of the row button so its toggle never triggers onPick */}

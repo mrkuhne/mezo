@@ -52,7 +52,7 @@ export function SleepPage() {
       {/* Last night hero */}
       <div style={{ padding: '0 24px 16px' }}>
         <div
-          className="card notch-12"
+          className="card"
           style={{
             padding: 20,
             background: 'linear-gradient(180deg, var(--wash-lav) 0%, var(--surface-1) 65%)',

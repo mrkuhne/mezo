@@ -31,7 +31,7 @@ export function SportStat({ label, val, sub, highlight = false }: SportStatProps
         {val}
       </div>
       {sub && (
-        <span className="text-tertiary" style={{ fontSize: 9, fontFamily: 'var(--ff-mono)', marginTop: 2 }}>
+        <span className="text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>
           {sub}
         </span>
       )}

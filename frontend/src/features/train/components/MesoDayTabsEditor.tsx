@@ -48,16 +48,15 @@ export function MesoDayTabsEditor({ days, onAddClick, onRemove, onChange, onReor
               aria-pressed={active}
               aria-label={`${d.day} · ${d.type}`}
               onClick={() => setActiveDay(d.day)}
-              className="notch-4"
+              className="rad-12"
               style={{
                 flex: '1 0 auto',
                 minWidth: 44,
                 padding: '8px 10px',
-                background: active ? 'color-mix(in srgb, var(--brand-glow) 8%, transparent)' : 'var(--surface-1)',
-                border: `1px solid ${active ? 'var(--border-brand)' : 'var(--border-subtle)'}`,
-                color: active ? 'var(--brand-glow)' : dayOff ? 'var(--text-tertiary)' : 'var(--text-secondary)',
+                background: active ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'var(--surface-1)',
+                border: `1px solid ${active ? 'var(--line)' : 'var(--border-subtle)'}`,
+                color: active ? 'var(--coral)' : dayOff ? 'var(--text-tertiary)' : 'var(--text-secondary)',
                 opacity: dayOff && !active ? 0.6 : 1,
-                fontFamily: 'var(--ff-mono)',
                 fontSize: 10,
                 fontWeight: 600,
                 letterSpacing: '0.08em',
@@ -66,7 +65,7 @@ export function MesoDayTabsEditor({ days, onAddClick, onRemove, onChange, onReor
             >
               {d.day}
               {!dayOff && (
-                <span style={{ marginLeft: 4, color: active ? 'var(--brand-glow)' : 'var(--text-tertiary)' }}>
+                <span style={{ marginLeft: 4, color: active ? 'var(--coral)' : 'var(--text-tertiary)' }}>
                   {d.exercises.length}
                 </span>
               )}
@@ -86,13 +85,13 @@ export function MesoDayTabsEditor({ days, onAddClick, onRemove, onChange, onReor
       </div>
 
       {off ? (
-        <div className="card notch-4 row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
+        <div className="card row gap-sm" style={{ padding: 12, alignItems: 'center' }}>
           <Icon name="anchor" size={12} color="var(--text-tertiary)" />
           <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>
             {day.note || 'Pihenőnap'}
           </span>
           {/* Edzéssé alakít — inert visual affordance, parity with the old day cards */}
-          <button type="button" className="chip notch-4" style={{ fontSize: 9, padding: '4px 8px' }}>
+          <button type="button" className="chip" style={{ fontSize: 9, padding: '4px 8px' }}>
             <Icon name="plus" size={10} /> Edzéssé alakít
           </button>
         </div>
@@ -112,15 +111,14 @@ export function MesoDayTabsEditor({ days, onAddClick, onRemove, onChange, onReor
           <button
             type="button"
             onClick={() => onAddClick(day.day)}
-            className="card notch-4"
+            className="card"
             style={{
               padding: 12,
               width: '100%',
               background: 'transparent',
               borderStyle: 'dashed',
-              borderColor: 'var(--border-brand)',
-              color: 'var(--brand-glow)',
-              fontFamily: 'var(--ff-mono)',
+              borderColor: 'var(--line)',
+              color: 'var(--coral)',
               fontSize: 10,
               letterSpacing: '0.14em',
               textTransform: 'uppercase',
@@ -148,7 +146,7 @@ function RecipeRow({ ex, onRemove, onChange }: {
   onChange: (patch: Partial<GymExercise>) => void
 }) {
   return (
-    <div className="card notch-4" style={{ padding: '10px 12px', background: 'var(--surface-2)' }}>
+    <div className="card" style={{ padding: '10px 12px', background: 'var(--surface-2)' }}>
       <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
         <div className="col flex-1" style={{ minWidth: 0 }}>
           <span style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.3 }}>{ex.name}</span>
@@ -166,7 +164,7 @@ function RecipeRow({ ex, onRemove, onChange }: {
           type="button"
           onClick={onRemove}
           aria-label={`${ex.name} törlése`}
-          className="chip notch-4"
+          className="chip"
           style={{ padding: '5px 7px', flexShrink: 0 }}
         >
           <Icon name="x" size={10} />
@@ -206,9 +204,9 @@ function RecipeStepper({ label, aria, value, min, max, onChange }: {
         <span style={{ fontFamily: 'var(--ff-display)', fontSize: 13, fontWeight: 600 }}>{value}</span>
         <div className="row gap-xs">
           <button type="button" aria-label={`${aria} csökkentése`} onClick={() => onChange(clamp(value - 1))}
-            style={{ width: 18, height: 18, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>−</button>
+            style={{ width: 18, height: 18, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', color: 'var(--coral)' }}>−</button>
           <button type="button" aria-label={`${aria} növelése`} onClick={() => onChange(clamp(value + 1))}
-            style={{ width: 18, height: 18, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>+</button>
+            style={{ width: 18, height: 18, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', color: 'var(--coral)' }}>+</button>
         </div>
       </div>
     </div>
@@ -241,9 +239,9 @@ function AnchorStepper({ aria, value, onChange }: {
         </span>
         <div className="row gap-xs">
           <button type="button" aria-label={`${aria} csökkentése`} onClick={dec}
-            style={{ width: 18, height: 18, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>−</button>
+            style={{ width: 18, height: 18, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', color: 'var(--coral)' }}>−</button>
           <button type="button" aria-label={`${aria} növelése`} onClick={inc}
-            style={{ width: 18, height: 18, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', color: 'var(--brand-glow)' }}>+</button>
+            style={{ width: 18, height: 18, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', color: 'var(--coral)' }}>+</button>
         </div>
       </div>
     </div>

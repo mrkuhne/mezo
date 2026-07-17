@@ -8,16 +8,16 @@ import { ProgressBar } from '@/shared/ui/ProgressBar'
 
 export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scorePct: number; confidence: number }) {
   return (
-    <div className="card notch-12" style={{ padding: 16 }}>
+    <div className="card" style={{ padding: 16 }}>
       <div className="row" style={{ gap: 16, alignItems: 'center' }}>
         {/* Ring */}
         <div style={{ flexShrink: 0 }}>
-          <ScoreRing pct={meal.score ?? 0} size={96} stroke={5} label={scorePct.toFixed(0)} labelColor="var(--brand-glow)" sublabel="/100" />
+          <ScoreRing pct={meal.score ?? 0} size={96} stroke={5} label={scorePct.toFixed(0)} labelColor="var(--coral)" sublabel="/100" />
         </div>
 
         {/* Meta */}
         <div className="col flex-1" style={{ gap: 4, minWidth: 0 }}>
-          <div className="row gap-xs flex-wrap" style={{ fontFamily: 'var(--ff-mono)', fontSize: 11 }}>
+          <div className="row gap-xs flex-wrap" style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11 }}>
             <span><span style={{ color: 'var(--text-tertiary)' }}>kcal</span> <span style={{ color: 'var(--text-primary)' }}>{meal.kcal}</span></span>
             <span style={{ color: 'var(--text-tertiary)' }}>·</span>
             <span><span style={{ color: 'var(--text-tertiary)' }}>P</span> <span style={{ color: 'var(--text-primary)' }}>{meal.p}</span></span>
@@ -34,7 +34,7 @@ export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scor
             <div className="flex-1" style={{ maxWidth: 80 }}>
               <ProgressBar value={confidence * 100} />
             </div>
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--brand-glow)' }}>
+            <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral)' }}>
               {(confidence * 100).toFixed(0)}%
             </span>
           </div>

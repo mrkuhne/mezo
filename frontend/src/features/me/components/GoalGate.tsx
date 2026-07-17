@@ -55,7 +55,7 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
         <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Új cél</span>
       </div>
 
-      {/* Centered gate card (notch / lav wash idiom). */}
+      {/* Centered gate card (rounded / lav wash idiom). */}
       <div
         className="col"
         style={{
@@ -67,7 +67,7 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
         }}
       >
         <div
-          className="notch-12"
+          className="rad-20"
           style={{
             width: 64,
             height: 64,
@@ -104,7 +104,7 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
             {missing.map((k, i) => (
               <span
                 key={k}
-                className="chip notch-4"
+                className="chip"
                 style={{
                   fontSize: 9,
                   fontWeight: 800,
@@ -122,7 +122,7 @@ export function GoalGate({ onClose, onComplete }: { onClose: () => void; onCompl
 
         <button
           type="button"
-          className="cta-primary notch-8"
+          className="cta-primary"
           onClick={() => setSheetOpen(true)}
           style={{ marginTop: 22, width: '100%', maxWidth: 280 }}
         >

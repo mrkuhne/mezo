@@ -23,7 +23,7 @@ const fmtVolume = (kg: number) =>
 
 function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="card notch-4" style={{ padding: 12 }}>
+    <div className="card" style={{ padding: 12 }}>
       <span className="eyebrow">{label}</span>
       <div style={{ fontFamily: 'var(--ff-display)', fontSize: 20, fontWeight: 600, marginTop: 6 }}>
         {value}
@@ -66,18 +66,18 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
                 {[MUSCLE_LABELS[r.muscle] ?? r.muscle, r.type, `${r.sessionCount} alkalom`].join(' · ')}
               </span>
             </div>
-            <button className="chip notch-4" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
+            <button className="chip" onClick={close} aria-label="Bezárás" style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
 
           {/* Hero — best set, or the rep counter for bodyweight exercises */}
           <div
-            className="card notch-12"
+            className="card"
             style={{
               padding: 16, margin: '12px 0',
               background: 'linear-gradient(180deg, color-mix(in srgb, var(--coral) 7%, transparent) 0%, var(--surface-1) 100%)',
-              borderColor: 'var(--border-brand)',
+              borderColor: 'var(--line)',
             }}
           >
             <span className="eyebrow brand">{r.bestSet ? 'Legjobb szett' : 'Összes rep'}</span>
@@ -119,7 +119,7 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
               <span className="eyebrow" style={{ display: 'block', marginBottom: 6 }}>
                 Rep-rekord · top súlyok
               </span>
-              <div className="card notch-4" style={{ marginBottom: 12 }}>
+              <div className="card" style={{ marginBottom: 12 }}>
                 {r.repRecords.map((rr, i) => (
                   <div
                     key={i}
@@ -130,7 +130,7 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
                     }}
                   >
                     <span className="label-mono" style={{ fontSize: 12 }}>{num(rr.weightKg!)} kg</span>
-                    <span className="label-mono" style={{ fontSize: 11, color: 'var(--brand-glow)' }}>{rr.reps} REP</span>
+                    <span className="label-mono" style={{ fontSize: 11, color: 'var(--coral)' }}>{rr.reps} REP</span>
                     <span className="label-mono text-tertiary" style={{ fontSize: 9 }}>{huMonthDay(rr.date)}</span>
                   </div>
                 ))}
@@ -151,8 +151,8 @@ export function ExerciseRecordSheet({ record, videoUrl, onClose }: ExerciseRecor
                     style={{
                       flex: 1,
                       height: `${Math.max(18, Math.round(((s.weightKg ?? s.reps) / maxRecent) * 100))}%`,
-                      background: 'color-mix(in srgb, var(--brand-glow) 30%, transparent)',
-                      borderTop: '2px solid var(--brand-glow)',
+                      background: 'color-mix(in srgb, var(--coral) 30%, transparent)',
+                      borderTop: '2px solid var(--coral)',
                     }}
                   />
                 ))}

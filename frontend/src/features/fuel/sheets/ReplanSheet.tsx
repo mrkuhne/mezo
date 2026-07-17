@@ -17,7 +17,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 
 // Per-system accent colors (port: fuel-stack.jsx ~613).
 const SYSTEM_COLOR: Record<ReplanCascade['system'], string> = {
-  Fuel: 'var(--brand-glow)',
+  Fuel: 'var(--coral)',
   Train: 'var(--cat-physiology)',
   Sleep: 'var(--cat-preference)',
   Insights: 'var(--cat-tendency)',
@@ -52,12 +52,12 @@ export function ReplanSheet({
               </div>
               <span
                 className="text-secondary"
-                style={{ fontSize: 11.5, marginTop: 4, fontFamily: 'var(--ff-mono)' }}
+                style={{ fontSize: 11.5, marginTop: 4 }}
               >
                 {phase === 'applied' ? 'Mai timeline újraszámolva' : 'Válassz scenario-t · látod a cascade-et'}
               </span>
             </div>
-            <button className="chip notch-4" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
+            <button className="chip" aria-label="Bezárás" onClick={close} style={{ padding: '6px 8px' }}>
               <Icon name="x" size={12} />
             </button>
           </div>
@@ -72,7 +72,7 @@ export function ReplanSheet({
                     <button
                       key={s.id}
                       onClick={() => setScenarioId(s.id)}
-                      className="card notch-4 row"
+                      className="card row"
                       style={{
                         padding: '10px 12px',
                         width: '100%',
@@ -80,9 +80,9 @@ export function ReplanSheet({
                         alignItems: 'center',
                         gap: 10,
                         background: selected
-                          ? 'color-mix(in srgb, var(--brand-glow) 6%, transparent)'
+                          ? 'color-mix(in srgb, var(--coral) 6%, transparent)'
                           : 'var(--surface-1)',
-                        borderColor: selected ? 'var(--border-brand)' : 'var(--border-subtle)',
+                        borderColor: selected ? 'var(--line)' : 'var(--border-subtle)',
                         borderLeft: '2px solid ' + s.color,
                       }}
                     >
@@ -91,7 +91,7 @@ export function ReplanSheet({
                         <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{s.title}</span>
                         <span
                           className="text-tertiary"
-                          style={{ fontSize: 10, fontFamily: 'var(--ff-mono)', marginTop: 2 }}
+                          style={{ fontSize: 10, marginTop: 2 }}
                         >
                           {s.detail}
                         </span>
@@ -112,7 +112,7 @@ export function ReplanSheet({
 
               {/* Cascade preview */}
               <div
-                className="card notch-12"
+                className="card"
                 style={{
                   padding: 14,
                   background:
@@ -145,7 +145,6 @@ export function ReplanSheet({
                           <span
                             style={{
                               padding: '2px 6px',
-                              fontFamily: 'var(--ff-mono)',
                               fontSize: 9,
                               fontWeight: 600,
                               color: sysColor,
@@ -186,10 +185,10 @@ export function ReplanSheet({
 
               {/* Actions */}
               <div className="row gap-sm mt-lg">
-                <button className="cta-ghost notch-4 flex-1" onClick={close}>
+                <button className="cta-ghost flex-1" onClick={close}>
                   Mégse · marad a régi
                 </button>
-                <button className="cta-primary notch-4 flex-1" onClick={() => setPhase('applied')}>
+                <button className="cta-primary flex-1" onClick={() => setPhase('applied')}>
                   <Icon name="check" size={14} /> Alkalmazom
                 </button>
               </div>
@@ -199,15 +198,15 @@ export function ReplanSheet({
           {phase === 'applied' && (
             <>
               <div
-                className="card notch-12"
+                className="card"
                 style={{
                   padding: 18,
-                  background: 'color-mix(in srgb, var(--brand-glow) 6%, transparent)',
-                  borderColor: 'var(--border-brand)',
+                  background: 'color-mix(in srgb, var(--coral) 6%, transparent)',
+                  borderColor: 'var(--line)',
                   textAlign: 'center',
                 }}
               >
-                <Icon name="sparkle" size={20} color="var(--brand-glow)" />
+                <Icon name="sparkle" size={20} color="var(--coral)" />
                 <div
                   style={{
                     fontFamily: 'var(--ff-display)',
@@ -231,7 +230,7 @@ export function ReplanSheet({
                 </div>
               </div>
 
-              <button className="cta-primary notch-4 mt-lg" onClick={close}>
+              <button className="cta-primary mt-lg" onClick={close}>
                 <Icon name="check" size={14} /> Megnézem
               </button>
             </>

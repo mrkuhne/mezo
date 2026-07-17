@@ -36,7 +36,7 @@ export function PersonDetailSheet({
             <DetailStat label="Cadence" val={person.contactCadenceLabel} />
             <DetailStat label="Mentions" val={person.mentionCount} />
           </div>
-          <div className="card notch-4 mt-lg" style={{ padding: 12 }}>
+          <div className="card mt-lg" style={{ padding: 12 }}>
             <p style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.5 }}>{person.notes}</p>
           </div>
           {person.knownFacts.length > 0 && (
@@ -57,7 +57,7 @@ export function PersonDetailSheet({
               <span className="eyebrow" style={{ marginBottom: 8, display: 'block' }}>Kapcsolt patternek</span>
               <div className="col gap-xs">
                 {person.ties.map((t, i) => (
-                  <div key={i} className="card notch-4" style={{ padding: 10, background: 'var(--surface-2)' }}>
+                  <div key={i} className="card" style={{ padding: 10, background: 'var(--surface-2)' }}>
                     <span style={{ fontSize: 11, color: 'var(--text-primary)', lineHeight: 1.5 }}>{t}</span>
                   </div>
                 ))}
@@ -68,7 +68,7 @@ export function PersonDetailSheet({
             <span className="eyebrow" style={{ marginBottom: 8, display: 'block' }}>Friss említések · {mentions.length}</span>
             <div className="col gap-sm">
               {mentions.slice(0, 5).map(m => (
-                <div key={m.id} className="card notch-4" style={{ padding: 10 }}>
+                <div key={m.id} className="card" style={{ padding: 10 }}>
                   <div className="row gap-xs" style={{ alignItems: 'center' }}>
                     <Icon name={m.source === 'voice' ? 'mic' : m.source === 'chip' ? 'check' : 'send'} size={10} color="var(--text-tertiary)" />
                     <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)' }}>{m.dayLabel} · {m.timeLabel}</span>
@@ -79,8 +79,8 @@ export function PersonDetailSheet({
             </div>
           </div>
           <div className="row gap-sm mt-lg">
-            <button className="cta-ghost notch-4 flex-1" onClick={close}>Vissza</button>
-            <button className="cta-primary notch-4 flex-1" onClick={onLog}>
+            <button className="cta-ghost flex-1" onClick={close}>Vissza</button>
+            <button className="cta-primary flex-1" onClick={onLog}>
               <Icon name="mic" size={14} /> Log most
             </button>
           </div>

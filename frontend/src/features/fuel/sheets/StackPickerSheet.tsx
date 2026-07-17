@@ -22,12 +22,12 @@ import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 
-// Accent colour per stash item: caffeine wins, then type, then brand-glow.
+// Accent colour per stash item: caffeine wins, then type, then the coral accent.
 function rowColor(s: SupplementStashItem): string {
   if (s.caffeine) return 'var(--warning)'
   if (s.type === 'stimulant') return 'var(--cat-tendency)'
   if (s.type === 'medication') return 'var(--error)'
-  return 'var(--brand-glow)'
+  return 'var(--coral)'
 }
 
 export function StackPickerSheet({
@@ -96,7 +96,7 @@ export function StackPickerSheet({
                 <button
                   key={s.id}
                   onClick={() => onToggle(s.id)}
-                  className="card notch-4 row"
+                  className="card row"
                   style={{
                     padding: '10px 12px',
                     width: '100%',
@@ -135,7 +135,7 @@ export function StackPickerSheet({
                     </div>
                     <span
                       className="text-tertiary"
-                      style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}
+                      style={{ fontSize: 10 }}
                     >
                       {s.brand} · {s.dose}
                     </span>

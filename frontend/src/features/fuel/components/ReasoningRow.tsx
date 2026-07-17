@@ -21,7 +21,6 @@ export function ReasoningRow({ reason }: { reason: Reasoning }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontFamily: 'var(--ff-mono)',
           fontSize: 9,
           color: glyphColor,
           background: 'var(--surface-2)',
@@ -33,7 +32,7 @@ export function ReasoningRow({ reason }: { reason: Reasoning }) {
       <div className="col flex-1">
         <span style={{ fontSize: 12.5, color: 'var(--text-primary)', lineHeight: 1.5 }}>{reason.text}</span>
         {reason.evidence && (
-          <span className="text-tertiary mt-xs" style={{ fontSize: 10, fontFamily: 'var(--ff-mono)' }}>
+          <span className="text-tertiary mt-xs" style={{ fontSize: 10 }}>
             {reason.evidence}
           </span>
         )}

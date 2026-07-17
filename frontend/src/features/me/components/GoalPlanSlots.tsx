@@ -66,7 +66,7 @@ function Slot({
 }) {
   return (
     <div
-      className="notch-8"
+      className="rad-16"
       style={{
         border: '1px dashed var(--border-strong)',
         background: 'transparent',
