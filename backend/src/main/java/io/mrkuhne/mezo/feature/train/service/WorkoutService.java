@@ -90,7 +90,7 @@ public class WorkoutService {
     // own @Transactional bean (getToday is a read), always on (no feature gate).
     private final WorkoutAutoCloseService workoutAutoCloseService;
 
-    public WorkoutTodayResponse getToday(UUID createdBy) {
+    public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
         // after this, only a today-dated instance can be 'active', so the open-instance
         // lookup below can never resurrect last week's abandoned session. Runs before the
@@ -113,7 +113,21 @@ public class WorkoutService {
         // regardless of whether today is a gym day, so the weekly rows can mark PAST done days.
         List<LocalDate> weekDoneDates = doneDatesThisWeek(createdBy);
         empty.setWeekDoneDates(weekDoneDates);
-        WorkoutSessionEntity day = findPlannedTemplateForDate(createdBy, LocalDate.now()).orElse(null);
+        // Day resolution (cross-day start, mezo-p7rp): open instance > param > weekday label.
+        // The open workout always wins — a deep link to another day while one runs resumes the
+        // running one (D6); the param lets any non-completed day of the week start today (D1).
+        WorkoutSessionEntity open = workoutSessionRepository
+            .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
+                createdBy, "active")
+            .orElse(null);
+        WorkoutSessionEntity day;
+        if (open != null) {
+            day = ownedTemplateOrThrow(createdBy, open.getTemplateSessionId());
+        } else if (templateSessionId != null) {
+            day = ownedTemplateOrThrow(createdBy, templateSessionId);
+        } else {
+            day = findPlannedTemplateForDate(createdBy, LocalDate.now()).orElse(null);
+        }
         if (day == null) {
             return empty;
         }
@@ -127,14 +141,9 @@ public class WorkoutService {
         // video_url), never per-exercise. Map keyed by catalog id; nulls filtered out.
         Map<UUID, String> videoByCatalog = catalogVideoResolver.resolve(exercises.stream()
             .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList());
-        WorkoutSessionEntity open = workoutSessionRepository
-            .findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
-                createdBy, day.getId(), "active")
-            .orElse(null);
-        WorkoutSessionEntity completedToday = workoutSessionRepository
-            .findFirstByCreatedByAndTemplateSessionIdAndStatusAndDateOrderByCreatedAtDesc(
-                createdBy, day.getId(), "completed", LocalDate.now())
-            .orElse(null);
+        // Week-scoped completion (D5): a template day completed ANY day of the current Mon–Sun
+        // week reviews instead of restarting — was date == today before mezo-p7rp.
+        WorkoutSessionEntity completedToday = completedThisWeek(createdBy, day.getId());
         return WorkoutTodayResponse.builder()
             .templateSessionId(day.getId())
             .dayLabel(day.getDayLabel())
@@ -157,6 +166,23 @@ public class WorkoutService {
             .completedWorkout(completedToday != null ? toInstanceResponse(createdBy, completedToday) : null)
             .weekDoneDates(weekDoneDates)
             .build();
+    }
+
+    /** An owned TEMPLATE row (templateSessionId == null) by id — 404 on anything else. */
+    private WorkoutSessionEntity ownedTemplateOrThrow(UUID createdBy, UUID templateId) {
+        return workoutSessionRepository.findById(templateId)
+            .filter(s -> createdBy.equals(s.getCreatedBy()) && s.getTemplateSessionId() == null)
+            .orElseThrow(WorkoutService::notFound);
+    }
+
+    /** The template day's most recent COMPLETED instance of the current Mon–Sun week (D5). */
+    private WorkoutSessionEntity completedThisWeek(UUID createdBy, UUID templateId) {
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1L);
+        return workoutSessionRepository
+            .findFirstByCreatedByAndTemplateSessionIdAndStatusAndDateBetweenOrderByDateDescCreatedAtDesc(
+                createdBy, templateId, "completed", monday, monday.plusDays(6))
+            .orElse(null);
     }
 
     /**
@@ -279,6 +305,18 @@ public class WorkoutService {
             .orElse(null);
         if (open != null) {
             return toInstanceResponse(createdBy, open);
+        }
+        // Cross-day guards (mezo-p7rp): one open workout at a time (D6) and one completion
+        // per template day per Mon–Sun week (D5) — the FE hides the CTA, this is the backstop.
+        if (workoutSessionRepository
+            .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
+                createdBy, "active").isPresent()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_WORKOUT_OPEN_ELSEWHERE").build(), HttpStatus.CONFLICT);
+        }
+        if (completedThisWeek(createdBy, template.getId()) != null) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("TRAIN_DAY_DONE_THIS_WEEK").build(), HttpStatus.CONFLICT);
         }
         WorkoutSessionEntity instance = new WorkoutSessionEntity();
         instance.setCreatedBy(createdBy); // server-side ownership — never from the client

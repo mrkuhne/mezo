@@ -33,7 +33,7 @@ class ClosingBlockSwitchOffIT extends AbstractIntegrationTest {
         var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
         train.createExercise(owner, day.getId(), "Fekvenyomás", 0);
 
-        WorkoutTodayResponse res = workoutService.getToday(owner);
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
         assertThat(res.getExercises()).hasSize(1);
         assertThat(res.getExercises().get(0).getName()).isEqualTo("Fekvenyomás");

@@ -47,8 +47,14 @@ export const trainApi = {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
-  workoutToday: (): Promise<WorkoutTodayResponse> =>
-    apiFetch<WorkoutTodayResponse>('/api/train/workouts/today'),
+  // Day resolution is server-side: open instance > templateSessionId param > today's
+  // weekday label (cross-day start, mezo-p7rp).
+  workoutToday: (templateSessionId?: string): Promise<WorkoutTodayResponse> =>
+    apiFetch<WorkoutTodayResponse>(
+      templateSessionId
+        ? `/api/train/workouts/today?templateSessionId=${templateSessionId}`
+        : '/api/train/workouts/today',
+    ),
   listWorkouts: (from: string, to: string): Promise<WorkoutSummaryResponse[]> =>
     apiFetch<WorkoutSummaryResponse[]>(`/api/train/workouts?from=${from}&to=${to}`),
   getWorkout: (id: string): Promise<WorkoutDetailResponse> =>
