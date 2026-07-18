@@ -61,9 +61,11 @@ public class FakeCompanionLlm implements CompanionLlm {
 
     /** Scripted meal draft (mezo-78rn): {@code [fake-meal:{json}]} payload is returned verbatim —
      *  matched in the user text (text + multimodal paths) and in the UTF-8-decoded image bytes,
-     *  so photo-only ITs drive canned JSON through the real multipart plumbing. */
+     *  so photo-only ITs drive canned JSON through the real multipart plumbing.
+     *  GREEDY (unlike scrape) — the draft payload {@code {"slot":…,"items":[{…}]}} nests objects
+     *  inside {@code items}, so the match must run to the LAST brace, not the first {@code }]}. */
     public static final Pattern MEAL_SENTINEL =
-            Pattern.compile("\\[fake-meal:(\\{.*?})]", Pattern.DOTALL);
+            Pattern.compile("\\[fake-meal:(\\{.*})]", Pattern.DOTALL);
 
     /** Scripted narrative (V2.2): {@code [fake-summary:…]} payload becomes the summary answer. */
     public static final Pattern SUMMARY_SENTINEL =

@@ -124,4 +124,17 @@ class CompanionLlmFakeIT extends AbstractIntegrationTest {
         String answer = companionLlm.complete("SYS", "user text", new byte[] {1, 2, 3}, "image/jpeg");
         assertThat(answer).startsWith("FAKE-LLM");
     }
+
+    @Test
+    void testComplete_shouldReturnFullNestedJson_whenMealSentinelHasNestedItems() {
+        // nested object inside items[] — the non-greedy sentinel would truncate at the first }]
+        String json = "{\"slot\":\"lunch\",\"items\":[{\"name\":\"Latte\",\"kcal\":120}]}";
+
+        String textPath = companionLlm.complete("SYS", "ebéd volt [fake-meal:" + json + "]");
+        assertThat(textPath).isEqualTo(json);
+
+        byte[] fakePhoto = ("[fake-meal:" + json + "]").getBytes(StandardCharsets.UTF_8);
+        String imagePath = companionLlm.complete("SYS", "", fakePhoto, "image/jpeg");
+        assertThat(imagePath).isEqualTo(json);
+    }
 }
