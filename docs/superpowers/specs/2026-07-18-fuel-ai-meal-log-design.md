@@ -170,3 +170,14 @@ the point-in-time artifact; these are the corrections):
 - **Shared Jackson-3 `ObjectMapper`.** `MealAiDraftService` injects the Boot-managed
   `tools.jackson.databind.ObjectMapper` (Jackson 3, `tools.jackson.*`) rather than instantiating
   one — consistent with the scrape extractor and the rest of the Boot 4 stack.
+- **Multipart container limits raised so the app cap is the effective limit (final-review fix).**
+  Boot's default 1 MB `spring.servlet.multipart.max-file-size` would reject a 1–5 MB photo during
+  multipart parsing — BEFORE `MealAiDraftService`'s `mezo.meal-ai-log.max-photo-bytes` (5 MB) check —
+  making the configured 5 MB cap unreachable, and (worse) surfacing the container breach as an
+  unhandled `MaxUploadSizeExceededException` → generic 500 instead of the spec's 400 "photo too big".
+  Fixed by raising the container caps in `application.yml` (`spring.servlet.multipart.max-file-size:
+  6MB`, `max-request-size: 7MB`) comfortably above the 5 MB app cap so the SERVICE check stays the
+  effective, message-bearing limit, plus a dedicated `GlobalExceptionHandler.handleMaxUploadSize`
+  (`MaxUploadSizeExceededException` → 400 field "photo") as the safety net if the container cap is
+  ever hit anyway. `MealAiUploadLimitApiIT` (10 kB container cap, 20 kB photo → 400) proves the
+  handler; `MealAiDraftApiIT`'s size-cap test still exercises the SERVICE path under the raised cap.

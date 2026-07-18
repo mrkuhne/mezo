@@ -3,6 +3,14 @@ server:
 spring:
   application:
     name: mezo
+  servlet:
+    multipart:
+      # Photo-upload container caps (mezo-78rn) — kept comfortably ABOVE the 5 MB app cap
+      # (mezo.meal-ai-log.max-photo-bytes) so the SERVICE check in MealAiDraftService is the
+      # effective, message-bearing limit; a container-cap breach still degrades to a clean 400
+      # via GlobalExceptionHandler.handleMaxUploadSize (safety net), never a 500.
+      max-file-size: 6MB
+      max-request-size: 7MB
   mvc:
     async:
       # SSE chat turns (companion V0.4): Gemini streams can exceed the container's ~30s

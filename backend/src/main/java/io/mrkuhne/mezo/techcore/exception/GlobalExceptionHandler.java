@@ -13,6 +13,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -106,6 +107,25 @@ public class GlobalExceptionHandler {
         m.setExceptionTraceId(traceId);
         m.setMessage(resolve(m));
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(List.of(m));
+    }
+
+    /**
+     * The servlet container's own multipart cap ({@code spring.servlet.multipart.max-file-size},
+     * raised to 6 MB for mezo-78rn) tripped during multipart parsing — BEFORE the request reached the
+     * {@code MealAiDraftService} size check. Surface the SAME 400 "photo too big" field error the
+     * service would have returned, instead of letting it fall through to the generic 500. The
+     * app-level {@code mezo.meal-ai-log.max-photo-bytes} (5 MB) sits below this container cap and is
+     * the effective, message-bearing limit; this is the safety net for the rare payload that slips
+     * past it into the container limit.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<List<SystemMessage>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        String traceId = UUID.randomUUID().toString();
+        log.warn("Upload too large [traceId={}]: {}", traceId, ex.getMessage());
+        SystemMessage m = SystemMessage.field("VALIDATION_INVALID_VALUE", "photo").build();
+        m.setExceptionTraceId(traceId);
+        m.setMessage(resolve(m));
+        return ResponseEntity.badRequest().body(List.of(m));
     }
 
     @ExceptionHandler(Exception.class)

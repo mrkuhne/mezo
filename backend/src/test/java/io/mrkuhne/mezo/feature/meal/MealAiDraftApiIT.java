@@ -23,10 +23,11 @@ import org.springframework.util.LinkedMultiValueMap;
  * so the canned LLM answer flows through parse → catalog-match → response without a model.
  *
  * <p>The photo size cap is shrunk to the {@code @Min(10_000)} floor via {@code @TestPropertySource}
- * so the oversized-photo test's payload (20 kB) trips the SERVICE cap while staying well under
- * Spring's own 1 MB {@code spring.servlet.multipart.max-file-size} default (a >5 MB in-test payload
- * would be rejected by the container BEFORE reaching the service check). Every other test here sends
- * a sub-kilobyte payload, so the shrunk cap is inert for them.
+ * so the oversized-photo test's payload (20 kB) trips the SERVICE cap while staying well under the
+ * 6 MB {@code spring.servlet.multipart.max-file-size} container cap (mezo-78rn) — the container cap
+ * is deliberately raised above the 5 MB app cap so the message-bearing SERVICE check is the effective
+ * limit, and the container-cap path is proven separately by {@code MealAiUploadLimitApiIT}. Every
+ * other test here sends a sub-kilobyte payload, so the shrunk cap is inert for them.
  */
 @ActiveProfiles("companion-fake")
 @TestPropertySource(properties = "mezo.meal-ai-log.max-photo-bytes=10000")
@@ -98,9 +99,9 @@ class MealAiDraftApiIT extends ApiIntegrationTest {
 
     @Test
     void testDraft_should400_whenPhotoTooLarge() {
-        // 20 kB payload > the shrunk 10 kB service cap (max-photo-bytes above), but < Spring's 1 MB
-        // multipart default — so the SERVICE cap fires, not the container. A valid image MIME so the
-        // size check (which precedes the MIME check) is the thing under test.
+        // 20 kB payload > the shrunk 10 kB service cap (max-photo-bytes above), but < the 6 MB
+        // multipart container cap — so the SERVICE cap fires, not the container. A valid image MIME so
+        // the size check (which precedes the MIME check) is the thing under test.
         byte[] oversized = new byte[20_000];
         HttpHeaders photoHeaders = new HttpHeaders();
         photoHeaders.setContentType(MediaType.IMAGE_PNG);
