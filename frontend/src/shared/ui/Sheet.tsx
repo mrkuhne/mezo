@@ -21,6 +21,8 @@ export function Sheet({ children, onClose, className, labelledBy }: SheetProps) 
   const backdropRef = useRef<HTMLDivElement>(null)
   const drag = useRef({ active: false, startY: 0, startT: 0, dy: 0, height: 0 })
   const closing = useRef(false)
+  const exitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const exitRaf = useRef<number | null>(null)
 
   // Render into the phone screen so `position: absolute` anchors to the device
   // viewport (and the backdrop covers the tab bar), not the scrolling content
@@ -55,15 +57,27 @@ export function Sheet({ children, onClose, className, labelledBy }: SheetProps) 
       onClose()
     }
     el.addEventListener('transitionend', finish, { once: true })
-    setTimeout(finish, EXIT_MS + 80) // fallback if transitionend never fires
+    exitTimer.current = setTimeout(finish, EXIT_MS + 80) // fallback if transitionend never fires
 
     // Apply the end state on the NEXT frame so there is a real start→end delta
     // to animate (works from rest at translateY(0) and from a dragged offset).
-    requestAnimationFrame(() => {
+    exitRaf.current = requestAnimationFrame(() => {
       el.style.transform = 'translateY(100%)'
       if (bd) bd.style.opacity = '0'
     })
   }, [onClose])
+
+  // The exit fallback timer/rAF must not outlive the component: under jsdom
+  // transitionend never fires, and a timer surviving unmount calls onClose (a
+  // parent setState) after test-environment teardown — the nondeterministic
+  // "window is not defined" CI failure (mezo-91rw).
+  useEffect(
+    () => () => {
+      if (exitTimer.current != null) clearTimeout(exitTimer.current)
+      if (exitRaf.current != null) cancelAnimationFrame(exitRaf.current)
+    },
+    [],
+  )
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

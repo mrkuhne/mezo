@@ -372,6 +372,12 @@ function ActiveWorkoutSession({
     // more of its sets remain, else the upcoming exercise's (or null on the last).
     if (wasSetIdx + 1 >= effectiveSetCount(session, finishing.id)) {
       setFeedbackEx(finishing)
+      // The debrief takeover unmounts a possibly mid-close ExerciseActionSheet
+      // (mount condition: actionSheetOpen && !feedbackEx) without its onClose
+      // ever firing — reset the flag here or the sheet re-opens once the
+      // debrief resolves. Pre-mezo-91rw the Sheet's leaked exit timer masked
+      // this by firing the parent setState after the unmount.
+      setActionSheetOpen(false)
     } else {
       startRest({
         seconds: restSecondsFor(current.type),
