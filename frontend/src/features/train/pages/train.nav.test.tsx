@@ -27,13 +27,19 @@ test('Train opens on Mai and the sub-nav switches between sub-tabs', async () =>
   expect(screen.getByText('MA 07:30 · MAV')).toBeInTheDocument()
   expect(screen.getByText('Heti terv')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('link', { name: 'Sport' }))
+  // Open dropdown and click Sport
+  await userEvent.click(screen.getByRole('button', { name: 'Mai' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Sport' }))
   expect(screen.getByText('BVSC csarnok')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('link', { name: 'Mesociklusok' }))
+  // Open dropdown and click Mesociklusok
+  await userEvent.click(screen.getByRole('button', { name: 'Sport' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Mesociklusok' }))
   expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
 
-  await userEvent.click(screen.getByRole('link', { name: 'Gym' }))
+  // Open dropdown and click Gym
+  await userEvent.click(screen.getByRole('button', { name: 'Mesociklusok' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Gym' }))
   expect(screen.getByText('W3 / 6')).toBeInTheDocument()
 })
 
