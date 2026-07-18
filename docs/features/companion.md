@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-07-11
+updated: 2026-07-18
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -749,6 +749,17 @@ All model access goes through the `CompanionLlm` port (`CompanionLlm.java`). **C
 the seam:** `complete(systemPrompt, userMessage) → String` (V0.2 uses only `complete`; `stream(…) →
 Flux<String>` exists for V0.4). Real adapter `GeminiCompanionLlm` / test fake `FakeCompanionLlm`;
 provider swap = one new adapter + one starter swap (ADR 0008).
+
+**Pantry URL-scrape consumer (✅ wired, ADR 0012).** The Kamra URL-scrape import needs the cheap
+LLM tier, but pantry must not import companion (the one-way feature-slice rule). So **pantry owns
+the port** it needs (`feature/pantry/service/ScrapeLlm.java`) and **companion owns the adapter**:
+`PantryScrapeLlmAdapter` (`llm/PantryScrapeLlmAdapter.java`) implements `ScrapeLlm` by delegating
+to `CompanionLlm.complete` (the cheap two-string tier). It is `@ConditionalOnProperty(COMPANION_SWITCH)`
+like every other `CompanionLlm` consumer, so companion off ⇒ no adapter bean ⇒ no `ScrapeLlm` bean
+⇒ the scrape endpoint degrades to a clean 503. This is the **consumer-owned LLM port** pattern —
+the only cross-feature dependency runs companion → pantry, so the ArchUnit feature-slice cycle rule
+stays closed: [ADR 0012](../decisions/0012-consumer-owned-llm-ports.md); the consumer side is in
+[`fuel.md`](fuel.md) §4–§5.
 
 **V2.1 embedding seam (✅ wired, unused until V2.2).** All embedding access goes through the
 `EmbeddingPort` (`EmbeddingPort.java`) — `embedDocuments(List<String>) → List<float[]>` /

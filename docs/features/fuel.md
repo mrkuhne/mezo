@@ -9,6 +9,8 @@ key_files:
   - frontend/src/data/fuel
   - api/feature/fuel/fuel.yml
   - api/feature/meal/meal.yml
+  - api/feature/pantry/pantry.yml
+  - backend/src/main/java/io/mrkuhne/mezo/feature/pantry
 related: [_platform-data-layer, _platform-design-system, train, today]
 ---
 
