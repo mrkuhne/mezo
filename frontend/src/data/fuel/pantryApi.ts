@@ -2,7 +2,7 @@ import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import type {
   Ingredient, SupplementStashItem, PantryItemInput,
-  PantryImport, PantrySuggestion, PantryLookupItem, PantryImportInput,
+  PantryImport, PantrySuggestion, PantryLookupItem, PantryImportInput, PantryScrapeDraft,
 } from '@/data/types'
 import type { PantrySourceKey } from '@/data/pantrySources'
 import { localDateString, huMonthDay } from '@/shared/lib/dates'
@@ -14,6 +14,9 @@ type PantryImportEntryResponse = components['schemas']['PantryImportEntryRespons
 type PantrySuggestionResponse = components['schemas']['PantrySuggestionResponse']
 type PantryLookupResponse = components['schemas']['PantryLookupResponse']
 type PantryLookupResult = components['schemas']['PantryLookupResult']
+type PantryScrapeRequest = components['schemas']['PantryScrapeRequest']
+type PantryScrapeResponse = components['schemas']['PantryScrapeResponse']
+type PantryScrapeResult = components['schemas']['PantryScrapeResult']
 
 export interface PantryData {
   ingredients: Ingredient[]
@@ -44,6 +47,10 @@ function toImportRequest(input: PantryImportInput): PantryImportRequest {
     kcal: input.kcal, proteinG: input.proteinG, carbsG: input.carbsG, fatG: input.fatG,
     fiberG: input.fiberG, sugarG: input.sugarG, saltG: input.saltG, saturatedFatG: input.saturatedFatG,
     nova: input.nova,
+    // Scrape provenance (mezo-8vum) — only set when the draft came from a URL scrape;
+    // undefined for a plain OFF import, so JSON.stringify omits them (payload unchanged).
+    sourceUrl: input.sourceUrl, confidence: input.confidence,
+    priceHuf: input.priceHuf, priceUnit: input.priceUnit,
   } satisfies PantryImportRequest
 }
 
@@ -74,6 +81,12 @@ function fromLookupResult(r: PantryLookupResult): PantryLookupItem {
   return r as PantryLookupItem
 }
 
+function fromScrapeResult(r: PantryScrapeResult): PantryScrapeDraft {
+  // Structurally identical to the draft (nova 1..4, source is the shared PantrySource
+  // enum, category widens to string) — same structural cast fromLookupResult uses.
+  return r as unknown as PantryScrapeDraft
+}
+
 export const pantryApi = {
   // The contract's IngredientResponse/SupplementStashResponse are structurally the domain
   // types except nova (number vs NovaGroup) — cast like sleepApi does. The P6 feed +
@@ -100,4 +113,10 @@ export const pantryApi = {
   importItem: (input: PantryImportInput): Promise<void> =>
     apiFetch('/api/pantry-import', { method: 'POST', body: JSON.stringify(toImportRequest(input)) })
       .then(() => undefined),
+  // P8 (mezo-8vum): URL-scrape draft — nothing persisted server-side; the user confirms via importItem.
+  scrape: (url: string): Promise<PantryScrapeDraft | null> =>
+    apiFetch<PantryScrapeResponse>('/api/pantry-import/scrape', {
+      method: 'POST',
+      body: JSON.stringify({ url } satisfies PantryScrapeRequest),
+    }).then(r => (r.result ? fromScrapeResult(r.result) : null)),
 }

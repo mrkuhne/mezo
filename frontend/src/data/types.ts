@@ -235,8 +235,27 @@ export interface PantryLookupItem {
   saturatedFatG?: number | null
   nova?: NovaGroup | null
 }
+// One URL-scrape hit (Fuel P8, mezo-8vum) — a lookup draft enriched with category,
+// price, and the scrape provenance (source/url/confidence). Nothing is persisted until
+// the user confirms via importItem; needsReview flags a low-confidence extraction.
+export interface PantryScrapeDraft extends PantryLookupItem {
+  category: string | null
+  priceHuf: number | null
+  priceUnit: string | null
+  source: PantrySourceKey
+  sourceUrl: string
+  confidence: number
+  needsReview: boolean
+}
 // The confirmed import draft (name/category user-editable) → POST /api/pantry-import.
-export interface PantryImportInput extends PantryLookupItem { category?: string | null }
+// Scrape provenance (mezo-8vum) rides along when the draft came from a URL scrape.
+export interface PantryImportInput extends PantryLookupItem {
+  category?: string | null
+  sourceUrl?: string | null
+  confidence?: number | null
+  priceHuf?: number | null
+  priceUnit?: string | null
+}
 
 // Unified pantry item shape — built by buildKamraItems (Task 28), consumed by KamraCard.
 // Merges scraped Ingredient (food) + SupplementStashItem (supplement/stim/med) into one card model.
