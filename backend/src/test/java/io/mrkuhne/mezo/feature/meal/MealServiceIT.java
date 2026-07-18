@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
+import io.mrkuhne.mezo.api.dto.MealProvenance;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.feature.meal.entity.MealProvenanceJson;
+import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
@@ -13,6 +16,8 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -28,10 +33,14 @@ import org.springframework.transaction.annotation.Transactional;
 class MealServiceIT extends AbstractIntegrationTest {
 
     @Autowired private MealService service;
+    @Autowired private MealRepository repository;
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private RecipePopulator recipePopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private io.mrkuhne.mezo.feature.meal.repository.MealItemRepository mealItemRepository;
+
+    /** JPA-managed shared EntityManager — reads the provenance envelope back fresh from the DB. */
+    @PersistenceContext private EntityManager entityManager;
 
     private UUID owner;
     private UUID other;
@@ -72,6 +81,30 @@ class MealServiceIT extends AbstractIntegrationTest {
         i.setAmount(new BigDecimal(grams));
         i.setUnit("g");
         return i;
+    }
+
+    /** An estimate-arm item (both FKs null, verbatim per-basis snapshot) — the AI confirm path. */
+    private MealItemRequest estimateItem() {
+        MealItemRequest i = new MealItemRequest();
+        i.setSource("estimate");
+        i.setAmount(new BigDecimal("1"));
+        i.setUnit("db");
+        i.setName("Csirkés wrap");
+        i.setPer(new BigDecimal("1"));
+        i.setBasisUnit("db");
+        i.setKcal(new BigDecimal("450"));
+        i.setProteinG(new BigDecimal("28"));
+        i.setCarbsG(new BigDecimal("40"));
+        i.setFatG(new BigDecimal("18"));
+        return i;
+    }
+
+    private MealProvenance provenance(String origin, String rawText, String confidence) {
+        MealProvenance p = new MealProvenance();
+        p.setOrigin(origin);
+        p.setRawText(rawText);
+        p.setConfidence(confidence == null ? null : new BigDecimal(confidence));
+        return p;
     }
 
     private MealRequest req(String slot, MealItemRequest... items) {
@@ -211,6 +244,49 @@ class MealServiceIT extends AbstractIntegrationTest {
         assertThat(after.getItems()).extracting("lineOrder").containsExactly(0, 1);
         // Bravo 150 g -> factor 1.5 -> 165 kcal ; recipe 1 adag -> 149 kcal -> rollup 314.
         assertThat(after.getMacros().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(314));
+    }
+
+    @Test
+    void testCreate_shouldPersistProvenance_whenAiConfirmed() {
+        MealRequest create = req("lunch", estimateItem());
+        create.setProvenance(provenance("ai-text", "csirkés wrap", "0.80"));
+
+        MealResponse created = service.create(owner, create);
+
+        // Re-read the row fresh from the DB (not the managed instance) to prove the mapper wrote it.
+        entityManager.flush();
+        entityManager.clear();
+        MealProvenanceJson persisted = repository.findById(created.getId()).orElseThrow().getProvenance();
+        assertThat(persisted).isNotNull();
+        assertThat(persisted.origin()).isEqualTo("ai-text");
+        assertThat(persisted.rawText()).isEqualTo("csirkés wrap");
+        assertThat(persisted.confidence()).isEqualByComparingTo(new BigDecimal("0.80"));
+    }
+
+    @Test
+    void testUpdate_shouldReplaceThenClearProvenance_whenReConfirmedThenManual() {
+        MealRequest create = req("lunch", estimateItem());
+        create.setProvenance(provenance("ai-text", "csirkés wrap", "0.80"));
+        MealResponse created = service.create(owner, create);
+
+        // Re-confirm with a DIFFERENT envelope -> the update-path setProvenance replaces it.
+        MealRequest reConfirm = req("lunch", estimateItem());
+        reConfirm.setProvenance(provenance("ai-photo", "photo of a wrap", "0.55"));
+        service.update(owner, created.getId(), reConfirm);
+
+        entityManager.flush();
+        entityManager.clear();
+        MealProvenanceJson replaced = repository.findById(created.getId()).orElseThrow().getProvenance();
+        assertThat(replaced.origin()).isEqualTo("ai-photo");
+        assertThat(replaced.rawText()).isEqualTo("photo of a wrap");
+        assertThat(replaced.confidence()).isEqualByComparingTo(new BigDecimal("0.55"));
+
+        // Manual edit with no provenance -> the column is nulled (manual/legacy row).
+        service.update(owner, created.getId(), req("lunch", estimateItem()));
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(repository.findById(created.getId()).orElseThrow().getProvenance()).isNull();
     }
 
     @Test

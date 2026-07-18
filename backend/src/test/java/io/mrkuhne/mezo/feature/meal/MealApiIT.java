@@ -221,10 +221,10 @@ class MealApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testCreate_shouldPersistEstimateLineAndProvenance_whenAiDraftConfirmed() {
+    void testCreate_shouldPersistEstimateLineAndScore_whenAiDraftConfirmed() {
         HttpHeaders auth = ownerAuthHeaders();
         // AI confirm path: an estimate line carries its own verbatim snapshot (no recipe/pantry FK)
-        // and the meal carries an ai-text provenance envelope.
+        // and the meal carries an ai-text provenance envelope (persistence asserted in MealServiceIT).
         MealRequest req = mealReq(estimateItem());
         MealProvenance prov = new MealProvenance();
         prov.setOrigin("ai-text");
