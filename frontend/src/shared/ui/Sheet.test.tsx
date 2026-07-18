@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Sheet } from '@/shared/ui/Sheet'
 
@@ -28,4 +28,22 @@ test('closes on Escape (after slide-down)', async () => {
   render(<Sheet onClose={onClose}><p>x</p></Sheet>)
   await userEvent.keyboard('{Escape}')
   await waitFor(() => expect(onClose).toHaveBeenCalledOnce())
+})
+
+// mezo-91rw: in jsdom transitionend never fires, so the EXIT_MS+80 fallback
+// setTimeout is the only path to onClose. If it survives unmount (RTL cleanup
+// racing a mid-close sheet at a test file's end), it fires after environment
+// teardown → setState on a torn-down jsdom → "window is not defined".
+test('unmount clears the pending exit timer — no onClose after unmount', () => {
+  vi.useFakeTimers()
+  try {
+    const onClose = vi.fn()
+    const { unmount } = render(<Sheet onClose={onClose}><p>x</p></Sheet>)
+    fireEvent.click(document.querySelector('.sheet-backdrop')!) // start the slide-down
+    unmount() // teardown wins the race against the fallback timer
+    vi.advanceTimersByTime(1000) // the ~380ms fallback would fire in this window
+    expect(onClose).not.toHaveBeenCalled()
+  } finally {
+    vi.useRealTimers()
+  }
 })
