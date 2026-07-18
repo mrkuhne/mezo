@@ -1102,17 +1102,32 @@ git add docs
 git commit -m "docs(features): compact header v2 — AppHero row, SubNavDropdown, np-pills retirement (mezo-ugqb)"
 ```
 
-- [ ] **Step 5: Push branch + self-PR (CI gate)**
+- [ ] **Step 5: Re-baseline the darwin visual goldens**
+
+The header appears on every visual-suite page — ALL goldens legitimately move (same as the mezo-k7rn header redesign). Regenerate the darwin set locally and eyeball the diffs (only header-region pixels should change beyond layout shift):
+
+```bash
+cd frontend && pnpm test:visual:update
+git add tests/visual/visual.spec.ts-snapshots
+git commit -m "test(visual): re-baseline darwin goldens for the compact header (mezo-ugqb)"
+```
+
+- [ ] **Step 6: Push branch + self-PR + linux goldens (CI gate)**
 
 ```bash
 git push -u origin feat/compact-header
 gh pr create --fill --title "feat(fe): compact single-row header + subnav dropdown (mezo-ugqb)"
+# linux goldens regenerate on the runner and land as a bot commit on the branch:
+gh workflow run update-visual-baselines.yml -r feat/compact-header
+gh run watch $(gh run list --workflow=update-visual-baselines.yml --branch feat/compact-header -L 1 --json databaseId -q '.[0].databaseId')
+git pull --rebase   # pick up the bot's linux-golden commit
+git commit --allow-empty -m "ci: retrigger after bot golden push (mezo-ugqb)" && git push  # bot pushes don't trigger CI
 gh pr checks --watch
 ```
 
-Expected: CI green (backend suite untouched but runs on clean runner; FE both modes + lint + contract-drift).
+Expected: CI green (backend suite untouched but runs on clean runner; FE both modes + lint + contract-drift + visual on fresh goldens).
 
-- [ ] **Step 6: Merge locally with --no-ff, push, clean up**
+- [ ] **Step 7: Merge locally with --no-ff, push, clean up**
 
 ```bash
 git checkout main && git pull --rebase
