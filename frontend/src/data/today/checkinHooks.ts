@@ -4,6 +4,7 @@ import { isMockMode } from '@/data/_client/mode'
 import { localDateString } from '@/shared/lib/dates'
 import { checkinApi, type CheckInResponse } from '@/data/me/biometricsApi'
 import { initialCheckins } from '@/data/today/checkins'
+import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type { CheckinSlot, CheckinState } from '@/data/types'
 
 const SLOT_TIMES = initialCheckins.map((c) => c.time)
@@ -72,9 +73,11 @@ export function useCheckins() {
           energy: v?.energy, stress: v?.stress, body: v?.body, mental: v?.mental,
           note: slot.note ?? undefined,
         })
+      } else {
+        awardGamificationEvent(qc, { type: 'CHECKIN' })
       }
     },
-    [mock, base, local, mutation, date],
+    [mock, base, local, mutation, date, qc],
   )
   return { checkins, saveCheckIn }
 }

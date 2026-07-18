@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { sleepApi } from '@/data/me/biometricsApi'
 import { sleepLog as initialSleepLog } from '@/data/me/sleep'
+import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type { SleepEntry, SleepLogInput } from '@/data/types'
 
 export function useSleep() {
@@ -24,8 +25,10 @@ export function useSleep() {
         })
       : sleepApi.log,
     onSuccess: (entry) => {
-      if (mock) qc.setQueryData<SleepEntry[]>(['sleepLog'], prev => [...(prev ?? []), entry])
-      else qc.invalidateQueries({ queryKey: ['sleepLog'] })
+      if (mock) {
+        qc.setQueryData<SleepEntry[]>(['sleepLog'], prev => [...(prev ?? []), entry])
+        awardGamificationEvent(qc, { type: 'SLEEP' })
+      } else qc.invalidateQueries({ queryKey: ['sleepLog'] })
     },
   })
   const logSleep = useCallback((input: SleepLogInput) => mutation.mutate(input), [mutation])

@@ -5,6 +5,7 @@ import { isMockMode } from '@/data/_client/mode'
 import { localDateString } from '@/shared/lib/dates'
 import { useDualQuery } from '@/data/useDualQuery'
 import { medicationSeed } from '@/data/fuel/medication'
+import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
   Medication,
   MedicationCycle,
@@ -63,7 +64,11 @@ export function useMedicationActions() {
 
   const logM = useMutation({
     mutationFn: mock
-      ? async (input: MedicationDoseInput) => mockLogDose(qc, input)
+      ? async (input: MedicationDoseInput) => {
+          mockLogDose(qc, input)
+          awardGamificationEvent(qc, { type: 'MEDICATION' })
+          return undefined
+        }
       : (input: MedicationDoseInput) => medicationApi.logDose(medId(qc), input),
     onSuccess: mock ? undefined : invalidate,
   })

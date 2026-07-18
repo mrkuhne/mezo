@@ -1526,3 +1526,34 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 @media (prefers-reduced-motion: no-preference) {
   .skl .bar i { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .45s var(--np-ease-ios) forwards; }
 }
+
+/* ===== AppHero — unified gamified header on the 4 main tabs (mezo-k7rn) ===== */
+.apphero { display: flex; align-items: center; gap: 12px; padding: 10px 24px 0; }
+.apphero .avwrap { position: relative; width: 62px; height: 62px; flex-shrink: 0; }
+.apphero .avlink { position: absolute; inset: 0; display: block; }
+.apphero .avatar {
+  position: absolute; inset: 6px; border-radius: 50%;
+  background: linear-gradient(140deg, #EEEBF6, #E2DCF0); color: var(--lav-deep);
+  font-family: var(--ff-display); font-weight: 800; font-size: 17px;
+  display: flex; align-items: center; justify-content: center;
+}
+:root[data-theme="dark"] .apphero .avatar { background: linear-gradient(140deg, rgba(155,143,196,.25), rgba(122,109,168,.25)); }
+.apphero .lvbadge {
+  position: absolute; right: -3px; bottom: -3px; min-width: 22px; height: 22px;
+  border-radius: 999px; background: var(--coral); color: #fff; font-size: 10.5px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; border: 2.5px solid var(--canvas);
+  padding: 0 4px; font-family: var(--ff-display); text-decoration: none;
+}
+.apphero .t1 { display: block; font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.3px; color: var(--ink); text-decoration: none; }
+.apphero .t2 { display: block; background: none; border: none; padding: 0; cursor: pointer; font-size: 11px; color: var(--lav-deep); font-weight: 800; margin-top: 1px; letter-spacing: .4px; text-transform: uppercase; text-align: left; font-family: var(--ff-body); }
+.apphero .util { margin-left: auto; display: flex; gap: 7px; align-items: center; }
+.apphero-chips { display: flex; gap: 6px; padding: 10px 24px 0; flex-wrap: wrap; }
+.apphero-chip {
+  display: inline-flex; align-items: center; gap: 4px; background: var(--surface);
+  border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800;
+  box-shadow: var(--np-shadow-row); border: none; color: var(--ink);
+  text-decoration: none; cursor: pointer; font-family: var(--ff-body);
+}
+.apphero-chip.fire { color: var(--amber-deep); }
+.apphero-chip.quest { color: var(--coral-deep); }
+.apphero-chip.coin { color: var(--sage-deep); }

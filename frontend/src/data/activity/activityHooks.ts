@@ -3,6 +3,7 @@ import { activityApi, type ActivityWriteResult } from '@/data/activity/activityA
 import { mockActivities, mockActivityHistory } from '@/data/activity/activityMock'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
+import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type { ActivityEntry, LifeSkillKey } from '@/data/types'
 
 const key = (d: string) => ['activities', d]
@@ -57,6 +58,7 @@ export function useActivityActions(date: string) {
       if (mock) {
         const res = mockWrite(text, date)
         qc.setQueryData<ActivityEntry[]>(key(date), (d) => [res.entry, ...(d ?? [])])
+        awardGamificationEvent(qc, { type: 'ACTIVITY', xpOverride: res.entry.xpAwarded ?? 0 })
         return res
       }
       return activityApi.create(text, date)

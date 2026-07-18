@@ -2,7 +2,7 @@
 title: Train
 type: feature-domain
 status: done
-updated: 2026-07-17
+updated: 2026-07-18
 tags: [train, running, sport, frontend, backend, data-layer, progression, hypertrophy]
 key_files:
   - frontend/src/features/train
@@ -43,6 +43,8 @@ Train is the largest mezo domain: a six-tab area for planning and executing stre
 ---
 
 ## 2. User-facing behavior
+
+**Since the gamified-header slice (`mezo-k7rn`, 2026-07-18), `TrainSection` renders the shared `AppHero` identity/progression header above `TrainSubNav`** (`TrainSection.tsx:13` — no `utilities` prop, Train has none) — every Train sub-page inherits it exactly like the pre-existing `.pghead-np` per-page headers below it. `AppHero` is domain-free platform chrome (avatar + XP ring/level badge, equipped title, 🔥/⚡/🪙 stat chips); Train contributes no props to it and consumes none of its state. See [growth.md](growth.md) for the account-progression domain and [`_platform-design-system.md` §1a](_platform-design-system.md) for the `.apphero` CSS family.
 
 The sub-nav (`TrainSubNav`, `frontend/src/features/train/pages/tabs.ts`) has six tabs: **`Mai`** (`/train`), **`Gym`** (`/train/gym`), **`Sport`** (`/train/sport`), **`Futás`** (`/train/futas`), **`Gyakorlatok`** (`/train/exercises`), **`Mesociklusok`** (`/train/mesocycles`). Four full-screen sibling routes have no sub-nav: active workout (`/train/session`), the done-day review (`/train/review/:workoutId`, `WorkoutReviewPage`), mesocycle planner/builder (`/train/mesocycles/new`, `/train/mesocycles/:id`), and the running-block builder (`/train/futas/:id`). **Since Napiv S4 (`mezo-8141`) the tab label reads `Gym` (was `GYM`)** — a copy-only change (the route/id are untouched) — and `TrainSubNav` itself renders the new coral `.np-pills`/`.np-pill` pill nav rather than the generic `.subnav-item`/`.active` idiom other domains used to use; `.np-pill`'s active tint is parametric via the `--pill-accent` custom property (defaults to `var(--coral)`), reserved for Fuel (`--sage`, S6) and Me (`--lav`, S7) to adopt the same markup later (`docs/features/_platform-design-system.md`). **Every Train page now also opens with a `.pghead-np` page-head** (an `.over` eyebrow line + `h1`, optionally a `.pgact-np` pill action chip) in place of the generic `.page-header`/`Eyebrow`/`PageTitle` idiom described in the design-system doc.
 
@@ -202,6 +204,7 @@ This is the highest-value section: Train both consumes and exposes a number of s
 | **Rest Live-Activity shell seam** (Napiv S5, `mezo-8141`) | Train ↔ App shell | `LiveActivityProvider` (`app/providers/LiveActivityProvider.tsx`) is mounted **once** in `AppLayout.tsx` (wraps `PhoneFrame`); `ActiveWorkoutPage` is the only feature calling `useLiveActivity().startRest`/`clearRest`, and `DynamicIsland` (`app/DynamicIsland.tsx`, mounted inside `PhoneFrame`) the only consumer of `useLiveActivityOptional().rest` (via `useContext`, so it renders the plain island when no `<LiveActivityProvider>` wraps it in a test) | `RestActivity {endsAt, total, next}` — see §2's Rest Live-Activity paragraph for timing + the "next"-label gotcha |
 | **Full-bleed session route** (Napiv S5, `mezo-8141`) | Train → App shell | `AppLayout.tsx:17` hides the bottom `TabBar` when `location.pathname === '/train/session'` (the session's own `.wk-top` header owns the back affordance) | boolean `hideTabBar`, a route-string match only — no route metadata/config involved |
 | **Level-up overlay** | Train → Progression | all 3 finish flows (gym `finishWorkout`, sport/run log sheets) call `useLevelUp().showLevelUp(r?.levelUp)`; the single `LevelUpProvider` host (`features/progression/`, mounted in `AppLayout`) portals `LevelUpScreen` over the chrome. The same 3 mutations also **invalidate `['progressionProfile']`** (real mode) so the P6 Me/Profile radar + muscle cards refresh with the just-earned XP (`docs/features/me.md` §3). | `LevelUpResult` (`@/data/train/trainApi`); sheets expose `onSave?: (input, done) => void` (deferred close — the parent shows the overlay in the mutation's `onSuccess` and calls `done()` in `onSettled`, so the sheet closes on both success **and** failure — no stuck-disabled CTA) |
+| **Account XP/coins/streak** (`mezo-k7rn`, mock-mode only) | Train → Gamification | mock-mode `finishWorkout` (`trainHooks.ts:387`, `type: 'GYM'`) and `logSportSession` (`trainHooks.ts:417`, `type: 'SPORT'`) call `awardGamificationEvent`; `useRunning`'s mock `logRunSession` (`runningHooks.ts:95`, `type: 'RUN'`) does the same — each is a **separate, additive** call beside the existing skill-XP/level-up path above, feeding the account-wide `AppHero` XP ring/coins/streak, not `WorkoutPlan`/`LevelUpResult`. Real mode never calls it (no-op) — see [growth.md](growth.md) for the account-progression domain. | `XpEventType` (`@/data/gamification/gamificationTypes`); no return value consumed here (the award emits its own toast) |
 
 **The canonical internal integration** is `TrainTodayPage`: it merges `gymSchedule` (from `useTrain`, itself the meso-days × gym-slots join of `deriveGymSchedule`), `sport.schedule` (volleyball), and `runSessionsForDay(activeRunningBlock, dayIdx)` (from `useRunning`, via `data/train/runningAgenda.ts`) into one `WeeklyAgendaDay[]`, then orders each day by time-of-day through the shared `daySessions` helper (`features/train/logic/agenda.ts`). Logging from here reuses the **shared sheets** `SportLogSheet`/`RunLogSheet`. Note the cross-load seams (Sport→everything, Running→gym volume) are the documented bidirectional contracts but their **live engines are Phase 3** — today they render static rows.
 
@@ -347,7 +350,7 @@ Both modes and both layers must stay green.
 - `frontend/src/features/train/logic/restTimer.ts` — pure `restSecondsFor(type)` (150s compound / 90s else, hardcoded) + `fmtMMSS` — the only place the rest duration is decided
 
 **FE — screens / views**
-- `frontend/src/features/train/{TrainSection,TrainSubNav,tabs}.{tsx,ts}` — shell + sub-nav
+- `frontend/src/features/train/{TrainSection,TrainSubNav,tabs}.{tsx,ts}` — shell + sub-nav; `TrainSection.tsx` mounts the cross-feature `AppHero` above `TrainSubNav` (`mezo-k7rn`, no props — see §2/§5)
 - `frontend/src/features/train/pages/{TrainTodayPage,GymPage,SportPage,RunningPage,ExercisesPage,MesocycleLibraryPage,WorkoutReviewPage}.tsx` (`WorkoutReviewPage` = the done-day read-only review at `/train/review/:workoutId`, `mezo-cd8s`)
 - `frontend/src/features/train/{ActiveWorkoutPage,MesocyclePlannerPage,MesocycleBuilderPage,RunningBlockBuilderPage}.tsx` — full-screen routes
 - `frontend/src/features/train/logic/planner.ts` — planner program-gen: goal `SCHEMES` (incl. `erohipertrofia` 6-8/RIR 0, `:48`), the `Láb+Plyo / Felső` split + A/B day lists with a leading weightless plyo seed (`:242`, `:334`); `frontend/src/features/train/logic/muscleFilters.ts` — exercise filters

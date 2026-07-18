@@ -14,8 +14,8 @@ function renderApp(path: string) {
 }
 
 test('/me shows the Profil route with the sub-nav', async () => {
-  // The Profil h1 moved out with the page-header chrome (MeHead is section-level
-  // now, mezo-8141) — the route is proven by its card content instead.
+  // The Profil h1 moved out with the page-header chrome (AppHero is section-level
+  // now, mezo-8141/mezo-k7rn) — the route is proven by its card content instead.
   renderApp('/me')
   expect(await screen.findByText('Biometria')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'Cél' })).toBeInTheDocument()
@@ -46,6 +46,6 @@ test('gear chip opens SettingsSheet and theme toggle flips data-theme', async ()
 test('deep-links directly to /me/people', () => {
   renderApp('/me/people')
   expect(screen.getByRole('heading', { level: 1, name: /Kapcsolatok/ })).toBeInTheDocument()
-  // MeHead is Me section chrome — it renders above the Outlet on sub-pages too.
-  expect(document.querySelector('.mehead')).toBeInTheDocument()
+  // AppHero is Me section chrome — it renders above the Outlet on sub-pages too.
+  expect(document.querySelector('.apphero')).toBeInTheDocument()
 })
