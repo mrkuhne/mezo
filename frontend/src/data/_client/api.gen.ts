@@ -749,6 +749,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pantry-import/scrape": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** LLM-extract a pantry draft from any product-page URL (mezo-8vum) — nothing is persisted */
+        post: operations["scrapePantryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recipe": {
         parameters: {
             query?: never;
@@ -2569,8 +2586,7 @@ export interface components {
             id: string;
             name: string;
             brand: string;
-            /** @enum {string} */
-            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts";
+            source: components["schemas"]["PantrySource"];
             category: string;
             per: number;
             unit: string;
@@ -2604,8 +2620,7 @@ export interface components {
             timing: string;
             taken: boolean;
             caffeine?: boolean | null;
-            /** @enum {string|null} */
-            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts" | null;
+            source?: components["schemas"]["PantrySource"] | null;
             per?: number | null;
             unit?: string | null;
             macros?: components["schemas"]["PantryMacros"] | null;
@@ -2624,8 +2639,7 @@ export interface components {
             kind: "food" | "supplement" | "stim" | "med";
             name: string;
             brand?: string | null;
-            /** @enum {string|null} */
-            source?: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts" | null;
+            source?: components["schemas"]["PantrySource"] | null;
             /** @enum {string|null} */
             category?: "vegetables" | "fruits" | "meat" | "fish" | "eggs" | "dairy" | "cheese" | "legumes" | "grains" | "pasta" | "bakery" | "nuts_seeds" | "oils_fats" | "condiments" | "snacks" | "beverages" | "supplement" | "other" | null;
             notes?: string | null;
@@ -2683,6 +2697,35 @@ export interface components {
             saturatedFatG?: number | null;
             nova?: number | null;
         };
+        PantryScrapeRequest: {
+            url: string;
+        };
+        PantryScrapeResponse: {
+            result?: components["schemas"]["PantryScrapeResult"] | null;
+        };
+        PantryScrapeResult: {
+            name: string;
+            brand?: string | null;
+            per: number;
+            unit: string;
+            kcal: number;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
+            nova?: number | null;
+            /** @enum {string|null} */
+            category?: "vegetables" | "fruits" | "meat" | "fish" | "eggs" | "dairy" | "cheese" | "legumes" | "grains" | "pasta" | "bakery" | "nuts_seeds" | "oils_fats" | "condiments" | "snacks" | "beverages" | "supplement" | "other" | null;
+            priceHuf?: number | null;
+            priceUnit?: string | null;
+            source: components["schemas"]["PantrySource"];
+            sourceUrl: string;
+            confidence: number;
+            needsReview: boolean;
+        };
         PantryImportRequest: {
             name: string;
             brand?: string | null;
@@ -2700,12 +2743,15 @@ export interface components {
             saltG?: number | null;
             saturatedFatG?: number | null;
             nova?: number | null;
+            sourceUrl?: string | null;
+            confidence?: number | null;
+            priceHuf?: number | null;
+            priceUnit?: string | null;
         };
         PantryImportEntryResponse: {
             /** Format: uuid */
             id: string;
-            /** @enum {string} */
-            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts";
+            source: components["schemas"]["PantrySource"];
             /** Format: date-time */
             when: string;
             items: number;
@@ -2715,11 +2761,12 @@ export interface components {
         };
         PantrySuggestionResponse: {
             name: string;
-            /** @enum {string} */
-            source: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts";
+            source: components["schemas"]["PantrySource"];
             price: string;
             reason: string;
         };
+        /** @enum {string} */
+        PantrySource: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "gymbeam.hu" | "web" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts";
         RecipeMacros: {
             kcal: number;
             p: number;
@@ -6125,6 +6172,66 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    scrapePantryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PantryScrapeRequest"];
+            };
+        };
+        responses: {
+            /** @description Draft extracted (result null when the page carries no nutrition facts) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryScrapeResponse"];
+                };
+            };
+            /** @description Validation error (bad/missing/non-http URL) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Page unreachable or LLM extraction failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM port unavailable (companion off) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.pantry.service;
 
+import io.mrkuhne.mezo.api.dto.PantrySource;
 import io.mrkuhne.mezo.api.dto.PantrySuggestionResponse;
 import io.mrkuhne.mezo.feature.pantry.config.PantrySuggestionProperties;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
@@ -83,7 +84,7 @@ public class PantrySuggestionService {
         if (!seen.add(item.getName())) return;
         out.add(PantrySuggestionResponse.builder()
             .name(item.getName())
-            .source(PantrySuggestionResponse.SourceEnum.fromValue(item.getSource()))
+            .source(PantrySource.fromValue(item.getSource()))
             .price(formatPrice(item))
             .reason(reason)
             .build());

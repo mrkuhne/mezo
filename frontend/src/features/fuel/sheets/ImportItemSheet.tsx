@@ -1,12 +1,12 @@
 // ============================================================
-// Mezo · ImportItemSheet (Fuel P6, mezo-bka — real since this slice)
-// 3-phase OpenFoodFacts import wizard for adding a new Kamra item:
-//   input     → one search field (terméknév VAGY vonalkód) + inert quick-import chips
-//   searching → OFF lookup in flight (mock mode: canned fixture after a demo delay)
-//   preview   → result list → picked draft (name editable, category select) → "Polcra"
-//               runs usePantryActions().importItem and closes
-// The old per-vendor scrape wizard is gone (P8 territory); source is always
-// 'openfoodfacts'. Camera/OCR/mic chips stay inert affordances (P8+).
+// Mezo · ImportItemSheet (Fuel P6 mezo-bka + P8 Link mode mezo-8vum)
+// Two-mode import wizard for adding a new Kamra item, sharing one 3-phase shell:
+//   Keresés (OFF) — the P6 OpenFoodFacts lookup: one search field (terméknév VAGY vonalkód)
+//                   → OFF lookup → result list → picked draft → "Polcra".
+//   Link          — the P8 URL-scrape: paste a product URL → scrapeItem extracts a draft
+//                   (name/macros/category/price + source/confidence provenance) → preview → confirm.
+// Both modes end in usePantryActions().importItem and close; the Link save passes the scrape
+// provenance (sourceUrl/confidence/price) through. Camera/OCR/mic chips stay inert (P8+).
 // ============================================================
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -16,9 +16,10 @@ import { StatCell } from '@/shared/ui/StatCell'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
 import { usePantry, usePantryActions } from '@/data/hooks'
-import type { PantryLookupItem } from '@/data/types'
+import type { PantryLookupItem, PantryScrapeDraft } from '@/data/types'
 
 type Phase = 'input' | 'searching' | 'preview'
+type Mode = 'search' | 'link'
 
 // The contract's PantryImportRequest category enum — the draft's pick list.
 const CONTRACT_CATEGORIES = [
@@ -29,15 +30,25 @@ const CONTRACT_CATEGORIES = [
 
 export function ImportItemSheet({ onClose }: { onClose: () => void }) {
   const { categoryMeta } = usePantry()
-  const { lookupItems, importItem } = usePantryActions()
+  const { lookupItems, importItem, scrapeItem } = usePantryActions()
+  const [mode, setMode] = useState<Mode>('search')
   const [phase, setPhase] = useState<Phase>('input')
   const [query, setQuery] = useState('')
+  const [url, setUrl] = useState('')
   const [results, setResults] = useState<PantryLookupItem[]>([])
+  const [draft, setDraft] = useState<PantryScrapeDraft | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('other')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+
+  // Switching mode always returns to the input step (each mode has its own input field).
+  const switchMode = (m: Mode) => {
+    setMode(m)
+    setPhase('input')
+    setError(null)
+  }
 
   const search = async () => {
     if (query.trim().length < 2) return
@@ -55,6 +66,22 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const scan = async () => {
+    if (!url.trim().startsWith('http')) return
+    setPhase('searching')
+    setError(null)
+    try {
+      const found = await scrapeItem(url.trim())
+      setDraft(found)
+      setName(found?.name ?? '')
+      setCategory(found?.category ?? 'other')
+      setPhase('preview')
+    } catch {
+      setError('Az oldal beolvasása nem sikerült — ellenőrizd a linket, vagy próbáld később.')
+      setPhase('input')
+    }
+  }
+
   const pick = (i: number) => {
     setPicked(i)
     setName(results[i].name)
@@ -65,6 +92,28 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
     setSaving(true)
     try {
       await importItem({ ...results[picked], name: name.trim() || results[picked].name, category })
+      close()
+    } catch {
+      setError('A mentés nem sikerült — próbáld újra.')
+      setPhase('input')
+      setSaving(false)
+    }
+  }
+
+  // Link-mode save: carry the scrape provenance (sourceUrl/confidence/price) through importItem.
+  const saveDraft = async (close: () => void) => {
+    if (draft == null || saving) return
+    setSaving(true)
+    try {
+      await importItem({
+        ...draft,
+        name: name.trim() || draft.name,
+        category,
+        sourceUrl: draft.sourceUrl,
+        confidence: draft.confidence,
+        priceHuf: draft.priceHuf,
+        priceUnit: draft.priceUnit,
+      })
       close()
     } catch {
       setError('A mentés nem sikerült — próbáld újra.')
@@ -92,7 +141,36 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
             Terméknevet vagy vonalkódot is beírhatsz.
           </p>
 
-          {phase === 'input' && (
+          <div className="row gap-xs" style={{ marginBottom: 14 }}>
+            <button
+              className="chip"
+              aria-pressed={mode === 'search'}
+              onClick={() => switchMode('search')}
+              style={{
+                flex: 1, justifyContent: 'center', fontSize: 11, padding: '8px 0',
+                background: mode === 'search' ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'transparent',
+                borderColor: mode === 'search' ? 'var(--line)' : 'var(--border-subtle)',
+                color: mode === 'search' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              }}
+            >
+              Keresés (OFF)
+            </button>
+            <button
+              className="chip"
+              aria-pressed={mode === 'link'}
+              onClick={() => switchMode('link')}
+              style={{
+                flex: 1, justifyContent: 'center', fontSize: 11, padding: '8px 0',
+                background: mode === 'link' ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'transparent',
+                borderColor: mode === 'link' ? 'var(--line)' : 'var(--border-subtle)',
+                color: mode === 'link' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              }}
+            >
+              Link
+            </button>
+          </div>
+
+          {phase === 'input' && mode === 'search' && (
             <>
               <div className="card" style={{ padding: '10px 12px', marginBottom: 10 }}>
                 <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Terméknév vagy vonalkód</span>
@@ -133,6 +211,43 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
             </>
           )}
 
+          {phase === 'input' && mode === 'link' && (
+            <>
+              <div className="card" style={{ padding: '10px 12px', marginBottom: 10 }}>
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Termékoldal linkje</span>
+                <input
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') void scan() }}
+                  inputMode="url"
+                  placeholder="https://…"
+                  aria-label="Termékoldal linkje"
+                  style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 4, width: '100%' }}
+                />
+              </div>
+
+              {error && (
+                <p style={{ fontSize: 11, color: 'var(--error)', marginBottom: 10 }}>{error}</p>
+              )}
+
+              <p className="text-secondary" style={{ fontSize: 11, lineHeight: 1.5, marginBottom: 14 }}>
+                Illeszd be egy termékoldal linkjét (pl. myprotein.hu, gymbeam.hu) — az AI kiolvassa
+                a nevet, makrókat és tápértékeket.
+              </p>
+
+              <div className="row gap-sm">
+                <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+                <button
+                  className="cta-primary flex-1"
+                  onClick={() => void scan()}
+                  disabled={!url.trim().startsWith('http')}
+                >
+                  <Icon name="sparkle" size={14} /> Beolvasás
+                </button>
+              </div>
+            </>
+          )}
+
           {phase === 'searching' && (
             <div className="card" style={{
               padding: 24, textAlign: 'center',
@@ -141,7 +256,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
             }}>
               <Icon name="search" size={20} color="var(--coral)" />
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
-                Keresés <SourceBadge source="openfoodfacts" size="lg" />
+                Keresés <SourceBadge source={mode === 'link' ? (draft?.source ?? 'web') : 'openfoodfacts'} size="lg" />
               </div>
               <div className="np-twinkle" style={{
                 width: 12, height: 12, borderRadius: '50%', margin: '16px auto 0',
@@ -150,7 +265,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
             </div>
           )}
 
-          {phase === 'preview' && (
+          {phase === 'preview' && mode === 'search' && (
             <>
               {results.length === 0 && (
                 <div className="card" style={{ padding: 14, marginBottom: 12, textAlign: 'center' }}>
@@ -236,6 +351,75 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                   className="cta-primary flex-1"
                   onClick={() => void save(close)}
                   disabled={picked == null || saving}
+                >
+                  <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Polcra'}
+                </button>
+              </div>
+            </>
+          )}
+
+          {phase === 'preview' && mode === 'link' && (
+            <>
+              {draft == null && (
+                <div className="card" style={{ padding: 14, marginBottom: 12, textAlign: 'center' }}>
+                  <span className="text-secondary" style={{ fontSize: 12 }}>
+                    Ezen az oldalon nem találtam tápértéket — vidd fel kézzel a Kamrában.
+                  </span>
+                </div>
+              )}
+
+              {draft != null && (
+                <div className="card" style={{
+                  padding: 14, marginBottom: 12,
+                  background: 'color-mix(in srgb, var(--coral) 4%, transparent)',
+                  borderColor: 'var(--line)',
+                }}>
+                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Eyebrow brand>Polcra kerül · /{draft.per}{draft.unit}</Eyebrow>
+                    <SourceBadge source={draft.source} />
+                  </div>
+                  <div className="card" style={{ padding: '8px 10px', margin: '10px 0' }}>
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Név</span>
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      aria-label="Tétel neve"
+                      style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 2, width: '100%' }}
+                    />
+                  </div>
+                  <div className="card" style={{ padding: '8px 10px', marginBottom: 10 }}>
+                    <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>Kategória</span>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      aria-label="Kategória"
+                      style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 2, width: '100%', background: 'transparent' }}
+                    >
+                      {CONTRACT_CATEGORIES.map(c => (
+                        <option key={c} value={c}>{categoryMeta[c]?.label ?? c}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="card row" style={{ padding: 10, justifyContent: 'space-between', background: 'var(--surface-1)' }}>
+                    <StatCell label={`kcal / ${draft.per}${draft.unit}`} val={String(draft.kcal ?? '—')} sub="" color="var(--coral)" />
+                    <StatCell label="P" val={(draft.proteinG ?? '—') + 'g'} sub="" color="var(--cat-physiology)" />
+                    <StatCell label="C" val={(draft.carbsG ?? '—') + 'g'} sub="" color="var(--warning)" />
+                    <StatCell label="F" val={(draft.fatG ?? '—') + 'g'} sub="" color="var(--cat-preference)" />
+                  </div>
+                  {draft.needsReview && (
+                    <p style={{ fontSize: 11, color: 'var(--warning)', marginTop: 10 }}>
+                      Az AI nem teljesen biztos a számokban — ellenőrizd őket mentés előtt.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              <div className="row gap-sm">
+                <button className="cta-ghost flex-1" onClick={() => setPhase('input')}>Vissza</button>
+                <button
+                  className="cta-primary flex-1"
+                  onClick={() => void saveDraft(close)}
+                  disabled={draft == null || saving}
                 >
                   <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Polcra'}
                 </button>

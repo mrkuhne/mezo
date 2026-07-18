@@ -56,6 +56,11 @@ public class PantryImportEntity extends OwnedEntity {
     @Column(length = 32)
     private String barcode;
 
+    /** Scrape provenance (mezo-8vum): the product-page URL the draft came from. Null for OFF/manual. */
+    @Size(max = 2000)
+    @Column(name = "source_url", columnDefinition = "text")
+    private String sourceUrl;
+
     @Column(name = "pantry_item_id", columnDefinition = "uuid")
     private UUID pantryItemId;
 

@@ -54,6 +54,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern FACTS_SENTINEL =
             Pattern.compile("\\[fake-facts:(\\[.*?]|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
+    public static final Pattern SCRAPE_SENTINEL =
+            Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
+
     /** Scripted narrative (V2.2): {@code [fake-summary:…]} payload becomes the summary answer. */
     public static final Pattern SUMMARY_SENTINEL =
             Pattern.compile("\\[fake-summary:([^\\]]*)]", Pattern.DOTALL);
@@ -225,6 +229,13 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(HypothesisPipelineService.REVISE_MARKER)) {
             Matcher m = REVISE_SENTINEL.matcher(userMessage.split("KONTEXTUS:", 2)[0]);
             return m.find() ? m.group(1) : "{}";
+        }
+        // Scrape extraction (mezo-8vum): the served product-page text embeds [fake-scrape:{json}];
+        // returning the JSON verbatim runs the real fetch->strip->prompt->parse path. A page WITHOUT
+        // the sentinel falls through to the prompt echo below (unparseable -> 502), as ITs assert.
+        Matcher scrape = SCRAPE_SENTINEL.matcher(userMessage);
+        if (scrape.find()) {
+            return scrape.group(1);
         }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));

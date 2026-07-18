@@ -2044,6 +2044,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/pantry-import/scrape:
+    post:
+      tags:
+        - PantryScrape
+      operationId: scrapePantryItem
+      summary: >-
+        LLM-extract a pantry draft from any product-page URL (mezo-8vum) —
+        nothing is persisted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PantryScrapeRequest'
+      responses:
+        '200':
+          description: >-
+            Draft extracted (result null when the page carries no nutrition
+            facts)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PantryScrapeResponse'
+        '400':
+          description: Validation error (bad/missing/non-http URL)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: Page unreachable or LLM extraction failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: LLM port unavailable (companion off)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/recipe:
     get:
       tags:
@@ -6347,19 +6394,7 @@ components:
         brand:
           type: string
         source:
-          type: string
-          enum:
-            - kifli.hu
-            - myprotein.hu
-            - tesco.hu
-            - auchan.hu
-            - manual
-            - lidl
-            - nutriversum
-            - herbahaz
-            - nutrifit
-            - decathlon
-            - openfoodfacts
+          $ref: '#/components/schemas/PantrySource'
         category:
           type: string
         per:
@@ -6452,19 +6487,8 @@ components:
           type: boolean
           nullable: true
         source:
-          type: string
-          enum:
-            - kifli.hu
-            - myprotein.hu
-            - tesco.hu
-            - auchan.hu
-            - manual
-            - lidl
-            - nutriversum
-            - herbahaz
-            - nutrifit
-            - decathlon
-            - openfoodfacts
+          allOf:
+            - $ref: '#/components/schemas/PantrySource'
           nullable: true
         per:
           type: number
@@ -6526,19 +6550,8 @@ components:
           type: string
           nullable: true
         source:
-          type: string
-          enum:
-            - kifli.hu
-            - myprotein.hu
-            - tesco.hu
-            - auchan.hu
-            - manual
-            - lidl
-            - nutriversum
-            - herbahaz
-            - nutrifit
-            - decathlon
-            - openfoodfacts
+          allOf:
+            - $ref: '#/components/schemas/PantrySource'
           nullable: true
         category:
           type: string
@@ -6724,6 +6737,109 @@ components:
           minimum: 1
           maximum: 4
           nullable: true
+    PantryScrapeRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          minLength: 12
+          maxLength: 2000
+    PantryScrapeResponse:
+      type: object
+      properties:
+        result:
+          allOf:
+            - $ref: '#/components/schemas/PantryScrapeResult'
+          nullable: true
+    PantryScrapeResult:
+      type: object
+      required:
+        - name
+        - per
+        - unit
+        - kcal
+        - source
+        - sourceUrl
+        - confidence
+        - needsReview
+      properties:
+        name:
+          type: string
+        brand:
+          type: string
+          nullable: true
+        per:
+          type: number
+        unit:
+          type: string
+        kcal:
+          type: number
+        proteinG:
+          type: number
+          nullable: true
+        carbsG:
+          type: number
+          nullable: true
+        fatG:
+          type: number
+          nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
+          nullable: true
+        nova:
+          type: integer
+          minimum: 1
+          maximum: 4
+          nullable: true
+        category:
+          type: string
+          nullable: true
+          enum:
+            - vegetables
+            - fruits
+            - meat
+            - fish
+            - eggs
+            - dairy
+            - cheese
+            - legumes
+            - grains
+            - pasta
+            - bakery
+            - nuts_seeds
+            - oils_fats
+            - condiments
+            - snacks
+            - beverages
+            - supplement
+            - other
+        priceHuf:
+          type: integer
+          nullable: true
+        priceUnit:
+          type: string
+          nullable: true
+        source:
+          $ref: '#/components/schemas/PantrySource'
+        sourceUrl:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        needsReview:
+          type: boolean
     PantryImportRequest:
       type: object
       required:
@@ -6802,6 +6918,21 @@ components:
           minimum: 1
           maximum: 4
           nullable: true
+        sourceUrl:
+          type: string
+          nullable: true
+          maxLength: 2000
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          nullable: true
+        priceHuf:
+          type: integer
+          nullable: true
+        priceUnit:
+          type: string
+          nullable: true
     PantryImportEntryResponse:
       type: object
       required:
@@ -6816,19 +6947,7 @@ components:
           type: string
           format: uuid
         source:
-          type: string
-          enum:
-            - kifli.hu
-            - myprotein.hu
-            - tesco.hu
-            - auchan.hu
-            - manual
-            - lidl
-            - nutriversum
-            - herbahaz
-            - nutrifit
-            - decathlon
-            - openfoodfacts
+          $ref: '#/components/schemas/PantrySource'
         when:
           type: string
           format: date-time
@@ -6852,23 +6971,27 @@ components:
         name:
           type: string
         source:
-          type: string
-          enum:
-            - kifli.hu
-            - myprotein.hu
-            - tesco.hu
-            - auchan.hu
-            - manual
-            - lidl
-            - nutriversum
-            - herbahaz
-            - nutrifit
-            - decathlon
-            - openfoodfacts
+          $ref: '#/components/schemas/PantrySource'
         price:
           type: string
         reason:
           type: string
+    PantrySource:
+      type: string
+      enum:
+        - kifli.hu
+        - myprotein.hu
+        - tesco.hu
+        - auchan.hu
+        - gymbeam.hu
+        - web
+        - manual
+        - lidl
+        - nutriversum
+        - herbahaz
+        - nutrifit
+        - decathlon
+        - openfoodfacts
     RecipeMacros:
       type: object
       required:

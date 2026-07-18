@@ -102,6 +102,14 @@ mezo:
     search-page-size: 8
     # How many recent import-feed rows PantryResponse.imports carries
     feed-size: 5
+  pantry-scrape:
+    # URL-scrape import (mezo-8vum) — outbound product-page fetch + LLM extraction limits.
+    timeout-ms: 8000
+    max-body-bytes: 2000000
+    user-agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+    accept-language: "hu,en;q=0.8"
+    confidence-threshold: 0.6
+    allow-private-hosts: false
   pantry-suggestion:
     # Deterministic Kamra swap heuristics (Fuel P6) — binds onto PantrySuggestionProperties
     # Max suggestions surfaced on the Kamra
@@ -122,6 +130,10 @@ mezo:
     # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
     # the import feed + suggestions in GET /api/pantry stay on regardless.
     pantry-import:
+      enabled: true
+    # Fuel URL-scrape import (mezo-8vum) — LLM extraction from product pages; needs the
+    # companion switch too (CompanionLlm bean), otherwise the endpoint answers 503.
+    pantry-scrape:
       enabled: true
     # Phase-3 companion (LLM chat + AI memory, ADR 0008). Gates every CompanionLlm bean;
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
