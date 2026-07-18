@@ -349,3 +349,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607141200_mezo-05v6_sport_schedule_slot_sport.sql
+  - changeSet:
+      id: "1.0.0:202607181100_mezo-8vum_pantry_scrape"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607181100_mezo-8vum_pantry_scrape.sql
