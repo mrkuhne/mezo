@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Napív")
 type: feature-platform
 status: done
-updated: 2026-07-16
+updated: 2026-07-18
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -12,7 +12,7 @@ key_files:
   - frontend/src/shared/lib/theme.ts
   - frontend/src/shared/lib/daypart.ts
   - frontend/src/shared/lib/cn.ts
-related: [_platform-data-layer, today, train, me]
+related: [_platform-data-layer, today, train, me, fuel, growth]
 ---
 
 # Design System & UI Primitives ("Napív") — Feature Documentation
@@ -48,7 +48,7 @@ src/
 └─ data/       the FE↔BE boundary: per-domain hooks + mock + types + REST client
 ```
 
-**Feature template** (only folders with content appear; `quickinput` has just `sheets/`, `progression` keeps its overlay provider at the feature root):
+**Feature template** (only folders with content appear; `quickinput` has just `sheets/`, `progression` keeps its overlay provider (`LevelUpProvider.tsx`) at the feature root alongside `components/AppHero.tsx` + `sheets/{TitleShopSheet,StreakSheet}.tsx` — the gamified-header slice, `mezo-k7rn`):
 ```
 features/<domain>/
 ├─ pages/        *Section · *Page · *SubNav · tabs.ts · *Skeleton   (the routed layer)
@@ -156,14 +156,14 @@ The S6 slice re-skinned **the entire Fuel domain** onto Napiv — unlike Train's
 The S7 slice re-skinned the entire Me domain onto Napiv; **Insights — then still the sole `.subnav`/`.subnav-item` consumer — followed in S8 (`mezo-8141`, `mezo-mifi`), which retired the `.subnav` CSS entirely** (§9). `MeSubNav` sets **`--pill-accent: var(--lav)`** on `.np-pills` (`MeSubNav.tsx:16` — the lavender active pill, the third parametrization of the S4 pill markup after Train's default coral and Fuel's `--sage`), and every Me page renders `.pghead-np` with the new **`.lav` accent modifier** (`.pghead-np.lav .over { color: var(--lav-deep) }`, `prototype.css:1503`). New CSS lives in `prototype.css:1502–1582`, five blocks:
 
 - **Me accent vocabulary** (`:1502–1505`) — the `.lav` modifier above, plus the new **`--amber-deep`** token (`#9A6A12` light / `#E3B565` dark) — a deeper amber for text-on-tint contexts, paralleling the existing `--sage-deep`/`--lav-deep` pattern. Primary consumer is the `.growth2` XP chip (below); also reused by `GrowthJournalCard`'s per-entry XP figures and `GoalTimeline`'s gap-chip border/text (both pre-existing components picking up the new token, not new markup).
-- **`.mehead`/`.avatar`** (`:1541–1546`) — the Profil identity header: a 64px gradient-fill circular `.avatar` (initials, lavender-ringed via a triple `box-shadow`, its own `data-theme="dark"` gradient override) beside a `.t1`/`.t2` name/biometrics-line stack. Sole consumer `MeHead.tsx`, mounted by every Me page (not just Profil) — see the `useProfile`/identity-statics decision below and [me.md §2](me.md).
+- **`.mehead`/`.avatar` — RETIRED (gamified-header slice, `mezo-k7rn`, 2026-07-18).** Was the Profil identity header (a 64px gradient-fill circular `.avatar` + a `.t1`/`.t2` name/biometrics-line stack), sole consumer `MeHead.tsx`, mounted by every Me page. **`MeHead.tsx` is deleted** — superseded by the cross-feature `.apphero` family (below), now mounted by all 4 main-tab shells (`TodayPage`/`TrainSection`/`FuelSection`/`MeSection`), not just Me. The biometrics line survives as `MeBioRow.tsx` (`features/me/components/`), rendered in `ProfilePage` content instead of the header. The `.mehead`/`.avatar` CSS rules themselves are left in `prototype.css` pending an S8-style cleanup pass (no remaining consumer). See the `useProfile`/identity-statics decision below, [me.md §2](me.md), and [growth.md](growth.md) for the account-progression domain behind `AppHero`.
 - **`.goalmini` + shared `.track`/`.fill`/`.dot`/`.track-l`** (`:1548–1559`) — `.goalmini` is the Profil goal-mini-track button shell; `.track` (a pill progress rail with a sage→amber gradient `.fill` and a ringed `.dot` handle) + `.track-l` (the start/current/target caption row) are **shared, not `.goalmini`-scoped** — both `GoalMiniCard.tsx` (Profil) and the `Cél` hero (`GoalsPage.tsx`) render the identical markup over the identical guard (`total`/`totalRange !== 0` — a `maintain` goal with no target weight hides the track entirely rather than divide-by-zero, `GoalMiniCard.tsx:15,25` / `GoalsPage.tsx:78-79,183`). A `prefers-reduced-motion: no-preference` block animates `.fill`'s width in from 0.
 - **`.biocard`/`.bhd`/`.biogrid`/`.bio`/`.tdee`** (`:1561–1571`) — the Profil Biometria card: `.bhd` is the header row (h3 + `szerkesztés ›` link in `--lav-deep`), `.biogrid` a 2-column stat grid of `.bio` cells (uppercase `.k` label + `--ff-display` tabular-nums `.v` value), and `.tdee` the derived base-TDEE row below a hairline divider (`--sage-deep` value, omitted entirely when `tdeeBootstrap` is null). Sole consumer `BiometricCard.tsx`.
 - **`.growth2` + shared `.skl`** (`:1572–1582`) — `.growth2` is the Profil `GrowthSummaryCard` card shell (`.hd` header row + the `--wash-amber`/`--amber-deep` `.xp` chip). **`.skl`** (icon+name `.k` · a `.bar`/`.bar i` fill-percent meter · a `--lav-deep` `.lv` level readout) is the shared skill-row idiom — reused **verbatim** by two consumers: `GrowthSummaryCard.tsx`'s top-3-across-all-bands preview (Profil) and `SkillBandCard.tsx`'s full per-band listing (the Growth page's Skillek tab, `mezo-rmhr`). `SkillBandCard` adds one **local, non-shared** extension after `.lv` — a right-aligned per-row cumulative-XP `<span>` (inline-styled, not a `.skl` class) — so the shared CSS stays untouched and `GrowthSummaryCard`'s three-slot preview shape is unaffected. A `prefers-reduced-motion: no-preference` block animates `.bar i`'s width in from 0, same as `.track .fill`.
 
 **Typography adjudication (Task 5, spec §3.2 basis).** The spec's eyebrow rule — tiny uppercase labels survive at **10–11px/700–800-weight Jakarta**, letter-spaced, in an accent color, one per card max — governs label-*role* text (card eyebrows, section headers). It does **not** extend to **micro-annotations**: small figures/tags that sit beside a value rather than label a whole card. Both **chart micro-annotations** (e.g. `GoalTimeline`'s week-ruler ticks and plan-lane tags) and **field-row/chip micro-annotations** (the hero's `Most`/`Cél` track-caption labels, `EditGoalSheet`'s field-row labels, `AttachPlanSheet`'s week tag, `GoalGate`'s missing-field chips) are exempt and may render at **8–9px Jakarta** — smaller than the eyebrow band, because they are dense secondary readouts, not card-level labels. This reading was adjudicated during the `Cél` re-skin review (Task 5) and applies wherever this micro-annotation shape recurs, not just in `Cél`.
 
-**`useProfile`/identity-statics decision REVISITED (Task 2, me.md §9).** The Slice-E decision that "no real-mode surface renders the identity statics" is now **superseded**: `MeHead` (S7, this slice) renders `user.name` on every Me page, in **both** modes — the sanctioned exception. `user` (name) stays the static single-user const (still no backend profile-name endpoint); the biometrics line beside it (age/height/latest weight/body-fat%) is genuine real-hook data (`useBiometricProfile`, `useWeight`). Revisit again when a backend profile identity surface exists.
+**`useProfile`/identity-statics decision REVISITED (Task 2, me.md §9; carrier changed `mezo-k7rn`).** The Slice-E decision that "no real-mode surface renders the identity statics" is now **superseded**: the shared `AppHero` (S7's `MeHead` renders this today; `mezo-k7rn` moved the render onto `AppHero` and widened it to every main tab, not just Me) renders `user.name` on every main-tab page, in **both** modes — the sanctioned exception. `user` (name) stays the static single-user const (still no backend profile-name endpoint); the biometrics line that used to sit beside it moved into `ProfilePage` content as `MeBioRow` (age/height/latest weight/body-fat%, genuine real-hook data — `useBiometricProfile`, `useWeight`) since `AppHero` itself carries no biometrics. Revisit again when a backend profile identity surface exists.
 
 Consumption/behavior detail lives in [me.md](me.md) §2/§9 — not duplicated here.
 
@@ -176,6 +176,15 @@ S8 re-skinned the **shared primitives themselves** (the `Common` block, `prototy
 - **`.chip`** — a pill again (`border-radius:999px`), with **`.chip.brand`** the coral *selected* state (`--wash-gym` fill + `--coral` border + `--coral-deep` text, `prototype.css:403–407`) — a surviving `brand` **class name**, not a token.
 - **`.cta-primary`** — a coral-gradient pill (`linear-gradient(--cta-g1,--cta-g2)`, `prototype.css:443–457`); **`.cta-ghost`** a warm pill (`background:var(--warm)`, `prototype.css:459+`).
 - The **`Toggle` thumb** and the **`ScoreRing`** default accent moved to **sage** — on the primitives, not just Fuel.
+
+### Napiv S9 gamified-header classes (`mezo-k7rn`, 2026-07-18)
+
+The gamified-header slice added the **`.apphero`** family to `prototype.css:1531–1559` — the unified identity/progression header consumed by all 4 main-tab shells (`TodayPage`, `TrainSection`, `FuelSection`, `MeSection`), retiring the per-domain `.mehead`/`.avatar` (§ above) and the Today-only `BrandRow`:
+
+- **`.apphero`** (+ `.avwrap`/`.avlink`/`.avatar`/`.lvbadge`/`.t1`/`.t2`/`.util`) — the top identity row: a 62px initials `.avatar` wrapped by an inline-SVG coral XP-progress ring (drawn by the component, not CSS — `AppHero.tsx:31-38`), a corner `.lvbadge` coral pill (current level, links to `/me/growth`), the `.t1` name (links to `/me`) + a `.t2` equipped-title button (opens `TitleShopSheet`), and an optional `.util` slot (`margin-left:auto`) for the per-tab `utilities` prop (Today: search + ✨ Insights; Me: ⚙️ settings; Train/Fuel: none).
+- **`.apphero-chips`** (+ `.apphero-chip.{fire,quest,coin}`) — the stat-chip row directly below: 🔥 streak (amber-deep, opens `StreakSheet`), ⚡ daily-quest done/total (coral-deep, links to `/me/growth`), 🪙 coins (sage-deep, opens `TitleShopSheet`).
+- Both blocks are plain flex rows on `--canvas`/`--ink` tokens (no new wash/tag pair) — the ring/badge/chip colors reuse the existing `--coral`/`--amber-deep`/`--coral-deep`/`--sage-deep` tokens, no new accent was introduced for this slice.
+- Sole consumer: `frontend/src/features/progression/components/AppHero.tsx`, mounted once per tab shell (the `MeHead`-precedent pattern — every sub-page of a tab inherits it). `TitleShopSheet`/`StreakSheet` (`features/progression/sheets/`) are the two bottom sheets it opens; both are ordinary `Sheet` consumers, no new CSS of their own. Behavior + the account-progression domain (XP stream, level curve, coins, streak, titles) are documented in [growth.md](growth.md), not here — this section only owns the CSS family.
 
 ---
 

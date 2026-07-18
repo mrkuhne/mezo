@@ -105,6 +105,9 @@ type GamificationProfile = {
   streakDays: number
   streakSavers: number      // held savers, 0..2
   activeTitleKey: string
+  ownedShopTitleKeys: string[]
+  lastActiveDate: string | null   // last local-ISO day that earned XP; null = seeded state
+  dayCounters: { date: string; counts: Partial<Record<XpEventType, number>> }  // daily-cap bookkeeping (§5.1)
 }
 type Title = {
   key: string
@@ -133,8 +136,9 @@ type XpEventType =
 
 `gamificationStore.awardGamificationEvent(type: XpEventType, xpOverride?: number)`:
 adds XP (respecting §5 caps), updates coins/streak/level, invalidates the gamification
-query key, and returns `{ leveledUp, newLevel }` so callers can fire the existing
-LevelUp overlay and the small "+N XP" toast.
+query key, and **emits its own toast** via `toastBus` (level-up > streak milestone >
+saver notice > plain XP priority) — it does not return data for callers to fire an
+overlay. It also returns `{ leveledUp, newLevel }` for callers that need the raw result.
 
 Call sites (mock-mode mutation hooks; real mode no-ops — the server will award):
 meal log, weight log, sleep log, check-in, medication log (fuel/me domains), gym
@@ -179,6 +183,14 @@ Lv30 = 18 560 XP. No level cap; titles top out at Lv30 for now.
 | Account level-up | +50 |
 | Streak milestone 7 / 30 / 100 days | +50 / +150 / +500 |
 
+The two quest rows are **implementation-deferred**: quest completion is DERIVED
+server-side (evaluated over already-logged data, never self-claimed — the existing
+Growth quest model), so there is no mock-mode "quest completed" event for
+`awardGamificationEvent` to hook. These coin awards land with the backend slice
+(`mezo-huzd`), which computes them server-side alongside the XP ledger. Every other
+row above IS mock-implemented today (level-up + streak milestone coins fire from
+`gamificationStore.awardGamificationEvent`).
+
 ### 6.2 Coin sinks
 
 Shop titles (§7.2) and the **streak saver**: 200 🪙, max 2 held.
@@ -189,7 +201,9 @@ Shop titles (§7.2) and the **streak saver**: 200 🪙, max 2 held.
 - Missed day: if a saver is held, one is auto-consumed and the streak survives (the
   StreakSheet shows "mentő elhasználva"); otherwise the streak resets to 0.
 - Streak state (`streakDays`, `streakSavers`, last-active date) lives in the gamification
-  profile; mock mode evaluates rollover lazily on first read of the day.
+  profile; mock mode evaluates rollover lazily on the **first AWARD of the day** (not the
+  first read) — a day with no XP-earning log never touches the streak, so simply opening
+  the app cannot silently roll it over or burn a saver.
 
 ## 7. Title system (MIX)
 
@@ -246,11 +260,19 @@ temporary, invisible to the hook consumers.
   titles + streak saver, price chips; disabled when coins are insufficient); any owned
   title is equippable from either segment. Coin balance pinned in the sheet header.
 - **`StreakSheet`** — bottom sheet: current streak, next milestone + coin reward, saver
-  count + buy button (shares `buyStreakSaver`), "mentő elhasználva" notice when applicable.
-- **XP toast** — small transient "+10 XP" confirmation after a successful awarded log
-  (mock mode); reuses the app's existing toast/feedback pattern if present, otherwise a
-  minimal fixed-position chip. Account level-up triggers the **existing** LevelUp overlay
-  via `useLevelUp().showLevelUp(...)`.
+  count + buy button (shares `buyStreakSaver`). The "mentő elhasználva" notice does
+  **not** live here as sheet-internal state — it surfaces as the award engine's own
+  info toast at the moment the saver is auto-consumed (see the XP toast bullet below);
+  the sheet itself only shows the current saver count + the buy affordance.
+- **XP toast** — the award function (`awardGamificationEvent`) emits exactly ONE toast
+  per award via the shared `toastBus`, in priority order: **level-up** (`🎉 Szint N —
+  +50 🪙`) > **streak milestone** (`🔥 N napos sorozat — +M 🪙`) > **saver notice**
+  (`🧊 Streak-mentő elhasználva — a sorozat megmaradt`) > **plain XP** (`+N XP`).
+  **Amendment (implementation finding):** account level-up celebrates via this success
+  toast (`🎉 Szint N — +50 🪙`), **not** the existing LevelUp overlay. The existing
+  `LevelUpScreen` stays reserved for skill/quest/activity level-ups: its layout is
+  gains-driven, and an account-level payload with empty `gains` would render the
+  "no level-up" headline instead (`LevelUpScreen.tsx:61`).
 
 ## 10. File map (planned)
 
