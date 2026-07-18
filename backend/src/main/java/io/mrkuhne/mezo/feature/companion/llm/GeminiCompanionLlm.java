@@ -6,10 +6,13 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MimeTypeUtils;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -50,6 +53,19 @@ public class GeminiCompanionLlm implements CompanionLlm {
     public String complete(String systemPrompt, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         return request(systemPrompt, userMessage, tools, toolContext).call().content();
+    }
+
+    @Override
+    public String complete(String systemPrompt, String userMessage, byte[] imageBytes, String mimeType) {
+        return chatClient.prompt()
+            .system(systemPrompt)
+            .user(u -> u.text(userMessage == null || userMessage.isBlank() ? "(no text)" : userMessage)
+                .media(Media.builder()
+                    .mimeType(MimeTypeUtils.parseMimeType(mimeType))
+                    .data(new ByteArrayResource(imageBytes))
+                    .build()))
+            .call()
+            .content();
     }
 
     @Override
