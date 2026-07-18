@@ -20,10 +20,13 @@ let token: string | null = null
 export function setToken(t: string | null) { token = t }
 
 export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // FormData bodies (multipart uploads) MUST NOT carry a manual Content-Type — the browser
+  // sets it together with the multipart boundary. JSON callers are unchanged.
+  const isForm = init.body instanceof FormData
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isForm ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init.headers ?? {}),
     },

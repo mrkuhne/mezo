@@ -7,6 +7,7 @@ import type {
   PantrySuggestion,
   PantryLookupItem,
   PantryScrapeDraft,
+  MealAiDraft,
   MealBreakdown,
   FuelMeal,
 } from '@/data/types'
@@ -342,6 +343,30 @@ export const MOCK_SCRAPE_DRAFT: PantryScrapeDraft = {
   saturatedFatG: 5, nova: 4, category: 'supplement', priceHuf: 24990, priceUnit: '/kg',
   source: 'myprotein.hu', sourceUrl: 'https://www.myprotein.hu/p/impact-whey/10530943/',
   confidence: 1, needsReview: false, barcode: null,
+}
+
+// === Mock AI meal draft (Fuel P8, mezo-78rn) — what the demo AiLogSheet "parses" from text/photo ===
+// One pantry-matched line (references a REAL Kamra seed so the badge + tap-through resolve) + one
+// low-confidence estimate line (needsReview → the review-chip path). `_aiSeed` is the first food seed.
+const _aiSeed = ingredients[0]
+export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
+  slot: 'lunch',
+  title: 'Csirkés wrap + latte',
+  note: null,
+  items: [
+    {
+      source: 'pantry', pantryItemId: _aiSeed.id, recipeId: null, name: _aiSeed.name,
+      amount: 60, unit: _aiSeed.unit, per: _aiSeed.per, basisUnit: _aiSeed.unit,
+      kcal: _aiSeed.macros.kcal, proteinG: _aiSeed.macros.p, carbsG: _aiSeed.macros.c, fatG: _aiSeed.macros.f,
+      nova: _aiSeed.nova, confidence: 1, needsReview: false,
+    },
+    {
+      source: 'estimate', pantryItemId: null, recipeId: null, name: 'Csirkés wrap',
+      amount: 1, unit: 'db', per: 1, basisUnit: 'db',
+      kcal: 450, proteinG: 28, carbsG: 40, fatG: 18,
+      nova: null, confidence: 0.6, needsReview: true,
+    },
+  ],
 }
 
 // === Standalone template breakdowns for orphan recipes (pantry-data.js:335–530) ===

@@ -6,8 +6,8 @@ import { isMockMode } from '@/data/_client/mode'
 import { localDateString } from '@/shared/lib/dates'
 import { useDualQuery } from '@/data/useDualQuery'
 import { fuelDay } from '@/data/fuel/fuel'
-import { ingredients, recipes as mockRecipes } from '@/data/fuel/pantry'
-import type { MealInput, MealItemLine, FuelMeal, FuelDay, MacroSet, RecipeLog } from '@/data/types'
+import { ingredients, recipes as mockRecipes, MOCK_AI_MEAL_DRAFT } from '@/data/fuel/pantry'
+import type { MealInput, MealItemLine, FuelMeal, FuelDay, MacroSet, RecipeLog, MealAiDraft } from '@/data/types'
 
 const FUELDAY_KEY = 'fuelDay'
 const RECIPES_KEY = ['recipes'] as const
@@ -84,10 +84,20 @@ export function useMealActions(date: string = localDateString()) {
     onSuccess: mock ? undefined : invalidate,
   })
 
+  // AI meal draft (mezo-78rn) — an ephemeral read (no cache), like pantry's scrapeItem; mock mode
+  // serves the canned draft after a demo delay, real mode POSTs multipart to /api/meal/ai-draft.
+  const draftMealFromAi = useCallback(
+    (req: { date: string; text?: string; photo?: Blob }): Promise<MealAiDraft> =>
+      mock
+        ? new Promise(resolve => setTimeout(() => resolve(MOCK_AI_MEAL_DRAFT), 600))
+        : mealApi.aiDraft(req),
+    [mock],
+  )
+
   const logMeal = useCallback((input: MealInput) => logM.mutate(input), [logM])
   const updateMeal = useCallback((id: string, input: MealInput) => updateM.mutate({ id, input }), [updateM])
   const deleteMeal = useCallback((id: string) => deleteM.mutate(id), [deleteM])
-  return { logMeal, updateMeal, deleteMeal }
+  return { logMeal, updateMeal, deleteMeal, draftMealFromAi }
 }
 
 /** Water intake write on the ['fuelDay', date] cache. Mock increments consumed.water in place;
@@ -141,8 +151,23 @@ const SLOT_LABEL: Record<MealInput['slot'], string> = {
   breakfast: 'Reggeli', lunch: 'Ebéd', dinner: 'Vacsora', snack: 'Snack',
 }
 
-/** Resolve a request item to a snapshot (name/per/macros/nova) from the mock seeds, then scale. */
+/** Resolve a request item to a snapshot (name/per/macros/nova) from the mock seeds, then scale.
+ *  An estimate line carries its own snapshot (no seed lookup) — same round(macro/per × amount) rule. */
 function buildLine(item: MealInput['items'][number]): MealItemLine {
+  if (item.source === 'estimate') {
+    const per = Math.max(1, item.per)
+    return {
+      source: 'estimate', refId: '', amount: item.amount, unit: item.unit,
+      name: item.name,
+      contribution: {
+        kcal: Math.round((item.kcal / per) * item.amount),
+        p: Math.round((item.proteinG / per) * item.amount),
+        c: Math.round((item.carbsG / per) * item.amount),
+        f: Math.round((item.fatG / per) * item.amount),
+      },
+      nova: item.nova ?? undefined,
+    }
+  }
   if (item.source === 'recipe') {
     const r = mockRecipes.find(x => x.id === item.refId)
     const per = Math.max(1, r?.servings ?? 1)

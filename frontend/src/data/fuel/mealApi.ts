@@ -1,13 +1,15 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
 import type {
-  MealInput, MealInputItem, FuelMeal, MealItemLine, MacroSet,
+  MealInput, FuelMeal, MealItemLine, MacroSet, MealSlot, MealItemSource,
+  MealAiDraft, MealAiDraftLine,
   MealBreakdown, MealDimension, MicroStatus, ToolType,
 } from '@/data/types'
 import type { NovaGroup } from '@/data/nova'
 
 type MealRequest = components['schemas']['MealRequest']
 type MealItemRequest = components['schemas']['MealItemRequest']
+type MealAiDraftResponse = components['schemas']['MealAiDraftResponse']
 type MealResponse = components['schemas']['MealResponse']
 type MealItemResponse = components['schemas']['MealItemResponse']
 type FuelDayResponse = components['schemas']['FuelDayResponse']
@@ -97,20 +99,25 @@ export interface FuelWeekData {
   days: FuelWeekDay[]
 }
 
-/** Editor input → contract request. The single `refId` is routed to recipeId | pantryItemId by
- *  source; the unused arm is sent as null so the server's exactly-one-of CHECK is satisfied. */
+/** Editor input → contract request. A recipe/pantry `refId` is routed to recipeId | pantryItemId
+ *  by source (the unused arm sent null so the server's exactly-one-of CHECK is satisfied); an
+ *  estimate line carries its own per-basis macro snapshot (no ref). `provenance` rides along. */
 export function toRequest(input: MealInput): MealRequest {
   return {
     slot: input.slot,
     loggedAt: input.loggedAt ?? null,
     title: input.title ?? null,
-    items: input.items.map((i: MealInputItem): MealItemRequest => ({
-      source: i.source,
-      recipeId: i.source === 'recipe' ? i.refId : null,
-      pantryItemId: i.source === 'pantry' ? i.refId : null,
-      amount: i.amount,
-      unit: i.unit,
-    })),
+    items: input.items.map(it =>
+      it.source === 'estimate'
+        ? ({ source: 'estimate', recipeId: null, pantryItemId: null,
+            amount: it.amount, unit: it.unit, name: it.name, per: it.per,
+            basisUnit: it.basisUnit, kcal: it.kcal, proteinG: it.proteinG,
+            carbsG: it.carbsG, fatG: it.fatG, nova: it.nova ?? null } satisfies MealItemRequest)
+        : ({ source: it.source,
+            recipeId: it.source === 'recipe' ? it.refId : null,
+            pantryItemId: it.source === 'pantry' ? it.refId : null,
+            amount: it.amount, unit: it.unit } satisfies MealItemRequest)),
+    provenance: input.provenance ?? null,
   } satisfies MealRequest
 }
 
@@ -155,6 +162,33 @@ function fromDayResponse(d: FuelDayResponse): FuelDayData {
   }
 }
 
+/** Contract AI-draft envelope → domain MealAiDraft. Structural mapper (mirrors fromScrapeResult):
+ *  normalizes the optional/nullable contract fields to explicit nulls the FE draft type expects. */
+export function fromAiDraftResponse(r: MealAiDraftResponse): MealAiDraft {
+  return {
+    slot: r.slot as MealSlot,
+    title: r.title ?? null,
+    note: r.note ?? null,
+    items: r.items.map((it): MealAiDraftLine => ({
+      source: it.source as MealItemSource,
+      pantryItemId: it.pantryItemId ?? null,
+      recipeId: it.recipeId ?? null,
+      name: it.name,
+      amount: it.amount,
+      unit: it.unit,
+      per: it.per,
+      basisUnit: it.basisUnit,
+      kcal: it.kcal,
+      proteinG: it.proteinG,
+      carbsG: it.carbsG,
+      fatG: it.fatG,
+      nova: it.nova ?? null,
+      confidence: it.confidence,
+      needsReview: it.needsReview,
+    })),
+  }
+}
+
 export const mealApi = {
   getDay: (date: string): Promise<FuelDayData> =>
     apiFetch<FuelDayResponse>(`/api/fuel/day/${date}`).then(fromDayResponse),
@@ -169,6 +203,15 @@ export const mealApi = {
     apiFetch(`/api/meal/${id}`, { method: 'PUT', body: JSON.stringify(toRequest(input)) }).then(() => undefined),
   remove: (id: string): Promise<void> =>
     apiFetch(`/api/meal/${id}`, { method: 'DELETE' }).then(() => undefined),
+  // AI meal draft (mezo-78rn): multipart (date required, text/photo optional) → parsed draft.
+  // The browser sets the multipart boundary — apiFetch omits its JSON Content-Type for FormData.
+  aiDraft: (req: { date: string; text?: string; photo?: Blob }): Promise<MealAiDraft> => {
+    const form = new FormData()
+    form.append('date', req.date)
+    if (req.text) form.append('text', req.text)
+    if (req.photo) form.append('photo', req.photo, 'photo.jpg')
+    return apiFetch<MealAiDraftResponse>('/api/meal/ai-draft', { method: 'POST', body: form }).then(fromAiDraftResponse)
+  },
   logWater: (date: string, amountMl: number): Promise<void> =>
     apiFetch('/api/water-log', { method: 'POST', body: JSON.stringify({ date, amountMl } satisfies WaterLogRequest) }).then(() => undefined),
 }
