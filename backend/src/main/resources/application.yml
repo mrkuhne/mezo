@@ -110,6 +110,14 @@ mezo:
     accept-language: "hu,en;q=0.8"
     confidence-threshold: 0.6
     allow-private-hosts: false
+  meal-ai-log:
+    max-photo-bytes: 5000000
+    allowed-mime-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+    confidence-threshold: 0.6
+    max-items: 12
   pantry-suggestion:
     # Deterministic Kamra swap heuristics (Fuel P6) — binds onto PantrySuggestionProperties
     # Max suggestions surfaced on the Kamra
@@ -134,6 +142,10 @@ mezo:
     # Fuel URL-scrape import (mezo-8vum) — LLM extraction from product pages; needs the
     # companion switch too (CompanionLlm bean), otherwise the endpoint answers 503.
     pantry-scrape:
+      enabled: true
+    # AI meal logging (mezo-78rn) — text/photo -> LLM draft; needs the companion switch too
+    # (CompanionLlm bean), otherwise the ai-draft endpoint answers 503.
+    meal-ai-log:
       enabled: true
     # Phase-3 companion (LLM chat + AI memory, ADR 0008). Gates every CompanionLlm bean;
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
