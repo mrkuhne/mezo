@@ -21,7 +21,7 @@ const newMeal: MealInput = {
   items: [{ source: 'pantry', refId: 'ing-zab', amount: 70, unit: 'g' }],
 }
 
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => { vi.useRealTimers(); vi.unstubAllEnvs() })
 
 describe('useFuelDay (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -64,6 +64,42 @@ describe('useFuelDay (mock mode)', () => {
     act(() => result.current.actions.deleteMeal(id))
     await waitFor(() => expect(result.current.read.fuel.meals.length).toBe(before - 1))
     expect(result.current.read.fuel.meals.some(m => m.id === id)).toBe(false)
+  })
+
+  it('draftMealFromAi returns the canned draft in mock mode', async () => {
+    vi.useFakeTimers()
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useMealActions(), { wrapper: Wrapper })
+    const promise = result.current.draftMealFromAi({ date: '2026-07-18', text: 'csirkés wrap' })
+    await vi.advanceTimersByTimeAsync(700)
+    const draft = await promise
+    expect(draft.items.length).toBeGreaterThan(0)
+    expect(draft.items.some(l => l.source === 'estimate')).toBe(true)
+    vi.useRealTimers()
+  })
+
+  it('logMeal accepts an estimate line and computes its contribution from snapshots', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ read: useFuelDay('2026-07-18'), actions: useMealActions('2026-07-18') }),
+      { wrapper: Wrapper },
+    )
+    const before = result.current.read.fuel.meals.length
+    act(() => result.current.actions.logMeal({
+      slot: 'lunch',
+      loggedAt: new Date('2026-07-18T12:00:00Z').toISOString(),
+      title: null,
+      items: [{ source: 'estimate', name: 'Csirkés wrap', amount: 1, unit: 'db',
+                per: 1, basisUnit: 'db', kcal: 450, proteinG: 28, carbsG: 40, fatG: 18 }],
+      provenance: { origin: 'ai-text', rawText: 'csirkés wrap' },
+    }))
+    await waitFor(() => expect(result.current.read.fuel.meals.length).toBe(before + 1))
+    // per = amount = 1 ⇒ contribution equals the given snapshot macros (round(450/1×1) = 450)
+    const added = result.current.read.fuel.meals.at(-1)!
+    expect(added.mealItems[0].source).toBe('estimate')
+    expect(added.mealItems[0].contribution.kcal).toBe(450)
+    expect(added.kcal).toBe(450)
+    expect(added.score).toBeNull()
   })
 })
 

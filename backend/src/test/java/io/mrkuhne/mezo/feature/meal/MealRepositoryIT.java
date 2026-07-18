@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
+import io.mrkuhne.mezo.feature.meal.entity.MealProvenanceJson;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
@@ -14,6 +15,8 @@ import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -91,5 +94,44 @@ class MealRepositoryIT extends AbstractIntegrationTest {
         mealPopulator.createPantryMeal(stranger, food);
 
         assertThat(repository.findByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(owner, MEAL_DAY)).isEmpty();
+    }
+
+    // mezo-78rn: AI-estimated line (source='estimate', both FKs NULL) + typed-jsonb provenance envelope.
+    @Test
+    void testSave_shouldRoundTripProvenanceAndEstimateLine_whenAiOrigin() {
+        UUID owner = databasePopulator.populateUser("ai-owner@test.local");
+
+        MealEntity meal = new MealEntity();
+        meal.setCreatedBy(owner);
+        meal.setLoggedAt(Instant.parse("2026-07-18T12:00:00Z"));
+        meal.setMealDate(LocalDate.of(2026, 7, 18));
+        meal.setSlot("lunch");
+        meal.setProvenance(new MealProvenanceJson("ai-text", null, new BigDecimal("0.80"), "csirkés wrap"));
+
+        MealItemEntity line = new MealItemEntity();
+        line.setCreatedBy(owner);
+        line.setMeal(meal);
+        line.setLineOrder(0);
+        line.setSource("estimate");
+        line.setAmount(new BigDecimal("1"));
+        line.setUnit("db");
+        line.setSnapshotName("Csirkés wrap");
+        line.setSnapshotPer(new BigDecimal("1"));
+        line.setSnapshotBasisUnit("db");
+        line.setSnapshotKcal(new BigDecimal("450"));
+        line.setSnapshotProteinG(new BigDecimal("28"));
+        line.setSnapshotCarbsG(new BigDecimal("40"));
+        line.setSnapshotFatG(new BigDecimal("18"));
+        meal.getItems().add(line);
+
+        MealEntity saved = repository.saveAndFlush(meal);
+        entityManager.clear();
+
+        MealEntity found = repository.findById(saved.getId()).orElseThrow();
+        assertThat(found.getProvenance().origin()).isEqualTo("ai-text");
+        assertThat(found.getProvenance().rawText()).isEqualTo("csirkés wrap");
+        assertThat(found.getItems().getFirst().getSource()).isEqualTo("estimate");
+        assertThat(found.getItems().getFirst().getRecipeId()).isNull();
+        assertThat(found.getItems().getFirst().getPantryItemId()).isNull();
     }
 }

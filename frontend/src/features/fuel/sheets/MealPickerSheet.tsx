@@ -17,7 +17,7 @@ import { MacroCells } from '@/features/fuel/components/MacroCells'
 
 export interface MealPickedItem {
   source: 'recipe' | 'pantry'
-  refId: string // recipeId (source 'recipe') or pantryItemId (source 'pantry') — canonical MealInputItem
+  refId: string // recipeId (source 'recipe') or pantryItemId (source 'pantry') — canonical MealItemInput
   amount: number
   unit: string
 }

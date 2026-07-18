@@ -54,7 +54,7 @@ public class MealItemEntity extends OwnedEntity {
 
     @NotNull
     @Column(nullable = false)
-    private String source; // recipe | pantry (DB CHECK ck_meal_item_source)
+    private String source; // recipe | pantry | estimate (DB CHECK ck_meal_item_source)
 
     @Column(name = "recipe_id")
     private UUID recipeId;

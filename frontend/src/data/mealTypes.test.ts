@@ -1,5 +1,5 @@
 import { describe, it, expectTypeOf } from 'vitest'
-import type { MealSlot, MealItemSource, MealItemLine, MealInput, MealInputItem, FuelMeal } from '@/data/types'
+import type { MealSlot, MealItemSource, MealItemLine, MealInput, MealItemInput, FuelMeal } from '@/data/types'
 
 describe('meal domain types', () => {
   it('MealSlot is the 4-slot union', () => {
@@ -26,8 +26,8 @@ describe('meal domain types', () => {
   it('MealInput is the editor payload (slot + nullable loggedAt/title + items)', () => {
     const input: MealInput = {
       slot: 'breakfast', loggedAt: null, title: null,
-      items: [{ source: 'pantry', refId: 'p-zab', amount: 70, unit: 'g' } satisfies MealInputItem],
+      items: [{ source: 'pantry', refId: 'p-zab', amount: 70, unit: 'g' } satisfies MealItemInput],
     }
-    expectTypeOf(input.items[0]).toEqualTypeOf<MealInputItem>()
+    expectTypeOf(input.items[0]).toEqualTypeOf<MealItemInput>()
   })
 })

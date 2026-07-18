@@ -126,3 +126,58 @@ canonical draft synchronously. Request bodies `satisfies` the generated types.
 - **Out of scope:** companion chat write-tool (separate policy decision), photo storage (pure
   ephemeral — no photoRef reserved), barcode-from-photo, streaming draft, multi-meal batch
   from one photo.
+
+## Implementation deviations (2026-07-18)
+
+What actually shipped differs from the design above on a few points (the design is left intact as
+the point-in-time artifact; these are the corrections):
+
+- **Consumer-owned `MealDraftLlm` port, not a direct `meal → companion.CompanionLlm` import.** The
+  Backend §4 "one-way import" would have formed an ArchUnit feature-slice cycle (companion already
+  depends transitively on meal: `companion → meal`). Resolved with the pattern the scrape sibling
+  established the same day — meal **owns the port** (`MealDraftLlm` in `feature/meal/service`, a
+  text-only `complete` + the multimodal overload) and companion provides `MealDraftLlmAdapter`
+  (`feature/companion/llm`, `@ConditionalOnProperty(COMPANION_SWITCH)`) delegating to `CompanionLlm`.
+  So the only cross-feature edge runs companion → meal and ArchUnit stays green; meal reaches the
+  port via `ObjectProvider<MealDraftLlm>`, so companion-off → no adapter bean → the endpoint's clean
+  503. See **[ADR 0012](../../decisions/0012-consumer-owned-llm-ports.md)** — which the URL-scrape
+  ADR already anticipated would govern this feature, superseding this spec's "meal → companion edge".
+- **`ck_meal_item_arm` ALSO widened.** The DB §1 note listed only `ck_meal_item_source`. But the
+  original `meal_item` also carried an arm CHECK (`ck_meal_item_arm`) forbidding both FKs null — a
+  FK-less `estimate` line violated it. The changeset drops+re-adds BOTH: `source` gains `estimate`,
+  and the arm gains `(source = 'estimate' and recipe_id is null and pantry_item_id is null)`.
+- **Switch-off is a 405, not the 404 the spec's Testing section assumed.** Unlike
+  `/api/pantry-import/scrape` (a leaf path → 404 when its controller is gone), `/api/meal/ai-draft`
+  collides with the `/api/meal/{id}` path-variable pattern; with the `@ConditionalOnProperty`
+  controller dropped, the surviving `POST /api/meal/{id}` route yields `405`. A NEW techcore handler
+  (`GlobalExceptionHandler.handleMethodNotAllowed`, `HttpRequestMethodNotSupportedException` → a
+  clean `METHOD_NOT_ALLOWED` SystemMessage) replaces what was a stack-trace-noisy generic 500 — a
+  small platform improvement that outlives this feature. `MealAiDraftSwitchOffApiIT` asserts the
+  generic `METHOD_NOT_ALLOWED` body (not a `MEAL_AI_*` code — the handler/service never ran).
+- **The `FakeCompanionLlm` meal sentinel is GREEDY** (`\[fake-meal:(\{.*})]`), unlike the scrape
+  sentinel's reluctant `(\{.*?})`. The meal draft payload `{"slot":…,"items":[{…},{…}]}` nests
+  objects inside `items`, so a reluctant match would stop at the first `}]` and truncate the JSON;
+  the match must run to the LAST brace. The fake matches it in BOTH the user text and the
+  UTF-8-decoded image bytes, so photo-only ITs drive canned JSON through the real multipart plumbing.
+- **Estimate-line macro basis: `per = amount`, not per-100g.** An estimate line's LLM macros are for
+  the stated portion, so the snapshot stores `per = amount` (whole-portion totals) and the read-time
+  `factor = amount/per` is exactly 1 — matching how the FE `buildLine` and the confirm path scale it.
+- **Boundary-INCLUSIVE confidence.** `needsReview` fires on `confidence <= confidence-threshold`
+  (not `<`): a >30%-off Atwater draft scores **exactly** the 0.6 threshold in IEEE-754 and must be
+  reviewed. Same idiom as the scrape sibling; a demoted (hallucinated-id) line always forces review
+  regardless. `MealAiDraftValidator` accumulates the penalty and subtracts ONCE (`1.0 − (a+b)`) to
+  avoid IEEE-754 compounding (`1.0−0.3−0.2 = 0.49999…` vs the exact `0.5`).
+- **Shared Jackson-3 `ObjectMapper`.** `MealAiDraftService` injects the Boot-managed
+  `tools.jackson.databind.ObjectMapper` (Jackson 3, `tools.jackson.*`) rather than instantiating
+  one — consistent with the scrape extractor and the rest of the Boot 4 stack.
+- **Multipart container limits raised so the app cap is the effective limit (final-review fix).**
+  Boot's default 1 MB `spring.servlet.multipart.max-file-size` would reject a 1–5 MB photo during
+  multipart parsing — BEFORE `MealAiDraftService`'s `mezo.meal-ai-log.max-photo-bytes` (5 MB) check —
+  making the configured 5 MB cap unreachable, and (worse) surfacing the container breach as an
+  unhandled `MaxUploadSizeExceededException` → generic 500 instead of the spec's 400 "photo too big".
+  Fixed by raising the container caps in `application.yml` (`spring.servlet.multipart.max-file-size:
+  6MB`, `max-request-size: 7MB`) comfortably above the 5 MB app cap so the SERVICE check stays the
+  effective, message-bearing limit, plus a dedicated `GlobalExceptionHandler.handleMaxUploadSize`
+  (`MaxUploadSizeExceededException` → 400 field "photo") as the safety net if the container cap is
+  ever hit anyway. `MealAiUploadLimitApiIT` (10 kB container cap, 20 kB photo → 400) proves the
+  handler; `MealAiDraftApiIT`'s size-cap test still exercises the SERVICE path under the raised cap.
