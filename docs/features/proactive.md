@@ -1414,8 +1414,10 @@ renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. **W2:**
 (anniversaryNote null, mode live); returns null memoir on the default 404; returns the seed +
 anniversaryNote without fetching in mock mode; `features/insights/pages/MemoirPage.test.tsx` gains a
 real-mode describe (renders the real memoir + anchors, no reactions/anniversary/archive; the 404 shows
-the honest „készül" placeholder, not demo fiction); `InsightsSubNav.test.tsx` + `insights.nav.test.tsx`
-flip Memoir from hidden to visible (5 real-mode tabs incl. Memoir). **H1:**
+the honest „készül" placeholder, not demo fiction); `insights.nav.test.tsx` flips Memoir from hidden to
+visible (5 real-mode tabs incl. Memoir) — at the time `InsightsSubNav.test.tsx` covered this too, but
+that file is since deleted with the component it tested (compact-header redesign, `mezo-ugqb`; the
+dropdown-based `SubNavDropdown`/`insights.nav.test.tsx` cover the same visibility behavior now). **H1:**
 `data/today/heartbeatHooks.test.tsx` (3) — maps the wire note to `CompanionNote`; null on the
 default 404; mock null without fetching (byte-parity);
 `features/today/components/CompanionNoteCard.test.tsx` (2) — nudge/closing eyebrow copy. **P1:**
@@ -1423,12 +1425,12 @@ default 404; mock null without fetching (byte-parity);
 derived window label; `[]` on the default empty array; mock seed without fetching;
 `features/insights/pages/PredictionsPage.test.tsx` gains a real-mode describe (real cards + „tanulom"
 on null confidence + derived accuracy header, no `hamarosan`; empty array → the honest null-state);
-`InsightsSubNav.test.tsx` + `insights.nav.test.tsx` flip Predictions from hidden to visible. **P2:**
+`insights.nav.test.tsx` flips Predictions from hidden to visible. **P2:**
 `data/insights/experimentsHooks.test.tsx` (3) — maps a proposed wire row (day 0, outcomeGood
 undefined); `[]` on the default; mock seed without fetching;
 `features/insights/pages/ExperimentsPage.test.tsx` gains a real-mode describe (a proposed row +
 Elfogadom/Elvetem, clicking Elfogadom POSTs the decision; the empty-array null-state);
-`InsightsSubNav.test.tsx` + `insights.nav.test.tsx` flip Experiments from hidden to visible (**all 7
+`insights.nav.test.tsx` flips Experiments from hidden to visible (**all 7
 tabs now**). MSW defaults: `/api/proactive/{briefing,weekly-suggestion,memoir,heartbeat}` return 404,
 `/api/proactive/prediction` and **`/api/proactive/experiment` return `200 []`**, plus default
 `POST …/experiment/{propose,{id}/decision}` handlers (list endpoints' honest default is an empty array).
@@ -1767,7 +1769,7 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{…P1 classes…,ExperimentPersistenceIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ExperimentJobIT,ExperimentJobSwitchOffIT,ProactiveApiExperimentIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/support/populator/{…,PredictionPopulator,ExperimentPopulator}.java` + `support/ResetDatabase.java` (`…prediction, experiment` in the TRUNCATE list).
-- FE: `…P1 tests…`, `frontend/src/data/insights/experimentsHooks.test.tsx`, `frontend/src/features/insights/pages/{ExperimentsPage.test.tsx,InsightsSubNav.test.tsx,insights.nav.test.tsx}`, `frontend/src/test/msw/handlers.ts` (four defaults 404 + prediction/experiment `200 []` + experiment POST handlers).
+- FE: `…P1 tests…`, `frontend/src/data/insights/experimentsHooks.test.tsx`, `frontend/src/features/insights/pages/{ExperimentsPage.test.tsx,insights.nav.test.tsx}` (`InsightsSubNav.test.tsx` deleted with the component, compact-header redesign `mezo-ugqb`), `frontend/src/test/msw/handlers.ts` (four defaults 404 + prediction/experiment `200 []` + experiment POST handlers).
 
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)

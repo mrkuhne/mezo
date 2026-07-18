@@ -19,7 +19,7 @@ frontend/src/
 
 ```
 features/<domain>/
-├─ pages/        *Section · *Page · *SubNav · tabs.ts · *Skeleton   (the routed layer)
+├─ pages/        *Section · *Page · tabs.ts · *Skeleton   (the routed layer)
 ├─ components/   presentational components + their small pure view-helpers
 ├─ sheets/       *Sheet / *Modal bottom-sheets
 └─ logic/        pure feature logic / derivations / feature-local logic hooks
@@ -31,11 +31,11 @@ Only folders with content exist. A non-routed full-screen overlay provider (e.g.
 
 | You are adding… | Name it | Put it in |
 |---|---|---|
-| a tab-root that renders a `SubNav` + `<Outlet>` | `<Domain>Section` | `pages/` |
+| a tab-root that renders `AppHero` (its sub-nav, if any, via `SubNavDropdown` in `AppHero`'s `utilities`) + `<Outlet>` | `<Domain>Section` | `pages/` |
 | any routed leaf — an `<Outlet>` child **or** a standalone full-page route | `<Name>Page` | `pages/` |
 | a modal / bottom-sheet | `<Name>Sheet` (or `<Name>Modal`) | `sheets/` |
 | a loading skeleton for a page | `<Name>Skeleton` | `pages/` (next to its page) |
-| a sub-navigation bar / its tab config | `<Domain>SubNav` / `tabs.ts` | `pages/` |
+| a section's sub-navigation | a `tabs.ts` list (`{id,to,label,end?}[]`) passed to `@/shared/ui/SubNavDropdown` inside `AppHero`'s `utilities` slot — **no `*SubNav` component** (retired, compact-header redesign `mezo-ugqb`) | `pages/` (`tabs.ts` only) |
 | a presentational unit | `<Name>Card/Panel/Row/Hero/Stat/Bar/Grid/Chip/Cell` | `components/` |
 | pure logic / a derivation / a feature-local logic hook | descriptive `.ts` (`planner.ts`, `agenda.ts`, `useEditableNumber.ts`) | `logic/` |
 
@@ -65,7 +65,7 @@ Only folders with content exist. A non-routed full-screen overlay provider (e.g.
 **Add a routed page under an existing tab:**
 1. Create `features/<domain>/pages/<Name>Page.tsx` (+ `<Name>Page.test.tsx`).
 2. Register it in `app/router.tsx` — as a child of the domain's `*Section` (shows the sub-nav) or as a top-level sibling route (full-screen, no sub-nav, like `train/session`).
-3. If it has a sub-nav entry, add it to the domain's `pages/tabs.ts` / `*SubNav`.
+3. If it has a sub-nav entry, add it to the domain's `pages/tabs.ts` list — that's the only file to touch; the list is rendered by the shared `@/shared/ui/SubNavDropdown` inside the section's `AppHero` `utilities` prop (no per-domain `*SubNav` component).
 4. Data via `useXxx()` from `@/data/hooks`; loading via a colocated `<Name>Skeleton`.
 
 **Add a bottom-sheet:** create `features/<domain>/sheets/<Name>Sheet.tsx` wrapping `@/shared/ui/Sheet` (whose props are `children`/`onClose`/`className`/`labelledBy` — there is **no `open` prop**). The opener (a page/component) owns a `useState` boolean and **conditionally mounts** the sheet — `{open && <XSheet onClose={() => setOpen(false)} … />}` — which is the idiom 30 of the 31 sheets use.

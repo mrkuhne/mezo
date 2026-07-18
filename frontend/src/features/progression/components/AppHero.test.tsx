@@ -16,14 +16,27 @@ const renderHero = (utilities?: React.ReactNode) =>
     </QueryWrapper>,
   )
 
-test('renders identity, level badge, equipped title and the three chips', () => {
+test('renders identity, level badge, equipped title and the label-less counters', () => {
   renderHero()
   expect(screen.getByText('Daniel')).toBeInTheDocument()
   expect(screen.getByText('A Fegyelmezett')).toBeInTheDocument()
   expect(screen.getByLabelText('Szint 12 — Growth')).toBeInTheDocument()
-  expect(screen.getByText('🔥 6 nap')).toBeInTheDocument()
-  expect(screen.getByText('⚡ 1/3 quest')).toBeInTheDocument() // mockQuestDay: 1 of 3 completed
+  expect(screen.getByText('🔥 6')).toBeInTheDocument()
+  expect(screen.getByText('⚡ 1/3')).toBeInTheDocument() // mockQuestDay: 1 of 3 completed
   expect(screen.getByText('🪙 240')).toBeInTheDocument()
+})
+
+test('counters keep the full Hungarian wording for screen readers', () => {
+  renderHero()
+  expect(screen.getByLabelText('6 napos sorozat')).toBeInTheDocument()
+  expect(screen.getByLabelText('1/3 napi quest')).toBeInTheDocument()
+  expect(screen.getByLabelText('240 érme')).toBeInTheDocument()
+})
+
+test('single row: the chips band is gone, counters live inside .apphero', () => {
+  const { container } = renderHero()
+  expect(container.querySelector('.apphero-chips')).toBeNull()
+  expect(container.querySelector('.apphero .counters')).toBeInTheDocument()
 })
 
 test('renders the per-tab utilities slot', () => {
@@ -31,18 +44,18 @@ test('renders the per-tab utilities slot', () => {
   expect(screen.getByLabelText('Keresés')).toBeInTheDocument()
 })
 
-test('🔥 chip opens the StreakSheet, 🪙 chip opens the TitleShopSheet', async () => {
+test('🔥 opens the StreakSheet, 🪙 opens the TitleShopSheet', async () => {
   renderHero()
-  await userEvent.click(screen.getByText('🔥 6 nap'))
+  await userEvent.click(screen.getByLabelText('6 napos sorozat'))
   expect(await screen.findByText('🔥 6 napos sorozat')).toBeInTheDocument()
   await userEvent.keyboard('{Escape}')
-  await userEvent.click(screen.getByText('🪙 240'))
+  await userEvent.click(screen.getByLabelText('240 érme'))
   expect(await screen.findByText('Title-ök')).toBeInTheDocument()
 })
 
-test('avatar links to /me, level badge and quest chip link to /me/growth', () => {
+test('avatar links to /me, level badge and quest counter link to /me/growth', () => {
   renderHero()
   expect(screen.getByLabelText('Profil')).toHaveAttribute('href', '/me')
   expect(screen.getByLabelText('Szint 12 — Growth')).toHaveAttribute('href', '/me/growth')
-  expect(screen.getByText('⚡ 1/3 quest')).toHaveAttribute('href', '/me/growth')
+  expect(screen.getByLabelText('1/3 napi quest')).toHaveAttribute('href', '/me/growth')
 })

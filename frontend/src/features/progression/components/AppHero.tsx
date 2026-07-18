@@ -5,11 +5,12 @@ import { StreakSheet } from '@/features/progression/sheets/StreakSheet'
 import { TitleShopSheet } from '@/features/progression/sheets/TitleShopSheet'
 import { localDateString } from '@/shared/lib/dates'
 
-const RING_R = 28
+const RING_R = 22
 const RING_C = 2 * Math.PI * RING_R
 
-/** The unified identity header on all 4 main tabs (spec §3). Per-tab controls arrive
- *  via `utilities` (Today: search + Insights, Me: settings). */
+/** The unified identity header on all 5 sections — one sticky avatar-height row
+ *  (compact-header spec §3). Per-section content arrives via `utilities`
+ *  (SubNavDropdown on Train/Fuel/Me/Insights; search + Insights link on Today). */
 export function AppHero({ utilities }: { utilities?: ReactNode }) {
   const { user } = useProfile()
   const { profile } = useGamification()
@@ -25,15 +26,15 @@ export function AppHero({ utilities }: { utilities?: ReactNode }) {
   return (
     <>
       <div className="apphero">
-        {/* Two sibling links, not nested (invalid HTML): avatar → /me, level badge → /me/growth (spec §3.1). */}
+        {/* Two sibling links, not nested (invalid HTML): avatar → /me, level badge → /me/growth. */}
         <div className="avwrap">
           <Link to="/me" className="avlink np-press" aria-label="Profil">
-            <svg viewBox="0 0 62 62" width="62" height="62" aria-hidden="true">
-              <circle cx="31" cy="31" r={RING_R} fill="none" stroke="var(--line)" strokeWidth="3.5" />
+            <svg viewBox="0 0 48 48" width="48" height="48" aria-hidden="true">
+              <circle cx="24" cy="24" r={RING_R} fill="none" stroke="var(--line)" strokeWidth="3" />
               <circle
-                cx="31" cy="31" r={RING_R} fill="none" stroke="var(--coral)" strokeWidth="3.5"
+                cx="24" cy="24" r={RING_R} fill="none" stroke="var(--coral)" strokeWidth="3"
                 strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - progress)}
-                transform="rotate(-90 31 31)"
+                transform="rotate(-90 24 24)"
               />
             </svg>
             <span className="avatar" aria-hidden="true">{initials}</span>
@@ -42,24 +43,35 @@ export function AppHero({ utilities }: { utilities?: ReactNode }) {
             {profile.level}
           </Link>
         </div>
-        <div>
+        <div className="idcol">
           <Link to="/me" className="t1">{user.name}</Link>
           <button type="button" className="t2 np-press" onClick={() => setSheet('titles')}>
             {activeTitle?.name ?? ''}
           </button>
         </div>
+        <div className="counters">
+          <button
+            type="button" className="cnt fire np-press"
+            aria-label={`${profile.streakDays} napos sorozat`}
+            onClick={() => setSheet('streak')}
+          >
+            🔥 {profile.streakDays}
+          </button>
+          <Link
+            to="/me/growth" className="cnt quest np-press"
+            aria-label={`${done}/${quests.length} napi quest`}
+          >
+            ⚡ {done}/{quests.length}
+          </Link>
+          <button
+            type="button" className="cnt coin np-press"
+            aria-label={`${profile.coins} érme`}
+            onClick={() => setSheet('titles')}
+          >
+            🪙 {profile.coins}
+          </button>
+        </div>
         {utilities && <div className="util">{utilities}</div>}
-      </div>
-      <div className="apphero-chips">
-        <button type="button" className="apphero-chip fire np-press" onClick={() => setSheet('streak')}>
-          🔥 {profile.streakDays} nap
-        </button>
-        <Link to="/me/growth" className="apphero-chip quest np-press">
-          ⚡ {done}/{quests.length} quest
-        </Link>
-        <button type="button" className="apphero-chip coin np-press" onClick={() => setSheet('titles')}>
-          🪙 {profile.coins}
-        </button>
       </div>
       {sheet === 'titles' && <TitleShopSheet onClose={() => setSheet(null)} />}
       {sheet === 'streak' && <StreakSheet onClose={() => setSheet(null)} />}

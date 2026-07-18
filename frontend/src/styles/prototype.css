@@ -217,8 +217,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: var(--canvas);
 }
 
-/* Lock background scroll when a sheet/modal is open */
-.phone-screen:has(.sheet-backdrop) .screen-content {
+/* Lock background scroll when a sheet/modal (or the SubNavDropdown popover, whose
+   backdrop is portaled into .phone-screen the same way) is open */
+.phone-screen:has(.sheet-backdrop, .dd-backdrop) .screen-content {
   overflow: hidden !important;
   touch-action: none;
 }
@@ -1286,13 +1287,6 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --tag-gym: #F0966B; --tag-sport: #E9A3AE; --tag-run: #9CC0E4;
 }
 
-/* ===== Napív pill sub-nav (spec §4.3; Fuel/Me adopt later via --pill-accent) ===== */
-.np-pills { display: flex; gap: 7px; padding: 8px 24px 10px; overflow-x: auto; scrollbar-width: none; position: sticky; top: 0; z-index: 5; background: var(--canvas); -webkit-mask-image: linear-gradient(to right, black 92%, transparent); mask-image: linear-gradient(to right, black 92%, transparent); }
-.np-pills::-webkit-scrollbar { display: none; }
-.np-pill { flex-shrink: 0; border-radius: 999px; padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--sub); background: rgba(255,255,255,.75); border: 1px solid rgba(43,33,24,.05); white-space: nowrap; }
-:root[data-theme="dark"] .np-pill { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.08); }
-.np-pill.on { color: #fff; border-color: transparent; background: var(--pill-accent-strong, var(--pill-accent, var(--coral))); }
-
 /* ===== Napív page head (pgheadrow — Train sub-pages; Fuel/Me adopt later) ===== */
 .pghead-np { display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 24px 0; }
 .pghead-np .over { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--coral-deep); }
@@ -1532,33 +1526,74 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
   .skl .bar i { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .45s var(--np-ease-ios) forwards; }
 }
 
-/* ===== AppHero — unified gamified header on the 4 main tabs (mezo-k7rn) ===== */
-.apphero { display: flex; align-items: center; gap: 12px; padding: 10px 24px 0; }
-.apphero .avwrap { position: relative; width: 62px; height: 62px; flex-shrink: 0; }
+/* ===== AppHero v2 — compact single-row sticky header on all 5 sections (mezo-ugqb).
+   Sticky at z 45: above content and tab-bar (40), below StatusBar (50) / island (60) /
+   sheets (200+). The border-bottom is the header/content separator from the spec. ===== */
+.apphero {
+  display: flex; align-items: center; gap: 10px; padding: 8px 24px;
+  position: sticky; top: 0; z-index: 45;
+  background: var(--canvas); border-bottom: 1px solid var(--line);
+}
+.apphero .avwrap { position: relative; width: 48px; height: 48px; flex-shrink: 0; }
 .apphero .avlink { position: absolute; inset: 0; display: block; }
 .apphero .avatar {
-  position: absolute; inset: 6px; border-radius: 50%;
+  position: absolute; inset: 5px; border-radius: 50%;
   background: linear-gradient(140deg, #EEEBF6, #E2DCF0); color: var(--lav-deep);
-  font-family: var(--ff-display); font-weight: 800; font-size: 17px;
+  font-family: var(--ff-display); font-weight: 800; font-size: 15px;
   display: flex; align-items: center; justify-content: center;
 }
 :root[data-theme="dark"] .apphero .avatar { background: linear-gradient(140deg, rgba(155,143,196,.25), rgba(122,109,168,.25)); }
 .apphero .lvbadge {
-  position: absolute; right: -3px; bottom: -3px; min-width: 22px; height: 22px;
-  border-radius: 999px; background: var(--coral); color: #fff; font-size: 10.5px; font-weight: 800;
-  display: flex; align-items: center; justify-content: center; border: 2.5px solid var(--canvas);
-  padding: 0 4px; font-family: var(--ff-display); text-decoration: none;
+  position: absolute; right: -2px; bottom: -2px; min-width: 18px; height: 18px;
+  border-radius: 999px; background: var(--coral); color: #fff; font-size: 9.5px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; border: 2px solid var(--canvas);
+  padding: 0 3px; font-family: var(--ff-display); text-decoration: none;
 }
-.apphero .t1 { display: block; font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.3px; color: var(--ink); text-decoration: none; }
-.apphero .t2 { display: block; background: none; border: none; padding: 0; cursor: pointer; font-size: 11px; color: var(--lav-deep); font-weight: 800; margin-top: 1px; letter-spacing: .4px; text-transform: uppercase; text-align: left; font-family: var(--ff-body); }
-.apphero .util { margin-left: auto; display: flex; gap: 7px; align-items: center; }
-.apphero-chips { display: flex; gap: 6px; padding: 10px 24px 0; flex-wrap: wrap; }
-.apphero-chip {
-  display: inline-flex; align-items: center; gap: 4px; background: var(--surface);
-  border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 800;
-  box-shadow: var(--np-shadow-row); border: none; color: var(--ink);
-  text-decoration: none; cursor: pointer; font-family: var(--ff-body);
+.apphero .idcol { min-width: 0; }
+.apphero .t1 {
+  display: block; font-family: var(--ff-display); font-size: 16px; font-weight: 800;
+  letter-spacing: -.3px; color: var(--ink); text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.apphero-chip.fire { color: var(--amber-deep); }
-.apphero-chip.quest { color: var(--coral-deep); }
-.apphero-chip.coin { color: var(--sage-deep); }
+.apphero .t2 { display: block; background: none; border: none; padding: 0; cursor: pointer; font-size: 10px; color: var(--lav-deep); font-weight: 800; margin-top: 1px; letter-spacing: .4px; text-transform: uppercase; text-align: left; font-family: var(--ff-body); }
+.apphero .counters { margin-left: auto; display: flex; align-items: center; gap: 2px; }
+.apphero .cnt {
+  background: none; border: none; padding: 6px 4px; cursor: pointer;
+  font: 800 12px/1 var(--ff-body); text-decoration: none; white-space: nowrap;
+}
+.apphero .cnt.fire { color: var(--amber-deep); }
+.apphero .cnt.quest { color: var(--coral-deep); }
+.apphero .cnt.coin { color: var(--sage-deep); }
+.apphero .util { display: flex; gap: 7px; align-items: center; }
+
+/* ===== SubNavDropdown — sub-nav popover in the sticky AppHero row (mezo-ugqb) =====
+   z-scale: chip lives inside .apphero (z 45, above tab-bar 40). The menu paints
+   within that stacking context. The backdrop is portaled into .phone-screen (same
+   target + fallback as Sheet, see Sheet.tsx) so its `position: absolute; inset: 0`
+   covers the whole device viewport instead of escaping the phone mockup on desktop —
+   z 44 keeps it above content + tab-bar (40) but strictly below the header/menu (45)
+   and sheets (200+), independent of portal DOM order. */
+.subnav-dd { position: relative; }
+.subnav-dd .dd-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 999px;
+  padding: 7px 12px; font: 800 12px/1 var(--ff-body);
+  color: var(--subnav-accent, var(--ink)); cursor: pointer; white-space: nowrap;
+}
+.dd-backdrop {
+  position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35);
+  border: none; padding: 0; cursor: default; z-index: 44;
+}
+.subnav-dd .dd-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 190px;
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 14px; padding: 5px 0; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+}
+.subnav-dd .dd-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 10px 14px; font: 700 13px/1.2 var(--ff-body);
+  color: var(--sub); text-decoration: none; background: none; border: none;
+  cursor: pointer; text-align: left;
+}
+.subnav-dd .dd-item.on { color: var(--subnav-accent, var(--coral-deep)); }
+.subnav-dd .dd-sep { border-top: 1px solid var(--line); margin: 4px 0; }

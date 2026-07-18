@@ -1,4 +1,5 @@
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
@@ -18,12 +19,11 @@ const renderAt = (path: string) => {
   )
 }
 
-test.each(['/today', '/train', '/fuel', '/me', '/insights'])('AppHero renders on %s', (path) => {
-  renderAt(path)
-  expect(document.querySelector('.apphero')).toBeInTheDocument()
-})
-
-test('the Insights entry point survives on /today', () => {
-  renderAt('/today')
-  expect(document.querySelector('a[aria-label="Insights"]')).toBeInTheDocument()
+test('the header dropdown lists all six Fuel sub-views', async () => {
+  renderAt('/fuel/stack')
+  await userEvent.click(screen.getByRole('button', { name: 'Stack' }))
+  for (const label of ['Mai', 'Terv', 'Stack', 'Receptek', 'Kamra', 'Gyógyszer']) {
+    expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument()
+  }
+  expect(document.querySelector('.np-pills')).toBeNull()
 })
