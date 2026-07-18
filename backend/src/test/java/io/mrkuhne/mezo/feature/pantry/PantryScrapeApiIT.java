@@ -153,4 +153,18 @@ class PantryScrapeApiIT extends ApiIntegrationTest {
         assertThat(feed.getStatus()).isEqualTo(PantryImportEntryResponse.StatusEnum.MANUAL_REVIEW);
         assertThat(feed.getOfWhat()).isEqualTo("Gyanús szelet");
     }
+
+    @Test
+    void testImport_shouldFallBackToWebSource_whenSourceUrlMalformed() {
+        HttpHeaders auth = ownerAuthHeaders();
+        PantryImportRequest req = new PantryImportRequest();
+        req.setName("Malformed forrás");
+        req.setPer(BigDecimal.valueOf(100));
+        req.setUnit("g");
+        req.setKcal(BigDecimal.valueOf(200));
+        req.setSourceUrl("ht tp://not a url"); // space -> URI.create throws; must degrade to 'web', never 500
+        PantryItemResponse item = postForBody("/api/pantry-import", req, auth, HttpStatus.CREATED, PantryItemResponse.class);
+        assertThat(item.getId()).isNotNull();
+        assertThat(item.getSource()).isEqualTo("web"); // malformed URL host is unparseable -> generic 'web'
+    }
 }

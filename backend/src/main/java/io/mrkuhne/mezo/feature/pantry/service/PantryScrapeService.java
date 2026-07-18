@@ -78,8 +78,18 @@ public class PantryScrapeService {
         return resp;
     }
 
+    /**
+     * Maps a URL to a pantry source by host. Called on the import path with the CLIENT-SENT
+     * {@code sourceUrl} (unvalidated), so a malformed URL degrades to the generic {@code web} — never
+     * throws, never 500 (mezo-w3o spirit).
+     */
     static String sourceFor(String url) {
-        String host = URI.create(url.strip()).getHost();
+        String host;
+        try {
+            host = URI.create(url.strip()).getHost();
+        } catch (IllegalArgumentException malformed) {
+            return "web";
+        }
         return host == null ? "web" : DOMAIN_SOURCES.getOrDefault(host.toLowerCase(), "web");
     }
 
