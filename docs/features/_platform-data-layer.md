@@ -8,7 +8,6 @@ key_files:
   - frontend/src/data/hooks.ts
   - frontend/src/data/train/trainHooks.ts
   - frontend/src/data/me/goalHooks.ts
-  - frontend/src/data/me/biometricHooks.ts
   - frontend/src/data/fuel/pantryHooks.ts
   - frontend/src/data/gamification
   - frontend/src/data/_client/mode.ts

@@ -8,13 +8,11 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/quest
   - backend/src/main/java/io/mrkuhne/mezo/feature/activity
   - backend/src/main/java/io/mrkuhne/mezo/feature/progression/service
-  - backend/src/main/resources/content/quest-catalog.json
   - frontend/src/data/quest
   - frontend/src/data/activity
   - frontend/src/data/gamification
   - frontend/src/features/progression
   - frontend/src/features/me/pages/GrowthPage.tsx
-  - frontend/src/features/today/components/GrowthTodayRow.tsx
 related: [today, me, train, fuel, _platform-data-layer, _platform-api-backend, _platform-design-system]
 ---
 
