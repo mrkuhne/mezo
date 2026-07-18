@@ -13,6 +13,8 @@ import { PacingCard } from '@/features/fuel/components/PacingCard'
 import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { ReplanSheet } from '@/features/fuel/sheets/ReplanSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
+import { localDateString } from '@/shared/lib/dates'
 
 // Napiv Mai recomposition (spec §4.4, mezo-8141): pghead-np sage header → RetaPhaseBar →
 // gauge card (KcalGauge + fuelchips + macro soft bars) → aistrip (PacingCard) → timeline
@@ -33,6 +35,7 @@ export function FuelMaiPage() {
   const [scoreMeal, setScoreMeal] = useState<FuelMeal | null>(null)
   const [replanOpen, setReplanOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
+  const [aiOpen, setAiOpen] = useState(false)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
 
@@ -59,15 +62,26 @@ export function FuelMaiPage() {
           <div className="over">Fuel · Reta D{retaDay} · kcal floor 2500</div>
           <h1>Mai pacing</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => openLog()}
-          className="pgact-np np-press"
-          aria-label="Logolás"
-          style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
-        >
-          <Icon name="plus" size={12} /> Log
-        </button>
+        <div className="row gap-xs" style={{ flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => setAiOpen(true)}
+            className="pgact-np np-press"
+            aria-label="AI naplózás"
+            style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
+          >
+            <Icon name="sparkle" size={12} /> AI
+          </button>
+          <button
+            type="button"
+            onClick={() => openLog()}
+            className="pgact-np np-press"
+            aria-label="Logolás"
+            style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+          >
+            <Icon name="plus" size={12} /> Log
+          </button>
+        </div>
       </div>
 
       {/* Reta phase context */}
@@ -205,6 +219,13 @@ export function FuelMaiPage() {
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
+      {aiOpen && (
+        <AiLogSheet
+          date={localDateString()}
+          onClose={() => setAiOpen(false)}
+          onManualFallback={() => { setAiOpen(false); openLog() }}
+        />
+      )}
     </>
   )
 }

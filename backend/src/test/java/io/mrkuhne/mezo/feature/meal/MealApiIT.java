@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MealBreakdown;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealItemResponse;
+import io.mrkuhne.mezo.api.dto.MealProvenance;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.MealScoreDimension;
@@ -81,6 +82,22 @@ class MealApiIT extends ApiIntegrationTest {
         i.setPantryItemId(pantryItemId);
         i.setAmount(new BigDecimal(amount));
         i.setUnit("g");
+        return i;
+    }
+
+    /** An estimate-arm meal item: source=estimate, verbatim name + per-basis macro snapshot, no FK. */
+    private MealItemRequest estimateItem() {
+        MealItemRequest i = new MealItemRequest();
+        i.setSource("estimate");
+        i.setAmount(new BigDecimal("1"));
+        i.setUnit("db");
+        i.setName("Csirkés wrap");
+        i.setPer(new BigDecimal("1"));
+        i.setBasisUnit("db");
+        i.setKcal(new BigDecimal("450"));
+        i.setProteinG(new BigDecimal("28"));
+        i.setCarbsG(new BigDecimal("40"));
+        i.setFatG(new BigDecimal("18"));
         return i;
     }
 
@@ -201,6 +218,64 @@ class MealApiIT extends ApiIntegrationTest {
         // context rows present (timing 13:20 is outside the breakfast window -> penalized, not absent)
         assertThat(b.getDimensions().get(3).getContext()).hasSize(3);
         assertThat(b.getTools()).extracting(t -> t.getType()).contains("read", "compute");
+    }
+
+    @Test
+    void testCreate_shouldPersistEstimateLineAndScore_whenAiDraftConfirmed() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // AI confirm path: an estimate line carries its own verbatim snapshot (no recipe/pantry FK)
+        // and the meal carries an ai-text provenance envelope (persistence asserted in MealServiceIT).
+        MealRequest req = mealReq(estimateItem());
+        MealProvenance prov = new MealProvenance();
+        prov.setOrigin("ai-text");
+        prov.setRawText("ettem egy csirkés wrapot");
+        req.setProvenance(prov);
+
+        MealResponse res = postForBody("/api/meal", req, auth, HttpStatus.CREATED, MealResponse.class);
+
+        assertThat(res.getItems()).hasSize(1);
+        MealItemResponse line = res.getItems().getFirst();
+        assertThat(line.getSource()).isEqualTo("estimate");
+        assertThat(line.getName()).isEqualTo("Csirkés wrap");
+        // amount 1 / per 1 -> factor 1: contribution == snapshot verbatim
+        assertThat(line.getContribution().getKcal()).isEqualByComparingTo("450");
+        assertThat(line.getContribution().getP()).isEqualByComparingTo("28");
+        assertThat(line.getContribution().getC()).isEqualByComparingTo("40");
+        assertThat(line.getContribution().getF()).isEqualByComparingTo("18");
+        // scoring ran end-to-end on a both-FK-null line: macro dim scores, micro/nova degrade
+        // honestly (no live source facts) — the meal score is present, not an NPE-500.
+        assertThat(res.getScore()).isNotNull();
+        assertThat(res.getScore().getValue()).isNotNull();
+        assertThat(res.getScore().getValue().doubleValue()).isBetween(0.0, 1.0);
+    }
+
+    @Test
+    void testCreate_shouldReturn400FieldError_whenEstimateLineMissingMacros() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // estimate arm requires the full per-basis macro set; drop the macros -> rejected on "items"
+        MealItemRequest estimate = estimateItem();
+        estimate.setKcal(null);
+        estimate.setProteinG(null);
+        estimate.setCarbsG(null);
+        estimate.setFatG(null);
+
+        String body = exchangeForBody(
+            HttpMethod.POST, "/api/meal", mealReq(estimate), auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "items", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testCreate_shouldReturn400FieldError_whenEstimateLineCarriesFk() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // an estimate line must carry NEITHER recipeId nor pantryItemId
+        MealItemRequest estimate = estimateItem();
+        estimate.setPantryItemId(UUID.randomUUID());
+
+        String body = exchangeForBody(
+            HttpMethod.POST, "/api/meal", mealReq(estimate), auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "items", "VALIDATION_INVALID_VALUE");
     }
 
     @Test

@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
+
+    /** Scripted meal draft (mezo-78rn): {@code [fake-meal:{json}]} payload is returned verbatim —
+     *  matched in the user text (text + multimodal paths) and in the UTF-8-decoded image bytes,
+     *  so photo-only ITs drive canned JSON through the real multipart plumbing.
+     *  GREEDY (unlike scrape) — the draft payload {@code {"slot":…,"items":[{…}]}} nests objects
+     *  inside {@code items}, so the match must run to the LAST brace, not the first {@code }]}. */
+    public static final Pattern MEAL_SENTINEL =
+            Pattern.compile("\\[fake-meal:(\\{.*})]", Pattern.DOTALL);
 
     /** Scripted narrative (V2.2): {@code [fake-summary:…]} payload becomes the summary answer. */
     public static final Pattern SUMMARY_SENTINEL =
@@ -237,8 +246,31 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (scrape.find()) {
             return scrape.group(1);
         }
+        // Meal draft (mezo-78rn) text-only path: a [fake-meal:{json}] planted in the user text is
+        // returned verbatim; the multimodal override handles the photo path (sentinel in the bytes).
+        Matcher meal = MEAL_SENTINEL.matcher(userMessage);
+        if (meal.find()) {
+            return meal.group(1);
+        }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));
+    }
+
+    @Override
+    public String complete(String systemPrompt, String userMessage, byte[] imageBytes, String mimeType) {
+        Matcher meal = MEAL_SENTINEL.matcher(userMessage == null ? "" : userMessage);
+        if (meal.find()) {
+            return meal.group(1);
+        }
+        if (imageBytes != null) {
+            // A "photo" in ITs is just the UTF-8 sentinel text — decode and re-match so photo-only
+            // ITs drive canned JSON through the real multipart plumbing.
+            Matcher img = MEAL_SENTINEL.matcher(new String(imageBytes, StandardCharsets.UTF_8));
+            if (img.find()) {
+                return img.group(1);
+            }
+        }
+        return complete(systemPrompt, userMessage);
     }
 
     /**

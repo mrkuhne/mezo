@@ -55,7 +55,7 @@ export interface MealBreakdown {
   tools: { type: ToolType; name: string }[]
 }
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
-export type MealItemSource = 'recipe' | 'pantry'
+export type MealItemSource = 'recipe' | 'pantry' | 'estimate'
 /** A logged meal line — polymorphic ref (recipe|pantry) + frozen snapshot name + this line's
  *  macro share. Mirrors RecipeIngredientLine: `refId` === recipeId (source 'recipe') or
  *  pantryItemId (source 'pantry'). `contribution` is round(snapshot × amount/per), HALF_UP. */
@@ -78,14 +78,63 @@ export interface FuelMeal {
   recipeId?: string
   breakdown?: MealBreakdown
 }
-/** Editor line — maps to MealItemRequest (refId → recipeId|pantryItemId by source). */
-export interface MealInputItem { source: MealItemSource; refId: string; amount: number; unit: string }
+/** Editor line for a recipe/pantry ref — maps to MealItemRequest (refId → recipeId|pantryItemId by source). */
+export interface MealRefInputItem { source: 'recipe' | 'pantry'; refId: string; amount: number; unit: string }
+/** Editor line for a free-form AI/user estimate — no seed ref; carries its own per-basis macro snapshot. */
+export interface MealEstimateInputItem {
+  source: 'estimate'
+  name: string
+  amount: number
+  unit: string
+  per: number
+  basisUnit: string
+  kcal: number; proteinG: number; carbsG: number; fatG: number
+  nova?: number | null
+}
+/** Editor line — discriminated on source: a recipe/pantry ref, or a free-form estimate. */
+export type MealItemInput = MealRefInputItem | MealEstimateInputItem
+/** How a logged meal originated — the provenance envelope round-tripped via MealRequest.provenance. */
+export interface MealProvenanceInput {
+  origin: 'manual' | 'ai-text' | 'ai-photo'
+  model?: string | null
+  confidence?: number | null
+  rawText?: string | null
+}
 /** Capture-sheet save payload — maps to the MealRequest contract. */
 export interface MealInput {
   slot: MealSlot
   loggedAt?: string | null
   title?: string | null
-  items: MealInputItem[]
+  items: MealItemInput[]
+  provenance?: MealProvenanceInput
+}
+/** One line of an AI meal draft (POST /api/meal/ai-draft) — a resolved pantry/recipe match or a
+ *  free-form estimate, each carrying a per-basis macro snapshot + confidence/needsReview. Mirrors
+ *  MealAiDraftItem; the user confirms/edits these before they become MealInput items. */
+export interface MealAiDraftLine {
+  source: MealItemSource
+  pantryItemId: string | null
+  recipeId: string | null
+  name: string
+  amount: number
+  unit: string
+  per: number
+  basisUnit: string
+  kcal: number
+  proteinG: number
+  carbsG: number
+  fatG: number
+  nova: number | null
+  confidence: number
+  needsReview: boolean
+}
+/** AI-parsed meal draft — a proposed slot + lines the user confirms before logging. Nothing is
+ *  persisted until confirmed. Mirrors the MealAiDraftResponse contract. */
+export interface MealAiDraft {
+  slot: MealSlot
+  title: string | null
+  note: string | null
+  items: MealAiDraftLine[]
 }
 export interface Micronutrient { name: string; pct: number; target: string }
 export interface FuelSummary { name: string; when: string; state: 'done' | 'pending'; dose: string }

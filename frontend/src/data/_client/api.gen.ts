@@ -872,6 +872,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/meal/ai-draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse + match a meal draft from free text and/or a photo (stateless, nothing persisted) */
+        post: operations["draftMealFromAi"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recipe/{id}/logs": {
         parameters: {
             query?: never;
@@ -2939,6 +2956,14 @@ export interface components {
             pantryItemId?: string | null;
             amount: number;
             unit: string;
+            name?: string | null;
+            per?: number | null;
+            basisUnit?: string | null;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            nova?: number | null;
         };
         MealItemResponse: {
             source: string;
@@ -2959,6 +2984,7 @@ export interface components {
             loggedAt?: string | null;
             title?: string | null;
             items: components["schemas"]["MealItemRequest"][];
+            provenance?: components["schemas"]["MealProvenance"] | null;
         };
         MealResponse: {
             /** Format: uuid */
@@ -2972,6 +2998,37 @@ export interface components {
             macros: components["schemas"]["Macros"];
             score: components["schemas"]["MealScore"];
             items: components["schemas"]["MealItemResponse"][];
+        };
+        MealAiDraftResponse: {
+            slot: string;
+            title?: string | null;
+            note?: string | null;
+            items: components["schemas"]["MealAiDraftItem"][];
+        };
+        MealAiDraftItem: {
+            source: string;
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            /** Format: uuid */
+            recipeId?: string | null;
+            name: string;
+            amount: number;
+            unit: string;
+            per: number;
+            basisUnit: string;
+            kcal: number;
+            proteinG: number;
+            carbsG: number;
+            fatG: number;
+            nova?: number | null;
+            confidence: number;
+            needsReview: boolean;
+        };
+        MealProvenance: {
+            origin: string;
+            model?: string | null;
+            confidence?: number | null;
+            rawText?: string | null;
         };
         FuelDayResponse: {
             /** Format: date */
@@ -6625,6 +6682,72 @@ export interface operations {
             };
             /** @description Not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    draftMealFromAi: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: date */
+                    date: string;
+                    text?: string;
+                    /** Format: binary */
+                    photo?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Editable draft (empty items = nothing recognized, honest empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealAiDraftResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Photo/LLM extraction failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM port unavailable (companion off) */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

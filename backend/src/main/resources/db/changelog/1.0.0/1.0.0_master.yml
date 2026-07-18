@@ -356,3 +356,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607181100_mezo-8vum_pantry_scrape.sql
+  - changeSet:
+      id: "1.0.0:202607181500_mezo-78rn_meal_item_estimate"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607181500_mezo-78rn_meal_item_estimate.sql
+  - changeSet:
+      id: "1.0.0:202607181501_mezo-78rn_meal_provenance"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607181501_mezo-78rn_meal_provenance.sql

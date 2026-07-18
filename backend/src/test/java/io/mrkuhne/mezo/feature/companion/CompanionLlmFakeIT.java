@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.tools.ToolCallAudit;
 import io.mrkuhne.mezo.feature.companion.tools.ToolContexts;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -101,5 +102,39 @@ class CompanionLlmFakeIT extends AbstractIntegrationTest {
         String out = companionLlm.complete("SYS", "[fake-tool:get_reta_cycle]", List.of(), Map.of());
 
         assertThat(out).contains("tool:get_reta_cycle=[UNKNOWN]");
+    }
+
+    @Test
+    void testComplete_shouldReturnMealSentinelJson_whenUserTextCarriesIt() {
+        String json = "{\"slot\":\"lunch\",\"items\":[]}";
+        String answer = companionLlm.complete("SYS", "ettem valamit [fake-meal:" + json + "]");
+        assertThat(answer).isEqualTo(json);
+    }
+
+    @Test
+    void testCompleteMultimodal_shouldReturnMealSentinelJson_whenImageBytesCarryIt() {
+        String json = "{\"slot\":\"dinner\",\"items\":[]}";
+        byte[] fakePhoto = ("[fake-meal:" + json + "]").getBytes(StandardCharsets.UTF_8);
+        String answer = companionLlm.complete("SYS", "", fakePhoto, "image/jpeg");
+        assertThat(answer).isEqualTo(json);
+    }
+
+    @Test
+    void testCompleteMultimodal_shouldFallBackToEcho_whenNoSentinel() {
+        String answer = companionLlm.complete("SYS", "user text", new byte[] {1, 2, 3}, "image/jpeg");
+        assertThat(answer).startsWith("FAKE-LLM");
+    }
+
+    @Test
+    void testComplete_shouldReturnFullNestedJson_whenMealSentinelHasNestedItems() {
+        // nested object inside items[] — the non-greedy sentinel would truncate at the first }]
+        String json = "{\"slot\":\"lunch\",\"items\":[{\"name\":\"Latte\",\"kcal\":120}]}";
+
+        String textPath = companionLlm.complete("SYS", "ebéd volt [fake-meal:" + json + "]");
+        assertThat(textPath).isEqualTo(json);
+
+        byte[] fakePhoto = ("[fake-meal:" + json + "]").getBytes(StandardCharsets.UTF_8);
+        String imagePath = companionLlm.complete("SYS", "", fakePhoto, "image/jpeg");
+        assertThat(imagePath).isEqualTo(json);
     }
 }

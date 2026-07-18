@@ -2,12 +2,14 @@ package io.mrkuhne.mezo.feature.meal.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
+import io.mrkuhne.mezo.api.dto.MealProvenance;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.RecipeLogResponse;
 import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
+import io.mrkuhne.mezo.feature.meal.entity.MealProvenanceJson;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealItemRepository;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
@@ -69,6 +71,7 @@ public class MealService {
         MealEntity meal = new MealEntity();
         meal.setCreatedBy(userId); // server-side ownership — never from the client
         OffsetDateTime loggedAt = applyHeader(meal, req);
+        meal.setProvenance(toProvenance(req.getProvenance())); // AI confirm path; NULL for manual rows
         rebuildItems(userId, meal, req.getItems());
         applyScore(userId, meal, loggedAt);
         return mapper.toResponse(repository.save(meal)); // cascade=ALL persists the items
@@ -78,6 +81,7 @@ public class MealService {
     public void update(UUID userId, UUID id, MealRequest req) {
         MealEntity meal = requireOwned(userId, id);
         OffsetDateTime loggedAt = applyHeader(meal, req);
+        meal.setProvenance(toProvenance(req.getProvenance())); // re-captured like the snapshots
         rebuildItems(userId, meal, req.getItems()); // dirty-checked; flush on tx commit
         applyScore(userId, meal, loggedAt); // re-scored like the snapshots are re-captured
     }
@@ -302,6 +306,27 @@ public class MealService {
             item.setSnapshotCarbsG(orDefault(p.getCarbsG(), BigDecimal.ZERO));
             item.setSnapshotFatG(orDefault(p.getFatG(), BigDecimal.ZERO));
             item.setSnapshotNova(p.getNova());
+        } else if ("estimate".equals(req.getSource())) {
+            // AI/manual estimate arm: NO recipe/pantry FK — the request carries its own verbatim
+            // per-basis snapshot (name + basis + full macro set), persisted as-is (no live source).
+            if (req.getRecipeId() != null || req.getPantryItemId() != null) {
+                throw invalidItems();
+            }
+            if (req.getName() == null || req.getName().isBlank()
+                || req.getPer() == null || req.getPer().signum() <= 0
+                || req.getBasisUnit() == null || req.getBasisUnit().isBlank()
+                || req.getKcal() == null || req.getProteinG() == null
+                || req.getCarbsG() == null || req.getFatG() == null) {
+                throw invalidItems();
+            }
+            item.setSnapshotName(req.getName());
+            item.setSnapshotPer(req.getPer());
+            item.setSnapshotBasisUnit(req.getBasisUnit());
+            item.setSnapshotKcal(req.getKcal());
+            item.setSnapshotProteinG(req.getProteinG());
+            item.setSnapshotCarbsG(req.getCarbsG());
+            item.setSnapshotFatG(req.getFatG());
+            item.setSnapshotNova(req.getNova() == null ? null : req.getNova().shortValue());
         } else {
             throw invalidItems(); // unknown source — the contract pattern should have caught it
         }
@@ -338,6 +363,14 @@ public class MealService {
             SystemMessage.field("VALIDATION_INVALID_VALUE", "items").build(), HttpStatus.BAD_REQUEST);
     }
 
+    /** Request provenance dto → typed jsonb envelope; absent provenance stays NULL (manual/legacy row). */
+    private static MealProvenanceJson toProvenance(MealProvenance dto) {
+        if (dto == null) {
+            return null;
+        }
+        return new MealProvenanceJson(dto.getOrigin(), dto.getModel(), dto.getConfidence(), dto.getRawText());
+    }
+
     /**
      * per-serving snapshot = whole-recipe macro ÷ servings, kept at FULL PRECISION (scale 6, mirroring
      * the contribution {@code factor} scale). Rounding happens exactly once downstream at the
@@ -346,7 +379,8 @@ public class MealService {
      * and the already-exact pantry arm (mezo-8xy). The {@code snapshot_kcal} column is bare numeric, so
      * the fractional value persists losslessly.
      */
-    private static BigDecimal perServing(BigDecimal whole, BigDecimal servings) {
+    // Package-private so MealAiDraftService's recipe arm reuses the exact per-serving rollup (mezo-78rn).
+    static BigDecimal perServing(BigDecimal whole, BigDecimal servings) {
         BigDecimal v = whole == null ? BigDecimal.ZERO : whole;
         return v.divide(servings, 6, RoundingMode.HALF_UP);
     }
