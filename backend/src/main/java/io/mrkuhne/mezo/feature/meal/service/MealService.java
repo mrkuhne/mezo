@@ -379,7 +379,8 @@ public class MealService {
      * and the already-exact pantry arm (mezo-8xy). The {@code snapshot_kcal} column is bare numeric, so
      * the fractional value persists losslessly.
      */
-    private static BigDecimal perServing(BigDecimal whole, BigDecimal servings) {
+    // Package-private so MealAiDraftService's recipe arm reuses the exact per-serving rollup (mezo-78rn).
+    static BigDecimal perServing(BigDecimal whole, BigDecimal servings) {
         BigDecimal v = whole == null ? BigDecimal.ZERO : whole;
         return v.divide(servings, 6, RoundingMode.HALF_UP);
     }
