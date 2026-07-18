@@ -73,4 +73,25 @@ class WebPageClientIT extends AbstractIntegrationTest {
             .isInstanceOf(SystemRuntimeErrorException.class)
             .hasMessageContaining("VALIDATION_INVALID_VALUE");
     }
+
+    @Test
+    void testFetch_shouldThrowFetchFailed_whenUpstreamRedirects() {
+        // 302 -> a resolvable 200 landing page; if redirects were followed the fetch would
+        // succeed with the landing body. It MUST NOT — a redirect could point at a private host
+        // (SSRF), so a 30x has to surface as fetch-failed instead of being chased.
+        SHOP.stubFor(get(urlPathEqualTo("/redir")).willReturn(
+            aResponse().withStatus(302).withHeader("Location", SHOP.baseUrl() + "/landing")));
+        SHOP.stubFor(get(urlPathEqualTo("/landing")).willReturn(
+            aResponse().withHeader("Content-Type", "text/html").withBody("<html><body>Landed</body></html>")));
+        assertThatThrownBy(() -> client.fetch(SHOP.baseUrl() + "/redir"))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessageContaining("PANTRY_SCRAPE_FETCH_FAILED");
+    }
+
+    @Test
+    void testFetch_shouldThrowValidation_whenUrlNull() {
+        assertThatThrownBy(() -> client.fetch(null))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessageContaining("VALIDATION_INVALID_VALUE");
+    }
 }
