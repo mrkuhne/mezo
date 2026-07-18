@@ -14,6 +14,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import tools.jackson.databind.JsonNode;
@@ -109,6 +110,37 @@ public abstract class ApiIntegrationTest extends AbstractIntegrationTest {
         HttpMethod method, String uri, Object request, HttpHeaders headers
     ) {
         return rest.exchange(uri, method, new HttpEntity<>(request, headers), String.class);
+    }
+
+    // ==== multipart/form-data helpers (mezo-78rn — meal ai-draft; reusable for future multipart ITs) ====
+
+    /**
+     * POSTs a {@code multipart/form-data} body as the seeded owner and returns the full
+     * {@link ResponseEntity} WITHOUT asserting the status (the caller inspects status + body).
+     * Plain form fields go in as raw values; a file part is an {@link HttpEntity} wrapping a
+     * {@link #photoPart(byte[], String)} resource with its own {@code Content-Type} part header.
+     */
+    protected <T> ResponseEntity<T> postMultipartForResponse(
+        String path, org.springframework.util.MultiValueMap<String, Object> parts, Class<T> responseType
+    ) {
+        HttpHeaders headers = ownerAuthHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        return rest.exchange(path, HttpMethod.POST, new HttpEntity<>(parts, headers), responseType);
+    }
+
+    /**
+     * A named byte[] file part for {@code multipart/form-data} — the anonymous subclass supplies the
+     * filename so {@code FormHttpMessageConverter} emits a real file part (a bare
+     * {@code ByteArrayResource} has no filename and is rejected as a field). Wrap the result in an
+     * {@code HttpEntity} carrying a {@code Content-Type} header to drive the part's declared MIME type.
+     */
+    protected static org.springframework.core.io.ByteArrayResource photoPart(byte[] bytes, String filename) {
+        return new org.springframework.core.io.ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return filename;
+            }
+        };
     }
 
     @SuppressWarnings("unchecked")
