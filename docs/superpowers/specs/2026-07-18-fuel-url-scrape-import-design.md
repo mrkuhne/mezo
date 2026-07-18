@@ -123,3 +123,29 @@ canonical scrape draft synchronously. Request bodies `satisfies` the generated t
 - **Out of scope:** PWA share-target (own follow-up), basket/multi-item scrape, per-site
   parsers, immediate meal logging from scrape (that's the AI food-logging feature), price
   tracking over time.
+
+## Implementation deviations (2026-07-18)
+
+What actually shipped differs from the design above on four points (the design is left intact
+as the point-in-time artifact; these are the corrections):
+
+- **Consumer-owned `ScrapeLlm` port, not direct `CompanionLlm` injection.** The Backend §6
+  "`pantry → companion.CompanionLlm` one-way edge" would have formed **3 ArchUnit feature-slice
+  cycles** (companion already depends transitively on pantry: `companion → fuel`/`meal → pantry`).
+  Resolved with a consumer-owned port — `ScrapeLlm` in `feature/pantry/service` + a companion-side
+  `PantryScrapeLlmAdapter` (`feature/companion/llm`) that delegates to `CompanionLlm` — so the only
+  cross-feature edge runs companion → pantry and ArchUnit stays 11/11 green. Companion-off →
+  no adapter bean → the endpoint's clean 503 (via `ObjectProvider<ScrapeLlm>`). See
+  **[ADR 0012](../../decisions/0012-consumer-owned-llm-ports.md)** (the pattern is now prescribed
+  for mezo-78rn's meal AI-log too, superseding that spec's "meal → companion edge" line).
+- **Boundary-INCLUSIVE confidence.** `needsReview` / `manual-review` fire on
+  `confidence <= threshold` (not `<`): a >30%-off Atwater draft scores **exactly** the 0.6
+  threshold in IEEE-754 (`1.0 − 0.4`) and must be reviewed. Both the scrape verdict
+  (`PantryScrapeService`) and the import persistence (`PantryImportService#isManualReview`) use `<=`.
+- **Two-segment ImportItemSheet toggle, not three.** The design proposed `Keresés | Vonalkód |
+  Link`; barcode is not a separate mode — the OFF search field already accepts a typed barcode
+  (all-digit ≥8 → v2 fetch), so the sheet ships a **`Keresés (OFF) | Link`** toggle and keeps the
+  barcode-scanner chip as an inert P8+ affordance inside Keresés.
+- **Jackson 3 shared `ObjectMapper` bean.** `ScrapeExtractionService` injects the shared
+  Boot-managed `tools.jackson.databind.ObjectMapper` (Jackson 3, `tools.jackson.*`) rather than
+  instantiating one — one configured mapper, consistent with the rest of the Boot 4 stack.
