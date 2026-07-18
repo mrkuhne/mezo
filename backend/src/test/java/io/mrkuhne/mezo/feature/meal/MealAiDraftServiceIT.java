@@ -7,10 +7,15 @@ import io.mrkuhne.mezo.api.dto.MealAiDraftItem;
 import io.mrkuhne.mezo.api.dto.MealAiDraftResponse;
 import io.mrkuhne.mezo.feature.meal.service.MealAiDraftService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
+import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -34,6 +39,12 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
 
     @Autowired
     private PantryItemPopulator pantryItemPopulator;
+
+    @Autowired
+    private RecipePopulator recipePopulator;
+
+    @Autowired
+    private RecipeMapper recipeMapper;
 
     @Autowired
     private DatabasePopulator databasePopulator;
@@ -69,6 +80,44 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         assertThat(estimate.getSource()).isEqualTo("estimate");
         assertThat(estimate.getKcal()).isEqualByComparingTo("120");
         assertThat(estimate.getPer()).isEqualByComparingTo("1"); // per = amount for estimates
+    }
+
+    @Test
+    void testDraft_shouldMatchRecipe_whenSentinelCarriesRealRecipeId() {
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        // The recipe's lines FK-reference a real pantry item (RESTRICT); seed it first.
+        PantryItemEntity ingredient = pantryItemPopulator.createFood(owner, "Túró", LocalDate.now().plusDays(10));
+        RecipeEntity recipe = recipePopulator.createRecipe(owner, ingredient.getId());
+
+        // Expected per-serving kcal is derived from the DB-seeded recipe the SAME way MealService's
+        // recipe arm does (whole rollup ÷ servings, scale 6 HALF_UP) — NOT from the sentinel's 999.
+        BigDecimal wholeKcal = recipeMapper.toResponse(recipe).getMacros().getKcal();
+        BigDecimal expectedPerServing =
+                wholeKcal.divide(BigDecimal.valueOf(recipe.getServings()), 6, RoundingMode.HALF_UP);
+
+        String json = """
+            {"slot":"lunch","title":"Ebéd","note":null,"items":[
+              {"pantryItemId":null,"recipeId":"%s","name":"Túrós tál KAMU","amount":1,"unit":"tál",
+               "kcal":999,"proteinG":1,"carbsG":1,"fatG":1}
+            ]}""".formatted(recipe.getId());
+
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(),
+                "túrós tál [fake-meal:" + json + "]", null);
+
+        assertThat(res.getItems()).hasSize(1);
+        MealAiDraftItem line = res.getItems().getFirst();
+        assertThat(line.getSource()).isEqualTo("recipe");
+        assertThat(line.getRecipeId()).isEqualTo(recipe.getId());
+        assertThat(line.getPantryItemId()).isNull();
+        assertThat(line.getName()).isEqualTo(recipe.getName()); // from the DB row, not the sentinel's "KAMU"
+        assertThat(line.getPer()).isEqualByComparingTo("1");
+        assertThat(line.getBasisUnit()).isEqualTo("adag");
+        assertThat(line.getUnit()).isEqualTo("adag");
+        // macros come from the recipe's per-serving rollup (DB), NOT the sentinel's kcal 999:
+        assertThat(line.getKcal()).isEqualByComparingTo(expectedPerServing);
+        assertThat(line.getKcal()).isEqualByComparingTo("148.5"); // 297 whole ÷ 2 servings
+        assertThat(line.getConfidence()).isEqualByComparingTo("1.0");
+        assertThat(line.getNeedsReview()).isFalse();
     }
 
     @Test
