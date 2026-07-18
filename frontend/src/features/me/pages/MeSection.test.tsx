@@ -13,31 +13,28 @@ function renderApp(path: string) {
   return render(<QueryWrapper><ThemeProvider><RouterProvider router={router} /></ThemeProvider></QueryWrapper>)
 }
 
-test('/me shows the Profil route with the sub-nav', async () => {
-  // The Profil h1 moved out with the page-header chrome (AppHero is section-level
-  // now, mezo-8141/mezo-k7rn) — the route is proven by its card content instead.
+test('/me shows the Profil route with the header dropdown', async () => {
   renderApp('/me')
   expect(await screen.findByText('Biometria')).toBeInTheDocument()
-  expect(screen.getByRole('link', { name: 'Cél' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Profil' })).toHaveAttribute('aria-haspopup', 'menu')
 })
 
-test('clicking the sub-nav navigates to Cél', async () => {
-  // GoalsPage runs in REAL mode here (default), so its active-goal query must
-  // resolve or it stays in the loading skeleton (mezo-f2z) and never renders the
-  // page header. Serve an empty goal list → the empty-state still carries the
-  // `/Hosszú cél/` heading this test asserts. weight/trend/profile use the default
-  // handlers. The heading appears after the query settles → findByRole (async).
+test('the dropdown lists all seven Me sub-views and navigates to Cél', async () => {
   server.use(http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])))
   renderApp('/me')
-  await userEvent.click(screen.getByRole('link', { name: 'Cél' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Profil' }))
+  for (const label of ['Profil', 'Growth', 'Cél', 'Súly', 'Alvás', 'Emberek', 'Tudás']) {
+    expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument()
+  }
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Cél' }))
   expect(await screen.findByRole('heading', { level: 1, name: /Hosszú cél/ })).toBeInTheDocument()
 })
 
-test('gear chip opens SettingsSheet and theme toggle flips data-theme', async () => {
+test('Beállítások menu item opens SettingsSheet and theme toggle flips data-theme', async () => {
   localStorage.clear()
   renderApp('/me')
-  await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))
-  // Light is the default (no attribute; light is the CSS base); toggling flips to dark.
+  await userEvent.click(screen.getByRole('button', { name: 'Profil' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Beállítások' }))
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
   await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')

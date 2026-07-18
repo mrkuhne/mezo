@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { AppHero } from '@/features/progression/components/AppHero'
-import { MeSubNav } from '@/features/me/pages/MeSubNav'
+import { ME_TABS } from '@/features/me/pages/tabs'
 import { SettingsSheet } from '@/features/me/sheets/SettingsSheet'
 import { Icon } from '@/shared/ui/Icon'
+import { SubNavDropdown } from '@/shared/ui/SubNavDropdown'
 
 export function MeSection() {
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -11,17 +12,18 @@ export function MeSection() {
     <>
       <AppHero
         utilities={
-          <button
-            type="button"
-            className="icon-btn np-press"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Beállítások"
-          >
-            <Icon name="settings" size={16} />
-          </button>
+          <SubNavDropdown
+            label="Me alnavigáció"
+            items={ME_TABS}
+            accent="var(--lav-deep)"
+            extraAction={{
+              label: 'Beállítások',
+              icon: <Icon name="settings" size={14} />,
+              onSelect: () => setSettingsOpen(true),
+            }}
+          />
         }
       />
-      <MeSubNav />
       <Outlet />
       {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
     </>

@@ -25,7 +25,8 @@ test('navigates between tabs by clicking the bottom nav', async () => {
 test('Me screen theme toggle flips data-theme', async () => {
   localStorage.clear()
   renderApp('/me')
-  await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Profil' }))
+  await userEvent.click(screen.getByRole('menuitem', { name: 'Beállítások' }))
   // Light is the default (no attribute; light is the CSS base); toggling flips to dark.
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
   await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
