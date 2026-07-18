@@ -18,14 +18,9 @@ const renderAt = (path: string) => {
   )
 }
 
-test.each(['/today', '/train', '/fuel', '/me'])('AppHero renders on %s', (path) => {
+test.each(['/today', '/train', '/fuel', '/me', '/insights'])('AppHero renders on %s', (path) => {
   renderAt(path)
   expect(document.querySelector('.apphero')).toBeInTheDocument()
-})
-
-test('AppHero does NOT render on /insights', () => {
-  renderAt('/insights')
-  expect(document.querySelector('.apphero')).not.toBeInTheDocument()
 })
 
 test('the Insights entry point survives on /today', () => {

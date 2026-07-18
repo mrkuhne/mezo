@@ -17,10 +17,10 @@ test('redirects / to Today', () => {
 test('navigates between tabs by clicking the bottom nav', async () => {
   renderApp('/today')
   await userEvent.click(screen.getByLabelText('Insights'))
-  // Insights shell: the pghead over-line is the stable landmark; the page title is
-  // dynamic per active sub-view (the index sub-view renders "Minták").
-  expect(screen.getByRole('heading', { level: 1, name: /minták/i })).toBeInTheDocument()
+  // Insights shell: the AppHero dropdown chip is the stable landmark; it shows the
+  // active sub-view (the index sub-view is "Minták").
   expect(screen.getByLabelText('Insights alnavigáció')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
 })
 test('Me screen theme toggle flips data-theme', async () => {
   localStorage.clear()

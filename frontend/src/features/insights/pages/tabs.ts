@@ -4,18 +4,17 @@ export interface InsightsTab {
   id: string
   to: string
   label: string
-  title: string
   end?: boolean
 }
 
 export const INSIGHTS_TABS: InsightsTab[] = [
-  { id: 'patterns', to: '/insights', label: 'Minták', title: 'Minták', end: true },
-  { id: 'weekly', to: '/insights/weekly', label: 'Heti', title: 'Heti riport' },
-  { id: 'memoir', to: '/insights/memoir', label: 'Memoár', title: 'Memoár' },
-  { id: 'knowledge', to: '/insights/knowledge', label: 'Tudástár', title: 'Tudástár' },
-  { id: 'chat', to: '/insights/chat', label: 'Chat', title: 'Chat' },
-  { id: 'predictions', to: '/insights/predictions', label: 'Előrejelzések', title: 'Előrejelzések' },
-  { id: 'experiments', to: '/insights/experiments', label: 'Kísérletek', title: 'Kísérletek' },
+  { id: 'patterns', to: '/insights', label: 'Minták', end: true },
+  { id: 'weekly', to: '/insights/weekly', label: 'Heti' },
+  { id: 'memoir', to: '/insights/memoir', label: 'Memoár' },
+  { id: 'knowledge', to: '/insights/knowledge', label: 'Tudástár' },
+  { id: 'chat', to: '/insights/chat', label: 'Chat' },
+  { id: 'predictions', to: '/insights/predictions', label: 'Előrejelzések' },
+  { id: 'experiments', to: '/insights/experiments', label: 'Kísérletek' },
 ]
 
 /** Phase-3+ demo surfaces that were hidden in real mode until the proactive epic shipped them:
