@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryMacros;
 import io.mrkuhne.mezo.api.dto.PantryMicro;
+import io.mrkuhne.mezo.api.dto.PantrySource;
 import io.mrkuhne.mezo.api.dto.PantryStock;
 import io.mrkuhne.mezo.api.dto.SupplementStashResponse;
 import io.mrkuhne.mezo.feature.pantry.entity.MicroFact;
@@ -198,7 +199,7 @@ public interface PantryMapper {
     default PantryImportEntryResponse toImportEntry(PantryImportEntity e) {
         return PantryImportEntryResponse.builder()
             .id(e.getId())
-            .source(PantryImportEntryResponse.SourceEnum.fromValue(e.getSource()))
+            .source(PantrySource.fromValue(e.getSource()))
             .when(e.getImportedAt().atOffset(ZoneOffset.UTC))
             .items(e.getItemCount())
             .status(PantryImportEntryResponse.StatusEnum.fromValue(e.getStatus()))
@@ -212,12 +213,12 @@ public interface PantryMapper {
      * are kept in lockstep (DB CHECK == contract enum), so this fallback should never fire — but
      * if they ever drift, degrade that row's source to "manual" and log, never 500.
      */
-    default IngredientResponse.SourceEnum toIngredientSource(String value) {
+    default PantrySource toIngredientSource(String value) {
         try {
-            return IngredientResponse.SourceEnum.fromValue(value);
+            return PantrySource.fromValue(value);
         } catch (IllegalArgumentException ex) {
             LOG.warn("pantry_item.source '{}' outside the contract enum — degrading to manual (mezo-w3o)", value);
-            return IngredientResponse.SourceEnum.MANUAL;
+            return PantrySource.MANUAL;
         }
     }
 
@@ -226,17 +227,17 @@ public interface PantryMapper {
      * enum is nullable in the contract, so its generated {@code fromValue} returns null instead
      * of throwing; both drift shapes degrade to manual.
      */
-    default SupplementStashResponse.SourceEnum toStashSource(String value) {
+    default PantrySource toStashSource(String value) {
         try {
-            SupplementStashResponse.SourceEnum mapped = SupplementStashResponse.SourceEnum.fromValue(value);
+            PantrySource mapped = PantrySource.fromValue(value);
             if (mapped == null) {
                 LOG.warn("pantry_item.source '{}' outside the contract enum — degrading to manual (mezo-w3o)", value);
-                return SupplementStashResponse.SourceEnum.MANUAL;
+                return PantrySource.MANUAL;
             }
             return mapped;
         } catch (IllegalArgumentException ex) {
             LOG.warn("pantry_item.source '{}' outside the contract enum — degrading to manual (mezo-w3o)", value);
-            return SupplementStashResponse.SourceEnum.MANUAL;
+            return PantrySource.MANUAL;
         }
     }
 

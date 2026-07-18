@@ -619,6 +619,8 @@ export const handlers = [
 
   // Pantry import (P6, mezo-bka) — OFF lookup proxy + confirmed-draft import.
   http.get(`${API_BASE}/api/pantry-import/lookup`, () => HttpResponse.json({ results: [] })),
+  // URL scrape (P8, mezo-8vum) — honest-empty default; tests override with server.use().
+  http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })),
   http.post(`${API_BASE}/api/pantry-import`, async ({ request }) => {
     const body = (await request.json()) as { name: string }
     return HttpResponse.json(

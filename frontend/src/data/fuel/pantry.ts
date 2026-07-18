@@ -6,6 +6,7 @@ import type {
   PantryImport,
   PantrySuggestion,
   PantryLookupItem,
+  PantryScrapeDraft,
   MealBreakdown,
   FuelMeal,
 } from '@/data/types'
@@ -333,6 +334,15 @@ export const pantryLookupFixture: PantryLookupItem[] = [
   { name: 'Görög joghurt 10%', brand: 'Mizo', barcode: '5998200711113', per: 100, unit: 'g', kcal: 119, proteinG: 6, carbsG: 4, fatG: 9, sugarG: 3.8, saltG: 0.1, saturatedFatG: 6.2, nova: 3 },
   { name: 'Skyr natúr', brand: 'Ehrmann', barcode: '4002971243307', per: 100, unit: 'g', kcal: 63, proteinG: 10.6, carbsG: 4, fatG: 0.2, sugarG: 3.9, saltG: 0.09, saturatedFatG: 0.1, nova: 1 },
 ]
+
+// === Mock URL-scrape draft (P8, mezo-8vum) — what the demo Link-mode scrape "extracts" ===
+export const MOCK_SCRAPE_DRAFT: PantryScrapeDraft = {
+  name: 'Impact Whey Protein · vanília', brand: 'Myprotein', per: 100, unit: 'g',
+  kcal: 412, proteinG: 82, carbsG: 4, fatG: 7.5, fiberG: null, sugarG: 4, saltG: 0.5,
+  saturatedFatG: 5, nova: 4, category: 'supplement', priceHuf: 24990, priceUnit: '/kg',
+  source: 'myprotein.hu', sourceUrl: 'https://www.myprotein.hu/p/impact-whey/10530943/',
+  confidence: 1, needsReview: false, barcode: null,
+}
 
 // === Standalone template breakdowns for orphan recipes (pantry-data.js:335–530) ===
 const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {

@@ -34,6 +34,9 @@ public class FeaturesConfiguration {
     /** Fuel P6 pantry import (OpenFoodFacts lookup + import endpoints). Gates OffClient + PantryImportController. */
     public static final String PANTRY_IMPORT_SWITCH = "mezo.feature.pantry-import.enabled";
 
+    /** Fuel URL-scrape import (mezo-8vum) — LLM extraction; independent of pantry-import (OFF). */
+    public static final String PANTRY_SCRAPE_SWITCH = "mezo.feature.pantry-scrape.enabled";
+
     /** Proactive layer (mezo-h4wp) — generated briefing + weekly prose + heartbeat + predictions.
      *  Every proactive bean conditions on BOTH this AND COMPANION_SWITCH (the generators call the
      *  CompanionLlm port, whose beans only exist when the companion is on). */

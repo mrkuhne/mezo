@@ -4,6 +4,7 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { usePantry, usePantryActions } from '@/data/fuel/pantryHooks'
+import { MOCK_SCRAPE_DRAFT } from '@/data/fuel/pantry'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
@@ -90,6 +91,15 @@ describe('usePantry (mock mode)', () => {
     })
     expect(result.current.pantry.ingredients.some(i => i.id === target.id)).toBe(false)
   })
+
+  it('scrapeItem resolves the canned MOCK_SCRAPE_DRAFT after the demo delay (mezo-8vum)', async () => {
+    // Mock mode: no backend — the URL-scrape action serves the canned draft (mirrors lookupItems).
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    const draft = await result.current.scrapeItem('https://www.myprotein.hu/p/impact-whey/10530943/')
+    expect(draft).toEqual(MOCK_SCRAPE_DRAFT)
+  })
 })
 
 describe('usePantry (real mode)', () => {
@@ -173,5 +183,34 @@ describe('usePantry (real mode)', () => {
     })
 
     expect(posted).toMatchObject({ name: 'Skyr natúr', per: 100, unit: 'g', kcal: 63, category: 'dairy' })
+  })
+
+  it('scrapeItem maps the response draft and returns null for result:null (mezo-8vum)', async () => {
+    // Real mode: POST /api/pantry-import/scrape → { result } (nothing persisted server-side).
+    server.use(
+      http.post(`${API_BASE}/api/pantry-import/scrape`, () =>
+        HttpResponse.json({
+          result: {
+            name: 'Impact Whey', per: 100, unit: 'g', kcal: 412, proteinG: 82, carbsG: 4,
+            fatG: 7.5, nova: 4, category: 'supplement', priceHuf: 24990, priceUnit: '/kg',
+            source: 'myprotein.hu', sourceUrl: 'https://www.myprotein.hu/p/x', confidence: 1, needsReview: false,
+          },
+        }),
+      ),
+    )
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    const draft = await result.current.scrapeItem('https://www.myprotein.hu/p/x')
+    expect(draft).toMatchObject({
+      name: 'Impact Whey', per: 100, unit: 'g', kcal: 412, proteinG: 82, carbsG: 4, fatG: 7.5, nova: 4,
+      category: 'supplement', priceHuf: 24990, priceUnit: '/kg',
+      source: 'myprotein.hu', sourceUrl: 'https://www.myprotein.hu/p/x', confidence: 1, needsReview: false,
+    })
+
+    // result: null (nothing extracted) passes straight through as null.
+    server.use(http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })))
+    const nullDraft = await result.current.scrapeItem('https://unknown.example/x')
+    expect(nullDraft).toBeNull()
   })
 })

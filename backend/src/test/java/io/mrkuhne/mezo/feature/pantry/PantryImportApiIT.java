@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResult;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
+import io.mrkuhne.mezo.api.dto.PantrySource;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PantryImportPopulator;
 import java.math.BigDecimal;
@@ -160,7 +161,7 @@ class PantryImportApiIT extends ApiIntegrationTest {
         assertThat(pantry.getImports()).hasSize(1);
         PantryImportEntryResponse feed = pantry.getImports().getFirst();
         assertThat(feed.getOfWhat()).isEqualTo("Skyr natúr");
-        assertThat(feed.getSource()).isEqualTo(PantryImportEntryResponse.SourceEnum.OPENFOODFACTS);
+        assertThat(feed.getSource()).isEqualTo(PantrySource.OPENFOODFACTS);
         assertThat(feed.getStatus()).isEqualTo(PantryImportEntryResponse.StatusEnum.SYNCED);
         assertThat(feed.getItems()).isEqualTo(1);
         assertThat(feed.getWhen()).isNotNull();

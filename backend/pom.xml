@@ -95,6 +95,14 @@
 		</dependency>
 
 		<dependency>
+			<!-- HTML parsing for the URL-scrape pantry import (mezo-8vum): HtmlNutritionStripper
+			     reduces a fetched product page to LLM-prompt-sized visible text. -->
+			<groupId>org.jsoup</groupId>
+			<artifactId>jsoup</artifactId>
+			<version>1.18.3</version>
+		</dependency>
+
+		<dependency>
 			<!-- Companion LLM provider (ADR 0008): Google Gen AI SDK based Gemini starter.
 			     Autoconfigures a ChatModel; the app only ever talks to it through the
 			     CompanionLlm port (feature/companion), so a provider swap is one adapter
