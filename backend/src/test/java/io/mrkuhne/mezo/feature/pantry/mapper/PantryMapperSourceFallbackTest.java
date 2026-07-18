@@ -2,8 +2,7 @@ package io.mrkuhne.mezo.feature.pantry.mapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.api.dto.IngredientResponse;
-import io.mrkuhne.mezo.api.dto.SupplementStashResponse;
+import io.mrkuhne.mezo.api.dto.PantrySource;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -18,18 +17,18 @@ class PantryMapperSourceFallbackTest {
     @Test
     void testToIngredientSource_shouldMapKnownValue_whenInEnum() {
         assertThat(mapper.toIngredientSource("openfoodfacts"))
-            .isEqualTo(IngredientResponse.SourceEnum.OPENFOODFACTS);
+            .isEqualTo(PantrySource.OPENFOODFACTS);
     }
 
     @Test
     void testToIngredientSource_shouldFallBackToManual_whenOutOfEnum() {
         assertThat(mapper.toIngredientSource("future-vendor.hu"))
-            .isEqualTo(IngredientResponse.SourceEnum.MANUAL);
+            .isEqualTo(PantrySource.MANUAL);
     }
 
     @Test
     void testToStashSource_shouldFallBackToManual_whenOutOfEnum() {
         assertThat(mapper.toStashSource("future-vendor.hu"))
-            .isEqualTo(SupplementStashResponse.SourceEnum.MANUAL);
+            .isEqualTo(PantrySource.MANUAL);
     }
 }
