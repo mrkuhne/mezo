@@ -1562,3 +1562,32 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .apphero-chip.fire { color: var(--amber-deep); }
 .apphero-chip.quest { color: var(--coral-deep); }
 .apphero-chip.coin { color: var(--sage-deep); }
+
+/* ===== SubNavDropdown — sub-nav popover in the sticky AppHero row (mezo-ugqb) =====
+   z-scale: chip lives inside .apphero (z 45, above tab-bar 40); the fixed backdrop and
+   the anchored menu paint within that stacking context — above content + tab-bar,
+   below StatusBar (50), DynamicIsland (60) and sheets (200+). */
+.subnav-dd { position: relative; }
+.subnav-dd .dd-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--surface); border: 1px solid var(--border-subtle); border-radius: 999px;
+  padding: 7px 12px; font: 800 12px/1 var(--ff-body);
+  color: var(--subnav-accent, var(--ink)); cursor: pointer; white-space: nowrap;
+}
+.subnav-dd .dd-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35);
+  border: none; padding: 0; cursor: default;
+}
+.subnav-dd .dd-menu {
+  position: absolute; top: calc(100% + 8px); right: 0; min-width: 190px;
+  background: var(--surface-1); border: 1px solid var(--border-subtle);
+  border-radius: 14px; padding: 5px 0; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+}
+.subnav-dd .dd-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%; padding: 10px 14px; font: 700 13px/1.2 var(--ff-body);
+  color: var(--sub); text-decoration: none; background: none; border: none;
+  cursor: pointer; text-align: left;
+}
+.subnav-dd .dd-item.on { color: var(--subnav-accent, var(--coral-deep)); }
+.subnav-dd .dd-sep { border-top: 1px solid var(--line); margin: 4px 0; }
