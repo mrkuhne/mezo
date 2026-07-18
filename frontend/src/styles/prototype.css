@@ -217,8 +217,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   background: var(--canvas);
 }
 
-/* Lock background scroll when a sheet/modal is open */
-.phone-screen:has(.sheet-backdrop) .screen-content {
+/* Lock background scroll when a sheet/modal (or the SubNavDropdown popover, whose
+   backdrop is portaled into .phone-screen the same way) is open */
+.phone-screen:has(.sheet-backdrop, .dd-backdrop) .screen-content {
   overflow: hidden !important;
   touch-action: none;
 }
@@ -1566,9 +1567,12 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 .apphero .util { display: flex; gap: 7px; align-items: center; }
 
 /* ===== SubNavDropdown — sub-nav popover in the sticky AppHero row (mezo-ugqb) =====
-   z-scale: chip lives inside .apphero (z 45, above tab-bar 40); the fixed backdrop and
-   the anchored menu paint within that stacking context — above content + tab-bar,
-   below StatusBar (50), DynamicIsland (60) and sheets (200+). */
+   z-scale: chip lives inside .apphero (z 45, above tab-bar 40). The menu paints
+   within that stacking context. The backdrop is portaled into .phone-screen (same
+   target + fallback as Sheet, see Sheet.tsx) so its `position: absolute; inset: 0`
+   covers the whole device viewport instead of escaping the phone mockup on desktop —
+   z 44 keeps it above content + tab-bar (40) but strictly below the header/menu (45)
+   and sheets (200+), independent of portal DOM order. */
 .subnav-dd { position: relative; }
 .subnav-dd .dd-chip {
   display: inline-flex; align-items: center; gap: 5px;
@@ -1576,9 +1580,9 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
   padding: 7px 12px; font: 800 12px/1 var(--ff-body);
   color: var(--subnav-accent, var(--ink)); cursor: pointer; white-space: nowrap;
 }
-.subnav-dd .dd-backdrop {
-  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35);
-  border: none; padding: 0; cursor: default;
+.dd-backdrop {
+  position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35);
+  border: none; padding: 0; cursor: default; z-index: 44;
 }
 .subnav-dd .dd-menu {
   position: absolute; top: calc(100% + 8px); right: 0; min-width: 190px;

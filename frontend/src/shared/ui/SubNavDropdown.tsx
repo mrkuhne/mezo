@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { NavLink, matchPath, useLocation } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { Icon } from '@/shared/ui/Icon'
@@ -33,6 +34,14 @@ export function SubNavDropdown({
   const { pathname } = useLocation()
   const chipRef = useRef<HTMLButtonElement>(null)
   const menuId = useId()
+  // Portal the backdrop into the phone screen so `position: absolute` covers the
+  // whole device viewport instead of whatever scrolling content the dropdown
+  // happens to be mounted inside — mirrors Sheet's portal target resolution
+  // exactly (Sheet.tsx). Falls back to <body> in tests where `.phone-screen`
+  // doesn't exist.
+  const [portalTarget] = useState<Element>(
+    () => document.querySelector('.phone-screen') ?? document.body,
+  )
   // Same active semantics as the retired NavLink pills: index items match exactly
   // (end: true), section items match by prefix.
   const active =
@@ -70,15 +79,18 @@ export function SubNavDropdown({
       </button>
       {open && (
         <>
-          <button
-            type="button"
-            className="dd-backdrop"
-            aria-label="Bezárás"
-            onClick={() => {
-              setOpen(false)
-              chipRef.current?.focus()
-            }}
-          />
+          {createPortal(
+            <button
+              type="button"
+              className="dd-backdrop"
+              aria-label="Bezárás"
+              onClick={() => {
+                setOpen(false)
+                chipRef.current?.focus()
+              }}
+            />,
+            portalTarget,
+          )}
           <div className="dd-menu" role="menu" id={menuId}>
             {items.map((item) => {
               const on = item === active
