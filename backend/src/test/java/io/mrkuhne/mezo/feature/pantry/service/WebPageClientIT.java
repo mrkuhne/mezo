@@ -51,6 +51,15 @@ class WebPageClientIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testFetch_shouldReturnBody_whenContentTypeMalformed() {
+        // A malformed Content-Type (unparseable by MediaType) must not escape as a raw
+        // IllegalArgumentException/InvalidMediaTypeException — charsetOf falls back to UTF-8.
+        SHOP.stubFor(get(urlPathEqualTo("/malformed-ct")).willReturn(
+            aResponse().withHeader("Content-Type", "text/html; charset=").withBody("<html><body>Impact Whey</body></html>")));
+        assertThat(client.fetch(SHOP.baseUrl() + "/malformed-ct")).contains("Impact Whey");
+    }
+
+    @Test
     void testFetch_shouldThrowFetchFailed_whenUpstream404() {
         SHOP.stubFor(get(urlPathEqualTo("/gone")).willReturn(aResponse().withStatus(404)));
         assertThatThrownBy(() -> client.fetch(SHOP.baseUrl() + "/gone"))

@@ -21,6 +21,7 @@ import org.springframework.boot.http.client.HttpRedirects;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -111,9 +112,20 @@ public class WebPageClient {
         return buffer.toByteArray();
     }
 
-    /** Charset from the response Content-Type, UTF-8 when the header is absent or charset-less. */
+    /**
+     * Charset from the response Content-Type, UTF-8 when the header is absent, charset-less, or
+     * malformed — {@code getContentType()} throws {@link InvalidMediaTypeException} (an
+     * IllegalArgumentException, not a RestClientException) on an unparseable header, which would
+     * otherwise escape {@code fetch}'s outer catch as a generic 500; swallow it to the same UTF-8
+     * fallback so every path stays within the class's typed-SystemMessage contract.
+     */
     private Charset charsetOf(HttpHeaders headers) {
-        MediaType contentType = headers.getContentType();
+        MediaType contentType;
+        try {
+            contentType = headers.getContentType();
+        } catch (InvalidMediaTypeException ex) {
+            return StandardCharsets.UTF_8;
+        }
         return contentType != null && contentType.getCharset() != null
             ? contentType.getCharset() : StandardCharsets.UTF_8;
     }

@@ -40,7 +40,12 @@ public class PantryImportService {
     private final PantryItemRepository itemRepository;
     private final PantryImportRepository importRepository;
     private final PantryMapper mapper;
-    /** Present only when the scrape switch is on; absent -> imports never land as manual-review. */
+    /**
+     * Always present — {@code PantryScrapeProperties} is registered unconditionally by
+     * {@code @ConfigurationPropertiesScan}, so {@code getIfAvailable()} never returns null here.
+     * Kept as an ObjectProvider purely as belt-and-suspenders (manual-review still hinges on the
+     * request carrying a confidence, not on the bean's presence).
+     */
     private final ObjectProvider<PantryScrapeProperties> scrapeProps;
 
     /**
@@ -112,8 +117,9 @@ public class PantryImportService {
 
     /**
      * A confirmed scraped draft whose deterministic confidence is at or below the scrape threshold
-     * lands as {@code manual-review} (a >30%-off Atwater draft scores exactly the threshold). No
-     * confidence (OFF/manual imports) or no scrape switch -> always {@code synced}.
+     * lands as {@code manual-review} (a >30%-off Atwater draft scores exactly the threshold).
+     * OFF/manual imports send no confidence (and none exist while the scrape switch is off), so a
+     * null confidence always stays {@code synced}.
      */
     private boolean isManualReview(BigDecimal confidence) {
         if (confidence == null) {
