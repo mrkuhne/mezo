@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -87,6 +88,24 @@ public class GlobalExceptionHandler {
         m.setExceptionTraceId(traceId);
         m.setMessage(resolve(m));
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(List.of(m));
+    }
+
+    /**
+     * A known route matched by path but not by HTTP method (e.g. a POST to a path that only maps
+     * {@code GET}/{@code PUT}/{@code DELETE}) — surface a clean 405 SystemMessage instead of letting
+     * it fall through to the generic 500 catch-all. This notably keeps a disabled feature honest:
+     * with a {@code @ConditionalOnProperty} controller gone, a request whose path still collides with
+     * a sibling path-variable route (e.g. {@code /api/meal/ai-draft} vs {@code /api/meal/{id}})
+     * degrades to 405, not a stack-trace-noisy 500.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<List<SystemMessage>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex) {
+        String traceId = UUID.randomUUID().toString();
+        log.warn("Method not allowed [traceId={}]: {}", traceId, ex.getMessage());
+        SystemMessage m = SystemMessage.error("METHOD_NOT_ALLOWED").build();
+        m.setExceptionTraceId(traceId);
+        m.setMessage(resolve(m));
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(List.of(m));
     }
 
     @ExceptionHandler(Exception.class)
