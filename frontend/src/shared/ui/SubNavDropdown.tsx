@@ -34,14 +34,6 @@ export function SubNavDropdown({
   const { pathname } = useLocation()
   const chipRef = useRef<HTMLButtonElement>(null)
   const menuId = useId()
-  // Portal the backdrop into the phone screen so `position: absolute` covers the
-  // whole device viewport instead of whatever scrolling content the dropdown
-  // happens to be mounted inside — mirrors Sheet's portal target resolution
-  // exactly (Sheet.tsx). Falls back to <body> in tests where `.phone-screen`
-  // doesn't exist.
-  const [portalTarget] = useState<Element>(
-    () => document.querySelector('.phone-screen') ?? document.body,
-  )
   // Same active semantics as the retired NavLink pills: index items match exactly
   // (end: true), section items match by prefix.
   const active =
@@ -89,7 +81,14 @@ export function SubNavDropdown({
                 chipRef.current?.focus()
               }}
             />,
-            portalTarget,
+            // Resolved lazily, here in the open-branch render, NOT via a useState
+            // initializer: SubNavDropdown mounts unconditionally with the page (it's
+            // in the always-rendered header), so a useState(() => querySelector(...))
+            // initializer would run on the very first render, before PhoneFrame's DOM
+            // commits, permanently caching the <body> fallback. This branch only ever
+            // renders once `open` is true, i.e. after the initial commit, so the query
+            // reliably finds `.phone-screen`. Same fallback as Sheet.tsx for jsdom/tests.
+            document.querySelector('.phone-screen') ?? document.body,
           )}
           <div className="dd-menu" role="menu" id={menuId}>
             {items.map((item) => {
