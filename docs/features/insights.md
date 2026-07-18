@@ -2,7 +2,7 @@
 title: Insights
 type: feature-domain
 status: mixed
-updated: 2026-07-16
+updated: 2026-07-18
 tags: [insights, frontend, data-layer]
 key_files:
   - frontend/src/features/insights
@@ -218,7 +218,7 @@ Insights is the **hub the other tabs point *toward*** and is itself **fed concep
 **Crossing type:** `KnowledgeFact[]` + `KnowledgeEdge[]`. Since V1.2 the backend IS live and serves both tabs through the same `useKnowledge()`: Insights/Knowledge consumes the real facts + candidates; Me/Knowledge keeps rendering the seed in mock mode and gets an honest `edges: []` in real mode (the graph/edges layer has no backend yet — a future slice).
 
 ### 5.2 Today → Insights (nav entry, no live teaser)
-The `InsightsTeaser.tsx` Today-tab card (a real-mode `usePatterns()` teaser, per Today's `useInsightsTeaser` hook) was **removed** by the Napív S3 Today re-composition (`mezo-8141`, 2026-07-13 — spec §4.2: the Insights entry point is the ✨ icon in `BrandRow`, nothing else). Today's only remaining path into this tab is that plain `<Link to="/insights" aria-label="Insights">` — navigation only, no pattern preview. The orphaned `useInsightsTeaser` hook (+ `InsightsTeaserItem` type and its `data/hooks.ts` re-export) was DELETED in S8 (`mezo-mifi`) — see [today.md §9](today.md).
+The `InsightsTeaser.tsx` Today-tab card (a real-mode `usePatterns()` teaser, per Today's `useInsightsTeaser` hook) was **removed** by the Napív S3 Today re-composition (`mezo-8141`, 2026-07-13 — spec §4.2: the Insights entry point is the ✨ icon, nothing else). Today's only remaining path into this tab is that plain `<Link to="/insights" aria-label="Insights">` — navigation only, no pattern preview. It originally lived in the now-deleted `BrandRow.tsx`; since the gamified-header slice (`mezo-k7rn`, 2026-07-18) it's one of the `utilities` Today passes into the shared `AppHero` header (see [today.md §2](today.md)) — same ✨ affordance, different carrier component. The orphaned `useInsightsTeaser` hook (+ `InsightsTeaserItem` type and its `data/hooks.ts` re-export) was DELETED in S8 (`mezo-mifi`) — see [today.md §9](today.md).
 
 ### 5.3 Me-tab `InsightCard` + `TrendInsight` — a parallel, lighter "insight" type
 `frontend/src/features/me/components/InsightCard.tsx` renders a **different** type: `TrendInsight { type: 'milestone'|'pattern'|'warning'; text }` (`types.ts:157-158`). `TrendInsight[]` arrays are embedded in **Goals** (`data/me/goals.ts`, `insights` field on the goal aggregate, `types.ts:186,218`) and **Sleep**. So the *insight concept leaks into Me/Goals/Sleep* via a lighter inline type. The `pattern` icon in `InsightCard` is literally `'insights'`. **Phase-3 reconciliation needed:** rich `Pattern` (Insights tab) vs lightweight `TrendInsight` (embedded) — decide whether to unify or keep two tiers.
@@ -354,7 +354,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `memoirHooks.ts` — **`useMemoir` (W2)**: dual-mode `['memoir']` read (mock seed no-fetch / real `GET /api/proactive/memoir`, 404→null); returns `{ memoir, anniversaryNote, mode }`
 - `memoirApi.ts` — **W2** `memoirApi.latest()` → proactive `GET /api/proactive/memoir` (wire → FE `Memoir` via `toMemoir`, `Hét N …` week label derived client-side)
 - `insightsHooks.ts` — `useInsights` (no longer returns `weekly`/`weeklySuggestion` since D′; its `memoir`/`anniversaryNote` fields no longer consumed since W2 — only `predictions`/`experiments` are live)
-- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`** (the boundary / Phase-3 swap point)
+- `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useWeekly`**, **`useMemoir`** (the boundary / Phase-3 swap point). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
 - `types.ts:349-418` — all Insights/Knowledge/Chat types
 - Tests: `insightsData.test.tsx`, `chatData.test.tsx`
 
