@@ -65,7 +65,7 @@ test('hides the Replan CTA in real mode even with an active protocol — no fabr
 })
 test('opening a meal score sheet then closing it', async () => {
   renderView()
-  await userEvent.click(screen.getAllByRole('button', { name: /AI/ })[0])
+  await userEvent.click(screen.getAllByRole('button', { name: 'AI score' })[0])
   expect(await screen.findByText('Súlyozott bontás')).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
   await waitFor(() => expect(screen.queryByText('Súlyozott bontás')).not.toBeInTheDocument())
