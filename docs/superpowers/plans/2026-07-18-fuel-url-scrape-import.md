@@ -128,7 +128,7 @@ cd ../../frontend && pnpm generate:api
 cd ../backend && ./mvnw clean generate-sources -q
 ```
 
-Expected: merge writes `api/openapi.yml`; FE types compile later; backend generates `PantryScrapeRequest/Response/Result` + `scrapePantryItem` on `PantryImportApi`. Backend now FAILS to compile (`PantryImportController` doesn't implement `scrapePantryItem`) — that's expected until Task 6; verify generation only, not `clean test`.
+Expected: merge writes `api/openapi.yml`; backend generates `PantryScrapeRequest/Response/Result` + a NEW `PantryScrapeApi` interface (own tag). Nothing implements it yet — an unimplemented generated interface compiles fine, so `./mvnw clean generate-sources` (and later compiles) stay green.
 
 - [ ] **Step 5: Commit**
 
@@ -193,7 +193,7 @@ alter table pantry_import add column source_url text;
 cd backend && ./mvnw clean test -Dtest=PantryItemRepositoryIT -DargLine=-Xmx3g
 ```
 
-Expected: Liquibase applies `202607181100_mezo-8vum_pantry_scrape` and the IT passes. (The controller still lacks `scrapePantryItem` → if compilation fails, add a temporary implementation returning `null` is NOT allowed — instead run this task's verification AFTER Task 3's stub lands. Alternative accepted order: do Task 3 Step 1–2 first.)
+Expected: Liquibase applies `202607181100_mezo-8vum_pantry_scrape` and the IT passes.
 
 - [ ] **Step 5: Commit**
 
