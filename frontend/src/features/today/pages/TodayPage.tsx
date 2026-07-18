@@ -1,6 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useTodayScenario, useToday, useCheckins, useCompanionNote, resolveBriefing } from '@/data/hooks'
-import { BrandRow } from '@/features/today/components/BrandRow'
+import { AppHero } from '@/features/progression/components/AppHero'
+import { Icon } from '@/shared/ui/Icon'
 import { GreetingHeader } from '@/features/today/components/GreetingHeader'
 import { DayArc } from '@/features/today/components/DayArc'
 import { BriefingCard } from '@/features/today/components/BriefingCard'
@@ -31,7 +33,14 @@ export function TodayPage() {
 
   return (
     <>
-      <BrandRow />
+      <AppHero
+        utilities={
+          <>
+            <button className="chip" aria-label="Keresés"><Icon name="search" size={12} /></button>
+            <Link to="/insights" aria-label="Insights" className="icon-btn"><Icon name="sparkle" size={18} /></Link>
+          </>
+        }
+      />
       <GreetingHeader today={today} user={user} retaDay={scenario.retaDay} />
       <DayArc checkins={checkins} workoutTime={workoutTime} />
       {workout ? (
