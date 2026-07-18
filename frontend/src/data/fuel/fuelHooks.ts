@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { mealApi, type FuelDayData } from '@/data/fuel/mealApi'
 import { apiFetch } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
+import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import { localDateString } from '@/shared/lib/dates'
 import { useDualQuery } from '@/data/useDualQuery'
 import { fuelDay } from '@/data/fuel/fuel'
@@ -67,7 +68,10 @@ export function useMealActions(date: string = localDateString()) {
 
   const logM = useMutation({
     mutationFn: mock
-      ? async (input: MealInput) => mockLog(qc, date, input)
+      ? async (input: MealInput) => {
+          mockLog(qc, date, input)
+          awardGamificationEvent(qc, { type: 'MEAL' })
+        }
       : (input: MealInput) => mealApi.create(input),
     onSuccess: mock ? undefined : invalidate,
   })

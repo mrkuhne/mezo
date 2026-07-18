@@ -5,6 +5,7 @@ import { currentWeekOf } from '@/shared/lib/dates'
 import { runningApi, type RunningBlockResponse, type RunningBlockUpsertRequest, type RunSessionLogRequest, type RunSessionLogResponse } from '@/data/train/runningApi'
 import { runningBlocksMock, runSessionsMock } from '@/data/train/running'
 import { runLevelUpMock } from '@/data/progression/progressionMock'
+import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 
 export type RunningData = {
   runningBlocks: RunningBlockResponse[]
@@ -91,6 +92,7 @@ export function useRunning(): RunningData {
       if (mock) {
         const logged = logMock(body)
         qc.setQueryData<RunSessionLogResponse[]>(['running', 'runSessions'], (prev = []) => [logged, ...prev])
+        awardGamificationEvent(qc, { type: 'RUN' })
         return Promise.resolve(logged)
       }
       return runningApi.logRunSession(body)

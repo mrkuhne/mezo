@@ -32,6 +32,7 @@ import {
   exerciseLibrary,
 } from '@/data/train/train'
 import { gymLevelUpMock, sportLevelUpMock } from '@/data/progression/progressionMock'
+import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
   ExerciseLibraryItem,
   GymSchedule,
@@ -382,7 +383,10 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // Mock returns a seeded LevelUpResult-carrying response (the no-op finish
     // can't compute one) so the gym complete flow shows the level-up overlay.
     mutationFn: mock
-      ? async (_id: string) => ({ levelUp: gymLevelUpMock } as WorkoutInstanceResponse)
+      ? async (_id: string) => {
+          awardGamificationEvent(qc, { type: 'GYM' })
+          return { levelUp: gymLevelUpMock } as WorkoutInstanceResponse
+        }
       : (id: string) => trainApi.finishWorkout(id),
     onSuccess: () => { invalidateToday(); invalidateProgression() },
   })
@@ -410,6 +414,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
               return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
             },
           )
+          awardGamificationEvent(qc, { type: 'SPORT' })
           // Only levelUp is read downstream; provide the required fields + the
           // captured effort, omitting the optional nullables.
           return {

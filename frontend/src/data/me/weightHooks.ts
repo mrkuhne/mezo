@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { weightApi, type WeightTrendResponse } from '@/data/me/biometricsApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
+import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import { weightLog as initialWeightLog, weightTrends as mockWeightTrends } from '@/data/me/goals'
 import type { WeightEntry, WeightLogInput, WeightTrends } from '@/data/types'
 
@@ -54,8 +55,10 @@ export function useWeight() {
           ({ date: input.date, value: input.weightKg, note: input.note })
       : weightApi.log,
     onSuccess: (entry) => {
-      if (mock) qc.setQueryData<WeightEntry[]>(['weightLog'], prev => [...(prev ?? []), entry])
-      else {
+      if (mock) {
+        qc.setQueryData<WeightEntry[]>(['weightLog'], prev => [...(prev ?? []), entry])
+        awardGamificationEvent(qc, { type: 'WEIGHT' })
+      } else {
         // A new weigh-in shifts the EWMA trend — refetch both the log and the trend.
         qc.invalidateQueries({ queryKey: ['weightLog'] })
         qc.invalidateQueries({ queryKey: ['weightTrend'] })
