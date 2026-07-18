@@ -82,6 +82,11 @@ public class MealEntity extends OwnedEntity {
     @Column(columnDefinition = "jsonb")
     private MealBreakdownJson breakdown;
 
+    /** Typed jsonb provenance envelope ({@link MealProvenanceJson}) — written by the AI confirm path, NULL for manual/legacy rows. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private MealProvenanceJson provenance;
+
     @OneToMany(mappedBy = "meal", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineOrder")
     private List<MealItemEntity> items = new ArrayList<>();
