@@ -67,6 +67,13 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern MEAL_SENTINEL =
             Pattern.compile("\\[fake-meal:(\\{.*})]", Pattern.DOTALL);
 
+    /** Scripted recipe breakdown prose (mezo-bw3y): {@code [fake-recipe-fit:{json}]} planted in the
+     *  RECIPE NAME (it appears in the prompt's user message). GREEDY — the payload nests objects.
+     *  No sentinel -> prompt echo -> unparseable -> the prose service degrades to the deterministic
+     *  envelope, which is exactly the LLM-failure path the ITs assert. */
+    public static final Pattern RECIPE_FIT_SENTINEL =
+            Pattern.compile("\\[fake-recipe-fit:(\\{.*})]", Pattern.DOTALL);
+
     /** Scripted narrative (V2.2): {@code [fake-summary:…]} payload becomes the summary answer. */
     public static final Pattern SUMMARY_SENTINEL =
             Pattern.compile("\\[fake-summary:([^\\]]*)]", Pattern.DOTALL);
@@ -251,6 +258,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         Matcher meal = MEAL_SENTINEL.matcher(userMessage);
         if (meal.find()) {
             return meal.group(1);
+        }
+        // Recipe breakdown prose (mezo-bw3y): sentinel planted in the recipe name; no sentinel ->
+        // prompt echo -> unparseable -> deterministic-envelope degrade (as the ITs assert).
+        Matcher recipeFit = RECIPE_FIT_SENTINEL.matcher(userMessage);
+        if (recipeFit.find()) {
+            return recipeFit.group(1);
         }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));

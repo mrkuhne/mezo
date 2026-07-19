@@ -40,6 +40,11 @@ public class FeaturesConfiguration {
     /** AI meal logging (text/photo -> LLM draft). Independent of the companion chat switch. */
     public static final String MEAL_AI_LOG_SWITCH = "mezo.feature.meal-ai-log.enabled";
 
+    /** Recipe AI template breakdown prose (mezo-bw3y): gates ONLY the LLM prose enrichment — the
+     *  deterministic GET /api/recipe/{id}/breakdown envelope stays on regardless. Prose additionally
+     *  needs COMPANION_SWITCH (the port adapter lives there). */
+    public static final String RECIPE_AI_SCORE_SWITCH = "mezo.feature.recipe-ai-score.enabled";
+
     /** Proactive layer (mezo-h4wp) — generated briefing + weekly prose + heartbeat + predictions.
      *  Every proactive bean conditions on BOTH this AND COMPANION_SWITCH (the generators call the
      *  CompanionLlm port, whose beans only exist when the companion is on). */
