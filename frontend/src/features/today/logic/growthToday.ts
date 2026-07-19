@@ -7,9 +7,9 @@ export interface GrowthTodaySummary {
 }
 
 /**
- * Today's growth-at-a-glance line for the Today `GrowthTodayRow` teaser (quests +
- * activity log relocated to /me/growth). xp = Σ xp on completed quests + Σ xpAwarded
- * on today's activity entries (0 for uncategorized rows — no special-casing needed).
+ * Today's growth-at-a-glance summary — the `TodayQuestsCard` header (done/total · +XP,
+ * mezo-gj2y; previously the retired GrowthTodayRow's line). xp = Σ xp on completed quests
+ * + Σ xpAwarded on today's activity entries (0 for uncategorized rows — no special-casing).
  */
 export function growthTodaySummary(quests: DailyQuest[], entries: ActivityEntry[]): GrowthTodaySummary {
   const completed = quests.filter((q) => q.status === 'completed')

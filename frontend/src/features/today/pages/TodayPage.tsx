@@ -11,12 +11,18 @@ import { VolleyballCard } from '@/features/today/components/VolleyballCard'
 import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 import { FuelTimelinePreview } from '@/features/today/components/FuelTimelinePreview'
 import { QuickStatsRow } from '@/features/today/components/QuickStatsRow'
-import { GrowthTodayRow } from '@/features/today/components/GrowthTodayRow'
+import { TodayQuestsCard } from '@/features/today/components/TodayQuestsCard'
+import { ZoneDivider } from '@/features/today/components/ZoneDivider'
 import { CheckInStrip } from '@/features/today/components/CheckInStrip'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { AnchorModeView } from '@/features/today/pages/AnchorModeView'
 
+/**
+ * Action-first zones (mezo-gj2y): Most (greeting + arc + hero) → Teendők ma (quests +
+ * check-in) → A napod (briefing, notes, stats, fuel). The vulnerability card stays above
+ * the action zone deliberately — tone lands before demands (ADR 0010 spirit).
+ */
 export function TodayPage() {
   const scenario = useTodayScenario()
   const {
@@ -30,6 +36,7 @@ export function TodayPage() {
   if (scenario.anchorMode) return <AnchorModeView />
 
   const todaySport = volleyballSessions.find(s => s.today)
+  const nextCheckinIdx = checkins.findIndex(c => c.state === 'now' || c.state === 'pending')
 
   return (
     <>
@@ -48,14 +55,18 @@ export function TodayPage() {
       ) : (
         todaySport && <VolleyballCard session={todaySport} note={volleyballNote} />
       )}
+      {scenario.vulnerable && <VulnerabilityCard />}
+      <ZoneDivider label="Teendők ma" />
+      <TodayQuestsCard
+        onCheckIn={nextCheckinIdx >= 0 ? () => setCheckInIdx(nextCheckinIdx) : undefined}
+      />
+      <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
+      <ZoneDivider label="A napod" />
       <BriefingCard briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />
       {companionNote && <CompanionNoteCard note={companionNote} />}
-      {scenario.vulnerable && <VulnerabilityCard />}
-      <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
       {workout && todaySport && <VolleyballCard session={todaySport} note={volleyballNote} />}
       <QuickStatsRow />
       <FuelTimelinePreview />
-      <GrowthTodayRow />
       {checkInIdx !== null && (
         <CheckInSheet
           slot={checkins[checkInIdx]}
