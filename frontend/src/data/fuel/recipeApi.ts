@@ -1,10 +1,18 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { Recipe, RecipeInput, RecipeIngredientLine } from '@/data/types'
+import { fromBreakdown } from '@/data/fuel/mealApi'
+import type { MealBreakdown, Recipe, RecipeInput, RecipeIngredientLine } from '@/data/types'
 
 type RecipeRequest = components['schemas']['RecipeRequest']
 type RecipeResponse = components['schemas']['RecipeResponse']
 type RecipeListResponse = components['schemas']['RecipeListResponse']
+type RecipeBreakdownResponse = components['schemas']['RecipeBreakdownResponse']
+
+/** What useRecipeBreakdown serves: the (possibly prose-less) envelope + fitsFor labels. */
+export interface RecipeBreakdownData {
+  breakdown: MealBreakdown | null
+  fitsFor: string[]
+}
 
 /** Editor input → contract request. pantryItemId passes straight through; category is a trusted
  *  form string cast to the contract type (mirrors pantryApi's category cast). */
@@ -67,6 +75,14 @@ export const recipeApi = {
     apiFetch<RecipeListResponse>('/api/recipe').then(res => res.recipes.map(fromResponse)),
   get: (id: string): Promise<Recipe> =>
     apiFetch<RecipeResponse>(`/api/recipe/${id}`).then(fromResponse),
+  // Template breakdown (mezo-bw3y): lazily materializing GET — the first call may take LLM
+  // seconds. keepDegraded: the template view SHOWS the weight-0 context card (spec D3), unlike
+  // the meal sheet which drops degraded dimensions.
+  getBreakdown: (id: string): Promise<RecipeBreakdownData> =>
+    apiFetch<RecipeBreakdownResponse>(`/api/recipe/${id}/breakdown`).then(r => ({
+      breakdown: r.breakdown ? fromBreakdown(r.breakdown, { keepDegraded: true }) : null,
+      fitsFor: r.fitsFor,
+    })),
   create: (input: RecipeInput): Promise<void> =>
     apiFetch('/api/recipe', { method: 'POST', body: JSON.stringify(toRequest(input)) }).then(() => undefined),
   update: (id: string, input: RecipeInput): Promise<void> =>

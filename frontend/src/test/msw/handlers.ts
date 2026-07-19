@@ -51,6 +51,32 @@ const recipeLogFixture = {
   ],
 }
 
+// Recipe template-breakdown fixture (mezo-bw3y) mirroring RecipeBreakdownResponse: the enriched
+// envelope — 3 live dims (renormalized weights) + the degraded context card the template view keeps.
+const recipeBreakdownFixture = {
+  breakdown: {
+    value: 0.91,
+    confidence: 0.86,
+    summary: 'MSW sablon-olvasat.',
+    dimensions: [
+      { id: 'macro', label: 'Kcal & makró arány', weight: 0.38, score: 0.92, detail: 'MSW makró detail.',
+        macro: { ratioP: 30, ratioC: 40, ratioF: 30, targetP: '~27%', targetC: '~46%', targetF: '~27%', kcalShareOfDay: 24.5, notes: null } },
+      { id: 'micro', label: 'Mikro–makro balance', weight: 0.31, score: 0.88, detail: 'MSW mikró detail.',
+        micros: [{ name: 'Rost', value: '9.5 g', pct: 82, status: 'good' }] },
+      { id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.31, score: 0.94, detail: 'MSW nova detail.',
+        nova: { dominant: 1, stack: [{ nova: 1, pct: 100, label: 'Zab' }], items: [{ name: 'Zabpehely 70g', nova: 1, warning: false }] } },
+      { id: 'context', label: 'Időzítés & kontextus', weight: 0, score: 0,
+        detail: 'Sablon szinten nincs időzítési adat — a kontextust a logolt étkezéseknél értékeljük.', context: [] },
+    ],
+    improve: [{ text: 'MSW javaslat.', impact: '+rost' }],
+    tools: [
+      { type: 'compute', name: 'templateFit(weights_renormalized)' },
+      { type: 'compute', name: 'llm:sablon-olvasat' },
+    ],
+  },
+  fitsFor: ['Post-workout · este'],
+}
+
 // Medication day fixture (mezo-d94) mirroring MedicationDayResponse + the medicationSeed:
 // the owner's single active Retatrutide on a 7-day cycle, derived cycle on retaDay 3 (stable),
 // three most-recent weekly doses.
@@ -553,8 +579,9 @@ export const handlers = [
   // Recipe (mezo-lns) — defaults; tests override with server.use() for payload capture +
   // list-after-write. GET list/detail return the fixture; writes echo 201/204.
   http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [recipeFixture] })),
-  // /logs registered before /:id so the segmented path matches deterministically.
+  // /logs + /breakdown registered before /:id so the segmented paths match deterministically.
   http.get(`${API_BASE}/api/recipe/:id/logs`, () => HttpResponse.json(recipeLogFixture)),
+  http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => HttpResponse.json(recipeBreakdownFixture)),
   http.get(`${API_BASE}/api/recipe/:id`, ({ params }) =>
     HttpResponse.json({ ...recipeFixture, id: String(params.id) }),
   ),

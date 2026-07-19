@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { recipeApi } from '@/data/fuel/recipeApi'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { recipeApi, type RecipeBreakdownData } from '@/data/fuel/recipeApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
 import { recipes as mockRecipes, ingredients, pantryCategoryMeta } from '@/data/fuel/pantry'
@@ -48,6 +48,38 @@ export function useRecipes() {
   }
 }
 
+const RECIPE_BREAKDOWN_KEY = (id: string) => ['recipeBreakdown', id] as const
+
+/** Template breakdown for the detail page (mezo-bw3y). Mock = the seed's templateBreakdown +
+ *  mezoFit.fitsFor, synchronous via initialData; real = the lazily materializing
+ *  GET /api/recipe/{id}/breakdown (the FIRST call may take LLM seconds — `pending` drives the
+ *  detail page's „Mezo értékeli…" card; no mock fallback in real mode). */
+export function useRecipeBreakdown(recipeId: string): {
+  breakdown: RecipeBreakdownData['breakdown']
+  fitsFor: string[]
+  pending: boolean
+} {
+  const mock = isMockMode()
+  const seed = (): RecipeBreakdownData => {
+    const r = mockRecipes.find(x => x.id === recipeId)
+    return { breakdown: r?.templateBreakdown ?? null, fitsFor: r?.mezoFit.fitsFor ?? [] }
+  }
+  const { data, isPending } = useQuery({
+    queryKey: RECIPE_BREAKDOWN_KEY(recipeId),
+    queryFn: mock ? async () => seed() : () => recipeApi.getBreakdown(recipeId),
+    initialData: mock ? seed() : undefined,
+    // real: the backend caches the enriched envelope; a session-long staleTime avoids re-firing
+    // the (potentially LLM-priced) GET on every remount, the write-path invalidation covers edits
+    staleTime: mock ? Infinity : 5 * 60_000,
+    enabled: recipeId !== '',
+  })
+  return {
+    breakdown: data?.breakdown ?? null,
+    fitsFor: data?.fitsFor ?? [],
+    pending: !mock && isPending,
+  }
+}
+
 /** Create/update/delete on the ['recipes'] cache. Real writes invalidate ['recipes'] AND ['pantry']. */
 export function useRecipeActions() {
   const qc = useQueryClient()
@@ -56,6 +88,7 @@ export function useRecipeActions() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: RECIPES_KEY })
     qc.invalidateQueries({ queryKey: PANTRY_KEY }) // recipe writes shift pantry usedInRecipes
+    qc.invalidateQueries({ queryKey: ['recipeBreakdown'] }) // edit nulls the server cache (mezo-bw3y)
   }
 
   const createM = useMutation({
