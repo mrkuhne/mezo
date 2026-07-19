@@ -21,4 +21,5 @@ inputs:
   - inputFile: ../feature/proactive/proactive.yml
   - inputFile: ../feature/quest/quest.yml
   - inputFile: ../feature/activity/activity.yml
+  - inputFile: ../feature/habit/habit.yml
 output: ../openapi.yml

@@ -1676,6 +1676,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/habit/day/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Day view of both routine chains; lazily creates + evaluates today's rows (Habits) */
+        get: operations["getHabitDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/{key}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manually check a MANUAL habit for today (Habits) */
+        post: operations["checkHabit"];
+        /** Same-day un-check of a MANUAL habit; reverses the XP (Habits) */
+        delete: operations["uncheckHabit"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/habit/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 28-day strengths + 30-day perfect-day counters (Habits) */
+        get: operations["getHabitSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2141,7 +2193,7 @@ export interface components {
         };
         LevelUpResult: {
             /** @enum {string} */
-            source: "GYM" | "SPORT" | "RUN" | "QUEST" | "ACTIVITY";
+            source: "GYM" | "SPORT" | "RUN" | "QUEST" | "ACTIVITY" | "HABIT";
             workoutLabel?: string;
             durationMin?: number;
             rpe?: number;
@@ -3752,6 +3804,51 @@ export interface components {
             completedQuest?: components["schemas"]["QuestResponse"] | null;
             /** @description 0–2 payloads — the activity award and/or the completed quest's award */
             levelUps: components["schemas"]["LevelUpResult"][];
+        };
+        HabitResponse: {
+            /** Format: uuid */
+            id?: string;
+            key: string;
+            /** @enum {string} */
+            chain: "MORNING" | "EVENING";
+            position: number;
+            title: string;
+            why: string;
+            anchorCopy: string;
+            /** @enum {string} */
+            mode: "DERIVED" | "MANUAL";
+            /** @enum {string} */
+            status: "pending" | "done" | "missed";
+            /** Format: date-time */
+            doneAt?: string | null;
+            xp: number;
+            /** @description trailing-28d done ratio, null under min-sample */
+            strengthPct?: number | null;
+        };
+        HabitDayResponse: {
+            /** Format: date */
+            date: string;
+            habits: components["schemas"]["HabitResponse"][];
+            levelUps: components["schemas"]["LevelUpResult"][];
+        };
+        HabitWriteResponse: {
+            habit: components["schemas"]["HabitResponse"];
+            levelUps: components["schemas"]["LevelUpResult"][];
+        };
+        HabitCheckRequest: {
+            /** Format: date */
+            date: string;
+        };
+        HabitStrength: {
+            key: string;
+            strengthPct?: number | null;
+            done28: number;
+            missed28: number;
+        };
+        HabitSummaryResponse: {
+            perfectMorningDays30: number;
+            perfectEveningDays30: number;
+            habits: components["schemas"]["HabitStrength"][];
         };
     };
     responses: never;
@@ -8650,6 +8747,152 @@ export interface operations {
                 };
             };
             /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getHabitDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day's habits (rerolled concept does not exist here) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitDayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    checkHabit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HabitCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Checked; XP awarded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitWriteResponse"];
+                };
+            };
+            /** @description HABIT_UNKNOWN */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_ALREADY_DONE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    uncheckHabit: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Un-checked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitResponse"];
+                };
+            };
+            /** @description HABIT_UNKNOWN */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_NOT_DONE */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getHabitSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitSummaryResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
             401: {
                 headers: {
                     [name: string]: unknown;

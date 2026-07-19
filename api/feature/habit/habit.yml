@@ -1,0 +1,147 @@
+openapi: 3.0.3
+info: { title: mezo habit fragment, version: 1.0.0 }
+paths:
+  /api/habit/day/{date}:
+    get:
+      tags: [Habit]
+      operationId: getHabitDay
+      summary: Day view of both routine chains; lazily creates + evaluates today's rows (Habits)
+      parameters:
+        - { name: date, in: path, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: The day's habits (rerolled concept does not exist here)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HabitDayResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/habit/{key}/check:
+    post:
+      tags: [Habit]
+      operationId: checkHabit
+      summary: Manually check a MANUAL habit for today (Habits)
+      parameters:
+        - { name: key, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HabitCheckRequest' }
+      responses:
+        '200':
+          description: Checked; XP awarded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HabitWriteResponse' }
+        '404':
+          description: HABIT_UNKNOWN
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_ALREADY_DONE
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    delete:
+      tags: [Habit]
+      operationId: uncheckHabit
+      summary: Same-day un-check of a MANUAL habit; reverses the XP (Habits)
+      parameters:
+        - { name: key, in: path, required: true, schema: { type: string } }
+        - { name: date, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Un-checked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HabitResponse' }
+        '404':
+          description: HABIT_UNKNOWN
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_NOT_DONE
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/habit/summary:
+    get:
+      tags: [Habit]
+      operationId: getHabitSummary
+      summary: 28-day strengths + 30-day perfect-day counters (Habits)
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HabitSummaryResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    HabitResponse:
+      type: object
+      required: [key, chain, position, title, why, anchorCopy, mode, status, xp]
+      properties:
+        id: { type: string, format: uuid }
+        key: { type: string }
+        chain: { type: string, enum: [MORNING, EVENING] }
+        position: { type: integer }
+        title: { type: string }
+        why: { type: string }
+        anchorCopy: { type: string }
+        mode: { type: string, enum: [DERIVED, MANUAL] }
+        status: { type: string, enum: [pending, done, missed] }
+        doneAt: { type: string, format: date-time, nullable: true }
+        xp: { type: integer }
+        strengthPct: { type: integer, nullable: true, description: 'trailing-28d done ratio, null under min-sample' }
+    HabitDayResponse:
+      type: object
+      required: [date, habits, levelUps]
+      properties:
+        date: { type: string, format: date }
+        habits:
+          type: array
+          items: { $ref: '#/components/schemas/HabitResponse' }
+        levelUps:
+          type: array
+          items: { $ref: '#/components/schemas/LevelUpResult' }
+    HabitWriteResponse:
+      type: object
+      required: [habit, levelUps]
+      properties:
+        habit: { $ref: '#/components/schemas/HabitResponse' }
+        levelUps:
+          type: array
+          items: { $ref: '#/components/schemas/LevelUpResult' }
+    HabitCheckRequest:
+      type: object
+      required: [date]
+      properties:
+        date: { type: string, format: date }
+    HabitStrength:
+      type: object
+      required: [key, done28, missed28]
+      properties:
+        key: { type: string }
+        strengthPct: { type: integer, nullable: true }
+        done28: { type: integer }
+        missed28: { type: integer }
+    HabitSummaryResponse:
+      type: object
+      required: [perfectMorningDays30, perfectEveningDays30, habits]
+      properties:
+        perfectMorningDays30: { type: integer }
+        perfectEveningDays30: { type: integer }
+        habits:
+          type: array
+          items: { $ref: '#/components/schemas/HabitStrength' }
