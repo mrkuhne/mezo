@@ -85,7 +85,8 @@ public class HabitService {
         requireManualToday(def, date);
         ensureRows(userId, LocalDate.now());
         HabitDayEntity row = repository
-            .findByCreatedByAndHabitDateAndHabitKey(userId, date, key).orElseThrow();
+            .findByCreatedByAndHabitDateAndHabitKey(userId, date, key)
+            .orElseThrow(() -> new IllegalStateException("habit_day row missing after ensureRows"));
         if (!HabitDayEntity.STATUS_PENDING.equals(row.getStatus())) {
             throw conflict("HABIT_ALREADY_DONE");
         }
