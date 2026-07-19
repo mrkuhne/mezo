@@ -57,7 +57,12 @@ export function useCheckins() {
   })
   const mutation = useMutation({
     mutationFn: checkinApi.save,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['checkins', date] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['checkins', date] })
+      // Quest evaluation is read-triggered: the 4th saved slot can complete a checkin_full
+      // quest, so nudge the day's quest read for same-screen feedback.
+      qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
+    },
     onError: (err) => console.error('Check-in sync failed', err),
   })
   const base = mock ? initialCheckins : buildDaySlots(rows ?? [])

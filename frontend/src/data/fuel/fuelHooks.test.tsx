@@ -187,7 +187,7 @@ describe('useWaterActions (mock mode)', () => {
 describe('useWaterActions (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
-  it('POSTs /api/water-log and invalidates fuelDay', async () => {
+  it('POSTs /api/water-log and invalidates fuelDay + the day quest read', async () => {
     const posted: unknown[] = []
     server.use(http.post(`${API_BASE}/api/water-log`, async ({ request }) => {
       posted.push(await request.json())
@@ -199,6 +199,11 @@ describe('useWaterActions (real mode)', () => {
     act(() => result.current.logWater(250))
     await waitFor(() => expect(posted).toHaveLength(1))
     expect(posted[0]).toEqual({ date: '2026-07-02', amountMl: 250 })
-    await waitFor(() => expect(spy.mock.calls.some(c => JSON.stringify(c[0]).includes('fuelDay'))).toBe(true))
+    await waitFor(() => {
+      const keys = spy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey: unknown }).queryKey))
+      expect(keys.some(k => k.includes('fuelDay'))).toBe(true)
+      // quest evaluation is read-triggered — the water write must nudge the quest day read
+      expect(keys).toContain(JSON.stringify(['dailyQuests', '2026-07-02']))
+    })
   })
 })

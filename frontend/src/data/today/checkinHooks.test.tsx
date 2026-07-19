@@ -1,5 +1,7 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
+import type { ReactNode } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { useCheckins } from '@/data/hooks'
 import { buildDaySlots } from '@/data/today/checkinHooks'
@@ -86,6 +88,30 @@ test('useCheckins (real mode) updates the slot locally AND POSTs exactly once wi
     note: 'délutáni',
   })
   expect(typeof lastBody!.date).toBe('string')
+})
+
+test('useCheckins (real mode) save invalidates the day quest read (read-triggered evaluation)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.post(`${API_BASE}/api/biometrics/checkin`, () =>
+      HttpResponse.json({ id: 'c1', savedAt: '2026-06-01T09:00:00Z' }, { status: 200 })),
+  )
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const spy = vi.spyOn(qc, 'invalidateQueries')
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  const { result } = renderHook(() => useCheckins(), { wrapper })
+
+  act(() => {
+    result.current.saveCheckIn(2, { state: 'done', values: { energy: 8, stress: 3, body: 7, mental: 8 }, note: null })
+  })
+
+  await waitFor(() => {
+    const keys = spy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey: unknown }).queryKey))
+    expect(keys.some(k => k.includes('checkins'))).toBe(true)
+    expect(keys.some(k => k.includes('dailyQuests'))).toBe(true)
+  })
 })
 
 test('useCheckins (mock mode) updates the slot locally and never fetches', async () => {

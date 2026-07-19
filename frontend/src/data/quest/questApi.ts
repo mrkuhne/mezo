@@ -22,6 +22,7 @@ export function toQuest(w: QuestWire): DailyQuest {
     title: w.title,
     why: w.why,
     targetLabel: w.targetLabel,
+    metric: w.metric ?? '',
     xp: w.xp,
     status: w.status as QuestStatus,
     completionMode: (w.completionMode ?? 'DERIVED') as QuestCompletionMode,

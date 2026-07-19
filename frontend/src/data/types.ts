@@ -808,6 +808,8 @@ export interface DailyQuest {
   title: string
   why: string
   targetLabel: string
+  /** QuestTargetEnvelope.metric — drives the Today smart log-CTA ('' when absent on old fixtures). */
+  metric: string
   xp: number
   status: QuestStatus
   completionMode: QuestCompletionMode
