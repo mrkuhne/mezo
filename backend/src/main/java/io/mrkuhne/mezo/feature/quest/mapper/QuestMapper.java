@@ -12,6 +12,7 @@ import org.mapstruct.Mapping;
 public interface QuestMapper {
 
     @Mapping(target = "targetLabel", expression = "java(QuestDisplay.targetLabel(e))")
+    @Mapping(target = "metric", source = "target.metric")
     QuestResponse toQuestResponse(DailyQuestEntity e);
 
     default OffsetDateTime map(Instant instant) {
