@@ -37,6 +37,7 @@ class QuestApiIT extends ApiIntegrationTest {
         assertThat(day.getQuests()).hasSize(3);
         assertThat(day.getQuests()).extracting(QuestResponse::getSlot)
             .containsExactlyInAnyOrder("BODY", "FUELBIO", "GROWTH");
+        assertThat(day.getQuests()).allSatisfy(q -> assertThat(q.getMetric()).isNotBlank());
         assertThat(day.getRerollsLeft()).isEqualTo(1);
         assertThat(day.getLevelUps()).isEmpty();
     }
@@ -99,6 +100,7 @@ class QuestApiIT extends ApiIntegrationTest {
         assertThat(replacement.getSlot()).isEqualTo("FUELBIO");
         assertThat(replacement.getStatus()).isEqualTo("offered");
         assertThat(replacement.getId()).isNotEqualTo(offered.getId());
+        assertThat(replacement.getMetric()).isNotBlank();
 
         // the old row is rerolled → excluded from the day read; cap of 1 → rerollsLeft 0
         QuestDayResponse day = getForBody("/api/quest/day/" + today,

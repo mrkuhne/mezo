@@ -29,7 +29,10 @@ export function useDailyQuests(date: string): DailyQuestsView {
     queryKey: key(date),
     queryFn: mock ? async () => MOCK_DAY : () => questApi.day(date),
     initialData: mock ? MOCK_DAY : undefined,
-    staleTime: mock ? Infinity : undefined,
+    // Real mode deliberately re-reads on every mount/focus: quest evaluation is READ-triggered
+    // server-side (derived completion happens on GET), so frequent reads are the domain's
+    // lazy-evaluation heartbeat — the 30s global staleTime would leave a just-logged quest stale.
+    staleTime: mock ? Infinity : 0,
     retry: false,
   })
   const data = q.data ?? (mock ? MOCK_DAY : EMPTY_DAY)

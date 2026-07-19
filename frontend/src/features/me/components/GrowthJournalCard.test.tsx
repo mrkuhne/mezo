@@ -6,7 +6,7 @@ import type { ActivityEntry, DailyQuest } from '@/data/types'
 
 const quest = (o: Partial<DailyQuest>): DailyQuest => ({
   id: 'q1', questDate: '2026-07-11', slot: 'BODY', skillKey: 'strength_endurance',
-  title: 'Csináld végig a mai edzést', why: '', targetLabel: '', xp: 25,
+  title: 'Csináld végig a mai edzést', why: '', targetLabel: '', metric: 'gym_session_done', xp: 25,
   status: 'completed', completionMode: 'DERIVED', ...o,
 })
 const activity = (o: Partial<ActivityEntry>): ActivityEntry => ({

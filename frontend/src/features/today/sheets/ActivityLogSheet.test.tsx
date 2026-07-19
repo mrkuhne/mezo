@@ -27,7 +27,7 @@ function result(over: Partial<ActivityWriteResult> = {}): ActivityWriteResult {
 const quest: DailyQuest = {
   id: 'dq3g', questDate: '2026-07-11', slot: 'GROWTH', skillKey: 'learning',
   title: 'Olvass ma legalább 10 percet', why: 'Aki naponta olvas, az olvasó ember.',
-  targetLabel: 'Tevékenységnapló-bejegyzés ma', xp: 20, status: 'offered',
+  targetLabel: 'Tevékenységnapló-bejegyzés ma', metric: 'activity_match', xp: 20, status: 'offered',
   completionMode: 'ACTIVITY',
 }
 

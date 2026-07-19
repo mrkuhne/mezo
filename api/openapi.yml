@@ -9226,6 +9226,7 @@ components:
         - title
         - why
         - targetLabel
+        - metric
         - xp
         - status
         - completionMode
@@ -9251,6 +9252,12 @@ components:
         targetLabel:
           type: string
           description: Code-derived display string of the structured target
+        metric:
+          type: string
+          description: >-
+            QuestTargetEnvelope.metric — drives the FE smart log-CTA
+            (gym_session_done | checkin_full | weight_logged | water_target |
+            protein_target | sleep_target | own_recipe_meal | activity_match)
         xp:
           type: integer
           format: int32

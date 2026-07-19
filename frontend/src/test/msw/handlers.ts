@@ -282,8 +282,8 @@ export const handlers = [
   http.post(`${API_BASE}/api/quest/:id/reroll`, ({ params }) =>
     HttpResponse.json({
       id: `${params.id}-r`, questDate: '2026-07-11', slot: 'FUELBIO', skillKey: 'recovery',
-      title: 'Csere-küldetés', why: 'Teszt.', targetLabel: '', xp: 15, status: 'offered',
-      completionMode: 'DERIVED', completedAt: null,
+      title: 'Csere-küldetés', why: 'Teszt.', targetLabel: '', metric: 'weight_logged', xp: 15,
+      status: 'offered', completionMode: 'DERIVED', completedAt: null,
     }),
   ),
 

@@ -119,7 +119,14 @@ export function useWaterActions(date: string = localDateString()) {
           })
         }
       : (amountMl: number) => mealApi.logWater(date, amountMl),
-    onSuccess: mock ? undefined : () => qc.invalidateQueries({ queryKey: [FUELDAY_KEY] }),
+    onSuccess: mock
+      ? undefined
+      : () => {
+          qc.invalidateQueries({ queryKey: [FUELDAY_KEY] })
+          // Quest evaluation is read-triggered: nudge the day's quest read so a met
+          // water_target flips to completed without leaving the current screen.
+          qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
+        },
   })
 
   const logWater = useCallback((amountMl: number) => waterM.mutate(amountMl), [waterM])

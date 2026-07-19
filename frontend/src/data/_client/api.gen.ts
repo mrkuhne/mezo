@@ -3683,6 +3683,8 @@ export interface components {
             why: string;
             /** @description Code-derived display string of the structured target */
             targetLabel: string;
+            /** @description QuestTargetEnvelope.metric — drives the FE smart log-CTA (gym_session_done | checkin_full | weight_logged | water_target | protein_target | sleep_target | own_recipe_meal | activity_match) */
+            metric: string;
             /** Format: int32 */
             xp: number;
             /** @description offered | completed | expired | rerolled */

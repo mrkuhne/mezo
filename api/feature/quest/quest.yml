@@ -97,7 +97,7 @@ components:
   schemas:
     QuestResponse:
       type: object
-      required: [id, questDate, slot, skillKey, title, why, targetLabel, xp, status, completionMode]
+      required: [id, questDate, slot, skillKey, title, why, targetLabel, metric, xp, status, completionMode]
       properties:
         id: { type: string, format: uuid }
         questDate: { type: string, format: date }
@@ -106,6 +106,7 @@ components:
         title: { type: string, description: HU identity-vote quest title }
         why: { type: string, description: HU benefit-first rationale }
         targetLabel: { type: string, description: Code-derived display string of the structured target }
+        metric: { type: string, description: 'QuestTargetEnvelope.metric — drives the FE smart log-CTA (gym_session_done | checkin_full | weight_logged | water_target | protein_target | sleep_target | own_recipe_meal | activity_match)' }
         xp: { type: integer, format: int32 }
         status: { type: string, description: 'offered | completed | expired | rerolled' }
         completionMode: { type: string, description: 'DERIVED | ACTIVITY (activity-mode completes via a matching activity-log entry)' }

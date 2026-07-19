@@ -16,6 +16,7 @@ const questWire = (overrides: Record<string, unknown> = {}) => ({
   title: 'Igyál meg legalább 2,5 litert ma',
   why: 'A hidratáltság a legolcsóbb teljesítményfokozó.',
   targetLabel: '≥ 2500 ml víz',
+  metric: 'water_target',
   xp: 15,
   status: 'offered',
   completedAt: null,
@@ -35,6 +36,7 @@ describe('useDailyQuests (real mode)', () => {
     const { result } = renderHook(() => useDailyQuests(DATE), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current.quests).toHaveLength(1))
     expect(result.current.quests[0].targetLabel).toBe('≥ 2500 ml víz')
+    expect(result.current.quests[0].metric).toBe('water_target')
     expect(result.current.rerollsLeft).toBe(1)
     expect(result.current.levelUps).toEqual([])
     expect(result.current.mode).toBe('live')
@@ -76,6 +78,7 @@ describe('useDailyQuests (mock mode)', () => {
     expect(result.current.mode).toBe('mock')
     expect(result.current.quests.length).toBeGreaterThan(0)
     expect(result.current.quests.some(q => q.status === 'completed')).toBe(true)
+    expect(result.current.quests.every(q => q.metric.length > 0)).toBe(true)
   })
 })
 

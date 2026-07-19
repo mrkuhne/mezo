@@ -2,7 +2,7 @@
 title: Design System & UI Primitives ("Napív")
 type: feature-platform
 status: done
-updated: 2026-07-18
+updated: 2026-07-19
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css

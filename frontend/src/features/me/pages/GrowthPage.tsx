@@ -81,7 +81,7 @@ export function GrowthPage() {
           {tab === 'skills' && (
             <>
               {/* "Ma" block (Task 7 relocation): the quests + activity log cards moved here
-                  from Today, which now only shows a GrowthTodayRow summary linking back. */}
+                  from Today, whose compact TodayQuestsCard links back here (mezo-gj2y). */}
               <div>
                 <Eyebrow>Ma</Eyebrow>
                 <DailyQuestsCard />
