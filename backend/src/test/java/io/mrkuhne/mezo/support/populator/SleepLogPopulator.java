@@ -29,4 +29,17 @@ public class SleepLogPopulator {
         e.setQuality(quality);
         return sleepLogRepository.saveAndFlush(e);
     }
+
+    /** Full sleep log incl. bed/wake clock strings (habit wake-window / bed-on-time tests). */
+    public SleepLogEntity createSleepLog(UUID owner, LocalDate date, String bedtime, String wakeup,
+        BigDecimal durationH) {
+        SleepLogEntity e = new SleepLogEntity();
+        e.setCreatedBy(owner);
+        e.setDate(date);
+        e.setBedtime(bedtime);
+        e.setWakeup(wakeup);
+        e.setDurationH(durationH);
+        e.setQuality(7);
+        return sleepLogRepository.saveAndFlush(e);
+    }
 }

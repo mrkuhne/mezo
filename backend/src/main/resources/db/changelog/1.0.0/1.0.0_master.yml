@@ -377,3 +377,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607191100_mezo-bw3y_recipe_breakdown.sql
+  - changeSet:
+      id: "1.0.0:202607192100_mezo-d1jb_create_habit_day"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607192100_mezo-d1jb_create_habit_day.sql
+  - changeSet:
+      id: "1.0.0:202607192130_mezo-d1jb_level_up_event_partial_unique"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607192130_mezo-d1jb_level_up_event_partial_unique.sql

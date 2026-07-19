@@ -12,6 +12,7 @@ import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard
 import { FuelTimelinePreview } from '@/features/today/components/FuelTimelinePreview'
 import { QuickStatsRow } from '@/features/today/components/QuickStatsRow'
 import { TodayQuestsCard } from '@/features/today/components/TodayQuestsCard'
+import { RoutineCard } from '@/features/today/components/RoutineCard'
 import { ZoneDivider } from '@/features/today/components/ZoneDivider'
 import { CheckInStrip } from '@/features/today/components/CheckInStrip'
 import { CompanionNoteCard } from '@/features/today/components/CompanionNoteCard'
@@ -60,6 +61,7 @@ export function TodayPage() {
       <TodayQuestsCard
         onCheckIn={nextCheckinIdx >= 0 ? () => setCheckInIdx(nextCheckinIdx) : undefined}
       />
+      <RoutineCard />
       <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
       <ZoneDivider label="A napod" />
       <BriefingCard briefing={briefing ?? resolveBriefing(scenario.dayState)} demo={briefingDemo} />

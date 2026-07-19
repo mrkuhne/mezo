@@ -5,6 +5,7 @@ import { SkillBandCard, type SkillRowVM } from '@/features/me/components/SkillBa
 import { GrowthJournalCard } from '@/features/me/components/GrowthJournalCard'
 import { BadgesCard } from '@/features/me/components/BadgesCard'
 import { PerksCard } from '@/features/me/components/PerksCard'
+import { RoutinesTab } from '@/features/me/components/RoutinesTab'
 import { buildGrowthJournal } from '@/features/me/logic/growthJournal'
 import { ATHLETIC_META, LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { MUSCLE_LABELS } from '@/data/train/train'
@@ -21,7 +22,7 @@ const isoDaysAgo = (n: number) => {
   return localDateString(d)
 }
 
-type Tab = 'skills' | 'journal' | 'awards'
+type Tab = 'skills' | 'journal' | 'awards' | 'routines'
 
 // Normalise hu-HU's NBSP / narrow-NBSP thousands separators to a plain space.
 const fmt = (v: number) => v.toLocaleString('hu-HU').replace(/[\u00a0\u202f]/g, ' ')
@@ -74,6 +75,7 @@ export function GrowthPage() {
           {/* segmented control */}
           <div className="row" role="tablist" aria-label="Growth nézetek" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 5, padding: 3, gap: 3 }}>
             <SegButton on={tab === 'skills'} onClick={() => setTab('skills')}>Skillek</SegButton>
+            <SegButton on={tab === 'routines'} onClick={() => setTab('routines')}>Rutin</SegButton>
             <SegButton on={tab === 'journal'} onClick={() => setTab('journal')}>Napló</SegButton>
             <SegButton on={tab === 'awards'} onClick={() => setTab('awards')}>Kitüntetések</SegButton>
           </div>
@@ -110,6 +112,7 @@ export function GrowthPage() {
               />
             </>
           )}
+          {tab === 'routines' && <RoutinesTab />}
           {tab === 'journal' && <JournalTab />}
           {tab === 'awards' && <AwardsTab />}
         </div>

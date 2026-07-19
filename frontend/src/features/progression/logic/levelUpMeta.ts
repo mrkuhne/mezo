@@ -61,6 +61,7 @@ export const HEADLINE_BY_SOURCE: Record<Source, string> = {
   SPORT: 'Megdolgoztattad.',
   QUEST: 'Napi győzelem.',
   ACTIVITY: 'Az élet is edzés.',
+  HABIT: 'A rutin épít.',
 }
 
 /** Headline when XP accrued but no level was crossed (the common case). */
@@ -72,4 +73,5 @@ export const CHIP_ICON_BY_SOURCE: Record<Source, string> = {
   SPORT: '🏐',
   QUEST: '📜',
   ACTIVITY: '✍️',
+  HABIT: '☀️',
 }

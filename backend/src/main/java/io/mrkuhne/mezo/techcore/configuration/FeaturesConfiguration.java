@@ -91,4 +91,10 @@ public class FeaturesConfiguration {
     /** E3 quest flavor copy — sub-switch of quest; the LLM rewrites title/why on the MORNING CRON
      *  only (never targets/XP — ADR 0010). Requires COMPANION_SWITCH too (CompanionLlm port). */
     public static final String QUEST_FLAVOR_SWITCH = "mezo.quest.flavor.enabled";
+
+    /** Habit engine (morning/evening routine chains, mezo-d1jb). Gates /api/habit + services. */
+    public static final String HABIT_SWITCH = "mezo.feature.habit.enabled";
+
+    /** Nightly habit close cron (end-of-day + next-day metrics) — schedule: mezo.habit.close-cron. */
+    public static final String HABIT_JOB_SWITCH = "mezo.techcore.cron.habit-job.enabled";
 }

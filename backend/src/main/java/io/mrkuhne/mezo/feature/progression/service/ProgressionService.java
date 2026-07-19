@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.feature.progression.entity.PerkUnlockEntity;
 import io.mrkuhne.mezo.feature.progression.quest.QuestSignal;
 import io.mrkuhne.mezo.feature.progression.entity.SkillProgressEntity;
 import io.mrkuhne.mezo.feature.progression.gym.GymSignal;
+import io.mrkuhne.mezo.feature.progression.habit.HabitSignal;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.feature.progression.repository.PerkUnlockRepository;
 import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
@@ -52,6 +53,7 @@ public class ProgressionService {
     private static final String SOURCE_SPORT = "SPORT";
     private static final String SOURCE_QUEST = "QUEST";
     private static final String SOURCE_ACTIVITY = "ACTIVITY";
+    public static final String SOURCE_HABIT = "HABIT";
     private static final int[] MILESTONES = {5, 10, 15, 20, 25, 30};
 
     private final SkillProgressRepository skillProgressRepository;
@@ -179,6 +181,35 @@ public class ProgressionService {
         to.setCumulativeXp(to.getCumulativeXp() + xp);
         to.setCurrentLevel(curve.levelFor(to.getCumulativeXp()));
         skillProgressRepository.save(to);
+    }
+
+    /** Habit completion XP — catalog-deterministic, LIFE kind, idempotent per habit_day row. */
+    @Transactional
+    public LevelUpResult applyHabit(UUID createdBy, HabitSignal signal) {
+        Map<String, Long> deltas = new LinkedHashMap<>();
+        Map<String, String> kinds = new LinkedHashMap<>();
+        if (signal.xp() > 0) {
+            deltas.put(signal.skillKey(), (long) signal.xp());
+            kinds.put(signal.skillKey(), "LIFE");
+        }
+        return award(createdBy, SOURCE_HABIT, signal.habitDayId(), deltas, kinds,
+            signal.label(), null, null);
+    }
+
+    /**
+     * Same-day manual un-check: delete the award event (so a re-check can re-award) and
+     * decrement the skill row directly — the moveActivityXp precedent, no new level_up_event.
+     */
+    @Transactional
+    public void revertHabit(UUID createdBy, UUID habitDayId, String skillKey, long xp) {
+        levelUpEventRepository
+            .findByCreatedByAndSourceTypeAndSourceRefId(createdBy, SOURCE_HABIT, habitDayId)
+            .ifPresent(levelUpEventRepository::delete);
+        skillProgressRepository.findByCreatedByAndSkillKey(createdBy, skillKey).ifPresent(row -> {
+            row.setCumulativeXp(Math.max(0, row.getCumulativeXp() - xp));
+            row.setCurrentLevel(curve.levelFor(row.getCumulativeXp()));
+            skillProgressRepository.save(row);
+        });
     }
 
     @Transactional

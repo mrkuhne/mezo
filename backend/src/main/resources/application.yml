@@ -175,6 +175,10 @@ mezo:
     # categorization onto the LIFE band; off ⇒ /api/activity surface 404s and no activity beans.
     activity:
       enabled: true
+    # Habit engine (bd mezo-d1jb) — fixed morning/evening routine chains; off ⇒ the /api/habit
+    # surface 404s and no habit beans exist (reads still close lazily on GET).
+    habit:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -220,6 +224,10 @@ mezo:
       # Daily-quest crons: morning generate backstop + nightly finalize (schedules: mezo.quest.*-cron);
       # off = the QuestJob bean does not exist (the lazy GET path still serves)
       quest-job:
+        enabled: true
+      # Nightly habit close: evaluates end-of-day metrics (caffeine cutoff, kitchen close) and
+      # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
+      habit-job:
         enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
@@ -507,6 +515,23 @@ mezo:
     daily-cap: 100
     confidence-threshold: 0.6
     default-xp: 10
+  # Habit engine tuning (mezo-d1jb, ADR 0010): every target window/cutoff is config, never code.
+  # Binds onto HabitProperties; the close cron fires after the quest finalize.
+  habit:
+    close-cron: "0 10 0 * * *"    # 00:10 — after the quest finalize
+    wake-window-min: 45
+    weigh-in-cutoff: "09:00"
+    morning-window-end: "10:00"
+    workout-cutoff: "12:00"
+    protein-target-g: 25
+    caffeine-cutoff: "14:00"
+    bed-grace-min: 30
+    kitchen-close-offset-min: 90
+    default-wake: "06:00"
+    default-bed: "23:00"
+    strength-window-days: 28
+    min-sample: 5
+    summary-days: 30
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
     default-increment: 2.5    # fallback load step when a type has no explicit increment

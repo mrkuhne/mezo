@@ -9,6 +9,7 @@ import { progressionProfileMock } from '@/data/progression/progressionMock'
 import { mockQuestDay, mockQuestHistory } from '@/data/quest/questMock'
 import { mockActivities, mockActivityHistory } from '@/data/activity/activityMock'
 import { achievementsMock } from '@/data/progression/achievementsMock'
+import { mockHabitDay, mockHabitSummary } from '@/data/habit/habitMock'
 
 // Barrel-mock the hooks the page (and, since Task 7, the DailyQuestsCard + ActivityLogCard
 // it mounts in the "Ma" block) read, so the fixtures drive the view deterministically in
@@ -21,6 +22,8 @@ const hooks = vi.hoisted(() => ({
   useDailyQuests: vi.fn(),
   useQuestActions: vi.fn(),
   useActivities: vi.fn(),
+  useHabitDay: vi.fn(),
+  useHabitSummary: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
@@ -31,6 +34,8 @@ vi.mock('@/data/hooks', async (importOriginal) => ({
   useDailyQuests: hooks.useDailyQuests,
   useQuestActions: hooks.useQuestActions,
   useActivities: hooks.useActivities,
+  useHabitDay: hooks.useHabitDay,
+  useHabitSummary: hooks.useHabitSummary,
 }))
 
 // Pin "today" to 2026-07-12 so the mock quest/activity dates (Júl 10–11) yield
@@ -62,6 +67,8 @@ beforeEach(() => {
   hooks.useDailyQuests.mockReturnValue({ quests: mockQuestDay, levelUps: [], rerollsLeft: 1, mode: 'mock' })
   hooks.useQuestActions.mockReturnValue({ reroll: vi.fn(), pending: false, consumeLevelUps: vi.fn() })
   hooks.useActivities.mockReturnValue({ data: mockActivities, isPending: false })
+  hooks.useHabitDay.mockReturnValue({ habits: mockHabitDay, levelUps: [], mode: 'mock' })
+  hooks.useHabitSummary.mockReturnValue({ data: mockHabitSummary })
 })
 afterEach(() => vi.clearAllMocks())
 
@@ -137,4 +144,11 @@ test('Kitüntetések tab renders both the Badges and Perks cards', async () => {
   expect(screen.getByText('4 / 9 megszerezve')).toBeInTheDocument()
   expect(screen.getByText('Perkek — mérföldkövek')).toBeInTheDocument()
   expect(screen.getByText('3 feloldva')).toBeInTheDocument()
+})
+
+test('switching to Rutin renders the routine chains from the habit seeds', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('tab', { name: 'Rutin' }))
+  expect(screen.getByText('Reggeli lánc')).toBeInTheDocument()
+  expect(screen.getByText('Esti lánc')).toBeInTheDocument()
 })
