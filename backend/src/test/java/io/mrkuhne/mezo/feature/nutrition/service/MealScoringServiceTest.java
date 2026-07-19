@@ -147,6 +147,31 @@ class MealScoringServiceTest {
     }
 
     @Test
+    void testRecipeTemplateBreakdown_shouldMatchRecipeFitAndDegradeContext_whenLinesScored() {
+        MealBreakdownJson b = service.recipeTemplateBreakdown(lunchLines());
+
+        assertThat(b).isNotNull();
+        // hero ≡ envelope: recipeFit is a delegate of this method by construction (mezo-bw3y)
+        assertThat(b.value()).isEqualByComparingTo(service.recipeFit(lunchLines()));
+        assertThat(b.dimensions()).extracting(MealBreakdownJson.Dimension::id)
+            .containsExactly("macro", "micro", "nova", "context");
+        // live weights renormalized (÷ .80, then round2) and summing to ~1; context honest zero
+        assertThat(b.dimensions().get(0).weight().doubleValue()).isCloseTo(0.375, within(0.01));
+        assertThat(b.dimensions().get(1).weight().doubleValue()).isCloseTo(0.3125, within(0.01));
+        assertThat(b.dimensions().get(2).weight().doubleValue()).isCloseTo(0.3125, within(0.01));
+        MealBreakdownJson.Dimension context = b.dimensions().get(3);
+        assertThat(context.weight()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(context.score()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(context.context()).isEmpty();
+        // prose stays empty here (the LLM layer merges over it); confidence is a real coverage mix
+        assertThat(b.summary()).isNull();
+        assertThat(b.improve()).isEmpty();
+        assertThat(b.confidence().doubleValue()).isStrictlyBetween(0.0, 1.01);
+        assertThat(b.tools()).extracting(MealBreakdownJson.ToolRow::name)
+            .contains("templateFit(weights_renormalized)");
+    }
+
+    @Test
     void testRecipeFit_shouldReturnNull_whenNoLineHasKcal() {
         BigDecimal fit = service.recipeFit(List.of(
             new ScoredLine("Fűszer", "5g", bd(0), bd(0), bd(0), bd(0), null,
