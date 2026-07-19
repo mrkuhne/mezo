@@ -5,7 +5,7 @@ import type { ActivityEntry, DailyQuest } from '@/data/types'
 const quest = (overrides: Partial<DailyQuest> = {}): DailyQuest => ({
   id: 'q', questDate: '2026-07-11', slot: 'BODY', skillKey: 'strength_endurance',
   title: 'Teszt küldetés', why: 'Teszt indoklás.', targetLabel: 'Teszt cél',
-  xp: 25, status: 'completed', completionMode: 'DERIVED', completedAt: '2026-07-11T18:00:00Z',
+  metric: 'gym_session_done', xp: 25, status: 'completed', completionMode: 'DERIVED', completedAt: '2026-07-11T18:00:00Z',
   ...overrides,
 })
 
