@@ -68,6 +68,14 @@ public class MealPopulator {
         return repository.saveAndFlush(meal);
     }
 
+    /** Breakfast pantry meal with an explicit loggedAt instant (kitchen-close tests). */
+    public MealEntity createPantryMeal(UUID owner, PantryItemEntity pantryItem, LocalDate mealDate,
+        Instant loggedAt) {
+        MealEntity meal = createPantryMeal(owner, pantryItem, mealDate);
+        meal.setLoggedAt(loggedAt);
+        return repository.saveAndFlush(meal);
+    }
+
     private MealEntity newMeal(UUID owner, String slot, String title) {
         MealEntity meal = new MealEntity();
         meal.setCreatedBy(owner);
