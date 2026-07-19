@@ -287,6 +287,15 @@ export const handlers = [
     }),
   ),
 
+  // Habit engine (mezo-d1jb) — honest-empty defaults (day: empty chains, summary: zeros; never a
+  // 404). Tests override with server.use() for populated cases.
+  http.get(`${API_BASE}/api/habit/day/:date`, ({ params }) =>
+    HttpResponse.json({ date: params.date, habits: [], levelUps: [] }),
+  ),
+  http.get(`${API_BASE}/api/habit/summary`, () =>
+    HttpResponse.json({ perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] }),
+  ),
+
   // Growth history + achievements (Growth page, mezo-rmhr) — honest-empty defaults
   // (never a 404); tests override with server.use() for data cases.
   http.get(`${API_BASE}/api/quest/history`, () => HttpResponse.json([])),

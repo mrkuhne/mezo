@@ -816,6 +816,27 @@ export interface DailyQuest {
   completedAt?: string | null
 }
 
+// ── Habit engine — morning & evening routine chains (mezo-d1jb) ──────────────
+export type HabitChain = 'MORNING' | 'EVENING'
+export type HabitMode = 'DERIVED' | 'MANUAL'
+export type HabitStatus = 'pending' | 'done' | 'missed'
+export interface HabitItem {
+  id?: string
+  key: string
+  chain: HabitChain
+  position: number
+  title: string
+  why: string
+  anchorCopy: string
+  mode: HabitMode
+  status: HabitStatus
+  doneAt?: string | null
+  xp: number
+  strengthPct?: number | null
+}
+export interface HabitStrengthRow { key: string; strengthPct: number | null; done28: number; missed28: number }
+export interface HabitSummary { perfectMorningDays30: number; perfectEveningDays30: number; habits: HabitStrengthRow[] }
+
 // ── Activity log (gamified growth E2, mezo-jzca) ─────────────────────────────
 export type LifeSkillKey =
   | 'mindfulness' | 'mindset' | 'cooking' | 'financial'
