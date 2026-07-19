@@ -2,7 +2,7 @@
 title: Platform · API Contract & Backend Architecture
 type: feature-platform
 status: done
-updated: 2026-07-18
+updated: 2026-07-19
 tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
@@ -147,6 +147,7 @@ UUID PKs (`id UUID DEFAULT gen_random_uuid()` in DDL; `@Id @GeneratedValue @Colu
 | `GET /pantry-import/lookup?q=`, `POST /pantry-import` | `PantryImportApi` | OpenFoodFacts lookup proxy + confirmed-draft import (Fuel P6, `mezo-bka`) — a SEPARATE tag so the whole feature is bean-gated by `mezo.feature.pantry-import.enabled` (off → 404); paths deliberately outside `/api/pantry/*` (a static segment there would 405 into the `{id}` pattern when off) |
 | `POST /pantry-import/scrape` | `PantryScrapeApi` (own `PantryScrapeController`) | URL-scrape draft (Fuel P8, `mezo-8vum`) — a SEPARATE tag/controller gated by `mezo.feature.pantry-scrape.enabled` (off → 404); returns an **ephemeral** draft (nothing persisted; the user confirms via `POST /pantry-import`). Needs the companion cheap LLM through the **pantry-owned `ScrapeLlm` port** ([ADR 0012](../decisions/0012-consumer-owned-llm-ports.md)) — companion off ⇒ no adapter bean ⇒ clean **503** `PANTRY_SCRAPE_LLM_UNAVAILABLE`; page fetch via the SSRF-guarded `WebPageClient` (below) |
 | `POST /meal/ai-draft` | `MealAiLogApi` (own `MealAiDraftController`) | AI meal-draft from free text and/or a photo (Fuel P8, `mezo-78rn`) — a SEPARATE tag/controller gated by `mezo.feature.meal-ai-log.enabled`; **off → 405, not 404** (the `multipart` path collides with `/api/meal/{id}`, so the surviving route yields 405 — a NEW techcore `GlobalExceptionHandler.handleMethodNotAllowed` returns a clean `METHOD_NOT_ALLOWED` instead of a generic 500). Needs the companion cheap+vision LLM via the **meal-owned `MealDraftLlm` port** ([ADR 0012](../decisions/0012-consumer-owned-llm-ports.md)) — companion off ⇒ clean **503** `MEAL_AI_LLM_UNAVAILABLE`; the ephemeral draft is confirmed via `POST /meal` (widened with an `estimate` item arm + `provenance`) — see [`fuel.md`](fuel.md) §4 |
+| `GET /recipe/{id}/breakdown` | `RecipeApi` (`RecipeController`) | Lazy template-breakdown read (`mezo-bw3y`) — the deterministic 3-dim envelope is recomputed each call; LLM prose enrichment (Hungarian summary/details/improve/fitsFor) rides the **recipe-owned `RecipeBreakdownLlm` port** ([ADR 0012](../decisions/0012-consumer-owned-llm-ports.md)) behind `mezo.feature.recipe-ai-score.enabled` and is persisted in `recipe.breakdown` jsonb only on success; the deterministic core stays ON with the flag/companion off (**silent prose-less degrade, no 503**) — see [`fuel.md`](fuel.md) §4 |
 | `GET/POST /companion/conversation`, `GET .../{id}/messages`, `POST .../{id}/message` | `CompanionApi` | companion chat spine (V0.2, `mezo-fnnq.2`) — sync JSON turn; see [`companion.md`](companion.md) §4 |
 | `POST /companion/conversation/{id}/message/stream` | `CompanionStreamApi` (**hand-written impl** — the V0.4 SSE precedent, §9) | streamed chat turn (`text/event-stream`: `delta*, done\|error`), `mezo-fnnq.4` |
 | `GET/POST /companion/fact`, `PATCH /companion/fact/{id}` | `CompanionApi` | knowledge-fact CRUD (V1.1, `mezo-fnnq.6`) — first PATCH endpoint (partial update); see [`companion.md`](companion.md) §4 |
