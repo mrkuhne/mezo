@@ -88,21 +88,56 @@ public class MealScoringService {
      * Deterministic recipe fit over the per-serving profile: macro+micro+NOVA, weights
      * renormalized (no logged time/slot → no context dimension). Returns {@code null} when the
      * profile carries no kcal at all — pending badge, never a fabricated number.
+     *
+     * <p>Since mezo-bw3y a thin delegate of {@link #recipeTemplateBreakdown}, so the fit badge and
+     * the template-breakdown envelope can never disagree.
      */
     public BigDecimal recipeFit(List<ScoredLine> perServingLines) {
+        MealBreakdownJson breakdown = recipeTemplateBreakdown(perServingLines);
+        return breakdown == null ? null : breakdown.value();
+    }
+
+    /**
+     * Full template envelope for a recipe (mezo-bw3y): the SAME three dimensions the fit scores
+     * (weights renormalized over the present ones, so the UI's {@code × súly = pt} rows sum to the
+     * total honestly) + an honest degraded context dimension (weight 0 — a template has no logged
+     * time/slot; context is evaluated on the meal side). {@code summary}/{@code improve} stay
+     * null/empty here — the AI prose layer merges over them (RecipeBreakdownProseService).
+     * Null exactly when the profile carries no kcal / no scorable dimension.
+     */
+    public MealBreakdownJson recipeTemplateBreakdown(List<ScoredLine> perServingLines) {
         double kcal = sum(perServingLines, ScoredLine::kcal);
         if (kcal <= 0) {
             return null;
         }
-        List<Dim> dims = List.of(
-            macroDim(perServingLines, kcal),
-            microDim(perServingLines, kcal),
-            novaDim(perServingLines, kcal));
-        double weightSum = dims.stream().mapToDouble(d -> d.effectiveWeight).sum();
+        Dim macro = macroDim(perServingLines, kcal);
+        Dim micro = microDim(perServingLines, kcal);
+        Dim nova = novaDim(perServingLines, kcal);
+        List<Dim> live = List.of(macro, micro, nova);
+        double weightSum = live.stream().mapToDouble(d -> d.effectiveWeight).sum();
         if (weightSum == 0) {
             return null;
         }
-        return round2(dims.stream().mapToDouble(d -> d.effectiveWeight * d.score).sum() / weightSum);
+        double value = live.stream().mapToDouble(d -> d.effectiveWeight * d.score).sum() / weightSum;
+        double confidence = live.stream().mapToDouble(d -> d.effectiveWeight * d.coverage).sum() / weightSum;
+
+        List<Dimension> dims = new ArrayList<>();
+        for (Dim d : live) {
+            dims.add(d.renormalized(weightSum).toJson());
+        }
+        dims.add(new Dimension("context", "Időzítés & kontextus", round2(0), round2(0),
+            "Sablon szinten nincs időzítési adat — a kontextust a logolt étkezéseknél értékeljük.",
+            null, null, null, List.of()));
+
+        List<ToolRow> tools = new ArrayList<>();
+        tools.add(new ToolRow("read", "recipe.line_snapshots(n=" + perServingLines.size() + ")"));
+        tools.add(new ToolRow("compute", "macroFit(mezo.nutrition)"));
+        if (nova.coverage > 0) {
+            tools.add(new ToolRow("compute", "novaDistribution(kcal_weighted)"));
+        }
+        tools.add(new ToolRow("compute", "templateFit(weights_renormalized)"));
+
+        return new MealBreakdownJson(round2(value), round2(confidence), null, dims, List.of(), tools);
     }
 
     // --- Macro (.30): kcal-share fit vs the mezo.nutrition targets -----------------------------
@@ -306,6 +341,12 @@ public class MealScoringService {
             // configWeight intentionally unused: a no-coverage dimension carries weight 0 (honest),
             // the total renormalizes over the rest, and confidence drops via coverage 0.
             return new Dim(id, label, 0, 0, 0, detail, null, null, null, null);
+        }
+
+        /** The same dimension with its weight renormalized over the present dimensions (mezo-bw3y). */
+        Dim renormalized(double weightSum) {
+            return new Dim(id, label, effectiveWeight / weightSum, score, coverage, detail,
+                macro, micros, nova, context);
         }
 
         Dimension toJson() {

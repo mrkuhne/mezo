@@ -370,3 +370,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607181501_mezo-78rn_meal_provenance.sql
+  - changeSet:
+      id: "1.0.0:202607191100_mezo-bw3y_recipe_breakdown"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607191100_mezo-bw3y_recipe_breakdown.sql
