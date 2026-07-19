@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.recipe.entity;
 
+import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -93,6 +94,11 @@ public class RecipeEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "fits_for", columnDefinition = "jsonb")
     private List<String> fitsFor;
+
+    /** Template breakdown cache (mezo-bw3y): 3-dim deterministic envelope + AI prose; null = not generated. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private MealBreakdownJson breakdown;
 
     @OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("lineOrder")

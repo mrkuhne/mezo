@@ -2,7 +2,7 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-07-18
+updated: 2026-07-19
 tags: [me, biometrics, progression, frontend, backend, data-layer]
 key_files:
   - frontend/src/features/me

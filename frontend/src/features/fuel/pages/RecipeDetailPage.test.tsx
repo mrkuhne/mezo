@@ -46,7 +46,7 @@ test('renders the hero, macro hero and ingredient contributions', async () => {
   // whole-recipe kcal appears in the macro hero
   expect(screen.getByText(String(r.macros.kcal))).toBeInTheDocument()
   // the deferred fit zone
-  expect(screen.getByText(/Mezo-fit · indoklás hamarosan/)).toBeInTheDocument()
+  expect(screen.getByText('PONTSZÁM')).toBeInTheDocument() // mezo-bw3y: the sparkle zone became the breakdown section
   // first ingredient name from the snapshot (enriched lines always carry a name)
   expect(screen.getByText(r.ingredients[0].name!)).toBeInTheDocument()
 })
@@ -151,4 +151,25 @@ test('shows the Logok empty-state when the recipe was never logged', async () =>
   await screen.findByText(unlogged.name)
   expect(screen.getByText('LOGOK')).toBeInTheDocument()
   expect(screen.getByText(/Még nem logoltad ezt a receptet/)).toBeInTheDocument()
+})
+
+test('renders the PONTSZÁM section + dimension cards from the seed templateBreakdown (mezo-bw3y)', async () => {
+  const qc = newQc()
+  const rec = firstId(qc)
+  renderDetail(rec.id, qc)
+  expect(await screen.findByText('PONTSZÁM')).toBeInTheDocument()
+  // the seed breakdown's dimension cards render via the shared ScoreBreakdownBody
+  expect(screen.getByText(/szempont · megbízh\./)).toBeInTheDocument()
+  expect(screen.getByText('Kcal & makró arány')).toBeInTheDocument()
+})
+
+test('renders the sablon-olvasat card with fitsFor chips when the seed carries a summary', async () => {
+  const qc = newQc()
+  const rec = firstId(qc)
+  if (!rec.templateBreakdown?.summary) return // seed without prose → the card honestly hides
+  renderDetail(rec.id, qc)
+  expect(await screen.findByText('Mezo · sablon-olvasat')).toBeInTheDocument()
+  for (const t of rec.mezoFit.fitsFor) {
+    expect(screen.getByText(`● ${t}`)).toBeInTheDocument()
+  }
 })

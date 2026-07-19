@@ -80,8 +80,9 @@ public class RecipeService {
         return resp;
     }
 
-    /** One batch pantry fetch for the fit pass; ids come from OWNED recipes' lines. */
-    private Map<UUID, PantryItemEntity> pantryByIdFor(Collection<RecipeEntity> recipes) {
+    /** One batch pantry fetch for the fit pass; ids come from OWNED recipes' lines.
+     *  Package-private since mezo-bw3y: RecipeBreakdownService reuses the exact fit inputs. */
+    Map<UUID, PantryItemEntity> pantryByIdFor(Collection<RecipeEntity> recipes) {
         List<UUID> ids = recipes.stream()
             .flatMap(r -> r.getLines().stream().map(RecipeIngredientEntity::getPantryItemId))
             .distinct()
@@ -94,8 +95,9 @@ public class RecipeService {
      * Per-serving {@link ScoredLine}s: macros from the frozen line snapshots (÷ servings, same
      * formula as the mapper's contribution), NOVA + nutrition-quality facts from the LIVE pantry
      * rows (a gone/fact-less source just lowers coverage — honest degrade, never fabricated).
+     * Package-private since mezo-bw3y: RecipeBreakdownService scores the same lines.
      */
-    private List<ScoredLine> fitLines(RecipeEntity e, Map<UUID, PantryItemEntity> pantryById) {
+    List<ScoredLine> fitLines(RecipeEntity e, Map<UUID, PantryItemEntity> pantryById) {
         BigDecimal servings = BigDecimal.valueOf(
             e.getServings() == null || e.getServings() < 1 ? 1 : e.getServings());
         return e.getLines().stream().map(line -> {
@@ -145,6 +147,8 @@ public class RecipeService {
         RecipeEntity recipe = requireOwned(userId, id);
         mapper.applyScalars(recipe, req);
         rebuildLines(userId, recipe, req.getIngredients()); // dirty-checked; flush on tx commit
+        recipe.setBreakdown(null); // template-breakdown cache invalidated on edit (mezo-bw3y D5 —
+        recipe.setFitsFor(null);   // catches renames the numeric staleness compare can't see)
     }
 
     @Transactional

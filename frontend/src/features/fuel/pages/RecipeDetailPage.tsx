@@ -5,8 +5,10 @@
 // editorial hero (image band + name/meta on the card surface below it, var(--ink)/
 // var(--faint) — Napiv de-darkening, mezo-8141: the retired dark-media text tokens) →
 // /adag↔egész macro hero → meta strip → Hozzávalók (per-line contribution in
-// MacroCells) → Logok (RecipeLogsList ← useRecipeLogs) → "Mezo-fit · hamarosan"
-// sparkle zone → actions. Star / Szerkesztés / Törlés / + Mai étkezéshez are all
+// MacroCells) → Logok (RecipeLogsList ← useRecipeLogs) → Mezo · sablon-olvasat +
+// PONTSZÁM (useRecipeBreakdown, mezo-bw3y: deterministic dims + lazy AI prose,
+// ScoreBreakdownBody shared with MealScoreSheet) → actions. Star / Szerkesztés /
+// Törlés / + Mai étkezéshez are all
 // LIVE (useRecipeActions / LogMealSheet). Route guard relies on useRecipes().recipes: mock is
 // synchronous via initialData; real mode briefly shows the not-found fallback on
 // a cold deep-link until the list resolves.
@@ -14,13 +16,15 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { Recipe, RecipeInput, PantryCategoryMeta } from '@/data/types'
-import { useRecipes, useRecipeActions, usePantry, useRecipeLogs } from '@/data/hooks'
+import { useRecipes, useRecipeActions, useRecipeBreakdown, usePantry, useRecipeLogs } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
+import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { RecipeLogsList } from '@/features/fuel/components/RecipeLogsList'
 import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
+import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 
@@ -70,9 +74,11 @@ export function RecipeDetailPage() {
   const { update, remove } = useRecipeActions()
   const [basis, setBasis] = useState<ServingBasis>('serving')
   const [logOpen, setLogOpen] = useState(false)
-  // Today's logs of this recipe (mezo-cki). Called with `id ?? ''` alongside the other top-level
-  // hooks — BEFORE the not-found early return — so hook order stays stable on a cold/not-found render.
+  // Today's logs of this recipe (mezo-cki) + the template breakdown (mezo-bw3y). Called with
+  // `id ?? ''` alongside the other top-level hooks — BEFORE the not-found early return — so hook
+  // order stays stable on a cold/not-found render.
   const { logs } = useRecipeLogs(id ?? '')
+  const { breakdown, fitsFor, pending: breakdownPending } = useRecipeBreakdown(id ?? '')
 
   const recipe = recipes.find(r => r.id === id)
 
@@ -208,23 +214,58 @@ export function RecipeDetailPage() {
         <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
       </div>
 
-      {/* Mezo-fit reasoning deferral — the NUMERIC fit is live (deterministic v0, mezo-yta);
-          only the prose/Reta-phase reasoning layer remains Phase-3 (P8). */}
-      <div
-        className="rad-20"
-        style={{ margin: '16px 0', padding: '18px 16px', textAlign: 'center', background: 'color-mix(in srgb, var(--sage) 5%, transparent)', border: '1px dashed var(--line)' }}
-      >
-        <div className="np-twinkle" style={{ color: 'var(--coral)', display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-          <Icon name="sparkle" size={26} />
+      {/* Mezo · sablon-olvasat + Pontszám (mezo-bw3y) — deterministic numbers + lazy AI prose.
+          Real mode: the FIRST open runs the LLM (seconds) → twinkle card; later opens serve the
+          jsonb cache. Prose-less envelope (flag/companion off, LLM error) renders cards only. */}
+      {breakdownPending && (
+        <div className="card" style={{ margin: '16px 0', padding: 16, textAlign: 'center' }}>
+          <div className="np-twinkle" style={{ color: 'var(--coral)', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+            <Icon name="sparkle" size={20} />
+          </div>
+          <span className="text-tertiary" style={{ fontSize: 11.5 }}>Mezo értékeli a receptet…</span>
         </div>
-        <div style={{ fontFamily: 'var(--ff-display)', fontSize: 16, fontWeight: 600, textTransform: 'uppercase', color: 'var(--coral)', marginBottom: 6 }}>
-          Mezo-fit · indoklás hamarosan
+      )}
+      {!breakdownPending && breakdown?.summary && (
+        <div className="card" style={{ margin: '16px 0', padding: 12, background: 'color-mix(in srgb, var(--sage) 6%, transparent)' }}>
+          <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
+            <Icon name="sparkle" size={12} color="var(--coral)" />
+            <div className="col flex-1">
+              <Eyebrow brand>Mezo · sablon-olvasat</Eyebrow>
+              <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
+                <SafeMarkdown text={breakdown.summary} />
+              </p>
+              {fitsFor.length > 0 && (
+                <div className="row gap-xs" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+                  {fitsFor.map(t => (
+                    <span key={t} className="chip brand" style={{ fontSize: 9, padding: '3px 8px' }}>● {t}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', lineHeight: 1.55, maxWidth: 260, margin: '0 auto' }}>
-          A fit-pontszám már determinisztikus (makró + tápanyag + NOVA). A szöveges indoklás és a
-          Reta-fázis-illeszkedés a Mezo-agy bekapcsolásakor érkezik (Phase-3).
+      )}
+      {!breakdownPending && breakdown && (
+        <>
+          <div className="row" style={{ alignItems: 'center', gap: 9, margin: '16px 2px 10px' }}>
+            <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>PONTSZÁM</span>
+            <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
+            <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+              {breakdown.dimensions.length} szempont · megbízh. {Math.round(breakdown.confidence * 100)}%
+            </span>
+          </div>
+          <div style={{ marginBottom: 16 }}>
+            <ScoreBreakdownBody breakdown={breakdown} />
+          </div>
+        </>
+      )}
+      {!breakdownPending && !breakdown && (
+        <div className="card" style={{ margin: '16px 0', padding: 16, textAlign: 'center' }}>
+          <span className="text-tertiary" style={{ fontSize: 11.5 }}>
+            Sablon-pontszámhoz még nincs elég adat (kcal nélküli hozzávalók).
+          </span>
         </div>
-      </div>
+      )}
 
       {/* Actions */}
       <button className="cta-primary" onClick={() => setLogOpen(true)} style={{ marginBottom: 9 }}>

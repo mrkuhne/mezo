@@ -155,6 +155,10 @@ mezo:
     # (CompanionLlm bean), otherwise the ai-draft endpoint answers 503.
     meal-ai-log:
       enabled: true
+    # Recipe AI template breakdown prose (mezo-bw3y) — off: GET /api/recipe/{id}/breakdown still
+    # serves the deterministic envelope, only summary/detail-prose/improve/fitsFor stay empty.
+    recipe-ai-score:
+      enabled: true
     # Phase-3 companion (LLM chat + AI memory, ADR 0008). Gates every CompanionLlm bean;
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
     companion:

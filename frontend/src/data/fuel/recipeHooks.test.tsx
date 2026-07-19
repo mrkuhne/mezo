@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useRecipes, useRecipeActions } from '@/data/fuel/recipeHooks'
+import { useRecipes, useRecipeActions, useRecipeBreakdown } from '@/data/fuel/recipeHooks'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { RecipeInput } from '@/data/types'
@@ -170,5 +170,37 @@ describe('useRecipes (real mode)', () => {
       expect(keys).toContain(JSON.stringify(['recipes']))
       expect(keys).toContain(JSON.stringify(['pantry']))
     })
+  })
+})
+
+describe('useRecipeBreakdown (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+
+  it('serves the seed templateBreakdown + mezoFit.fitsFor synchronously', () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useRecipeBreakdown('rec-1'), { wrapper: Wrapper })
+    expect(result.current.pending).toBe(false)
+    expect(result.current.breakdown).not.toBeNull()
+    expect(result.current.breakdown!.dimensions.length).toBeGreaterThan(0)
+    expect(result.current.fitsFor.length).toBeGreaterThan(0)
+  })
+})
+
+describe('useRecipeBreakdown (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('resolves the MSW envelope with the degraded context card KEPT (mezo-bw3y)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useRecipeBreakdown('r1'), { wrapper: Wrapper })
+    expect(result.current.pending).toBe(true) // no mock fallback while loading
+    expect(result.current.breakdown).toBeNull()
+    await waitFor(() => expect(result.current.pending).toBe(false))
+    const b = result.current.breakdown!
+    expect(b.summary).toBe('MSW sablon-olvasat.')
+    // 4 dimensions incl. the weight-0 context card (the meal mapper would drop it)
+    expect(b.dimensions.map(d => d.id)).toEqual(['macro', 'micro', 'nova', 'context'])
+    expect(b.dimensions[3].weight).toBe(0)
+    expect(b.improve).toHaveLength(1)
+    expect(result.current.fitsFor).toEqual(['Post-workout · este'])
   })
 })

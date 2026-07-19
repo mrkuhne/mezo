@@ -55,6 +55,16 @@ paths:
         '204': { description: Deleted }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/recipe/{id}/breakdown:
+    get:
+      tags: [Recipe]
+      operationId: getRecipeBreakdown
+      summary: Lazily materialized template breakdown — deterministic 3-dim envelope + cached AI prose (mezo-bw3y)
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        '200': { description: Breakdown (breakdown null while the recipe has no kcal), content: { application/json: { schema: { $ref: '#/components/schemas/RecipeBreakdownResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
     RecipeMacros:
@@ -78,6 +88,16 @@ components:
       required: [fitsFor]
       properties:
         score: { type: number, nullable: true }
+        fitsFor: { type: array, items: { type: string } }
+    # Template breakdown (mezo-bw3y): the envelope schema is the meal fragment's MealBreakdown —
+    # a cross-fragment $ref resolved at merge time (the SystemMessage common-schema precedent).
+    RecipeBreakdownResponse:
+      type: object
+      required: [fitsFor]
+      properties:
+        breakdown:
+          nullable: true
+          allOf: [ { $ref: '#/components/schemas/MealBreakdown' } ]
         fitsFor: { type: array, items: { type: string } }
     RecipeIngredientRequest:
       type: object

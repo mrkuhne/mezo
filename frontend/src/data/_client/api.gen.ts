@@ -803,6 +803,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipe/{id}/breakdown": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lazily materialized template breakdown — deterministic 3-dim envelope + cached AI prose (mezo-bw3y) */
+        get: operations["getRecipeBreakdown"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/fuel/day/{date}": {
         parameters: {
             query?: never;
@@ -2798,6 +2815,10 @@ export interface components {
         };
         RecipeMezoFit: {
             score?: number | null;
+            fitsFor: string[];
+        };
+        RecipeBreakdownResponse: {
+            breakdown?: components["schemas"]["MealBreakdown"] | null;
             fitsFor: string[];
         };
         RecipeIngredientRequest: {
@@ -6477,6 +6498,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getRecipeBreakdown: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Breakdown (breakdown null while the recipe has no kcal) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecipeBreakdownResponse"];
+                };
             };
             /** @description Missing/invalid token */
             401: {

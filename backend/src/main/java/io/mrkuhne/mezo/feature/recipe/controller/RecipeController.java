@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.feature.recipe.controller;
 
 import io.mrkuhne.mezo.api.controller.RecipeApi;
+import io.mrkuhne.mezo.api.dto.RecipeBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.RecipeListResponse;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.feature.recipe.service.RecipeBreakdownService;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.UUID;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class RecipeController implements RecipeApi {
 
     private final RecipeService service;
+    private final RecipeBreakdownService breakdownService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -26,6 +29,11 @@ public class RecipeController implements RecipeApi {
     @Override
     public RecipeResponse getRecipe(UUID id) {
         return service.get(currentUserId.get(), id);
+    }
+
+    @Override
+    public RecipeBreakdownResponse getRecipeBreakdown(UUID id) {
+        return breakdownService.getOrGenerate(currentUserId.get(), id);
     }
 
     @Override

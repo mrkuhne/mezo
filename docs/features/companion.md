@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-07-18
+updated: 2026-07-19
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -778,6 +778,14 @@ ArchUnit slice-cycle rule stays green, and meal reaches the port via `ObjectProv
 so companion off ⇒ no adapter bean ⇒ the `/api/meal/ai-draft` endpoint degrades to a clean 503. The
 consumer side (service/prompt/validator/estimate arm) is in [`fuel.md`](fuel.md) §4–§5.
 
+**Recipe AI-breakdown consumer (✅ wired, ADR 0012, mezo-bw3y).** The third consumer port, cheap
+tier text-only: **recipe owns the port** (`feature/recipe/service/RecipeBreakdownLlm.java` — one
+two-string `complete`) and **companion owns the adapter** `RecipeBreakdownLlmAdapter`
+(`llm/RecipeBreakdownLlmAdapter.java`, `@ConditionalOnProperty(COMPANION_SWITCH)`). Unlike
+scrape/ai-draft (whole feature IS the LLM → 503), the breakdown endpoint's core is deterministic:
+companion off ⇒ empty `ObjectProvider` ⇒ **silent prose-less degrade**, never an error. Consumer
+side (prose service/prompt/cache) in [`fuel.md`](fuel.md) §2/§4.
+
 **V2.1 embedding seam (✅ wired, unused until V2.2).** All embedding access goes through the
 `EmbeddingPort` (`EmbeddingPort.java`) — `embedDocuments(List<String>) → List<float[]>` /
 `embedQuery(String) → float[]`, unit vectors at `DIMENSIONS=768`. Real `GeminiEmbeddingAdapter`
@@ -1356,7 +1364,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — LLM port (ADR 0008)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port (`complete` + `stream`, tools variants since V0.5; the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); `tools(Object...)` + `toolContext` registration; the Spring AI `Media` image part (mezo-78rn).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MealDraftLlmAdapter.java` — companion-side adapter for the meal-owned `MealDraftLlm` port (ADR 0012, mezo-78rn); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates both overloads to `CompanionLlm`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/CompanionHelloRunner.java` — `companion-smoke` real-API round-trip proof.
 
