@@ -1760,3 +1760,63 @@ button.hab-row:active { background: var(--surface-glass); }
 @media (prefers-reduced-motion: reduce) {
   .quests-progress > i, .quest-cta { transition: none; }
 }
+
+/* ===== Daily intention banner (mezo-a686) ===== */
+.intent {
+  background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 20px;
+  filter: var(--card-elev); padding: 15px 16px; position: relative; overflow: hidden;
+}
+/* faint north-star wash in the corner — the signature */
+.intent::after {
+  content: ""; position: absolute; right: -30px; top: -30px; width: 130px; height: 130px; border-radius: 50%;
+  background: radial-gradient(circle at center, color-mix(in srgb, var(--lav) 20%, transparent), transparent 70%);
+  pointer-events: none;
+}
+.intent-head { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
+.intent-star {
+  width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto; display: grid; place-items: center;
+  background: var(--wash-lav); color: var(--lav-deep); font-size: 15px;
+}
+.intent-eye { font: 800 10px/1.2 var(--ff-body); letter-spacing: .09em; text-transform: uppercase; color: var(--lav-deep); }
+.intent-creed { font: 500 13.5px/1.45 var(--ff-body); color: var(--sub); font-style: italic; }
+.intent-edit { margin-left: auto; font: 700 10.5px/1 var(--ff-body); color: var(--faint); padding: 5px 9px; border-radius: 999px; }
+.intent-edit:active { background: var(--surface-glass, rgba(0, 0, 0, .04)); }
+
+.intent-div { height: 1px; background: var(--border-subtle); margin: 13px 0 12px; }
+
+.intent-focus-eye { font: 800 9.5px/1 var(--ff-body); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+.intent-focus-eye .cnt { color: var(--quat); font-size: 9px; letter-spacing: .04em; }
+.intent-focus { font: 600 16px/1.35 var(--ff-display); color: var(--ink); letter-spacing: -.01em; }
+.intent-foci { display: flex; flex-direction: column; gap: 10px; }
+.intent .fx { display: flex; gap: 9px; align-items: flex-start; }
+.intent .fx-mark { color: var(--lav-deep); font-size: 11px; line-height: 1; margin-top: 6px; flex: 0 0 auto; }
+.intent .fx-text { font: 600 15px/1.35 var(--ff-display); color: var(--ink); letter-spacing: -.01em; }
+.intent-add { margin-top: 11px; display: inline-flex; align-items: center; gap: 5px; font: 700 11.5px/1 var(--ff-body);
+  color: var(--lav-deep); padding: 7px 11px; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--lav) 40%, transparent); }
+.intent-add svg { width: 12px; height: 12px; }
+.intent-cap { margin-top: 11px; font: 600 10.5px/1.3 var(--ff-body); color: var(--quat); }
+
+.intent-cta {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 15px; border-radius: 999px;
+  font: 700 12.5px/1 var(--ff-body); color: #fff;
+  background: linear-gradient(135deg, var(--lav), var(--lav-deep));
+  box-shadow: 0 2px 7px color-mix(in srgb, var(--lav-deep) 42%, transparent);
+}
+.intent-cta.ghost { background: none; color: var(--lav-deep); border: 1.5px solid color-mix(in srgb, var(--lav) 45%, transparent); box-shadow: none; }
+.intent-cta svg { width: 14px; height: 14px; }
+
+.intent-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.intent-prompt { font: 600 13.5px/1.3 var(--ff-body); color: var(--ink); flex: 1; min-width: 120px; }
+
+/* evening reflect */
+.reflect { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
+.reflect-q { font: 700 11.5px/1.3 var(--ff-body); color: var(--sub); margin-bottom: 8px; }
+.reflect-opts { display: flex; gap: 8px; }
+.reflect-opt {
+  flex: 1; padding: 9px 6px; border-radius: 12px; font: 700 12px/1 var(--ff-body); color: var(--sub);
+  background: var(--warm); text-align: center;
+}
+.reflect-opt.on-yes { background: var(--wash-sage); color: var(--sage-deep); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--sage) 45%, transparent); }
+.reflect-done { display: inline-flex; align-items: center; gap: 6px; font: 700 12px/1.3 var(--ff-body); color: var(--sage-deep);
+  background: var(--wash-sage); padding: 8px 12px; border-radius: 12px; margin-top: 12px; }
+.reflect-done svg { width: 14px; height: 14px; }

@@ -4,6 +4,7 @@ import { useTodayScenario, useToday, useCheckins, useCompanionNote, resolveBrief
 import { AppHero } from '@/features/progression/components/AppHero'
 import { Icon } from '@/shared/ui/Icon'
 import { GreetingHeader } from '@/features/today/components/GreetingHeader'
+import { IntentionBanner } from '@/features/today/components/IntentionBanner'
 import { DayArc } from '@/features/today/components/DayArc'
 import { BriefingCard } from '@/features/today/components/BriefingCard'
 import { WorkoutTeaser } from '@/features/today/components/WorkoutTeaser'
@@ -50,6 +51,7 @@ export function TodayPage() {
         }
       />
       <GreetingHeader today={today} user={user} retaDay={scenario.retaDay} />
+      <IntentionBanner />
       <DayArc checkins={checkins} workoutTime={workoutTime} />
       {workout ? (
         <WorkoutTeaser workout={workout} niggle={scenario.niggle} time={workoutTime} prediction={prediction} />
