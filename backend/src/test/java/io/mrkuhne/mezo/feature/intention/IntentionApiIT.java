@@ -52,7 +52,7 @@ class IntentionApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testReflect_shouldSetThenRejectInvalid() {
+    void testReflect_shouldPersistReflection_whenValid() {
         LocalDate d = LocalDate.now();
         IntentionDayResponse day = postForBody("/api/intention/reflect",
             ReflectRequest.builder().date(d).value(ReflectRequest.ValueEnum.YES).build(),
