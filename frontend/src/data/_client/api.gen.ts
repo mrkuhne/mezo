@@ -1728,6 +1728,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/intention/day/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The day's creed + foci + reflection (Intention) */
+        get: operations["getIntentionDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intention/creed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert the standing creed (Intention) */
+        put: operations["setCreed"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intention/focus": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a focus for the day (max 3) (Intention) */
+        post: operations["addFocus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intention/focus/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a focus (Intention) */
+        delete: operations["removeFocus"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/intention/reflect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set the day's holistic reflection (Intention) */
+        post: operations["reflect"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3849,6 +3934,39 @@ export interface components {
             perfectMorningDays30: number;
             perfectEveningDays30: number;
             habits: components["schemas"]["HabitStrength"][];
+        };
+        IntentionFocusResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date */
+            focusDate: string;
+            text: string;
+        };
+        IntentionCreedResponse: {
+            text: string;
+        };
+        IntentionDayResponse: {
+            /** Format: date */
+            date: string;
+            creed?: string | null;
+            foci: components["schemas"]["IntentionFocusResponse"][];
+            /** @enum {string|null} */
+            reflection?: "yes" | "partial" | "no" | null;
+            focusCap: number;
+        };
+        SetCreedRequest: {
+            text: string;
+        };
+        AddFocusRequest: {
+            /** Format: date */
+            date: string;
+            text: string;
+        };
+        ReflectRequest: {
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            value: "yes" | "partial" | "no";
         };
     };
     responses: never;
@@ -8894,6 +9012,174 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getIntentionDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day's intention state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntentionDayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setCreed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetCreedRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved creed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntentionCreedResponse"];
+                };
+            };
+            /** @description INTENTION_TEXT_REQUIRED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    addFocus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddFocusRequest"];
+            };
+        };
+        responses: {
+            /** @description Focus added */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntentionFocusResponse"];
+                };
+            };
+            /** @description INTENTION_TEXT_REQUIRED */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description INTENTION_FOCUS_CAP */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    removeFocus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description INTENTION_FOCUS_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    reflect: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReflectRequest"];
+            };
+        };
+        responses: {
+            /** @description Reflection saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IntentionDayResponse"];
+                };
+            };
+            /** @description INTENTION_REFLECTION_INVALID */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
