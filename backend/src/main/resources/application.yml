@@ -179,6 +179,10 @@ mezo:
     # surface 404s and no habit beans exist (reads still close lazily on GET).
     habit:
       enabled: true
+    # Daily intention (bd mezo-a686) — standing creed + up to 3 daily foci + evening reflection;
+    # off ⇒ the /api/intention surface 404s and no intention beans exist.
+    intention:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -532,6 +536,12 @@ mezo:
     strength-window-days: 28
     min-sample: 5
     summary-days: 30
+  # Daily intention tuning (mezo-a686): focus cap + text limits are config, never code.
+  # Binds onto IntentionProperties.
+  intention:
+    focus-cap: 3
+    creed-max-len: 280
+    focus-max-len: 200
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
     default-increment: 2.5    # fallback load step when a type has no explicit increment

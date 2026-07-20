@@ -97,4 +97,7 @@ public class FeaturesConfiguration {
 
     /** Nightly habit close cron (end-of-day + next-day metrics) — schedule: mezo.habit.close-cron. */
     public static final String HABIT_JOB_SWITCH = "mezo.techcore.cron.habit-job.enabled";
+
+    /** Daily intention (creed + foci + reflection, mezo-a686). Gates /api/intention + services. */
+    public static final String INTENTION_SWITCH = "mezo.feature.intention.enabled";
 }
