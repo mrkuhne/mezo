@@ -296,6 +296,12 @@ export const handlers = [
     HttpResponse.json({ perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] }),
   ),
 
+  // Daily intention (mezo-a686) — honest-empty default (no creed, no foci, no reflection; never a
+  // 404). Tests override with server.use() for populated cases.
+  http.get(`${API_BASE}/api/intention/day/:date`, ({ params }) =>
+    HttpResponse.json({ date: params.date, creed: null, foci: [], reflection: null, focusCap: 3 }),
+  ),
+
   // Growth history + achievements (Growth page, mezo-rmhr) — honest-empty defaults
   // (never a 404); tests override with server.use() for data cases.
   http.get(`${API_BASE}/api/quest/history`, () => HttpResponse.json([])),

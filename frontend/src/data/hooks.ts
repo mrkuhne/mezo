@@ -34,5 +34,6 @@ export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHoo
 export { useProgressionProfile, useAchievements } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 export { useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habitHooks'
+export { useIntentionDay, useIntentionActions } from '@/data/intention/intentionHooks'
 export { useActivities, useActivityActions, useActivityHistory } from '@/data/activity/activityHooks'
 export { useGamification, useTitles, useGamificationActions } from '@/data/gamification/gamificationHooks'
