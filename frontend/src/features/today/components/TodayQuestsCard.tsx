@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { CSSProperties } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useActivities, useDailyQuests, useQuestActions, useWaterActions } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
@@ -6,14 +7,27 @@ import { growthTodaySummary } from '@/features/today/logic/growthToday'
 import { questAction } from '@/features/today/logic/questAction'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { Icon } from '@/shared/ui/Icon'
+import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
-import type { DailyQuest } from '@/data/types'
+import type { DailyQuest, QuestSlot } from '@/data/types'
 
-const STATE_ICON: Record<DailyQuest['status'], string> = {
-  offered: '◦',
-  completed: '✓',
-  expired: '—',
-  rerolled: '—',
+/** A row's two-token colour family — drives every tinted surface via inline custom props. */
+type QuestFamily = { accent: string; text: string }
+
+/** Domain hue per quest slot (offered rows). Completed → sage, expired → muted (below). */
+const SLOT_FAMILY: Record<QuestSlot, QuestFamily> = {
+  BODY: { accent: 'var(--coral)', text: 'var(--coral-deep)' },
+  FUELBIO: { accent: 'var(--amber)', text: 'var(--amber-deep)' },
+  GROWTH: { accent: 'var(--lav)', text: 'var(--lav-deep)' },
+}
+const DONE_FAMILY: QuestFamily = { accent: 'var(--sage)', text: 'var(--sage-deep)' }
+const MUTED_FAMILY: QuestFamily = { accent: 'var(--faint)', text: 'var(--text-tertiary)' }
+
+/** Completed reads as achieved (sage) regardless of domain; expired stays quiet (ADR 0010). */
+function questFamily(q: DailyQuest): QuestFamily {
+  if (q.status === 'completed') return DONE_FAMILY
+  if (q.status === 'offered') return SLOT_FAMILY[q.slot] ?? SLOT_FAMILY.BODY
+  return MUTED_FAMILY
 }
 
 interface TodayQuestsCardProps {
@@ -57,9 +71,11 @@ export function TodayQuestsCard({ onCheckIn }: TodayQuestsCardProps) {
     else navigate(action.to)
   }
 
+  const pct = Math.round((done / total) * 100)
+
   return (
     <div className="card" style={{ margin: '8px 0', padding: '14px 16px' }}>
-      <div className="row" style={{ justifyContent: 'space-between', paddingBottom: 8 }}>
+      <div className="quests-head">
         <span className="eyebrow">⚡ Napi küldetések</span>
         <Link
           to="/me/growth"
@@ -69,35 +85,27 @@ export function TodayQuestsCard({ onCheckIn }: TodayQuestsCardProps) {
           {done}/{total} · +{xp} XP <Icon name="chevron-right" size={12} />
         </Link>
       </div>
+      <div className="quests-progress" aria-hidden>
+        <i style={{ width: `${pct}%` }} />
+      </div>
       {quests.map(q => {
         const action = q.status === 'offered' ? questAction(q) : null
         const showCta = action !== null && (action.kind !== 'checkin' || onCheckIn !== undefined)
+        const fam = questFamily(q)
+        const done_ = q.status === 'completed'
         return (
-          <div key={q.id} className="row" style={{ alignItems: 'center', gap: 10, padding: '6px 0' }}>
-            <span
-              aria-hidden
-              style={{
-                color: q.status === 'completed' ? 'var(--success)' : 'var(--coral)',
-                opacity: q.status === 'expired' ? 0.4 : 1,
-                width: 14, textAlign: 'center', flexShrink: 0,
-              }}
-            >
-              {STATE_ICON[q.status]}
+          <div
+            key={q.id}
+            className={cn('quest-row', q.status === 'expired' && 'is-expired')}
+            style={{ '--q-accent': fam.accent, '--q-text': fam.text } as CSSProperties}
+          >
+            <span className={cn('quest-disc', done_ && 'is-done')} aria-hidden>
+              {done_ ? '✓' : <i className="quest-pip" />}
             </span>
-            <div
-              style={{
-                flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600,
-                opacity: q.status === 'expired' ? 0.5 : 1,
-                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-              }}
-            >
-              {q.title}
-            </div>
-            {q.status === 'completed' && (
-              <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{q.xp} XP</span>
-            )}
+            <div className="quest-title">{q.title}</div>
+            {done_ && <span className="quest-xp">+{q.xp} XP</span>}
             {showCta && (
-              <button className="chip" onClick={() => run(q)} style={{ cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              <button className="quest-cta" onClick={() => run(q)}>
                 {action.label}
               </button>
             )}

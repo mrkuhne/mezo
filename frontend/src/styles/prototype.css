@@ -1687,3 +1687,76 @@ button.hab-row:active { background: var(--surface-glass); }
 .hab-spct { font: 700 12.5px/1 var(--ff-mono); color: var(--lav-deep); letter-spacing: -.02em; flex: 0 0 auto; }
 .hab-sbar { height: 7px; border-radius: 999px; background: var(--warm); overflow: hidden; margin-top: 7px; margin-left: 23px; }
 .hab-sbar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lav), #B7A8E0); }
+
+/* ===== Napi küldetések — Today quest card (mezo-vj0b) =====
+   Per-domain colour-coded quest rows. A row's hue is set inline via two custom props
+   --q-accent / --q-text (BODY→coral, FUELBIO→amber, GROWTH→lav; completed→sage,
+   expired→faint); every surface below derives from those, so a row themes from two values. */
+.quests-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; padding-bottom: 9px;
+}
+.quests-progress {
+  height: 5px; border-radius: 999px; overflow: hidden; margin-bottom: 12px;
+  background: color-mix(in srgb, var(--faint) 20%, transparent);
+}
+.quests-progress > i {
+  display: block; height: 100%; border-radius: inherit;
+  background: linear-gradient(90deg, var(--coral-deep), var(--amber));
+  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--coral) 55%, transparent);
+  transition: width .55s cubic-bezier(.4, 0, .2, 1);
+}
+.quest-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 11px; margin-bottom: 7px;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--q-accent) 7%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--q-accent) 22%, transparent);
+}
+.quest-row:last-child { margin-bottom: 0; }
+.quest-row.is-expired { opacity: .55; }
+
+.quest-disc {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 800; line-height: 1;
+  color: var(--q-text);
+  background: color-mix(in srgb, var(--q-accent) 15%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--q-accent) 42%, transparent);
+}
+.quest-disc.is-done {
+  color: #fff; background: var(--q-accent); border-color: var(--q-accent);
+  box-shadow: 0 3px 9px -3px var(--q-accent);
+}
+.quest-pip { width: 7px; height: 7px; border-radius: 50%; background: var(--q-accent); }
+
+.quest-title {
+  flex: 1; min-width: 0;
+  font-size: 13px; font-weight: 600; line-height: 1.35;
+  color: var(--text-primary);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.quest-row.is-expired .quest-title { color: var(--text-secondary); }
+
+.quest-xp, .quest-cta {
+  flex-shrink: 0; white-space: nowrap;
+  border-radius: 999px; font-family: var(--ff-body);
+  color: var(--q-text);
+}
+.quest-xp {
+  padding: 6px 11px; font-size: 11px; font-weight: 800; letter-spacing: .01em;
+  background: color-mix(in srgb, var(--q-accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--q-accent) 32%, transparent);
+}
+.quest-cta {
+  padding: 7px 13px; font-size: 11px; font-weight: 700; cursor: pointer;
+  background: color-mix(in srgb, var(--q-accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--q-accent) 40%, transparent);
+  transition: filter .12s ease, transform .12s ease;
+}
+.quest-cta:hover { filter: brightness(.96); }
+.quest-cta:active { transform: scale(.96); }
+
+@media (prefers-reduced-motion: reduce) {
+  .quests-progress > i, .quest-cta { transition: none; }
+}
