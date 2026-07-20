@@ -38,5 +38,13 @@
   { "key": "bed_on_time", "chain": "EVENING", "position": 4,
     "title": "Lefekvés időben", "why": "A fix lefekvés a teljes lánc záróköve — ettől lesz holnap is reggeled.",
     "anchorCopy": "wind-down után", "mode": "DERIVED", "metric": "bedtime_next_day",
-    "skillKey": "recovery", "skillKind": "LIFE", "xp": 15 }
+    "skillKey": "recovery", "skillKind": "LIFE", "xp": 15 },
+  { "key": "daily_intention", "chain": "MORNING", "position": 7,
+    "title": "Napi szándék", "why": "Egy szándékkal indított nap nem sodródik — te választod az irányt.",
+    "anchorCopy": "reggeli rutin után", "mode": "DERIVED", "metric": "intention_focus_set",
+    "skillKey": "mindset", "skillKind": "LIFE", "xp": 10 },
+  { "key": "intention_reflect", "chain": "EVENING", "position": 5,
+    "title": "Szándékkal éltem?", "why": "A napzáró őszinte pillantás tanít a legtöbbet — tartás vagy sodródás volt?",
+    "anchorCopy": "lefekvés előtt", "mode": "DERIVED", "metric": "intention_reflected",
+    "skillKey": "mindset", "skillKind": "LIFE", "xp": 5 }
 ]

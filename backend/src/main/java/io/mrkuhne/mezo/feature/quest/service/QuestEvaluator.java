@@ -34,6 +34,7 @@ public class QuestEvaluator {
     private final FuelDayService fuelDayService;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final MealItemRepository mealItemRepository;
+    private final io.mrkuhne.mezo.feature.intention.repository.IntentionFocusRepository intentionFocusRepository;
 
     public boolean satisfied(DailyQuestEntity q) {
         LocalDate d = q.getQuestDate();
@@ -58,6 +59,8 @@ public class QuestEvaluator {
                 .getConsumed().getP().compareTo(threshold) >= 0;
             case "own_recipe_meal" -> mealItemRepository
                 .existsByCreatedByAndDeletedFalseAndSourceAndMeal_MealDate(q.getCreatedBy(), "recipe", d);
+            case "intention_focus_set" -> !intentionFocusRepository
+                .findByCreatedByAndFocusDateAndDeletedFalseOrderByCreatedAtAsc(q.getCreatedBy(), d).isEmpty();
             default -> {
                 log.warn("Unknown quest metric '{}' on quest {} — treated as not satisfied",
                     q.getTarget().metric(), q.getId());
