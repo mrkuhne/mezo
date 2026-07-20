@@ -5,6 +5,8 @@ export type HabitAction =
   | { kind: 'nav'; to: string }
   | { kind: 'meal-sheet' }
   | { kind: 'sleep-sheet' }
+  | { kind: 'intention-sheet' }
+  | { kind: 'intention-reflect' }
   | { kind: 'none' }
 
 /** ADR 0010: a CTA never self-completes a DERIVED habit — it opens the underlying log surface. */
@@ -29,6 +31,12 @@ export function habitAction(h: HabitItem): HabitAction {
   }
   if (h.key === 'protein_breakfast') {
     return { kind: 'meal-sheet' }
+  }
+  if (h.key === 'daily_intention') {
+    return { kind: 'intention-sheet' }
+  }
+  if (h.key === 'intention_reflect') {
+    return { kind: 'intention-reflect' }
   }
   const to = NAV_BY_KEY[h.key]
   return to ? { kind: 'nav', to } : { kind: 'none' }

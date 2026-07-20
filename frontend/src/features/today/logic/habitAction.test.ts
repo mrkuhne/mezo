@@ -19,6 +19,12 @@ describe('habitAction', () => {
     expect(habitAction({ ...byKey('protein_breakfast'), status: 'pending' })).toEqual({ kind: 'meal-sheet' })
     expect(habitAction({ ...byKey('caffeine_cutoff'), status: 'pending' })).toEqual({ kind: 'none' })
   })
+  test('intention habits open their own surfaces', () => {
+    expect(habitAction({ ...byKey('morning_sunlight'), mode: 'DERIVED', key: 'daily_intention', status: 'pending' }))
+      .toEqual({ kind: 'intention-sheet' })
+    expect(habitAction({ ...byKey('morning_sunlight'), mode: 'DERIVED', key: 'intention_reflect', status: 'pending' }))
+      .toEqual({ kind: 'intention-reflect' })
+  })
   test('done/missed habits have no action', () => {
     expect(habitAction(byKey('wake_on_time'))).toEqual({ kind: 'none' }) // seed status: done
   })

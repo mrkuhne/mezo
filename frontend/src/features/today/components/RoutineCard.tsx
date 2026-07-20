@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useHabitDay, useHabitActions, useSleep } from '@/data/hooks'
+import { useHabitDay, useHabitActions, useSleep, useIntentionActions, useIntentionDay } from '@/data/hooks'
 import type { HabitItem } from '@/data/types'
 import { habitAction, type HabitAction } from '@/features/today/logic/habitAction'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
+import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
+import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
 import { daypartNow } from '@/shared/lib/daypart'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
@@ -39,10 +41,14 @@ export function RoutineCard() {
   const { habits, levelUps } = useHabitDay(date)
   const { check, pending, consumeLevelUps } = useHabitActions(date)
   const { logSleep } = useSleep()
+  const { addFocus, reflect } = useIntentionActions(date)
+  const { data: intention } = useIntentionDay(date)
   const { showLevelUp } = useLevelUp()
   const navigate = useNavigate()
   const [mealOpen, setMealOpen] = useState(false)
   const [sleepOpen, setSleepOpen] = useState(false)
+  const [intentionOpen, setIntentionOpen] = useState(false)
+  const [reflectOpen, setReflectOpen] = useState(false)
   const daypart = daypartNow()
 
   // surface a completion's level-up exactly once
@@ -100,6 +106,10 @@ export function RoutineCard() {
       setMealOpen(true)
     } else if (action.kind === 'sleep-sheet') {
       setSleepOpen(true)
+    } else if (action.kind === 'intention-sheet') {
+      setIntentionOpen(true)
+    } else if (action.kind === 'intention-reflect') {
+      setReflectOpen(true)
     }
   }
 
@@ -189,6 +199,8 @@ export function RoutineCard() {
       <div className="hab-chain">{chain.map(renderRow)}</div>
       {mealOpen && <LogMealSheet initialSlot="breakfast" onClose={() => setMealOpen(false)} />}
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
+      {intentionOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setIntentionOpen(false)} />}
+      {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}
     </div>
   )
 }
