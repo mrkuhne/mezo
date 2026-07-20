@@ -39,6 +39,22 @@ describe('RoutineCard', () => {
     expect(screen.queryByText('Koffein-cutoff')).not.toBeInTheDocument()
   })
 
+  test('header sums the XP already earned from done habits', () => {
+    renderCard()
+    // seed: 3 morning habits done (10 + 5 + 10) → 25 XP
+    expect(screen.getByText(/3\/6 ma · \+25 XP/)).toBeInTheDocument()
+  })
+
+  test('only the current habit carries a prominent action; downstream stays a tappable row', () => {
+    renderCard()
+    // seed morning: wake/napfény/súlymérés done → Gombakávé is the first pending (nav → Napló)
+    const current = screen.getByRole('button', { name: 'Gombakávé logolása' })
+    expect(current).toHaveTextContent('Napló')
+    // a downstream pending habit is the whole row (no "Napló"/"Pipa" label text on it)
+    const downstream = screen.getByRole('button', { name: 'Reggeli edzés logolása' })
+    expect(downstream).not.toHaveTextContent('Napló')
+  })
+
   test('evening daypart renders the evening chain', () => {
     vi.mocked(daypartNow).mockReturnValue('este')
     renderCard()

@@ -15,4 +15,13 @@ describe('RoutinesTab', () => {
     expect(screen.getByText(/Tökéletes reggelek/)).toBeInTheDocument()
     expect(screen.getByText('6')).toBeInTheDocument() // perfectMorningDays30 seed
   })
+
+  test('long habit titles render in full — no truncation of the label', () => {
+    render(<QueryWrapper><RoutinesTab /></QueryWrapper>)
+    // the longest title used to ellipsis-truncate in the old fixed-width .skl column
+    expect(screen.getByText('Wind-down, képernyő le')).toBeInTheDocument()
+    expect(screen.getByText('Reggeli súlymérés')).toBeInTheDocument()
+    // a per-habit 28-day strength percentage is shown
+    expect(screen.getByText('82%')).toBeInTheDocument()
+  })
 })

@@ -2,16 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useHabitDay, useHabitActions } from '@/data/hooks'
 import type { HabitItem } from '@/data/types'
-import { habitAction } from '@/features/today/logic/habitAction'
+import { habitAction, type HabitAction } from '@/features/today/logic/habitAction'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { daypartNow } from '@/shared/lib/daypart'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 
-const STATE_ICON: Record<HabitItem['status'], string> = { pending: '◦', done: '✓', missed: '—' }
-
-/** Daypart-aware routine chains: morning chain in the morning, evening chain in the evening. */
+/**
+ * Daypart-aware routine chains rendered as a single vertical thread — the habit-stacking
+ * chain made literal. Only the current (first-pending) habit carries a prominent action; the
+ * remaining pending habits stay tappable rows with a quiet chevron (single-next-action focus).
+ */
 export function RoutineCard() {
   const date = localDateString()
   const { habits, levelUps } = useHabitDay(date)
@@ -64,49 +66,99 @@ export function RoutineCard() {
   }
 
   const firstPending = chain.find((h) => h.status === 'pending')?.key
+  const earnedXp = chain.filter((h) => h.status === 'done').reduce((sum, h) => sum + h.xp, 0)
+
+  const runAction = (h: HabitItem, action: HabitAction) => {
+    if (action.kind === 'check') {
+      check(h.key).then((lu) => lu?.[0] && showLevelUp(lu[0]))
+    } else if (action.kind === 'nav') {
+      navigate(action.to)
+    } else if (action.kind === 'meal-sheet') {
+      setMealOpen(true)
+    }
+  }
+
+  const renderRow = (h: HabitItem) => {
+    const action = habitAction(h)
+    const isCheck = action.kind === 'check'
+    const hasAction = action.kind !== 'none'
+    const ariaLabel = isCheck ? `${h.title} pipálása` : `${h.title} logolása`
+    const nodeCls =
+      h.status === 'done' ? 'hab-node done' : h.key === firstPending ? 'hab-node now' : 'hab-node'
+    const node = <span className={nodeCls} />
+    const main = (
+      <div className="hab-main">
+        <div className="hab-anchor">{h.anchorCopy}</div>
+        <div className="hab-title">{h.title}</div>
+      </div>
+    )
+    const xp = <span className="hab-xp">+{h.xp}</span>
+
+    // done / missed — static, no affordance
+    if (h.status !== 'pending') {
+      return (
+        <div key={h.key} className={`hab-row ${h.status}`}>
+          {node}
+          {main}
+          <div className="hab-right">
+            {xp}
+            {h.status === 'done' && <span className="hab-tick">✓</span>}
+          </div>
+        </div>
+      )
+    }
+
+    // current habit — the one prominent action (none for passively-derived habits)
+    if (h.key === firstPending) {
+      return (
+        <div key={h.key} className="hab-row now">
+          {node}
+          {main}
+          <div className="hab-right">
+            {xp}
+            {hasAction && (
+              <button className="hab-act" disabled={pending} aria-label={ariaLabel}
+                onClick={() => runAction(h, action)}>
+                {isCheck ? 'Pipa' : 'Napló'}
+              </button>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    // downstream pending with no user surface — a plain, non-tappable row
+    if (!hasAction) {
+      return (
+        <div key={h.key} className="hab-row">
+          {node}
+          {main}
+          <div className="hab-right">{xp}</div>
+        </div>
+      )
+    }
+
+    // downstream pending — the whole row is tappable, a quiet chevron hints at the action
+    return (
+      <button key={h.key} className="hab-row" disabled={pending} aria-label={ariaLabel}
+        onClick={() => runAction(h, action)}>
+        {node}
+        {main}
+        <div className="hab-right">
+          {xp}
+          <span className="hab-chev" aria-hidden="true">›</span>
+        </div>
+      </button>
+    )
+  }
 
   return (
     <div className="card">
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <span className="eyebrow">{title}</span>
-        <span className="eyebrow text-tertiary">{doneOf(chain)}/{chain.length} ma</span>
+        <span className="eyebrow text-tertiary">{doneOf(chain)}/{chain.length} ma · +{earnedXp} XP</span>
       </div>
-      {chain.map((h) => {
-        const action = habitAction(h)
-        const glow = h.key === firstPending
-        return (
-          <div key={h.key} className="row" style={{ alignItems: 'flex-start', gap: 10, padding: '6px 0',
-            ...(glow ? { background: 'var(--wash-lav)', borderRadius: 8, padding: '6px 8px' } : {}) }}>
-            <span style={{ color: h.status === 'done' ? 'var(--success)' : 'var(--coral)',
-              opacity: h.status === 'missed' ? 0.4 : 1, width: 14, textAlign: 'center' }}>
-              {STATE_ICON[h.status]}
-            </span>
-            <div style={{ flex: 1, opacity: h.status === 'missed' ? 0.5 : 1 }}>
-              <div className="text-tertiary" style={{ fontSize: 10 }}>{h.anchorCopy}</div>
-              <div style={{ fontSize: 13, fontWeight: 600 }}>{h.title}</div>
-            </div>
-            <span className="chip" style={{ whiteSpace: 'nowrap' }}>+{h.xp} XP</span>
-            {action.kind === 'check' && (
-              <button className="chip" disabled={pending} aria-label={`${h.title} pipálása`}
-                onClick={() => check(h.key).then((lu) => lu?.[0] && showLevelUp(lu[0]))}>
-                Pipa
-              </button>
-            )}
-            {action.kind === 'nav' && (
-              <button className="chip" aria-label={`${h.title} logolása`}
-                onClick={() => navigate(action.to)}>
-                Logolás
-              </button>
-            )}
-            {action.kind === 'meal-sheet' && (
-              <button className="chip" aria-label={`${h.title} logolása`}
-                onClick={() => setMealOpen(true)}>
-                Logolás
-              </button>
-            )}
-          </div>
-        )
-      })}
+      <div className="hab-chain">{chain.map(renderRow)}</div>
       {mealOpen && <LogMealSheet initialSlot="breakfast" onClose={() => setMealOpen(false)} />}
     </div>
   )
