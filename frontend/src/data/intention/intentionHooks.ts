@@ -40,12 +40,14 @@ export function useIntentionActions(date: string) {
   const addFocusM = useMutation({
     mutationFn: async (text: string) => {
       if (mock) {
-        patch((d) => {
-          if (d.foci.length >= d.focusCap) return d
-          const first = d.foci.length === 0
-          if (first) awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 10 })
-          return { ...d, foci: [...d.foci, { id: `if-${d.foci.length + 1}-${date}`, focusDate: date, text }] }
-        })
+        // Decide first-focus + under-cap from the current cache BEFORE patching, then patch,
+        // then award sequentially (side effect lifted out of the pure updater — mirrors habitHooks).
+        const current = qc.getQueryData<IntentionDay>(key(date))
+        if (current && current.foci.length < current.focusCap) {
+          const firstFocus = current.foci.length === 0
+          patch((d) => ({ ...d, foci: [...d.foci, { id: crypto.randomUUID(), focusDate: date, text }] }))
+          if (firstFocus) awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 10 })
+        }
         return
       }
       return intentionApi.addFocus(date, text).then(() => undefined)
