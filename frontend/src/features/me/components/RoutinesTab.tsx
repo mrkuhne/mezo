@@ -33,7 +33,7 @@ export function RoutinesTab() {
       return null
     }
     return (
-      <div className="card">
+      <div className="card" style={{ padding: '14px 16px' }}>
         <div className="eyebrow" style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
           <span aria-hidden="true">{emoji}</span>
           <span>{label}</span>

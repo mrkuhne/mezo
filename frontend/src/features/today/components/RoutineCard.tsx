@@ -1,13 +1,33 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useHabitDay, useHabitActions } from '@/data/hooks'
+import { useHabitDay, useHabitActions, useSleep } from '@/data/hooks'
 import type { HabitItem } from '@/data/types'
 import { habitAction, type HabitAction } from '@/features/today/logic/habitAction'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { daypartNow } from '@/shared/lib/daypart'
 import { localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
+
+const IconCheck = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M20 6 9 17l-5-5" />
+  </svg>
+)
+const IconPencil = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+)
+const IconChevron = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"
+    strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="m9 6 6 6-6 6" />
+  </svg>
+)
 
 /**
  * Daypart-aware routine chains rendered as a single vertical thread — the habit-stacking
@@ -18,9 +38,11 @@ export function RoutineCard() {
   const date = localDateString()
   const { habits, levelUps } = useHabitDay(date)
   const { check, pending, consumeLevelUps } = useHabitActions(date)
+  const { logSleep } = useSleep()
   const { showLevelUp } = useLevelUp()
   const navigate = useNavigate()
   const [mealOpen, setMealOpen] = useState(false)
+  const [sleepOpen, setSleepOpen] = useState(false)
   const daypart = daypartNow()
 
   // surface a completion's level-up exactly once
@@ -53,7 +75,8 @@ export function RoutineCard() {
 
   if (daypart === 'delutan') {
     return (
-      <Link to="/me/growth" className="card row" style={{ alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+      <Link to="/me/growth" className="card row"
+        style={{ alignItems: 'center', gap: 10, padding: '14px 16px', margin: '8px 0', textDecoration: 'none' }}>
         <span aria-hidden="true">🔁</span>
         <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
           Reggeli rutin {doneOf(morning)}/{morning.length}
@@ -75,6 +98,8 @@ export function RoutineCard() {
       navigate(action.to)
     } else if (action.kind === 'meal-sheet') {
       setMealOpen(true)
+    } else if (action.kind === 'sleep-sheet') {
+      setSleepOpen(true)
     }
   }
 
@@ -92,7 +117,6 @@ export function RoutineCard() {
         <div className="hab-title">{h.title}</div>
       </div>
     )
-    const xp = <span className="hab-xp">+{h.xp}</span>
 
     // done / missed — static, no affordance
     if (h.status !== 'pending') {
@@ -101,8 +125,11 @@ export function RoutineCard() {
           {node}
           {main}
           <div className="hab-right">
-            {xp}
-            {h.status === 'done' && <span className="hab-tick">✓</span>}
+            {h.status === 'done' ? (
+              <span className="hab-earned"><IconCheck />+{h.xp}</span>
+            ) : (
+              <span className="hab-xp">+{h.xp}</span>
+            )}
           </div>
         </div>
       )
@@ -115,10 +142,11 @@ export function RoutineCard() {
           {node}
           {main}
           <div className="hab-right">
-            {xp}
+            <span className="hab-xp">+{h.xp}</span>
             {hasAction && (
               <button className="hab-act" disabled={pending} aria-label={ariaLabel}
                 onClick={() => runAction(h, action)}>
+                {isCheck ? <IconCheck /> : <IconPencil />}
                 {isCheck ? 'Pipa' : 'Napló'}
               </button>
             )}
@@ -133,7 +161,7 @@ export function RoutineCard() {
         <div key={h.key} className="hab-row">
           {node}
           {main}
-          <div className="hab-right">{xp}</div>
+          <div className="hab-right"><span className="hab-xp">+{h.xp}</span></div>
         </div>
       )
     }
@@ -145,21 +173,22 @@ export function RoutineCard() {
         {node}
         {main}
         <div className="hab-right">
-          {xp}
-          <span className="hab-chev" aria-hidden="true">›</span>
+          <span className="hab-xp">+{h.xp}</span>
+          <span className="hab-chev"><IconChevron /></span>
         </div>
       </button>
     )
   }
 
   return (
-    <div className="card">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
+    <div className="card" style={{ padding: '14px 16px', margin: '8px 0' }}>
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <span className="eyebrow">{title}</span>
         <span className="eyebrow text-tertiary">{doneOf(chain)}/{chain.length} ma · +{earnedXp} XP</span>
       </div>
       <div className="hab-chain">{chain.map(renderRow)}</div>
       {mealOpen && <LogMealSheet initialSlot="breakfast" onClose={() => setMealOpen(false)} />}
+      {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
     </div>
   )
 }
