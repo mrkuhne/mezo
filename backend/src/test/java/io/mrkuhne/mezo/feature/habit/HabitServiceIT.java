@@ -56,13 +56,13 @@ class HabitServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetDay_shouldLazilyCreateTenPendingRows_whenTodayFirstRead() {
+    void testGetDay_shouldLazilyCreateTwelvePendingRows_whenTodayFirstRead() {
         UUID owner = owner();
         HabitDayResponse day = habitService.getDay(owner, LocalDate.now());
-        assertThat(day.getHabits()).hasSize(10);
+        assertThat(day.getHabits()).hasSize(12);
         assertThat(day.getHabits())
             .allSatisfy(h -> assertThat(h.getStatus().getValue()).isIn("pending", "done"));
-        assertThat(repository.findByCreatedByAndHabitDate(owner, LocalDate.now())).hasSize(10);
+        assertThat(repository.findByCreatedByAndHabitDate(owner, LocalDate.now())).hasSize(12);
     }
 
     @Test
@@ -126,7 +126,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
     void testClosePast_shouldCloseEndOfDayAndMissRest_whenYesterdayPending() {
         UUID owner = owner();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        habitPopulator.pendingDay(owner, yesterday); // all 10 keys pending
+        habitPopulator.pendingDay(owner, yesterday); // all 12 keys pending
 
         habitService.closePast(owner, LocalDate.now());
 
@@ -203,17 +203,19 @@ class HabitServiceIT extends AbstractIntegrationTest {
     void testSummary_shouldCountPerfectDays_whenFullChainDone() {
         UUID owner = owner();
         LocalDate day = LocalDate.now().minusDays(1);
-        // all 6 MORNING keys done on the same past day -> one perfect morning
+        // all 7 MORNING keys done on the same past day -> one perfect morning
         habitPopulator.row(owner, day, "wake_on_time", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_sunlight", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_weigh_in", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_coffee", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_workout", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "protein_breakfast", HabitDayEntity.STATUS_DONE);
-        // only 3 of 4 EVENING keys done (bed_on_time missed) -> no perfect evening
+        habitPopulator.row(owner, day, "daily_intention", HabitDayEntity.STATUS_DONE);
+        // only 4 of 5 EVENING keys done (bed_on_time missed) -> no perfect evening
         habitPopulator.row(owner, day, "caffeine_cutoff", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "kitchen_close", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "wind_down", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, day, "intention_reflect", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "bed_on_time", HabitDayEntity.STATUS_MISSED);
 
         HabitSummaryResponse summary = habitService.summary(owner);
