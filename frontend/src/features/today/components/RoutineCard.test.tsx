@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -72,7 +72,8 @@ describe('RoutineCard', () => {
     vi.mocked(daypartNow).mockReturnValue('este')
     renderCard()
     await userEvent.click(screen.getByRole('button', { name: 'Wind-down, képernyő le pipálása' }))
-    // the row's status mark flips from ◦ to ✓ via the cache patch
-    expect((await screen.findAllByText('✓')).length).toBeGreaterThan(0)
+    // once checked the row becomes a static done row — its action button is gone (cache patch)
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Wind-down, képernyő le pipálása' })).not.toBeInTheDocument())
   })
 })

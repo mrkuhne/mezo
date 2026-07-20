@@ -8,8 +8,11 @@ describe('habitAction', () => {
   test('manual habits are checkable', () => {
     expect(habitAction({ ...byKey('morning_sunlight'), status: 'pending' })).toEqual({ kind: 'check' })
   })
+  test('sleep-derived habits open the sleep sheet inline', () => {
+    expect(habitAction({ ...byKey('wake_on_time'), status: 'pending' })).toEqual({ kind: 'sleep-sheet' })
+    expect(habitAction({ ...byKey('bed_on_time'), status: 'pending' })).toEqual({ kind: 'sleep-sheet' })
+  })
   test('derived habits tap through to their logging surface', () => {
-    expect(habitAction({ ...byKey('wake_on_time'), status: 'pending' })).toEqual({ kind: 'nav', to: '/me/sleep' })
     expect(habitAction({ ...byKey('morning_weigh_in'), status: 'pending' })).toEqual({ kind: 'nav', to: '/me/weight' })
     expect(habitAction({ ...byKey('morning_coffee'), status: 'pending' })).toEqual({ kind: 'nav', to: '/fuel/stack' })
     expect(habitAction({ ...byKey('morning_workout'), status: 'pending' })).toEqual({ kind: 'nav', to: '/train' })
