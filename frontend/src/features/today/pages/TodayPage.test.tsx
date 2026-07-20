@@ -18,6 +18,17 @@ const hooks = vi.hoisted(() => ({
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
   useToday: hooks.useToday,
+  // IntentionBanner (mounted under the greeting) is stubbed to an empty, settled day so the
+  // composition tests stay deterministic regardless of ambient VITE_USE_MOCK — the banner renders
+  // its "no creed yet" state and contributes no headings/labels the assertions below rely on.
+  useIntentionDay: () => ({
+    data: { date: '2026-07-20', creed: null, foci: [], reflection: null, focusCap: 3 },
+    isPending: false,
+  }),
+  useIntentionActions: () => ({
+    setCreed: async () => {}, addFocus: async () => {}, removeFocus: async () => {},
+    reflect: async () => {}, pending: false,
+  }),
 }))
 
 const baseTodayData = {

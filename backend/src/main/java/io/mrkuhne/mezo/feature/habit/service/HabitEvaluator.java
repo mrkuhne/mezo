@@ -46,12 +46,15 @@ public class HabitEvaluator {
     private final RunSessionLogRepository runSessionLogRepository;
     private final MealRepository mealRepository;
     private final FuelDayService fuelDayService;
+    private final io.mrkuhne.mezo.feature.intention.repository.IntentionFocusRepository intentionFocusRepository;
+    private final io.mrkuhne.mezo.feature.intention.repository.DailyIntentionRepository dailyIntentionRepository;
     private final HabitTargets habitTargets;
     private final HabitProperties properties;
 
     /** Metrics decidable during the day (re-checked on every read). */
     public static final Set<String> INTRADAY_METRICS = Set.of("sleep_wake_window", "manual",
-        "weight_logged_before", "stim_intake_before", "training_done_today", "breakfast_protein");
+        "weight_logged_before", "stim_intake_before", "training_done_today", "breakfast_protein",
+        "intention_focus_set", "intention_reflected");
     /** Metrics decidable only once the day is over (nightly close / next read). */
     public static final Set<String> END_OF_DAY_METRICS = Set.of("no_stim_after", "last_meal_before");
     /** Decided by the NEXT day's sleep log (deadline: next day noon). */
@@ -95,6 +98,10 @@ public class HabitEvaluator {
                     .minusMinutes(properties.kitchenCloseOffsetMin());
                 yield !localTime(meals.getLast().getLoggedAt()).isAfter(close);
             }
+            case "intention_focus_set" -> !intentionFocusRepository
+                .findByCreatedByAndFocusDateAndDeletedFalseOrderByCreatedAtAsc(userId, date).isEmpty();
+            case "intention_reflected" -> dailyIntentionRepository
+                .findByCreatedByAndIntentionDateAndDeletedFalse(userId, date).isPresent();
             case METRIC_BED_NEXT_DAY -> sleepLog(userId, date.plusDays(1))
                 .map(SleepLogEntity::getBedtime).filter(Objects::nonNull)
                 .map(b -> bedtimeOnTime(LocalTime.parse(b),

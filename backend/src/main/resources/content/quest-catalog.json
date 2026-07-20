@@ -103,5 +103,11 @@
     "why": "Egy szakács ma is főz — és pontosan tudja, mi kerül a tányérjára.",
     "mode": "DERIVED", "metric": "own_recipe_meal", "threshold": null, "xp": 25, "coins": 0,
     "difficulty": 2, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 3
+  },
+  {
+    "key": "growth_intention", "slot": "GROWTH", "skillKey": "mindset", "skillKind": "LIFE",
+    "title": "Fogalmazd meg a mai szándékod", "why": "Aki szándékkal kezdi a napot, az irányítja — nem sodródik.",
+    "mode": "DERIVED", "metric": "intention_focus_set", "threshold": null, "xp": 20, "coins": 0,
+    "difficulty": 2, "dayTypes": ["ANY"], "requiresGoalPrescription": false, "cooldownDays": 1
   }
 ]

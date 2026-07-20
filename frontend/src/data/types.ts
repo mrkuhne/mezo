@@ -837,6 +837,17 @@ export interface HabitItem {
 export interface HabitStrengthRow { key: string; strengthPct: number | null; done28: number; missed28: number }
 export interface HabitSummary { perfectMorningDays30: number; perfectEveningDays30: number; habits: HabitStrengthRow[] }
 
+// ── Daily intention — standing creed + up to 3 daily foci + a holistic reflection (mezo-a686)
+export type Reflection = 'yes' | 'partial' | 'no'
+export interface IntentionFocus { id: string; focusDate: string; text: string }
+export interface IntentionDay {
+  date: string
+  creed: string | null
+  foci: IntentionFocus[]
+  reflection: Reflection | null
+  focusCap: number
+}
+
 // ── Activity log (gamified growth E2, mezo-jzca) ─────────────────────────────
 export type LifeSkillKey =
   | 'mindfulness' | 'mindset' | 'cooking' | 'financial'

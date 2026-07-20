@@ -4199,6 +4199,135 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/intention/day/{date}':
+    get:
+      tags:
+        - Intention
+      operationId: getIntentionDay
+      summary: The day's creed + foci + reflection (Intention)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The day's intention state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentionDayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/intention/creed:
+    put:
+      tags:
+        - Intention
+      operationId: setCreed
+      summary: Upsert the standing creed (Intention)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetCreedRequest'
+      responses:
+        '200':
+          description: Saved creed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentionCreedResponse'
+        '400':
+          description: INTENTION_TEXT_REQUIRED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/intention/focus:
+    post:
+      tags:
+        - Intention
+      operationId: addFocus
+      summary: Add a focus for the day (max 3) (Intention)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddFocusRequest'
+      responses:
+        '200':
+          description: Focus added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentionFocusResponse'
+        '400':
+          description: INTENTION_TEXT_REQUIRED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: INTENTION_FOCUS_CAP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/intention/focus/{id}':
+    delete:
+      tags:
+        - Intention
+      operationId: removeFocus
+      summary: Remove a focus (Intention)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Removed
+        '404':
+          description: INTENTION_FOCUS_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/intention/reflect:
+    post:
+      tags:
+        - Intention
+      operationId: reflect
+      summary: Set the day's holistic reflection (Intention)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReflectRequest'
+      responses:
+        '200':
+          description: Reflection saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntentionDayResponse'
+        '400':
+          description: INTENTION_REFLECTION_INVALID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -9624,3 +9753,84 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HabitStrength'
+    IntentionFocusResponse:
+      type: object
+      required:
+        - id
+        - focusDate
+        - text
+      properties:
+        id:
+          type: string
+          format: uuid
+        focusDate:
+          type: string
+          format: date
+        text:
+          type: string
+    IntentionCreedResponse:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+    IntentionDayResponse:
+      type: object
+      required:
+        - date
+        - foci
+        - focusCap
+      properties:
+        date:
+          type: string
+          format: date
+        creed:
+          type: string
+          nullable: true
+        foci:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntentionFocusResponse'
+        reflection:
+          type: string
+          nullable: true
+          enum:
+            - 'yes'
+            - partial
+            - 'no'
+        focusCap:
+          type: integer
+    SetCreedRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+    AddFocusRequest:
+      type: object
+      required:
+        - date
+        - text
+      properties:
+        date:
+          type: string
+          format: date
+        text:
+          type: string
+    ReflectRequest:
+      type: object
+      required:
+        - date
+        - value
+      properties:
+        date:
+          type: string
+          format: date
+        value:
+          type: string
+          enum:
+            - 'yes'
+            - partial
+            - 'no'
