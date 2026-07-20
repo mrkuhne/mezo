@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useHabitDay, useHabitActions, useSleep } from '@/data/hooks'
 import type { HabitItem } from '@/data/types'
 import { habitAction, type HabitAction } from '@/features/today/logic/habitAction'
@@ -43,6 +43,7 @@ export function RoutineCard() {
   const navigate = useNavigate()
   const [mealOpen, setMealOpen] = useState(false)
   const [sleepOpen, setSleepOpen] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const daypart = daypartNow()
 
   // surface a completion's level-up exactly once
@@ -71,21 +72,6 @@ export function RoutineCard() {
 
   if (habits.length === 0) {
     return null // honest ghost: switch off / real mode before data
-  }
-
-  if (daypart === 'delutan') {
-    return (
-      <Link to="/me/growth" className="card row"
-        style={{ alignItems: 'center', gap: 10, padding: '14px 16px', margin: '8px 0', textDecoration: 'none' }}>
-        <span aria-hidden="true">🔁</span>
-        <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
-          Reggeli rutin {doneOf(morning)}/{morning.length}
-        </span>
-        <span className="text-tertiary" style={{ fontSize: 11 }}>
-          este: {doneOf(evening)}/{evening.length}
-        </span>
-      </Link>
-    )
   }
 
   const firstPending = chain.find((h) => h.status === 'pending')?.key
@@ -180,13 +166,35 @@ export function RoutineCard() {
     )
   }
 
+  // Afternoon collapses to a one-row summary (the morning chain is behind you); tapping it
+  // expands the morning chain so a missed item can still be logged retroactively (mezo-km27).
+  const isAfternoon = daypart === 'delutan'
+
   return (
     <div className="card" style={{ padding: '14px 16px', margin: '8px 0' }}>
-      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-        <span className="eyebrow">{title}</span>
-        <span className="eyebrow text-tertiary">{doneOf(chain)}/{chain.length} ma · +{earnedXp} XP</span>
-      </div>
-      <div className="hab-chain">{chain.map(renderRow)}</div>
+      {isAfternoon ? (
+        <button
+          className="rt-toggle"
+          aria-expanded={expanded}
+          aria-controls="rt-chain"
+          onClick={() => setExpanded((e) => !e)}
+        >
+          <span aria-hidden="true">🔁</span>
+          <span className="rt-label">Reggeli rutin {doneOf(morning)}/{morning.length}</span>
+          <span className="rt-eve">este: {doneOf(evening)}/{evening.length}</span>
+          <span className={`rt-chev ${expanded ? 'open' : ''}`} aria-hidden="true"><IconChevron /></span>
+        </button>
+      ) : (
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+          <span className="eyebrow">{title}</span>
+          <span className="eyebrow text-tertiary">{doneOf(chain)}/{chain.length} ma · +{earnedXp} XP</span>
+        </div>
+      )}
+      {(!isAfternoon || expanded) && (
+        <div className="hab-chain" id="rt-chain" style={isAfternoon ? { marginTop: 10 } : undefined}>
+          {chain.map(renderRow)}
+        </div>
+      )}
       {mealOpen && <LogMealSheet initialSlot="breakfast" onClose={() => setMealOpen(false)} />}
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
     </div>
