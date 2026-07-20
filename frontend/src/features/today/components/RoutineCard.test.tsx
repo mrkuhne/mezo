@@ -68,6 +68,20 @@ describe('RoutineCard', () => {
     expect(screen.getByText(/Reggeli rutin 3\/6/)).toBeInTheDocument()
   })
 
+  test('midday summary is collapsed and expands to the morning chain for retroactive logging', async () => {
+    vi.mocked(daypartNow).mockReturnValue('delutan')
+    renderCard()
+    // collapsed: only the summary toggle is present, the chain rows are hidden
+    const toggle = screen.getByRole('button', { expanded: false })
+    expect(toggle).toHaveTextContent('Reggeli rutin 3/6')
+    expect(screen.queryByText('Ébredés időben')).not.toBeInTheDocument()
+    // expand → the morning chain appears and its current habit can still be logged
+    await userEvent.click(toggle)
+    expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument()
+    expect(screen.getByText('Ébredés időben')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Gombakávé logolása' })).toBeInTheDocument()
+  })
+
   test('manual pending habit checks and flips', async () => {
     vi.mocked(daypartNow).mockReturnValue('este')
     renderCard()
