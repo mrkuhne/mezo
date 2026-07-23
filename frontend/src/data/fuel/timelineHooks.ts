@@ -18,6 +18,7 @@ import { fuelDay, fuelPlan, getScoredMeal } from '@/data/fuel/fuel'
 import { useFuelDay } from '@/data/fuel/fuelHooks'
 import { useRecipes } from '@/data/fuel/recipeHooks'
 import { useProtocol, useStack, useIntakes } from '@/data/fuel/stackHooks'
+import { useFuelSettings } from '@/data/fuel/fuelSettingsHooks'
 import { useGoal } from '@/data/me/goalHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
@@ -85,6 +86,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const intakes = useIntakes(date)
   const { gymSchedule, sport } = useTrain()
   const { activeRunningBlock } = useRunning()
+  const { settings } = useFuelSettings() // Fuel-owned caffeine cutoff (mezo-53su)
 
   if (isMockMode()) {
     return { plan: fuelPlan.today, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuelDay.meals) }
@@ -118,7 +120,8 @@ export function useFuelTimeline(date: string = localDateString()) {
 
   const plan = buildDayPlan({
     wake, bed, mealsPerDay, blocks, budget,
-    meals: fuel.meals, recipes, protocolSlots, intakes, nowHHmm,
+    meals: fuel.meals, recipes, protocolSlots, intakes,
+    caffeineCutoff: settings.caffeineCutoff, nowHHmm,
   })
   return { plan, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
 }

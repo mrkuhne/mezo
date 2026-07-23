@@ -22,6 +22,7 @@ export interface FuelSlot {
   time: string
   kind: FuelKind
   label: string
+  slotKey?: MealSlot // meal/snack window identity (mezo-53su); absent on block/protocol slots
   state: 'done' | 'now' | 'pending'
   mealName?: string
   mezoNote?: string
