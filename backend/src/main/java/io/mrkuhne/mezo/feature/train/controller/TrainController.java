@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.train.controller;
 import io.mrkuhne.mezo.api.controller.TrainApi;
 import io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest;
 import io.mrkuhne.mezo.api.dto.CatalogVideoRequest;
+import io.mrkuhne.mezo.api.dto.CustomWorkoutResponse;
+import io.mrkuhne.mezo.api.dto.CustomWorkoutUpsertRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
 import io.mrkuhne.mezo.api.dto.ExerciseNoteRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
@@ -115,6 +117,26 @@ public class TrainController implements TrainApi {
     @Override
     public MesoDay replaceDayExercises(UUID id, UUID dayId, List<GymExerciseInput> gymExerciseInput) {
         return service.replaceDayExercises(currentUserId.get(), id, dayId, gymExerciseInput);
+    }
+
+    @Override
+    public List<CustomWorkoutResponse> listCustomWorkouts() {
+        return service.listCustomWorkouts(currentUserId.get());
+    }
+
+    @Override
+    public CustomWorkoutResponse createCustomWorkout(CustomWorkoutUpsertRequest customWorkoutUpsertRequest) {
+        return service.createCustomWorkout(currentUserId.get(), customWorkoutUpsertRequest);
+    }
+
+    @Override
+    public CustomWorkoutResponse updateCustomWorkout(UUID id, CustomWorkoutUpsertRequest customWorkoutUpsertRequest) {
+        return service.updateCustomWorkout(currentUserId.get(), id, customWorkoutUpsertRequest);
+    }
+
+    @Override
+    public void deleteCustomWorkout(UUID id) {
+        service.deleteCustomWorkout(currentUserId.get(), id);
     }
 
     @Override
