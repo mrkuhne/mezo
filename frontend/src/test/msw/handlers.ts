@@ -525,7 +525,7 @@ export const handlers = [
   http.get(`${API_BASE}/api/train/exercises`, () =>
     HttpResponse.json([
       { id: 'f1e3a0e2-0000-4000-8000-000000000070', slug: 'chest-supported-row', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, editable: true, videoUrl: 'https://youtu.be/GZTvxN5fPBc' },
-      { id: 'f1e3a0e2-0000-4000-8000-000000000071', slug: 'hip-thrust', name: 'Hip Thrust', muscle: 'glute', type: 'compound', stim: 0.86, fatigue: 0.55 },
+      { id: 'f1e3a0e2-0000-4000-8000-000000000071', slug: 'hip-thrust', name: 'Hip Thrust', muscle: 'glute', type: 'compound', stim: 0.86, fatigue: 0.55, videoUrl: 'https://youtu.be/xDmFkJxPzeM' },
       { id: 'f1e3a0e2-0000-4000-8000-000000000072', slug: 'box-jump', name: 'Box Jump', muscle: 'quad', type: 'plyo', stim: 0.6, fatigue: 0.35 },
       { id: 'f1e3a0e2-0000-4000-8000-000000000073', slug: 'lateral-raise', name: 'Lateral Raise', muscle: 'shoulder', type: 'isolation', stim: 0.72, fatigue: 0.2 },
       { id: 'f1e3a0e2-0000-4000-8000-000000000074', slug: 'standing-calf-raise', name: 'Standing Calf Raise', muscle: 'calf', type: 'isolation', stim: 0.72, fatigue: 0.2 },
@@ -581,6 +581,30 @@ export const handlers = [
           { reps: 10, date: '2026-05-26' },
           { reps: 12, date: '2026-06-02' },
         ],
+      },
+      // Name-grouped record (mezo-u5gk): NO catalogId (live backend returns none for
+      // records whose logged exercise row lacks the catalog link), but the name
+      // matches the Hip Thrust catalog row above — the card must resolve the
+      // catalog item (video affordance) via the name fallback.
+      {
+        name: 'Hip Thrust', muscle: 'glute', type: 'compound',
+        bestSet: { weightKg: 120, reps: 10, date: '2026-06-01' },
+        bestE1rm: { value: 160, set: { weightKg: 120, reps: 10, date: '2026-06-01' } },
+        totalVolume: 8400, totalSets: 12, totalReps: 118, sessionCount: 4,
+        repRecords: [{ weightKg: 120, reps: 10, date: '2026-06-01' }],
+        recentTopSets: [{ weightKg: 120, reps: 10, date: '2026-06-01' }],
+      },
+      // Live-backend bodyweight shape (mezo-kaui): sets logged with weight 0 come
+      // back as bestSet.weightKg 0 + bestE1rm 0 (NOT absent, unlike Box Jump above)
+      // — the card must still render the rep-based bodyweight stat branch.
+      {
+        catalogId: 'f1e3a0e2-0000-4000-8000-000000000076',
+        name: 'Dead Hang', muscle: 'lats', type: 'plyo',
+        bestSet: { weightKg: 0, reps: 35, date: '2026-06-02' },
+        bestE1rm: { value: 0, set: { weightKg: 0, reps: 35, date: '2026-06-02' } },
+        totalVolume: 0, totalSets: 2, totalReps: 65, sessionCount: 1,
+        repRecords: [{ weightKg: 0, reps: 35, date: '2026-06-02' }],
+        recentTopSets: [{ weightKg: 0, reps: 35, date: '2026-06-02' }],
       },
     ]),
   ),
