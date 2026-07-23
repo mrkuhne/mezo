@@ -41,6 +41,15 @@ test('default state ranks top exercises with best set and e1RM chip', async () =
   expect(within(plyoRow).getByText(/Plyo/)).toBeInTheDocument()   // ⚡ Plyo pill
 })
 
+test('a name-grouped record (no catalogId) gets the video affordance via name fallback', async () => {
+  renderView()
+  const row = await screen.findByRole('button', { name: /Hip Thrust/ })
+  // the record fixture has no catalogId — the catalog row is resolved by name
+  const scope = within(row.parentElement as HTMLElement)
+  await userEvent.click(scope.getByRole('button', { name: 'Videó hozzáadása' }))
+  expect(await screen.findByText('Videó · Hip Thrust')).toBeInTheDocument()
+})
+
 test('a bodyweight record with weightKg 0 (live-backend shape) uses the rep stat branch', async () => {
   renderView()
   const row = await screen.findByRole('button', { name: /Dead Hang/ })
@@ -142,12 +151,12 @@ test('deleting an owned row goes through the edit sheet with a confirm step', as
 // DOES get a video button. Chest Supported Row is editable and already has a video.
 test('a seed (non-editable) record row exposes a video-add affordance and opens the sheet', async () => {
   renderView()
-  await screen.findByRole('button', { name: /Box Jump/ })
-  // Box Jump carries no edit/delete (not editable)...
-  const boxRow = screen.getByRole('button', { name: /Box Jump/ })
-  expect(boxRow).toBeInTheDocument()
-  // ...but the video-add button is present and opens the VideoUrlSheet for it.
-  await userEvent.click(screen.getByRole('button', { name: 'Videó hozzáadása' }))
+  const boxRow = await screen.findByRole('button', { name: /Box Jump/ })
+  // Box Jump carries no edit/delete (not editable), but the video-add roundel is
+  // present (scoped: Hip Thrust's no-video row exposes the same label) and opens
+  // the VideoUrlSheet for it.
+  const scope = within(boxRow.parentElement as HTMLElement)
+  await userEvent.click(scope.getByRole('button', { name: 'Videó hozzáadása' }))
   expect(await screen.findByText('Videó · Box Jump')).toBeInTheDocument()
   expect(screen.getByLabelText('Videó URL')).toHaveValue('')
 })
@@ -171,8 +180,8 @@ test('setting a video on a seed row issues the PUT /video request', async () => 
     }),
   )
   renderView()
-  await screen.findByRole('button', { name: /Box Jump/ })
-  await userEvent.click(screen.getByRole('button', { name: 'Videó hozzáadása' }))
+  const boxRow = await screen.findByRole('button', { name: /Box Jump/ })
+  await userEvent.click(within(boxRow.parentElement as HTMLElement).getByRole('button', { name: 'Videó hozzáadása' }))
   await userEvent.type(await screen.findByLabelText('Videó URL'), 'https://youtu.be/dQw4w9WgXcQ')
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   await waitFor(() => expect(videoId).toBe('f1e3a0e2-0000-4000-8000-000000000072'))

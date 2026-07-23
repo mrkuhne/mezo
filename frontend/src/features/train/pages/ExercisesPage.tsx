@@ -323,7 +323,15 @@ export function ExercisesPage() {
         ) : (
           <div className="col gap-sm">
             {records.map((r, i) => {
-              const lib = r.catalogId ? exerciseLibrary.find((e) => e.catalogId === r.catalogId) : undefined
+              // Resolve the record's catalog row by id, falling back to name:
+              // the live backend returns NO catalogId on name-grouped records
+              // (logged exercise row without a catalog link, mezo-u5gk), the
+              // same identity fallback the ghost dedup (recordKeys) uses. The
+              // video affordance stays gated on a backend catalogId (mock
+              // statics never set it).
+              const lib =
+                (r.catalogId ? exerciseLibrary.find((e) => e.catalogId === r.catalogId) : undefined) ??
+                exerciseLibrary.find((e) => e.name.toLowerCase() === r.name.toLowerCase())
               return (
                 <RecordRow
                   key={r.catalogId ?? r.name}
@@ -331,7 +339,7 @@ export function ExercisesPage() {
                   rank={searching ? null : i + 1}
                   lib={lib}
                   onOpen={() => setOpenRecord(r)}
-                  onVideo={lib ? () => setVideoFor({ id: lib.catalogId ?? lib.id, name: lib.name, videoUrl: lib.videoUrl ?? null }) : undefined}
+                  onVideo={lib?.catalogId ? () => setVideoFor({ id: lib.catalogId!, name: lib.name, videoUrl: lib.videoUrl ?? null }) : undefined}
                   onEdit={lib?.editable ? () => setCatalog({ edit: lib }) : undefined}
                 />
               )

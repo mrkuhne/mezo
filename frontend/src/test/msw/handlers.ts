@@ -582,6 +582,18 @@ export const handlers = [
           { reps: 12, date: '2026-06-02' },
         ],
       },
+      // Name-grouped record (mezo-u5gk): NO catalogId (live backend returns none for
+      // records whose logged exercise row lacks the catalog link), but the name
+      // matches the Hip Thrust catalog row above — the card must resolve the
+      // catalog item (video affordance) via the name fallback.
+      {
+        name: 'Hip Thrust', muscle: 'glute', type: 'compound',
+        bestSet: { weightKg: 120, reps: 10, date: '2026-06-01' },
+        bestE1rm: { value: 160, set: { weightKg: 120, reps: 10, date: '2026-06-01' } },
+        totalVolume: 8400, totalSets: 12, totalReps: 118, sessionCount: 4,
+        repRecords: [{ weightKg: 120, reps: 10, date: '2026-06-01' }],
+        recentTopSets: [{ weightKg: 120, reps: 10, date: '2026-06-01' }],
+      },
       // Live-backend bodyweight shape (mezo-kaui): sets logged with weight 0 come
       // back as bestSet.weightKg 0 + bestE1rm 0 (NOT absent, unlike Box Jump above)
       // — the card must still render the rep-based bodyweight stat branch.
