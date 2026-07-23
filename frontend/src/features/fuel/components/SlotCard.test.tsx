@@ -60,6 +60,50 @@ test('tapping the budget-only Logolás affordance fires onLogMeal(slot)', async 
   expect(onLogMeal).toHaveBeenCalledWith(budget)
 })
 
+// ── Slot-level AI chip (mezo-53su) ─────────────────────────────────────────────
+// An open meal/snack slot that carries a slotKey gets a second chip ("AI") beside Logolás,
+// wired to onAiLog(slot). It renders ONLY when the slot is loggable (suggestion/budget), has a
+// slotKey, and onAiLog is supplied — never on a done slot, never without a slotKey.
+const budgetWithSlotKey: FuelSlot = {
+  time: '12:30', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'pending', kcal: 700, p: 45, c: 70, f: 22,
+}
+
+test('an open budget slot with slotKey renders BOTH the Logolás and the AI chip', () => {
+  render(
+    <SlotCard slot={budgetWithSlotKey} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop} onLogMeal={vi.fn()} onAiLog={vi.fn()} />,
+  )
+  expect(screen.getByRole('button', { name: 'Ebéd logolása' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Ebéd AI-logolása' })).toBeInTheDocument()
+})
+
+test('clicking the AI chip fires onAiLog(slot)', async () => {
+  const onAiLog = vi.fn()
+  render(
+    <SlotCard slot={budgetWithSlotKey} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop} onLogMeal={vi.fn()} onAiLog={onAiLog} />,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Ebéd AI-logolása' }))
+  expect(onAiLog).toHaveBeenCalledWith(budgetWithSlotKey)
+})
+
+test('a budget slot WITHOUT a slotKey renders Logolás but no AI chip', () => {
+  render(
+    <SlotCard slot={budget} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop} onLogMeal={vi.fn()} onAiLog={vi.fn()} />,
+  )
+  expect(screen.getByRole('button', { name: 'Ebéd logolása' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Ebéd AI-logolása' })).not.toBeInTheDocument()
+})
+
+test('a done slot renders neither the Logolás nor the AI chip', () => {
+  const doneSlot: FuelSlot = {
+    time: '09:15', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done',
+    mealName: 'Zabkása', kcal: 500, p: 30, c: 55, f: 12,
+  }
+  render(
+    <SlotCard slot={doneSlot} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop} onLogMeal={vi.fn()} onAiLog={vi.fn()} />,
+  )
+  expect(screen.queryByRole('button', { name: /logolása/ })).not.toBeInTheDocument()
+})
+
 // ── Workout / sport duration guard ─────────────────────────────────────────────
 test('a workout slot without a duration renders no "· perc" suffix', () => {
   renderCard({ time: '17:00', kind: 'workout', label: 'Push A', state: 'pending' })

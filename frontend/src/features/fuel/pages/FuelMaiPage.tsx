@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
 import { useFuelDay, useFuelTimeline, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
-import { slotKeyOfLabel } from '@/data/fuel/fuelConfig'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Icon } from '@/shared/ui/Icon'
 import { RetaPhaseBar } from '@/shared/ui/RetaPhaseBar'
@@ -37,6 +36,7 @@ export function FuelMaiPage() {
   const [replanOpen, setReplanOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
@@ -53,7 +53,12 @@ export function FuelMaiPage() {
   }
   const handleLogMeal = (slot: FuelSlot) => {
     if (slot.suggestedRecipeId) openLog({ source: 'recipe', recipeId: slot.suggestedRecipeId })
-    else openLog(null, slotKeyOfLabel(slot.label))
+    else openLog(null, slot.slotKey ?? 'snack')
+  }
+  // Slot-level AI logging (mezo-53su): launch AiLogSheet locked to the tapped slot's slotKey.
+  const handleAiLog = (slot: FuelSlot) => {
+    setAiSlot(slot.slotKey)
+    setAiOpen(true)
   }
 
   return (
@@ -67,7 +72,7 @@ export function FuelMaiPage() {
         <div className="row gap-xs" style={{ flexShrink: 0 }}>
           <button
             type="button"
-            onClick={() => setAiOpen(true)}
+            onClick={() => { setAiSlot(undefined); setAiOpen(true) }}
             className="pgact-np np-press"
             aria-label="AI naplózás"
             style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
@@ -168,7 +173,7 @@ export function FuelMaiPage() {
             )}
           </div>
         )}
-        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} />
+        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} onAiLog={handleAiLog} />
       </div>
 
       {/* Water — NEW dedicated slot (replaces MacroHero's water row) */}
@@ -226,6 +231,7 @@ export function FuelMaiPage() {
       {aiOpen && (
         <AiLogSheet
           date={localDateString()}
+          initialSlot={aiSlot}
           onClose={() => setAiOpen(false)}
           onManualFallback={() => { setAiOpen(false); openLog() }}
         />

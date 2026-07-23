@@ -79,7 +79,8 @@ export function AiLogSheet({ date, initialSlot, onClose, onManualFallback }: AiL
       // Map the shared draft lines into local editable state — a fresh object per line, so edits
       // never reach back into MOCK_AI_MEAL_DRAFT (a shared reference in mock mode).
       setLines(d.items.map((it, i) => ({ ...it, key: i })))
-      setSlot(d.slot)
+      // slot-lock (mezo-53su): a slot-targeted launch keeps its slot; the review selector still allows manual change
+      if (!initialSlot) setSlot(d.slot)
       setTitle(d.title ?? '')
       setNote(d.note)
       setPhase('review')

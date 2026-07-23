@@ -3,15 +3,37 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
+// The mock demo day (fixed now 13:30) is fully logged — every meal/snack slot is `done`, so no
+// per-slot log/AI chip renders. To page-test the slot-level AI chip (mezo-53su) we inject one
+// open meal/snack slot (slotKey set) into the composed timeline; default off, so every other test
+// sees the unmodified real timeline. Idiom mirrors AiLogSheet.test's hoisted single-hook override.
+const hoisted = vi.hoisted(() => ({ injectOpenSlot: false }))
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useFuelTimeline: (date?: string) => {
+      const real = actual.useFuelTimeline(date)
+      if (!hoisted.injectOpenSlot) return real
+      const openSlot: FuelSlot = {
+        time: '20:00', kind: 'snack', label: 'Esti snack', slotKey: 'snack',
+        state: 'pending', kcal: 300, p: 20, c: 30, f: 8,
+      }
+      return { ...real, plan: { ...real.plan, slots: [...real.plan.slots, openSlot] } }
+    },
+  }
+})
+
 // FuelMaiPage reads the composed dual-mode useFuelDay (mezo-arb); pin mock mode for the static
 // Phase-1 seed (consumed 1840, scored meals with breakdowns) and provide a QueryClientProvider.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => { vi.unstubAllEnvs(); hoisted.injectOpenSlot = false })
 
 const renderView = () =>
   render(
@@ -84,6 +106,15 @@ test('opens the LogMealSheet from the ＋ Log entry', async () => {
   renderView()
   fireEvent.click(screen.getByRole('button', { name: /log/i }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
+})
+test('clicking a slot AI chip opens the AI log sheet on that slot (mezo-53su)', async () => {
+  hoisted.injectOpenSlot = true // give the fully-logged mock day one open meal/snack slot
+  renderView()
+  // An open meal/snack slot with a slotKey carries a per-slot "AI" chip beside Logolás.
+  const aiChips = screen.getAllByRole('button', { name: /AI-logolása/ })
+  expect(aiChips.length).toBeGreaterThan(0)
+  await userEvent.click(aiChips[0])
+  expect(await screen.findByRole('dialog', { name: 'AI ételnapló' })).toBeInTheDocument()
 })
 test('logs water via the +250/+500 slot buttons', async () => {
   renderView()

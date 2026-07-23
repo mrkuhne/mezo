@@ -7,11 +7,13 @@ export function FuelTimeline({
   getScoredMeal,
   onOpenScore,
   onLogMeal,
+  onAiLog,
 }: {
   slots: FuelSlot[]
   getScoredMeal: (s: FuelSlot) => FuelMeal | null
   onOpenScore: (m: FuelMeal) => void
   onLogMeal?: (slot: FuelSlot) => void
+  onAiLog?: (slot: FuelSlot) => void
 }) {
   return (
     <div className="col" style={{ gap: 0 }}>
@@ -23,6 +25,7 @@ export function FuelTimeline({
           scoredMeal={getScoredMeal(slot)}
           onOpenScore={onOpenScore}
           onLogMeal={onLogMeal}
+          onAiLog={onAiLog}
         />
       ))}
     </div>
