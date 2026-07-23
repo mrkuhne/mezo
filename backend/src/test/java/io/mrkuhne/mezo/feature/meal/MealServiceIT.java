@@ -249,7 +249,9 @@ class MealServiceIT extends AbstractIntegrationTest {
     @Test
     void testCreate_shouldPersistProvenance_whenAiConfirmed() {
         MealRequest create = req("lunch", estimateItem());
-        create.setProvenance(provenance("ai-text", "csirkés wrap", "0.80"));
+        MealProvenance envelope = provenance("ai-text", "csirkés wrap", "0.80");
+        envelope.setModel("gemini-2.5-flash"); // model passthrough asserted since mezo-j4e6
+        create.setProvenance(envelope);
 
         MealResponse created = service.create(owner, create);
 
@@ -261,6 +263,7 @@ class MealServiceIT extends AbstractIntegrationTest {
         assertThat(persisted.origin()).isEqualTo("ai-text");
         assertThat(persisted.rawText()).isEqualTo("csirkés wrap");
         assertThat(persisted.confidence()).isEqualByComparingTo(new BigDecimal("0.80"));
+        assertThat(persisted.model()).isEqualTo("gemini-2.5-flash");
     }
 
     @Test
