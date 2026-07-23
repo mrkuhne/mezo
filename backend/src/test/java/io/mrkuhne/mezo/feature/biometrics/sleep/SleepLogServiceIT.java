@@ -23,8 +23,10 @@ class SleepLogServiceIT extends AbstractIntegrationTest {
     void testList_shouldReturnOnlyOwnRows_whenTwoUsersLog() {
         UUID userA = databasePopulator.populateUser("a@test.local");
         UUID userB = databasePopulator.populateUser("b@test.local");
-        service.log(userA, new LogSleepRequest(LocalDate.parse("2026-06-01"), "23:10", "06:40", new BigDecimal("7.50"), 8, 1, null));
-        service.log(userB, new LogSleepRequest(LocalDate.parse("2026-06-01"), "00:30", "07:00", new BigDecimal("6.50"), 6, 2, null));
+        service.log(userA, new LogSleepRequest(LocalDate.parse("2026-06-01"), "23:10", "06:40", new BigDecimal("7.50"), 8, 1, null,
+            null, null, null, null, null, null, null));
+        service.log(userB, new LogSleepRequest(LocalDate.parse("2026-06-01"), "00:30", "07:00", new BigDecimal("6.50"), 6, 2, null,
+            null, null, null, null, null, null, null));
 
         assertThat(service.list(userA)).hasSize(1);
         assertThat(service.list(userB)).hasSize(1);

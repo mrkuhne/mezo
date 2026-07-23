@@ -1830,6 +1830,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sleep/goal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The sleep goal; config-default ghost when unset — never 404 (SleepGoal) */
+        get: operations["getSleepGoal"];
+        /** Upsert the sleep goal (per-user singleton) (SleepGoal) */
+        put: operations["setSleepGoal"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1922,6 +1940,20 @@ export interface components {
             quality?: number;
             awakenings?: number;
             note?: string;
+            /** @description Total time in bed in minutes — enables true efficiency (asleep ÷ in-bed) */
+            inBedMin?: number;
+            /** @description Minutes awake during the night (tracker phase data) */
+            awakeMin?: number;
+            /** @description Light-sleep minutes (tracker phase data) */
+            lightMin?: number;
+            /** @description REM minutes (tracker phase data; Sleep Cycle calls it Dream) */
+            remMin?: number;
+            /** @description Deep-sleep minutes (tracker phase data) */
+            deepMin?: number;
+            /** @description Tracker-reported quality 0–100 (Sleep Cycle's own metric) */
+            sourceQualityPct?: number;
+            /** @description Row provenance; omitted → 'manual' */
+            source?: string;
         };
         SleepLogResponse: {
             /** Format: uuid */
@@ -1937,6 +1969,20 @@ export interface components {
             /** @description Hours between last meal and sleep — always 0 until Fuel lands */
             mealToSleep: number;
             notes?: string;
+            /** @description Total time in bed in minutes — enables true efficiency (asleep ÷ in-bed) */
+            inBedMin?: number;
+            /** @description Minutes awake during the night (tracker phase data) */
+            awakeMin?: number;
+            /** @description Light-sleep minutes (tracker phase data) */
+            lightMin?: number;
+            /** @description REM minutes (tracker phase data; Sleep Cycle calls it Dream) */
+            remMin?: number;
+            /** @description Deep-sleep minutes (tracker phase data) */
+            deepMin?: number;
+            /** @description Tracker-reported quality 0–100 (Sleep Cycle's own metric) */
+            sourceQualityPct?: number;
+            /** @description Row provenance; omitted → 'manual' */
+            source?: string;
         };
         SaveCheckInRequest: {
             /** Format: date */
@@ -3985,6 +4031,30 @@ export interface components {
             date: string;
             /** @enum {string} */
             value: "yes" | "partial" | "no";
+        };
+        SleepGoalResponse: {
+            /** @description Asleep target in minutes (UI hints the 7–9 h range; default 480) */
+            targetMinutes: number;
+            /** @description Which end is fixed — the other end is derived */
+            anchor: string;
+            /** @description The fixed end, HH:mm */
+            anchorTime: string;
+            /** @description Wake anchor, HH:mm — derived when anchor=BED; equals anchorTime when anchor=WAKE */
+            wakeTime: string;
+            /** @description Bed anchor, HH:mm — derived when anchor=WAKE; equals anchorTime when anchor=BED */
+            bedTime: string;
+            /** @description ± band in minutes for the regularity score (Walker ±15) */
+            regularityBandMin: number;
+        };
+        SetSleepGoalRequest: {
+            /** @description Asleep target in minutes */
+            targetMinutes: number;
+            /** @description Which end is fixed */
+            anchor: string;
+            /** @description The fixed end, HH:mm */
+            anchorTime: string;
+            /** @description Omit to keep/take the config default (15) */
+            regularityBandMin?: number;
         };
     };
     responses: never;
@@ -9263,6 +9333,77 @@ export interface operations {
             };
             /** @description INTENTION_REFLECTION_INVALID */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getSleepGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The goal with both derived ends (wakeTime + bedTime composed server-side) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SleepGoalResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setSleepGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetSleepGoalRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved goal, derived ends recomposed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SleepGoalResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

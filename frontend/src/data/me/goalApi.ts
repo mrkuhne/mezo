@@ -8,13 +8,15 @@ export type FeasibilityPreviewRequest = components['schemas']['FeasibilityPrevie
 export type FeasibilityPreviewResponse = components['schemas']['FeasibilityPreviewResponse']
 
 // toRequest mapper — rebuild a full GoalUpsertRequest from a persisted
-// GoalResponse so a partial edit (e.g. the day-planner settings) can PUT the
-// whole contract without dropping the window/weights/guards it must round-trip.
+// GoalResponse so a partial edit (the meal cadence) can PUT the whole contract
+// without dropping the window/weights/guards it must round-trip.
 // `rateTargetPctPerWeek` is intentionally omitted — the backend derives it (G6).
-// Planner overrides win over the stored values (undefined = keep as-is).
+// The `mealsPerDay` override wins over the stored value (undefined = keep as-is);
+// wake/bed are no longer edited here (they live on the sleep goal, mezo-dbsr) but
+// stay on the wire, so they pass straight through from `res` (spec §6).
 export function goalResponseToUpsert(
   res: GoalResponse,
-  planner?: { mealsPerDay?: number; wakeTime?: string; bedTime?: string },
+  planner?: { mealsPerDay?: number },
 ): GoalUpsertRequest {
   return {
     title: res.title,
@@ -26,8 +28,8 @@ export function goalResponseToUpsert(
     targetWeightKg: res.targetWeightKg ?? null,
     identityFrame: res.identityFrame ?? null,
     mealsPerDay: planner?.mealsPerDay ?? res.mealsPerDay,
-    wakeTime: planner?.wakeTime ?? res.wakeTime,
-    bedTime: planner?.bedTime ?? res.bedTime,
+    wakeTime: res.wakeTime,
+    bedTime: res.bedTime,
   } satisfies GoalUpsertRequest
 }
 

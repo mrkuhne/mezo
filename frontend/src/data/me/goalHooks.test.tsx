@@ -256,12 +256,14 @@ test('useGoalActions (real mode) savePlanner PUTs a full goal carrying the edite
   }
   const { result } = renderHook(() => useGoalActions(), { wrapper: makeHookWrapper() })
   await act(async () => {
-    await result.current.savePlanner('g1', res, { mealsPerDay: 5, wakeTime: '05:30', bedTime: '22:30' })
+    await result.current.savePlanner('g1', res, { mealsPerDay: 5 })
   })
-  // the edited planner fields ride in the PUT body …
+  // the edited meal cadence rides in the PUT body …
   expect(body!.mealsPerDay).toBe(5)
-  expect(body!.wakeTime).toBe('05:30')
-  expect(body!.bedTime).toBe('22:30')
+  // … while wake/bed (no longer editable — they live on the sleep goal, mezo-dbsr)
+  // pass straight through from the persisted goal, unchanged (spec §6).
+  expect(body!.wakeTime).toBe('06:00')
+  expect(body!.bedTime).toBe('23:00')
   // … alongside the untouched required contract fields (window/weights preserved).
   expect(body!.title).toBe('Nyári cut')
   expect(body!.startDate).toBe('2026-06-01')
@@ -347,7 +349,7 @@ test('useGoalActions (mock mode) actions are no-ops that resolve without calling
     await result.current.activate('x')
     await result.current.attachPlan('x', { planType: 'mesocycle', planId: 'p', startWeek: 1 })
     await result.current.detachPlan('x', 'l')
-    await result.current.savePlanner('x', mockGoalResponse, { mealsPerDay: 5, wakeTime: '05:30', bedTime: '22:30' })
+    await result.current.savePlanner('x', mockGoalResponse, { mealsPerDay: 5 })
   })
   expect(result.current.pending).toBe(false)
 })

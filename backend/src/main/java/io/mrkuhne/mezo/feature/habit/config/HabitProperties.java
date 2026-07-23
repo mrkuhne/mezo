@@ -18,8 +18,6 @@ public record HabitProperties(
     @NotBlank String caffeineCutoff,
     @Min(0) int bedGraceMin,
     @Min(0) int kitchenCloseOffsetMin,
-    @NotBlank String defaultWake,
-    @NotBlank String defaultBed,
     @Min(1) int strengthWindowDays,
     @Min(1) int minSample,
     @Min(1) int summaryDays) {}

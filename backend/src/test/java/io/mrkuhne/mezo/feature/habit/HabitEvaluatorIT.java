@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.habit.service.HabitEvaluator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -35,6 +36,7 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
 
     @Autowired private HabitEvaluator evaluator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
@@ -145,6 +147,8 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     @Test
     void testSatisfied_shouldEvaluateBedtimeNextDay_withMidnightWrap() {
         UUID owner = owner();
+        // Anchor bed target explicitly at 23:00 (was the old config ghost; ghost is now 22:00 — spec §3).
+        sleepGoalPopulator.goal(owner, 450, "BED", "23:00", 15);
         LocalDate d = LocalDate.now().minusDays(1);
         sleepLogPopulator.createSleepLog(owner, d.plusDays(1), "23:15", "06:30", new BigDecimal("7.0"));
         assertThat(evaluator.satisfied("bedtime_next_day", owner, d)).isTrue();
@@ -153,6 +157,8 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     @Test
     void testSatisfied_shouldFailBedtime_whenAfterMidnight() {
         UUID owner = owner();
+        // Anchor bed target explicitly at 23:00 (was the old config ghost; ghost is now 22:00 — spec §3).
+        sleepGoalPopulator.goal(owner, 450, "BED", "23:00", 15);
         LocalDate d = LocalDate.now().minusDays(1);
         sleepLogPopulator.createSleepLog(owner, d.plusDays(1), "00:40", "07:10", new BigDecimal("6.5"));
         assertThat(evaluator.satisfied("bedtime_next_day", owner, d)).isFalse();

@@ -194,6 +194,9 @@ mezo:
     # off ⇒ the /api/intention surface 404s and no intention beans exist.
     intention:
       enabled: true
+    # Sleep goal + day-anchor (mezo-dbsr): first-class sleep goal owns the day's wake/bed anchor.
+    sleep-goal:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -542,8 +545,6 @@ mezo:
     caffeine-cutoff: "14:00"
     bed-grace-min: 30
     kitchen-close-offset-min: 90
-    default-wake: "06:00"
-    default-bed: "23:00"
     strength-window-days: 28
     min-sample: 5
     summary-days: 30
@@ -553,6 +554,14 @@ mezo:
     focus-cap: 3
     creed-max-len: 280
     focus-max-len: 200
+  # Sleep goal defaults (mezo-dbsr): the config-default "ghost" served before the user saves a goal,
+  # plus the regularity band default. Binds onto SleepGoalProperties.
+  sleep:
+    default-target-min: 480
+    default-anchor: WAKE
+    default-wake: "06:00"
+    default-bed: "23:00"
+    regularity-band-min: 15
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
     default-increment: 2.5    # fallback load step when a type has no explicit increment

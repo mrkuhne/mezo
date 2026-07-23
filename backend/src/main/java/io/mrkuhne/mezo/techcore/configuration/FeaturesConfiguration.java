@@ -103,4 +103,7 @@ public class FeaturesConfiguration {
 
     /** Daily intention (creed + foci + reflection, mezo-a686). Gates /api/intention + services. */
     public static final String INTENTION_SWITCH = "mezo.feature.intention.enabled";
+
+    /** Sleep goal + day-anchor (mezo-dbsr). Gates /api/sleep/goal + SleepGoalService (the anchor resolver stays on). */
+    public static final String SLEEP_GOAL_SWITCH = "mezo.feature.sleep-goal.enabled";
 }

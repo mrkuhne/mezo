@@ -399,6 +399,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202607201200_mezo-a686_create_intention.sql
   - changeSet:
+      id: "1.0.0:202607230957_mezo-dbsr_create_sleep_goal"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607230957_mezo-dbsr_create_sleep_goal.sql
+  - changeSet:
       id: "1.0.0:202607231400_mezo-d8tr_pantry_photo_source"
       author: daniel.kuhne
       changes:

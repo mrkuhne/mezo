@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -53,6 +54,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private MedicationPopulator medicationPopulator;
     @Autowired private MedicationDosePopulator medicationDosePopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
 
     @Test
@@ -131,7 +133,35 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(block).contains("[Cél] Nyári cut (cut): 84.2 → 80 kg");
         assertThat(block).contains("3. hét");
         assertThat(block).contains("e heti recept: 2100 kcal, 180 g fehérje, alvás 7.5 h, pihenőnap: Szo, V");
-        assertThat(block).contains("étkezés/nap: 4, ébredés: 06:30, lefekvés: 22:30");
+        // The day anchor now comes from the sleep goal, not the retired goal wake/bed columns
+        // (createGoalFull passed 06:30/22:30). With no sleep_goal row the config ghost renders.
+        assertThat(block).contains("étkezés/nap: 4, ébredés: 06:00, lefekvés: 22:00");
+        assertThat(block).doesNotContain("06:30").doesNotContain("22:30");
+    }
+
+    @Test
+    void testRender_shouldRenderSleepGoalAnchor_whenSleepGoalRowExists() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        goalPopulator.createGoalFull(owner, today.minusWeeks(1), today.plusWeeks(6), null, 4, "06:30", "22:30");
+        // 7.5 h target anchored to a 06:45 wake → derived bed 23:15
+        sleepGoalPopulator.goal(owner, 450, "WAKE", "06:45", 15);
+
+        String block = assembler.render(owner, today);
+
+        assertThat(block).contains("ébredés: 06:45, lefekvés: 23:15");
+    }
+
+    @Test
+    void testRender_shouldRenderGhostAnchor_whenNoSleepGoalRow() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        goalPopulator.createGoalFull(owner, today.minusWeeks(1), today.plusWeeks(6), null, 4, "06:30", "22:30");
+
+        String block = assembler.render(owner, today);
+
+        // no sleep_goal row → config ghost (WAKE 06:00, 8 h target → bed 22:00); goal columns ignored
+        assertThat(block).contains("ébredés: 06:00, lefekvés: 22:00");
     }
 
     @Test

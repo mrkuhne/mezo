@@ -6,7 +6,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -49,4 +52,34 @@ public class SleepLogEntity extends OwnedEntity {
 
     @Column(length = 500)
     private String notes;
+
+    // Tracker-grade enrichment (mezo-dbsr): nullable — manual rows stay sparse; slice B (screenshot) fills them.
+    @Min(1)
+    @Column(name = "in_bed_min")
+    private Integer inBedMin;
+
+    @Min(0)
+    @Column(name = "awake_min")
+    private Integer awakeMin;
+
+    @Min(0)
+    @Column(name = "light_min")
+    private Integer lightMin;
+
+    @Min(0)
+    @Column(name = "rem_min")
+    private Integer remMin;
+
+    @Min(0)
+    @Column(name = "deep_min")
+    private Integer deepMin;
+
+    @Min(0)
+    @Max(100)
+    @Column(name = "source_quality_pct")
+    private Integer sourceQualityPct;
+
+    @Pattern(regexp = "manual|screenshot")
+    @Column(length = 10)
+    private String source = "manual";
 }

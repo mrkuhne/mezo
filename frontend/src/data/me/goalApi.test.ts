@@ -40,11 +40,13 @@ test('goalResponseToUpsert round-trips the day-planner settings (mealsPerDay/wak
   expect(req.bedTime).toBe('23:00')
 })
 
-test('goalResponseToUpsert applies planner overrides while keeping the rest', () => {
-  const req = goalResponseToUpsert(res, { mealsPerDay: 5, wakeTime: '05:30', bedTime: '22:30' })
+test('goalResponseToUpsert applies the mealsPerDay override, passing wake/bed through from res', () => {
+  const req = goalResponseToUpsert(res, { mealsPerDay: 5 })
   expect(req.mealsPerDay).toBe(5)
-  expect(req.wakeTime).toBe('05:30')
-  expect(req.bedTime).toBe('22:30')
+  // wake/bed are no longer editable via the planner (they live on the sleep goal,
+  // mezo-dbsr) — they stay on the wire and pass straight through from res (spec §6).
+  expect(req.wakeTime).toBe('06:00')
+  expect(req.bedTime).toBe('23:00')
   // untouched window/weights still ride along
   expect(req.startDate).toBe('2026-06-01')
   expect(req.startWeightKg).toBe(84.2)

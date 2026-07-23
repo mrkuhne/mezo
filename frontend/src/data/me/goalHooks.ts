@@ -181,9 +181,11 @@ export function useGoalActions() {
     onSuccess: (_data, id) => { invalidateGoals(); invalidateTimeline(id) },
   })
   // Day-planner edit (Fuel P5) — rebuild a full GoalUpsertRequest from the
-  // persisted GoalResponse (preserving window/weights/guards) with the edited
-  // planner overrides, then PUT. Real mode invalidates ['goals'] so useGoal
-  // re-derives; mock no-ops (the Napi ritmus edit is Phase-1 fire-and-forget).
+  // persisted GoalResponse (preserving window/weights/guards, and passing the
+  // wire-kept wake/bed through unchanged) with the edited mealsPerDay override,
+  // then PUT. The wake/bed anchor now lives on the sleep goal (mezo-dbsr). Real
+  // mode invalidates ['goals'] so useGoal re-derives; mock no-ops (the Napi
+  // ritmus edit is Phase-1 fire-and-forget).
   const savePlannerM = useMutation({
     mutationFn: async ({
       goalId,
@@ -192,7 +194,7 @@ export function useGoalActions() {
     }: {
       goalId: string
       res: GoalResponse
-      planner: { mealsPerDay: number; wakeTime: string; bedTime: string }
+      planner: { mealsPerDay: number }
     }) => {
       if (mock) return null
       return goalApi.update(goalId, goalResponseToUpsert(res, planner))
@@ -213,7 +215,7 @@ export function useGoalActions() {
   )
   const evaluate = useCallback((id: string) => evaluateM.mutateAsync(id), [evaluateM])
   const savePlanner = useCallback(
-    (goalId: string, res: GoalResponse, planner: { mealsPerDay: number; wakeTime: string; bedTime: string }) =>
+    (goalId: string, res: GoalResponse, planner: { mealsPerDay: number }) =>
       savePlannerM.mutateAsync({ goalId, res, planner }),
     [savePlannerM],
   )

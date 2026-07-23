@@ -425,8 +425,11 @@ defaults (7 days / 4 weeks).
 spec §4 order — `[Profil]` (biometric profile + `WeightTrendService` trend; an empty weigh-in
 series renders `nincs adat`, and rates are omitted while `dataSufficiency = NONE` — a zero trend
 would be a fabricated number), `[Cél]` (active goal, derived current week
-`DAYS(startDate→today)/7+1`, the prescription segment whose `fromWeek..toWeek` contains it, and
-the `mealsPerDay`/`wakeTime`/`bedTime` planner fields), `[Edzés]` (active meso with the week
+`DAYS(startDate→today)/7+1`, the prescription segment whose `fromWeek..toWeek` contains it, the
+goal's `mealsPerDay`, and the day's `ébredés`/`lefekvés` anchor resolved via `SleepAnchorPort`
+from the sleep goal — never the retired goal wake/bed columns; the resolver always returns an
+anchor, so both lines always render, falling back to the config ghost when no sleep goal exists),
+`[Edzés]` (active meso with the week
 DERIVED from `startDate` — the stored `currentWeek` can lag; gym/sport weekly rhythm; last-N-days
 gym/sport/run digest), `[Mai üzemanyag]` (`FuelDayService.getDay` consumed/targets incl. water +
 active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` retaDay +
@@ -974,11 +977,13 @@ companion voice (`"Te vagy a mezo"`, `"retatrutid"`), the windowed history block
 (`"Daniel: …"`/`"Mezo: …"`), and that the current message rides as the `user=[…]` param, not the
 history.
 
-**`ContextSnapshotAssemblerIT` (V0.3, 10 tests)** — the snapshot is fully assertable without any
+**`ContextSnapshotAssemblerIT` (V0.3, 12 tests)** — the snapshot is fully assertable without any
 LLM: empty-user render (all six blocks in order, every absence an explicit `nincs adat`, config
 targets still render), profile+trend, current-week segment + planner selection, train digest +
 schedules, digest-window exclusion, FuelDay/protocol/intakes, retaDay+phase (`4. nap (Stabil)`),
-sleep+check-in, note truncation at 200 chars, and determinism (two renders are `equals`).
+sleep+check-in, note truncation at 200 chars, the `[Cél]` day anchor sourced from the sleep goal
+(derived `06:45`/`23:15`) vs. the config ghost (`06:00`/`22:00`) when no sleep goal exists, and
+determinism (two renders are `equals`).
 `ChatServiceIT` gained `testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndHistory…` —
 the fake's echo proves voice → `AKTUÁLIS ÁLLAPOT` → history ordering in the real prompt.
 

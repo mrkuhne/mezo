@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, it, test, vi } from 'vitest'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { QueryWrapper, makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
@@ -9,6 +10,8 @@ import { API_BASE } from '@/test/msw/handlers'
 // Asserts the Phase-1 mock sleep hero, so pin mock mode explicitly.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
+
+const renderPage = () => render(<SleepPage />, { wrapper: QueryWrapper })
 
 test('renders the last-night hero', () => {
   render(<SleepPage />, { wrapper: QueryWrapper })
@@ -32,4 +35,33 @@ test('real mode with an empty sleep log renders the placeholder instead of crash
   render(<SleepPage />, { wrapper: makeHookWrapper() })
 
   await waitFor(() => expect(screen.getByText('Még nincs alvásadat.')).toBeInTheDocument())
+})
+
+it('renders the sleep-goal card with derived ends and the regularity band', () => {
+  renderPage()
+  expect(screen.getByText('23:15')).toBeInTheDocument()          // derived bed
+  expect(screen.getAllByText('06:45').length).toBeGreaterThan(0) // fixed wake
+  expect(screen.getByText('7.5 ó cél')).toBeInTheDocument()
+  expect(screen.getByText(/a rendszeresség a király/i)).toBeInTheDocument()
+  expect(screen.getByText('±15p')).toBeInTheDocument()
+})
+
+it('renders the two score rings with computed values', () => {
+  renderPage()
+  expect(screen.getByText('Rendszeresség')).toBeInTheDocument()
+  expect(screen.getByText('Hatékonyság')).toBeInTheDocument()
+  expect(screen.getByText('14 nap · ±15p')).toBeInTheDocument()
+  expect(screen.getByText('cél ≥ 85%')).toBeInTheDocument()
+})
+
+it('opens the SleepGoalSheet from the szerkeszt button', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('button', { name: /szerkeszt/i }))
+  expect(screen.getByRole('dialog', { name: 'Alvás-cél' })).toBeInTheDocument()
+})
+
+it('shows the bed-delta stat on the hero', () => {
+  renderPage()
+  // last mock night bed 23:05 vs target 23:15 -> −10p
+  expect(screen.getByText(/vs\. cél lefekvés/)).toHaveTextContent('−10p')
 })
