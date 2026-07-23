@@ -114,6 +114,48 @@ test('deleting an owned row issues the delete request', async () => {
   await waitFor(() => expect(deleted).toBe('f1e3a0e2-0000-4000-8000-000000000070'))
 })
 
+// Video affordance (mezo-bnsk) — the demo video can be attached to ANY catalog row.
+// Box Jump is a seed (non-editable) record row: it has NO edit/delete affordance but
+// DOES get a video button. Chest Supported Row is editable and already has a video.
+test('a seed (non-editable) record row exposes a video-add affordance and opens the sheet', async () => {
+  renderView()
+  await screen.findByRole('button', { name: /Box Jump/ })
+  // Box Jump carries no edit/delete (not editable)...
+  const boxRow = screen.getByRole('button', { name: /Box Jump/ })
+  expect(boxRow).toBeInTheDocument()
+  // ...but the video-add button is present and opens the VideoUrlSheet for it.
+  await userEvent.click(screen.getByRole('button', { name: 'Videó hozzáadása' }))
+  expect(await screen.findByText('Videó · Box Jump')).toBeInTheDocument()
+  expect(screen.getByLabelText('Videó URL')).toHaveValue('')
+})
+
+test('an editable row with a video exposes a video-edit affordance seeded with its URL', async () => {
+  renderView()
+  await screen.findByRole('button', { name: /Chest Supported Row/ })
+  await userEvent.click(screen.getByRole('button', { name: 'Videó szerkesztése' }))
+  expect(await screen.findByText('Videó · Chest Supported Row')).toBeInTheDocument()
+  expect(screen.getByLabelText('Videó URL')).toHaveValue('https://youtu.be/GZTvxN5fPBc')
+})
+
+test('setting a video on a seed row issues the PUT /video request', async () => {
+  let videoId = ''
+  let videoBody: unknown = null
+  server.use(
+    http.put(`${API_BASE}/api/train/exercises/:id/video`, async ({ params, request }) => {
+      videoId = String(params.id)
+      videoBody = await request.json()
+      return HttpResponse.json({ id: params.id, slug: 'box-jump', ...(videoBody as object) })
+    }),
+  )
+  renderView()
+  await screen.findByRole('button', { name: /Box Jump/ })
+  await userEvent.click(screen.getByRole('button', { name: 'Videó hozzáadása' }))
+  await userEvent.type(await screen.findByLabelText('Videó URL'), 'https://youtu.be/dQw4w9WgXcQ')
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  await waitFor(() => expect(videoId).toBe('f1e3a0e2-0000-4000-8000-000000000072'))
+  expect(videoBody).toEqual({ videoUrl: 'https://youtu.be/dQw4w9WgXcQ' })
+})
+
 describe('ExercisesPage (real mode, pending)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
@@ -134,5 +176,13 @@ describe('ExercisesPage (mock mode)', () => {
   it('renders content with no skeleton (synchronous seed)', () => {
     renderView()
     expect(screen.queryByRole('status')).toBeNull()
+  })
+  // The static Phase-1 catalog carries no backend catalogId, so it exposes no video
+  // affordance — the video button is gated on a real backend catalog row (mezo-bnsk).
+  it('exposes no video affordance on static catalog ghost rows', async () => {
+    renderView()
+    await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'bench')
+    expect(screen.getByText('Barbell Bench Press')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Videó/ })).toBeNull()
   })
 })
