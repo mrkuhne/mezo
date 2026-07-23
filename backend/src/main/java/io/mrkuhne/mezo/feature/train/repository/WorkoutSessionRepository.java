@@ -104,4 +104,8 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
      */
     Optional<WorkoutSessionEntity> findFirstByCreatedByAndTemplateSessionIdAndStatusAndDateBetweenOrderByDateDescCreatedAtDesc(
         UUID createdBy, UUID templateSessionId, String status, LocalDate from, LocalDate to);
+
+    /** The owner's CUSTOM (saját) workout templates, oldest first (mezo-ws2x). */
+    List<WorkoutSessionEntity> findByCreatedByAndOriginAndTemplateSessionIdIsNullOrderByCreatedAtAsc(
+        UUID createdBy, String origin);
 }
