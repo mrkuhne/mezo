@@ -17,11 +17,13 @@ test('useFuelDay returns macros, 4 meals, micronutrients', () => {
   expect(result.current.fuel.meals[3].score).toBeNull()
   expect(result.current.fuel.micronutrients).toHaveLength(5)
 })
-test('useFuelTimeline returns 10 slots with one now-slot + getScoredMeal works', () => {
+test('useFuelTimeline returns a computed plan with one now-slot + getScoredMeal works', () => {
   // useFuelTimeline became a composed dual-mode hook (mezo-9ys) — it calls useFuelDay/useGoal/…
   // TanStack queries, so it needs a QueryClient even in mock mode (all seed synchronously).
+  // Since mezo-53su the mock plan is COMPUTED (buildDayPlan over the mock data); the slot count
+  // varies with the real weekday's blocks, so assert the contract, not a pinned count.
   const { result } = renderHook(() => useFuelTimeline(), { wrapper: QueryWrapper })
-  expect(result.current.plan.slots).toHaveLength(10)
+  expect(result.current.plan.slots.length).toBeGreaterThan(0)
   expect(result.current.plan.slots.filter(s => s.state === 'now')).toHaveLength(1)
   // NOTE: in the prototype data only kind==='meal' done slots map to a scored meal
   // (e.g. the 06:20 'snack' done slot has a mealName but no matching scored meal).
