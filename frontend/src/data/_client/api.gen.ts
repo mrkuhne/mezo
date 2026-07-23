@@ -6581,7 +6581,7 @@ export interface operations {
                     "application/json": components["schemas"]["PantryScrapeResponse"];
                 };
             };
-            /** @description Validation error (bad/missing/non-http URL) */
+            /** @description Validation error (oversized/unsupported/missing photo) */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -2122,7 +2122,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/PantryScrapeResponse'
         '400':
-          description: Validation error (bad/missing/non-http URL)
+          description: Validation error (oversized/unsupported/missing photo)
           content:
             application/json:
               schema:
