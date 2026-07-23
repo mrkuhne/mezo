@@ -1865,6 +1865,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The fuel settings; config-default ghost when unset — never 404 (FuelSettings) */
+        get: operations["getFuelSettings"];
+        /** Upsert the fuel settings (per-user singleton) (FuelSettings) */
+        put: operations["setFuelSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4098,6 +4116,16 @@ export interface components {
             confidence: number;
             /** @description confidence <= threshold or a key field missing */
             needsReview: boolean;
+        };
+        FuelSettingsResponse: {
+            /** @description Eating occasions per day — drives the planner's meal windows */
+            mealsPerDay: number;
+            /** @description Last caffeine time, HH:mm — the Mai chip, day plan and habit metric all read this */
+            caffeineCutoff: string;
+        };
+        SetFuelSettingsRequest: {
+            mealsPerDay: number;
+            caffeineCutoff: string;
         };
     };
     responses: never;
@@ -9513,6 +9541,77 @@ export interface operations {
             };
             /** @description SLEEP_SHOT_LLM_UNAVAILABLE — companion LLM port absent */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFuelSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings (ghost 4 / 14:00 before the first save) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelSettingsResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setFuelSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetFuelSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FuelSettingsResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
