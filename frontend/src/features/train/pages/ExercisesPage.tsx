@@ -18,21 +18,38 @@ import { Icon } from '@/shared/ui/Icon'
 import { cn } from '@/shared/lib/cn'
 import { ExerciseRecordSheet } from '@/features/train/sheets/ExerciseRecordSheet'
 import { CatalogExerciseSheet } from '@/features/train/sheets/CatalogExerciseSheet'
+import { VideoUrlSheet } from '@/features/train/sheets/VideoUrlSheet'
 import ExercisesSkeleton from '@/features/train/pages/ExercisesSkeleton'
 
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
 
-// Edit/delete affordances for a user-authored (editable) catalog row — rendered
-// beneath the record/ghost row so the row's own tap target stays intact.
-function RowActions({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
+// Per-row action bar rendered beneath the record/ghost row (keeps the row's own
+// tap target intact). The video chip shows on EVERY catalog row — attach/replace
+// the demo via the ownership-free /video endpoint, so built-in (seed) rows get
+// videos too; edit + delete render only for user-authored (editable) rows.
+function RowActions({ hasVideo, onVideo, onEdit, onDelete }: {
+  hasVideo: boolean; onVideo: () => void; onEdit?: () => void; onDelete?: () => void
+}) {
   return (
     <div className="row gap-xs" style={{ justifyContent: 'flex-end' }}>
-      <button className="chip" aria-label="Gyakorlat szerkesztése" onClick={onEdit} style={{ padding: '4px 8px' }}>
-        <Icon name="pencil" size={12} />
+      <button
+        className={cn('chip', hasVideo && 'brand')}
+        aria-label={hasVideo ? 'Videó szerkesztése' : 'Videó hozzáadása'}
+        onClick={onVideo}
+        style={{ padding: '4px 8px', fontSize: 9 }}
+      >
+        ▶ Videó
       </button>
-      <button className="chip" aria-label="Gyakorlat törlése" onClick={onDelete} style={{ padding: '4px 8px' }}>
-        <Icon name="trash" size={12} color="var(--warning)" />
-      </button>
+      {onEdit && (
+        <button className="chip" aria-label="Gyakorlat szerkesztése" onClick={onEdit} style={{ padding: '4px 8px' }}>
+          <Icon name="pencil" size={12} />
+        </button>
+      )}
+      {onDelete && (
+        <button className="chip" aria-label="Gyakorlat törlése" onClick={onDelete} style={{ padding: '4px 8px' }}>
+          <Icon name="trash" size={12} color="var(--warning)" />
+        </button>
+      )}
     </div>
   )
 }
@@ -104,6 +121,8 @@ export function ExercisesPage() {
   const [openRecord, setOpenRecord] = useState<ExerciseRecordResponse | null>(null)
   // null = closed · {} = author a new exercise · { edit } = edit an owned row.
   const [catalog, setCatalog] = useState<{ edit?: ExerciseLibraryItem } | null>(null)
+  // The catalog row whose demo video is being attached/edited (null = sheet closed).
+  const [videoFor, setVideoFor] = useState<{ id: string; name: string; videoUrl: string | null } | null>(null)
 
   // Real-mode loading: show the layout-aware skeleton until the catalog + records
   // queries resolve (exercisesPending), before the records ghost-state branch. After
@@ -190,10 +209,12 @@ export function ExercisesPage() {
               return (
                 <div key={r.catalogId ?? r.name} className="col gap-xs">
                   <RecordRow record={r} rank={searching ? null : i + 1} onOpen={() => setOpenRecord(r)} />
-                  {lib?.editable && (
+                  {lib && (
                     <RowActions
-                      onEdit={() => setCatalog({ edit: lib })}
-                      onDelete={() => deleteCatalogExercise(lib.catalogId ?? lib.id)}
+                      hasVideo={!!lib.videoUrl}
+                      onVideo={() => setVideoFor({ id: lib.catalogId ?? lib.id, name: lib.name, videoUrl: lib.videoUrl ?? null })}
+                      onEdit={lib.editable ? () => setCatalog({ edit: lib }) : undefined}
+                      onDelete={lib.editable ? () => deleteCatalogExercise(lib.catalogId ?? lib.id) : undefined}
                     />
                   )}
                 </div>
@@ -202,10 +223,12 @@ export function ExercisesPage() {
             {ghosts.map((g) => (
               <div key={g.id} className="col gap-xs">
                 <GhostRow item={g} />
-                {g.editable && (
+                {g.catalogId && (
                   <RowActions
-                    onEdit={() => setCatalog({ edit: g })}
-                    onDelete={() => deleteCatalogExercise(g.catalogId ?? g.id)}
+                    hasVideo={!!g.videoUrl}
+                    onVideo={() => setVideoFor({ id: g.catalogId ?? g.id, name: g.name, videoUrl: g.videoUrl ?? null })}
+                    onEdit={g.editable ? () => setCatalog({ edit: g }) : undefined}
+                    onDelete={g.editable ? () => deleteCatalogExercise(g.catalogId ?? g.id) : undefined}
                   />
                 )}
               </div>
@@ -233,6 +256,10 @@ export function ExercisesPage() {
 
       {catalog && (
         <CatalogExerciseSheet edit={catalog.edit} onClose={() => setCatalog(null)} />
+      )}
+
+      {videoFor && (
+        <VideoUrlSheet exercise={videoFor} onClose={() => setVideoFor(null)} />
       )}
     </>
   )
