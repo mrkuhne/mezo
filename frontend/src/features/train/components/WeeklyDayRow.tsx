@@ -32,11 +32,13 @@ interface WeeklyDayRowProps {
   onStartGym: () => void
   /** A completed (non-today or today) gym day was tapped — open its review. */
   onReviewGym?: () => void
+  /** A non-today, not-done gym day was tapped — open its GymDaySheet (cross-day start, mezo-j3x0). */
+  onOpenGymDay?: () => void
   onLogSport?: (s: VolleyballSession) => void
   onLogRun?: (s: RunPrescribedSession) => void
 }
 
-export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gymInProgress, onStartGym, onReviewGym, onLogSport, onLogRun }: WeeklyDayRowProps) {
+export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gymInProgress, onStartGym, onReviewGym, onOpenGymDay, onLogSport, onLogRun }: WeeklyDayRowProps) {
   const { day, isToday } = agenda
   // Time-ordered flat session list — gym/volleyball/running interleave by
   // time-of-day so a morning run renders above an evening gym (untimed last).
@@ -67,7 +69,7 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             // A completed (kész) gym day — today OR a past day — opens its review;
             // today's not-yet-logged row starts the session; other days are inert.
             return (
-              <button key="gym" type="button" className="s" onClick={gymLogged ? onReviewGym : isToday ? onStartGym : undefined}>
+              <button key="gym" type="button" className="s" onClick={gymLogged ? onReviewGym : isToday ? onStartGym : onOpenGymDay}>
                 <span className="stag stag-gym">GYM</span>
                 {isToday ? <b>{gym.type}</b> : gym.type}
                 <span className="meta">{meta}</span>
