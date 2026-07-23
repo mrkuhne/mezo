@@ -44,10 +44,20 @@ test('default state ranks top exercises with best set and e1RM chip', async () =
 test('a name-grouped record (no catalogId) gets the video affordance via name fallback', async () => {
   renderView()
   const row = await screen.findByRole('button', { name: /Hip Thrust/ })
-  // the record fixture has no catalogId — the catalog row is resolved by name
+  // the record fixture has no catalogId — the catalog row (with its video) is
+  // resolved by name, so the roundel is the EDIT affordance seeded with the URL
   const scope = within(row.parentElement as HTMLElement)
-  await userEvent.click(scope.getByRole('button', { name: 'Videó hozzáadása' }))
+  await userEvent.click(scope.getByRole('button', { name: 'Videó szerkesztése' }))
   expect(await screen.findByText('Videó · Hip Thrust')).toBeInTheDocument()
+  expect(screen.getByLabelText('Videó URL')).toHaveValue('https://youtu.be/xDmFkJxPzeM')
+})
+
+test('a name-grouped record opens the record sheet WITH the demo player chip', async () => {
+  renderView()
+  // the videoUrl prop must resolve through the same name fallback (mezo-7ndk)
+  await userEvent.click(await screen.findByRole('button', { name: /Hip Thrust/ }))
+  const sheet = await screen.findByRole('dialog')
+  expect(within(sheet).getByRole('button', { name: /Demo/ })).toBeInTheDocument()
 })
 
 test('a bodyweight record with weightKg 0 (live-backend shape) uses the rep stat branch', async () => {
@@ -163,8 +173,8 @@ test('a seed (non-editable) record row exposes a video-add affordance and opens 
 
 test('an editable row with a video exposes a video-edit affordance seeded with its URL', async () => {
   renderView()
-  await screen.findByRole('button', { name: /Chest Supported Row/ })
-  await userEvent.click(screen.getByRole('button', { name: 'Videó szerkesztése' }))
+  const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
+  await userEvent.click(within(row.parentElement as HTMLElement).getByRole('button', { name: 'Videó szerkesztése' }))
   expect(await screen.findByText('Videó · Chest Supported Row')).toBeInTheDocument()
   expect(screen.getByLabelText('Videó URL')).toHaveValue('https://youtu.be/GZTvxN5fPBc')
 })

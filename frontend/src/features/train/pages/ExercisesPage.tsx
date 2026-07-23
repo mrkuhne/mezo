@@ -250,6 +250,15 @@ export function ExercisesPage() {
   const searching = search !== '' || filter !== 'all'
   const q = search.toLowerCase()
 
+  // Resolve a record's catalog row by id, falling back to name: the live
+  // backend returns NO catalogId on name-grouped records (logged exercise row
+  // without a catalog link, mezo-u5gk/mezo-7ndk) — the same identity fallback
+  // the ghost dedup (recordKeys) uses. Feeds both the card (roundels, Saját
+  // pill) and the record sheet's videoUrl prop.
+  const resolveCatalogRow = (r: ExerciseRecordResponse) =>
+    (r.catalogId ? exerciseLibrary.find((e) => e.catalogId === r.catalogId) : undefined) ??
+    exerciseLibrary.find((e) => e.name.toLowerCase() === r.name.toLowerCase())
+
   const records = exerciseRecords.filter(
     (r) => matchesMuscleFilter(r.muscle, r.type, filter) && (q === '' || r.name.toLowerCase().includes(q)),
   )
@@ -323,15 +332,7 @@ export function ExercisesPage() {
         ) : (
           <div className="col gap-sm">
             {records.map((r, i) => {
-              // Resolve the record's catalog row by id, falling back to name:
-              // the live backend returns NO catalogId on name-grouped records
-              // (logged exercise row without a catalog link, mezo-u5gk), the
-              // same identity fallback the ghost dedup (recordKeys) uses. The
-              // video affordance stays gated on a backend catalogId (mock
-              // statics never set it).
-              const lib =
-                (r.catalogId ? exerciseLibrary.find((e) => e.catalogId === r.catalogId) : undefined) ??
-                exerciseLibrary.find((e) => e.name.toLowerCase() === r.name.toLowerCase())
+              const lib = resolveCatalogRow(r)
               return (
                 <RecordRow
                   key={r.catalogId ?? r.name}
@@ -364,11 +365,7 @@ export function ExercisesPage() {
       {openRecord && (
         <ExerciseRecordSheet
           record={openRecord}
-          videoUrl={
-            openRecord.catalogId
-              ? exerciseLibrary.find((e) => e.catalogId === openRecord.catalogId)?.videoUrl ?? null
-              : null
-          }
+          videoUrl={resolveCatalogRow(openRecord)?.videoUrl ?? null}
           onClose={() => setOpenRecord(null)}
         />
       )}
