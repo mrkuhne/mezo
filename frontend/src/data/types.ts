@@ -292,7 +292,7 @@ export interface PantryScrapeDraft extends PantryLookupItem {
   priceHuf: number | null
   priceUnit: string | null
   source: PantrySourceKey
-  sourceUrl: string
+  sourceUrl: string | null
   confidence: number
   needsReview: boolean
 }
@@ -302,6 +302,7 @@ export interface PantryImportInput extends PantryLookupItem {
   category?: string | null
   sourceUrl?: string | null
   confidence?: number | null
+  origin?: 'photo' | null // mezo-d8tr: photo-draft confirms carry the provenance marker (no URL)
   priceHuf?: number | null
   priceUnit?: string | null
 }

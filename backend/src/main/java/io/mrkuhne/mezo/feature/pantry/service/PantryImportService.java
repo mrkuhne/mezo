@@ -35,6 +35,7 @@ public class PantryImportService {
     /** OFF nutriments are per-100 basis (g or ml); the draft pins per=100. */
     private static final BigDecimal PER_BASIS = BigDecimal.valueOf(100);
     private static final String SOURCE_OPENFOODFACTS = "openfoodfacts";
+    private static final String SOURCE_PHOTO = "photo";
 
     private final OffClient offClient;
     private final PantryItemRepository itemRepository;
@@ -72,11 +73,12 @@ public class PantryImportService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.field("VALIDATION_INVALID_VALUE", "kcal").build(), HttpStatus.BAD_REQUEST);
         }
-        // A scraped draft carries its origin URL -> derive the source from the URL host (never the
-        // client); a plain OFF/manual confirm has no sourceUrl and stays 'openfoodfacts'.
-        String source = req.getSourceUrl() == null
-            ? SOURCE_OPENFOODFACTS
-            : PantryScrapeService.sourceFor(req.getSourceUrl());
+        // Three-armed source derivation: a scraped draft carries its origin URL -> derive from the
+        // URL host (never the client); a photo draft carries the origin marker (mezo-d8tr) -> the
+        // 'photo' provenance; a plain OFF confirm has neither and stays 'openfoodfacts'.
+        String source = req.getSourceUrl() != null
+            ? PantryScrapeService.sourceFor(req.getSourceUrl())
+            : "photo".equals(req.getOrigin()) ? SOURCE_PHOTO : SOURCE_OPENFOODFACTS;
 
         PantryItemEntity item = new PantryItemEntity();
         item.setCreatedBy(userId); // server-side ownership — never from the client

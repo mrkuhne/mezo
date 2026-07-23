@@ -1,7 +1,7 @@
 export type PantrySourceKey =
   | 'kifli.hu' | 'myprotein.hu' | 'tesco.hu' | 'auchan.hu' | 'gymbeam.hu' | 'web'
   | 'manual' | 'lidl' | 'nutriversum' | 'herbahaz' | 'nutrifit' | 'decathlon'
-  | 'openfoodfacts'
+  | 'openfoodfacts' | 'photo'
 export interface PantrySourceMeta { label: string; color: string; short: string }
 export const pantrySources: Record<PantrySourceKey, PantrySourceMeta> = {
   'kifli.hu':     { label: 'kifli.hu',      color: '#7CB342', short: 'K' },
@@ -17,4 +17,5 @@ export const pantrySources: Record<PantrySourceKey, PantrySourceMeta> = {
   'nutrifit':     { label: 'Nutrifit',      color: '#F59E0B', short: 'NF' },
   'decathlon':    { label: 'Decathlon',     color: '#0082C3', short: 'D' },
   'openfoodfacts': { label: 'OpenFoodFacts', color: '#FF8714', short: 'OFF' },
+  'photo':        { label: 'Fotó',          color: '#F97316', short: 'F' },
 }

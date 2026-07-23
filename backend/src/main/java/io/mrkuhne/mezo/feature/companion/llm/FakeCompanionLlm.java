@@ -59,6 +59,11 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
 
+    /** Scripted photo import (mezo-d8tr): {@code [fake-photo:{json}]} decoded from IMAGE BYTES —
+     *  the flat draft JSON nests no objects, so the non-greedy match is safe (unlike meal). */
+    public static final Pattern PHOTO_SENTINEL =
+            Pattern.compile("\\[fake-photo:(\\{.*?})]", Pattern.DOTALL);
+
     /** Scripted meal draft (mezo-78rn): {@code [fake-meal:{json}]} payload is returned verbatim —
      *  matched in the user text (text + multimodal paths) and in the UTF-8-decoded image bytes,
      *  so photo-only ITs drive canned JSON through the real multipart plumbing.
@@ -281,6 +286,20 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher img = MEAL_SENTINEL.matcher(new String(imageBytes, StandardCharsets.UTF_8));
             if (img.find()) {
                 return img.group(1);
+            }
+        }
+        return complete(systemPrompt, userMessage);
+    }
+
+    @Override
+    public String complete(String systemPrompt, String userMessage, List<InlineImage> images) {
+        // Photo import (mezo-d8tr): a "photo" in ITs is the UTF-8 sentinel text — decode EVERY
+        // image so the two-photo path is exercised; no sentinel -> prompt echo -> the caller's
+        // parse fails -> 502, which is exactly the extraction-failure path ITs assert.
+        for (InlineImage img : images) {
+            Matcher m = PHOTO_SENTINEL.matcher(new String(img.bytes(), StandardCharsets.UTF_8));
+            if (m.find()) {
+                return m.group(1);
             }
         }
         return complete(systemPrompt, userMessage);

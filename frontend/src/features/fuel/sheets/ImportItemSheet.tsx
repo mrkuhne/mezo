@@ -1,14 +1,18 @@
 // ============================================================
-// Mezo · ImportItemSheet (Fuel P6 mezo-bka + P8 Link mode mezo-8vum)
-// Two-mode import wizard for adding a new Kamra item, sharing one 3-phase shell:
+// Mezo · ImportItemSheet (Fuel P6 mezo-bka + P8 Link mode mezo-8vum + Fotó mode mezo-d8tr)
+// Three-mode import wizard for adding a new Kamra item, sharing one 3-phase shell:
 //   Keresés (OFF) — the P6 OpenFoodFacts lookup: one search field (terméknév VAGY vonalkód)
 //                   → OFF lookup → result list → picked draft → "Polcra".
 //   Link          — the P8 URL-scrape: paste a product URL → scrapeItem extracts a draft
 //                   (name/macros/category/price + source/confidence provenance) → preview → confirm.
-// Both modes end in usePantryActions().importItem and close; the Link save passes the scrape
-// provenance (sourceUrl/confidence/price) through. Camera/OCR/mic chips stay inert (P8+).
+//   Fotó          — the mezo-d8tr photo-extract: one label photo (+ optional front-of-pack photo)
+//                   → photoExtract reads a draft off the label → the shared Link-mode preview →
+//                   confirm carries an `origin: 'photo'` provenance marker (no URL).
+// All modes end in usePantryActions().importItem and close; Link/Fotó saves pass the draft's
+// provenance (source/sourceUrl/confidence/price) through saveDraft. Barcode-scanner/mic chips
+// stay inert (P8+).
 // ============================================================
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
@@ -19,7 +23,7 @@ import { usePantry, usePantryActions } from '@/data/hooks'
 import type { PantryLookupItem, PantryScrapeDraft } from '@/data/types'
 
 type Phase = 'input' | 'searching' | 'preview'
-type Mode = 'search' | 'link'
+type Mode = 'search' | 'link' | 'photo'
 
 // The contract's PantryImportRequest category enum — the draft's pick list.
 const CONTRACT_CATEGORIES = [
@@ -30,11 +34,13 @@ const CONTRACT_CATEGORIES = [
 
 export function ImportItemSheet({ onClose }: { onClose: () => void }) {
   const { categoryMeta } = usePantry()
-  const { lookupItems, importItem, scrapeItem } = usePantryActions()
+  const { lookupItems, importItem, scrapeItem, photoExtract } = usePantryActions()
   const [mode, setMode] = useState<Mode>('search')
   const [phase, setPhase] = useState<Phase>('input')
   const [query, setQuery] = useState('')
   const [url, setUrl] = useState('')
+  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const [photoFile2, setPhotoFile2] = useState<File | null>(null)
   const [results, setResults] = useState<PantryLookupItem[]>([])
   const [draft, setDraft] = useState<PantryScrapeDraft | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
@@ -82,6 +88,35 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const MAX_PHOTO_BYTES = 5_000_000
+
+  const extractPhotos = async (second?: File | null) => {
+    if (!photoFile) return
+    const p2 = second !== undefined ? second : photoFile2
+    setPhase('searching')
+    setError(null)
+    try {
+      const found = await photoExtract(photoFile, p2 ?? undefined)
+      setDraft(found)
+      setName(found?.name ?? '')
+      setCategory(found?.category ?? 'other')
+      setPhase('preview')
+    } catch {
+      setError('A fotó beolvasása nem sikerült — próbáld élesebb képpel, vagy vidd fel kézzel.')
+      setPhase('input')
+    }
+  }
+
+  const pickPhoto = (setter: (f: File | null) => void) => (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] ?? null
+    if (f && f.size > MAX_PHOTO_BYTES) {
+      setError('A kép túl nagy (JPEG/PNG/WebP, max 5 MB).')
+      return
+    }
+    setError(null)
+    setter(f)
+  }
+
   const pick = (i: number) => {
     setPicked(i)
     setName(results[i].name)
@@ -113,6 +148,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
         confidence: draft.confidence,
         priceHuf: draft.priceHuf,
         priceUnit: draft.priceUnit,
+        origin: mode === 'photo' ? 'photo' : undefined,
       })
       close()
     } catch {
@@ -168,6 +204,19 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
             >
               Link
             </button>
+            <button
+              className="chip"
+              aria-pressed={mode === 'photo'}
+              onClick={() => switchMode('photo')}
+              style={{
+                flex: 1, justifyContent: 'center', fontSize: 11, padding: '8px 0',
+                background: mode === 'photo' ? 'color-mix(in srgb, var(--coral) 8%, transparent)' : 'transparent',
+                borderColor: mode === 'photo' ? 'var(--line)' : 'var(--border-subtle)',
+                color: mode === 'photo' ? 'var(--text-primary)' : 'var(--text-tertiary)',
+              }}
+            >
+              Fotó
+            </button>
           </div>
 
           {phase === 'input' && mode === 'search' && (
@@ -190,9 +239,6 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
               <div className="card" style={{ padding: 12, marginBottom: 14, background: 'var(--surface-1)' }}>
                 <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>HAMAROSAN · gyors-import</span>
                 <div className="row gap-xs mt-sm flex-wrap">
-                  <button className="chip" disabled style={{ fontSize: 9, padding: '6px 10px', opacity: 0.5 }}>
-                    <Icon name="camera" size={11} /> Címke fotó
-                  </button>
                   <button className="chip" disabled style={{ fontSize: 9, padding: '6px 10px', opacity: 0.5 }}>
                     <Icon name="tool" size={11} /> Vonalkód-szkenner
                   </button>
@@ -248,6 +294,63 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
             </>
           )}
 
+          {phase === 'input' && mode === 'photo' && (
+            <>
+              <div className="card" style={{ padding: '10px 12px', marginBottom: 10 }}>
+                <label className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                  Címke fotó
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    aria-label="Címke fotó"
+                    onChange={pickPhoto(setPhotoFile)}
+                    style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 6, width: '100%' }}
+                  />
+                </label>
+                {photoFile && (
+                  <span className="text-secondary" style={{ fontSize: 11 }}>✓ {photoFile.name}</span>
+                )}
+              </div>
+              <div className="card" style={{ padding: '10px 12px', marginBottom: 10 }}>
+                <label className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                  Előlap fotó (opcionális — ha a név nem látszik a címkén)
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    aria-label="Előlap fotó"
+                    onChange={pickPhoto(setPhotoFile2)}
+                    style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 6, width: '100%' }}
+                  />
+                </label>
+                {photoFile2 && (
+                  <span className="text-secondary" style={{ fontSize: 11 }}>✓ {photoFile2.name}</span>
+                )}
+              </div>
+
+              {error && (
+                <p style={{ fontSize: 11, color: 'var(--error)', marginBottom: 10 }}>{error}</p>
+              )}
+
+              <p className="text-secondary" style={{ fontSize: 11, lineHeight: 1.5, marginBottom: 14 }}>
+                Fotózd le a termék tápérték-táblázatát — az AI kiolvassa a makrókat /100 g bázison.
+                A fotó nem kerül tárolásra.
+              </p>
+
+              <div className="row gap-sm">
+                <button className="cta-ghost flex-1" onClick={close}>Mégse</button>
+                <button
+                  className="cta-primary flex-1"
+                  onClick={() => void extractPhotos()}
+                  disabled={!photoFile}
+                >
+                  <Icon name="sparkle" size={14} /> Beolvasás
+                </button>
+              </div>
+            </>
+          )}
+
           {phase === 'searching' && (
             <div className="card" style={{
               padding: 24, textAlign: 'center',
@@ -256,7 +359,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
             }}>
               <Icon name="search" size={20} color="var(--coral)" />
               <div style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', marginTop: 10 }}>
-                Keresés <SourceBadge source={mode === 'link' ? (draft?.source ?? 'web') : 'openfoodfacts'} size="lg" />
+                Keresés <SourceBadge source={mode === 'link' ? (draft?.source ?? 'web') : mode === 'photo' ? 'photo' : 'openfoodfacts'} size="lg" />
               </div>
               <div className="np-twinkle" style={{
                 width: 12, height: 12, borderRadius: '50%', margin: '16px auto 0',
@@ -358,12 +461,14 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
             </>
           )}
 
-          {phase === 'preview' && mode === 'link' && (
+          {phase === 'preview' && (mode === 'link' || mode === 'photo') && (
             <>
               {draft == null && (
                 <div className="card" style={{ padding: 14, marginBottom: 12, textAlign: 'center' }}>
                   <span className="text-secondary" style={{ fontSize: 12 }}>
-                    Ezen az oldalon nem találtam tápértéket — vidd fel kézzel a Kamrában.
+                    {mode === 'photo'
+                      ? 'Nem találtam használható adatot a fotón — próbáld élesebb képpel, adj hozzá előlap fotót (név/márka), vagy vidd fel kézzel.'
+                      : 'Ezen az oldalon nem találtam tápértéket — vidd fel kézzel a Kamrában.'}
                   </span>
                 </div>
               )}
@@ -410,6 +515,24 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                     <p style={{ fontSize: 11, color: 'var(--warning)', marginTop: 10 }}>
                       Az AI nem teljesen biztos a számokban — ellenőrizd őket mentés előtt.
                     </p>
+                  )}
+                  {mode === 'photo' && !photoFile2 && (!name.trim() || draft.needsReview) && (
+                    <label className="chip" style={{ marginTop: 10, fontSize: 10, padding: '6px 10px', cursor: 'pointer' }}>
+                      <Icon name="camera" size={11} /> + előlap fotó (név/márka)
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        aria-label="Előlap fotó hozzáadása"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0] ?? null
+                          if (!f) return
+                          setPhotoFile2(f)
+                          void extractPhotos(f) // re-extract with BOTH images
+                        }}
+                      />
+                    </label>
                   )}
                 </div>
               )}

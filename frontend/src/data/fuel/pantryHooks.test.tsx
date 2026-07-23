@@ -4,7 +4,7 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { usePantry, usePantryActions } from '@/data/fuel/pantryHooks'
-import { MOCK_SCRAPE_DRAFT } from '@/data/fuel/pantry'
+import { MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
@@ -100,6 +100,15 @@ describe('usePantry (mock mode)', () => {
     const draft = await result.current.scrapeItem('https://www.myprotein.hu/p/impact-whey/10530943/')
     expect(draft).toEqual(MOCK_SCRAPE_DRAFT)
   })
+
+  it('photoExtract resolves the canned MOCK_PHOTO_DRAFT after the demo delay (mezo-d8tr)', async () => {
+    // Mock mode: no backend — the photo-import action serves the canned draft (mirrors scrapeItem).
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    const draft = await result.current.photoExtract(new File(['x'], 'label.jpg', { type: 'image/jpeg' }))
+    expect(draft).toEqual(MOCK_PHOTO_DRAFT)
+  })
 })
 
 describe('usePantry (real mode)', () => {
@@ -185,6 +194,26 @@ describe('usePantry (real mode)', () => {
     expect(posted).toMatchObject({ name: 'Skyr natúr', per: 100, unit: 'g', kcal: 63, category: 'dairy' })
   })
 
+  it('importItem carries the origin marker for a photo-confirmed draft (mezo-d8tr)', async () => {
+    let posted: Record<string, unknown> | null = null
+    server.use(
+      http.post(`${API_BASE}/api/pantry-import`, async ({ request }) => {
+        posted = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ id: 'new-1', kind: 'food', name: 'Skyr · epres', source: 'photo' }, { status: 201 })
+      }),
+    )
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    await act(async () => {
+      await result.current.importItem({
+        name: 'Skyr · epres', per: 100, unit: 'g', kcal: 62, category: 'dairy', origin: 'photo',
+      })
+    })
+
+    expect(posted).toMatchObject({ origin: 'photo' })
+  })
+
   it('scrapeItem maps the response draft and returns null for result:null (mezo-8vum)', async () => {
     // Real mode: POST /api/pantry-import/scrape → { result } (nothing persisted server-side).
     server.use(
@@ -211,6 +240,40 @@ describe('usePantry (real mode)', () => {
     // result: null (nothing extracted) passes straight through as null.
     server.use(http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })))
     const nullDraft = await result.current.scrapeItem('https://unknown.example/x')
+    expect(nullDraft).toBeNull()
+  })
+
+  it('photoExtract POSTs multipart and maps the result draft, returns null for result:null (mezo-d8tr)', async () => {
+    // Real mode: POST /api/pantry-import/photo → { result } (multipart; photos ephemeral server-side).
+    let contentType: string | null = null
+    server.use(
+      http.post(`${API_BASE}/api/pantry-import/photo`, async ({ request }) => {
+        contentType = request.headers.get('content-type')
+        return HttpResponse.json({
+          result: {
+            name: 'Skyr · epres', per: 100, unit: 'g', kcal: 62, proteinG: 10, carbsG: 4, fatG: 0.2,
+            saltG: 0.1, saturatedFatG: 0.1, sugarG: 3.9, nova: 2, category: 'dairy',
+            priceHuf: null, priceUnit: null,
+            source: 'photo', sourceUrl: null, confidence: 1, needsReview: false,
+          },
+        })
+      }),
+    )
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    const draft = await result.current.photoExtract(new File(['x'], 'label.jpg', { type: 'image/jpeg' }))
+    expect(contentType).toMatch(/^multipart\/form-data/)
+    expect(draft?.source).toBe('photo')
+    expect(draft?.sourceUrl).toBeNull()
+    expect(draft).toMatchObject({
+      name: 'Skyr · epres', per: 100, unit: 'g', kcal: 62, proteinG: 10, carbsG: 4, fatG: 0.2, nova: 2,
+      category: 'dairy', source: 'photo', sourceUrl: null, confidence: 1, needsReview: false,
+    })
+
+    // result: null (nothing extracted) passes straight through as null.
+    server.use(http.post(`${API_BASE}/api/pantry-import/photo`, () => HttpResponse.json({ result: null })))
+    const nullDraft = await result.current.photoExtract(new File(['x'], 'label.jpg', { type: 'image/jpeg' }))
     expect(nullDraft).toBeNull()
   })
 })

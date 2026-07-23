@@ -49,7 +49,8 @@ function toImportRequest(input: PantryImportInput): PantryImportRequest {
     nova: input.nova,
     // Scrape provenance (mezo-8vum) — only set when the draft came from a URL scrape;
     // undefined for a plain OFF import, so JSON.stringify omits them (payload unchanged).
-    sourceUrl: input.sourceUrl, confidence: input.confidence,
+    // The origin marker (mezo-d8tr) rides along the same way for photo-draft confirms.
+    sourceUrl: input.sourceUrl, confidence: input.confidence, origin: input.origin,
     priceHuf: input.priceHuf, priceUnit: input.priceUnit,
   } satisfies PantryImportRequest
 }
@@ -119,4 +120,13 @@ export const pantryApi = {
       method: 'POST',
       body: JSON.stringify({ url } satisfies PantryScrapeRequest),
     }).then(r => (r.result ? fromScrapeResult(r.result) : null)),
+  // Photo import (mezo-d8tr): label photo(s) → extracted draft; photos ephemeral server-side.
+  // FormData: the browser sets the multipart boundary (apiFetch omits its JSON Content-Type).
+  photoExtract: (photo: File, photo2?: File): Promise<PantryScrapeDraft | null> => {
+    const form = new FormData()
+    form.append('photo', photo, photo.name || 'label.jpg')
+    if (photo2) form.append('photo2', photo2, photo2.name || 'front.jpg')
+    return apiFetch<PantryScrapeResponse>('/api/pantry-import/photo', { method: 'POST', body: form })
+      .then(r => (r.result ? fromScrapeResult(r.result) : null))
+  },
 }
