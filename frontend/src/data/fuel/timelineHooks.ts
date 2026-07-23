@@ -19,6 +19,7 @@ import { useFuelDay } from '@/data/fuel/fuelHooks'
 import { useRecipes } from '@/data/fuel/recipeHooks'
 import { useProtocol, useStack, useIntakes } from '@/data/fuel/stackHooks'
 import { useGoal } from '@/data/me/goalHooks'
+import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
@@ -78,6 +79,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { fuel } = useFuelDay(date)
   const { recipes } = useRecipes()
   const { goal, goalResponse, timeline } = useGoal()
+  const { goal: sleepGoal } = useSleepGoal()
   const { selectedIds } = useProtocol()
   const { stash } = useStack()
   const intakes = useIntakes(date)
@@ -89,9 +91,11 @@ export function useFuelTimeline(date: string = localDateString()) {
   }
 
   // ── Real composition ───────────────────────────────────────────────────────
-  const wake = goal?.wakeTime ?? PLANNER_DEFAULTS.wake
-  const bed = goal?.bedTime ?? PLANNER_DEFAULTS.bed
-  const mealsPerDay = goal?.mealsPerDay ?? PLANNER_DEFAULTS.mealsPerDay
+  // The wake/bed day-anchor is now owned by the sleep goal (mezo-dbsr, spec D3) —
+  // always set (mock seed / real ghost), so no PLANNER_DEFAULTS fallback is needed.
+  const wake = sleepGoal.wakeTime
+  const bed = sleepGoal.bedTime
+  const mealsPerDay = goal?.mealsPerDay ?? PLANNER_DEFAULTS.mealsPerDay // eating cadence stays on the weight goal
 
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
   const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null

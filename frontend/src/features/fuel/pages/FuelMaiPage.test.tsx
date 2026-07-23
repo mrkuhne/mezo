@@ -89,13 +89,23 @@ test('logs water via the +250/+500 slot buttons', async () => {
 })
 test('real mode: fuelchips show schedule-derived values (kitchen close, coffee cutoff)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
-  renderView()
-  await screen.findByRole('heading', { name: 'Mai pacing' })
-  // Derived from the default wake/bed rhythm: kitchen close = bed(23:00) − 90m = 21:30,
-  // caffeine cutoff pinned 14:00 (both are planner-composed, not the frozen mock plan).
-  expect(screen.getByText(/kávé cutoff 14:00/)).toBeInTheDocument()
-  expect(screen.getByText(/konyha zár 21:30/)).toBeInTheDocument()
-  expect(screen.getAllByText('21:30').length).toBeGreaterThanOrEqual(1) // the Vacsora window snaps here
+  // Pin a Sunday (Vas) — a rest day in the default fixtures (gym is Csü, volleyball
+  // Hét–Pén) — so no training block snaps the Vacsora main off kitchenClose, making
+  // the window-anchor assertion deterministic. Fake ONLY Date so findBy keeps polling.
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-05T10:00:00'))
+  try {
+    renderView()
+    await screen.findByRole('heading', { name: 'Mai pacing' })
+    // Derived from the SLEEP goal's wake/bed anchor (mezo-dbsr) — the default MSW
+    // /api/sleep/goal resolves to 06:45/23:15, so kitchen close = bed(23:15) − 90m =
+    // 21:45 (findByText waits out the sleep-goal fetch); caffeine cutoff pinned 14:00.
+    expect(screen.getByText(/kávé cutoff 14:00/)).toBeInTheDocument()
+    expect(await screen.findByText(/konyha zár 21:45/)).toBeInTheDocument()
+    expect(screen.getAllByText('21:45').length).toBeGreaterThanOrEqual(1) // the Vacsora window snaps to kitchenClose
+  } finally {
+    vi.useRealTimers()
+  }
 })
 test('real mode: the timeline workout block reads the schedule-derived type, not a stale label', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')

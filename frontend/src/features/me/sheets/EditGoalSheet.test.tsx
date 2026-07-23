@@ -17,16 +17,19 @@ test('shows the goal fields read-only', () => {
   expect(screen.getByText(`${goal.targetWeight} kg`)).toBeInTheDocument()
 })
 
-// Day-planner (Fuel P5) — the "Napi ritmus" section surfaces the goal's planner
-// settings: an Étkezés/nap stepper (3–6) + two <input type="time"> anchors, all
-// defaulting from the loaded goal.
-test('renders the Napi ritmus section defaulting from the loaded goal', () => {
+// Day-planner (Fuel P5) — the "Napi ritmus" section now surfaces only the meal
+// cadence: an Étkezés/nap stepper (3–6) defaulting from the loaded goal. The
+// wake/bed anchor moved to the sleep goal (mezo-dbsr), so the two <input type="time">
+// rows are GONE and a hint points at the Alvás page.
+test('renders the Napi ritmus section with only the meal-cadence stepper', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   render(<EditGoalSheet onClose={() => {}} goal={goal} goalResponse={goalResponse} goalId={goal.id} />, { wrapper: QueryWrapper })
   expect(screen.getByText('Napi ritmus')).toBeInTheDocument()
   expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('4')
-  expect(screen.getByLabelText('Ébredés')).toHaveValue('06:00')
-  expect(screen.getByLabelText('Lefekvés')).toHaveValue('23:00')
+  // the wake/bed anchor rows are gone — they live on the sleep goal now
+  expect(screen.queryByLabelText('Ébredés')).toBeNull()
+  expect(screen.queryByLabelText('Lefekvés')).toBeNull()
+  expect(screen.getByText('Az ébredés/lefekvés horgony az Alvás oldalon állítható.')).toBeInTheDocument()
 })
 
 test('the meal stepper clamps between 3 and 6', async () => {
@@ -47,7 +50,7 @@ test('the meal stepper clamps between 3 and 6', async () => {
   expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('3')
 })
 
-test('the planner defaults fall back to 4 / 06:00 / 23:00 when the goal has none', () => {
+test('the meal-cadence default falls back to 4 when the goal has none', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   const bare = { ...goalResponse, mealsPerDay: undefined, wakeTime: undefined, bedTime: undefined }
   render(
@@ -60,11 +63,12 @@ test('the planner defaults fall back to 4 / 06:00 / 23:00 when the goal has none
     { wrapper: QueryWrapper },
   )
   expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('4')
-  expect(screen.getByLabelText('Ébredés')).toHaveValue('06:00')
-  expect(screen.getByLabelText('Lefekvés')).toHaveValue('23:00')
+  // no wake/bed rows to fall back — the anchor lives on the sleep goal now
+  expect(screen.queryByLabelText('Ébredés')).toBeNull()
+  expect(screen.queryByLabelText('Lefekvés')).toBeNull()
 })
 
-test('saving the rhythm PUTs the edited planner settings (real mode)', async () => {
+test('saving the rhythm PUTs the edited meal cadence, passing wake/bed through (real mode)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   let body: Record<string, unknown> | null = null
   server.use(
@@ -79,8 +83,10 @@ test('saving the rhythm PUTs the edited planner settings (real mode)', async () 
   await userEvent.click(screen.getByRole('button', { name: 'Ritmus mentése' }))
   await waitFor(() => expect(body).not.toBeNull())
   expect(body!.mealsPerDay).toBe(5)
-  expect(body!.wakeTime).toBe('06:00')
-  expect(body!.bedTime).toBe('23:00')
+  // wake/bed are no longer editable here — the PUT passes the persisted goal's
+  // values straight through (spec §6, mezo-dbsr), NOT anything the sheet holds.
+  expect(body!.wakeTime).toBe(goalResponse.wakeTime)
+  expect(body!.bedTime).toBe(goalResponse.bedTime)
   // required contract fields preserved in the payload
   expect(body!.startWeightKg).toBe(goalResponse.startWeightKg)
   await waitFor(() => expect(onClose).toHaveBeenCalled())

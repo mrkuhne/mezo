@@ -27,10 +27,9 @@ export function EditGoalSheet({
 }) {
   const { archive, remove, savePlanner, pending } = useGoalActions()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  // Day-planner state (Fuel P5) — defaults from the loaded goal, else 4/06:00/23:00.
+  // Day-planner state (Fuel P5) — the meal cadence only; the wake/bed anchor moved
+  // to the sleep goal (mezo-dbsr), edited on the Alvás page. Default 4 when unset.
   const [mealsPerDay, setMealsPerDay] = useState(goal.mealsPerDay ?? 4)
-  const [wakeTime, setWakeTime] = useState(goal.wakeTime ?? '06:00')
-  const [bedTime, setBedTime] = useState(goal.bedTime ?? '23:00')
 
   return (
     <Sheet onClose={onClose} labelledBy="edit-goal-title">
@@ -65,9 +64,10 @@ export function EditGoalSheet({
             </div>
           </div>
 
-          {/* Napi ritmus (Fuel P5) — the goal's day-planner settings: étkezés/nap
-              stepper (3–6) + wake/bed time anchors. Save PUTs the full goal with
-              these overrides (window/weights preserved) via useGoalActions. */}
+          {/* Napi ritmus (Fuel P5) — the goal's meal cadence (étkezés/nap stepper,
+              3–6). The wake/bed anchor moved to the sleep goal (mezo-dbsr); Save PUTs
+              the full goal with the meal override (window/weights + the wire-preserved
+              wake/bed passed through) via useGoalActions. */}
           <div className="col gap-sm mt-lg">
             <span style={SECTION_LABEL}>Napi ritmus</span>
 
@@ -107,40 +107,15 @@ export function EditGoalSheet({
               </div>
             </div>
 
-            {/* Wake / bed time anchors */}
-            <div
-              className="row"
-              style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}
-            >
-              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Ébredés</span>
-              <input
-                type="time"
-                aria-label="Ébredés"
-                value={wakeTime}
-                onChange={(e) => setWakeTime(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums', colorScheme: 'dark' }}
-              />
-            </div>
-            <div
-              className="row"
-              style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}
-            >
-              <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>Lefekvés</span>
-              <input
-                type="time"
-                aria-label="Lefekvés"
-                value={bedTime}
-                onChange={(e) => setBedTime(e.target.value)}
-                style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums', colorScheme: 'dark' }}
-              />
-            </div>
+            {/* The wake/bed anchor moved to the sleep goal (mezo-dbsr) — point at its new home. */}
+            <span style={{ fontSize: 9, color: 'var(--faint)' }}>Az ébredés/lefekvés horgony az Alvás oldalon állítható.</span>
 
             <button
               type="button"
               className="cta-primary"
               disabled={pending}
               style={{ opacity: pending ? 0.5 : 1 }}
-              onClick={() => savePlanner(goalId, goalResponse, { mealsPerDay, wakeTime, bedTime }).then(close)}
+              onClick={() => savePlanner(goalId, goalResponse, { mealsPerDay }).then(close)}
             >
               <Icon name="check" size={14} /> Ritmus mentése
             </button>

@@ -7,7 +7,6 @@ import { useFuelTimeline } from '@/data/fuel/timelineHooks'
 import { useFuelPreview } from '@/data/today/todayHooks'
 import { fuelPlan } from '@/data/fuel/fuel'
 import { deriveDailyBudget } from '@/features/fuel/logic/buildDayPlan'
-import { PLANNER_DEFAULTS } from '@/data/fuel/fuelConfig'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { FuelSlot } from '@/data/types'
@@ -104,9 +103,10 @@ describe('useFuelTimeline (real mode)', () => {
       const { Wrapper } = sharedWrapper()
       const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
 
-      // Goal day-planner settings flow through (bed 22:30 → kitchenClose = bed − 90).
-      await waitFor(() => expect(result.current.plan.bedtime).toBe('22:30'))
-      expect(result.current.plan.kitchenClose).toBe('21:00')
+      // The wake/bed anchor now comes from the SLEEP goal (mezo-dbsr) — the default
+      // MSW /api/sleep/goal serves 06:45/23:15, so bed 23:15 → kitchenClose = bed − 90.
+      await waitFor(() => expect(result.current.plan.bedtime).toBe('23:15'))
+      expect(result.current.plan.kitchenClose).toBe('21:45')
       // Gym block flows through: Csü gym slot @ 18:30, meso day type 'Pull'.
       expect(result.current.plan.workout.start).toBe('18:30')
       expect(result.current.plan.workout.type).toBe('Pull')
@@ -150,9 +150,9 @@ describe('useFuelTimeline (real mode)', () => {
     expect(sumP(result.current.plan.slots)).toBe(163)
   })
 
-  it('cold-load: windows from PLANNER_DEFAULTS + the day-targets fallback budget, never the seed', async () => {
+  it('cold-load: meal windows from PLANNER_DEFAULTS + the sleep-goal anchor + the day-targets fallback budget, never the seed', async () => {
     server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])), // no goal → defaults + fallback budget
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])), // no weight goal → mealsPerDay default + fallback budget
       http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [] })),
       http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
         HttpResponse.json({
@@ -165,11 +165,13 @@ describe('useFuelTimeline (real mode)', () => {
     )
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+    // bed comes from the SLEEP goal (mezo-dbsr) — the default MSW /api/sleep/goal
+    // resolves to 23:15 (waitFor covers the ghost→resolved flip); kitchenClose = bed − 90.
+    await waitFor(() => expect(result.current.plan.bedtime).toBe('23:15'))
     await waitFor(() => expect(sumKcal(result.current.plan.slots)).toBe(2800))
-    // Defaults: mealsPerDay 4 → 4 windows; bed 23:00 → kitchenClose 21:30.
+    // mealsPerDay 4 (PLANNER_DEFAULTS, no weight goal) → 4 windows; bed 23:15 → kitchenClose 21:45.
     expect(mealWindows(result.current.plan.slots)).toHaveLength(4)
-    expect(result.current.plan.bedtime).toBe(PLANNER_DEFAULTS.bed)
-    expect(result.current.plan.kitchenClose).toBe('21:30')
+    expect(result.current.plan.kitchenClose).toBe('21:45')
     // Never the seed: the fallback used the live day-targets (2800), and no seed wake slot leaks.
     expect(result.current.plan).not.toBe(fuelPlan.today)
     expect(result.current.plan.slots.some(s => s.time === '05:50' && s.label === 'Ébresztő')).toBe(false)
