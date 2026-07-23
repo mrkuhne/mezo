@@ -1287,7 +1287,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 }
 
 /* ===== Napív page head (pgheadrow — Train sub-pages; Fuel/Me adopt later) ===== */
-.pghead-np { display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 24px 0; }
+.pghead-np { display: flex; justify-content: space-between; align-items: flex-end; padding: 10px 24px 0; margin-bottom: 12px; } /* bottom gap so the first content block never sits flush (mezo-nhra) */
 .pghead-np .over { font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: var(--coral-deep); }
 .pghead-np h1 { font-family: var(--ff-display); font-weight: 800; letter-spacing: -.4px; font-size: 27px; color: var(--ink); }
 .pgact-np { display: inline-flex; align-items: center; gap: 4px; border: 0; cursor: pointer; font: inherit; border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 800; background: var(--warm); color: var(--coral-deep); white-space: nowrap; }
@@ -1781,6 +1781,7 @@ a.hab-link:hover { opacity: 0.85; }
 .intent {
   background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 20px;
   filter: var(--card-elevation); padding: 15px 16px; position: relative; overflow: hidden;
+  margin: 8px 24px; /* card inset — never edge-to-edge (mezo-nhra) */
 }
 /* faint north-star wash in the corner — the signature */
 .intent::after {
