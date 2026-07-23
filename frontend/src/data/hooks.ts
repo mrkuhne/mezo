@@ -5,7 +5,7 @@ export { useTodayScenario, resolveBriefing, useToday, useFuelPreview, useQuickSt
 export { useCheckins } from '@/data/today/checkinHooks'
 export { useBriefing } from '@/data/today/briefingHooks'
 export { useCompanionNote } from '@/data/today/heartbeatHooks'
-export { useSleep, useSleepGoal, useSleepGoalActions } from '@/data/me/sleepHooks'
+export { useSleep, useSleepGoal, useSleepGoalActions, useSleepShot } from '@/data/me/sleepHooks'
 export { useProfile } from '@/data/me/meHooks'
 export { usePeople } from '@/data/me/peopleHooks'
 export { useInsights } from '@/data/insights/insightsHooks'

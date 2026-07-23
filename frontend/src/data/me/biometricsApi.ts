@@ -1,6 +1,6 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { WeightEntry, WeightLogInput, SleepEntry, SleepLogInput, SleepGoal, SleepGoalInput } from '@/data/types'
+import type { WeightEntry, WeightLogInput, SleepEntry, SleepLogInput, SleepGoal, SleepGoalInput, SleepShotDraft } from '@/data/types'
 
 // Contract types generated from api/openapi.yml — regenerate with `pnpm generate:api`.
 type WeightLogResponse = components['schemas']['WeightLogResponse']
@@ -9,6 +9,7 @@ type SleepLogResponse = components['schemas']['SleepLogResponse']
 type LogSleepRequest = components['schemas']['LogSleepRequest']
 type SleepGoalResponse = components['schemas']['SleepGoalResponse']
 type SetSleepGoalRequest = components['schemas']['SetSleepGoalRequest']
+type SleepShotDraftResponse = components['schemas']['SleepShotDraftResponse']
 export type CheckInResponse = components['schemas']['CheckInResponse']
 export type SaveCheckInBody = components['schemas']['SaveCheckInRequest']
 export type WeightTrendResponse = components['schemas']['WeightTrendResponse']
@@ -42,8 +43,34 @@ export const sleepApi = {
         durationH: input.durationH, quality: input.quality,
         awakenings: input.awakenings, note: input.note,
         inBedMin: input.inBedMin,
+        // Screenshot-confirm enrichment (mezo-66ab) — undefined for manual rows, so JSON.stringify omits them.
+        source: input.source, sourceQualityPct: input.sourceQualityPct,
+        awakeMin: input.awakeMin, lightMin: input.lightMin,
+        remMin: input.remMin, deepMin: input.deepMin,
       } satisfies LogSleepRequest),
     }) as Promise<SleepEntry>,
+}
+
+export const sleepShotApi = {
+  // FormData: the browser sets the multipart boundary (apiFetch omits its JSON Content-Type).
+  extract: (photo: File): Promise<SleepShotDraft> => {
+    const form = new FormData()
+    form.append('photo', photo, photo.name || 'screenshot.png')
+    return apiFetch<SleepShotDraftResponse>('/api/sleep/screenshot', { method: 'POST', body: form })
+      .then(r => ({
+        bedtime: r.bedtime ?? null,
+        wakeup: r.wakeup ?? null,
+        durationH: r.durationH ?? null,
+        inBedMin: r.inBedMin ?? null,
+        awakeMin: r.awakeMin ?? null,
+        lightMin: r.lightMin ?? null,
+        remMin: r.remMin ?? null,
+        deepMin: r.deepMin ?? null,
+        sourceQualityPct: r.sourceQualityPct ?? null,
+        confidence: r.confidence,
+        needsReview: r.needsReview,
+      }))
+  },
 }
 
 export const sleepGoalApi = {
