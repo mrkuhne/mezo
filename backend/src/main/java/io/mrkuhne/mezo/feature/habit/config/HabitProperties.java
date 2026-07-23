@@ -15,7 +15,6 @@ public record HabitProperties(
     @NotBlank String morningWindowEnd,
     @NotBlank String workoutCutoff,
     @Min(1) int proteinTargetG,
-    @NotBlank String caffeineCutoff,
     @Min(0) int bedGraceMin,
     @Min(0) int kitchenCloseOffsetMin,
     @Min(1) int strengthWindowDays,

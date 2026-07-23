@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.fuel.repository.SupplementIntakeRepository;
+import io.mrkuhne.mezo.feature.fuel.service.CaffeineCutoffPort;
 import io.mrkuhne.mezo.feature.habit.config.HabitProperties;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
@@ -50,6 +51,7 @@ public class HabitEvaluator {
     private final io.mrkuhne.mezo.feature.intention.repository.DailyIntentionRepository dailyIntentionRepository;
     private final HabitTargets habitTargets;
     private final HabitProperties properties;
+    private final CaffeineCutoffPort caffeineCutoffPort;
 
     /** Metrics decidable during the day (re-checked on every read). */
     public static final Set<String> INTRADAY_METRICS = Set.of("sleep_wake_window", "manual",
@@ -87,7 +89,7 @@ public class HabitEvaluator {
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .compareTo(BigDecimal.valueOf(properties.proteinTargetG())) >= 0;
             case "no_stim_after" -> stimIntakes(userId, date).stream()
-                .noneMatch(t -> t.isAfter(LocalTime.parse(properties.caffeineCutoff())));
+                .noneMatch(t -> t.isAfter(caffeineCutoffPort.resolve(userId)));
             case "last_meal_before" -> {
                 var meals = mealRepository
                     .findByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(userId, date);

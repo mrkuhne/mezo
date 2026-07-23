@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.habit.service.HabitEvaluator;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
@@ -41,6 +42,7 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private SupplementIntakePopulator supplementIntakePopulator;
+    @Autowired private FuelSettingsPopulator fuelSettingsPopulator;
     @Autowired private MealPopulator mealPopulator;
     @Autowired private TrainPopulator trainPopulator;
 
@@ -131,6 +133,18 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     void testSatisfied_shouldPassCaffeineCutoff_whenNoLateStim() {
         UUID owner = owner();
         assertThat(evaluator.satisfied("no_stim_after", owner, LocalDate.now())).isTrue();
+    }
+
+    @Test
+    void testSatisfied_shouldUseFuelSettingsCutoff_whenRowExists() {
+        UUID owner = owner();
+        LocalDate d = LocalDate.now();
+        fuelSettingsPopulator.settings(owner, 4, "17:00"); // personal cutoff later than the ghost
+        var stim = pantryItemPopulator.createStim(owner, "Origin pre-workout");
+        supplementIntakePopulator.createIntake(owner, stim.getId(), at(d, "16:00"));
+
+        // 16:00 intake is BEFORE the personal 17:00 cutoff -> satisfied (would fail on the 14:00 ghost).
+        assertThat(evaluator.satisfied("no_stim_after", owner, d)).isTrue();
     }
 
     @Test

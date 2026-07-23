@@ -548,7 +548,6 @@ mezo:
     morning-window-end: "10:00"
     workout-cutoff: "12:00"
     protein-target-g: 25
-    caffeine-cutoff: "14:00"
     bed-grace-min: 30
     kitchen-close-offset-min: 90
     strength-window-days: 28
