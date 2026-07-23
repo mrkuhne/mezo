@@ -1848,6 +1848,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/sleep/screenshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract an editable sleep-log draft from a Sleep Cycle screenshot (SleepShot) */
+        post: operations["draftSleepFromScreenshot"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4057,6 +4074,30 @@ export interface components {
             anchorTime: string;
             /** @description Omit to keep/take the config default (15) */
             regularityBandMin?: number;
+        };
+        SleepShotDraftResponse: {
+            /** @description Went-to-bed time, HH:mm (normalized zero-padded) */
+            bedtime?: string;
+            /** @description Woke-up time, HH:mm */
+            wakeup?: string;
+            /** @description Asleep duration in hours (from the screenshot's Asleep value, 2 decimals) */
+            durationH?: number;
+            /** @description Total time in bed, minutes */
+            inBedMin?: number;
+            /** @description Awake minutes (phase) */
+            awakeMin?: number;
+            /** @description Light-sleep minutes (phase) */
+            lightMin?: number;
+            /** @description REM minutes (Sleep Cycle calls it Dream) */
+            remMin?: number;
+            /** @description Deep-sleep minutes (phase) */
+            deepMin?: number;
+            /** @description Sleep Cycle's own 0-100 quality */
+            sourceQualityPct?: number;
+            /** @description Deterministic consistency score (validator, never the LLM) */
+            confidence: number;
+            /** @description confidence <= threshold or a key field missing */
+            needsReview: boolean;
         };
     };
     responses: never;
@@ -9406,6 +9447,72 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    draftSleepFromScreenshot: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description The Sleep Cycle screenshot (jpeg/png/webp, max 5 MB)
+                     */
+                    photo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Extracted draft — all extraction fields nullable (honest partial), confidence deterministic */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SleepShotDraftResponse"];
+                };
+            };
+            /** @description Missing/oversized/unsupported photo */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description SLEEP_SHOT_EXTRACT_FAILED — the model answer was unusable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description SLEEP_SHOT_LLM_UNAVAILABLE — companion LLM port absent */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

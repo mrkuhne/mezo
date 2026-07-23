@@ -76,6 +76,10 @@ tags:
       weekly/heartbeat/prediction surfaces in later slices.
   - name: SleepGoal
     description: Sleep goal + day anchor — the single source of the day's wake/bed pair
+  - name: SleepShot
+    description: >-
+      Sleep Cycle screenshot -> LLM-vision draft (nothing persisted; confirm
+      rides POST /api/biometrics/sleep)
 paths:
   /api/auth/login:
     post:
@@ -4431,6 +4435,60 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/sleep/screenshot:
+    post:
+      tags:
+        - SleepShot
+      operationId: draftSleepFromScreenshot
+      summary: >-
+        Extract an editable sleep-log draft from a Sleep Cycle screenshot
+        (SleepShot)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - photo
+              properties:
+                photo:
+                  type: string
+                  format: binary
+                  description: 'The Sleep Cycle screenshot (jpeg/png/webp, max 5 MB)'
+      responses:
+        '200':
+          description: >-
+            Extracted draft — all extraction fields nullable (honest partial),
+            confidence deterministic
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SleepShotDraftResponse'
+        '400':
+          description: Missing/oversized/unsupported photo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: SLEEP_SHOT_EXTRACT_FAILED — the model answer was unusable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: SLEEP_SHOT_LLM_UNAVAILABLE — companion LLM port absent
           content:
             application/json:
               schema:
@@ -10077,3 +10135,55 @@ components:
           type: integer
           minimum: 1
           description: Omit to keep/take the config default (15)
+    SleepShotDraftResponse:
+      type: object
+      required:
+        - confidence
+        - needsReview
+      properties:
+        bedtime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: 'Went-to-bed time, HH:mm (normalized zero-padded)'
+        wakeup:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: 'Woke-up time, HH:mm'
+        durationH:
+          type: number
+          description: >-
+            Asleep duration in hours (from the screenshot's Asleep value, 2
+            decimals)
+        inBedMin:
+          type: integer
+          minimum: 1
+          description: 'Total time in bed, minutes'
+        awakeMin:
+          type: integer
+          minimum: 0
+          description: Awake minutes (phase)
+        lightMin:
+          type: integer
+          minimum: 0
+          description: Light-sleep minutes (phase)
+        remMin:
+          type: integer
+          minimum: 0
+          description: REM minutes (Sleep Cycle calls it Dream)
+        deepMin:
+          type: integer
+          minimum: 0
+          description: Deep-sleep minutes (phase)
+        sourceQualityPct:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Sleep Cycle's own 0-100 quality
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: 'Deterministic consistency score (validator, never the LLM)'
+        needsReview:
+          type: boolean
+          description: confidence <= threshold or a key field missing
