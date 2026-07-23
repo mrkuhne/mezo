@@ -13,6 +13,7 @@ import { WorkoutReviewPage } from '@/features/train/pages/WorkoutReviewPage'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
 import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
 import { RunningBlockBuilderPage } from '@/features/train/pages/RunningBlockBuilderPage'
+import { CustomWorkoutBuilderPage } from '@/features/train/pages/CustomWorkoutBuilderPage'
 import { FuelSection } from '@/features/fuel/pages/FuelSection'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
@@ -64,6 +65,8 @@ export const routes: RouteObject[] = [
       { path: 'train/review/:workoutId', element: <WorkoutReviewPage /> },
       { path: 'train/mesocycles/new', element: <MesocyclePlannerPage /> },
       { path: 'train/mesocycles/:id', element: <MesocycleBuilderPage /> },
+      { path: 'train/custom/new', element: <CustomWorkoutBuilderPage /> },
+      { path: 'train/custom/:id', element: <CustomWorkoutBuilderPage /> },
       { path: 'train/futas/:id', element: <RunningBlockBuilderPage /> },
       {
         path: 'fuel',
