@@ -14,6 +14,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -123,6 +124,22 @@ public class GlobalExceptionHandler {
         String traceId = UUID.randomUUID().toString();
         log.warn("Upload too large [traceId={}]: {}", traceId, ex.getMessage());
         SystemMessage m = SystemMessage.field("VALIDATION_INVALID_VALUE", "photo").build();
+        m.setExceptionTraceId(traceId);
+        m.setMessage(resolve(m));
+        return ResponseEntity.badRequest().body(List.of(m));
+    }
+
+    /**
+     * A {@code @RequestPart(required = true)} multipart part absent from the request (mezo-d8tr:
+     * {@code POST /api/pantry-import/photo} with no {@code photo} part) is rejected by Spring
+     * BEFORE the controller method runs — surface the same FIELD 400 a present-but-invalid photo
+     * would get, instead of falling through to the generic 500 catch-all.
+     */
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    public ResponseEntity<List<SystemMessage>> handleMissingPart(MissingServletRequestPartException ex) {
+        String traceId = UUID.randomUUID().toString();
+        log.warn("Required multipart part missing [traceId={}]: {}", traceId, ex.getRequestPartName());
+        SystemMessage m = SystemMessage.field("VALIDATION_INVALID_VALUE", ex.getRequestPartName()).build();
         m.setExceptionTraceId(traceId);
         m.setMessage(resolve(m));
         return ResponseEntity.badRequest().body(List.of(m));
