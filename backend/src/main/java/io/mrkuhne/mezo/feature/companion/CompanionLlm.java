@@ -31,11 +31,20 @@ public interface CompanionLlm {
         return complete(systemPrompt, userMessage, List.of(), Map.of());
     }
 
+    /** An ephemeral inline image for a multimodal call — bytes live only for the call. */
+    record InlineImage(byte[] bytes, String mimeType) {}
+
     /**
-     * One-shot completion on the cheap tier with ONE inline image (vision). The bytes live only
-     * for this call — nothing is stored. mezo-78rn (AI meal log) is the first consumer.
+     * One-shot completion on the cheap tier with ephemeral inline image(s) (vision). Nothing is
+     * stored. mezo-d8tr (pantry photo import) is the first multi-image consumer; single-image
+     * callers (meal-AI, mezo-78rn) ride the delegating default below.
      */
-    String complete(String systemPrompt, String userMessage, byte[] imageBytes, String mimeType);
+    String complete(String systemPrompt, String userMessage, List<InlineImage> images);
+
+    /** Single-image convenience — delegates to the list overload. */
+    default String complete(String systemPrompt, String userMessage, byte[] imageBytes, String mimeType) {
+        return complete(systemPrompt, userMessage, List.of(new InlineImage(imageBytes, mimeType)));
+    }
 
     /**
      * One-shot completion on the SMART tier (V3.2 — the heavy weekly pipelines; ADR 0008 model
