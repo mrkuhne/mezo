@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.BriefingPopulator;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
@@ -78,6 +79,7 @@ import org.springframework.context.annotation.Import;
     CheckInPopulator.class,
     PantryItemPopulator.class, PantryImportPopulator.class,
     RecipePopulator.class, MealPopulator.class, WaterLogPopulator.class,
+    FuelSettingsPopulator.class,
     MedicationPopulator.class, MedicationDosePopulator.class,
     ProtocolPopulator.class, SupplementIntakePopulator.class,
     SkillProgressPopulator.class, LevelUpEventPopulator.class,
