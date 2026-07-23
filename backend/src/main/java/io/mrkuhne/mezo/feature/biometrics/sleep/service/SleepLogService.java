@@ -33,6 +33,15 @@ public class SleepLogService {
         e.setQuality(req.getQuality());
         e.setAwakenings(req.getAwakenings());
         e.setNotes(req.getNote());
+        e.setInBedMin(req.getInBedMin());
+        e.setAwakeMin(req.getAwakeMin());
+        e.setLightMin(req.getLightMin());
+        e.setRemMin(req.getRemMin());
+        e.setDeepMin(req.getDeepMin());
+        e.setSourceQualityPct(req.getSourceQualityPct());
+        if (req.getSource() != null) {
+            e.setSource(req.getSource()); // entity default stays "manual" when omitted
+        }
         return mapper.toResponse(repository.save(e));
     }
 }
