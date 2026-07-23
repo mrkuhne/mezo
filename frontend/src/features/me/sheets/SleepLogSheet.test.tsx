@@ -58,6 +58,15 @@ describe('screenshot mode (mezo-66ab)', () => {
     expect(screen.getByText(/95%/)).toBeInTheDocument()
   })
 
+  test('review hero shows the asleep duration that gets saved, not the bed span', async () => {
+    renderSheet()
+    await toReview()
+    // hero = asleep duration (7.48, what saveShot persists), NOT the 00:42→09:03 bed span (8.3)
+    expect(screen.getByText('7.48')).toBeInTheDocument()
+    expect(screen.queryByText('8.3')).not.toBeInTheDocument()
+    expect(screen.queryByText('8.4')).not.toBeInTheDocument()
+  })
+
   test('save posts the full enriched payload with source screenshot and the edited date', async () => {
     const { onSave } = renderSheet()
     await toReview()

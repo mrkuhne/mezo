@@ -49,6 +49,9 @@ export function SleepLogSheet({
 
   const isShot = mode === 'shot'
   const showInputs = mode === 'manual' || shotPhase === 'review'
+  // Shot review shows the value that will actually be SAVED (the asleep duration),
+  // not the bed span — manual mode keeps the span-derived value (mezo-66ab).
+  const heroDuration = isShot ? (durationInput ? Number(durationInput) : duration) : duration
 
   const save = (close: () => void) => {
     onSave({
@@ -156,7 +159,7 @@ export function SleepLogSheet({
             <>
               <div className="card" style={{ padding: 18, marginBottom: 14, background: 'var(--wash-lav)' }}>
                 <div className="row" style={{ justifyContent: 'center', alignItems: 'baseline', gap: 6 }}>
-                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 48, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{duration}</span>
+                  <span style={{ fontFamily: 'var(--ff-display)', fontSize: 48, fontWeight: 600, color: 'var(--ink)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{heroDuration}</span>
                   <span style={{ fontSize: 14, color: 'var(--text-tertiary)' }}>h</span>
                 </div>
                 <div className="row gap-lg mt-lg" style={{ justifyContent: 'center' }}>
