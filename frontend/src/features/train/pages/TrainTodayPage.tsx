@@ -97,6 +97,17 @@ export function TrainTodayPage() {
     const base = new Date()
     return localDateString(new Date(base.getFullYear(), base.getMonth(), base.getDate() - todayIdx() + i))
   }
+  // Completed custom (saját) instances of this week, grouped by ISO date — extra
+  // weekly rows on the date they were actually trained (mezo-ws2x).
+  const customByDate = new Map<string, { id: string; title: string }[]>()
+  for (const w of weekWorkouts) {
+    if (w.origin === 'custom' && w.status === 'completed') {
+      const list = customByDate.get(w.date) ?? []
+      list.push({ id: w.id, title: w.title })
+      customByDate.set(w.date, list)
+    }
+  }
+
   const agenda: WeeklyAgendaDay[] = DAY_ORDER.map((d, i) => {
     const g = gymTimes.find((x) => x.day === d)
     const v = vbSessions.filter((x) => x.day === d)
@@ -107,6 +118,7 @@ export function TrainTodayPage() {
       sport: v,
       running: runSessionsForDay(activeRunningBlock, DAY_ORDER.indexOf(d)),
       isToday: Boolean(g?.today || v.some((x) => x.today)),
+      custom: customByDate.get(weekDateIso(i)) ?? [],
     }
   })
 
@@ -416,6 +428,7 @@ export function TrainTodayPage() {
                 return md ? () => setOpenGymDay(md) : undefined
               })()}
               onLogSport={(s) => setSportLogSport(sportOf(s))}
+              onReviewCustom={(wid) => navigate(`/train/review/${wid}`)}
               onLogRun={(s) => setRunLogCtx({
                 blockId: activeRunningBlock!.id,
                 weekNumber: activeRunningBlock!.currentWeek,

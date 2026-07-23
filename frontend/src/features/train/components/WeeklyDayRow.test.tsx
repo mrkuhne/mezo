@@ -153,3 +153,21 @@ it('a non-today, not-done gym row is tappable and calls onOpenGymDay (mezo-j3x0)
   expect(onStartGym).not.toHaveBeenCalled()
   expect(onReviewGym).not.toHaveBeenCalled()
 })
+
+it('renders a completed custom (saját) workout row and opens its review (mezo-ws2x)', () => {
+  const onReviewCustom = vi.fn()
+  const { container } = render(
+    <WeeklyDayRow
+      agenda={{ day: 'Szo', isToday: false, gym: null, sport: [], running: [], custom: [{ id: 'w9', title: 'Pihenőnapi felső' }] }}
+      onStartGym={() => {}}
+      onReviewCustom={onReviewCustom}
+    />,
+  )
+  expect(screen.getByText('SAJÁT')).toBeInTheDocument()
+  expect(screen.getByText('Pihenőnapi felső')).toBeInTheDocument()
+  expect(screen.getByText('kész')).toBeInTheDocument()
+  // a day with only a custom session is NOT a rest row
+  expect(container.querySelector('.dayrow.rest')).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button'))
+  expect(onReviewCustom).toHaveBeenCalledWith('w9')
+})

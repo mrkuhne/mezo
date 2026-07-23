@@ -13,14 +13,17 @@ function hoursHu(mins: number): string {
   return `${s}h`
 }
 
-export function weeklyLoad(agenda: Pick<WeeklyAgendaDay, 'gym' | 'sport' | 'running'>[]): LoadTile[] {
+export function weeklyLoad(agenda: Pick<WeeklyAgendaDay, 'gym' | 'sport' | 'running' | 'custom'>[]): LoadTile[] {
   const tiles: LoadTile[] = []
 
   const gymDays = agenda.filter((a) => a.gym)
-  if (gymDays.length) {
+  // Completed custom (saját) sessions are real gym load — they add to the count (mezo-ws2x).
+  const customCount = agenda.reduce((n, a) => n + (a.custom?.length ?? 0), 0)
+  const gymCount = gymDays.length + customCount
+  if (gymCount) {
     const durs = gymDays.map((a) => a.gym!.duration).filter((d): d is number => d != null)
     const avg = durs.length ? Math.round(durs.reduce((x, y) => x + y, 0) / durs.length) : null
-    tiles.push({ kind: 'gym', label: 'Gym', icon: '🏋️', value: avg ? `${gymDays.length}× · ${avg}p` : `${gymDays.length}×` })
+    tiles.push({ kind: 'gym', label: 'Gym', icon: '🏋️', value: avg ? `${gymCount}× · ${avg}p` : `${gymCount}×` })
   }
 
   for (const k of SPORT_KINDS) {
