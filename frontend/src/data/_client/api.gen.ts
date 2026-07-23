@@ -766,6 +766,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/pantry-import/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract a pantry draft from nutrition-label photo(s) (stateless, photos ephemeral, nothing persisted) */
+        post: operations["photoExtractPantryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recipe": {
         parameters: {
             query?: never;
@@ -2893,7 +2910,7 @@ export interface components {
             priceHuf?: number | null;
             priceUnit?: string | null;
             source: components["schemas"]["PantrySource"];
-            sourceUrl: string;
+            sourceUrl?: string | null;
             confidence: number;
             needsReview: boolean;
         };
@@ -2916,6 +2933,7 @@ export interface components {
             nova?: number | null;
             sourceUrl?: string | null;
             confidence?: number | null;
+            origin?: string | null;
             priceHuf?: number | null;
             priceUnit?: string | null;
         };
@@ -2937,7 +2955,7 @@ export interface components {
             reason: string;
         };
         /** @enum {string} */
-        PantrySource: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "gymbeam.hu" | "web" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts";
+        PantrySource: "kifli.hu" | "myprotein.hu" | "tesco.hu" | "auchan.hu" | "gymbeam.hu" | "web" | "manual" | "lidl" | "nutriversum" | "herbahaz" | "nutrifit" | "decathlon" | "openfoodfacts" | "photo";
         RecipeMacros: {
             kcal: number;
             p: number;
@@ -6532,6 +6550,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    photoExtractPantryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                    /** Format: binary */
+                    photo2?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Draft extracted (result null when no nutrition facts are legible) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PantryScrapeResponse"];
                 };
             };
         };
