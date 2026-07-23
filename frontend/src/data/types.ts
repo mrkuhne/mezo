@@ -399,12 +399,35 @@ export interface SleepEntry {
   awakenings: number
   mealToSleep: number
   notes: string | null
+  // Tracker-grade enrichment (mezo-dbsr) — null/absent on plain manual rows
+  inBedMin?: number | null
+  awakeMin?: number | null
+  lightMin?: number | null
+  remMin?: number | null
+  deepMin?: number | null
+  sourceQualityPct?: number | null
+  source?: 'manual' | 'screenshot' | null
 }
 /** Phase 2 REST DTO — POST /sleep-log. `durationH` is computed in the sheet from bedtime+wakeup. */
 export interface SleepLogInput {
   date: string; bedtime: string; wakeup: string
   durationH: number; quality: number; awakenings: number; note?: string
+  inBedMin?: number
 }
+
+/** The sleep goal — target asleep-duration + one fixed end; the other end is derived (spec D1/D4). */
+export interface SleepGoal {
+  targetMinutes: number
+  anchor: 'WAKE' | 'BED'
+  anchorTime: string
+  /** Derived (or equal to anchorTime) — HH:mm; the day-anchor consumers read these two. */
+  wakeTime: string
+  bedTime: string
+  regularityBandMin: number
+}
+
+/** PUT /api/sleep/goal payload — wake/bed are always server-derived, never sent. */
+export type SleepGoalInput = Omit<SleepGoal, 'wakeTime' | 'bedTime'>
 // --- Emberek (people) ---
 export type Affect = 'positive' | 'neutral' | 'mixed' | 'negative'
 export type Relationship = 'partner' | 'teammate' | 'mentee'

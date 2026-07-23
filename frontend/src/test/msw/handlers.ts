@@ -212,6 +212,23 @@ export const handlers = [
     )
   }),
 
+  // Sleep goal (mezo-dbsr) — default demo goal tuned to the sleep-log cluster (bed 23:15 /
+  // wake 06:45); never a 404 (the backend resolves the config ghost). PUT re-derives the
+  // free end from the anchor. Tests override with server.use() for payload capture.
+  http.get(`${API_BASE}/api/sleep/goal`, () =>
+    HttpResponse.json({
+      targetMinutes: 450, anchor: 'WAKE', anchorTime: '06:45',
+      wakeTime: '06:45', bedTime: '23:15', regularityBandMin: 15,
+    })),
+  http.put(`${API_BASE}/api/sleep/goal`, async ({ request }) => {
+    const body = (await request.json()) as { targetMinutes: number; anchor: 'WAKE' | 'BED'; anchorTime: string; regularityBandMin?: number }
+    const toMin = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
+    const toHHmm = (m: number) => `${String(Math.floor(((m % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((m % 1440) + 1440) % 1440 % 60).padStart(2, '0')}`
+    const wakeTime = body.anchor === 'WAKE' ? body.anchorTime : toHHmm(toMin(body.anchorTime) + body.targetMinutes)
+    const bedTime = body.anchor === 'BED' ? body.anchorTime : toHHmm(toMin(body.anchorTime) - body.targetMinutes)
+    return HttpResponse.json({ ...body, regularityBandMin: body.regularityBandMin ?? 15, wakeTime, bedTime })
+  }),
+
   http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),
 
   // Proactive briefing (B1.2) — default: honest 404 "no generated briefing yet", so Today
