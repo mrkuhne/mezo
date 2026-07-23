@@ -196,7 +196,7 @@ export function RoutineCard() {
   const isAfternoon = daypart === 'delutan'
 
   return (
-    <div className="card" style={{ padding: '14px 16px', margin: '8px 0' }}>
+    <div className="card" style={{ padding: '14px 16px', margin: '8px 24px' }}>
       {isAfternoon ? (
         <button
           className="rt-toggle"
