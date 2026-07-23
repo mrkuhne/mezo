@@ -128,6 +128,59 @@ test('editing an amount and deleting a line confirms with the edited single item
   expect(payload.items[0].amount).toBe(80)
 })
 
+test('confirm builds the ai-photo provenance when a photo was attached (mezo-j4e6)', async () => {
+  vi.useFakeTimers()
+  const logSpy = vi.fn()
+  hoisted.logMeal = logSpy as (input: MealInput) => void
+  renderSheet()
+
+  const file = new File(['x'], 'ebed.jpg', { type: 'image/jpeg' })
+  fireEvent.change(screen.getByLabelText('Étel fotó'), { target: { files: [file] } })
+  fireEvent.click(screen.getByRole('button', { name: /AI naplózás/ }))
+  await act(async () => { await vi.advanceTimersByTimeAsync(700) })
+  vi.useRealTimers()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Naplózás' }))
+
+  const payload = logSpy.mock.calls[0][0] as MealInput
+  expect(payload.provenance?.origin).toBe('ai-photo')
+  expect(payload.provenance?.rawText).toBeNull() // photo-only: no free text
+})
+
+test('blanking an amount keeps the previous value — a 0-amount line is unconfirmable (mezo-j4e6)', async () => {
+  vi.useFakeTimers()
+  const logSpy = vi.fn()
+  hoisted.logMeal = logSpy as (input: MealInput) => void
+  renderSheet()
+
+  fireEvent.change(screen.getByLabelText('Mit ettél?'), { target: { value: 'csirkés wrap' } })
+  fireEvent.click(screen.getByRole('button', { name: /AI naplózás/ }))
+  await act(async () => { vi.advanceTimersByTime(700) })
+  vi.useRealTimers()
+
+  const amounts = screen.getAllByLabelText('Mennyiség')
+  const before = (amounts[0] as HTMLInputElement).value
+  fireEvent.change(amounts[0], { target: { value: '' } }) // Number('') is 0 — the bug surface
+  fireEvent.click(screen.getByRole('button', { name: 'Naplózás' }))
+
+  const payload = logSpy.mock.calls[0][0] as MealInput
+  expect(payload.items[0].amount).toBe(Number(before)) // kept, not coerced to 0
+})
+
+test('an attached photo renders a thumbnail preview, not just the filename (mezo-j4e6)', () => {
+  // jsdom has no createObjectURL — provide one so the thumbnail can resolve a src.
+  URL.createObjectURL = vi.fn(() => 'blob:thumb') as never
+  URL.revokeObjectURL = vi.fn() as never
+  renderSheet()
+
+  fireEvent.change(screen.getByLabelText('Étel fotó'),
+    { target: { files: [new File(['x'], 'ebed.jpg', { type: 'image/jpeg' })] } })
+
+  const thumb = screen.getByAltText('Fotó előnézet') as HTMLImageElement
+  expect(thumb.src).toContain('blob:thumb')
+  expect(screen.getByText('ebed.jpg')).toBeInTheDocument() // filename stays alongside
+})
+
 test('confirm builds the ai-text provenance and copies the estimate snapshot fields', async () => {
   vi.useFakeTimers()
   const logSpy = vi.fn()

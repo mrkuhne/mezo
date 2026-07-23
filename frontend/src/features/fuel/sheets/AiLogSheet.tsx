@@ -13,7 +13,7 @@
 //               carry refId) + a provenance envelope → logMeal. An empty draft offers a manual
 //               fallback (onManualFallback); a rejection shows the error copy and returns to input.
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMealActions } from '@/data/hooks'
 import type { MealAiDraftLine, MealItemInput, MealSlot } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -65,6 +65,10 @@ export function AiLogSheet({ date, initialSlot, onClose, onManualFallback }: AiL
 
   const canSubmit = text.trim().length > 0 || photo != null
 
+  // Thumbnail preview for the attached photo (mezo-j4e6) — object URL revoked on change/unmount.
+  const photoUrl = useMemo(() => (photo ? URL.createObjectURL(photo) : null), [photo])
+  useEffect(() => () => { if (photoUrl) URL.revokeObjectURL(photoUrl) }, [photoUrl])
+
   const submit = async () => {
     if (!canSubmit) return
     setPhase('drafting')
@@ -87,7 +91,9 @@ export function AiLogSheet({ date, initialSlot, onClose, onManualFallback }: AiL
 
   const setAmount = (key: number, value: string) => {
     const n = Number(value)
-    setLines(prev => prev.map(l => (l.key === key ? { ...l, amount: Number.isNaN(n) ? l.amount : n } : l)))
+    // Blank/zero guard (mezo-j4e6): Number('') coerces to 0 — a 0-amount line would confirm
+    // as a 0 kcal entry. Anything non-positive keeps the previous amount instead.
+    setLines(prev => prev.map(l => (l.key === key ? { ...l, amount: !Number.isFinite(n) || n <= 0 ? l.amount : n } : l)))
   }
   const removeLine = (key: number) => setLines(prev => prev.filter(l => l.key !== key))
 
@@ -170,6 +176,13 @@ export function AiLogSheet({ date, initialSlot, onClose, onManualFallback }: AiL
                 </label>
                 {photo && (
                   <span className="row gap-xs" style={{ alignItems: 'center', fontSize: 11, color: 'var(--text-secondary)' }}>
+                    {photoUrl && (
+                      <img
+                        src={photoUrl}
+                        alt="Fotó előnézet"
+                        style={{ width: 28, height: 28, objectFit: 'cover', borderRadius: 4, border: '1px solid var(--border-subtle)' }}
+                      />
+                    )}
                     {photo.name}
                     <button
                       aria-label="Fotó eltávolítása"
