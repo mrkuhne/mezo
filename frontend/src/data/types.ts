@@ -38,6 +38,11 @@ export interface FuelPlanToday {
   bedtime: string; kitchenClose: string; caffeineCutoff: string
   slots: FuelSlot[]
 }
+/** Fuel-owned planner settings (mezo-53su) — eating cadence + caffeine cutoff, per-user singleton. */
+export interface FuelSettings {
+  mealsPerDay: number
+  caffeineCutoff: string
+}
 export interface MacroSet { kcal: number; p: number; c: number; f: number; water: number }
 export type ToolType = 'read' | 'compute' | 'write'
 export interface MealDimensionBase { id: 'macro' | 'micro' | 'nova' | 'context'; label: string; weight: number; score: number; color: string; detail: string }
