@@ -3,13 +3,17 @@
 // Default state: "Top gyakorlatok" ranked by sessionCount (backend order).
 // Active search/filter switches to full-catalog results: record rows first,
 // then dashed ghost rows for catalog items without history (STIM meter).
-// Tapping a record row opens ExerciseRecordSheet (mockup variant A). Mock mode
-// has no set history -> records are empty, the catalog search still works
-// over the static library. Mockup-validated (visual companion, mezo-wua).
+// Cards are variant-A three-zone cards (mezo-kaui): muscle-color rail +
+// rank plaque + name + integrated ▶/⋯ roundels · colored pill row (filled
+// amber plyo pill) · 3-cell stat strip (weighted vs bodyweight branch).
+// Tapping a record row opens ExerciseRecordSheet; ⋯ opens CatalogExerciseSheet
+// (edit + delete live there); ▶ opens VideoUrlSheet. Mock mode has no set
+// history -> records are empty, the catalog search still works.
 // ============================================================
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
+import { muscleColor } from '@/features/train/logic/muscleColors'
 import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '@/features/train/logic/muscleFilters'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
@@ -22,92 +26,203 @@ import { VideoUrlSheet } from '@/features/train/sheets/VideoUrlSheet'
 import ExercisesSkeleton from '@/features/train/pages/ExercisesSkeleton'
 
 const num = (n: number) => (Math.round(n * 10) / 10).toString().replace(/\.0$/, '')
+// Σ volume, whole kg from the API → "4.2 t" above a tonne, "860 kg" below.
+// num() (Math.round-based) avoids toFixed's float-drift on values like 182.45.
+const fmtVolume = (kg: number) => (kg >= 1000 ? `${num(kg / 1000)} t` : `${kg} kg`)
+// Best single-set rep count for the bodyweight stat branch: repRecords first
+// (all-time records), recentTopSets as fallback (bodyweight rows can ship
+// empty repRecords — see the Box Jump fixture), else null → em dash.
+const maxRep = (r: ExerciseRecordResponse): number | null => {
+  const src = r.repRecords.length ? r.repRecords : r.recentTopSets
+  return src.length ? Math.max(...src.map((s) => s.reps)) : null
+}
 
-// Per-row action bar rendered beneath the record/ghost row (keeps the row's own
-// tap target intact). The video chip shows on EVERY catalog row — attach/replace
-// the demo via the ownership-free /video endpoint, so built-in (seed) rows get
-// videos too; edit + delete render only for user-authored (editable) rows.
-function RowActions({ hasVideo, onVideo, onEdit, onDelete }: {
-  hasVideo: boolean; onVideo: () => void; onEdit?: () => void; onDelete?: () => void
+// Mono uppercase pill — the card's secondary-info unit (muscle/type/sessions/Saját).
+function Pill({ bg, color, children }: { bg: string; color: string; children: ReactNode }) {
+  return (
+    <span
+      className="label-mono"
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4, borderRadius: 999,
+        padding: '4px 9px', fontSize: 8.5, fontWeight: 700, letterSpacing: '0.05em',
+        textTransform: 'uppercase', whiteSpace: 'nowrap', background: bg, color,
+      }}
+    >
+      {children}
+    </span>
+  )
+}
+
+// One cell of the hairline-topped stat strip (label over value).
+function StatCell({ label, value, color, first }: {
+  label: string; value: string; color?: string; first?: boolean
 }) {
   return (
-    <div className="row gap-xs" style={{ justifyContent: 'flex-end' }}>
-      <button
-        className={cn('chip', hasVideo && 'brand')}
-        aria-label={hasVideo ? 'Videó szerkesztése' : 'Videó hozzáadása'}
-        onClick={onVideo}
-        style={{ padding: '4px 8px', fontSize: 9 }}
-      >
-        ▶ Videó
-      </button>
-      {onEdit && (
-        <button className="chip" aria-label="Gyakorlat szerkesztése" onClick={onEdit} style={{ padding: '4px 8px' }}>
-          <Icon name="pencil" size={12} />
-        </button>
-      )}
-      {onDelete && (
-        <button className="chip" aria-label="Gyakorlat törlése" onClick={onDelete} style={{ padding: '4px 8px' }}>
-          <Icon name="trash" size={12} color="var(--warning)" />
-        </button>
-      )}
+    <div style={{ flex: 1, ...(first ? {} : { borderLeft: '1px solid var(--border-subtle)', paddingLeft: 12 }) }}>
+      <div className="label-mono text-tertiary" style={{ fontSize: 7.5 }}>{label}</div>
+      <div className="label-mono" style={{ fontSize: 15, fontWeight: 700, marginTop: 2, color: color ?? 'var(--text-primary)' }}>
+        {value}
+      </div>
     </div>
   )
 }
 
-function RecordRow({ record, rank, onOpen }: {
-  record: ExerciseRecordResponse; rank: number | null; onOpen: () => void
+// Round icon button (▶ video / ⋯ edit) — sits over the card, outside the open-button
+// so we never nest <button> in <button>.
+function Roundel({ label, onClick, bg, color, size = 30, children }: {
+  label: string; onClick: () => void; bg: string; color: string; size?: number; children: ReactNode
 }) {
-  const r = record
   return (
-    <button className="card row" onClick={onOpen}
-      style={{ padding: 12, alignItems: 'center', textAlign: 'left', width: '100%' }}>
-      {rank != null && (
-        <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)', width: 22, flexShrink: 0 }}>
-          {String(rank).padStart(2, '0')}
-        </span>
-      )}
-      <div className="col flex-1">
-        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{r.name}</span>
-        <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
-          {(MUSCLE_LABELS[r.muscle] ?? r.muscle).toUpperCase()} · {r.sessionCount} ALKALOM
-        </span>
-      </div>
-      <div className="col" style={{ alignItems: 'flex-end' }}>
-        <span className="label-mono" style={{ fontSize: 12, color: 'var(--text-primary)' }}>
-          {r.bestSet ? `${num(r.bestSet.weightKg!)}×${r.bestSet.reps}` : `${r.totalReps} rep`}
-        </span>
-        <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 8 }}>
-          {r.bestSet ? 'LEGJOBB SZETT' : 'ÖSSZES REP'}
-        </span>
-      </div>
-      <span className={cn('chip', r.bestE1rm && 'brand')} style={{ fontSize: 9, marginLeft: 12, flexShrink: 0 }}>
-        {r.bestE1rm ? `e1RM ${num(r.bestE1rm.value)}` : r.type.toUpperCase()}
-      </span>
+    <button
+      aria-label={label}
+      onClick={onClick}
+      style={{
+        width: size, height: size, borderRadius: 999, border: 'none', flexShrink: 0,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        background: bg, color, fontSize: 10, fontWeight: 700,
+      }}
+    >
+      {children}
     </button>
   )
 }
 
-function GhostRow({ item }: { item: ExerciseLibraryItem }) {
+function RecordRow({ record, rank, lib, onOpen, onVideo, onEdit }: {
+  record: ExerciseRecordResponse
+  rank: number | null
+  lib?: ExerciseLibraryItem
+  onOpen: () => void
+  onVideo?: () => void
+  onEdit?: () => void
+}) {
+  const r = record
+  const mc = muscleColor(r.muscle)
+  const weighted = r.bestSet?.weightKg != null
+  const best = maxRep(r)
+  // reserve header space for the absolutely-positioned roundels
+  const actionPad = onEdit && onVideo ? 66 : onVideo || onEdit ? 34 : 0
   return (
-    <div className="row" style={{
-      padding: 12, alignItems: 'center', background: 'var(--surface-1)',
-      border: '1px dashed var(--border-strong)', opacity: 0.75,
-    }}>
-      <div className="col flex-1">
-        <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{item.name}</span>
-        <span className="label-mono text-tertiary mt-xs" style={{ fontSize: 9 }}>
-          {(MUSCLE_LABELS[item.muscle] ?? item.muscle).toUpperCase()} · MÉG NINCS REKORD
-        </span>
+    <div className="card" style={{ display: 'flex', overflow: 'hidden' }}>
+      <div style={{ width: 5, background: mc.rail, flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ flex: 1, position: 'relative', padding: '14px 14px 12px' }}>
+        <button onClick={onOpen} style={{ display: 'block', width: '100%', textAlign: 'left' }}>
+          <div className="row" style={{ alignItems: 'center', gap: 10, paddingRight: actionPad }}>
+            {rank != null && (
+              <span
+                className="label-mono"
+                style={{
+                  width: 26, height: 26, borderRadius: 8, background: mc.wash, color: mc.deep,
+                  fontSize: 11, fontWeight: 800, display: 'inline-flex',
+                  alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                }}
+              >
+                {rank}
+              </span>
+            )}
+            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>
+              {r.name}
+            </span>
+          </div>
+          <div className="row" style={{ gap: 6, margin: '10px 0 12px', flexWrap: 'wrap' }}>
+            <Pill bg={mc.wash} color={mc.deep}>{MUSCLE_LABELS[r.muscle] ?? r.muscle}</Pill>
+            {r.type === 'plyo' ? (
+              // --amber is bright in BOTH themes; --ink flips → deliberate literal warm ink.
+              <Pill bg="var(--amber)" color="#2B2118">⚡ Plyo</Pill>
+            ) : (
+              <Pill bg="var(--surface-2)" color="var(--text-secondary)">{r.type}</Pill>
+            )}
+            <Pill bg="var(--surface-2)" color="var(--text-secondary)">{r.sessionCount} alkalom</Pill>
+            {lib?.editable && <Pill bg="var(--wash-amber)" color="var(--coral-deep)">Saját</Pill>}
+          </div>
+          <div className="row" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 10 }}>
+            {weighted ? (
+              <>
+                <StatCell first label="Legjobb szett" value={`${num(r.bestSet!.weightKg!)}×${r.bestSet!.reps}`} />
+                <StatCell
+                  label="e1RM"
+                  value={r.bestE1rm ? `${num(r.bestE1rm.value)} kg` : '—'}
+                  color={r.bestE1rm ? 'var(--coral-deep)' : undefined}
+                />
+                <StatCell label="Összvolumen" value={fmtVolume(r.totalVolume)} />
+              </>
+            ) : (
+              <>
+                <StatCell first label="Max rep" value={best != null ? String(best) : '—'} />
+                <StatCell label="Összes rep" value={String(r.totalReps)} />
+                <StatCell label="Szettek" value={String(r.totalSets)} />
+              </>
+            )}
+          </div>
+        </button>
+        <div className="row gap-xs" style={{ position: 'absolute', top: 12, right: 12 }}>
+          {onEdit && (
+            <Roundel label="Gyakorlat szerkesztése" onClick={onEdit} bg="var(--surface-2)" color="var(--text-secondary)" size={26}>
+              ⋯
+            </Roundel>
+          )}
+          {onVideo && (
+            <Roundel
+              label={lib?.videoUrl ? 'Videó szerkesztése' : 'Videó hozzáadása'}
+              onClick={onVideo}
+              bg={lib?.videoUrl ? mc.wash : 'var(--surface-2)'}
+              color={lib?.videoUrl ? mc.deep : 'var(--text-quaternary)'}
+            >
+              ▶
+            </Roundel>
+          )}
+        </div>
       </div>
-      <div className="col" style={{ alignItems: 'flex-end' }}>
-        <span className="label-mono" style={{ fontSize: 8, color: 'var(--coral)' }}>STIM</span>
-        <div className="row gap-xs mt-xs">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <div key={n} style={{
-              width: 4, height: 8,
-              background: n / 5 <= item.stim ? 'var(--coral)' : 'var(--surface-2)',
-            }} />
-          ))}
+    </div>
+  )
+}
+
+function GhostRow({ item, onVideo, onEdit }: {
+  item: ExerciseLibraryItem
+  onVideo?: () => void
+  onEdit?: () => void
+}) {
+  const mc = muscleColor(item.muscle)
+  return (
+    <div
+      style={{
+        display: 'flex', overflow: 'hidden', borderRadius: 20,
+        border: '1px dashed var(--border-strong)', opacity: 0.85,
+      }}
+    >
+      <div style={{ width: 5, background: mc.rail, opacity: 0.45, flexShrink: 0 }} aria-hidden="true" />
+      <div style={{ flex: 1, padding: '13px 14px' }}>
+        <div className="row" style={{ alignItems: 'center', gap: 10 }}>
+          <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 700, color: 'var(--text-secondary)', flex: 1 }}>
+            {item.name}
+          </span>
+          <div style={{ textAlign: 'right' }}>
+            <div className="label-mono" style={{ fontSize: 7.5, color: mc.deep }}>Stim</div>
+            <div className="row gap-xs" style={{ marginTop: 3 }}>
+              {[1, 2, 3, 4, 5].map((n) => (
+                <div key={n} style={{ width: 5, height: 9, background: n / 5 <= item.stim ? mc.rail : 'var(--surface-3)' }} />
+              ))}
+            </div>
+          </div>
+          {onEdit && (
+            <Roundel label="Gyakorlat szerkesztése" onClick={onEdit} bg="var(--surface-2)" color="var(--text-secondary)" size={26}>
+              ⋯
+            </Roundel>
+          )}
+          {onVideo && (
+            <Roundel
+              label={item.videoUrl ? 'Videó szerkesztése' : 'Videó hozzáadása'}
+              onClick={onVideo}
+              bg={item.videoUrl ? mc.wash : 'var(--surface-2)'}
+              color={item.videoUrl ? mc.deep : 'var(--text-quaternary)'}
+              size={26}
+            >
+              ▶
+            </Roundel>
+          )}
+        </div>
+        <div className="row" style={{ gap: 6, marginTop: 8 }}>
+          <Pill bg={mc.wash} color={mc.deep}>{MUSCLE_LABELS[item.muscle] ?? item.muscle}</Pill>
+          <Pill bg="var(--surface-2)" color="var(--text-tertiary)">Még nincs rekord</Pill>
         </div>
       </div>
     </div>
@@ -115,7 +230,7 @@ function GhostRow({ item }: { item: ExerciseLibraryItem }) {
 }
 
 export function ExercisesPage() {
-  const { exerciseRecords, exerciseLibrary, exercisesPending, deleteCatalogExercise } = useTrain()
+  const { exerciseRecords, exerciseLibrary, exercisesPending } = useTrain()
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [openRecord, setOpenRecord] = useState<ExerciseRecordResponse | null>(null)
@@ -207,31 +322,24 @@ export function ExercisesPage() {
             {records.map((r, i) => {
               const lib = r.catalogId ? exerciseLibrary.find((e) => e.catalogId === r.catalogId) : undefined
               return (
-                <div key={r.catalogId ?? r.name} className="col gap-xs">
-                  <RecordRow record={r} rank={searching ? null : i + 1} onOpen={() => setOpenRecord(r)} />
-                  {lib && (
-                    <RowActions
-                      hasVideo={!!lib.videoUrl}
-                      onVideo={() => setVideoFor({ id: lib.catalogId ?? lib.id, name: lib.name, videoUrl: lib.videoUrl ?? null })}
-                      onEdit={lib.editable ? () => setCatalog({ edit: lib }) : undefined}
-                      onDelete={lib.editable ? () => deleteCatalogExercise(lib.catalogId ?? lib.id) : undefined}
-                    />
-                  )}
-                </div>
+                <RecordRow
+                  key={r.catalogId ?? r.name}
+                  record={r}
+                  rank={searching ? null : i + 1}
+                  lib={lib}
+                  onOpen={() => setOpenRecord(r)}
+                  onVideo={lib ? () => setVideoFor({ id: lib.catalogId ?? lib.id, name: lib.name, videoUrl: lib.videoUrl ?? null }) : undefined}
+                  onEdit={lib?.editable ? () => setCatalog({ edit: lib }) : undefined}
+                />
               )
             })}
             {ghosts.map((g) => (
-              <div key={g.id} className="col gap-xs">
-                <GhostRow item={g} />
-                {g.catalogId && (
-                  <RowActions
-                    hasVideo={!!g.videoUrl}
-                    onVideo={() => setVideoFor({ id: g.catalogId ?? g.id, name: g.name, videoUrl: g.videoUrl ?? null })}
-                    onEdit={g.editable ? () => setCatalog({ edit: g }) : undefined}
-                    onDelete={g.editable ? () => deleteCatalogExercise(g.catalogId ?? g.id) : undefined}
-                  />
-                )}
-              </div>
+              <GhostRow
+                key={g.id}
+                item={g}
+                onVideo={g.catalogId ? () => setVideoFor({ id: g.catalogId ?? g.id, name: g.name, videoUrl: g.videoUrl ?? null }) : undefined}
+                onEdit={g.editable ? () => setCatalog({ edit: g }) : undefined}
+              />
             ))}
             {searching && records.length + ghosts.length === 0 && (
               <p className="text-tertiary" style={{ fontSize: 12, textAlign: 'center', padding: 20 }}>
