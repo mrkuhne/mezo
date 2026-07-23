@@ -148,7 +148,9 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
         confidence: draft.confidence,
         priceHuf: draft.priceHuf,
         priceUnit: draft.priceUnit,
-        origin: mode === 'photo' ? 'photo' : undefined,
+        // Provenance follows the DRAFT (mezo-iqf9): a mode flip while the extraction is in
+        // flight must not relabel a photo draft as an URL-scrape confirm.
+        origin: draft.source === 'photo' ? 'photo' : undefined,
       })
       close()
     } catch {
@@ -528,11 +530,21 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                         onChange={(e) => {
                           const f = e.target.files?.[0] ?? null
                           if (!f) return
+                          // Same 5 MB pre-check as the input phase (mezo-iqf9) — an oversized
+                          // front photo must not fire a doomed server round-trip.
+                          if (f.size > MAX_PHOTO_BYTES) {
+                            setError('A kép túl nagy (JPEG/PNG/WebP, max 5 MB).')
+                            return
+                          }
+                          setError(null)
                           setPhotoFile2(f)
                           void extractPhotos(f) // re-extract with BOTH images
                         }}
                       />
                     </label>
+                  )}
+                  {error && (
+                    <p style={{ fontSize: 11, color: 'var(--error)', marginTop: 8 }}>{error}</p>
                   )}
                 </div>
               )}
