@@ -103,11 +103,18 @@ describe('usePantry (mock mode)', () => {
 
   it('photoExtract resolves the canned MOCK_PHOTO_DRAFT after the demo delay (mezo-d8tr)', async () => {
     // Mock mode: no backend — the photo-import action serves the canned draft (mirrors scrapeItem).
-    const { Wrapper } = sharedWrapper()
-    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+    // Fake timers (mezo-iqf9): the 600 ms demo delay must not cost real suite time.
+    vi.useFakeTimers()
+    try {
+      const { Wrapper } = sharedWrapper()
+      const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
 
-    const draft = await result.current.photoExtract(new File(['x'], 'label.jpg', { type: 'image/jpeg' }))
-    expect(draft).toEqual(MOCK_PHOTO_DRAFT)
+      const draft = result.current.photoExtract(new File(['x'], 'label.jpg', { type: 'image/jpeg' }))
+      await vi.advanceTimersByTimeAsync(600)
+      await expect(draft).resolves.toEqual(MOCK_PHOTO_DRAFT)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
 

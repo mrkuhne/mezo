@@ -209,6 +209,54 @@ test('photo mode: re-extract chip shows when the name is unreadable (mezo-a74c)'
   vi.useRealTimers()
 })
 
+test('photo mode: re-extract chip rejects an oversized front photo without re-extracting (mezo-iqf9)', async () => {
+  vi.useFakeTimers()
+  const photoSpy = vi.fn(() => Promise.resolve({ ...MOCK_PHOTO_DRAFT, name: '' })) // chip visible
+  hoisted.photo = photoSpy
+
+  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
+  fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
+  fireEvent.change(screen.getByLabelText('Címke fotó'),
+    { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
+  fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
+  await act(async () => { await vi.runAllTimersAsync() })
+  expect(photoSpy).toHaveBeenCalledTimes(1)
+
+  const big = new File(['x'], 'front.jpg', { type: 'image/jpeg' })
+  Object.defineProperty(big, 'size', { value: 6_000_000 }) // over the 5 MB cap
+  fireEvent.change(screen.getByLabelText('Előlap fotó hozzáadása'), { target: { files: [big] } })
+  await act(async () => { await vi.runAllTimersAsync() })
+
+  expect(photoSpy).toHaveBeenCalledTimes(1) // no second extraction fired
+  expect(screen.getByText(/túl nagy/)).toBeInTheDocument()
+  vi.useRealTimers()
+})
+
+test('photo mode: origin derives from the draft, surviving a mode switch mid-extract (mezo-iqf9)', async () => {
+  vi.useFakeTimers()
+  let resolvePhoto: (d: PantryScrapeDraft | null) => void = () => {}
+  hoisted.photo = () => new Promise(res => { resolvePhoto = res })
+  const importSpy = vi.fn().mockResolvedValue(undefined)
+  hoisted.importItem = importSpy
+
+  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
+  fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
+  fireEvent.change(screen.getByLabelText('Címke fotó'),
+    { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
+  fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
+
+  // the user flips to Link mode while the photo extraction is still in flight
+  fireEvent.click(screen.getByRole('button', { name: 'Link' }))
+  await act(async () => { resolvePhoto(MOCK_PHOTO_DRAFT) })
+
+  fireEvent.click(screen.getByRole('button', { name: /Polcra/ }))
+  await act(async () => { await vi.runAllTimersAsync() })
+
+  // provenance follows the DRAFT, not the currently toggled mode
+  expect(importSpy).toHaveBeenCalledWith(expect.objectContaining({ origin: 'photo' }))
+  vi.useRealTimers()
+})
+
 test('photo mode: confirm passes the origin marker to importItem', async () => {
   vi.useFakeTimers()
   const importSpy = vi.fn().mockResolvedValue(undefined)
