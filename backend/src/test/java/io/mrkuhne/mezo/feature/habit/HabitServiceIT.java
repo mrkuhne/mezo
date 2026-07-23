@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
@@ -43,6 +44,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealPopulator mealPopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private HabitPopulator habitPopulator;
@@ -142,6 +144,8 @@ class HabitServiceIT extends AbstractIntegrationTest {
     @Test
     void testClosePast_shouldCloseBedOnTime_whenNextDaySleepLogArrives() {
         UUID owner = owner();
+        // Anchor bed target explicitly at 23:00 (was the old config ghost; ghost is now 22:00 — spec §3).
+        sleepGoalPopulator.goal(owner, 450, "BED", "23:00", 15);
         LocalDate dayBefore = LocalDate.now().minusDays(2);
         habitPopulator.pendingDay(owner, dayBefore);
         sleepLogPopulator.createSleepLog(owner, dayBefore.plusDays(1), "23:20", "06:10",

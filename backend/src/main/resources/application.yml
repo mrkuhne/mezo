@@ -534,8 +534,6 @@ mezo:
     caffeine-cutoff: "14:00"
     bed-grace-min: 30
     kitchen-close-offset-min: 90
-    default-wake: "06:00"
-    default-bed: "23:00"
     strength-window-days: 28
     min-sample: 5
     summary-days: 30
