@@ -88,6 +88,35 @@ components:
           minimum: 0
         note:
           type: string
+        inBedMin:
+          type: integer
+          minimum: 1
+          description: Total time in bed in minutes — enables true efficiency (asleep ÷ in-bed)
+        awakeMin:
+          type: integer
+          minimum: 0
+          description: Minutes awake during the night (tracker phase data)
+        lightMin:
+          type: integer
+          minimum: 0
+          description: Light-sleep minutes (tracker phase data)
+        remMin:
+          type: integer
+          minimum: 0
+          description: REM minutes (tracker phase data; Sleep Cycle calls it Dream)
+        deepMin:
+          type: integer
+          minimum: 0
+          description: Deep-sleep minutes (tracker phase data)
+        sourceQualityPct:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Tracker-reported quality 0–100 (Sleep Cycle's own metric)
+        source:
+          type: string
+          pattern: '^(manual|screenshot)$'
+          description: Row provenance; omitted → 'manual'
     SleepLogResponse:
       type: object
       required:
@@ -117,3 +146,32 @@ components:
           description: Hours between last meal and sleep — always 0 until Fuel lands
         notes:
           type: string
+        inBedMin:
+          type: integer
+          minimum: 1
+          description: Total time in bed in minutes — enables true efficiency (asleep ÷ in-bed)
+        awakeMin:
+          type: integer
+          minimum: 0
+          description: Minutes awake during the night (tracker phase data)
+        lightMin:
+          type: integer
+          minimum: 0
+          description: Light-sleep minutes (tracker phase data)
+        remMin:
+          type: integer
+          minimum: 0
+          description: REM minutes (tracker phase data; Sleep Cycle calls it Dream)
+        deepMin:
+          type: integer
+          minimum: 0
+          description: Deep-sleep minutes (tracker phase data)
+        sourceQualityPct:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Tracker-reported quality 0–100 (Sleep Cycle's own metric)
+        source:
+          type: string
+          pattern: '^(manual|screenshot)$'
+          description: Row provenance; omitted → 'manual'

@@ -1,0 +1,86 @@
+openapi: 3.0.3
+info: { title: mezo sleep-goal fragment, version: 1.0.0 }
+tags:
+  - name: SleepGoal
+    description: Sleep goal + day anchor — the single source of the day's wake/bed pair
+paths:
+  /api/sleep/goal:
+    get:
+      tags: [SleepGoal]
+      operationId: getSleepGoal
+      summary: The sleep goal; config-default ghost when unset — never 404 (SleepGoal)
+      responses:
+        '200':
+          description: The goal with both derived ends (wakeTime + bedTime composed server-side)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SleepGoalResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    put:
+      tags: [SleepGoal]
+      operationId: setSleepGoal
+      summary: Upsert the sleep goal (per-user singleton) (SleepGoal)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetSleepGoalRequest' }
+      responses:
+        '200':
+          description: Saved goal, derived ends recomposed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SleepGoalResponse' }
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    SleepGoalResponse:
+      type: object
+      required: [targetMinutes, anchor, anchorTime, wakeTime, bedTime, regularityBandMin]
+      properties:
+        targetMinutes:
+          type: integer
+          minimum: 1
+          maximum: 1440
+          description: Asleep target in minutes (UI hints the 7–9 h range; default 480)
+        anchor:
+          type: string
+          pattern: '^(WAKE|BED)$'
+          description: Which end is fixed — the other end is derived
+        anchorTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: The fixed end, HH:mm
+        wakeTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: Wake anchor, HH:mm — derived when anchor=BED; equals anchorTime when anchor=WAKE
+        bedTime:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: Bed anchor, HH:mm — derived when anchor=WAKE; equals anchorTime when anchor=BED
+        regularityBandMin:
+          type: integer
+          minimum: 1
+          description: ± band in minutes for the regularity score (Walker ±15)
+    SetSleepGoalRequest:
+      type: object
+      required: [targetMinutes, anchor, anchorTime]
+      properties:
+        targetMinutes: { type: integer, minimum: 1, maximum: 1440, description: 'Asleep target in minutes' }
+        anchor: { type: string, pattern: '^(WAKE|BED)$', description: 'Which end is fixed' }
+        anchorTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', description: 'The fixed end, HH:mm' }
+        regularityBandMin: { type: integer, minimum: 1, description: 'Omit to keep/take the config default (15)' }

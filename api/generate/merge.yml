@@ -23,4 +23,5 @@ inputs:
   - inputFile: ../feature/activity/activity.yml
   - inputFile: ../feature/habit/habit.yml
   - inputFile: ../feature/intention/intention.yml
+  - inputFile: ../feature/sleep-goal/sleep-goal.yml
 output: ../openapi.yml
