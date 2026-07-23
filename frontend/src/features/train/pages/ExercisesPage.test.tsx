@@ -108,6 +108,24 @@ test('editing an owned row opens the sheet seeded with its name', async () => {
   expect(screen.getByLabelText('Név')).toHaveValue('Chest Supported Row')
 })
 
+test('deleting an owned row goes through the edit sheet with a confirm step', async () => {
+  let deleted = ''
+  server.use(
+    http.delete(`${API_BASE}/api/train/exercises/:id`, ({ params }) => {
+      deleted = String(params.id)
+      return new HttpResponse(null, { status: 204 })
+    }),
+  )
+  renderView()
+  await screen.findByRole('button', { name: /Chest Supported Row/ })
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat szerkesztése' }))
+  const del = await screen.findByRole('button', { name: 'Gyakorlat törlése' })
+  await userEvent.click(del)                      // first tap: arm
+  expect(deleted).toBe('')                        // not deleted yet
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat törlése' })) // confirm
+  await waitFor(() => expect(deleted).toBe('f1e3a0e2-0000-4000-8000-000000000070'))
+})
+
 // Video affordance (mezo-bnsk) — the demo video can be attached to ANY catalog row.
 // Box Jump is a seed (non-editable) record row: it has NO edit/delete affordance but
 // DOES get a video button. Chest Supported Row is editable and already has a video.

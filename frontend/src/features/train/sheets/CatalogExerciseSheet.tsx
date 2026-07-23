@@ -3,7 +3,9 @@
 // exercise. Name input, muscle segmented picker (13 tokens), type segmented
 // (compound|isolation|plyo), stim + fatigue decimal steppers (0–1, step 0.05),
 // video URL input, Mentés CTA (disabled when the name is blank). Create mode
-// calls createCatalogExercise; edit mode (edit prop) calls updateCatalogExercise.
+// calls createCatalogExercise; edit mode (edit prop) calls updateCatalogExercise
+// and also hosts the destructive path: a two-tap-confirm Törlés button calling
+// deleteCatalogExercise (moved here from the page's RowActions, mezo-kaui).
 // The mutation's onSuccess closes the sheet (animated). Follows the
 // ExercisePickerSheet / SportLogSheet visual idiom (chip picker + notch cards).
 // ============================================================
@@ -71,7 +73,7 @@ interface CatalogExerciseSheetProps {
 }
 
 export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProps) {
-  const { createCatalogExercise, updateCatalogExercise } = useTrain()
+  const { createCatalogExercise, updateCatalogExercise, deleteCatalogExercise } = useTrain()
   const [name, setName] = useState(edit?.name ?? '')
   const [muscle, setMuscle] = useState<MuscleKey>((edit?.muscle as MuscleKey) ?? 'back-mid')
   const [type, setType] = useState<ExType>((edit?.type as ExType) ?? 'compound')
@@ -79,6 +81,8 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
   const [fatigue, setFatigue] = useState(edit?.fatigue ?? 0.3)
   const [videoUrl, setVideoUrl] = useState(edit?.videoUrl ?? '')
   const [saving, setSaving] = useState(false)
+  // Two-tap delete confirm: first tap arms the button, second fires the mutation.
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   const trimmed = name.trim()
   const isEdit = edit != null
@@ -199,6 +203,26 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
               style={fieldStyle}
             />
           </div>
+
+          {/* Delete — edit mode only; two-tap confirm, then the mutation closes the sheet */}
+          {isEdit && (
+            <button
+              type="button"
+              className="chip"
+              aria-label="Gyakorlat törlése"
+              onClick={() => {
+                if (!confirmDelete) { setConfirmDelete(true); return }
+                deleteCatalogExercise(edit.catalogId ?? edit.id, { onSuccess: close })
+              }}
+              style={{
+                alignSelf: 'center', marginTop: 14, background: 'transparent',
+                borderColor: 'transparent', color: 'var(--warning)',
+              }}
+            >
+              <Icon name="trash" size={12} color="var(--warning)" />
+              {confirmDelete ? 'Biztos? Koppints a törléshez' : 'Gyakorlat törlése'}
+            </button>
+          )}
 
           {/* Footer */}
           <div className="row gap-sm mt-lg">
