@@ -37,6 +37,9 @@ public class FeaturesConfiguration {
     /** Fuel URL-scrape import (mezo-8vum) — LLM extraction; independent of pantry-import (OFF). */
     public static final String PANTRY_SCRAPE_SWITCH = "mezo.feature.pantry-scrape.enabled";
 
+    /** Fuel photo import (mezo-d8tr) — nutrition-label photo -> LLM draft; independent of scrape. */
+    public static final String PANTRY_PHOTO_SWITCH = "mezo.feature.pantry-photo.enabled";
+
     /** AI meal logging (text/photo -> LLM draft). Independent of the companion chat switch. */
     public static final String MEAL_AI_LOG_SWITCH = "mezo.feature.meal-ai-log.enabled";
 

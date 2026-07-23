@@ -10,7 +10,7 @@ spring:
       # effective, message-bearing limit; a container-cap breach still degrades to a clean 400
       # via GlobalExceptionHandler.handleMaxUploadSize (safety net), never a 500.
       max-file-size: 6MB
-      max-request-size: 7MB
+      max-request-size: 12MB # 12MB: the photo import (mezo-d8tr) sends up to TWO 5 MB photos in one request.
   mvc:
     async:
       # SSE chat turns (companion V0.4): Gemini streams can exceed the container's ~30s
@@ -118,6 +118,14 @@ mezo:
     accept-language: "hu,en;q=0.8"
     confidence-threshold: 0.6
     allow-private-hosts: false
+  pantry-photo:
+    # Label-photo import (mezo-d8tr) — upload limits + needs-review threshold.
+    max-photo-bytes: 5000000
+    allowed-mime-types:
+      - image/jpeg
+      - image/png
+      - image/webp
+    confidence-threshold: 0.6
   meal-ai-log:
     max-photo-bytes: 5000000
     allowed-mime-types:
@@ -150,6 +158,9 @@ mezo:
     # Fuel URL-scrape import (mezo-8vum) — LLM extraction from product pages; needs the
     # companion switch too (CompanionLlm bean), otherwise the endpoint answers 503.
     pantry-scrape:
+      enabled: true
+    # Fuel photo import (mezo-d8tr) — label photo -> LLM draft; needs the companion switch too.
+    pantry-photo:
       enabled: true
     # AI meal logging (mezo-78rn) — text/photo -> LLM draft; needs the companion switch too
     # (CompanionLlm bean), otherwise the ai-draft endpoint answers 503.
