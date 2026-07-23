@@ -44,11 +44,14 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
      * [from, to] with status 'completed' — the "gym done that day" signal driving the Mai
      * done-state. Done = EXPLICITLY FINISHED (spec 2026-07-15): a started-but-unclosed
      * instance (any number of logged sets) is NOT done; the lazy auto-close settles stale ones.
+     * MESO-ONLY (mezo-ws2x D5): custom (saját) instances are plan-adherence-exempt and never
+     * tick these weekly done dates, however many times they're completed.
      */
     @Query("""
         SELECT DISTINCT s.date FROM WorkoutSessionEntity s
         WHERE s.createdBy = :createdBy
           AND s.templateSessionId IS NOT NULL
+          AND s.origin = 'meso'
           AND s.date BETWEEN :from AND :to
           AND s.status = 'completed'
         """)
