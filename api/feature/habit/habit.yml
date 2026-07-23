@@ -104,6 +104,7 @@ components:
         doneAt: { type: string, format: date-time, nullable: true }
         xp: { type: integer }
         strengthPct: { type: integer, nullable: true, description: 'trailing-28d done ratio, null under min-sample' }
+        linkUrl: { type: string, nullable: true, description: 'optional external resource opened directly from the row (e.g. a routine video)' }
     HabitDayResponse:
       type: object
       required: [date, habits, levelUps]

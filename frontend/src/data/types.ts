@@ -414,6 +414,26 @@ export interface SleepLogInput {
   date: string; bedtime: string; wakeup: string
   durationH: number; quality: number; awakenings: number; note?: string
   inBedMin?: number
+  // Screenshot-confirm enrichment (mezo-66ab) — all optional so manual callers are unchanged.
+  source?: 'manual' | 'screenshot'
+  sourceQualityPct?: number
+  awakeMin?: number; lightMin?: number; remMin?: number; deepMin?: number
+}
+
+/** LLM-vision extraction from a Sleep Cycle screenshot (mezo-66ab) — a draft, never persisted as-is. */
+export interface SleepShotDraft {
+  bedtime: string | null
+  wakeup: string | null
+  durationH: number | null
+  inBedMin: number | null
+  awakeMin: number | null
+  lightMin: number | null
+  remMin: number | null
+  deepMin: number | null
+  sourceQualityPct: number | null
+  /** Deterministic consistency score 0..1 (backend validator, never the LLM). */
+  confidence: number
+  needsReview: boolean
 }
 
 /** The sleep goal — target asleep-duration + one fixed end; the other end is derived (spec D1/D4). */
@@ -857,6 +877,7 @@ export interface HabitItem {
   doneAt?: string | null
   xp: number
   strengthPct?: number | null
+  linkUrl?: string | null
 }
 export interface HabitStrengthRow { key: string; strengthPct: number | null; done28: number; missed28: number }
 export interface HabitSummary { perfectMorningDays30: number; perfectEveningDays30: number; habits: HabitStrengthRow[] }

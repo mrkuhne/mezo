@@ -12,14 +12,28 @@ class HabitCatalogIT extends AbstractIntegrationTest {
     private HabitCatalog catalog;
 
     @Test
-    void testLoad_shouldExposeTenOrderedHabits_whenContextBoots() {
-        assertThat(catalog.all()).hasSize(12);
-        assertThat(catalog.forChain(HabitCatalog.CHAIN_MORNING)).hasSize(7);
+    void testLoad_shouldExposeOrderedHabits_whenContextBoots() {
+        assertThat(catalog.all()).hasSize(14);
+        assertThat(catalog.forChain(HabitCatalog.CHAIN_MORNING)).hasSize(9);
         assertThat(catalog.forChain(HabitCatalog.CHAIN_EVENING)).hasSize(5);
         assertThat(catalog.forChain(HabitCatalog.CHAIN_MORNING))
             .extracting(HabitCatalog.HabitDef::position)
-            .containsExactly(1, 2, 3, 4, 5, 6, 7);
+            .containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9);
         assertThat(catalog.byKey("morning_weigh_in")).isPresent();
         assertThat(catalog.byKey("nope")).isEmpty();
+    }
+
+    @Test
+    void testLoad_shouldPlaceTheTwoNewHabitsRightAfterSunlight_withAClickableVideoLink() {
+        assertThat(catalog.byKey("morning_pushups")).hasValueSatisfying(d -> {
+            assertThat(d.position()).isEqualTo(3);
+            assertThat(d.mode()).isEqualTo(HabitCatalog.MODE_MANUAL);
+            assertThat(d.linkUrl()).isNull();
+        });
+        assertThat(catalog.byKey("morning_video")).hasValueSatisfying(d -> {
+            assertThat(d.position()).isEqualTo(4);
+            assertThat(d.mode()).isEqualTo(HabitCatalog.MODE_MANUAL);
+            assertThat(d.linkUrl()).isEqualTo("https://www.facebook.com/share/r/1ERXP5zNFs/?mibextid=wwXIfr");
+        });
     }
 }

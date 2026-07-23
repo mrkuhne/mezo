@@ -58,13 +58,13 @@ class HabitServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetDay_shouldLazilyCreateTwelvePendingRows_whenTodayFirstRead() {
+    void testGetDay_shouldLazilyCreateFourteenPendingRows_whenTodayFirstRead() {
         UUID owner = owner();
         HabitDayResponse day = habitService.getDay(owner, LocalDate.now());
-        assertThat(day.getHabits()).hasSize(12);
+        assertThat(day.getHabits()).hasSize(14);
         assertThat(day.getHabits())
             .allSatisfy(h -> assertThat(h.getStatus().getValue()).isIn("pending", "done"));
-        assertThat(repository.findByCreatedByAndHabitDate(owner, LocalDate.now())).hasSize(12);
+        assertThat(repository.findByCreatedByAndHabitDate(owner, LocalDate.now())).hasSize(14);
     }
 
     @Test
@@ -207,9 +207,11 @@ class HabitServiceIT extends AbstractIntegrationTest {
     void testSummary_shouldCountPerfectDays_whenFullChainDone() {
         UUID owner = owner();
         LocalDate day = LocalDate.now().minusDays(1);
-        // all 7 MORNING keys done on the same past day -> one perfect morning
+        // all 9 MORNING keys done on the same past day -> one perfect morning
         habitPopulator.row(owner, day, "wake_on_time", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_sunlight", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, day, "morning_pushups", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, day, "morning_video", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_weigh_in", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_coffee", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "morning_workout", HabitDayEntity.STATUS_DONE);

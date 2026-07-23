@@ -106,4 +106,7 @@ public class FeaturesConfiguration {
 
     /** Sleep goal + day-anchor (mezo-dbsr). Gates /api/sleep/goal + SleepGoalService (the anchor resolver stays on). */
     public static final String SLEEP_GOAL_SWITCH = "mezo.feature.sleep-goal.enabled";
+
+    /** Sleep screenshot ingestion (mezo-66ab) — Sleep Cycle screenshot -> LLM-vision draft. */
+    public static final String SLEEP_SHOT_SWITCH = "mezo.feature.sleep-shot.enabled";
 }

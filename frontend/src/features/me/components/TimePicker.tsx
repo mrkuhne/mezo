@@ -30,6 +30,10 @@ export function TimePicker({
   hours: number[]
 }) {
   const [h, m] = val.split(':')
+  // Screenshot drafts carry exact times (e.g. 00:42) — inject the current value as an
+  // option when it's outside the preset lists, so the select can display it (mezo-66ab).
+  const hourOptions = hours.includes(parseInt(h)) ? hours : [...hours, parseInt(h)].sort((a, b) => a - b)
+  const minuteOptions = [0, 30].includes(parseInt(m)) ? [0, 30] : [0, parseInt(m), 30].sort((a, b) => a - b)
   return (
     <div className="col" style={{ alignItems: 'center' }}>
       <span style={SECTION_LABEL}>{label}</span>
@@ -40,7 +44,7 @@ export function TimePicker({
           onChange={e => onChange(String(e.target.value).padStart(2, '0') + ':' + m)}
           style={SELECT_STYLE}
         >
-          {hours.map(hh => <option key={hh} value={hh}>{String(hh).padStart(2, '0')}</option>)}
+          {hourOptions.map(hh => <option key={hh} value={hh}>{String(hh).padStart(2, '0')}</option>)}
         </select>
         <span style={{ color: 'var(--text-tertiary)', lineHeight: '32px' }}>:</span>
         <select
@@ -49,7 +53,7 @@ export function TimePicker({
           onChange={e => onChange(h + ':' + String(e.target.value).padStart(2, '0'))}
           style={SELECT_STYLE}
         >
-          {[0, 30].map(mm => <option key={mm} value={mm}>{String(mm).padStart(2, '0')}</option>)}
+          {minuteOptions.map(mm => <option key={mm} value={mm}>{String(mm).padStart(2, '0')}</option>)}
         </select>
       </div>
     </div>

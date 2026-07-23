@@ -7,12 +7,13 @@
 
 ## 0. TL;DR — where we are right now
 
-- **Implemented, PR pending:** `mezo-dbsr` — **Sleep goal + day-anchor** (slice A of the sleep effort).
-  The full slice landed on `feat/sleep-anchor` (commits `e804d68a..ea444891`): backend `sleep_goal` singleton + enriched `sleep_log` + `GET/PUT /api/sleep/goal` + the **ungated `SleepAnchorPort`**; `HabitTargets` and the Fuel Mai timeline repointed onto the anchor (the old goal wake/bed config keys dropped, no-goal bed default 23:00→22:00); FE `useSleepGoal`/`useSleepGoalActions`, the SleepPage goal card + regularity/efficiency rings + enriched hero, `SleepGoalSheet`, and the optional in-bed field on `SleepLogSheet`. Living docs updated (me/fuel/habit + `_platform-api-backend`/`_platform-data-layer`). **Awaiting the self-PR → CI-green → merge.**
+- **Landed on main:** `mezo-dbsr` — **Sleep goal + day-anchor** (slice A). Merged via **PR #43** (`feat/sleep-anchor`, commits `e804d68a..ea444891`): backend `sleep_goal` singleton + enriched `sleep_log` + `GET/PUT /api/sleep/goal` + the **ungated `SleepAnchorPort`**; `HabitTargets` and the Fuel Mai timeline repointed onto the anchor (the old goal wake/bed config keys dropped, no-goal bed default 23:00→22:00); FE `useSleepGoal`/`useSleepGoalActions`, the SleepPage goal card + regularity/efficiency rings + enriched hero, `SleepGoalSheet`, and the optional in-bed field on `SleepLogSheet`.
   - Spec (approved, D1–D8): [`2026-07-23-sleep-anchor-design.md`](2026-07-23-sleep-anchor-design.md)
   - Feature docs: [`me.md`](../../features/me.md) §2/§3/§4/§5.3/§9/§10 · [`fuel.md`](../../features/fuel.md) §2/§3/§4/§5 · [`habit.md`](../../features/habit.md) §5/§9/§10.
-  - Branch: `feat/sleep-anchor` (off `origin/main`).
-- **Next:** slice B (Sleep Cycle screenshot ingestion) — a new brainstorm + spec. See §5.
+- **Implemented, PR pending:** `mezo-66ab` — **Sleep Cycle screenshot ingestion** (slice B). Landed on `feat/sleep-shot` (commits `3d906e00..991a3119`, off the merged slice A): the sleep-owned `SleepShotLlm` **vision** port + companion `SleepShotLlmAdapter` ([ADR 0012](../../decisions/0012-consumer-owned-llm-ports.md), the fourth consumer), `SleepShotService` (ONE vision call → brace-window parse → time zero-padding → `durationH = asleepMin/60`) + the deterministic `SleepShotDraftValidator` (asleep≤in-bed, phase-sum ±10%, span≈in-bed ±15p; confidence = passed/applicable; needsReview boundary-inclusive ≤0.6 or key field missing), `POST /api/sleep/screenshot` (`SleepShotController`, tag `SleepShot`) gated on `mezo.feature.sleep-shot.enabled` with `mezo.sleep-shot` caps/threshold; FE `useSleepShot` (action-only) + the `SleepLogSheet` **Kézi|Screenshot** toggle (pick → drafting → review, confirm down the normal `POST /api/biometrics/sleep` with `source:'screenshot'`) + the out-of-list `TimePicker` tolerance. **Nothing persists** at extraction time. Living docs updated ([`me.md`](../../features/me.md) §2/§3/§4/§8 · [`_platform-api-backend.md`](../../features/_platform-api-backend.md) · [`_platform-data-layer.md`](../../features/_platform-data-layer.md) · [`companion.md`](../../features/companion.md) §5.3). **Awaiting the self-PR → CI-green → merge.**
+  - Spec (approved, D1–D8): [`2026-07-23-sleep-shot-design.md`](2026-07-23-sleep-shot-design.md)
+  - Branch: `feat/sleep-shot` (off the merged slice A).
+- **Next:** slice C (the Walker practical layers, §4) + the anchor **consumers** (Fuel „Mai" slot-timing fix + morning-training reschedule). See §3/§5.
 
 ## 1. How we got here — the two source videos
 
@@ -32,6 +33,7 @@ Daniel asked to build recommendations from two YouTube videos into the app.
 | `mezo-b2fe` | Habit routine UI redesign — chain-thread `RoutineCard` + no-truncation Rutin tab | #35 |
 | `mezo-8ml4` | Habit routine polish — card padding, button glow, inline sleep-sheet | #36 |
 | `mezo-a686` | **Daily intention** — creed + up to 3 daily foci + evening reflection; Today `IntentionBanner`, 2 DERIVED habits, `growth_intention` quest. (Spontaneous, NOT from a video.) | #39 |
+| `mezo-dbsr` | **Sleep goal + day-anchor** — `sleep_goal` singleton + enriched `sleep_log` + `GET/PUT /api/sleep/goal` + the ungated `SleepAnchorPort` (Habit/Fuel repointed onto it); FE goal card + regularity/efficiency rings + `SleepGoalSheet`. (Sleep cluster **slice A**.) | #43 |
 
 ## 3. The decomposition & ordering (the master plan)
 
@@ -44,13 +46,13 @@ sleep-anchor first, and the old Fuel/training slices become **consumers** of the
    Daily intention .................................. ✅ DONE (mezo-a686)  [spontaneous]
 
 SLEEP CLUSTER (the new foundation — video 2):
-   A. Sleep goal + day-anchor + enriched log + manual  ✅ IMPLEMENTED (mezo-dbsr, PR pending)
-   B. Sleep Cycle SCREENSHOT ingestion (LLM-vision) ... ⏳ NEXT (was "②"); lands into A's model
-   C. Video-2 practical layers ....................... ⏳ LATER (see §4 for the reserved ideas)
+   A. Sleep goal + day-anchor + enriched log + manual  ✅ DONE (mezo-dbsr, PR #43)
+   B. Sleep Cycle SCREENSHOT ingestion (LLM-vision) ... ✅ IMPLEMENTED (mezo-66ab, PR pending) — lands into A's model
+   C. Video-2 practical layers ....................... ⏳ NEXT (see §4 for the reserved ideas)
 
 CONSUMERS of the anchor (were video-1 ③④):
-   Fuel "Mai" slot-timing fix + slot-level AI logging  ⏳ (consumes the anchor; relocates mealsPerDay to Fuel)
-   Morning-training reschedule + Tasty Dose/Origin protocol setup ⏳ (consumes the wake anchor)
+   Fuel "Mai" slot-timing fix + slot-level AI logging  ⏳ NEXT (consumes the anchor; relocates mealsPerDay to Fuel)
+   Morning-training reschedule + Tasty Dose/Origin protocol setup ⏳ NEXT (consumes the wake anchor)
 ```
 
 **Why sleep-first (Daniel's insight):** the day's timing anchor (wake/bed) currently lives
@@ -61,7 +63,7 @@ anchor means: set an 8h target + fixed wake → derive bed → and *everything* 
 workout window, caffeine cutoff, kitchen close) cascades from one source. Slice A does exactly
 this migration (see the spec).
 
-### Slice B — Sleep Cycle screenshot ingestion (the immediate follow-on)
+### Slice B — Sleep Cycle screenshot ingestion (✅ IMPLEMENTED, `mezo-66ab`)
 
 The enriched `sleep_log` (slice A, spec §D5) is built to receive these. **Fields Sleep Cycle
 shows** (from Daniel's example screenshot, `qxxnRMT9C-8`-era app):
@@ -72,12 +74,16 @@ shows** (from Daniel's example screenshot, `qxxnRMT9C-8`-era app):
 - **Quality** 95% (Sleep Cycle's own 0–100 metric)
 - (Also shows a "Sleep Goal: Missed" with target bed/wake + deltas — mirrors our own goal.)
 
-**Pattern to reuse:** the project already has TWO LLM-vision/extraction pipelines with a clean
-**consumer-owned LLM port** (ADR 0012): `feature/pantry` scrape (`ScrapeLlm`) and `feature/meal`
-AI-draft (`MealDraftLlm`, multimodal vision). Slice B = a `SleepShotLlm` port, a vision call
-extracting the fields above into an **editable draft**, confirmed down the same
-`POST /api/biometrics/sleep` (enriched) path. Gated on a feature flag. Manual logging (slice A)
-and screenshot (slice B) both land in the same model.
+**Pattern reused (as shipped):** the project already had LLM-vision/extraction pipelines with a clean
+**consumer-owned LLM port** (ADR 0012): `feature/pantry` scrape (`ScrapeLlm`), `feature/meal`
+AI-draft (`MealDraftLlm`, multimodal vision), `feature/recipe` breakdown (`RecipeBreakdownLlm`).
+Slice B added the **fourth**: the sleep-owned `SleepShotLlm` vision port + companion
+`SleepShotLlmAdapter`, a single vision call in `SleepShotService` extracting the fields above into an
+**editable draft** (deterministic confidence via `SleepShotDraftValidator` — the LLM never grades
+itself), confirmed down the same `POST /api/biometrics/sleep` (enriched) path with `source:'screenshot'`.
+Surface `POST /api/sleep/screenshot`, gated on `mezo.feature.sleep-shot.enabled`; nothing persists at
+extraction time. Manual logging (slice A) and screenshot (slice B) land in the same model. Full spec:
+[`2026-07-23-sleep-shot-design.md`](2026-07-23-sleep-shot-design.md); feature docs per §0.
 
 ## 4. Matthew Walker video — full extraction (RESERVED for slice C + reference)
 
@@ -128,23 +134,32 @@ Framework he gives = **QQRT**: **Q**uantity · **Q**uality · **R**egularity · 
 
 ## 5. Next-session playbook (post-`/clear`)
 
-1. **Land slice A (`mezo-dbsr`), then start slice B.** Slice A is fully implemented on `feat/sleep-anchor`
-   (commits `e804d68a..ea444891`, living docs updated) — all that remains is the house merge ritual: open the
-   self-PR → wait for CI-green → `gh pr merge --merge` (note `/me/sleep` is NOT in the visual golden set, so no
-   goldens changed). Once merged, move `mezo-dbsr` to done and pick up **slice B**.
-2. **Slice B — Sleep Cycle screenshot ingestion (the next brainstorm + spec).** §3 has the field list from the
-   example screenshot + the reusable port pattern: a `SleepShotLlm` port (mirroring `ScrapeLlm` / `MealDraftLlm`,
-   [ADR 0012](../../decisions/0012-consumer-owned-llm-ports.md)) — a vision call → an editable draft → confirmed
-   down the SAME enriched `POST /api/biometrics/sleep` path (slice A already built the columns), gated on a feature
-   flag. Kick off with **`superpowers:brainstorming`** → `writing-plans` → `subagent-driven-development` (the
-   mezo-d1jb / mezo-dbsr loop: task-brief → implementer → task-reviewer → fix-wave → ledger; whole-branch review;
-   runtime-verify via chrome-devtools mock FE).
+1. **Land slice B (`mezo-66ab`), then start slice C / the consumers.** Slice A is merged (**PR #43**). Slice B is
+   fully implemented on `feat/sleep-shot` (commits `3d906e00..991a3119`, living docs updated) — all that remains is
+   the house merge ritual: open the self-PR → wait for CI-green → `gh pr merge --merge` (note `/me/sleep` is NOT in
+   the visual golden set, so no goldens changed). Once merged, move `mezo-66ab` to done and pick up **slice C or the
+   anchor consumers**.
+2. **Next work — slice C and/or the anchor consumers (the next brainstorm + spec).** Two ready threads, both off the
+   now-anchored model: **slice C** = the Walker practical layers (§4 — wind-down/dim nudges, temperature card, the
+   20-minute rule, 3am toolkit, sleep-banking, education/A-B scaffolds; heed the DEBUNKS list), and **the anchor
+   consumers** = the Fuel „Mai" slot-timing fix + slot-level AI logging (relocates `mealsPerDay` to Fuel) and the
+   morning-training reschedule (both read the wake/bed anchor via `useSleepGoal()` / `SleepAnchorPort`). Kick off with
+   **`superpowers:brainstorming`** → `writing-plans` → `subagent-driven-development` (the mezo-d1jb / mezo-dbsr /
+   mezo-66ab loop: task-brief → implementer → task-reviewer → fix-wave → ledger; whole-branch review; runtime-verify
+   via chrome-devtools mock FE).
 3. **Slice A locked decisions (now SHIPPED — reference, don't re-litigate):** sleep goal = target + fixed
    `WAKE|BED` → derive the other end; ±15 regularity band (score only); `sleep_goal` = the single anchor source
    via the ungated `SleepAnchorPort`, repointing `HabitTargets` + the Fuel timeline; enriched `sleep_log`
    (in_bed_min + phase minutes + source_quality_pct + source); efficiency = asleep ÷ in-bed ≥ 85%; habits
    re-centre but keep the 45-min config window; `mealsPerDay` stays on the weight goal; wake/bed rows removed
-   from `EditGoalSheet`; GET `/api/sleep/goal` never 404s (config-ghost).
+   from `EditGoalSheet`; GET `/api/sleep/goal` never 404s (config-ghost). **Slice B locked decisions (`mezo-66ab`,
+   SHIPPED — reference):** ONE vision call per screenshot; the LLM returns raw fields (asleep/in-bed/phase minutes
+   + qualityPct + times), the backend derives `durationH = asleepMin/60` and zero-pads clock times; confidence is
+   **deterministic** (`SleepShotDraftValidator`, never the LLM) = passed/applicable consistency checks, `needsReview`
+   boundary-inclusive ≤ threshold (0.6) or a key field missing; **nothing persists** — the editable draft confirms
+   down the existing enriched `POST /api/biometrics/sleep` with `source:'screenshot'`; sleep-owned `SleepShotLlm`
+   port + companion adapter (ADR 0012, 4th consumer); gated on `mezo.feature.sleep-shot.enabled`; 400 photo / 502
+   extract-failed / 503 llm-unavailable.
 4. **House workflow reminders:** worktree commits use `git -c core.hooksPath=/dev/null commit`; run
    bd from the main checkout (`~/MrKuhne/mezo`); backend ITs need Postgres on :15432 (`docker compose up -d`)
    and OOM on the full suite locally (use focused `-Dtest=… -DargLine=-Xmx3g`, CI is the full gate);

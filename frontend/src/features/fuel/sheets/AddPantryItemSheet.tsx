@@ -75,8 +75,10 @@ export function AddPantryItemSheet({
   const [category, setCategory] = useState(initial?.category ?? 'protein')
   const [source, setSource] = useState<PantrySourceKey>(initial?.source ?? 'manual')
   const [name, setName] = useState(initial?.name ?? '')
-  const [per, setPer] = useState(initial?.per?.toString() ?? '100')
-  const [unit, setUnit] = useState(initial?.unit ?? 'g')
+  // The macro BASIS is not an input (mezo-0gjr): create always lands per-100 g / grams — the
+  // value the label prints. A legacy non-100 basis (the one intentional per-serving row) is
+  // shown read-only in edit mode and never rewritten (edit omits per/unit → PATCH-merge keeps it).
+  const legacyPer = editId != null && initial?.per != null && initial.per !== 100 ? initial.per : null
   // macros
   const [kcal, setKcal] = useState(initial?.kcal?.toString() ?? '')
   const [proteinG, setProteinG] = useState(initial?.proteinG?.toString() ?? '')
@@ -102,8 +104,12 @@ export function AddPantryItemSheet({
       name,
       source,
       category,
-      per: toNum(per),
-      unit,
+      // Create pins the per-100 g / grams basis explicitly (a null serving_amount would re-open
+      // the `per ?? 1` recipe-math trap). Edit ECHOES the stored basis unchanged (omitting it
+      // would 400: validatePerKind runs on the update request too — food requires unit, a
+      // gram-based dose-less supplement requires per). The legacy per-serving row survives
+      // because inputFromItem always hands the stored per/unit back via `initial`.
+      ...(editId ? { per: initial?.per ?? 100, unit: initial?.unit ?? 'g' } : { per: 100, unit: 'g' }),
       stockQty: toNum(stockQty),
       stockUnit: stockUnit || undefined,
       price: toNum(price),
@@ -173,18 +179,17 @@ export function AddPantryItemSheet({
                 {sourceKeys.map(s => <option key={s} value={s}>{pantrySources[s].label}</option>)}
               </select>
             </Field>
-            <Field label="Adag">
-              <div className="row gap-xs" style={{ marginTop: 3, alignItems: 'center' }}>
-                <input {...numProps} value={per} onChange={e => setPer(e.target.value)} placeholder="100" style={{ fontSize: 14, color: 'var(--text-primary)', width: '50%' }} />
-                <input value={unit} onChange={e => setUnit(e.target.value)} placeholder="g" style={{ fontSize: 14, color: 'var(--text-primary)', width: '50%' }} />
-              </div>
-            </Field>
           </div>
+          {legacyPer != null && (
+            <p className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', margin: '0 2px 8px' }}>
+              Bázis: /{legacyPer} {initial?.unit ?? 'g'} · örökölt
+            </p>
+          )}
 
           {isFood ? (
             <>
-              {/* Makrók */}
-              <SectionHead>Makrók</SectionHead>
+              {/* Makrók — the label's per-100 g column, verbatim (mezo-0gjr) */}
+              <SectionHead>Makrók · /100 g</SectionHead>
               <div style={grid2}>
                 <Field label="kcal"><input {...numProps} value={kcal} onChange={e => setKcal(e.target.value)} placeholder="119" style={fieldInputStyle} /></Field>
                 <Field label="Fehérje"><input {...numProps} value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="6" style={fieldInputStyle} /></Field>
@@ -194,8 +199,8 @@ export function AddPantryItemSheet({
                 <Field label="Zsír"><input {...numProps} value={fatG} onChange={e => setFatG(e.target.value)} placeholder="9" style={fieldInputStyle} /></Field>
               </div>
 
-              {/* Tápanyag */}
-              <SectionHead>Tápanyag</SectionHead>
+              {/* Tápanyag — same per-100 g basis as the macros */}
+              <SectionHead>Tápanyag · /100 g</SectionHead>
               <div style={grid2}>
                 <Field label="Rost"><input {...numProps} value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
                 <Field label="Cukor"><input {...numProps} value={sugarG} onChange={e => setSugarG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>

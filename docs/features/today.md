@@ -133,7 +133,7 @@ Backend (`backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/`):
 - `repository/CheckInRepository.java` — `extends OwnedRepository<CheckInEntity>`; two derived queries.
 - `mapper/CheckInMapper.java` — MapStruct; custom `Instant → OffsetDateTime` (UTC).
 - Migration `backend/src/main/resources/db/changelog/1.0.0/script/202606101320_mezo-v67_create_check_in.sql` — table `check_in` with `pk_check_in_id`, `fk_check_in_created_by_app_user_id` (ON DELETE CASCADE), `uq_check_in_created_by_date_slot`, `ck_check_in_state` CHECK, `idx_check_in_created_by_date`. **No `@Profile("demodata")` seed** for check-ins (owner seed only).
-- FE client `frontend/src/data/me/biometricsApi.ts:41–45` — `checkinApi.listForDay` / `checkinApi.save`; types `CheckInResponse` / `SaveCheckInBody` from `api.gen.ts`. (Today uses **only** `checkinApi` from this shared biometrics client; the `weightApi.trend` method G5 `mezo-g1u` added to the same file belongs to `useWeight` and does not touch Today.)
+- FE client `frontend/src/data/me/biometricsApi.ts:41–45` — `checkinApi.listForDay` / `checkinApi.save`; types `CheckInResponse` / `SaveCheckInBody` from `api.gen.ts`. (Today uses **only** `checkinApi` from this shared biometrics client; the other methods on the same file — `weightApi.trend` [G5 `mezo-g1u`], `sleepGoalApi` [`mezo-dbsr`], `sleepShotApi` [`mezo-66ab`] — belong to `useWeight`/`useSleepGoal`/`useSleepShot` and do not touch Today. This shared client is why `biometricsApi.ts` keeps drifting this doc's staleness without Today itself changing.)
 
 ## 5. Integrations
 
