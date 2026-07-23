@@ -10,10 +10,11 @@
 - **Landed on main:** `mezo-dbsr` — **Sleep goal + day-anchor** (slice A). Merged via **PR #43** (`feat/sleep-anchor`, commits `e804d68a..ea444891`): backend `sleep_goal` singleton + enriched `sleep_log` + `GET/PUT /api/sleep/goal` + the **ungated `SleepAnchorPort`**; `HabitTargets` and the Fuel Mai timeline repointed onto the anchor (the old goal wake/bed config keys dropped, no-goal bed default 23:00→22:00); FE `useSleepGoal`/`useSleepGoalActions`, the SleepPage goal card + regularity/efficiency rings + enriched hero, `SleepGoalSheet`, and the optional in-bed field on `SleepLogSheet`.
   - Spec (approved, D1–D8): [`2026-07-23-sleep-anchor-design.md`](2026-07-23-sleep-anchor-design.md)
   - Feature docs: [`me.md`](../../features/me.md) §2/§3/§4/§5.3/§9/§10 · [`fuel.md`](../../features/fuel.md) §2/§3/§4/§5 · [`habit.md`](../../features/habit.md) §5/§9/§10.
-- **Implemented, PR pending:** `mezo-66ab` — **Sleep Cycle screenshot ingestion** (slice B). Landed on `feat/sleep-shot` (commits `3d906e00..991a3119`, off the merged slice A): the sleep-owned `SleepShotLlm` **vision** port + companion `SleepShotLlmAdapter` ([ADR 0012](../../decisions/0012-consumer-owned-llm-ports.md), the fourth consumer), `SleepShotService` (ONE vision call → brace-window parse → time zero-padding → `durationH = asleepMin/60`) + the deterministic `SleepShotDraftValidator` (asleep≤in-bed, phase-sum ±10%, span≈in-bed ±15p; confidence = passed/applicable; needsReview boundary-inclusive ≤0.6 or key field missing), `POST /api/sleep/screenshot` (`SleepShotController`, tag `SleepShot`) gated on `mezo.feature.sleep-shot.enabled` with `mezo.sleep-shot` caps/threshold; FE `useSleepShot` (action-only) + the `SleepLogSheet` **Kézi|Screenshot** toggle (pick → drafting → review, confirm down the normal `POST /api/biometrics/sleep` with `source:'screenshot'`) + the out-of-list `TimePicker` tolerance. **Nothing persists** at extraction time. Living docs updated ([`me.md`](../../features/me.md) §2/§3/§4/§8 · [`_platform-api-backend.md`](../../features/_platform-api-backend.md) · [`_platform-data-layer.md`](../../features/_platform-data-layer.md) · [`companion.md`](../../features/companion.md) §5.3). **Awaiting the self-PR → CI-green → merge.**
+- **Landed on main:** `mezo-66ab` — **Sleep Cycle screenshot ingestion** (slice B). Merged via **PR #48** (`feat/sleep-shot`, commits `3d906e00..991a3119`, off the merged slice A): the sleep-owned `SleepShotLlm` **vision** port + companion `SleepShotLlmAdapter` ([ADR 0012](../../decisions/0012-consumer-owned-llm-ports.md), the fourth consumer), `SleepShotService` (ONE vision call → brace-window parse → time zero-padding → `durationH = asleepMin/60`) + the deterministic `SleepShotDraftValidator` (asleep≤in-bed, phase-sum ±10%, span≈in-bed ±15p; confidence = passed/applicable; needsReview boundary-inclusive ≤0.6 or key field missing), `POST /api/sleep/screenshot` (`SleepShotController`, tag `SleepShot`) gated on `mezo.feature.sleep-shot.enabled` with `mezo.sleep-shot` caps/threshold; FE `useSleepShot` (action-only) + the `SleepLogSheet` **Kézi|Screenshot** toggle (pick → drafting → review, confirm down the normal `POST /api/biometrics/sleep` with `source:'screenshot'`) + the out-of-list `TimePicker` tolerance. **Nothing persists** at extraction time. Living docs updated ([`me.md`](../../features/me.md) §2/§3/§4/§8 · [`_platform-api-backend.md`](../../features/_platform-api-backend.md) · [`_platform-data-layer.md`](../../features/_platform-data-layer.md) · [`companion.md`](../../features/companion.md) §5.3).
   - Spec (approved, D1–D8): [`2026-07-23-sleep-shot-design.md`](2026-07-23-sleep-shot-design.md)
-  - Branch: `feat/sleep-shot` (off the merged slice A).
-- **Next:** slice C (the Walker practical layers, §4) + the anchor **consumers** (Fuel „Mai" slot-timing fix + morning-training reschedule). See §3/§5.
+- **Landed on main:** `mezo-53su` — **Fuel „Mai" slot-timing fix + `fuel_settings` + slot-level AI** (the FIRST anchor consumer). Commits `71aebab2..9f3d001c` on `feat/fuel-slot-timing`: the `fuel_settings` per-user singleton (`GET/PUT /api/fuel/settings`, tag `FuelSettings`, config-ghost 4/"14:00") relocating `mealsPerDay` + the caffeine cutoff off the weight goal / habit config into a Fuel-owned home; the **ungated `CaffeineCutoffPort`/`CaffeineCutoffResolver`** the habit `no_stim_after` metric now reads (`HabitProperties.caffeineCutoff` + its yml key removed — the `SleepAnchorPort` idiom, third port instance); now-aware re-flow of pending meal windows in `buildDayPlan` (`FuelSlot.slotKey` identity, `MOCK_NOW_HHMM='13:30'`, the static `fuelPlan.today` seed retired so both modes compute the timeline); the Mai `.fuelchips` `szerkeszt` chip → `FuelSettingsSheet`; `EditGoalSheet` loses its "Napi ritmus" section; and the slot-level `AI` chip → `AiLogSheet` with slot-lock. Living docs updated ([`fuel.md`](../../features/fuel.md) §1/§2/§3/§4/§5/§10 · [`habit.md`](../../features/habit.md) §4/§5/§9/§10 · [`me.md`](../../features/me.md) §2/§3 · [`_platform-api-backend.md`](../../features/_platform-api-backend.md) · [`_platform-data-layer.md`](../../features/_platform-data-layer.md)); D4 tie-break codified in the slice spec.
+  - Spec (approved, D1–D8): [`2026-07-23-fuel-slot-timing-design.md`](2026-07-23-fuel-slot-timing-design.md)
+- **Next:** slice C (the Walker practical layers, §4) + the remaining anchor **consumer** (morning-training reschedule). See §3/§5.
 
 ## 1. How we got here — the two source videos
 
@@ -34,6 +35,8 @@ Daniel asked to build recommendations from two YouTube videos into the app.
 | `mezo-8ml4` | Habit routine polish — card padding, button glow, inline sleep-sheet | #36 |
 | `mezo-a686` | **Daily intention** — creed + up to 3 daily foci + evening reflection; Today `IntentionBanner`, 2 DERIVED habits, `growth_intention` quest. (Spontaneous, NOT from a video.) | #39 |
 | `mezo-dbsr` | **Sleep goal + day-anchor** — `sleep_goal` singleton + enriched `sleep_log` + `GET/PUT /api/sleep/goal` + the ungated `SleepAnchorPort` (Habit/Fuel repointed onto it); FE goal card + regularity/efficiency rings + `SleepGoalSheet`. (Sleep cluster **slice A**.) | #43 |
+| `mezo-66ab` | **Sleep Cycle screenshot ingestion** — sleep-owned `SleepShotLlm` vision port + `SleepShotService` + deterministic `SleepShotDraftValidator` + `POST /api/sleep/screenshot`; FE `SleepLogSheet` Kézi\|Screenshot toggle. (Sleep cluster **slice B**.) | #48 |
+| `mezo-53su` | **Fuel „Mai" slot-timing + `fuel_settings` + slot-level AI** — `fuel_settings` singleton + `GET/PUT /api/fuel/settings` + the ungated `CaffeineCutoffPort`; now-aware `buildDayPlan` re-flow + slot identity + slot-locked `AiLogSheet`; `EditGoalSheet` loses its planner section. (First **anchor consumer**.) | self-PR |
 
 ## 3. The decomposition & ordering (the master plan)
 
@@ -47,11 +50,11 @@ sleep-anchor first, and the old Fuel/training slices become **consumers** of the
 
 SLEEP CLUSTER (the new foundation — video 2):
    A. Sleep goal + day-anchor + enriched log + manual  ✅ DONE (mezo-dbsr, PR #43)
-   B. Sleep Cycle SCREENSHOT ingestion (LLM-vision) ... ✅ IMPLEMENTED (mezo-66ab, PR pending) — lands into A's model
+   B. Sleep Cycle SCREENSHOT ingestion (LLM-vision) ... ✅ DONE (mezo-66ab, PR #48) — lands into A's model
    C. Video-2 practical layers ....................... ⏳ NEXT (see §4 for the reserved ideas)
 
 CONSUMERS of the anchor (were video-1 ③④):
-   Fuel "Mai" slot-timing fix + slot-level AI logging  ⏳ NEXT (consumes the anchor; relocates mealsPerDay to Fuel)
+   Fuel "Mai" slot-timing fix + slot-level AI logging  ✅ DONE (mezo-53su) — consumes the anchor; relocated mealsPerDay + caffeine cutoff to Fuel
    Morning-training reschedule + Tasty Dose/Origin protocol setup ⏳ NEXT (consumes the wake anchor)
 ```
 
@@ -63,7 +66,7 @@ anchor means: set an 8h target + fixed wake → derive bed → and *everything* 
 workout window, caffeine cutoff, kitchen close) cascades from one source. Slice A does exactly
 this migration (see the spec).
 
-### Slice B — Sleep Cycle screenshot ingestion (✅ IMPLEMENTED, `mezo-66ab`)
+### Slice B — Sleep Cycle screenshot ingestion (✅ DONE, `mezo-66ab`, PR #48)
 
 The enriched `sleep_log` (slice A, spec §D5) is built to receive these. **Fields Sleep Cycle
 shows** (from Daniel's example screenshot, `qxxnRMT9C-8`-era app):
@@ -134,19 +137,18 @@ Framework he gives = **QQRT**: **Q**uantity · **Q**uality · **R**egularity · 
 
 ## 5. Next-session playbook (post-`/clear`)
 
-1. **Land slice B (`mezo-66ab`), then start slice C / the consumers.** Slice A is merged (**PR #43**). Slice B is
-   fully implemented on `feat/sleep-shot` (commits `3d906e00..991a3119`, living docs updated) — all that remains is
-   the house merge ritual: open the self-PR → wait for CI-green → `gh pr merge --merge` (note `/me/sleep` is NOT in
-   the visual golden set, so no goldens changed). Once merged, move `mezo-66ab` to done and pick up **slice C or the
-   anchor consumers**.
-2. **Next work — slice C and/or the anchor consumers (the next brainstorm + spec).** Two ready threads, both off the
-   now-anchored model: **slice C** = the Walker practical layers (§4 — wind-down/dim nudges, temperature card, the
-   20-minute rule, 3am toolkit, sleep-banking, education/A-B scaffolds; heed the DEBUNKS list), and **the anchor
-   consumers** = the Fuel „Mai" slot-timing fix + slot-level AI logging (relocates `mealsPerDay` to Fuel) and the
-   morning-training reschedule (both read the wake/bed anchor via `useSleepGoal()` / `SleepAnchorPort`). Kick off with
-   **`superpowers:brainstorming`** → `writing-plans` → `subagent-driven-development` (the mezo-d1jb / mezo-dbsr /
-   mezo-66ab loop: task-brief → implementer → task-reviewer → fix-wave → ledger; whole-branch review; runtime-verify
-   via chrome-devtools mock FE).
+1. **Slice B AND the first anchor consumer are merged — pick up slice C or the morning-training reschedule.** Slice A
+   is merged (**PR #43**); slice B (`mezo-66ab`, **PR #48**) and the Fuel „Mai" slot-timing consumer (`mezo-53su`) are
+   merged too. Two threads remain off the now-anchored model — see item 2.
+2. **Next work — slice C and/or the morning-training reschedule (the next brainstorm + spec).** Two ready threads, both
+   off the now-anchored model: **slice C** = the Walker practical layers (§4 — wind-down/dim nudges, temperature card,
+   the 20-minute rule, 3am toolkit, sleep-banking, education/A-B scaffolds; heed the DEBUNKS list), and **the remaining
+   anchor consumer** = the morning-training reschedule + Tasty Dose/Origin protocol setup (reads the wake anchor via
+   `useSleepGoal()` / `SleepAnchorPort`). The Fuel „Mai" slot-timing fix + slot-level AI consumer is **already done**
+   (`mezo-53su` — it relocated `mealsPerDay` + the caffeine cutoff to a Fuel-owned `fuel_settings` singleton). Kick off
+   with **`superpowers:brainstorming`** → `writing-plans` → `subagent-driven-development` (the mezo-d1jb / mezo-dbsr /
+   mezo-66ab / mezo-53su loop: task-brief → implementer → task-reviewer → fix-wave → ledger; whole-branch review;
+   runtime-verify via chrome-devtools mock FE).
 3. **Slice A locked decisions (now SHIPPED — reference, don't re-litigate):** sleep goal = target + fixed
    `WAKE|BED` → derive the other end; ±15 regularity band (score only); `sleep_goal` = the single anchor source
    via the ungated `SleepAnchorPort`, repointing `HabitTargets` + the Fuel timeline; enriched `sleep_log`
