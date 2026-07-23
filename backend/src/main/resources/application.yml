@@ -197,6 +197,9 @@ mezo:
     # Sleep goal + day-anchor (mezo-dbsr): first-class sleep goal owns the day's wake/bed anchor.
     sleep-goal:
       enabled: true
+    # Sleep screenshot ingestion (mezo-66ab): Sleep Cycle screenshot -> LLM-vision draft.
+    sleep-shot:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -562,6 +565,11 @@ mezo:
     default-wake: "06:00"
     default-bed: "23:00"
     regularity-band-min: 15
+  # Sleep screenshot extraction tuning (mezo-66ab). Binds onto SleepShotProperties.
+  sleep-shot:
+    max-photo-bytes: 5000000
+    allowed-mime-types: [image/jpeg, image/png, image/webp]
+    confidence-threshold: 0.6
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
     default-increment: 2.5    # fallback load step when a type has no explicit increment
