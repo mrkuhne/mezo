@@ -17,8 +17,8 @@ class HabitApiIT extends ApiIntegrationTest {
     void testGetHabitDay_shouldLazilyCreateBothChains_whenTodayFirstRead() {
         HabitDayResponse day = getForBody("/api/habit/day/" + LocalDate.now(),
             ownerAuthHeaders(), HttpStatus.OK, HabitDayResponse.class);
-        assertThat(day.getHabits()).hasSize(12);
-        assertThat(day.getHabits()).filteredOn(h -> "MORNING".equals(h.getChain().getValue())).hasSize(7);
+        assertThat(day.getHabits()).hasSize(14);
+        assertThat(day.getHabits()).filteredOn(h -> "MORNING".equals(h.getChain().getValue())).hasSize(9);
         assertThat(day.getHabits()).filteredOn(h -> "EVENING".equals(h.getChain().getValue())).hasSize(5);
     }
 
@@ -67,7 +67,7 @@ class HabitApiIT extends ApiIntegrationTest {
         HabitSummaryResponse s = getForBody("/api/habit/summary",
             ownerAuthHeaders(), HttpStatus.OK, HabitSummaryResponse.class);
         assertThat(s.getPerfectMorningDays30()).isZero();
-        assertThat(s.getHabits()).hasSize(12);
+        assertThat(s.getHabits()).hasSize(14);
         assertThat(s.getHabits()).allSatisfy(h -> assertThat(h.getStrengthPct()).isNull());
     }
 }
