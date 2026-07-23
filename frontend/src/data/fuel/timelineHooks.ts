@@ -1,23 +1,25 @@
-// Fuel P5 — dual-mode day-planner timeline hook.
+// Fuel P5 — unified day-planner timeline hook (mezo-53su).
 //
-// MOCK: byte-parity with the Phase-1 seed (`fuelPlan.today` + id-based `getScoredMeal` over
-//   `fuelDay.meals`) — identical to the retired `fuelReadHooks.useFuelTimeline`.
-// REAL: composes the day's LIVE sources into a `FuelPlanToday` via the pure `buildDayPlan`:
-//   goal day-planner settings + the current-week prescription budget, the day's logged meals +
-//   the recipe catalog, the supplement protocol (anchor-aware) + intakes, and today's gym/sport/
-//   run blocks. Design: docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md.
+// Both modes compose the day's LIVE sources into a `FuelPlanToday` via the pure `buildDayPlan`:
+//   the sleep-goal wake/bed anchor + fuel-settings cadence & caffeine cutoff, the current-week
+//   prescription budget, the day's logged meals + the recipe catalog, the supplement protocol
+//   (anchor-aware) + intakes, and today's gym/sport/run blocks. In MOCK mode every source hook
+//   serves its seed, so the same composition yields a deterministic demo plan (fixed now 13:30);
+//   the static hand-authored plan seed is retired (mezo-53su). Design:
+//   docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md.
 //
-// React rules of hooks: EVERY hook below is called UNCONDITIONALLY in both modes; only the
-// RETURNED value branches on `isMockMode()`. The real composition under the guard is pure
-// (module functions + buildDayPlan), never hooks.
+// React rules of hooks: EVERY hook below is called UNCONDITIONALLY in both modes. The only
+// mode branch is the injected `nowHHmm` (fixed in mock for determinism). The composition is
+// pure (module functions + buildDayPlan), never hooks.
 
 import { isMockMode } from '@/data/_client/mode'
 import { localDateString, currentWeekOf } from '@/shared/lib/dates'
-import { PLANNER_DEFAULTS, toHHmm, toMin } from '@/data/fuel/fuelConfig'
-import { fuelDay, fuelPlan, getScoredMeal } from '@/data/fuel/fuel'
+import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
+import { getScoredMeal } from '@/data/fuel/fuel'
 import { useFuelDay } from '@/data/fuel/fuelHooks'
 import { useRecipes } from '@/data/fuel/recipeHooks'
 import { useProtocol, useStack, useIntakes } from '@/data/fuel/stackHooks'
+import { useFuelSettings } from '@/data/fuel/fuelSettingsHooks'
 import { useGoal } from '@/data/me/goalHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
@@ -29,6 +31,9 @@ import type { GoalResponse } from '@/data/me/goalApi'
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
 import type { RunningBlockResponse } from '@/data/train/runningApi'
 import type { FuelSlot, GymSchedule, SportSchedule } from '@/data/types'
+
+// Fixed mock "now" (spec D6) — deterministic demo + tests.
+export const MOCK_NOW_HHMM = '13:30'
 
 // The pre-workout supplement stack lands T-40min before the first training block (spec §5).
 const PRE_WORKOUT_STACK_LEAD_MIN = 40
@@ -72,30 +77,27 @@ function currentSegment(
 }
 
 /**
- * The Fuel "Mai" timeline. Mock serves the hand-authored Phase-1 plan; real composes the live day.
+ * The Fuel "Mai" timeline — one composition in both modes (mezo-53su). Mock sources serve their
+ * seeds, so the same `buildDayPlan` yields a deterministic demo plan; real composes the live day.
  */
 export function useFuelTimeline(date: string = localDateString()) {
-  // All reads are unconditional (rules of hooks) — the mode branch is only on the return value.
   const { fuel } = useFuelDay(date)
   const { recipes } = useRecipes()
-  const { goal, goalResponse, timeline } = useGoal()
+  const { goalResponse, timeline } = useGoal()
   const { goal: sleepGoal } = useSleepGoal()
   const { selectedIds } = useProtocol()
   const { stash } = useStack()
   const intakes = useIntakes(date)
   const { gymSchedule, sport } = useTrain()
   const { activeRunningBlock } = useRunning()
+  const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
 
-  if (isMockMode()) {
-    return { plan: fuelPlan.today, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuelDay.meals) }
-  }
-
-  // ── Real composition ───────────────────────────────────────────────────────
-  // The wake/bed day-anchor is now owned by the sleep goal (mezo-dbsr, spec D3) —
-  // always set (mock seed / real ghost), so no PLANNER_DEFAULTS fallback is needed.
+  // ── Composition (both modes) ─────────────────────────────────────────────────
+  // The wake/bed day-anchor is owned by the sleep goal (mezo-dbsr, spec D3) — always set
+  // (mock seed / real ghost). Meal cadence + caffeine cutoff are Fuel-owned settings.
   const wake = sleepGoal.wakeTime
   const bed = sleepGoal.bedTime
-  const mealsPerDay = goal?.mealsPerDay ?? PLANNER_DEFAULTS.mealsPerDay // eating cadence stays on the weight goal
+  const mealsPerDay = settings.mealsPerDay
 
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
   const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null
@@ -112,13 +114,17 @@ export function useFuelTimeline(date: string = localDateString()) {
   }
   const protocolSlots = buildProtocol(selection, stash, anchors).slots
 
-  // `nowHHmm` from the wall clock here (buildDayPlan stays clock-free/deterministic).
+  // `nowHHmm` is injected (buildDayPlan stays clock-free/deterministic). Mock pins a fixed now
+  // (spec D6) for a deterministic demo + tests; real reads the wall clock.
   const now = new Date()
-  const nowHHmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+  const nowHHmm = isMockMode()
+    ? MOCK_NOW_HHMM
+    : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
   const plan = buildDayPlan({
     wake, bed, mealsPerDay, blocks, budget,
-    meals: fuel.meals, recipes, protocolSlots, intakes, nowHHmm,
+    meals: fuel.meals, recipes, protocolSlots, intakes,
+    caffeineCutoff: settings.caffeineCutoff, nowHHmm,
   })
   return { plan, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
 }

@@ -4,7 +4,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { today, user, workout, workoutPrediction, volleyballNote, fuelToday } from '@/data/today/today'
+import { today, user, workout, workoutPrediction, volleyballNote } from '@/data/today/today'
 import type { VolleyballSession } from '@/data/types'
 
 // useToday is mocked here (not for the other today.* hooks) so the composition tests below
@@ -34,7 +34,7 @@ vi.mock('@/data/hooks', async (importOriginal) => ({
 const baseTodayData = {
   today, user, briefing: null, briefingDemo: false,
   workout, workoutTime: today.workoutTime, prediction: workoutPrediction,
-  volleyballSessions: [] as VolleyballSession[], volleyballNote, fuelToday,
+  volleyballSessions: [] as VolleyballSession[], volleyballNote,
 }
 
 beforeEach(() => {
@@ -55,7 +55,9 @@ test('default (medium) renders the Napiv order: greeting, day arc, hero workout,
   renderAt('/today')
   expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
   expect(screen.getByRole('img', { name: 'A napod íve' })).toBeInTheDocument()
-  expect(screen.getByText('Pull Day')).toBeInTheDocument()
+  // The hero workout teaser's <h2>. 'Pull Day' now ALSO appears in the fuel-preview's
+  // computed workout slot (the unified mock plan surfaces the block), so target the heading.
+  expect(screen.getByRole('heading', { name: 'Pull Day' })).toBeInTheDocument()
   expect(screen.getByText(/briefing/i)).toBeInTheDocument()
   expect(screen.getByText('Hogy vagy ma?')).toBeInTheDocument()
   expect(screen.getByText('Ma eddig')).toBeInTheDocument()
@@ -67,7 +69,7 @@ test('action-first zones: both dividers render, quests sit between the hero and 
   expect(screen.getByRole('separator', { name: 'Teendők ma' })).toBeInTheDocument()
   expect(screen.getByRole('separator', { name: 'A napod' })).toBeInTheDocument()
   // document order: hero → Teendők (quests + check-in) → A napod (briefing …)
-  const hero = screen.getByText('Pull Day')
+  const hero = screen.getByRole('heading', { name: 'Pull Day' }) // the hero teaser <h2> (not the fuel-preview mention)
   const teendok = screen.getByRole('separator', { name: 'Teendők ma' })
   const strip = screen.getByText('Hogy vagy ma?')
   const napod = screen.getByRole('separator', { name: 'A napod' })
@@ -108,7 +110,9 @@ test('rest day (no workout): the volleyball session becomes the hero slot and is
   }
   hooks.useToday.mockReturnValue({ ...baseTodayData, workout: null, workoutTime: null, volleyballSessions: [session] })
   renderAt('/today')
-  expect(screen.queryByText('Pull Day')).not.toBeInTheDocument()
+  // No workout hero heading on a rest day. ('Pull Day' may still appear as a fuel-preview
+  // workout-slot span from the computed mock plan — that is a separate, correct surface.)
+  expect(screen.queryByRole('heading', { name: 'Pull Day' })).not.toBeInTheDocument()
   expect(screen.getAllByText(/Sport · 19:30/)).toHaveLength(1)
 })
 
@@ -118,6 +122,6 @@ test('workout day with a volleyball session: hero stays the workout, volleyball 
   }
   hooks.useToday.mockReturnValue({ ...baseTodayData, volleyballSessions: [session] })
   renderAt('/today')
-  expect(screen.getByText('Pull Day')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Pull Day' })).toBeInTheDocument() // hero stays the workout teaser
   expect(screen.getAllByText(/Sport · 19:30/)).toHaveLength(1)
 })

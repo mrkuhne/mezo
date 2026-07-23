@@ -200,6 +200,9 @@ mezo:
     # Sleep screenshot ingestion (mezo-66ab): Sleep Cycle screenshot -> LLM-vision draft.
     sleep-shot:
       enabled: true
+    # Fuel planner settings (mezo-53su): eating cadence + caffeine cutoff singleton.
+    fuel-settings:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -545,7 +548,6 @@ mezo:
     morning-window-end: "10:00"
     workout-cutoff: "12:00"
     protein-target-g: 25
-    caffeine-cutoff: "14:00"
     bed-grace-min: 30
     kitchen-close-offset-min: 90
     strength-window-days: 28
@@ -570,6 +572,10 @@ mezo:
     max-photo-bytes: 5000000
     allowed-mime-types: [image/jpeg, image/png, image/webp]
     confidence-threshold: 0.6
+  # Fuel-settings ghost defaults (mezo-53su). Binds onto FuelSettingsProperties.
+  fuel-settings:
+    default-meals-per-day: 4
+    default-caffeine-cutoff: "14:00"
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
     default-increment: 2.5    # fallback load step when a type has no explicit increment

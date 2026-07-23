@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
 import { useFuelDay, useFuelTimeline, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
-import { slotKeyOfLabel } from '@/data/fuel/fuelConfig'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Icon } from '@/shared/ui/Icon'
 import { RetaPhaseBar } from '@/shared/ui/RetaPhaseBar'
@@ -14,6 +13,7 @@ import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { ReplanSheet } from '@/features/fuel/sheets/ReplanSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
+import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
 import { localDateString } from '@/shared/lib/dates'
 
 // Napiv Mai recomposition (spec §4.4, mezo-8141): pghead-np sage header → RetaPhaseBar →
@@ -36,6 +36,8 @@ export function FuelMaiPage() {
   const [replanOpen, setReplanOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
 
@@ -51,7 +53,12 @@ export function FuelMaiPage() {
   }
   const handleLogMeal = (slot: FuelSlot) => {
     if (slot.suggestedRecipeId) openLog({ source: 'recipe', recipeId: slot.suggestedRecipeId })
-    else openLog(null, slotKeyOfLabel(slot.label))
+    else openLog(null, slot.slotKey ?? 'snack')
+  }
+  // Slot-level AI logging (mezo-53su): launch AiLogSheet locked to the tapped slot's slotKey.
+  const handleAiLog = (slot: FuelSlot) => {
+    setAiSlot(slot.slotKey)
+    setAiOpen(true)
   }
 
   return (
@@ -65,7 +72,7 @@ export function FuelMaiPage() {
         <div className="row gap-xs" style={{ flexShrink: 0 }}>
           <button
             type="button"
-            onClick={() => setAiOpen(true)}
+            onClick={() => { setAiSlot(undefined); setAiOpen(true) }}
             className="pgact-np np-press"
             aria-label="AI naplózás"
             style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
@@ -99,6 +106,7 @@ export function FuelMaiPage() {
             <span className="chx" style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)', cursor: 'default' }}>
               konyha zár {plan.kitchenClose}
             </span>
+            <button type="button" className="chip" aria-label="Fuel beállítások" onClick={() => setSettingsOpen(true)} style={{ fontSize: 9, padding: '3px 8px' }}>szerkeszt</button>
           </div>
 
           <div className="macror">
@@ -165,7 +173,7 @@ export function FuelMaiPage() {
             )}
           </div>
         )}
-        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} />
+        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} onAiLog={handleAiLog} />
       </div>
 
       {/* Water — NEW dedicated slot (replaces MacroHero's water row) */}
@@ -219,9 +227,11 @@ export function FuelMaiPage() {
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
+      {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
       {aiOpen && (
         <AiLogSheet
           date={localDateString()}
+          initialSlot={aiSlot}
           onClose={() => setAiOpen(false)}
           onManualFallback={() => { setAiOpen(false); openLog() }}
         />

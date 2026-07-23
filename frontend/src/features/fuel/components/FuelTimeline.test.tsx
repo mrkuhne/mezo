@@ -24,9 +24,9 @@ function setup(onOpenScore = () => {}) {
 }
 test('renders a row per slot (.slot/.fav/.mrow) with its time + meal name, and marks the now-slot .next with a "következő" mrow marker', () => {
   const { container } = setup()
-  expect(screen.getByText('05:50')).toBeInTheDocument()
+  expect(screen.getByText('06:45')).toBeInTheDocument()      // the computed wake (Ébresztő) slot — sleep goal 06:45
   expect(screen.getByText(/Túrós zabkása/)).toBeInTheDocument()
-  expect(screen.getByText('következő')).toBeInTheDocument()   // the now-slot's mrow marker (16:00)
+  expect(screen.getByText('következő')).toBeInTheDocument()   // the now-slot's mrow marker (fixed mock now 13:30)
   expect(container.querySelectorAll('.slot').length).toBeGreaterThan(0)
   expect(container.querySelector('.slot.next')).toBeInTheDocument()
   expect(container.querySelector('.fav')).toBeInTheDocument()
@@ -40,7 +40,7 @@ test('AI-score button opens the score sheet for a scored meal', async () => {
   const onOpenScore = vi.fn()
   setup(onOpenScore)
   const aiButtons = screen.getAllByRole('button', { name: /AI/ })
-  expect(aiButtons.length).toBeGreaterThanOrEqual(1)   // ≈2 (09:15 + 13:00)
+  expect(aiButtons.length).toBeGreaterThanOrEqual(1)   // ≈3 scored meals (09:15 m1 + 13:00 m2 + 16:00 m3)
   await userEvent.click(aiButtons[0])
   expect(onOpenScore).toHaveBeenCalled()
 })

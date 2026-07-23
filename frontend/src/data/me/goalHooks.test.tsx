@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { useGoal, useGoalActions } from '@/data/me/goalHooks'
-import { goal as mockGoal, goalResponse as mockGoalResponse, linkedMesocycles as mockLinkedMesocycles } from '@/data/me/goals'
+import { goal as mockGoal, linkedMesocycles as mockLinkedMesocycles } from '@/data/me/goals'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -231,44 +231,10 @@ test('useGoalActions (real mode) archive/remove/activate hit the right endpoints
   expect(calls).toEqual(['archive', 'remove', 'activate'])
 })
 
-test('useGoalActions (real mode) savePlanner PUTs a full goal carrying the edited planner settings', async () => {
-  let body: Record<string, unknown> | null = null
-  server.use(
-    http.put(`${API_BASE}/api/goals/g1`, async ({ request }) => {
-      body = (await request.json()) as Record<string, unknown>
-      return HttpResponse.json({ id: 'g1', status: 'active' })
-    }),
-  )
-  const res = {
-    id: 'g1',
-    title: 'Nyári cut',
-    trajectory: 'cut' as const,
-    guards: ['strength' as const],
-    status: 'active' as const,
-    startDate: '2026-06-01',
-    targetDate: '2026-07-27',
-    startWeightKg: 84.2,
-    targetWeightKg: 80,
-    rateTargetPctPerWeek: 0.7,
-    mealsPerDay: 4,
-    wakeTime: '06:00',
-    bedTime: '23:00',
-  }
-  const { result } = renderHook(() => useGoalActions(), { wrapper: makeHookWrapper() })
-  await act(async () => {
-    await result.current.savePlanner('g1', res, { mealsPerDay: 5 })
-  })
-  // the edited meal cadence rides in the PUT body …
-  expect(body!.mealsPerDay).toBe(5)
-  // … while wake/bed (no longer editable — they live on the sleep goal, mezo-dbsr)
-  // pass straight through from the persisted goal, unchanged (spec §6).
-  expect(body!.wakeTime).toBe('06:00')
-  expect(body!.bedTime).toBe('23:00')
-  // … alongside the untouched required contract fields (window/weights preserved).
-  expect(body!.title).toBe('Nyári cut')
-  expect(body!.startDate).toBe('2026-06-01')
-  expect(body!.startWeightKg).toBe(84.2)
-})
+// The planner-edit PUT (savePlanner) was retired when the meal-cadence editor moved
+// off the goal sheet into the Fuel settings sheet (mezo-53su). The goal-PUT wire
+// still carries mealsPerDay/wake/bed straight through — proven at the mapper level
+// in goalApi.test.ts (goalResponseToUpsert round-trips the day-planner settings).
 
 test('useGoalActions (real mode) attach/detach hit goalLinkApi with the right args', async () => {
   let attachBody: unknown = null
@@ -349,7 +315,6 @@ test('useGoalActions (mock mode) actions are no-ops that resolve without calling
     await result.current.activate('x')
     await result.current.attachPlan('x', { planType: 'mesocycle', planId: 'p', startWeek: 1 })
     await result.current.detachPlan('x', 'l')
-    await result.current.savePlanner('x', mockGoalResponse, { mealsPerDay: 5 })
   })
   expect(result.current.pending).toBe(false)
 })

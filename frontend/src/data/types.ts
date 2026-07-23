@@ -22,6 +22,7 @@ export interface FuelSlot {
   time: string
   kind: FuelKind
   label: string
+  slotKey?: MealSlot // meal/snack window identity (mezo-53su); absent on block/protocol slots
   state: 'done' | 'now' | 'pending'
   mealName?: string
   mezoNote?: string
@@ -37,6 +38,11 @@ export interface FuelPlanToday {
   volleyball: { start: string; end: string; noneToday: boolean }
   bedtime: string; kitchenClose: string; caffeineCutoff: string
   slots: FuelSlot[]
+}
+/** Fuel-owned planner settings (mezo-53su) — eating cadence + caffeine cutoff, per-user singleton. */
+export interface FuelSettings {
+  mealsPerDay: number
+  caffeineCutoff: string
 }
 export interface MacroSet { kcal: number; p: number; c: number; f: number; water: number }
 export type ToolType = 'read' | 'compute' | 'write'

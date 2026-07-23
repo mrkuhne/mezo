@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { EditGoalSheet } from '@/features/me/sheets/EditGoalSheet'
 import { goal, goalResponse } from '@/data/me/goals'
+import { goalResponseToUpsert } from '@/data/me/goalApi'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -17,79 +18,30 @@ test('shows the goal fields read-only', () => {
   expect(screen.getByText(`${goal.targetWeight} kg`)).toBeInTheDocument()
 })
 
-// Day-planner (Fuel P5) — the "Napi ritmus" section now surfaces only the meal
-// cadence: an Étkezés/nap stepper (3–6) defaulting from the loaded goal. The
-// wake/bed anchor moved to the sleep goal (mezo-dbsr), so the two <input type="time">
-// rows are GONE and a hint points at the Alvás page.
-test('renders the Napi ritmus section with only the meal-cadence stepper', () => {
+// Day-planner trim (mezo-53su) — the meal-cadence + caffeine editor moved off the
+// goal sheet into the Fuel settings sheet, and the wake/bed anchor lives on the
+// sleep goal (mezo-dbsr). So the whole "Napi ritmus" section is GONE: no section
+// header, no Étkezés/nap stepper, no "Ritmus mentése" save button.
+test('no longer renders the "Napi ritmus" planner section (moved to Fuel settings)', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   render(<EditGoalSheet onClose={() => {}} goal={goal} goalResponse={goalResponse} goalId={goal.id} />, { wrapper: QueryWrapper })
-  expect(screen.getByText('Napi ritmus')).toBeInTheDocument()
-  expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('4')
-  // the wake/bed anchor rows are gone — they live on the sleep goal now
-  expect(screen.queryByLabelText('Ébredés')).toBeNull()
-  expect(screen.queryByLabelText('Lefekvés')).toBeNull()
-  expect(screen.getByText('Az ébredés/lefekvés horgony az Alvás oldalon állítható.')).toBeInTheDocument()
+  expect(screen.queryByText('Napi ritmus')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Étkezés növelése' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Étkezés csökkentése' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Ritmus mentése' })).toBeNull()
 })
 
-test('the meal stepper clamps between 3 and 6', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  render(<EditGoalSheet onClose={() => {}} goal={goal} goalResponse={goalResponse} goalId={goal.id} />, { wrapper: QueryWrapper })
-  const inc = screen.getByRole('button', { name: 'Étkezés növelése' })
-  const dec = screen.getByRole('button', { name: 'Étkezés csökkentése' })
-  // from 4 → up to the 6 cap
-  await userEvent.click(inc)
-  await userEvent.click(inc)
-  await userEvent.click(inc) // clamped
-  expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('6')
-  // back down to the 3 floor
-  await userEvent.click(dec)
-  await userEvent.click(dec)
-  await userEvent.click(dec)
-  await userEvent.click(dec) // clamped
-  expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('3')
-})
-
-test('the meal-cadence default falls back to 4 when the goal has none', () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
-  const bare = { ...goalResponse, mealsPerDay: undefined, wakeTime: undefined, bedTime: undefined }
-  render(
-    <EditGoalSheet
-      onClose={() => {}}
-      goal={{ ...goal, mealsPerDay: null, wakeTime: null, bedTime: null }}
-      goalResponse={bare}
-      goalId={goal.id}
-    />,
-    { wrapper: QueryWrapper },
-  )
-  expect(screen.getByLabelText(/Étkezés\/nap/)).toHaveTextContent('4')
-  // no wake/bed rows to fall back — the anchor lives on the sleep goal now
-  expect(screen.queryByLabelText('Ébredés')).toBeNull()
-  expect(screen.queryByLabelText('Lefekvés')).toBeNull()
-})
-
-test('saving the rhythm PUTs the edited meal cadence, passing wake/bed through (real mode)', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  let body: Record<string, unknown> | null = null
-  server.use(
-    http.put(`${API_BASE}/api/goals/${goalResponse.id}`, async ({ request }) => {
-      body = (await request.json()) as Record<string, unknown>
-      return HttpResponse.json({ ...goalResponse, status: 'active' })
-    }),
-  )
-  const onClose = vi.fn()
-  render(<EditGoalSheet onClose={onClose} goal={goal} goalResponse={goalResponse} goalId={goalResponse.id} />, { wrapper: QueryWrapper })
-  await userEvent.click(screen.getByRole('button', { name: 'Étkezés növelése' })) // 4 → 5
-  await userEvent.click(screen.getByRole('button', { name: 'Ritmus mentése' }))
-  await waitFor(() => expect(body).not.toBeNull())
-  expect(body!.mealsPerDay).toBe(5)
-  // wake/bed are no longer editable here — the PUT passes the persisted goal's
-  // values straight through (spec §6, mezo-dbsr), NOT anything the sheet holds.
-  expect(body!.wakeTime).toBe(goalResponse.wakeTime)
-  expect(body!.bedTime).toBe(goalResponse.bedTime)
-  // required contract fields preserved in the payload
-  expect(body!.startWeightKg).toBe(goalResponse.startWeightKg)
-  await waitFor(() => expect(onClose).toHaveBeenCalled())
+// Pass-through proof — a goal PUT built from the persisted goal still carries the
+// mealsPerDay wire field straight from the response (goalResponseToUpsert, the
+// mapper that builds the PUT body). The value is unread by this sheet now but must
+// keep round-tripping so the Fuel settings edit doesn't clobber it (spec §6).
+test('the goal PUT body carries mealsPerDay straight from the persisted goal (pass-through)', () => {
+  const body = goalResponseToUpsert(goalResponse)
+  expect(body.mealsPerDay).toBe(goalResponse.mealsPerDay)
+  // window/weights + the wire-kept wake/bed anchor also pass straight through
+  expect(body.wakeTime).toBe(goalResponse.wakeTime)
+  expect(body.bedTime).toBe(goalResponse.bedTime)
+  expect(body.startWeightKg).toBe(goalResponse.startWeightKg)
 })
 
 // The target/cél pace must render as %/hét (sourced from rateTargetPctPerWeek →

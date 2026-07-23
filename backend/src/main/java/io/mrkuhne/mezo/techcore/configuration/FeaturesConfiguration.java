@@ -109,4 +109,7 @@ public class FeaturesConfiguration {
 
     /** Sleep screenshot ingestion (mezo-66ab) — Sleep Cycle screenshot -> LLM-vision draft. */
     public static final String SLEEP_SHOT_SWITCH = "mezo.feature.sleep-shot.enabled";
+
+    /** Fuel planner settings (mezo-53su) — eating cadence + caffeine cutoff singleton. Gates /api/fuel/settings (the caffeine resolver stays on). */
+    public static final String FUEL_SETTINGS_SWITCH = "mezo.feature.fuel-settings.enabled";
 }

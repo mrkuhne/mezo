@@ -1,0 +1,68 @@
+openapi: 3.0.3
+info: { title: mezo fuel-settings fragment, version: 1.0.0 }
+tags:
+  - name: FuelSettings
+    description: Fuel-owned per-user planner settings (eating cadence + caffeine cutoff)
+paths:
+  /api/fuel/settings:
+    get:
+      tags: [FuelSettings]
+      operationId: getFuelSettings
+      summary: The fuel settings; config-default ghost when unset — never 404 (FuelSettings)
+      responses:
+        '200':
+          description: The settings (ghost 4 / 14:00 before the first save)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FuelSettingsResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    put:
+      tags: [FuelSettings]
+      operationId: setFuelSettings
+      summary: Upsert the fuel settings (per-user singleton) (FuelSettings)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetFuelSettingsRequest' }
+      responses:
+        '200':
+          description: Saved settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FuelSettingsResponse' }
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    FuelSettingsResponse:
+      type: object
+      required: [mealsPerDay, caffeineCutoff]
+      properties:
+        mealsPerDay:
+          type: integer
+          minimum: 3
+          maximum: 6
+          description: Eating occasions per day — drives the planner's meal windows
+        caffeineCutoff:
+          type: string
+          pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+          description: Last caffeine time, HH:mm — the Mai chip, day plan and habit metric all read this
+    SetFuelSettingsRequest:
+      type: object
+      required: [mealsPerDay, caffeineCutoff]
+      properties:
+        mealsPerDay: { type: integer, minimum: 3, maximum: 6 }
+        caffeineCutoff: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$' }

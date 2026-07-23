@@ -419,3 +419,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607231811_mezo-ws2x_workout_session_origin.sql
+  - changeSet:
+      id: "1.0.0:202607231933_mezo-53su_create_fuel_settings"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607231933_mezo-53su_create_fuel_settings.sql

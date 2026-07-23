@@ -49,7 +49,7 @@ test('tapping a recipe-suggestion slot opens LogMealSheet pre-filled from that r
   hoisted.plan = {
     ...baseCtx,
     slots: [
-      { time: '08:00', kind: 'meal', label: 'Reggeli', state: 'pending', mealName: recipe.name, suggestedRecipeId: recipe.id, kcal: 480, p: 30, c: 55, f: 12 },
+      { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'pending', mealName: recipe.name, suggestedRecipeId: recipe.id, kcal: 480, p: 30, c: 55, f: 12 },
     ],
   }
   renderView()
@@ -64,7 +64,7 @@ test('tapping a budget-only slot opens LogMealSheet with the mapped slot pre-sel
   hoisted.plan = {
     ...baseCtx,
     slots: [
-      { time: '19:30', kind: 'meal', label: 'Vacsora', state: 'pending', kcal: 700, p: 45, c: 70, f: 22 },
+      { time: '19:30', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 700, p: 45, c: 70, f: 22 },
     ],
   }
   renderView()

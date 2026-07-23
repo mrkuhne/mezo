@@ -231,3 +231,38 @@ test('a draft rejection shows the error copy and returns to the input phase', as
   // back to input: the free-text field is on screen again
   expect(screen.getByLabelText('Mit ettél?')).toBeInTheDocument()
 })
+
+// ── Slot-lock (mezo-53su) ──────────────────────────────────────────────────────
+// A slot-targeted launch (initialSlot set from the tapped SlotCard) keeps its slot through the
+// draft — the AI's proposed slot must NOT override it; the review selector still allows a manual
+// change. MOCK_AI_MEAL_DRAFT proposes 'lunch' (Ebéd), so we launch with a DIFFERENT slot to prove
+// the lock; without initialSlot, the draft's 'lunch' wins (unchanged pre-53su behaviour).
+test('slot-lock: an initialSlot survives the draft — the AI-proposed slot does not override it (mezo-53su)', async () => {
+  vi.useFakeTimers()
+  render(
+    <AiLogSheet date={DATE} initialSlot="breakfast" onClose={() => {}} onManualFallback={() => {}} />,
+    { wrapper: wrapper() },
+  )
+
+  fireEvent.change(screen.getByLabelText('Mit ettél?'), { target: { value: 'csirkés wrap' } })
+  fireEvent.click(screen.getByRole('button', { name: /AI naplózás/ }))
+  await act(async () => { vi.advanceTimersByTime(700) })
+  vi.useRealTimers()
+
+  // Draft proposes 'lunch' (Ebéd) but the launch locked 'breakfast' (Reggeli).
+  expect(screen.getByRole('button', { name: 'Reggeli' })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: 'Ebéd' })).toHaveAttribute('aria-pressed', 'false')
+})
+
+test('no initialSlot: the AI-proposed slot wins in review (mezo-53su)', async () => {
+  vi.useFakeTimers()
+  renderSheet() // launched without a slot (e.g. the header AI button)
+
+  fireEvent.change(screen.getByLabelText('Mit ettél?'), { target: { value: 'csirkés wrap' } })
+  fireEvent.click(screen.getByRole('button', { name: /AI naplózás/ }))
+  await act(async () => { vi.advanceTimersByTime(700) })
+  vi.useRealTimers()
+
+  // MOCK_AI_MEAL_DRAFT.slot === 'lunch' → Ebéd is pressed, the 'snack' default did not stick.
+  expect(screen.getByRole('button', { name: 'Ebéd' })).toHaveAttribute('aria-pressed', 'true')
+})

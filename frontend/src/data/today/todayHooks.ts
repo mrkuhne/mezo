@@ -14,14 +14,12 @@ import {
   briefingVariants,
   workout,
   volleyballSessions,
-  fuelToday,
   workoutPrediction,
   volleyballNote,
 } from '@/data/today/today'
 import type {
   Briefing,
   DayState,
-  FuelPlanToday,
   QuickStatItem,
   TodayMeta,
   TodayScenario,
@@ -70,7 +68,6 @@ type TodayData = {
   volleyballSessions: VolleyballSession[]
   /** Demo "Stacked day" AI note in mock mode; null in real mode (proactive-epic prose). */
   volleyballNote: string | null
-  fuelToday: FuelPlanToday
 }
 
 // The Today composition (T slice, mezo-t16y.3): mock returns the byte-identical Phase-1
@@ -92,7 +89,6 @@ export function useToday(): TodayData {
       prediction: workoutPrediction,
       volleyballSessions,
       volleyballNote,
-      fuelToday,
     }
   }
   const now = new Date()
@@ -122,7 +118,6 @@ export function useToday(): TodayData {
     prediction: null,
     volleyballSessions: train.sport.schedule?.volleyball.sessions ?? [],
     volleyballNote: null,
-    fuelToday,
   }
 }
 

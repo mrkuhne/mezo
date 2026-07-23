@@ -5,7 +5,6 @@ import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useFuelTimeline } from '@/data/fuel/timelineHooks'
 import { useFuelPreview } from '@/data/today/todayHooks'
-import { fuelPlan } from '@/data/fuel/fuel'
 import { deriveDailyBudget } from '@/features/fuel/logic/buildDayPlan'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -55,15 +54,23 @@ afterEach(() => vi.unstubAllEnvs())
 describe('useFuelTimeline / useFuelPreview (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('plan is the Phase-1 seed byte-for-byte (fuelPlan.today), 10 slots, one now-slot', () => {
+  it('mock: composes a deterministic COMPUTED plan (no static seed) — slots, one now-slot, settings + sleep-goal anchors', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
-    expect(result.current.plan).toBe(fuelPlan.today)
-    expect(result.current.plan.slots).toHaveLength(10)
-    expect(result.current.plan.slots.filter(s => s.state === 'now')).toHaveLength(1)
+    const plan = result.current.plan
+    // Same buildDayPlan composition as real mode, fed the mock seeds → a live-computed plan.
+    expect(plan.slots.length).toBeGreaterThan(0)
+    expect(plan.slots.filter(s => s.state === 'now')).toHaveLength(1) // fixed mock now 13:30 → exactly one
+    expect(plan.caffeineCutoff).toBe('14:00')                          // fuel-settings ghost cutoff
+    expect(plan.bedtime).toBe('23:15')                                 // mock sleep goal (wake 06:45 − 450m)
+    expect(plan.kitchenClose).toBe('21:45')                            // bed 23:15 − 90m
+    // Determinism (no ambient clock/random): a second independent render yields an equal plan.
+    const { Wrapper: Wrapper2 } = sharedWrapper()
+    const { result: result2 } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper2 })
+    expect(result2.current.plan).toEqual(plan)
   })
 
-  it('getScoredMeal resolves a done meal slot by id against the seed day (title-join is dead)', () => {
+  it('getScoredMeal resolves a done meal slot by id against the mock day (title-join is dead)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
     const slot = result.current.plan.slots.find(s => s.kind === 'meal' && s.state === 'done' && s.mealId)!
@@ -118,8 +125,6 @@ describe('useFuelTimeline (real mode)', () => {
       const wake = result.current.plan.slots.find(s => s.kind === 'wake')
       expect(wake).toBeDefined()
       expect(wake?.items?.some(it => it.done)).toBe(true)
-      // Never the seed.
-      expect(result.current.plan).not.toBe(fuelPlan.today)
     } finally {
       vi.useRealTimers()
     }
@@ -150,9 +155,9 @@ describe('useFuelTimeline (real mode)', () => {
     expect(sumP(result.current.plan.slots)).toBe(163)
   })
 
-  it('cold-load: meal windows from PLANNER_DEFAULTS + the sleep-goal anchor + the day-targets fallback budget, never the seed', async () => {
+  it('cold-load: meal windows from the fuel-settings cadence + the sleep-goal anchor + the day-targets fallback budget', async () => {
     server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])), // no weight goal → mealsPerDay default + fallback budget
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])), // no weight goal → fuel-settings cadence + fallback budget
       http.get(`${API_BASE}/api/recipe`, () => HttpResponse.json({ recipes: [] })),
       http.get(`${API_BASE}/api/fuel/day/:date`, ({ params }) =>
         HttpResponse.json({
@@ -169,11 +174,11 @@ describe('useFuelTimeline (real mode)', () => {
     // resolves to 23:15 (waitFor covers the ghost→resolved flip); kitchenClose = bed − 90.
     await waitFor(() => expect(result.current.plan.bedtime).toBe('23:15'))
     await waitFor(() => expect(sumKcal(result.current.plan.slots)).toBe(2800))
-    // mealsPerDay 4 (PLANNER_DEFAULTS, no weight goal) → 4 windows; bed 23:15 → kitchenClose 21:45.
+    // mealsPerDay 4 (fuel-settings default, no weight goal) → 4 windows; bed 23:15 → kitchenClose 21:45.
     expect(mealWindows(result.current.plan.slots)).toHaveLength(4)
     expect(result.current.plan.kitchenClose).toBe('21:45')
-    // Never the seed: the fallback used the live day-targets (2800), and no seed wake slot leaks.
-    expect(result.current.plan).not.toBe(fuelPlan.today)
+    // Computed, not a static seed: the fallback used the live day-targets (2800), and no hand-authored
+    // 05:50 wake slot leaks (the wake anchor is the sleep goal's 06:45).
     expect(result.current.plan.slots.some(s => s.time === '05:50' && s.label === 'Ébresztő')).toBe(false)
   })
 })

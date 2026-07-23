@@ -8,7 +8,6 @@
 // `new Date(iso)`. Design: docs/superpowers/specs/2026-07-02-fuel-p5-merged-timeline-design.md §3.
 
 import {
-  CAFFEINE_CUTOFF,
   DEFAULT_BLOCK_MIN,
   EATING_START_OFFSET_MIN,
   FAT_KCAL_SHARE,
@@ -50,6 +49,7 @@ export interface DayPlanInput {
   recipes: Recipe[]
   protocolSlots: ProtocolSlotData[]
   intakes: Intake[]
+  caffeineCutoff: string
   nowHHmm: string
 }
 
@@ -225,6 +225,62 @@ function hhmmFromLoggedAt(iso: string, fallback: string): string {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+// ── reflowPendingWindows ─────────────────────────────────────────────────────
+/**
+ * Now-aware re-flow (spec D4): pending meal windows re-space evenly on [floor, kitchenClose],
+ * order preserved; future-block snaps re-applied; 90-min min-gap forward-push; clamp at close.
+ * Done windows (filled[i]) keep their planned time — their slots render at loggedAt anyway.
+ *
+ * NOTE (mezo-53su): the future-block post-workout snap is applied AFTER the min-gap forward-push,
+ * not before. The spec wants BOTH the training snap and the 90-min gap kept, but they conflict when
+ * an evenly re-spaced snack lands just before the post-workout window (e.g. base + gym 18:00, now
+ * 13:30: the snack re-spaces to 18:50, then the forward-push would shove the 19:45 post-workout main
+ * to 20:20). The training snap is the hard physiological anchor ("eat 45 min after the workout"), so
+ * it wins the tie — matching the required test `future-block snaps survive the re-flow`. Ordering the
+ * snap last lets it override the gap-push in that conflict; with no future block the two loops are
+ * order-independent, so every other case is unaffected.
+ */
+export function reflowPendingWindows(
+  windows: PlannedWindow[],
+  filled: boolean[],
+  floor: number,
+  kitchenClose: number,
+  blocks: PlannerBlock[],
+  now: number,
+): PlannedWindow[] {
+  const pendingIdx = windows.map((_, i) => i).filter(i => !filled[i])
+  if (pendingIdx.length === 0 || floor <= windows[pendingIdx[0]].time) {
+    // nothing pending, or the earliest pending window is already at/after the floor -> keep the plan
+    if (pendingIdx.every(i => windows[i].time >= floor)) return windows
+  }
+  const out = windows.map(w => ({ ...w }))
+  const span = Math.max(0, kitchenClose - floor)
+  const n = pendingIdx.length
+  pendingIdx.forEach((wi, j) => {
+    out[wi].time = n === 1 ? floor : floor + (span * j) / (n - 1)
+  })
+  // Order + min-gap forward-push + clamp (pending only; done windows keep their slot in the order).
+  const pendings = pendingIdx.map(i => out[i]).sort((a, z) => a.time - z.time)
+  for (let i = 1; i < pendings.length; i++) {
+    if (pendings[i].time < pendings[i - 1].time + MIN_SLOT_GAP_MIN) {
+      pendings[i].time = Math.min(kitchenClose, pendings[i - 1].time + MIN_SLOT_GAP_MIN)
+    }
+  }
+  // Re-apply snaps for FUTURE blocks only (a past workout must not drag a window backward). Applied
+  // last so the post-workout snap is the hard anchor and is never undone by the gap-push above.
+  for (const b of [...blocks].sort((x, y) => toMin(x.time) - toMin(y.time))) {
+    const start = toMin(b.time)
+    if (start < now) continue
+    const end = start + (b.durationMin ?? DEFAULT_BLOCK_MIN)
+    const post = pendingIdx
+      .map(i => out[i])
+      .filter(w => w.kind === 'meal')
+      .sort((a, z) => Math.abs(a.time - start) - Math.abs(z.time - start))[0]
+    if (post) post.time = Math.max(floor, Math.min(kitchenClose, end + POST_WORKOUT_SNAP_MIN))
+  }
+  return out
+}
+
 // ── buildDayPlan ─────────────────────────────────────────────────────────────
 export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   const { wake, bed, mealsPerDay, blocks, budget, meals, recipes, protocolSlots, intakes, nowHHmm } = input
@@ -245,8 +301,23 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   for (const k of Object.keys(loggedByKey) as SlotKey[]) loggedByKey[k].sort((a, z) => a.loggedAt.localeCompare(z.loggedAt))
   const cursor: Record<SlotKey, number> = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 }
 
+  // 2b. Fill map (which window will be 'done') WITHOUT consuming cursors yet.
+  const willFill: boolean[] = (() => {
+    const c: Record<SlotKey, number> = { breakfast: 0, lunch: 0, dinner: 0, snack: 0 }
+    return windows.map(w => c[w.slotKey]++ < loggedByKey[w.slotKey].length)
+  })()
+
+  // 2c. Now-aware re-flow of the pending windows (spec D4). splitBudget ran on the PRE-flow windows;
+  //     re-flow preserves array positions (adjusts only times), so budgets[i] stays aligned to flowed[i].
+  const eatingStart = toMin(wake) + EATING_START_OFFSET_MIN
+  const lastLoggedMin = meals.length
+    ? Math.max(...meals.map(m => toMin(hhmmFromLoggedAt(m.loggedAt, nowHHmm))))
+    : 0
+  const floor = Math.max(eatingStart, now, lastLoggedMin ? lastLoggedMin + MIN_SLOT_GAP_MIN : 0)
+  const flowed = reflowPendingWindows(windows, willFill, floor, kitchenCloseMin, blocks, now)
+
   // 3. Fill each window: logged → done; else recipe suggestion; else budget-only.
-  const mealSlots: FuelSlot[] = windows.map((w, i) => {
+  const mealSlots: FuelSlot[] = flowed.map((w, i) => {
     const logged = loggedByKey[w.slotKey][cursor[w.slotKey]]
     if (logged) {
       cursor[w.slotKey]++
@@ -254,6 +325,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         time: hhmmFromLoggedAt(logged.loggedAt, toHHmm(w.time)),
         kind: w.kind,
         label: w.label,
+        slotKey: w.slotKey,
         state: 'done',
         mealId: logged.id,
         mealName: logged.title,
@@ -271,6 +343,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         time: toHHmm(w.time),
         kind: w.kind,
         label: w.label,
+        slotKey: w.slotKey,
         state: 'pending',
         mealName: rec.name,
         suggestedRecipeId: rec.id,
@@ -280,7 +353,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         f: ps.f,
       }
     }
-    return { time: toHHmm(w.time), kind: w.kind, label: w.label, state: 'pending', kcal: b.kcal, p: b.p, c: b.c, f: b.f }
+    return { time: toHHmm(w.time), kind: w.kind, label: w.label, slotKey: w.slotKey, state: 'pending', kcal: b.kcal, p: b.p, c: b.c, f: b.f }
   })
 
   // 3b. Surplus logged meals — anything of a slotKey beyond that slot's window count (a 2nd snack on
@@ -296,6 +369,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         time: hhmmFromLoggedAt(m.loggedAt, nowHHmm),
         kind: k === 'snack' ? 'snack' : 'meal',
         label: labelByKey[k] ?? m.title,
+        slotKey: k,
         state: 'done',
         mealId: m.id,
         mealName: m.title,
@@ -367,7 +441,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
       : { start: '—', end: '—', noneToday: true },
     bedtime: bed,
     kitchenClose: toHHmm(kitchenCloseMin),
-    caffeineCutoff: CAFFEINE_CUTOFF,
+    caffeineCutoff: input.caffeineCutoff,
     slots,
   }
 }

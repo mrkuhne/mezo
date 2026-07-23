@@ -739,6 +739,12 @@ export const handlers = [
   }),
   http.delete(`${API_BASE}/api/fuel/intake/entry/:id`, () => new HttpResponse(null, { status: 204 })),
 
+  // Fuel planner settings (mezo-53su) — config-default ghost; PUT echoes the saved body.
+  http.get(`${API_BASE}/api/fuel/settings`, () =>
+    HttpResponse.json({ mealsPerDay: 4, caffeineCutoff: '14:00' })),
+  http.put(`${API_BASE}/api/fuel/settings`, async ({ request }) =>
+    HttpResponse.json(await request.json())),
+
   // Companion chat (V0.4) — fixtures mirror the mock seed (initialChat) so page/hook tests
   // assert the same strings in both modes. Tests exercise switch-off by overriding the
   // conversation list with a 404 (server.use).

@@ -36,12 +36,14 @@ export function SlotCard({
   scoredMeal,
   onOpenScore,
   onLogMeal,
+  onAiLog,
 }: {
   slot: FuelSlot
   meta: KindMeta
   scoredMeal: FuelMeal | null
   onOpenScore: (m: FuelMeal) => void
   onLogMeal?: (slot: FuelSlot) => void
+  onAiLog?: (slot: FuelSlot) => void
 }) {
   const isDone = slot.state === 'done'
   const isNow = slot.state === 'now'
@@ -146,6 +148,19 @@ export function SlotCard({
             style={{ marginTop: 6, background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
           >
             Logolás
+          </button>
+        )}
+        {/* Slot-level AI logging (mezo-53su) — a second chip beside Logolás on open meal/snack
+            slots; launches AiLogSheet locked to this slot's slotKey. */}
+        {(isSuggestion || isBudgetSlot) && slot.slotKey && onAiLog && (
+          <button
+            type="button"
+            aria-label={`${slot.label} AI-logolása`}
+            onClick={() => onAiLog(slot)}
+            className="chx"
+            style={{ marginTop: 6, marginLeft: 6, background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
+          >
+            AI
           </button>
         )}
 

@@ -12,7 +12,7 @@ import {
   type PlannerBlock,
 } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, MacroSet, ProtocolSlotData, Recipe } from '@/data/types'
-import { toHHmm } from '@/data/fuel/fuelConfig'
+import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 
 // ── fixture factories ────────────────────────────────────────────────────────
 function meal(over: Partial<FuelMeal> & { slot: string; loggedAt: string }): FuelMeal {
@@ -73,6 +73,7 @@ function baseInput(over: Partial<DayPlanInput> = {}): DayPlanInput {
     recipes: [],
     protocolSlots: [],
     intakes: [],
+    caffeineCutoff: '14:00',
     nowHHmm: '12:00',
     ...over,
   }
@@ -349,4 +350,67 @@ test('workout falls back and volleyball reports noneToday when the blocks are ab
 test('a gym block with unknown duration reports end "—" / duration 0 in the top field', () => {
   const plan = buildDayPlan(baseInput({ blocks: [{ kind: 'gym', time: '07:30', durationMin: null, label: 'Edzés · gym' }] }))
   expect(plan.workout).toEqual({ type: 'Edzés', start: '07:30', end: '—', duration: 0 })
+})
+
+// ── slot identity + now-aware re-flow (mezo-53su) ─────────────────────────────
+describe('slot identity + now-aware re-flow (mezo-53su)', () => {
+  const TODAY = '2026-07-02'
+  // Baseline inputs used across the cases: wake 06:00, bed 23:00 -> eatingStart 06:45, kitchenClose 21:30.
+  const base = { wake: '06:00', bed: '23:00', mealsPerDay: 4, blocks: [], budget: NO_BUDGET, meals: [], recipes: [], protocolSlots: [], intakes: [], caffeineCutoff: '14:00' }
+
+  it('meal slots carry their slotKey; block slots do not', () => {
+    const plan = buildDayPlan({ ...base, blocks: [{ kind: 'gym', label: 'Pull', time: '07:30', durationMin: 60 }], nowHHmm: '06:00' })
+    const mealSlot = plan.slots.find(s => s.label === 'Reggeli')!
+    const block = plan.slots.find(s => s.kind === 'workout')!
+    expect(mealSlot.slotKey).toBe('breakfast')
+    expect(block.slotKey).toBeUndefined()
+  })
+
+  it('pending windows never render in the past (morning parity, midday drift)', () => {
+    const morning = buildDayPlan({ ...base, nowHHmm: '06:00' })
+    // floor = max(eatingStart 06:45, 06:00, 0) = 06:45 -> identical to the static placement
+    expect(morning.slots.find(s => s.label === 'Reggeli')!.time).toBe('06:45')
+    const midday = buildDayPlan({ ...base, nowHHmm: '13:30' })
+    // nothing logged by 13:30 -> ALL pending windows re-space evenly on [13:30, 21:30]
+    for (const s of midday.slots.filter(s => s.slotKey)) {
+      expect(toMin(s.time)).toBeGreaterThanOrEqual(toMin('13:30'))
+    }
+    expect(midday.slots.find(s => s.label === 'Reggeli')!.time).toBe('13:30') // first pending sits at the floor
+  })
+
+  it('late lunch pushes the rest: floor = lastLogged + 90', () => {
+    const lunch = meal({ slot: 'lunch', loggedAt: `${TODAY}T15:00:00`, title: 'Késői ebéd' })
+    const plan = buildDayPlan({ ...base, meals: [lunch], nowHHmm: '15:05' })
+    // floor = max(06:45, 15:05, 15:00+90 = 16:30) = 16:30; pending = Reggeli, Vacsora, Uzsonna
+    const pending = plan.slots.filter(s => s.slotKey && s.state !== 'done')
+    for (const s of pending) expect(toMin(s.time)).toBeGreaterThanOrEqual(toMin('16:30'))
+    const done = plan.slots.find(s => s.state === 'done')!
+    expect(done.time).toBe('15:00') // done slots keep their loggedAt
+  })
+
+  it('re-flow keeps the 90-min gap and clamps at kitchen close', () => {
+    const plan = buildDayPlan({ ...base, nowHHmm: '20:00' })
+    // floor 20:00, close 21:30 -> 4 pending windows squeeze into 90 min: spacing collapses toward the close
+    const pending = plan.slots.filter(s => s.slotKey)
+    expect(toMin(pending[pending.length - 1].time)).toBeLessThanOrEqual(toMin('21:30'))
+    for (const s of pending) expect(toMin(s.time)).toBeGreaterThanOrEqual(toMin('20:00'))
+  })
+
+  it('future-block snaps survive the re-flow; past blocks do not re-snap', () => {
+    const blocks = [{ kind: 'gym' as const, label: 'Pull', time: '18:00', durationMin: 60 }]
+    const plan = buildDayPlan({ ...base, blocks, nowHHmm: '13:30' })
+    // post-workout main snaps to 19:45 (blockEnd 19:00 + 45) even after re-flow
+    expect(plan.slots.some(s => s.slotKey && s.time === '19:45')).toBe(true)
+  })
+
+  it('is deterministic: same inputs, same plan', () => {
+    const a = buildDayPlan({ ...base, nowHHmm: '13:30' })
+    const b = buildDayPlan({ ...base, nowHHmm: '13:30' })
+    expect(a).toEqual(b)
+  })
+
+  it('passes the caffeineCutoff input through', () => {
+    const plan = buildDayPlan({ ...base, caffeineCutoff: '12:30', nowHHmm: '06:00' })
+    expect(plan.caffeineCutoff).toBe('12:30')
+  })
 })
