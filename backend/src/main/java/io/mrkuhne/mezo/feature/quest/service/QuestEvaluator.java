@@ -40,8 +40,10 @@ public class QuestEvaluator {
         LocalDate d = q.getQuestDate();
         BigDecimal threshold = q.getTarget().threshold();
         return switch (q.getTarget().metric()) {
+            // Plan-adherence (mezo-ws2x D5): MESO-only — a completed custom (saját) instance
+            // never satisfies the planned "gym_session_done" quest.
             case "gym_session_done" -> !workoutSessionRepository
-                .findDoneInstanceDates(q.getCreatedBy(), d, d).isEmpty();
+                .findMesoDoneInstanceDates(q.getCreatedBy(), d, d).isEmpty();
             case "checkin_full" -> checkInRepository
                 .findByCreatedByAndDateOrderBySlotTime(q.getCreatedBy(), d).size()
                 >= threshold.intValue();

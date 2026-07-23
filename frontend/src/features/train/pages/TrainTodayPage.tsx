@@ -154,10 +154,13 @@ export function TrainTodayPage() {
     sport.sessions.find((s) => s.sport === k && s.date === todayHu) ?? null
   const sportDoneOn = (iso: string | undefined, k: SportKind) =>
     Boolean(iso) && sport.sessions.some((s) => s.sport === k && s.date === huMonthDayDow(iso!))
-  // Weekly-row review taps: a completed instance per day → its id, so a kész gym
-  // row opens /train/review/{id} (real mode; mock has no persisted instances).
+  // Weekly-row review taps: a completed MESO instance per day → its id, so a kész
+  // planned gym row opens /train/review/{id} (real mode; mock has no persisted
+  // instances). origin === 'meso' keeps this deterministic on a same-date meso +
+  // custom double-completion — custom rows have their own onReviewCustom path
+  // (final-review fix, mezo-ws2x — Finding 3).
   const workoutIdByDate = Object.fromEntries(
-    weekWorkouts.filter((w) => w.status === 'completed').map((w) => [w.date, w.id]),
+    weekWorkouts.filter((w) => w.status === 'completed' && w.origin === 'meso').map((w) => [w.date, w.id]),
   )
   const runLoggedFor = (key: string) =>
     runSessions.find(
@@ -384,8 +387,29 @@ export function TrainTodayPage() {
         )
       })}
 
-      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
-      {!today?.gym && !today?.sport.length && todayRuns.length === 0 && (
+      {/* Open custom (saját) instance on a rest day (real mode): the gym hero above only
+          renders when today has a gym schedule slot, so an open instance started on a
+          non-gym day (e.g. a meso-less custom workout) otherwise has no resume affordance
+          anywhere on Mai (final-review fix, mezo-ws2x — Finding 4). getToday's open-wins
+          day resolution means `workout` already IS the open instance's day plan here. */}
+      {!today?.gym && todaySession?.openWorkout && workout && (
+        <div style={{ padding: '0 24px 12px' }}>
+          <div className="card" style={{ padding: 18 }}>
+            <span className="eyebrow" style={{ color: 'var(--warning)' }}>● Folyamatban</span>
+            <p style={{ fontSize: 15, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>{workout.title}</p>
+            <div className="np-ctarow mt-md">
+              <button type="button" className="np-cta np-press" onClick={openSession}>
+                Folytassuk → · {todaySession.openWorkout.sets.filter((s) => !s.skipped).length} szett kész
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run.
+          Gated off an open instance above — an in-progress resume card and the rest-day
+          card must never render together (mezo-ws2x — Finding 4). */}
+      {!today?.gym && !today?.sport.length && todayRuns.length === 0 && !todaySession?.openWorkout && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card" style={{ padding: 18 }}>
             <span className="eyebrow">Ma pihenőnap</span>

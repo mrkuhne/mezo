@@ -116,6 +116,35 @@ test('real mode shows the rest-day note when /today is empty but a meso is activ
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
 })
 
+// An open custom (saját) instance on a rest day (no gym slot today) has no gym-hero
+// home, so it needs its own resume affordance instead of just "Ma pihenőnap" with
+// nothing to resume it (final-review fix, mezo-ws2x — Finding 4).
+test('real mode: an open custom instance on a rest day renders a resume card, not just Ma pihenőnap', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    // the meso's only gym day is NOT today -> rest day (no gym schedule slot today)
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'cw-1', dayLabel: 'Ma', title: 'Saját HIIT', durationEst: 30,
+        exercises: [{ id: 'e-1', name: 'Burpee', muscle: 'full', sets: 3, targetReps: '10-12', targetRIR: 2, type: 'compound' }],
+        openWorkout: {
+          id: 'w-9', templateSessionId: 'cw-1', date: localDateString(), status: 'active',
+          sets: [{ id: 's-1', exerciseId: 'e-1', setIndex: 0, weightKg: 0, reps: 10, skipped: false }],
+        },
+      }),
+    ),
+  )
+  renderView()
+  expect(await screen.findByText('● Folyamatban')).toBeInTheDocument()
+  expect(screen.getByText('Saját HIIT')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Folytassuk/ })).toBeInTheDocument()
+  expect(screen.getByText(/Folytassuk → · 1 szett kész/)).toBeInTheDocument()
+  expect(screen.queryByText(/Ma pihenőnap/)).not.toBeInTheDocument()
+})
+
 test('real mode orders the morning run hero above the evening gym hero', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const todayIdx = (new Date().getDay() + 6) % 7

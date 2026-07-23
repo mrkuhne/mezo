@@ -264,11 +264,15 @@ public class WorkoutService {
             .build();
     }
 
-    /** Dates (this Mon–Sun week) with a gym instance carrying >=1 logged set — gym done-state. */
+    /**
+     * Dates (this Mon–Sun week) with a gym instance carrying >=1 logged set — gym done-state
+     * ({@code WorkoutTodayResponse.weekDoneDates}). Plan-adherence (mezo-ws2x D5): MESO-only —
+     * a completed custom (saját) instance never ticks a template day's weekly ✓.
+     */
     private List<LocalDate> doneDatesThisWeek(UUID createdBy) {
         LocalDate today = LocalDate.now();
         LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1L);
-        return workoutSessionRepository.findDoneInstanceDates(createdBy, monday, monday.plusDays(6));
+        return workoutSessionRepository.findMesoDoneInstanceDates(createdBy, monday, monday.plusDays(6));
     }
 
     /**
@@ -310,7 +314,8 @@ public class WorkoutService {
             return toInstanceResponse(createdBy, open);
         }
         // Cross-day guards (mezo-p7rp): one open workout at a time (D6) and one completion
-        // per template day per Mon–Sun week (D5) — the FE hides the CTA, this is the backstop.
+        // per template day per Mon–Sun week (D5) — the FE hides the CTA, this is the backstop
+        // — D5 skipped for custom (saját) templates (mezo-ws2x).
         if (workoutSessionRepository
             .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
                 createdBy, "active").isPresent()) {

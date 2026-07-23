@@ -151,8 +151,18 @@ class CustomWorkoutIT extends AbstractIntegrationTest {
         var today = workoutService.getToday(user, cw.getId());
         // A custom day is repeatable — it must never flip the FE into the review redirect.
         assertThat(today.getCompletedWorkout()).isNull();
-        // ...and it must not tick the plan-adherence weekly done dates (D5 semantics).
+        // ...and it must not tick the plan-adherence weekly done dates (D5 semantics) — this
+        // now proves the MESO-ONLY finder (findMesoDoneInstanceDates), fed by weekDoneDates.
         assertThat(today.getWeekDoneDates()).isEmpty();
+        // Finder split (final-review fix, mezo-ws2x — Finding 2): the origin-agnostic finder
+        // (real-load semantics — habit/companion/proactive) DOES count the completed custom
+        // instance, while the meso-only variant (plan-adherence — weekly ✓/quests/discipline)
+        // does not.
+        java.time.LocalDate today_ = java.time.LocalDate.now();
+        assertThat(workoutSessionRepository.findDoneInstanceDates(user, today_, today_))
+            .containsExactly(today_);
+        assertThat(workoutSessionRepository.findMesoDoneInstanceDates(user, today_, today_))
+            .isEmpty();
     }
 
     @Test

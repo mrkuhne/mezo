@@ -85,7 +85,9 @@ export function ActiveWorkoutPage() {
   // mock mode.
   if (workoutPending) return <ScreenSkeleton />
   // T0 clean slate: never render the session without a workout (and at least one exercise).
-  if (!workout || workout.exercises.length === 0 || !activeMeso) return <Navigate to="/train" replace />
+  // Meso-independence (mezo-ws2x D4): getToday resolves custom (saját) templates with NO
+  // active meso, so `activeMeso` is legitimately null here — it must NOT gate the redirect.
+  if (!workout || workout.exercises.length === 0) return <Navigate to="/train" replace />
   // Completed today + nothing open → the session is over; review instead of restart
   // (spec 2026-07-15 gating — the prep screen must be unreachable, challenges included).
   // Mock mode has no completedTodayWorkout (always null), so this never fires there.
@@ -110,7 +112,8 @@ export function ActiveWorkoutPage() {
 
 interface SessionProps {
   workout: WorkoutPlan
-  activeMeso: Mesocycle
+  // Nullable (mezo-ws2x D4): a custom (saját) template session runs with no active meso.
+  activeMeso: Mesocycle | null
   todaySession: { templateSessionId: string; openWorkout: WorkoutInstanceResponse | null } | null
   startWorkout: (templateSessionId: string, opts?: { onSuccess?: (w: WorkoutInstanceResponse) => void }) => void
   logSet: (workoutId: string, set: SetLogRequest) => void
@@ -141,7 +144,11 @@ function ActiveWorkoutSession({
     navigate('/train')
   }
 
-  const weekLabel = `Week ${activeMeso.currentWeek} · ${activeMeso.phaseCurve[activeMeso.currentWeek - 1]}`
+  // No active meso (custom/saját template, mezo-ws2x D4) ⇒ no week/phase to show —
+  // fall back to the day title instead of dereferencing a null activeMeso.
+  const weekLabel = activeMeso
+    ? `Week ${activeMeso.currentWeek} · ${activeMeso.phaseCurve[activeMeso.currentWeek - 1]}`
+    : W.title
   const niggleActive = !!W.niggleWarning
 
   const open = todaySession?.openWorkout ?? null
@@ -701,6 +708,9 @@ function ActiveWorkoutSession({
   // exercise's set count in its meso day and reusing the day-exercises PUT. The
   // day is the one whose exercise list contains the current exercise (by id).
   const writeExtraSetToTemplate = (exerciseId: string) => {
+    // Meso-less custom (saját) sessions have no template day to persist against —
+    // already an effective no-op (mezo-ws2x D4), made explicit here.
+    if (!activeMeso) return
     const day = activeMeso.days?.find((d) => d.exercises?.some((e) => e.id === exerciseId))
     if (!day?.id) return
     const exercises: GymExerciseInput[] = day.exercises.map((e) => ({
