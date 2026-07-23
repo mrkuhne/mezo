@@ -14,6 +14,7 @@ import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { ReplanSheet } from '@/features/fuel/sheets/ReplanSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
+import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
 import { localDateString } from '@/shared/lib/dates'
 
 // Napiv Mai recomposition (spec §4.4, mezo-8141): pghead-np sage header → RetaPhaseBar →
@@ -36,6 +37,7 @@ export function FuelMaiPage() {
   const [replanOpen, setReplanOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
 
@@ -99,6 +101,7 @@ export function FuelMaiPage() {
             <span className="chx" style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)', cursor: 'default' }}>
               konyha zár {plan.kitchenClose}
             </span>
+            <button type="button" className="chip" aria-label="Fuel beállítások" onClick={() => setSettingsOpen(true)} style={{ fontSize: 9, padding: '3px 8px' }}>szerkeszt</button>
           </div>
 
           <div className="macror">
@@ -219,6 +222,7 @@ export function FuelMaiPage() {
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
+      {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
       {aiOpen && (
         <AiLogSheet
           date={localDateString()}

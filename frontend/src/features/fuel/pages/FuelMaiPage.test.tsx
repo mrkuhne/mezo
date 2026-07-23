@@ -36,6 +36,11 @@ test('renders header, gauge, fuelchips, macro bars, timeline and micronutrients'
   expect(screen.getByText('Zsír')).toBeInTheDocument()
   expect(screen.getByText('Mikrotápanyagok · heti')).toBeInTheDocument()
 })
+test('opens the FuelSettingsSheet from the szerkeszt chip', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Fuel beállítások' }))
+  expect(await screen.findByRole('dialog', { name: 'Fuel beállítások' })).toBeInTheDocument()
+})
 test('shows the protocol-meta row when a protocol is active (mock, v3)', () => {
   renderView()
   expect(screen.getByText(/Stack · v3/)).toBeInTheDocument()
