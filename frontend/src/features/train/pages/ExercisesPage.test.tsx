@@ -26,12 +26,30 @@ test('default state ranks top exercises with best set and e1RM chip', async () =
   renderView()
   expect(await screen.findByText('Top gyakorlatok · rekordjaid')).toBeInTheDocument()
   const row = await screen.findByRole('button', { name: /Chest Supported Row/ })
-  expect(within(row).getByText('01')).toBeInTheDocument()
-  expect(within(row).getByText('102.5×9')).toBeInTheDocument()
-  expect(within(row).getByText('e1RM 133.3')).toBeInTheDocument()
-  // bodyweight record rows surface the rep counter instead
+  expect(within(row).getByText('1')).toBeInTheDocument()          // rank plaque (was '01')
+  expect(within(row).getByText('102.5×9')).toBeInTheDocument()    // Legjobb szett cell
+  expect(within(row).getByText('133.3 kg')).toBeInTheDocument()   // e1RM cell
+  expect(within(row).getByText('182.5 t')).toBeInTheDocument()    // Összvolumen cell
+  expect(within(row).getByText('Hát (közép)')).toBeInTheDocument()// muscle pill
+  expect(within(row).getByText('21 alkalom')).toBeInTheDocument() // sessions pill
+  expect(within(row).getByText('Saját')).toBeInTheDocument()      // editable badge
+  // bodyweight (plyo) record: rep-based stat cells + filled plyo pill
   const plyoRow = screen.getByRole('button', { name: /Box Jump/ })
-  expect(within(plyoRow).getByText('186 rep')).toBeInTheDocument()
+  expect(within(plyoRow).getByText('Max rep')).toBeInTheDocument()
+  expect(within(plyoRow).getByText('12')).toBeInTheDocument()     // max reps from recentTopSets
+  expect(within(plyoRow).getByText('186')).toBeInTheDocument()    // Összes rep
+  expect(within(plyoRow).getByText(/Plyo/)).toBeInTheDocument()   // ⚡ Plyo pill
+})
+
+test('a bodyweight record with weightKg 0 (live-backend shape) uses the rep stat branch', async () => {
+  renderView()
+  const row = await screen.findByRole('button', { name: /Dead Hang/ })
+  // no weighted cells — 0×35 / e1RM 0 must NOT appear
+  expect(within(row).queryByText('0×35')).not.toBeInTheDocument()
+  expect(within(row).queryByText('e1RM')).not.toBeInTheDocument()
+  expect(within(row).getByText('Max rep')).toBeInTheDocument()
+  expect(within(row).getByText('35')).toBeInTheDocument()
+  expect(within(row).getByText('65')).toBeInTheDocument()
 })
 
 test('search merges record rows with catalog ghost rows', async () => {
@@ -85,11 +103,12 @@ test('the header + Új gyakorlat button opens the create sheet', async () => {
   expect(screen.getByLabelText('Név')).toHaveValue('')
 })
 
-test('an editable record row exposes edit + delete affordances', async () => {
+test('an editable record row exposes the ⋯ edit roundel but no page-level delete', async () => {
   renderView()
   await screen.findByRole('button', { name: /Chest Supported Row/ })
   expect(screen.getByRole('button', { name: 'Gyakorlat szerkesztése' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Gyakorlat törlése' })).toBeInTheDocument()
+  // delete moved into CatalogExerciseSheet (mezo-kaui) — no longer on the page
+  expect(screen.queryByRole('button', { name: 'Gyakorlat törlése' })).not.toBeInTheDocument()
 })
 
 test('editing an owned row opens the sheet seeded with its name', async () => {
@@ -100,7 +119,7 @@ test('editing an owned row opens the sheet seeded with its name', async () => {
   expect(screen.getByLabelText('Név')).toHaveValue('Chest Supported Row')
 })
 
-test('deleting an owned row issues the delete request', async () => {
+test('deleting an owned row goes through the edit sheet with a confirm step', async () => {
   let deleted = ''
   server.use(
     http.delete(`${API_BASE}/api/train/exercises/:id`, ({ params }) => {
@@ -110,7 +129,11 @@ test('deleting an owned row issues the delete request', async () => {
   )
   renderView()
   await screen.findByRole('button', { name: /Chest Supported Row/ })
-  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat törlése' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat szerkesztése' }))
+  const del = await screen.findByRole('button', { name: 'Gyakorlat törlése' })
+  await userEvent.click(del)                      // first tap: arm
+  expect(deleted).toBe('')                        // not deleted yet
+  await userEvent.click(screen.getByRole('button', { name: 'Gyakorlat törlése' })) // confirm
   await waitFor(() => expect(deleted).toBe('f1e3a0e2-0000-4000-8000-000000000070'))
 })
 

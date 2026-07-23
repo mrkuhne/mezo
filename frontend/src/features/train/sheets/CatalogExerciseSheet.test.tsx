@@ -6,17 +6,24 @@ import type { ExerciseLibraryItem } from '@/data/types'
 
 // The sheet builds a CatalogExerciseCreateRequest and calls the mutation hook
 // directly — mock useTrain so the tests assert the exact request payload.
-const { createCatalogExercise, updateCatalogExercise } = vi.hoisted(() => ({
+const { createCatalogExercise, updateCatalogExercise, deleteCatalogExercise } = vi.hoisted(() => ({
   createCatalogExercise: vi.fn(),
   updateCatalogExercise: vi.fn(),
+  deleteCatalogExercise: vi.fn(),
 }))
 vi.mock('@/data/hooks', () => ({
-  useTrain: () => ({ createCatalogExercise, updateCatalogExercise }),
+  useTrain: () => ({ createCatalogExercise, updateCatalogExercise, deleteCatalogExercise }),
 }))
 
 beforeEach(() => {
   createCatalogExercise.mockClear()
   updateCatalogExercise.mockClear()
+  deleteCatalogExercise.mockClear()
+})
+
+test('create mode shows no delete button', () => {
+  render(<CatalogExerciseSheet onClose={vi.fn()} />)
+  expect(screen.queryByRole('button', { name: 'Gyakorlat törlése' })).toBeNull()
 })
 
 test('create mode builds the request and calls createCatalogExercise', async () => {

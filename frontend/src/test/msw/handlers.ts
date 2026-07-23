@@ -582,6 +582,18 @@ export const handlers = [
           { reps: 12, date: '2026-06-02' },
         ],
       },
+      // Live-backend bodyweight shape (mezo-kaui): sets logged with weight 0 come
+      // back as bestSet.weightKg 0 + bestE1rm 0 (NOT absent, unlike Box Jump above)
+      // — the card must still render the rep-based bodyweight stat branch.
+      {
+        catalogId: 'f1e3a0e2-0000-4000-8000-000000000076',
+        name: 'Dead Hang', muscle: 'lats', type: 'plyo',
+        bestSet: { weightKg: 0, reps: 35, date: '2026-06-02' },
+        bestE1rm: { value: 0, set: { weightKg: 0, reps: 35, date: '2026-06-02' } },
+        totalVolume: 0, totalSets: 2, totalReps: 65, sessionCount: 1,
+        repRecords: [{ weightKg: 0, reps: 35, date: '2026-06-02' }],
+        recentTopSets: [{ weightKg: 0, reps: 35, date: '2026-06-02' }],
+      },
     ]),
   ),
   http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {

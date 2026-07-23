@@ -50,7 +50,7 @@ test('useTrain (real mode) maps the API exercise catalog into exerciseLibrary', 
 
 test('useTrain (real mode) serves exercise records from the endpoint', async () => {
   const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
-  await waitFor(() => expect(result.current.exerciseRecords.length).toBe(2))
+  await waitFor(() => expect(result.current.exerciseRecords.length).toBe(3))
   const row = result.current.exerciseRecords[0]
   expect(row.name).toBe('Chest Supported Row')
   expect(row.bestSet?.weightKg).toBe(102.5)

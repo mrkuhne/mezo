@@ -1,7 +1,7 @@
 // Layout-aware loading skeleton for ExercisesPage (mezo-f2z). Mirrors the real shape —
 // page-header → search bar → muscle-filter chip row → a section eyebrow → a column of
-// RecordRow placeholders (rank circle + name line + small e1RM chip) — so the swap to
-// real content does not reflow. Built from the Skeleton primitives.
+// variant-A card placeholders (muscle rail + rank plaque + name + play roundel · pill
+// row · stat strip, mezo-kaui) — so the swap to real content does not reflow.
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function ExercisesSkeleton() {
@@ -32,13 +32,27 @@ export default function ExercisesSkeleton() {
         </div>
         <div className="col gap-sm">
           {Array.from({ length: 4 }, (_, i) => (
-            <SkeletonCard key={i} style={{ padding: 12 }}>
-              <div className="row gap-md" style={{ alignItems: 'center' }}>
-                <Skeleton variant="circle" width={22} height={22} />
-                <div className="col gap-sm flex-1">
-                  <Skeleton width="55%" height={13} /><Skeleton width="35%" height={9} />
+            <SkeletonCard key={i} style={{ padding: 0, overflow: 'hidden' }}>
+              <div className="row" style={{ alignItems: 'stretch' }}>
+                <Skeleton width={5} height={104} radius={0} />
+                <div className="col gap-sm flex-1" style={{ padding: '14px 14px 12px' }}>
+                  <div className="row gap-sm" style={{ alignItems: 'center' }}>
+                    <Skeleton width={26} height={26} radius={8} />
+                    <Skeleton width="55%" height={15} />
+                    <div className="flex-1" />
+                    <Skeleton variant="circle" width={30} height={30} />
+                  </div>
+                  <div className="row gap-xs">
+                    <Skeleton width={54} height={18} radius={999} />
+                    <Skeleton width={72} height={18} radius={999} />
+                    <Skeleton width={64} height={18} radius={999} />
+                  </div>
+                  <div className="row gap-md">
+                    <Skeleton width="24%" height={22} />
+                    <Skeleton width="24%" height={22} />
+                    <Skeleton width="24%" height={22} />
+                  </div>
                 </div>
-                <Skeleton width={52} height={20} radius={6} />
               </div>
             </SkeletonCard>
           ))}
