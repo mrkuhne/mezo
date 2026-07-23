@@ -39,11 +39,24 @@ class SleepShotDraftValidatorTest {
     }
 
     @Test
-    void testScore_shouldNeedReview_whenConfidenceAtThresholdBoundary(){
-        // Phases sum way off (200 vs 501) AND span mismatch via bedtime shift -> 2/4 = 0.5 <= 0.6.
+    void testScore_shouldNeedReview_whenConfidenceBelowThreshold() {
+        // Phases sum way off (200 vs 501) AND span mismatch via bedtime shift -> 2/4 = 0.5 < 0.6.
         Extracted e = new Extracted("02:00", "09:03", 400, 501, 50, 50, 50, 50, 95);
 
         Score s = validator.score(e, THRESHOLD);
+
+        assertThat(s.confidence()).isEqualByComparingTo(new BigDecimal("0.5"));
+        assertThat(s.needsReview()).isTrue();
+    }
+
+    @Test
+    void testScore_shouldNeedReview_whenConfidenceEqualsThreshold() {
+        // Same 2/4 = 0.50 extraction, but the caller's threshold is exactly 0.50: the boundary-inclusive
+        // <= must still force review. All key fields present, so review is driven purely by the threshold
+        // comparison — this test fails if <= is ever weakened to <.
+        Extracted e = new Extracted("02:00", "09:03", 400, 501, 50, 50, 50, 50, 95);
+
+        Score s = validator.score(e, 0.5);
 
         assertThat(s.confidence()).isEqualByComparingTo(new BigDecimal("0.5"));
         assertThat(s.needsReview()).isTrue();

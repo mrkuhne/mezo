@@ -55,7 +55,7 @@ public class SleepShotDraftValidator {
             }
         }
 
-        if (e.bedtime() != null && e.wakeup() != null && timesParse && e.inBedMin() != null) {
+        if (timesParse && e.inBedMin() != null) { // timesParse already implies both times non-null
             applicable++;
             int span = Math.floorMod(toMin(e.wakeup()) - toMin(e.bedtime()), 24 * 60);
             if (Math.abs(span - e.inBedMin()) <= SPAN_TOLERANCE_MIN) {
