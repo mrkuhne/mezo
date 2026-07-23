@@ -65,3 +65,4 @@ playwright-report/
 
 # Manual git worktrees for independent sessions (never commit)
 .worktrees/
+issues.jsonl

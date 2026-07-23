@@ -131,3 +131,25 @@ test('the chevron affordance renders only on a day with content, never on a rest
   )
   expect(rest.querySelector('.chev')).not.toBeInTheDocument()
 })
+
+it('a non-today, not-done gym row is tappable and calls onOpenGymDay (mezo-j3x0)', () => {
+  const onOpenGymDay = vi.fn()
+  const onStartGym = vi.fn()
+  const onReviewGym = vi.fn()
+  render(
+    <WeeklyDayRow
+      agenda={{
+        day: 'Szo', date: '2026-06-20', isToday: false,
+        gym: { day: 'Szo', active: true, time: '10:00', duration: null, type: 'Pull Day' } as never,
+        sport: [], running: [],
+      }}
+      onOpenGymDay={onOpenGymDay}
+      onStartGym={onStartGym}
+      onReviewGym={onReviewGym}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button'))
+  expect(onOpenGymDay).toHaveBeenCalledTimes(1)
+  expect(onStartGym).not.toHaveBeenCalled()
+  expect(onReviewGym).not.toHaveBeenCalled()
+})

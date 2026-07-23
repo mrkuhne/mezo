@@ -49,6 +49,15 @@ test('no volleyball session today (Csü) ⇒ today-volleyball block is absent', 
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
+test('a non-today weekly gym row opens the GymDaySheet with the cross-day start CTA (mezo-j3x0)', () => {
+  renderView()
+  // Mock today = Csü (fixture flag); the Hét row shows the Push Day slot → non-today gym row.
+  fireEvent.click(screen.getByRole('button', { name: /Push Day/ }))
+  // The sheet renders the day's first exercise and the non-today start CTA.
+  expect(screen.getByText('Barbell Bench Press')).toBeInTheDocument()
+  expect(screen.getByText(/Indítsuk · ma/)).toBeInTheDocument()
+})
+
 // ---- real-mode block: agenda derives from the active meso, /today drives the hero ----
 
 const todayLabel = () => DAY_ORDER[(new Date().getDay() + 6) % 7]
