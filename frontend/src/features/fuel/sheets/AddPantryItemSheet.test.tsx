@@ -79,35 +79,91 @@ describe('AddPantryItemSheet', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
-  it('edit mode: a supplement ADAG (per) change round-trips to the stash', async () => {
-    // Repro of the reported "25g→100g reverts" bug: editing a supplement's ADAG must
-    // persist to the stash item's `per` through updateItem.
+  // The old "supplement ADAG (per) change round-trips" test is RETIRED by design (mezo-0gjr):
+  // the basis is no longer an input — the form can't change `per` at all, which is the point.
+  // The replacement guarantees live in the "fixed per-100 g basis" describe below.
+
+  it('the basis is not an input: no Adag field, sections declare the /100 g basis (mezo-0gjr)', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={qc}>
+        <AddPantryItemSheet open onClose={vi.fn()} />
+      </QueryClientProvider>,
+    )
+    expect(screen.queryByText('Adag')).not.toBeInTheDocument()
+    expect(screen.getByText('Makrók · /100 g')).toBeInTheDocument()
+    expect(screen.getByText('Tápanyag · /100 g')).toBeInTheDocument()
+  })
+
+  it('create always lands on the per-100 g / grams basis (mezo-0gjr)', async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={qc}>{children}</QueryClientProvider>
     )
-    const onClose = vi.fn()
     const { result } = renderHook(() => usePantry(), { wrapper })
-    const target = result.current.stash[0]
+    const NEW_NAME = 'Per100-bázis-teszt'
 
+    render(
+      <QueryClientProvider client={qc}>
+        <AddPantryItemSheet open onClose={vi.fn()} />
+      </QueryClientProvider>,
+    )
+    fireEvent.change(screen.getByLabelText(/név/i), { target: { value: NEW_NAME } })
+    fireEvent.change(screen.getByLabelText(/kcal/i), { target: { value: '412' } })
+    fireEvent.click(screen.getByRole('button', { name: /polcra/i }))
+
+    await waitFor(() => {
+      const added = result.current.ingredients.find(i => i.name === NEW_NAME)
+      expect(added?.per).toBe(100)
+      expect(added?.unit).toBe('g')
+    })
+  })
+
+  it('edit leaves a legacy non-100 basis untouched (mezo-0gjr)', async () => {
+    // The one intentional per-serving row (Vanilla whey, per=30) must survive an
+    // unrelated edit: the form ECHOES the stored basis from `initial` (inputFromItem
+    // always carries per/unit) — omitting it would trip validatePerKind on update.
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    const { result } = renderHook(() => usePantry(), { wrapper })
+    await waitFor(() => expect(result.current.ingredients.length).toBeGreaterThan(0))
+    const target = result.current.ingredients[0]
+    // plant a legacy basis directly in the cache the mock mutators merge onto
+    qc.setQueryData(['pantry'], (prev: { ingredients: typeof result.current.ingredients } & Record<string, unknown>) => ({
+      ...prev,
+      ingredients: prev.ingredients.map(i => i.id === target.id ? { ...i, per: 30 } : i),
+    }))
+
+    render(
+      <QueryClientProvider client={qc}>
+        <AddPantryItemSheet open onClose={vi.fn()} editId={target.id} initial={{ kind: 'food', name: target.name, per: 30, unit: 'g' }} />
+      </QueryClientProvider>,
+    )
+    fireEvent.change(screen.getByLabelText(/név/i), { target: { value: 'Átnevezett örökölt bázisú' } })
+    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
+
+    await waitFor(() => {
+      const edited = result.current.ingredients.find(i => i.id === target.id)
+      expect(edited?.name).toBe('Átnevezett örökölt bázisú')
+      expect(edited?.per).toBe(30) // the legacy basis survived the save
+    })
+  })
+
+  it('edit shows the inherited-basis hint when the stored basis is not /100 (mezo-0gjr)', () => {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={qc}>
         <AddPantryItemSheet
           open
-          onClose={onClose}
-          editId={target.id}
-          initial={{ kind: 'supplement', name: target.name, per: 25, unit: 'g' }}
+          onClose={vi.fn()}
+          editId="whatever"
+          initial={{ kind: 'supplement', name: 'Iso Whey Vanilla', per: 30, unit: 'g' }}
         />
       </QueryClientProvider>,
     )
-    const perInput = screen.getByPlaceholderText('100') as HTMLInputElement
-    expect(perInput.value).toBe('25')
-    fireEvent.change(perInput, { target: { value: '100' } })
-    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
-
-    await waitFor(() => {
-      expect(result.current.stash.find(s => s.id === target.id)?.per).toBe(100)
-    })
+    expect(screen.getByText(/Bázis: \/30 g · örökölt/)).toBeInTheDocument()
   })
 
   it('edit mode saves changed extended-nutrition + price fields via updateItem', async () => {
