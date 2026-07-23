@@ -107,10 +107,23 @@ export function RoutineCard() {
     const nodeCls =
       h.status === 'done' ? 'hab-node done' : h.key === firstPending ? 'hab-node now' : 'hab-node'
     const node = <span className={nodeCls} />
+    const titleEl = h.linkUrl ? (
+      <a
+        className="hab-title hab-link"
+        href={h.linkUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {h.title} ↗
+      </a>
+    ) : (
+      <div className="hab-title">{h.title}</div>
+    )
     const main = (
       <div className="hab-main">
         <div className="hab-anchor">{h.anchorCopy}</div>
-        <div className="hab-title">{h.title}</div>
+        {titleEl}
       </div>
     )
 
@@ -131,10 +144,12 @@ export function RoutineCard() {
       )
     }
 
-    // current habit — the one prominent action (none for passively-derived habits)
-    if (h.key === firstPending) {
+    // current habit — the one prominent action (none for passively-derived habits).
+    // A row carrying a link uses this same non-nested layout so the <a> never sits inside a
+    // whole-row <button> (invalid + click-conflicting); the link stays independently tappable.
+    if (h.key === firstPending || h.linkUrl) {
       return (
-        <div key={h.key} className="hab-row now">
+        <div key={h.key} className={h.key === firstPending ? 'hab-row now' : 'hab-row'}>
           {node}
           {main}
           <div className="hab-right">

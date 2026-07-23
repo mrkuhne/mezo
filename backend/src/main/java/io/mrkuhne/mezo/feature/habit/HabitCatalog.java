@@ -29,7 +29,8 @@ public class HabitCatalog {
     private static final Set<String> MODES = Set.of(MODE_DERIVED, MODE_MANUAL);
 
     public record HabitDef(String key, String chain, int position, String title, String why,
-        String anchorCopy, String mode, String metric, String skillKey, String skillKind, int xp) {}
+        String anchorCopy, String mode, String metric, String skillKey, String skillKind, int xp,
+        String linkUrl) {}
 
     private final ObjectMapper objectMapper; // SB4 Jackson 3 (tools.jackson)
     private List<HabitDef> defs = List.of();

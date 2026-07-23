@@ -3973,6 +3973,8 @@ export interface components {
             xp: number;
             /** @description trailing-28d done ratio, null under min-sample */
             strengthPct?: number | null;
+            /** @description optional external resource opened directly from the row (e.g. a routine video) */
+            linkUrl?: string | null;
         };
         HabitDayResponse: {
             /** Format: date */
