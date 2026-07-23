@@ -345,6 +345,14 @@ export const MOCK_SCRAPE_DRAFT: PantryScrapeDraft = {
   confidence: 1, needsReview: false, barcode: null,
 }
 
+// === Mock photo-import draft (mezo-d8tr) — what the demo Fotó-mode "reads" off a label ===
+export const MOCK_PHOTO_DRAFT: PantryScrapeDraft = {
+  name: 'Skyr · epres', brand: 'Milbona', per: 100, unit: 'g',
+  kcal: 62, proteinG: 10, carbsG: 4, fatG: 0.2, fiberG: null, sugarG: 3.9, saltG: 0.1,
+  saturatedFatG: 0.1, nova: 2, category: 'dairy', priceHuf: null, priceUnit: null,
+  source: 'photo', sourceUrl: null, confidence: 1, needsReview: false, barcode: null,
+}
+
 // === Mock AI meal draft (Fuel P8, mezo-78rn) — what the demo AiLogSheet "parses" from text/photo ===
 // One pantry-matched line (references a REAL Kamra seed so the badge + tap-through resolve) + one
 // low-confidence estimate line (needsReview → the review-chip path). `_aiSeed` is the first food seed.
