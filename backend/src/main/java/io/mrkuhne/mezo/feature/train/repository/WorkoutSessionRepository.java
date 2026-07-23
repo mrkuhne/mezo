@@ -44,6 +44,10 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
      * [from, to] with status 'completed' — the "gym done that day" signal driving the Mai
      * done-state. Done = EXPLICITLY FINISHED (spec 2026-07-15): a started-but-unclosed
      * instance (any number of logged sets) is NOT done; the lazy auto-close settles stale ones.
+     * Origin-agnostic (both meso and custom/saját instances count) — this is the REAL-LOAD
+     * signal (habit "training_done_today", the companion [Edzés] context block, the proactive
+     * volume-trend window); the plan-adherence variant that excludes custom is
+     * {@link #findMesoDoneInstanceDates} (mezo-ws2x).
      */
     @Query("""
         SELECT DISTINCT s.date FROM WorkoutSessionEntity s
@@ -53,6 +57,24 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
           AND s.status = 'completed'
         """)
     List<LocalDate> findDoneInstanceDates(
+        @Param("createdBy") UUID createdBy, @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
+     * Plan-adherence variant of {@link #findDoneInstanceDates}: same query, but MESO-ONLY
+     * (mezo-ws2x D5) — custom (saját) instances are repeatable any time and never tick these
+     * weekly done dates, however many times they're completed. Drives the weekly ✓ marks
+     * ({@code WorkoutTodayResponse.weekDoneDates}), quest evaluation, and the discipline signal
+     * (training commitment) — everywhere "did the PLANNED day happen this week" matters.
+     */
+    @Query("""
+        SELECT DISTINCT s.date FROM WorkoutSessionEntity s
+        WHERE s.createdBy = :createdBy
+          AND s.templateSessionId IS NOT NULL
+          AND s.origin = 'meso'
+          AND s.date BETWEEN :from AND :to
+          AND s.status = 'completed'
+        """)
+    List<LocalDate> findMesoDoneInstanceDates(
         @Param("createdBy") UUID createdBy, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
     /**
@@ -104,4 +126,8 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
      */
     Optional<WorkoutSessionEntity> findFirstByCreatedByAndTemplateSessionIdAndStatusAndDateBetweenOrderByDateDescCreatedAtDesc(
         UUID createdBy, UUID templateSessionId, String status, LocalDate from, LocalDate to);
+
+    /** The owner's CUSTOM (saját) workout templates, oldest first (mezo-ws2x). */
+    List<WorkoutSessionEntity> findByCreatedByAndOriginAndTemplateSessionIdIsNullOrderByCreatedAtAsc(
+        UUID createdBy, String origin);
 }

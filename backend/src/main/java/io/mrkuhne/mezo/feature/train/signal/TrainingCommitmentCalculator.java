@@ -41,7 +41,9 @@ public class TrainingCommitmentCalculator implements TrainingCommitmentSource {
                 planned++;
             }
         }
-        int done = (int) workoutSessionRepository.findDoneInstanceDates(createdBy, from, to)
+        // Plan-adherence (mezo-ws2x D5): MESO-only — a completed custom (saját) instance
+        // doesn't count toward "did the planned days happen" discipline.
+        int done = (int) workoutSessionRepository.findMesoDoneInstanceDates(createdBy, from, to)
             .stream().distinct().count();
         return new Stats(planned, done);
     }

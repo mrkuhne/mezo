@@ -17,6 +17,8 @@ export interface WeeklyAgendaDay {
   sport: VolleyballSession[]
   running: RunPrescribedSession[]
   isToday: boolean
+  /** Completed custom (saját) workout instances on this date — extra done rows (mezo-ws2x). */
+  custom?: { id: string; title: string }[]
 }
 
 interface WeeklyDayRowProps {
@@ -36,14 +38,17 @@ interface WeeklyDayRowProps {
   onOpenGymDay?: () => void
   onLogSport?: (s: VolleyballSession) => void
   onLogRun?: (s: RunPrescribedSession) => void
+  /** A completed custom (saját) workout row was tapped — open its review. */
+  onReviewCustom?: (id: string) => void
 }
 
-export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gymInProgress, onStartGym, onReviewGym, onOpenGymDay, onLogSport, onLogRun }: WeeklyDayRowProps) {
+export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gymInProgress, onStartGym, onReviewGym, onOpenGymDay, onLogSport, onLogRun, onReviewCustom }: WeeklyDayRowProps) {
   const { day, isToday } = agenda
   // Time-ordered flat session list — gym/volleyball/running interleave by
   // time-of-day so a morning run renders above an evening gym (untimed last).
   const sessions = daySessions(agenda)
-  const hasContent = sessions.length > 0
+  const customItems = agenda.custom ?? []
+  const hasContent = sessions.length > 0 || customItems.length > 0
 
   return (
     <div className={cn('dayrow', isToday && 'today', !hasContent && 'rest')}>
@@ -67,7 +72,8 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             // days from each other AND from the TrainTodayPage hero's own `time · Xp` line.
             const meta = [gym.time, gym.duration ? `${gym.duration}p` : null, gym.type].filter(Boolean).join(' · ')
             // A completed (kész) gym day — today OR a past day — opens its review;
-            // today's not-yet-logged row starts the session; other days are inert.
+            // today's not-yet-logged row starts the session; any other day opens
+            // its GymDaySheet via onOpenGymDay (cross-day start, mezo-j3x0).
             return (
               <button key="gym" type="button" className="s" onClick={gymLogged ? onReviewGym : isToday ? onStartGym : onOpenGymDay}>
                 <span className="stag stag-gym">GYM</span>
@@ -120,6 +126,19 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             </button>
           )
         })}
+
+        {customItems.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className="s"
+            onClick={onReviewCustom ? () => onReviewCustom(c.id) : undefined}
+          >
+            <span className="stag stag-gym">SAJÁT</span>
+            {c.title}
+            <span className="done-chip">kész</span>
+          </button>
+        ))}
       </div>
 
       {hasContent && <span className="chev" aria-hidden="true">›</span>}

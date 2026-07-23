@@ -161,6 +161,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/custom-workouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The owner's saved custom (saját) workout templates, oldest first */
+        get: operations["listCustomWorkouts"];
+        put?: never;
+        /** Create a custom workout template (name + full recipe exercise list) */
+        post: operations["createCustomWorkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/train/custom-workouts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename + full exercise-list replace of a custom workout template */
+        put: operations["updateCustomWorkout"];
+        post?: never;
+        /** Soft-delete a custom workout template (instance history survives) */
+        delete: operations["deleteCustomWorkout"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/exercises": {
         parameters: {
             query?: never;
@@ -2195,6 +2231,16 @@ export interface components {
             /** Format: uuid */
             catalogId?: string;
         };
+        CustomWorkoutResponse: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            exercises: components["schemas"]["GymExercise"][];
+        };
+        CustomWorkoutUpsertRequest: {
+            name: string;
+            exercises: components["schemas"]["GymExerciseInput"][];
+        };
         ExerciseCatalogItem: {
             /** Format: uuid */
             id: string;
@@ -2340,6 +2386,13 @@ export interface components {
             date: string;
             /** @enum {string} */
             status: "planned" | "active" | "completed" | "skipped";
+            /**
+             * @description Mesocycle-plan instance vs custom (saját) workout instance (mezo-ws2x)
+             * @enum {string}
+             */
+            origin: "meso" | "custom";
+            /** @description The workout title — the template day's title / the custom workout's name */
+            title: string;
         };
         WorkoutDetailResponse: {
             /** Format: uuid */
@@ -4617,6 +4670,168 @@ export interface operations {
                 };
             };
             /** @description Mesocycle/day not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listCustomWorkouts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Custom workout templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomWorkoutResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createCustomWorkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomWorkoutUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description The created template */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomWorkoutResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateCustomWorkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomWorkoutUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated template */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomWorkoutResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Foreign/missing/non-custom row */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteCustomWorkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Foreign/missing/non-custom row */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -101,21 +101,19 @@ public class WorkoutService {
         MesocycleEntity activeMeso = mesocycleRepository
             .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
             .stream().findFirst().orElse(null);
-        if (activeMeso == null) {
-            return empty;
-        }
         // Fix zárás: idempotent ensure across ALL template days of the active meso, BEFORE
         // today's exercise list is resolved — its own @Transactional (getToday itself is a read).
-        if (closingBlockGate.getIfAvailable() != null) {
+        if (activeMeso != null && closingBlockGate.getIfAvailable() != null) {
             closingBlockService.ensureClosingExercises(createdBy, activeMeso.getId());
         }
-        // Gym done-state signal: this week's instance dates with >=1 logged set. Computed
-        // regardless of whether today is a gym day, so the weekly rows can mark PAST done days.
+        // Gym done-state signal: this week's completed MESO-ORIGIN instance dates (custom
+        // never ticks the planned rows — mezo-ws2x D5). Computed regardless of whether
+        // today is a gym day, so the weekly rows can mark PAST done days.
         List<LocalDate> weekDoneDates = doneDatesThisWeek(createdBy);
         empty.setWeekDoneDates(weekDoneDates);
-        // Day resolution (cross-day start, mezo-p7rp): open instance > param > weekday label.
-        // The open workout always wins — a deep link to another day while one runs resumes the
-        // running one (D6); the param lets any non-completed day of the week start today (D1).
+        // Day resolution (mezo-p7rp + mezo-ws2x): open instance > param > weekday label.
+        // The open-instance and param branches are meso-INDEPENDENT — a custom (saját)
+        // workout must resolve with no active meso too; only the weekday fallback needs one.
         WorkoutSessionEntity open = workoutSessionRepository
             .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
                 createdBy, "active")
@@ -125,8 +123,10 @@ public class WorkoutService {
             day = ownedTemplateOrThrow(createdBy, open.getTemplateSessionId());
         } else if (templateSessionId != null) {
             day = ownedTemplateOrThrow(createdBy, templateSessionId);
-        } else {
+        } else if (activeMeso != null) {
             day = findPlannedTemplateForDate(createdBy, LocalDate.now()).orElse(null);
+        } else {
+            day = null;
         }
         if (day == null) {
             return empty;
@@ -143,7 +143,10 @@ public class WorkoutService {
             .map(ExerciseEntity::getCatalogId).filter(java.util.Objects::nonNull).toList());
         // Week-scoped completion (D5): a template day completed ANY day of the current Mon–Sun
         // week reviews instead of restarting — was date == today before mezo-p7rp.
-        WorkoutSessionEntity completedToday = completedThisWeek(createdBy, day.getId());
+        // A custom day is repeatable — completedWorkout would trigger the FE review
+        // redirect, so it stays null for custom-origin days (mezo-ws2x D4).
+        WorkoutSessionEntity completedToday =
+            "custom".equals(day.getOrigin()) ? null : completedThisWeek(createdBy, day.getId());
         return WorkoutTodayResponse.builder()
             .templateSessionId(day.getId())
             .dayLabel(day.getDayLabel())
@@ -261,11 +264,15 @@ public class WorkoutService {
             .build();
     }
 
-    /** Dates (this Mon–Sun week) with a gym instance carrying >=1 logged set — gym done-state. */
+    /**
+     * Dates (this Mon–Sun week) with a gym instance carrying >=1 logged set — gym done-state
+     * ({@code WorkoutTodayResponse.weekDoneDates}). Plan-adherence (mezo-ws2x D5): MESO-only —
+     * a completed custom (saját) instance never ticks a template day's weekly ✓.
+     */
     private List<LocalDate> doneDatesThisWeek(UUID createdBy) {
         LocalDate today = LocalDate.now();
         LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1L);
-        return workoutSessionRepository.findDoneInstanceDates(createdBy, monday, monday.plusDays(6));
+        return workoutSessionRepository.findMesoDoneInstanceDates(createdBy, monday, monday.plusDays(6));
     }
 
     /**
@@ -307,20 +314,23 @@ public class WorkoutService {
             return toInstanceResponse(createdBy, open);
         }
         // Cross-day guards (mezo-p7rp): one open workout at a time (D6) and one completion
-        // per template day per Mon–Sun week (D5) — the FE hides the CTA, this is the backstop.
+        // per template day per Mon–Sun week (D5) — the FE hides the CTA, this is the backstop
+        // — D5 skipped for custom (saját) templates (mezo-ws2x).
         if (workoutSessionRepository
             .findFirstByCreatedByAndStatusAndTemplateSessionIdIsNotNullOrderByDateDescCreatedAtDesc(
                 createdBy, "active").isPresent()) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("TRAIN_WORKOUT_OPEN_ELSEWHERE").build(), HttpStatus.CONFLICT);
         }
-        if (completedThisWeek(createdBy, template.getId()) != null) {
+        // D5 is plan-adherence: a custom (saját) template is repeatable any time (mezo-ws2x).
+        if (!"custom".equals(template.getOrigin()) && completedThisWeek(createdBy, template.getId()) != null) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("TRAIN_DAY_DONE_THIS_WEEK").build(), HttpStatus.CONFLICT);
         }
         WorkoutSessionEntity instance = new WorkoutSessionEntity();
         instance.setCreatedBy(createdBy); // server-side ownership — never from the client
         instance.setMesocycleId(template.getMesocycleId());
+        instance.setOrigin(template.getOrigin());
         instance.setTemplateSessionId(template.getId());
         instance.setDayLabel(template.getDayLabel());
         instance.setType(template.getType());

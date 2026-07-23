@@ -19,6 +19,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { GymDaySheet } from '@/features/train/sheets/GymDaySheet'
+import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import type { MesoDay } from '@/data/types'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import { daySessions } from '@/features/train/logic/agenda'
@@ -40,6 +41,7 @@ export function TrainTodayPage() {
   const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
   const [openGymDay, setOpenGymDay] = useState<MesoDay | null>(null)
+  const [customOpen, setCustomOpen] = useState(false)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
   // the running block query are unresolved, render the layout-matched skeleton
@@ -72,6 +74,17 @@ export function TrainTodayPage() {
           </div>
           <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
         </div>
+        <div style={{ padding: '0 24px 16px' }}>
+          <button type="button" onClick={() => setCustomOpen(true)} className="card" style={{
+            padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
+            borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
+            letterSpacing: '0.14em', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            <Icon name="plus" size={12} /> Saját edzés
+          </button>
+        </div>
+        {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
       </>
     )
   }
@@ -84,6 +97,17 @@ export function TrainTodayPage() {
     const base = new Date()
     return localDateString(new Date(base.getFullYear(), base.getMonth(), base.getDate() - todayIdx() + i))
   }
+  // Completed custom (saját) instances of this week, grouped by ISO date — extra
+  // weekly rows on the date they were actually trained (mezo-ws2x).
+  const customByDate = new Map<string, { id: string; title: string }[]>()
+  for (const w of weekWorkouts) {
+    if (w.origin === 'custom' && w.status === 'completed') {
+      const list = customByDate.get(w.date) ?? []
+      list.push({ id: w.id, title: w.title })
+      customByDate.set(w.date, list)
+    }
+  }
+
   const agenda: WeeklyAgendaDay[] = DAY_ORDER.map((d, i) => {
     const g = gymTimes.find((x) => x.day === d)
     const v = vbSessions.filter((x) => x.day === d)
@@ -94,6 +118,7 @@ export function TrainTodayPage() {
       sport: v,
       running: runSessionsForDay(activeRunningBlock, DAY_ORDER.indexOf(d)),
       isToday: Boolean(g?.today || v.some((x) => x.today)),
+      custom: customByDate.get(weekDateIso(i)) ?? [],
     }
   })
 
@@ -129,10 +154,13 @@ export function TrainTodayPage() {
     sport.sessions.find((s) => s.sport === k && s.date === todayHu) ?? null
   const sportDoneOn = (iso: string | undefined, k: SportKind) =>
     Boolean(iso) && sport.sessions.some((s) => s.sport === k && s.date === huMonthDayDow(iso!))
-  // Weekly-row review taps: a completed instance per day → its id, so a kész gym
-  // row opens /train/review/{id} (real mode; mock has no persisted instances).
+  // Weekly-row review taps: a completed MESO instance per day → its id, so a kész
+  // planned gym row opens /train/review/{id} (real mode; mock has no persisted
+  // instances). origin === 'meso' keeps this deterministic on a same-date meso +
+  // custom double-completion — custom rows have their own onReviewCustom path
+  // (final-review fix, mezo-ws2x — Finding 3).
   const workoutIdByDate = Object.fromEntries(
-    weekWorkouts.filter((w) => w.status === 'completed').map((w) => [w.date, w.id]),
+    weekWorkouts.filter((w) => w.status === 'completed' && w.origin === 'meso').map((w) => [w.date, w.id]),
   )
   const runLoggedFor = (key: string) =>
     runSessions.find(
@@ -359,14 +387,42 @@ export function TrainTodayPage() {
         )
       })}
 
-      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run */}
-      {!today?.gym && !today?.sport.length && todayRuns.length === 0 && (
+      {/* Open custom (saját) instance on a rest day (real mode): the gym hero above only
+          renders when today has a gym schedule slot, so an open instance started on a
+          non-gym day (e.g. a meso-less custom workout) otherwise has no resume affordance
+          anywhere on Mai (final-review fix, mezo-ws2x — Finding 4). getToday's open-wins
+          day resolution means `workout` already IS the open instance's day plan here. */}
+      {!today?.gym && todaySession?.openWorkout && workout && (
+        <div style={{ padding: '0 24px 12px' }}>
+          <div className="card" style={{ padding: 18 }}>
+            <span className="eyebrow" style={{ color: 'var(--warning)' }}>● Folyamatban</span>
+            <p style={{ fontSize: 15, fontWeight: 600, marginTop: 8, color: 'var(--text-primary)' }}>{workout.title}</p>
+            <div className="np-ctarow mt-md">
+              <button type="button" className="np-cta np-press" onClick={openSession}>
+                Folytassuk → · {todaySession.openWorkout.sets.filter((s) => !s.skipped).length} szett kész
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run.
+          Gated off an open instance above — an in-progress resume card and the rest-day
+          card must never render together (mezo-ws2x — Finding 4). */}
+      {!today?.gym && !today?.sport.length && todayRuns.length === 0 && !todaySession?.openWorkout && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card" style={{ padding: 18 }}>
             <span className="eyebrow">Ma pihenőnap</span>
             <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               Nincs tervezett edzés mára — a heti rended lent találod.
             </p>
+            <CtaGhost
+              className="rad-12 mt-md"
+              onClick={() => setCustomOpen(true)}
+              style={{ borderColor: 'color-mix(in srgb, var(--tag-gym) 40%, transparent)', color: 'var(--tag-gym)' }}
+            >
+              <Icon name="plus" size={12} /> Saját edzés
+            </CtaGhost>
           </div>
         </div>
       )}
@@ -396,6 +452,7 @@ export function TrainTodayPage() {
                 return md ? () => setOpenGymDay(md) : undefined
               })()}
               onLogSport={(s) => setSportLogSport(sportOf(s))}
+              onReviewCustom={(wid) => navigate(`/train/review/${wid}`)}
               onLogRun={(s) => setRunLogCtx({
                 blockId: activeRunningBlock!.id,
                 weekNumber: activeRunningBlock!.currentWeek,
@@ -407,6 +464,19 @@ export function TrainTodayPage() {
             />
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => setCustomOpen(true)}
+          className="card mt-md"
+          style={{
+            padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
+            borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
+            letterSpacing: '0.14em', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <Icon name="plus" size={12} /> Saját edzés
+        </button>
       </div>
 
       {/* Note */}
@@ -422,6 +492,7 @@ export function TrainTodayPage() {
         </div>
       </div>
 
+      {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
       {sportLogSport && (
         <SportLogSheet
           initialSport={sportLogSport}

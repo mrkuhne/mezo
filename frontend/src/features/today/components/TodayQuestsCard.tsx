@@ -74,7 +74,7 @@ export function TodayQuestsCard({ onCheckIn }: TodayQuestsCardProps) {
   const pct = Math.round((done / total) * 100)
 
   return (
-    <div className="card" style={{ margin: '8px 0', padding: '14px 16px' }}>
+    <div className="card" style={{ margin: '8px 24px', padding: '14px 16px' }}>
       <div className="quests-head">
         <span className="eyebrow">⚡ Napi küldetések</span>
         <Link

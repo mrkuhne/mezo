@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
+import io.mrkuhne.mezo.api.dto.CustomWorkoutResponse;
+import io.mrkuhne.mezo.api.dto.CustomWorkoutUpsertRequest;
 import io.mrkuhne.mezo.api.dto.GymExerciseInput;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesoDayInput;
@@ -194,6 +196,86 @@ public class TrainService {
         }
         List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
         return toDay(day, saved, videosByCatalog(saved));
+    }
+
+    // ── Saját edzés (custom workout templates, mezo-ws2x) ─────────────────────────
+    // A custom template is a meso-less workout_session TEMPLATE row (origin='custom',
+    // mesocycleId null, templateSessionId null); its name lives in `type` (like meso day
+    // titles) and its exercises are ordinary recipe rows, so the whole instance machinery
+    // (start/log/finish/records/prescriptions) works on it unchanged.
+
+    /** The owner's custom (saját) workout templates, oldest first. */
+    public List<CustomWorkoutResponse> listCustomWorkouts(UUID createdBy) {
+        List<WorkoutSessionEntity> templates = workoutSessionRepository
+            .findByCreatedByAndOriginAndTemplateSessionIdIsNullOrderByCreatedAtAsc(createdBy, "custom");
+        if (templates.isEmpty()) {
+            return List.of();
+        }
+        List<ExerciseEntity> exercises = exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(
+                createdBy, templates.stream().map(WorkoutSessionEntity::getId).toList());
+        Map<UUID, List<ExerciseEntity>> byTemplate = exercises.stream()
+            .collect(Collectors.groupingBy(ExerciseEntity::getWorkoutSessionId));
+        Map<UUID, String> videos = videosByCatalog(exercises);
+        return templates.stream()
+            .map(t -> toCustomWorkoutResponse(t, byTemplate.getOrDefault(t.getId(), List.of()), videos))
+            .toList();
+    }
+
+    @Transactional
+    public CustomWorkoutResponse createCustomWorkout(UUID createdBy, CustomWorkoutUpsertRequest req) {
+        WorkoutSessionEntity template = new WorkoutSessionEntity();
+        template.setCreatedBy(createdBy); // server-side ownership — never from the client
+        template.setOrigin("custom");
+        template.setDayLabel(""); // custom templates are not weekday-bound
+        template.setType(req.getName());
+        template.setStatus("planned");
+        WorkoutSessionEntity saved = workoutSessionRepository.save(template);
+        return replaceCustomExercises(createdBy, saved, req.getExercises());
+    }
+
+    @Transactional
+    public CustomWorkoutResponse updateCustomWorkout(UUID createdBy, UUID id, CustomWorkoutUpsertRequest req) {
+        WorkoutSessionEntity template = ownedCustomTemplateOrThrow(createdBy, id);
+        template.setType(req.getName());
+        return replaceCustomExercises(createdBy, template, req.getExercises());
+    }
+
+    @Transactional
+    public void deleteCustomWorkout(UUID createdBy, UUID id) {
+        // Soft delete (@SQLDelete) — completed instances and their sets keep feeding
+        // records/history (the record identity read includes soft-deleted rows).
+        workoutSessionRepository.delete(ownedCustomTemplateOrThrow(createdBy, id));
+    }
+
+    /** An owned CUSTOM template row by id — missing/foreign/meso-origin/instance rows are all 404. */
+    private WorkoutSessionEntity ownedCustomTemplateOrThrow(UUID createdBy, UUID id) {
+        return OwnershipGuard.ownedOrThrow(
+            workoutSessionRepository.findById(id)
+                .filter(s -> "custom".equals(s.getOrigin()) && s.getTemplateSessionId() == null),
+            createdBy);
+    }
+
+    /** Full-list replace, same soft-delete + re-insert pattern as {@link #replaceDayExercises}. */
+    private CustomWorkoutResponse replaceCustomExercises(
+            UUID createdBy, WorkoutSessionEntity template, List<GymExerciseInput> inputs) {
+        exerciseRepository.deleteAll(exerciseRepository
+            .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(createdBy, List.of(template.getId())));
+        List<ExerciseEntity> fresh = new ArrayList<>(inputs.size());
+        for (int i = 0; i < inputs.size(); i++) {
+            fresh.add(toExerciseEntity(createdBy, template.getId(), inputs.get(i), i));
+        }
+        List<ExerciseEntity> saved = exerciseRepository.saveAll(fresh);
+        return toCustomWorkoutResponse(template, saved, videosByCatalog(saved));
+    }
+
+    private CustomWorkoutResponse toCustomWorkoutResponse(
+            WorkoutSessionEntity template, List<ExerciseEntity> exercises, Map<UUID, String> videos) {
+        return CustomWorkoutResponse.builder()
+            .id(template.getId())
+            .name(template.getType())
+            .exercises(toDay(template, exercises, videos).getExercises())
+            .build();
     }
 
     /** Single-active invariant: archives every currently active meso of the owner. */

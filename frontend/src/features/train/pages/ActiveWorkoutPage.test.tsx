@@ -1076,6 +1076,43 @@ test('real mode: a completed today instance redirects the session route to the r
   expect(screen.queryByText(/Kezdjük el/)).toBeNull()
 })
 
+// --- meso-less custom (saját) workout: getToday is meso-independent (D4, final-review
+// fix, mezo-ws2x — Finding 1). No active meso must NOT bounce a custom day's prep screen. ---
+test('real mode: a custom workout with NO active meso renders the prep screen instead of redirecting', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () =>
+      HttpResponse.json({
+        templateSessionId: 'cw-1', dayLabel: 'Ma', title: 'Saját HIIT', durationEst: 30,
+        exercises: [
+          { id: 'e-1', name: 'Burpee', muscle: 'full', warmupSets: 0, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound', lastWeek: null },
+        ],
+        openWorkout: null,
+        completedWorkout: null,
+        weekDoneDates: [],
+      }),
+    ),
+  )
+  render(
+    <QueryWrapper>
+      <MemoryRouter initialEntries={['/train/session?day=cw-1']}>
+        <LevelUpProvider>
+          <LiveActivityProvider>
+            <DynamicIsland />
+            <ActiveWorkoutPage />
+          </LiveActivityProvider>
+        </LevelUpProvider>
+      </MemoryRouter>
+    </QueryWrapper>,
+  )
+  // Title renders in more than one spot (PageTitle + the no-meso week-label fallback
+  // chip + the start CTA) — assert presence, not uniqueness.
+  expect((await screen.findAllByText('Saját HIIT')).length).toBeGreaterThan(0)
+  expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
+})
+
 // --- loading skeleton (mezo-f2z) ---------------------------------------------
 // Real mode renders the generic ScreenSkeleton (role="status") while the
 // meso + today queries are unresolved (workoutPending = !mock && (mesoPending ||
