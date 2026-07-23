@@ -25,6 +25,7 @@ export function SleepLogSheet({
   const [wakeup, setWakeup] = useState('06:30')
   const [quality, setQuality] = useState(7)
   const [awakenings, setAwakenings] = useState(1)
+  const [inBedMin, setInBedMin] = useState('')
   const [note, setNote] = useState('')
   const duration = computeDuration(bedtime, wakeup)
 
@@ -32,6 +33,7 @@ export function SleepLogSheet({
     onSave({
       date: new Date().toISOString().slice(0, 10),
       bedtime, wakeup, durationH: duration, quality, awakenings,
+      inBedMin: inBedMin ? Number(inBedMin) : undefined,
       note: note || undefined,
     })
     close()
@@ -93,6 +95,14 @@ export function SleepLogSheet({
                 )
               })}
             </div>
+          </div>
+          <div className="row mt-lg" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}>
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: 'var(--faint)' }}>
+              Ágyban összesen (perc)
+            </span>
+            <input type="number" inputMode="numeric" min={1} placeholder="opcionális" aria-label="Ágyban összesen (perc)"
+              value={inBedMin} onChange={(e) => setInBedMin(e.target.value)}
+              style={{ width: 72, background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }} />
           </div>
           <div className="col gap-sm mt-lg">
             <span style={SECTION_LABEL}>Egy mondat · opcionális</span>

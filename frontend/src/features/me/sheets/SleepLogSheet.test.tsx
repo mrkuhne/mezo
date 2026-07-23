@@ -12,3 +12,11 @@ test('Save bubbles up a SleepLogInput with computed duration then closes', async
   )
   await waitFor(() => expect(onClose).toHaveBeenCalled())
 })
+
+test('includes inBedMin when the optional field is filled', async () => {
+  const onSave = vi.fn()
+  render(<SleepLogSheet onClose={vi.fn()} onSave={onSave} />)
+  await userEvent.type(screen.getByLabelText('Ágyban összesen (perc)'), '480')
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ inBedMin: 480 }))
+})
