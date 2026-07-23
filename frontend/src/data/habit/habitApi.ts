@@ -27,6 +27,7 @@ export function toHabit(w: HabitWire): HabitItem {
     doneAt: w.doneAt ?? null,
     xp: w.xp,
     strengthPct: w.strengthPct ?? null,
+    linkUrl: w.linkUrl ?? null,
   }
 }
 

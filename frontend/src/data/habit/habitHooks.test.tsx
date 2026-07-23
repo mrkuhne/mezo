@@ -14,8 +14,8 @@ describe('useHabitDay (mock mode)', () => {
 
   test('serves the seed synchronously', () => {
     const { result } = renderHook(() => useHabitDay(DATE), { wrapper: makeHookWrapper() })
-    expect(result.current.habits).toHaveLength(10)
-    expect(result.current.habits.filter((h) => h.chain === 'MORNING')).toHaveLength(6)
+    expect(result.current.habits).toHaveLength(12)
+    expect(result.current.habits.filter((h) => h.chain === 'MORNING')).toHaveLength(8)
   })
 
   test('manual check flips the row and stays in cache', async () => {

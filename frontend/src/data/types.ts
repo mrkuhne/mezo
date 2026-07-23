@@ -857,6 +857,7 @@ export interface HabitItem {
   doneAt?: string | null
   xp: number
   strengthPct?: number | null
+  linkUrl?: string | null
 }
 export interface HabitStrengthRow { key: string; strengthPct: number | null; done28: number; missed28: number }
 export interface HabitSummary { perfectMorningDays30: number; perfectEveningDays30: number; habits: HabitStrengthRow[] }

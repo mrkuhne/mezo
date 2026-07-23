@@ -32,6 +32,7 @@ public class HabitMapper {
                 ? row.getDoneAt().atOffset(ZoneOffset.UTC) : null)
             .xp(def.xp())
             .strengthPct(strengthPct)
+            .linkUrl(def.linkUrl())
             .build();
     }
 }

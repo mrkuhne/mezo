@@ -42,17 +42,29 @@ describe('RoutineCard', () => {
   test('header sums the XP already earned from done habits', () => {
     renderCard()
     // seed: 3 morning habits done (10 + 5 + 10) → 25 XP
-    expect(screen.getByText(/3\/6 ma · \+25 XP/)).toBeInTheDocument()
+    expect(screen.getByText(/3\/8 ma · \+25 XP/)).toBeInTheDocument()
   })
 
   test('only the current habit carries a prominent action; downstream stays a tappable row', () => {
     renderCard()
-    // seed morning: wake/napfény/súlymérés done → Gombakávé is the first pending (nav → Napló)
-    const current = screen.getByRole('button', { name: 'Gombakávé logolása' })
-    expect(current).toHaveTextContent('Napló')
+    // seed morning: wake/napfény done → 50 fekvőtámasz is the first pending (MANUAL → Pipa)
+    const current = screen.getByRole('button', { name: '50 fekvőtámasz pipálása' })
+    expect(current).toHaveTextContent('Pipa')
     // a downstream pending habit is the whole row (no "Napló"/"Pipa" label text on it)
-    const downstream = screen.getByRole('button', { name: 'Reggeli edzés logolása' })
+    const downstream = screen.getByRole('button', { name: 'Gombakávé logolása' })
     expect(downstream).not.toHaveTextContent('Napló')
+  })
+
+  test('the video habit renders a clickable link opening the video directly', () => {
+    renderCard()
+    const link = screen.getByRole('link', { name: /Reggeli videó/ })
+    expect(link).toHaveAttribute('href', 'https://www.facebook.com/share/r/1ERXP5zNFs/?mibextid=wwXIfr')
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'))
+    // it is a link, not wrapped in a whole-row button (no nested interactive element)
+    expect(screen.queryByRole('button', { name: 'Reggeli videó logolása' })).not.toBeInTheDocument()
+    // it still carries its own MANUAL check affordance
+    expect(screen.getByRole('button', { name: 'Reggeli videó pipálása' })).toBeInTheDocument()
   })
 
   test('evening daypart renders the evening chain', () => {
@@ -65,7 +77,7 @@ describe('RoutineCard', () => {
   test('midday renders the compact summary row', () => {
     vi.mocked(daypartNow).mockReturnValue('delutan')
     renderCard()
-    expect(screen.getByText(/Reggeli rutin 3\/6/)).toBeInTheDocument()
+    expect(screen.getByText(/Reggeli rutin 3\/8/)).toBeInTheDocument()
   })
 
   test('midday summary is collapsed and expands to the morning chain for retroactive logging', async () => {
@@ -73,7 +85,7 @@ describe('RoutineCard', () => {
     renderCard()
     // collapsed: only the summary toggle is present, the chain rows are hidden
     const toggle = screen.getByRole('button', { expanded: false })
-    expect(toggle).toHaveTextContent('Reggeli rutin 3/6')
+    expect(toggle).toHaveTextContent('Reggeli rutin 3/8')
     expect(screen.queryByText('Ébredés időben')).not.toBeInTheDocument()
     // expand → the morning chain appears and its current habit can still be logged
     await userEvent.click(toggle)

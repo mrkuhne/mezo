@@ -1632,6 +1632,8 @@ button.hab-row:active { background: var(--surface-glass); }
 .hab-main { min-width: 0; padding-left: 4px; }
 .hab-anchor { font: 600 10px/1.2 var(--ff-body); color: var(--text-quaternary); margin-bottom: 2px; }
 .hab-title { font: 600 14px/1.3 var(--ff-body); color: var(--ink); }
+a.hab-link { color: var(--lav-deep); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+a.hab-link:hover { opacity: 0.85; }
 .hab-row.done .hab-title { color: var(--sub); }
 .hab-right { display: flex; align-items: center; gap: 8px; justify-self: end; padding-left: 6px; }
 
