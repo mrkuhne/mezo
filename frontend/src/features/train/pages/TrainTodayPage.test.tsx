@@ -58,6 +58,13 @@ test('a non-today weekly gym row opens the GymDaySheet with the cross-day start 
   expect(screen.getByText(/Indítsuk · ma/)).toBeInTheDocument()
 })
 
+test('the weekly-plan footer opens the Saját edzés sheet (mezo-ws2x)', () => {
+  renderView()
+  fireEvent.click(screen.getAllByRole('button', { name: /Saját edzés/ })[0])
+  expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
+  expect(screen.getByText('Pihenőnapi felső')).toBeInTheDocument()
+})
+
 // ---- real-mode block: agenda derives from the active meso, /today drives the hero ----
 
 const todayLabel = () => DAY_ORDER[(new Date().getDay() + 6) % 7]

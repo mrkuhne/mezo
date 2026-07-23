@@ -19,6 +19,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { GymDaySheet } from '@/features/train/sheets/GymDaySheet'
+import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import type { MesoDay } from '@/data/types'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import { daySessions } from '@/features/train/logic/agenda'
@@ -40,6 +41,7 @@ export function TrainTodayPage() {
   const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
   const [openGymDay, setOpenGymDay] = useState<MesoDay | null>(null)
+  const [customOpen, setCustomOpen] = useState(false)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
   // the running block query are unresolved, render the layout-matched skeleton
@@ -72,6 +74,17 @@ export function TrainTodayPage() {
           </div>
           <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
         </div>
+        <div style={{ padding: '0 24px 16px' }}>
+          <button type="button" onClick={() => setCustomOpen(true)} className="card" style={{
+            padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
+            borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
+            letterSpacing: '0.14em', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}>
+            <Icon name="plus" size={12} /> Saját edzés
+          </button>
+        </div>
+        {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
       </>
     )
   }
@@ -367,6 +380,13 @@ export function TrainTodayPage() {
             <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
               Nincs tervezett edzés mára — a heti rended lent találod.
             </p>
+            <CtaGhost
+              className="rad-12 mt-md"
+              onClick={() => setCustomOpen(true)}
+              style={{ borderColor: 'color-mix(in srgb, var(--tag-gym) 40%, transparent)', color: 'var(--tag-gym)' }}
+            >
+              <Icon name="plus" size={12} /> Saját edzés
+            </CtaGhost>
           </div>
         </div>
       )}
@@ -407,6 +427,19 @@ export function TrainTodayPage() {
             />
           ))}
         </div>
+        <button
+          type="button"
+          onClick={() => setCustomOpen(true)}
+          className="card mt-md"
+          style={{
+            padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
+            borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
+            letterSpacing: '0.14em', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          }}
+        >
+          <Icon name="plus" size={12} /> Saját edzés
+        </button>
       </div>
 
       {/* Note */}
@@ -422,6 +455,7 @@ export function TrainTodayPage() {
         </div>
       </div>
 
+      {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
       {sportLogSport && (
         <SportLogSheet
           initialSport={sportLogSport}

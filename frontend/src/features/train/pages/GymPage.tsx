@@ -18,6 +18,7 @@ import { PhaseDots } from '@/features/train/components/PhaseDots'
 import { GymDayCard } from '@/features/train/components/GymDayCard'
 import { GymDaySheet } from '@/features/train/sheets/GymDaySheet'
 import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
+import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import GymSkeleton from '@/features/train/pages/GymSkeleton'
 
 export function GymPage() {
@@ -29,6 +30,7 @@ export function GymPage() {
   const navigate = useNavigate()
   const [openDay, setOpenDay] = useState<MesoDay | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
+  const [customOpen, setCustomOpen] = useState(false)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) are
   // unresolved, render the layout-matched skeleton before the empty-state. Placed
@@ -75,6 +77,14 @@ export function GymPage() {
           <h1>{activeMeso.shortTitle}</h1>
         </div>
         <div className="row gap-sm" style={{ alignItems: 'center' }}>
+          <button
+            type="button"
+            onClick={() => setCustomOpen(true)}
+            className="pgact-np np-press"
+            style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
+          >
+            <Icon name="plus" size={12} /> Saját
+          </button>
           {/* saveGymSchedule is a no-op in mock mode (trainHooks) — hide the
               editor entry there, mirroring SportPage's mock-mode gating. */}
           {!isMockMode() && (
@@ -149,6 +159,7 @@ export function GymPage() {
           onClose={() => setScheduleOpen(false)}
         />
       )}
+      {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
     </>
   )
 }
