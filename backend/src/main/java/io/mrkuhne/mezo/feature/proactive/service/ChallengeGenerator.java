@@ -19,10 +19,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -130,14 +133,32 @@ public class ChallengeGenerator {
     Gather gather(UUID userId, UUID templateSessionId) {
         List<ExerciseEntity> exercises = exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(templateSessionId));
+        // Identity-based history (mezo-q7o6): a fresh custom (saját) template's rows carry no
+        // sets of their own, so grounding is resolved across ALL exercise rows sharing the
+        // identity (catalog id, else exact name; soft-deleted day-edit rows included) — the
+        // ExerciseRecordService idiom. Row-only history left first-ever saját sessions
+        // permanently challenge-less.
+        Map<UUID, ExerciseRepository.ExerciseIdentityRow> identityById = exerciseRepository
+                .findIdentityRowsIncludingDeleted(userId).stream()
+                .collect(Collectors.toMap(ExerciseRepository.ExerciseIdentityRow::getId, r -> r));
+        Map<String, List<ExerciseSetEntity>> setsByIdentity = new HashMap<>();
+        for (ExerciseSetEntity set : exerciseSetRepository.findByCreatedByAndRepsNotNull(userId)) {
+            if (set.isSkipped()) {
+                continue;
+            }
+            ExerciseRepository.ExerciseIdentityRow row = identityById.get(set.getExerciseId());
+            if (row == null) {
+                continue;
+            }
+            setsByIdentity.computeIfAbsent(identityKey(row.getCatalogId(), row.getName()),
+                    k -> new ArrayList<>()).add(set);
+        }
         List<ExerciseCandidate> candidates = new ArrayList<>();
         for (ExerciseEntity ex : exercises) {
-            List<ExerciseSetEntity> sets = exerciseSetRepository
-                    .findByCreatedByAndExerciseIdOrderBySetIndexAsc(userId, ex.getId());
-            List<ExerciseSetEntity> logged = sets.stream()
-                    .filter(s -> !s.isSkipped() && s.getReps() != null).toList();
+            List<ExerciseSetEntity> logged = setsByIdentity.getOrDefault(
+                    identityKey(ex.getCatalogId(), ex.getName()), List.of());
             if (logged.isEmpty()) {
-                continue;   // no history — drop
+                continue;   // no history under this identity anywhere — drop
             }
             int maxPr = logged.stream().map(ExerciseSetEntity::getWeightKg)
                     .filter(w -> w != null).map(BigDecimal::intValue).reduce(0, Integer::max);
@@ -173,6 +194,11 @@ public class ChallengeGenerator {
         }
         payload.append("\nKIHÍVÁS-TÍPUSOK: PR | Depth | Volume");
         return new Gather(payload.toString(), candidates, patterns, refCandidates);
+    }
+
+    /** Exercise identity across rows: catalog id, else exact name (ExerciseRecordService idiom). */
+    private static String identityKey(UUID catalogId, String name) {
+        return catalogId != null ? "c:" + catalogId : "n:" + name;
     }
 
     private ChallengeEntity build(UUID userId, UUID templateSessionId, LocalDate date,

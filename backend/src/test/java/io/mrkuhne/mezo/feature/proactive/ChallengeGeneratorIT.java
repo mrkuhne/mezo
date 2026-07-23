@@ -42,6 +42,9 @@ class ChallengeGeneratorIT extends AbstractIntegrationTest {
     @Autowired
     private CheckInPopulator checkInPopulator;
 
+    @Autowired
+    private io.mrkuhne.mezo.feature.train.service.TrainService trainService;
+
     /** Template session + one exercise with logged-set history (the grounding gate passes). */
     private ExerciseEntity seedTemplateWithHistory(UUID user, WorkoutSessionEntity session) {
         ExerciseEntity ex = trainPopulator.createExercise(user, session.getId(), "Chest Supported Row", 0);
@@ -107,6 +110,38 @@ class ChallengeGeneratorIT extends AbstractIntegrationTest {
                         + "\"glory\":\"Dicsőség.\",\"refIndexes\":[],\"patternIndex\":null}]}]");
 
         assertThat(generator.generate(user, session.getId(), LocalDate.now())).isEmpty();
+    }
+
+    @Test
+    void testGenerate_shouldGroundOnIdentityHistory_whenFreshCustomTemplate() {
+        UUID user = userPopulator.createUser("chg-identity@test.local").getId();
+        // History lives on a MESO day's exercise row (same name, different row id)...
+        WorkoutSessionEntity mesoDay = templateSession(user);
+        seedTemplateWithHistory(user, mesoDay);
+        // ...the custom (saját) template is fresh — its own row has ZERO logged sets.
+        io.mrkuhne.mezo.api.dto.CustomWorkoutResponse custom = trainService.createCustomWorkout(user,
+                io.mrkuhne.mezo.api.dto.CustomWorkoutUpsertRequest.builder()
+                        .name("Pihenőnapi húzás")
+                        .exercises(List.of(io.mrkuhne.mezo.api.dto.GymExerciseInput.builder()
+                                .name("Chest Supported Row").muscle("back-mid")
+                                .warmupSets(1).workingSets(3).repMin(8).repMax(10).targetRIR(1)
+                                .type(io.mrkuhne.mezo.api.dto.GymExerciseInput.TypeEnum.COMPOUND)
+                                .build()))
+                        .build());
+        checkInPopulator.createCheckIn(user, LocalDate.now(), "20:00", 3, 2,
+                "[fake-challenge:{\"challenges\":[{\"exerciseIndex\":0,\"type\":\"PR\","
+                        + "\"targetWeightKg\":90.0,\"targetReps\":6,\"risk\":\"low\","
+                        + "\"why\":\"Első saját alkalom, PR-ral.\",\"glory\":\"Dicsőség.\","
+                        + "\"refIndexes\":[0],\"patternIndex\":null}]}]");
+
+        // Identity-based grounding (mezo-q7o6): the shared exercise NAME carries the meso
+        // history onto the custom row, so the first-ever saját session can get a challenge.
+        List<ChallengeEntity> saved = generator.generate(user, custom.getId(), LocalDate.now());
+
+        assertThat(saved).hasSize(1);
+        assertThat(saved.getFirst().getExerciseId())
+                .isEqualTo(custom.getExercises().getFirst().getId());
+        assertThat(saved.getFirst().getExerciseName()).isEqualTo("Chest Supported Row");
     }
 
     @Test

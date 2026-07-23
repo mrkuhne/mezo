@@ -2,7 +2,7 @@
 title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-07-11
+updated: 2026-07-24
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -347,7 +347,12 @@ evaluator**. Design of record:
   template_session_id, workout_date)` — NOT unique (several challenges per session/day).
 - **`ChallengeGenerator`** (smart tier) — **lazy on the prep-read** for **today's** planned session
   (no generation cron): pure-code `gather` (template exercises + per-exercise last-week set / PR
-  history / volume-vs-plan; **drop exercises with no history** = the grounding gate; none left ⇒ `[]`)
+  history / volume-vs-plan; **drop exercises with no history** = the grounding gate; none left ⇒ `[]`).
+  **Since `mezo-q7o6` the grounding history is resolved by exercise IDENTITY** (catalog id, else
+  exact name — the `ExerciseRecordService` idiom via `findIdentityRowsIncludingDeleted`), not by the
+  template row alone: a fresh custom (saját, `mezo-ws2x`) template's first-ever session inherits the
+  meso rows' logged-set history, so it can get challenges too (row-only history left first saját
+  sessions permanently challenge-less)
   → ONE `completeSmart` (`CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"`) → per proposal: type-required
   target-field validation (PR needs weight+reps, Depth needs `targetRir`, Volume needs `targetSets`;
   missing ⇒ DROP — unevaluatable), pattern-copied-or-null confidence, model-selected `refs` by index,
