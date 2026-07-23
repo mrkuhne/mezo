@@ -41,6 +41,17 @@ test('default state ranks top exercises with best set and e1RM chip', async () =
   expect(within(plyoRow).getByText(/Plyo/)).toBeInTheDocument()   // ⚡ Plyo pill
 })
 
+test('a bodyweight record with weightKg 0 (live-backend shape) uses the rep stat branch', async () => {
+  renderView()
+  const row = await screen.findByRole('button', { name: /Dead Hang/ })
+  // no weighted cells — 0×35 / e1RM 0 must NOT appear
+  expect(within(row).queryByText('0×35')).not.toBeInTheDocument()
+  expect(within(row).queryByText('e1RM')).not.toBeInTheDocument()
+  expect(within(row).getByText('Max rep')).toBeInTheDocument()
+  expect(within(row).getByText('35')).toBeInTheDocument()
+  expect(within(row).getByText('65')).toBeInTheDocument()
+})
+
 test('search merges record rows with catalog ghost rows', async () => {
   renderView()
   await screen.findByRole('button', { name: /Chest Supported Row/ })

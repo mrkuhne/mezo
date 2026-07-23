@@ -97,7 +97,10 @@ function RecordRow({ record, rank, lib, onOpen, onVideo, onEdit }: {
 }) {
   const r = record
   const mc = muscleColor(r.muscle)
-  const weighted = r.bestSet?.weightKg != null
+  // Bodyweight sets arrive BOTH as absent weightKg (contract doc) AND as
+  // weightKg: 0 (live backend logs bodyweight sets with weight 0) → the
+  // weighted stat branch needs an actual load, not just a present field.
+  const weighted = (r.bestSet?.weightKg ?? 0) > 0
   const best = maxRep(r)
   // reserve header space for the absolutely-positioned roundels
   const actionPad = onEdit && onVideo ? 66 : onVideo || onEdit ? 34 : 0
