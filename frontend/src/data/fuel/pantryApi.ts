@@ -49,6 +49,7 @@ function toImportRequest(input: PantryImportInput): PantryImportRequest {
     nova: input.nova,
     // Scrape provenance (mezo-8vum) — only set when the draft came from a URL scrape;
     // undefined for a plain OFF import, so JSON.stringify omits them (payload unchanged).
+    // The origin marker (mezo-d8tr) rides along the same way for photo-draft confirms.
     sourceUrl: input.sourceUrl, confidence: input.confidence, origin: input.origin,
     priceHuf: input.priceHuf, priceUnit: input.priceUnit,
   } satisfies PantryImportRequest

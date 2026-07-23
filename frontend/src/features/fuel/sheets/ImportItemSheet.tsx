@@ -467,7 +467,7 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                 <div className="card" style={{ padding: 14, marginBottom: 12, textAlign: 'center' }}>
                   <span className="text-secondary" style={{ fontSize: 12 }}>
                     {mode === 'photo'
-                      ? 'Nem találtam tápértéket a fotón — próbáld élesebb/közelebbi képpel, vagy vidd fel kézzel.'
+                      ? 'Nem találtam használható adatot a fotón — próbáld élesebb képpel, adj hozzá előlap fotót (név/márka), vagy vidd fel kézzel.'
                       : 'Ezen az oldalon nem találtam tápértéket — vidd fel kézzel a Kamrában.'}
                   </span>
                 </div>

@@ -2121,6 +2121,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PantryScrapeResponse'
+        '400':
+          description: Validation error (bad/missing/non-http URL)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: LLM extraction failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: LLM port unavailable (companion off)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/recipe:
     get:
       tags:
