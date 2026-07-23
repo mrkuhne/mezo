@@ -71,12 +71,14 @@ public class PantryPhotoService {
         }
         String answer = port.complete(SYSTEM_PROMPT, "", images);
         ExtractedDraft d = parse(answer);
-        if (d.kcal() == null || d.name() == null || d.name().isBlank()) {
+        if (d.kcal() == null) {
             return new PantryScrapeResponse(); // honest empty: no legible nutrition facts
         }
         double confidence = validator.confidence(d);
         PantryScrapeResult result = new PantryScrapeResult();
-        result.setName(d.name().strip());
+        // Unreadable name != unusable draft (mezo-a74c): the macros are the valuable part — keep
+        // them and hand back an empty name; the FE save-guard forces the user to fill it in.
+        result.setName(d.name() == null ? "" : d.name().strip());
         result.setBrand(d.brand());
         result.setPer(BigDecimal.valueOf(100)); // mezo-y9ga: basis is ALWAYS per-100 g
         result.setUnit("g");

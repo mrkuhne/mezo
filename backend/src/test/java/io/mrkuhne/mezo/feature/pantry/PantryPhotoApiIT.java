@@ -89,6 +89,24 @@ class PantryPhotoApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testPhoto_shouldReturnDraftWithEmptyName_whenNameUnreadable() {
+        // Legible nutrition table + unreadable product name (mezo-a74c): the macros are the
+        // valuable part — return the draft with an empty name (the FE save-guard forces the
+        // user to type one) instead of dropping the whole extraction.
+        String nameless = DRAFT_JSON.replace("\"name\":\"Skyr epres\"", "\"name\":null");
+        var parts = new LinkedMultiValueMap<String, Object>();
+        parts.add("photo", jpegPart("[fake-photo:" + nameless + "]"));
+
+        ResponseEntity<PantryScrapeResponse> res = postMultipartForResponse(PATH, parts, PantryScrapeResponse.class);
+
+        assertThat(res.getStatusCode()).isEqualTo(HttpStatus.OK);
+        var r = res.getBody().getResult();
+        assertThat(r).isNotNull(); // the extraction survives — only the name is missing
+        assertThat(r.getName()).isEmpty();
+        assertThat(r.getKcal()).isEqualByComparingTo(BigDecimal.valueOf(62));
+    }
+
+    @Test
     void testPhoto_shouldFlagNeedsReview_whenAtwaterInconsistent() {
         // kcal 200 vs Atwater 57.8 → >30% off → 1.0 - 0.4 = 0.6 == threshold → needs review
         String off = DRAFT_JSON.replace("\"kcal\":62", "\"kcal\":200");

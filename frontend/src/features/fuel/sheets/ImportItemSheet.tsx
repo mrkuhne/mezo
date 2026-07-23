@@ -542,7 +542,9 @@ export function ImportItemSheet({ onClose }: { onClose: () => void }) {
                 <button
                   className="cta-primary flex-1"
                   onClick={() => void saveDraft(close)}
-                  disabled={draft == null || saving}
+                  // Name guard (mezo-a74c): a photo draft can arrive with an unreadable → empty
+                  // name; the contract requires name minLength 1, so block the save until typed.
+                  disabled={draft == null || saving || !name.trim()}
                 >
                   <Icon name="check" size={14} /> {saving ? 'Mentés…' : 'Polcra'}
                 </button>

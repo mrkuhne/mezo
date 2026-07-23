@@ -176,6 +176,39 @@ test('photo mode: selecting a label photo enables Beolvasás and lands on the sh
   vi.useRealTimers()
 })
 
+test('photo mode: empty-name draft disables Polcra until a name is typed (mezo-a74c)', async () => {
+  vi.useFakeTimers()
+  hoisted.photo = () => Promise.resolve({ ...MOCK_PHOTO_DRAFT, name: '' }) // unreadable name
+
+  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
+  fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
+  fireEvent.change(screen.getByLabelText('Címke fotó'),
+    { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
+  fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
+  await act(async () => { await vi.runAllTimersAsync() })
+
+  // the macros landed on the preview, but a nameless item must not reach the shelf
+  expect(screen.getByRole('button', { name: /Polcra/ })).toBeDisabled()
+  fireEvent.change(screen.getByLabelText('Tétel neve'), { target: { value: 'Skyr epres' } })
+  expect(screen.getByRole('button', { name: /Polcra/ })).toBeEnabled()
+  vi.useRealTimers()
+})
+
+test('photo mode: re-extract chip shows when the name is unreadable (mezo-a74c)', async () => {
+  vi.useFakeTimers()
+  hoisted.photo = () => Promise.resolve({ ...MOCK_PHOTO_DRAFT, name: '' })
+
+  render(<ImportItemSheet onClose={() => {}} />, { wrapper: wrapper() })
+  fireEvent.click(screen.getByRole('button', { name: 'Fotó' }))
+  fireEvent.change(screen.getByLabelText('Címke fotó'),
+    { target: { files: [new File(['x'], 'label.jpg', { type: 'image/jpeg' })] } })
+  fireEvent.click(screen.getByRole('button', { name: /Beolvasás/ }))
+  await act(async () => { await vi.runAllTimersAsync() })
+
+  expect(screen.getByText('+ előlap fotó (név/márka)')).toBeInTheDocument()
+  vi.useRealTimers()
+})
+
 test('photo mode: confirm passes the origin marker to importItem', async () => {
   vi.useFakeTimers()
   const importSpy = vi.fn().mockResolvedValue(undefined)
