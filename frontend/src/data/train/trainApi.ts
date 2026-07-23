@@ -32,6 +32,8 @@ export type LevelUpRobustness = components['schemas']['LevelUpRobustness']
 export type WorkoutSummaryResponse = components['schemas']['WorkoutSummaryResponse']
 export type WorkoutDetailResponse = components['schemas']['WorkoutDetailResponse']
 export type WorkoutDetailExercise = components['schemas']['WorkoutDetailExercise']
+export type CustomWorkoutResponse = components['schemas']['CustomWorkoutResponse']
+export type CustomWorkoutUpsertRequest = components['schemas']['CustomWorkoutUpsertRequest']
 
 export const trainApi = {
   mesocycles: (): Promise<MesocycleResponse[]> => apiFetch<MesocycleResponse[]>('/api/train/mesocycles'),
@@ -110,4 +112,12 @@ export const trainApi = {
       method: 'PUT',
       body: JSON.stringify({ note } satisfies ExerciseNoteRequest),
     }),
+  customWorkouts: (): Promise<CustomWorkoutResponse[]> =>
+    apiFetch<CustomWorkoutResponse[]>('/api/train/custom-workouts'),
+  createCustomWorkout: (body: CustomWorkoutUpsertRequest): Promise<CustomWorkoutResponse> =>
+    apiFetch<CustomWorkoutResponse>('/api/train/custom-workouts', { method: 'POST', body: JSON.stringify(body) }),
+  updateCustomWorkout: (id: string, body: CustomWorkoutUpsertRequest): Promise<CustomWorkoutResponse> =>
+    apiFetch<CustomWorkoutResponse>(`/api/train/custom-workouts/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+  deleteCustomWorkout: (id: string): Promise<void> =>
+    apiFetch<void>(`/api/train/custom-workouts/${id}`, { method: 'DELETE' }),
 }

@@ -168,6 +168,124 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/custom-workouts:
+    get:
+      tags: [Train]
+      operationId: listCustomWorkouts
+      summary: The owner's saved custom (saját) workout templates, oldest first
+      responses:
+        '200':
+          description: Custom workout templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomWorkoutResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags: [Train]
+      operationId: createCustomWorkout
+      summary: Create a custom workout template (name + full recipe exercise list)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomWorkoutUpsertRequest'
+      responses:
+        '201':
+          description: The created template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomWorkoutResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/custom-workouts/{id}:
+    put:
+      tags: [Train]
+      operationId: updateCustomWorkout
+      summary: Rename + full exercise-list replace of a custom workout template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomWorkoutUpsertRequest'
+      responses:
+        '200':
+          description: The updated template
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomWorkoutResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Foreign/missing/non-custom row
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags: [Train]
+      operationId: deleteCustomWorkout
+      summary: Soft-delete a custom workout template (instance history survives)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Foreign/missing/non-custom row
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/exercises:
     get:
       tags: [Train]
@@ -1325,6 +1443,36 @@ components:
         catalogId:
           type: string
           format: uuid
+    CustomWorkoutResponse:
+      type: object
+      required:
+        - id
+        - name
+        - exercises
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/GymExercise'
+    CustomWorkoutUpsertRequest:
+      type: object
+      required:
+        - name
+        - exercises
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/GymExerciseInput'
     ExerciseCatalogItem:
       type: object
       required:
@@ -1646,7 +1794,7 @@ components:
           $ref: '#/components/schemas/LevelUpResult'
     WorkoutSummaryResponse:
       type: object
-      required: [id, date, status]
+      required: [id, date, status, origin, title]
       properties:
         id:
           type: string
@@ -1661,6 +1809,13 @@ components:
         status:
           type: string
           enum: [planned, active, completed, skipped]
+        origin:
+          type: string
+          enum: [meso, custom]
+          description: Mesocycle-plan instance vs custom (saját) workout instance (mezo-ws2x)
+        title:
+          type: string
+          description: The workout title — the template day's title / the custom workout's name
     WorkoutDetailResponse:
       type: object
       required: [id, templateSessionId, date, status, title, dayLabel, exercises]

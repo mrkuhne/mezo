@@ -1,6 +1,6 @@
 import type {
   Mesocycle, WorkoutPlan, GymSchedule, GymScheduleSlot, Sport, ExerciseLibraryItem,
-  GoalPreset, SplitOption, MesoPhase,
+  GoalPreset, SplitOption, MesoPhase, CustomWorkout,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
 
@@ -427,6 +427,19 @@ export const gymSchedule: GymSchedule = {
 export const gymScheduleMock: GymScheduleSlot[] = [
   { dayOfWeek: 1, time: '18:30' }, // Kedd
   { dayOfWeek: 3, time: '18:30' }, // Csü
+]
+
+// Saved custom (saját) workout templates — mock parity for the entry sheet/composer (mezo-ws2x).
+export const customWorkoutsMock: CustomWorkout[] = [
+  {
+    id: 'custom-1',
+    name: 'Pihenőnapi felső',
+    exercises: [
+      { id: 'cw1-1', name: 'Incline DB Press', muscle: 'chest', warmupSets: 1, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+      { id: 'cw1-2', name: 'Lat Pulldown', muscle: 'lats', warmupSets: 1, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'compound' },
+      { id: 'cw1-3', name: 'Lateral Raise', muscle: 'shoulder', warmupSets: 0, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+    ],
+  },
 ]
 
 // --- sport (data.js:250-322) — ADD jumpCount to each session (port fix) ---

@@ -74,4 +74,9 @@ public class WorkoutSessionEntity extends OwnedEntity {
     @NotNull
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex = 0;
+
+    /** Template/instance origin: mesocycle plan day vs custom (saját) workout (DB CHECK, mezo-ws2x). */
+    @NotNull
+    @Column(nullable = false)
+    private String origin = "meso"; // meso|custom
 }

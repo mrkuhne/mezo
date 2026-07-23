@@ -36,6 +36,12 @@ test('tapping the current training day (Csü Pull) opens the detail sheet', () =
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
 })
 
+test('the Saját header chip opens the custom workout sheet (mezo-ws2x)', () => {
+  renderView()
+  fireEvent.click(screen.getByRole('button', { name: /Saját$/ }))
+  expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
+})
+
 // Loading skeleton (mezo-f2z) — real mode shows the GymSkeleton (role="status")
 // while the meso/today queries are unresolved (workoutPending); mock seeds → no skeleton.
 describe('GymPage (real mode, pending)', () => {

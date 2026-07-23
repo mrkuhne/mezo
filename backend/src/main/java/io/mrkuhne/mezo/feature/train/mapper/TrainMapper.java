@@ -73,6 +73,11 @@ public interface TrainMapper {
     TodayExercise toTodayExercise(ExerciseEntity entity);
 
     @Mapping(target = "status", expression = "java(WorkoutSummaryResponse.StatusEnum.fromValue(entity.getStatus()))")
+    // origin needs the same fromValue() treatment as status: MapStruct's default String->enum
+    // conversion calls Enum.valueOf() (matches constant NAMES), which throws for the lowercase
+    // 'meso'/'custom' DB values against the MESO/CUSTOM constants (mezo-ws2x).
+    @Mapping(target = "origin", expression = "java(WorkoutSummaryResponse.OriginEnum.fromValue(entity.getOrigin()))")
+    @Mapping(target = "title", source = "type")
     WorkoutSummaryResponse toWorkoutSummary(WorkoutSessionEntity entity);
 
     VolumeRecompute toRecompute(VolumeRecomputeJson json);

@@ -2,7 +2,7 @@
 title: Growth — Daily Quests, Activity Log & Gamified Progression
 type: feature-domain
 status: done
-updated: 2026-07-20
+updated: 2026-07-23
 tags: [today, me, train, fuel, intention, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/quest
@@ -110,7 +110,7 @@ Both ports (`TrainingCommitmentSource`, `QuestLedgerSource`) keep the dependency
 
 ## 5. Integrations
 
-- **← Train:** day-type seam `WorkoutService.findPlannedTemplateForDate`; `gym_session_done` via `WorkoutSessionRepository.findDoneInstanceDates`; the **discipline trait's training half** via `TrainingCommitmentSource` (impl `feature/train/signal/TrainingCommitmentCalculator`).
+- **← Train:** day-type seam `WorkoutService.findPlannedTemplateForDate`; `gym_session_done` via `WorkoutSessionRepository.findMesoDoneInstanceDates` (the plan-adherence variant since `mezo-ws2x` — custom/saját workouts don't complete the quest); the **discipline trait's training half** via `TrainingCommitmentSource` (impl `feature/train/signal/TrainingCommitmentCalculator`).
 - **← Goal:** protein target from the active goal's prescription segment (`GoalPrescriptionJson.currentSegment`); `bio_protein` only eligible when a prescription exists.
 - **← Fuel:** protein via `FuelDayService.getDay`, water via `WaterLogService.sumForDay`, and the **`own_recipe_meal`** GROWTH metric via `MealItemRepository.existsByCreatedByAndDeletedFalseAndSourceAndMeal_MealDate(user, "recipe", date)` — the "cook from your own recipe" quest.
 - **← Biometrics:** check-in count, weight-log presence, sleep duration repositories.
