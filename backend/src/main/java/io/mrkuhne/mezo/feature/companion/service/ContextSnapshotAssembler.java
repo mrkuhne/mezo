@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
 import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
+import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
@@ -34,6 +35,7 @@ import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -57,6 +59,7 @@ public class ContextSnapshotAssembler {
     static final String NO_DATA = "nincs adat";
     /** dayOfWeek 0=Hétfő..6=Vasárnap (GymScheduleSlotEntity convention). */
     private static final List<String> HU_DAYS = List.of("H", "K", "Sze", "Cs", "P", "Szo", "V");
+    private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
 
     private final BiometricProfileRepository biometricProfileRepository;
     private final WeightTrendService weightTrendService;
@@ -74,6 +77,7 @@ public class ContextSnapshotAssembler {
     private final MedicationCycleService medicationCycleService;
     private final SleepLogRepository sleepLogRepository;
     private final CheckInRepository checkInRepository;
+    private final SleepAnchorPort sleepAnchorPort;
     private final CompanionProperties properties;
 
     public String render(UUID userId, LocalDate today) {
@@ -147,12 +151,11 @@ public class ContextSnapshotAssembler {
         if (goal.getMealsPerDay() != null) {
             b.append("; étkezés/nap: ").append(goal.getMealsPerDay());
         }
-        if (goal.getWakeTime() != null) {
-            b.append(", ébredés: ").append(goal.getWakeTime());
-        }
-        if (goal.getBedTime() != null) {
-            b.append(", lefekvés: ").append(goal.getBedTime());
-        }
+        // Day anchor is owned by the sleep goal (SleepAnchorPort), not the retired goal columns.
+        // The resolver never returns empty (config ghost when no row), so these always render.
+        SleepAnchorPort.SleepAnchor anchor = sleepAnchorPort.resolve(userId);
+        b.append(", ébredés: ").append(anchor.wake().format(HH_MM))
+                .append(", lefekvés: ").append(anchor.bed().format(HH_MM));
         return b.toString();
     }
 
