@@ -709,6 +709,11 @@ export interface MesoDay {
   current?: boolean
   muscleAccent?: boolean
 }
+export interface CustomWorkout {
+  id: string
+  name: string
+  exercises: GymExercise[]
+}
 export interface VolumeBaseline { name: string; mev: number; mav: number; mrv: number }
 export interface VolumeAdjustment {
   kind: string           // 'pattern' | 'recovery' | 'niggle' | 'sport-cross'
