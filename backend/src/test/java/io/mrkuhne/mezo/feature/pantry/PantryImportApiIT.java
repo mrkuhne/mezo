@@ -168,6 +168,30 @@ class PantryImportApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testImport_shouldPersistPhotoSource_whenOriginPhoto() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        PantryImportRequest req = new PantryImportRequest();
+        req.setName("Skyr epres");
+        req.setPer(BigDecimal.valueOf(100));
+        req.setUnit("g");
+        req.setKcal(BigDecimal.valueOf(62));
+        req.setOrigin("photo");
+        req.setConfidence(BigDecimal.valueOf(0.95));
+
+        PantryItemResponse created = postForBody("/api/pantry-import", req, auth,
+            HttpStatus.CREATED, PantryItemResponse.class);
+
+        assertThat(created.getSource()).isEqualTo("photo");
+
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+        PantryImportEntryResponse feed = pantry.getImports().stream()
+            .filter(f -> "Skyr epres".equals(f.getOfWhat())).findFirst().orElseThrow();
+        assertThat(feed.getSource()).isEqualTo(PantrySource.PHOTO);
+        assertThat(feed.getStatus()).isEqualTo(PantryImportEntryResponse.StatusEnum.SYNCED);
+    }
+
+    @Test
     void testImport_shouldReturn400FieldError_whenKcalMissing() {
         PantryImportRequest bad = importReq();
         bad.setKcal(null);

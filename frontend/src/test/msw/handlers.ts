@@ -663,6 +663,8 @@ export const handlers = [
   http.get(`${API_BASE}/api/pantry-import/lookup`, () => HttpResponse.json({ results: [] })),
   // URL scrape (P8, mezo-8vum) — honest-empty default; tests override with server.use().
   http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })),
+  // Photo import (mezo-d8tr) — honest-empty default; tests override with server.use().
+  http.post(`${API_BASE}/api/pantry-import/photo`, () => HttpResponse.json({ result: null })),
   http.post(`${API_BASE}/api/pantry-import`, async ({ request }) => {
     const body = (await request.json()) as { name: string }
     return HttpResponse.json(

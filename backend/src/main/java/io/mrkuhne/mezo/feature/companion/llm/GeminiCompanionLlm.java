@@ -56,14 +56,18 @@ public class GeminiCompanionLlm implements CompanionLlm {
     }
 
     @Override
-    public String complete(String systemPrompt, String userMessage, byte[] imageBytes, String mimeType) {
+    public String complete(String systemPrompt, String userMessage, List<InlineImage> images) {
         return chatClient.prompt()
             .system(systemPrompt)
-            .user(u -> u.text(userMessage == null || userMessage.isBlank() ? "(no text)" : userMessage)
-                .media(Media.builder()
-                    .mimeType(MimeTypeUtils.parseMimeType(mimeType))
-                    .data(new ByteArrayResource(imageBytes))
-                    .build()))
+            .user(u -> {
+                u.text(userMessage == null || userMessage.isBlank() ? "(no text)" : userMessage);
+                for (InlineImage img : images) {
+                    u.media(Media.builder()
+                        .mimeType(MimeTypeUtils.parseMimeType(img.mimeType()))
+                        .data(new ByteArrayResource(img.bytes()))
+                        .build());
+                }
+            })
             .call()
             .content();
     }

@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { pantryApi, type PantryData } from '@/data/fuel/pantryApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
-import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, pantryLookupFixture, MOCK_SCRAPE_DRAFT } from '@/data/fuel/pantry'
+import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, pantryLookupFixture, MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
 import { pantrySources } from '@/data/pantrySources'
 import { supplementsStash } from '@/data/fuel/fuel'
 import type { Ingredient, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryLookupItem, PantryScrapeDraft } from '@/data/types'
@@ -100,7 +100,15 @@ export function usePantryActions() {
         : pantryApi.scrape(url),
     [mock],
   )
-  return { addItem, updateItem, deleteItem, importItem, lookupItems, scrapeItem }
+  // Photo import (mezo-d8tr) — ephemeral read like scrapeItem; mock serves the canned draft.
+  const photoExtract = useCallback(
+    (photo: File, photo2?: File): Promise<PantryScrapeDraft | null> =>
+      mock
+        ? new Promise(resolve => setTimeout(() => resolve(MOCK_PHOTO_DRAFT), 600))
+        : pantryApi.photoExtract(photo, photo2),
+    [mock],
+  )
+  return { addItem, updateItem, deleteItem, importItem, lookupItems, scrapeItem, photoExtract }
 }
 
 // --- mock-mode cache mutators: keep the offline app interactive ---
