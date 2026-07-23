@@ -34,6 +34,7 @@ import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -73,6 +74,7 @@ import org.springframework.context.annotation.Import;
     IntentionPopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
+    SleepGoalPopulator.class,
     CheckInPopulator.class,
     PantryItemPopulator.class, PantryImportPopulator.class,
     RecipePopulator.class, MealPopulator.class, WaterLogPopulator.class,
