@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-07-20
+updated: 2026-07-23
 tags: [today, biometrics, frontend, data-layer]
 key_files:
   - frontend/src/features/today
