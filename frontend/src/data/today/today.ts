@@ -7,8 +7,6 @@ import type {
   WorkoutPrediction,
 } from '@/data/types'
 
-export { fuelToday } from '@/data/fuel/fuel'
-
 export const today: TodayMeta = {
   dayLabel: 'Csütörtök',
   dateLabel: 'Máj 22',

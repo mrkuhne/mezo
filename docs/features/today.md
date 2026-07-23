@@ -56,7 +56,7 @@ The single FE↔data boundary is `frontend/src/data/hooks.ts`. Since Slice T eve
 TodayPage.tsx (composition root)
   ├─ useTodayScenario()    todayHooks.ts   — URL params (+ real-mode retaDay from useMedication().cycle) → TodayScenario
   ├─ useToday()            todayHooks.ts   — { today, user, briefing, briefingDemo, workout, workoutTime,
-  │                                           prediction, volleyballSessions, volleyballNote, fuelToday }
+  │                                           prediction, volleyballSessions, volleyballNote }
   │     briefing = useBriefing() (composed); briefingDemo = serverBriefing == null
   │     mock: statics · real: useTrain() → today session (workout, null=rest day), active meso (header
   │     chips), gym slot time, sport schedule sessions; real date labels; prediction/volleyballNote = null
@@ -112,9 +112,9 @@ Key behavioral facts (the Today hooks live in `data/today/todayHooks.ts` + `data
 - `FuelSlot` / `FuelPlanToday` (:19–36) — consumed by the fuel preview.
 
 ### Mock data
-- `frontend/src/data/today/today.ts` — `today`, `user`, `briefing`, `briefingVariants` (`good` / `medium = null` / `rough`), `workout`, `volleyballSessions` (5 sessions, **none flagged `today:true`** — see §9), the mock-only demo copy `workoutPrediction` + `volleyballNote` (Slice T — previously hardcoded in the components), re-exports `fuelToday`.
+- `frontend/src/data/today/today.ts` — `today`, `user`, `briefing`, `briefingVariants` (`good` / `medium = null` / `rough`), `workout`, `volleyballSessions` (5 sessions, **none flagged `today:true`** — see §9), the mock-only demo copy `workoutPrediction` + `volleyballNote` (Slice T — previously hardcoded in the components). (The `fuelToday` re-export was retired with the static fuel-plan seed in mezo-53su.)
 - `frontend/src/data/today/checkins.ts` — `initialCheckins`: 4 slots `06:30 done · 10:00 done · 14:00 now · 20:00 pending`.
-- `frontend/src/data/fuel/fuel.ts` — `fuelToday = fuelPlan.today` (shared with the Fuel area).
+- The Today fuel preview now comes only from the computed `useFuelPreview` → `useFuelTimeline` (`data/fuel/fuel.ts` no longer carries a `fuelToday`/`fuelPlan` seed — retired mezo-53su).
 
 ### Backend check-in (the only real piece)
 Contract fragment: [`api/feature/checkin/checkin.yml`](../../api/feature/checkin/checkin.yml) → merged into `api/openapi.yml` → FE types in `frontend/src/data/_client/api.gen.ts`, BE interfaces/DTOs in `io.mrkuhne.mezo.api`.
@@ -140,7 +140,7 @@ Backend (`backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/`):
 Today is an **aggregation surface** — its value is in the seams to the other domains. Most are navigation-only or shared-data; only one is a live backend integration.
 
 - **→ Train (`/train`)** — *live shared data + navigation* (Slice T). In real mode `useToday` composes `useTrain()`: the teaser renders Train's today session (`WorkoutPlan`), the header chips the active meso, the eyebrow time the weekly gym slot, and `volleyballSessions` the real sport schedule — the same TanStack cache entries the Train tab uses. `WorkoutTeaser` card click and the **"Indítsuk"** CTA both `navigate('/train')`. Mock mode keeps its own static `workout` (seam type `Workout | WorkoutPlan`). The gym `.typetag` now reads **`🏋️ Gym · {workout.tag}`** (the real meso phase, e.g. `"Week 3 · MAV"`), falling back to a bare `🏋️ Gym` when `tag` is empty (real mode sets `tag: ''`) — this replaced a hardcoded `hipertrófia` phase word in S8 (`mezo-mifi`). The niggle banner renders only when `workout.niggleWarning` exists (mock-only today — real niggle sources are proactive-epic); since the Napív S3 hero rework (`mezo-8141`) its copy renders **from `workout.niggleWarning.detail`** (the human-authored provenance text), replacing the pre-S3 hardcoded placeholder line.
-- **→ Fuel (`/fuel`)** — *shared data*. `FuelTimelinePreview` consumes `useFuelPreview`, which composes the **same dual-mode `useFuelTimeline()` plan the Fuel "Mai" view renders** (mock: `fuelPlan.today`; real: the `buildDayPlan` composition) — so the two never diverge (seam types `FuelSlot` / `FuelPlanToday`). It uses the shared `KIND_META` constant from `data/kindMeta.ts` (also used by Fuel). The "Fuel → Terv" eyebrow is **not** a nav link in current code.
+- **→ Fuel (`/fuel`)** — *shared data*. `FuelTimelinePreview` consumes `useFuelPreview`, which composes the **same `useFuelTimeline()` plan the Fuel "Mai" view renders** — since mezo-53su that is **one `buildDayPlan` composition in both modes** (the static `fuelPlan.today` seed is retired; mock just feeds seed sources + a fixed `13:30` now), so the two never diverge (seam types `FuelSlot` / `FuelPlanToday`). It uses the shared `KIND_META` constant from `data/kindMeta.ts` (also used by Fuel). The "Fuel → Terv" eyebrow is **not** a nav link in current code.
 - **→ Insights (`/insights`)** — *navigation only*, since the Napív S3 removal of `InsightsTeaser` (`mezo-8141`). No live-data teaser remains on Today; the sole entry point is the ✨ `<Link>` Today passes into `AppHero`'s `utilities` prop (`TodayPage.tsx:40`, since `mezo-k7rn` — previously in the now-deleted `BrandRow.tsx`). `useInsightsTeaser` (the hook that used to back the teaser) was deleted in S8 (`mezo-mifi`) — see §9.
 - **← AppHero / account progression (`mezo-k7rn`)** — *shared platform component, not Today-owned*. `AppHero` reads `useProfile`/`useGamification`/`useTitles`/`useDailyQuests` itself; Today only supplies the `utilities` prop (search + ✨ Insights). The domain behind the hero (XP stream, level curve, coins, streak, titles) is documented in [growth.md](growth.md); the shared CSS family in [`_platform-design-system.md`](_platform-design-system.md).
 - **→ Biometrics backend (real)** — `useCheckins` reads (`listForDay`) + writes (`save`) `feature/biometrics/checkin`; `useQuickStats` reads the sleep + weight logs (`useSleep`/`useWeight` — same cache keys as the Me tab). Server-side the check-in is a sibling of weight/sleep inside the biometrics feature, not a Today package. Since companion V0.3 the **latest check-in is also read into every chat turn's context snapshot** ([`companion.md`](companion.md) §5.5) via the `CheckInRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc` finder — read-only, one-directional (companion → biometrics).
@@ -166,7 +166,7 @@ const scenario = useTodayScenario()                  // { dayState, retaDay, nig
 const {
   today, user, briefing, briefingDemo,               // briefingDemo: true in real mode → honest label
   workout, workoutTime, prediction,                  // workout: Workout | WorkoutPlan | null (null = rest day, hero swaps to volleyball)
-  volleyballSessions, volleyballNote, fuelToday,     // prediction/volleyballNote: demo copy, null in real mode
+  volleyballSessions, volleyballNote,                // prediction/volleyballNote: demo copy, null in real mode
 } = useToday()
 const briefing = resolveBriefing(scenario.dayState)  // Briefing (variant merged over base)
 const { visible, nextStack } = useFuelPreview()      // 3 upcoming FuelSlots + next incomplete stack
@@ -227,7 +227,6 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 - **GOTCHA — `briefing.tone` is dead data.** Set in `briefingVariants` (`energetic` / `supportive`) but `BriefingCard` never reads it. (The only consumed `tone` is the in-sheet `CheckInObservation` tone, computed locally.)
 - **GOTCHA — niggle-banner copy now renders from `workout.niggleWarning.detail`** (since the Napív S3 hero rework, `mezo-8141` — no longer the pre-S3 hardcoded placeholder line). Still a **mock-only** surface either way: real workouts (`toWorkoutPlan` in `trainHooks.ts`) never set `niggleWarning` (Phase-3 AI extra), so the banner never renders in real mode regardless of copy source.
 - **GOTCHA — the mock-mode water CTA never completes the quest.** `TodayQuestsCard`'s `+250 ml` chip updates the fuel ring in mock mode, but the mock quest day is a static seed (no evaluation), so the row stays `offered` — same accepted demo limitation as the deterministic activity classifier. Real mode completes it on the invalidated re-read.
-- **GOTCHA — `useToday().fuelToday` is the mock seed in both modes.** No component consumes it (the fuel preview goes through `useFuelPreview`); it is kept only for hook-signature stability — flag for the Phase-2 exit audit (X slice) cleanup.
 - **Real-mode check-in derivation:** a past slot with no server row renders `skipped` (—) — an honest "missed", not `pending`; the current window is `now`; the strip reconciles with the server after every save (invalidate), so multi-device/day-reload states converge.
 - **Local-date correctness:** the day read + `saveCheckIn` use `localDateString()` (`Intl en-CA`, local tz) — deliberately not UTC slicing, so evening entries don't shift to the next day. See `shared/lib/dates.ts`.
 - **Scenario duplication:** `useTodayScenario` is called in both `TodayPage` and `AppLayout`; both must derive `anchorMode` consistently for the warm canvas and the content to match.
@@ -245,7 +244,7 @@ cd backend  && ./mvnw clean test               # ITs against the fixed mezo_test
 
 **Frontend — data & lib:**
 - `frontend/src/data/today/todayHooks.ts` (+ `todayHooks.test.tsx`) — `useTodayScenario`, `resolveBriefing`, `useToday`, `useFuelPreview`, `useQuickStats` (`useInsightsTeaser` was deleted in `mezo-mifi`, §9); `checkinHooks.ts` (+ test, incl. `buildDaySlots`) — `useCheckins`; `briefingHooks.ts` (+ test) — `useBriefing` (proactive B1.2) + `briefingApi.ts` (`toBriefing` wire→`Briefing`); all re-exported by the `data/hooks.ts` barrel.
-- `frontend/src/data/today/today.ts` (incl. `workoutPrediction`, `volleyballNote`), `checkins.ts`, `kindMeta.ts`, `types.ts` (`TodayMeta`/`UserMeta`/`WorkoutPrediction`/`QuickStatItem`), `fuel.ts` (`fuelToday`).
+- `frontend/src/data/today/today.ts` (incl. `workoutPrediction`, `volleyballNote`), `checkins.ts`, `kindMeta.ts`, `types.ts` (`TodayMeta`/`UserMeta`/`WorkoutPrediction`/`QuickStatItem`).
 - `frontend/src/data/me/biometricsApi.ts` (`checkinApi`), `data/_client/mode.ts`, `shared/lib/dates.ts`, `data/_client/api.ts` (`apiFetch`/`setToken`), `shared/lib/safeMarkdown.tsx`.
 - `frontend/src/shared/ui/RetaPhaseBar.tsx`, `QuickStat.tsx` — shared primitives.
 - `frontend/src/app/AppLayout.tsx` (anchor wiring), `router.tsx:47`, `PhoneFrame.tsx`.

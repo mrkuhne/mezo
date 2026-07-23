@@ -4,10 +4,8 @@
 
 import type { MealSlot } from '@/data/types'
 
-// mealsPerDay is the only planner default left here — the wake/bed day-anchor moved
-// to the sleep goal (mezo-dbsr), which is always set (mock seed / real ghost).
-export const PLANNER_DEFAULTS = { mealsPerDay: 4 } as const
-export const CAFFEINE_CUTOFF = '14:00'
+// Meal cadence + caffeine cutoff now live on Fuel settings (mezo-53su); the wake/bed day-anchor
+// moved to the sleep goal (mezo-dbsr). What stays here are the pure placement/snapping constants.
 export const EATING_START_OFFSET_MIN = 45
 export const KITCHEN_CLOSE_OFFSET_MIN = 90
 export const PRE_WORKOUT_SNAP_MIN = 75
