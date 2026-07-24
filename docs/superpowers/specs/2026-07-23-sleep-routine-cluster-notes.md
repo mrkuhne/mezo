@@ -15,7 +15,8 @@
 - **Landed on main:** `mezo-53su` — **Fuel „Mai" slot-timing fix + `fuel_settings` + slot-level AI** (the FIRST anchor consumer). Commits `71aebab2..9f3d001c` on `feat/fuel-slot-timing`: the `fuel_settings` per-user singleton (`GET/PUT /api/fuel/settings`, tag `FuelSettings`, config-ghost 4/"14:00") relocating `mealsPerDay` + the caffeine cutoff off the weight goal / habit config into a Fuel-owned home; the **ungated `CaffeineCutoffPort`/`CaffeineCutoffResolver`** the habit `no_stim_after` metric now reads (`HabitProperties.caffeineCutoff` + its yml key removed — the `SleepAnchorPort` idiom, third port instance); now-aware re-flow of pending meal windows in `buildDayPlan` (`FuelSlot.slotKey` identity, `MOCK_NOW_HHMM='13:30'`, the static `fuelPlan.today` seed retired so both modes compute the timeline); the Mai `.fuelchips` `szerkeszt` chip → `FuelSettingsSheet`; `EditGoalSheet` loses its "Napi ritmus" section; and the slot-level `AI` chip → `AiLogSheet` with slot-lock. Living docs updated ([`fuel.md`](../../features/fuel.md) §1/§2/§3/§4/§5/§10 · [`habit.md`](../../features/habit.md) §4/§5/§9/§10 · [`me.md`](../../features/me.md) §2/§3 · [`_platform-api-backend.md`](../../features/_platform-api-backend.md) · [`_platform-data-layer.md`](../../features/_platform-data-layer.md)); D4 tie-break codified in the slice spec.
   - Spec (approved, D1–D8): [`2026-07-23-fuel-slot-timing-design.md`](2026-07-23-fuel-slot-timing-design.md)
 - **Implemented on `feat/sleep-night` (PR pending):** `mezo-d71m` — **slice C-éj**: slice C was decomposed (2026-07-24 brainstorm) into **C-éj = C1 evening + C2 night layer in ONE slice** — and it is now built (commits `64ec47b5..253f5cb7` on `feat/sleep-night`, awaiting the self-PR + CI gate): the `WindDownBanner` T-90/T-60/night phases carrying the `wind_down` check (over the single time source `features/today/logic/windDown.ts`), the full-screen extra-dark `NightPage` (`/me/sleep/night`) with the unified 20-minute watchdog flow + 3 calm tools (breathing/body-scan/4K-walk) + the localStorage night-trace → morning `SleepLogSheet` awakenings prefill, and the **circadian auto-theme** (`ThemeMode` gains `'auto'`, default on; `CircadianTheme` flips dark exactly inside `isDarkWindow`). FE-only, no backend change. **C3** (education/motivation stat cards + escalation), **C4** (sleep-banking), **C5** (7-day A/B) stay reserved as separate slices. Spec (approved, D1–D9): [`2026-07-24-sleep-night-layer-design.md`](2026-07-24-sleep-night-layer-design.md) + mockup [`2026-07-24-sleep-night-layer-mockup.html`](2026-07-24-sleep-night-layer-mockup.html). Feature docs updated: [`today.md`](../../features/today.md) §2/§10 · [`me.md`](../../features/me.md) §2/§10 · [`habit.md`](../../features/habit.md) §5/§9 · [`_platform-design-system.md`](../../features/_platform-design-system.md) §2/§3/§10.
-- **Next after C-éj:** C3–C5 (§4) + the remaining anchor **consumer** (morning-training reschedule). See §3/§5.
+- **Implemented on `feat/sleep-c3` (PR pending):** `mezo-hd8k` — **slice C3**: the Walker education/motivation layer — a daily-rotating `SleepStatCard` (7 motivational stats, §4 list; the heavy clinical stats deliberately excluded from rotation) + full-deck `SleepStatsSheet`, a gentle data-driven **escalation card** (trailing-14d avg <6.0h OR avg quality ≤4, min 5 samples, 14-day snooze `mezo-sleep-escal-snooze` — the heavy stats + CBT-I path live HERE, only in the sheet's escalation section), and the **§7 research-ingest** of both source videos into `docs/research/` (knowledge-base skill — DONE, §7). FE-only. Five new FE files (`logic/{sleepEducation,sleepEscalation}.ts`, `components/{SleepStatCard,SleepEscalationCard}.tsx`, `sheets/SleepStatsSheet.tsx`), mounted in `SleepPage.tsx`. DEBUNK/myth cards stay reserved. Feature docs updated: [`me.md`](../../features/me.md) §2/§10. Spec (approved, D1–D7): [`2026-07-24-sleep-c3-education-design.md`](2026-07-24-sleep-c3-education-design.md).
+- **Next after C3:** C4 sleep-banking · C5 A/B experiment (§4) + the remaining anchor **consumer** (morning-training reschedule). See §3/§5.
 
 ## 1. How we got here — the two source videos
 
@@ -54,7 +55,8 @@ SLEEP CLUSTER (the new foundation — video 2):
    B. Sleep Cycle SCREENSHOT ingestion (LLM-vision) ... ✅ DONE (mezo-66ab, PR #48) — lands into A's model
    C. Video-2 practical layers — DECOMPOSED (2026-07-24):
       C-éj (C1 evening + C2 night in one slice) ....... ✅ BUILT on feat/sleep-night (mezo-d71m, PR pending)
-      C3 education/motivation cards · C4 sleep-banking · C5 A/B experiment ... ⏳ RESERVED (§4)
+      C3 education/motivation + escalation cards ...... ✅ BUILT on feat/sleep-c3 (mezo-hd8k, PR pending)
+      C4 sleep-banking · C5 A/B experiment ............ ⏳ RESERVED (§4)
 
 CONSUMERS of the anchor (were video-1 ③④):
    Fuel "Mai" slot-timing fix + slot-level AI logging  ✅ DONE (mezo-53su) — consumes the anchor; relocated mealsPerDay + caffeine cutoff to Fuel
@@ -110,10 +112,10 @@ Framework he gives = **QQRT**: **Q**uantity · **Q**uality · **R**egularity · 
 - **"Don't check the clock" + calm-down toolkit** for 3am wakeups: box-breathing (e.g. in 5 / hold 6 / out 7),
   body scan, a vividly-narrated "4K mental walk" (Alison Harvey — speeds return to sleep), guided meditation.
 - **Sleep-banking mode:** before a known deficit (travel, on-call, big event, new baby), extend
-  time-in-bed to ~10 h for the prior days → **~40% less cognitive impairment** when later deprived (Walter Reed / Balkin).
-- **Motivation/education stat cards** (short, quotable — see stats below).
-- **7-day A/B self-experiment** scaffold (baseline → intervention → baseline) to prove a change isn't placebo.
-- **Escalation nudge:** frequent distressing nightmares / very short sleep → a "see someone" resource card.
+  time-in-bed to ~10 h for the prior days → **~40% less cognitive impairment** when later deprived (Walter Reed / Balkin). — ⏳ still reserved (C4).
+- **Motivation/education stat cards** (short, quotable — see stats below). — ✅ **DONE (C3, `mezo-hd8k`):** the daily-rotating `SleepStatCard` (7-stat `STAT_DECK`, deterministic `dailyStatIndex`) + the full-deck `SleepStatsSheet` (with sources footer). Heavy clinical stats deliberately kept OUT of the rotation.
+- **7-day A/B self-experiment** scaffold (baseline → intervention → baseline) to prove a change isn't placebo. — ⏳ still reserved (C5).
+- **Escalation nudge:** frequent distressing nightmares / very short sleep → a "see someone" resource card. — ✅ **DONE (C3, `mezo-hd8k`):** the data-driven `SleepEscalationCard` (`evaluateEscalation` trailing-14d avg <6.0h / avg ≤4 quality, min 5 samples, 14-day snooze) renders INSTEAD of the stat card; the heavy stats + CBT-I path live only in `SleepStatsSheet`'s escalation section. Gentle framing — no red, no guilt (ADR 0010).
 
 ### Motivation stats (quotable)
 - Regularity (most vs least regular, UK Biobank ~60k): **−49% all-cause mortality, −57% cardiometabolic disease, −39% cancer mortality.** Regularity **beat quantity** for predicting mortality.
@@ -122,6 +124,9 @@ Framework he gives = **QQRT**: **Q**uantity · **Q**uality · **R**egularity · 
 - Deep NREM runs the brain's glymphatic "power cleanse" (clears beta-amyloid/tau).
 
 ### DEBUNKS (do NOT build)
+
+> **C3 status (`mezo-hd8k`):** this myth-list is now captured durably as the [`sleep-debunks.md`](../../research/concepts/sleep-debunks.md) research concept page — but it ships as **wiki knowledge only; still NO app feature / DEBUNK cards** (those stay reserved). The list below remains the "do-not-build" guardrail.
+
 - Fixed **90-min smart-wake** devices (cycle ranges 70–120 min — "nonsense").
 - "**8 hours for everyone**" (it's a 7–9 h *range*).
 - **Blue-light-blocking** as the main lever (the real issue is *engagement*/"bed rotting", not the wavelength — the famous iPad study didn't replicate).
@@ -176,9 +181,14 @@ Framework he gives = **QQRT**: **Q**uantity · **Q**uality · **R**egularity · 
   DERIVED completions earn XP but their level-up is currently silent; decide surface-vs-quiet).
 - `mezo-azwt` — daily-intention follow-ups (removeFocus 404 test, error-code asserts, dead CSS, banner state tests).
 
-## 7. A full research ingestion of the Walker video is a TODO
+## 7. Research ingestion of the source videos — ✅ DONE (`mezo-hd8k`)
 
-Per CLAUDE.md, an external source worth keeping should be ingested into `docs/research/` via the
-**`knowledge-base`** skill (source → `research/raw/`, distilled into entity/concept pages). This
-doc folds the *buildable* insights inline for continuity; a proper `research/` ingestion of the
-Walker interview (and the Ethier video) can be done later for the wiki.
+**DONE (`mezo-hd8k`):** both source videos are now ingested into `docs/research/` via the
+**`knowledge-base`** skill — see [`docs/research/log.md`](../../research/log.md). Two raw transcripts
+(`research/raw/transcripts/2026-07-23-walker-doac-sleep-interview.md` +
+`2026-07-23-ethier-morning-routine.md`) were distilled into **2 entities**
+([`matthew-walker`](../../research/entities/matthew-walker.md), [`jeremy-ethier`](../../research/entities/jeremy-ethier.md))
++ **4 concepts** ([`qqrt`](../../research/concepts/qqrt.md), [`sleep-regularity`](../../research/concepts/sleep-regularity.md),
+[`sleep-debunks`](../../research/concepts/sleep-debunks.md), [`morning-routine`](../../research/concepts/morning-routine.md)),
+with a new `sleep` tag added to the taxonomy and both pages registered in the index + log. This doc still
+folds the *buildable* insights inline (§4) for slice continuity; the wiki is the durable external-source record.

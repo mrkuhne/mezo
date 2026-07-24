@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { http, HttpResponse } from 'msw'
@@ -8,8 +8,20 @@ import { QueryWrapper, makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
-// Asserts the Phase-1 mock sleep hero, so pin mock mode explicitly.
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+vi.mock('@/features/me/logic/sleepEscalation', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/me/logic/sleepEscalation')>()),
+  evaluateEscalation: vi.fn(() => ({ triggered: false, reason: null })),
+}))
+import { evaluateEscalation, SNOOZE_KEY } from '@/features/me/logic/sleepEscalation'
+
+// Asserts the Phase-1 mock sleep hero, so pin mock mode explicitly. Also clears the
+// snooze localStorage key and resets the escalation mock to its not-triggered default
+// so test order can't leak state between the escalation cases.
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  localStorage.clear()
+  vi.mocked(evaluateEscalation).mockReturnValue({ triggered: false, reason: null })
+})
 afterEach(() => vi.unstubAllEnvs())
 
 // SleepPage renders a <Link> (night-mode entry row), so a router context is required.
@@ -83,4 +95,26 @@ test('renders the night-mode entry row linking to /me/sleep/night', () => {
   renderPage() // the file's existing helper
   const link = screen.getByRole('link', { name: /Éjszakai mód/ })
   expect(link).toHaveAttribute('href', '/me/sleep/night')
+})
+
+test('renders the daily stat card when no escalation', () => {
+  renderPage()
+  expect(screen.getByText('Miért számít?')).toBeInTheDocument()
+})
+
+test('escalation replaces the stat card and Most nem snoozes it away', () => {
+  vi.mocked(evaluateEscalation).mockReturnValue({ triggered: true, reason: 'short' })
+  renderPage()
+  expect(screen.getByText(/tartósan kevés/i)).toBeInTheDocument()
+  expect(screen.queryByText('Miért számít?')).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Most nem' }))
+  expect(screen.getByText('Miért számít?')).toBeInTheDocument()
+  expect(localStorage.getItem(SNOOZE_KEY)).not.toBeNull()
+  vi.mocked(evaluateEscalation).mockReturnValue({ triggered: false, reason: null })
+})
+
+test('stat card opens the deck sheet', () => {
+  renderPage()
+  fireEvent.click(screen.getByText('Miért számít?'))
+  expect(screen.getByText('A kutatás számai')).toBeInTheDocument()
 })

@@ -62,7 +62,7 @@ page — don't spawn a stub.
 Tags are a **small, controlled, extensible** vocabulary — the shared spine across both collections.
 Seed set relevant to mezo (Phase-3 AI brain + the platform around it):
 
-`ai` · `rag` · `pgvector` · `nestjs` · `spring` · `deployment` · `market` · `tooling` · `technique`
+`ai` · `rag` · `pgvector` · `nestjs` · `spring` · `deployment` · `market` · `tooling` · `technique` · `sleep`
 
 The features collection adds its domain taxonomy (`train`, `fuel`, `today`, `insights`, `me`,
 `platform`, `backend`, `frontend`, `auth`, `data-layer`, `design`, `running`, `sport`, `biometrics`).
