@@ -30,13 +30,15 @@ test('the dropdown lists all seven Me sub-views and navigates to Cél', async ()
   expect(await screen.findByRole('heading', { level: 1, name: /Hosszú cél/ })).toBeInTheDocument()
 })
 
-test('Beállítások menu item opens SettingsSheet and theme toggle flips data-theme', async () => {
-  localStorage.clear()
+test('Beállítások menu item opens SettingsSheet and the theme selector flips data-theme', async () => {
+  // Default is circadian-auto (wall-clock dependent); preset manual light to keep this
+  // smoke test deterministic. CircadianTheme.test covers the auto resolution.
+  localStorage.setItem('mezo-theme', 'light')
   renderApp('/me')
   await userEvent.click(screen.getByRole('button', { name: 'Profil' }))
   await userEvent.click(screen.getByRole('menuitem', { name: 'Beállítások' }))
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
-  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
+  await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 

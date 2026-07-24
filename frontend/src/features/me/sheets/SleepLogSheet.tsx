@@ -5,6 +5,8 @@ import { TimePicker } from '@/features/me/components/TimePicker'
 import { useSleep, useSleepShot } from '@/data/hooks'
 import type { SleepLogInput, SleepShotDraft } from '@/data/types'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
+import { clearNightWake, readNightWake } from '@/features/me/logic/nightTrace'
+import { localDateString } from '@/shared/lib/dates'
 
 function computeDuration(bedtime: string, wakeup: string): number {
   const [bh, bm] = bedtime.split(':').map(Number)
@@ -42,7 +44,9 @@ export function SleepLogSheet({
   const [bedtime, setBedtime] = useState('23:00')
   const [wakeup, setWakeup] = useState('06:30')
   const [quality, setQuality] = useState(7)
-  const [awakenings, setAwakenings] = useState(1)
+  // Soft night-trace prefill (spec D7): read once on mount; manual edits simply override.
+  const [nightTrace] = useState(() => readNightWake(localDateString()))
+  const [awakenings, setAwakenings] = useState(nightTrace ? Math.min(nightTrace.count, 4) : 1)
   const [inBedMin, setInBedMin] = useState('')
   const [note, setNote] = useState('')
   const duration = computeDuration(bedtime, wakeup)
@@ -60,6 +64,7 @@ export function SleepLogSheet({
       inBedMin: inBedMin ? Number(inBedMin) : undefined,
       note: note || undefined,
     })
+    clearNightWake(localDateString())
     close()
   }
 
@@ -78,6 +83,7 @@ export function SleepLogSheet({
       source: 'screenshot',
       note: note || undefined,
     })
+    clearNightWake(localDateString())
     close()
   }
 
@@ -200,11 +206,12 @@ export function SleepLogSheet({
                   <span style={SECTION_LABEL}>Ébredések éjjel</span>
                   <span style={{ fontFamily: 'var(--ff-display)', fontSize: 18, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{awakenings}<span style={{ fontSize: 10, color: 'var(--text-tertiary)', marginLeft: 4 }}>×</span></span>
                 </div>
-                <div className="row gap-sm">
+                <div className="row gap-sm" role="group" aria-label="Ébredések éjjel">
                   {[0, 1, 2, 3, '4+'].map(n => {
                     const val = n === '4+' ? 4 : (n as number)
                     return (
                       <button key={n} onClick={() => setAwakenings(val)} className="flex-1 chip"
+                        aria-pressed={awakenings === val}
                         style={{ padding: '10px',
                           background: awakenings === val ? 'var(--wash-lav)' : 'var(--surface-1)',
                           borderColor: awakenings === val ? 'var(--lav-deep)' : 'var(--border-subtle)',
@@ -213,6 +220,14 @@ export function SleepLogSheet({
                     )
                   })}
                 </div>
+                {nightTrace && (
+                  <div className="row gap-sm" style={{ alignItems: 'flex-start', background: 'var(--wash-lav)', borderRadius: 14, padding: '11px 13px' }}>
+                    <span aria-hidden="true" style={{ fontSize: 13 }}>🌙</span>
+                    <span style={{ fontSize: 11.5, lineHeight: 1.55, color: 'var(--lav-deep)', flex: 1 }}>
+                      Az éjjel {nightTrace.count}× jártál az éjszakai módban — előtöltöttem. Írd felül, ha máshogy emlékszel.
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="row mt-lg" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px', background: 'var(--surface-2)' }}>

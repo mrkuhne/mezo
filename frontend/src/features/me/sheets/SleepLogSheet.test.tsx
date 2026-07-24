@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -92,5 +92,51 @@ describe('screenshot mode (mezo-66ab)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ bedtime: '23:00', wakeup: '06:30' }))
     expect(onSave.mock.calls[0][0].source).toBeUndefined()
+  })
+})
+
+describe('night-trace prefill (mezo-d71m)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  const renderSheet = (onSave = vi.fn(), onClose = vi.fn()) => {
+    render(<QueryWrapper><SleepLogSheet onClose={onClose} onSave={onSave} /></QueryWrapper>)
+    return { onSave, onClose }
+  }
+
+  const today = new Intl.DateTimeFormat('en-CA').format(new Date())
+  const KEY = `mezo-night-wake:${today}`
+
+  beforeEach(() => localStorage.clear())
+
+  // The awakenings chips (0..4+) share number labels with the quality selector (1..10),
+  // so scope the lookup to the labeled awakenings group to keep the query unambiguous.
+  const awakeChip = (name: string) =>
+    within(screen.getByRole('group', { name: 'Ébredések éjjel' })).getByRole('button', { name })
+
+  test('prefills awakenings from the trace and shows the hint', () => {
+    localStorage.setItem(KEY, JSON.stringify({ count: 2, lastAt: 'x' }))
+    renderSheet()
+    expect(screen.getByText(/Az éjjel 2× jártál az éjszakai módban/)).toBeInTheDocument()
+    expect(awakeChip('2')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('clamps the prefill at 4', () => {
+    localStorage.setItem(KEY, JSON.stringify({ count: 7, lastAt: 'x' }))
+    renderSheet()
+    expect(awakeChip('4+')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('no trace: default awakenings, no hint', () => {
+    renderSheet()
+    expect(screen.queryByText(/éjszakai módban/)).toBeNull()
+    expect(awakeChip('1')).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  test('saving clears the trace', () => {
+    localStorage.setItem(KEY, JSON.stringify({ count: 1, lastAt: 'x' }))
+    renderSheet()
+    fireEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+    expect(localStorage.getItem(KEY)).toBeNull()
   })
 })

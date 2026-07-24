@@ -2,7 +2,7 @@
 title: Habit — Morning & Evening Routine Engine
 type: feature-domain
 status: done
-updated: 2026-07-23
+updated: 2026-07-24
 tags: [today, me, growth, fuel, train, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
@@ -98,6 +98,7 @@ All inbound edges are **pure reads** — habit depends on {biometrics, meal, fue
 - **← Sleep goal** (`HabitTargets`, `mezo-dbsr`, spec D3): the wake/bed anchors now come from the **sleep goal** through the shared **`SleepAnchorPort`** — `HabitTargets` is a thin adapter over it (`HabitTargets.java:17-24`), no longer a `GoalRepository` + `HabitProperties.defaultWake`/`defaultBed` reader (those config keys are **removed**). The port ghosts config defaults when no sleep-goal row exists (the no-goal default **bed shifted 23:00 → 22:00**). The M1 `sleep_wake_window` / E4 `bedtime_next_day` checks re-centre on the sleep goal's anchor but **keep their 45-min tolerance window** (`mezo.habit.wake-window-min`) — the strict ±15 band is only the sleep-goal regularity *score*, not the habit gate. `kitchenClose = bedTime − kitchen-close-offset-min (90′)`.
 - **→ Progression** (`ProgressionService.applyHabit` / `revertHabit`, source `HABIT`): completion rides the shared idempotent `award(...)` tail (`source_type=HABIT`, `source_ref_id=habit_day.id`) onto the habit's **LIFE** skill; un-check reverts by soft-deleting the event + decrementing the skill row directly (§4 schema change #2). The CHECK was relaxed additively. Discipline trait and the Growth journal do **not** consume habit signals in v1 (deliberate — wireable later).
 - **→ Today / Growth surfaces:** `RoutineCard` (Today) + the Rutin tab (`/me/growth`) as in §2. The `AppHero` ⚡ counter stays **quest-only** — habits do not feed it.
+- **→ Today `WindDownBanner` (the `wind_down` habit's SECOND surface, sleep slice C-éj `mezo-d71m`):** during the evening winddown window (`[bed−60, bed)`) the Today `WindDownBanner` ([today.md §2](today.md)) renders the `wind_down` MANUAL habit with its own `Pipa` check, reading `useHabitDay(date)`/`useHabitActions(date)` over the **same `['habitDay', date]` cache as `RoutineCard`** — so a check on either surface flips the other, and the completion's level-up rides the shared `useLevelUp` overlay from whichever surface performed it. No habit-domain change: it is a second consumer of the existing hooks, not a new metric or catalog row.
 - **↔ Account progression / `AppHero` (mock-mode side-effect):** in **mock mode** `useHabitActions.check` also calls `awardGamificationEvent(qc, {type:'HABIT', xpOverride})` (`data/habit/habitHooks.ts:58`) so the `AppHero` account XP/streak/coin ledger moves in an offline demo — the tenth call site of the mock account-XP precedent (see [growth.md §2](growth.md), "Account progression"). `HABIT` is registered in `gamificationTypes.XpEventType` + `xpValues` (`XP_VALUES.HABIT = 0`, `DAILY_CAPS.HABIT = 10` — the amount comes from the habit's own `xpOverride`). **Real mode never calls it** (account XP is derived from the profile there). DERIVED completions carry no mock account-XP (there is no mock "derived" event, same as quests).
 
 ## 6. How to use it (consume)
@@ -145,6 +146,7 @@ A whole new chain or custom/user-edited habits are **out of scope** in v1 (the d
 - **Gotcha — END_OF_DAY habits show `pending` all day:** E1/E2 are not in `INTRADAY_METRICS`, so the today-read never completes them — they resolve only at the nightly close or the next-day read. Expected, not a stuck row.
 - **Gotcha — MANUAL habits are never auto-completed:** M2/E3 nominally sit in the intraday set but `evaluateIntraday` skips `metric == "manual"` — they complete solely via the `check` write (honest self-claim), and quietly `missed` at close if untapped.
 - **Gotcha — the perfect toast fires on mount:** `RoutineCard`'s `wasComplete` ref starts `false`, so a chain that is already complete when the card first mounts emits the celebration toast once on that mount (an accepted "welcome back" chime, not a per-completion-only event).
+- **Gotcha — after midnight the `WindDownBanner` checks the NEW day's row.** The Today banner (sleep slice C-éj, §5) keys `useHabitDay`/`useHabitActions` on `localDateString()`, so once the wall clock passes midnight (a bed time of e.g. 00:15 puts the winddown window on both sides of midnight) the `wind_down` check writes to the **new** day's `habit_day` row — the same date-source behaviour as `RoutineCard`, deliberately consistent (both use the local-date string, never a UTC slice).
 - **Deferred (spec §10 / sub-projects ②③④):** custom/user-edited habits + catalog-management UI; PWA reminder notifications; companion flavor copy + discipline-trait/Growth-journal HABIT consumption; and the three sibling specs — ② Sleep Cycle screenshot ingestion, ③ Fuel „Mai" slot-timing fix + slot-level AI logging, ④ morning-training reschedule + Tasty Dose/Origin protocol data setup.
 
 ## 10. Key files

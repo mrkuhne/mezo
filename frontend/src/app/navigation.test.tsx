@@ -22,14 +22,17 @@ test('navigates between tabs by clicking the bottom nav', async () => {
   expect(screen.getByLabelText('Insights alnavigáció')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
 })
-test('Me screen theme toggle flips data-theme', async () => {
-  localStorage.clear()
+test('Me screen theme selector flips data-theme', async () => {
+  // Default is now circadian-auto (wall-clock dependent); preset manual light so this
+  // navigation smoke test stays deterministic. Auto/circadian resolution is covered by
+  // CircadianTheme.test + ThemeProvider.test.
+  localStorage.setItem('mezo-theme', 'light')
   renderApp('/me')
   await userEvent.click(screen.getByRole('button', { name: 'Profil' }))
   await userEvent.click(screen.getByRole('menuitem', { name: 'Beállítások' }))
-  // Light is the default (no attribute; light is the CSS base); toggling flips to dark.
+  // Manual light => no attribute (light is the CSS base); choosing Sötét flips to dark.
   expect(document.documentElement.getAttribute('data-theme')).toBeNull()
-  await userEvent.click(screen.getByRole('switch', { name: 'Téma váltás' }))
+  await userEvent.click(screen.getByRole('button', { name: /Sötét/ }))
   expect(document.documentElement.getAttribute('data-theme')).toBe('dark')
 })
 test('the tab bar stays visible on the regular Train tab', () => {
