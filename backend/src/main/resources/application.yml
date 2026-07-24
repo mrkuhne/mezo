@@ -194,6 +194,9 @@ mezo:
     # off ⇒ the /api/intention surface 404s and no intention beans exist.
     intention:
       enabled: true
+    # Napzárás closing ritual (bd mezo-hvmx) — sleep-anchored evening close; off ⇒ /api/ritual 404s.
+    ritual:
+      enabled: true
     # Sleep goal + day-anchor (mezo-dbsr): first-class sleep goal owns the day's wake/bed anchor.
     sleep-goal:
       enabled: true
@@ -559,6 +562,11 @@ mezo:
     focus-cap: 3
     creed-max-len: 280
     focus-max-len: 200
+  # Napzárás window tunables (mezo-hvmx, spec §5) — bed-anchored offsets, minutes. Binds onto
+  # RitualProperties.
+  ritual:
+    lead-min: 75        # the window opens bed − 75'
+    prep-lead-min: 45   # sleep-prep display anchor: bed − 45'
   # Sleep goal defaults (mezo-dbsr): the config-default "ghost" served before the user saves a goal,
   # plus the regularity band default. Binds onto SleepGoalProperties.
   sleep:
