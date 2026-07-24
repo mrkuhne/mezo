@@ -59,6 +59,12 @@ export function dailyStatIndex(dateIso: string, deckLength: number = STAT_DECK.l
   return Number(dateIso.replaceAll('-', '')) % deckLength
 }
 
+/** Reason-branched escalation lead-in — shared by SleepEscalationCard and SleepStatsSheet. */
+export const ESCALATION_LEAD: Record<'short' | 'quality', string> = {
+  short: 'Az elmúlt két hétben tartósan kevés az alvásod.',
+  quality: 'Az elmúlt két hétben tartósan rossz minőségű az alvásod.',
+}
+
 /** Escalation-sheet copy (spec §3 tail) — shown ONLY in the sheet's escalation section. */
 export const ESCALATION_HEAVY_STATS =
   'Tartósan 6 óra alatti alvás mellett a kutatások 100–150%-kal magasabb öngyilkossági rizikót mértek; a gyakori, nyomasztó rémálmok önálló figyelmeztető jelek — a szervezet vészjelzései, nem jellemhibák.'

@@ -1,7 +1,7 @@
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import {
-  ESCALATION_CBT, ESCALATION_HEAVY_STATS, STAT_DECK,
+  ESCALATION_CBT, ESCALATION_HEAVY_STATS, ESCALATION_LEAD, STAT_DECK,
 } from '@/features/me/logic/sleepEducation'
 
 /** The full Walker deck (slice C3, spec D3) + the escalation section (spec D4) when the
@@ -29,9 +29,7 @@ export function SleepStatsSheet({
             <section className="sesc-sheet" aria-label="Az alvásod jelez">
               <span className="sstat-eye" style={{ color: 'var(--amber-deep)' }}>Az alvásod jelez</span>
               <p className="sesc-lead">
-                {escalation === 'short'
-                  ? 'Az elmúlt két hétben tartósan kevés az alvásod.'
-                  : 'Az elmúlt két hétben tartósan rossz minőségű az alvásod.'}
+                {ESCALATION_LEAD[escalation]}
                 {' '}Ez nem akaraterő kérdése.
               </p>
               <p className="sesc-body">{ESCALATION_HEAVY_STATS}</p>
