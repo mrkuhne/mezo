@@ -38,6 +38,9 @@ export function habitAction(h: HabitItem): HabitAction {
   if (h.key === 'intention_reflect') {
     return { kind: 'intention-reflect' }
   }
+  if (h.key === 'evening_ritual') {
+    return { kind: 'nav', to: '/ritual' }
+  }
   const to = NAV_BY_KEY[h.key]
   return to ? { kind: 'nav', to } : { kind: 'none' }
 }

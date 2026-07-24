@@ -28,4 +28,8 @@ describe('habitAction', () => {
   test('done/missed habits have no action', () => {
     expect(habitAction(byKey('wake_on_time'))).toEqual({ kind: 'none' }) // seed status: done
   })
+  test('evening_ritual navigates to /ritual', () => {
+    expect(habitAction({ ...byKey('morning_sunlight'), mode: 'DERIVED', key: 'evening_ritual', status: 'pending' }))
+      .toEqual({ kind: 'nav', to: '/ritual' })
+  })
 })
