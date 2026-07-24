@@ -28,12 +28,19 @@ describe('ChallengesCarousel', () => {
     expect(screen.getByText('Kihívások generálása…')).toBeInTheDocument()
     expect(screen.queryByText('⚔ Elfogadom')).not.toBeInTheDocument()
     expect(screen.queryByText('Ma nincs kihívás')).not.toBeInTheDocument()
+    // no cards are actually shown yet — the eyebrow must not fake a "· 0" count
+    // (final-review fix, mezo-bxpg — Finding 4).
+    expect(screen.getByText('⚔ A mai küldetések')).toBeInTheDocument()
+    expect(screen.queryByText(/⚔ A mai küldetések ·/)).not.toBeInTheDocument()
   })
 
   test('resolved-empty (not pending) renders the honest empty line', () => {
     render(<ChallengesCarousel challenges={[]} accepted={{}} onToggle={vi.fn()} />)
     expect(screen.getByText('Ma nincs kihívás')).toBeInTheDocument()
     expect(screen.queryByText('Kihívások generálása…')).not.toBeInTheDocument()
+    // genuinely zero quests today — same rule: no fake "· 0" suffix.
+    expect(screen.getByText('⚔ A mai küldetések')).toBeInTheDocument()
+    expect(screen.queryByText(/⚔ A mai küldetések ·/)).not.toBeInTheDocument()
   })
 
   test('renders the quest cards + the counted section eyebrow when neither pending nor empty', () => {

@@ -51,7 +51,7 @@ export function ChallengesCarousel({
         style={{ padding: '0 24px 12px', justifyContent: 'space-between', alignItems: 'flex-end' }}
       >
         <div className="col">
-          <Eyebrow brand>⚔ A mai küldetések · {challenges.length}</Eyebrow>
+          <Eyebrow brand>⚔ A mai küldetések{showCards ? ` · ${challenges.length}` : ''}</Eyebrow>
           {showCards && (
             <span
               className="text-tertiary"
