@@ -16,8 +16,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useChallengeActions, useChallenges, useTrain } from '@/data/hooks'
 import { localDateString } from '@/shared/lib/dates'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import { useLiveActivity } from '@/app/providers/LiveActivityProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
+import { useRestTimer } from '@/features/train/logic/useRestTimer'
+import { RestTimerBar } from '@/features/train/components/RestTimerBar'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import {
@@ -136,11 +137,11 @@ function ActiveWorkoutSession({
   const W = workout
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const { startRest, clearRest } = useLiveActivity()
-  // Exiting the session (Bezárás / back / Mentés — all route through here) must not
-  // leave a rest ticking in the shell's Dynamic Island after the user has left.
+  const rest = useRestTimer()
+  // Exiting the session (Bezárás / back / Mentés — all route through here) drops any
+  // running rest; the state is page-local so unmount alone would clear it too.
   const onExit = () => {
-    clearRest()
+    rest.skip()
     navigate('/train')
   }
 
@@ -210,13 +211,11 @@ function ActiveWorkoutSession({
     return () => clearTimeout(t)
   }, [showPR])
 
-  // The rest Live-Activity must not survive past this session: clear it once the
-  // summary/recap phase is reached, and on unmount (mid-workout navigation away,
-  // e.g. a deep-link change) as a final safety net.
+  // A rest must not survive into the summary/recap phase. (No unmount cleanup
+  // needed anymore — the timer state is page-local and dies with the page.)
   useEffect(() => {
-    if (phase === 'complete' || phase === 'summary') clearRest()
-  }, [phase, clearRest])
-  useEffect(() => () => clearRest(), [clearRest])
+    if (phase === 'complete' || phase === 'summary') rest.skip()
+  }, [phase, rest.skip])
 
   // Plan growth mid-session (mezo-ohvm): the server-side closing block can append
   // template exercises while this session is already open — a refetch then grows
@@ -375,8 +374,7 @@ function ActiveWorkoutSession({
 
     // Last set of this exercise → pin it for the debrief sheet. Otherwise
     // completeSetModel already advanced the cursor for the same exercise, and the
-    // island rest starts (spec §4.5): "next" is the current exercise's name when
-    // more of its sets remain, else the upcoming exercise's (or null on the last).
+    // in-card rest starts (mezo-xt65): the CTA slot morphs into the RestTimerBar.
     if (wasSetIdx + 1 >= effectiveSetCount(session, finishing.id)) {
       setFeedbackEx(finishing)
       // The debrief takeover unmounts a possibly mid-close ExerciseActionSheet
@@ -386,10 +384,9 @@ function ActiveWorkoutSession({
       // this by firing the parent setState after the unmount.
       setActionSheetOpen(false)
     } else {
-      startRest({
-        seconds: restSecondsFor(current.type),
-        next: wasSetIdx + 1 < currentSetCount ? current.name : (nextEx?.name ?? null),
-      })
+      // No "next" label anywhere — mid-exercise the next set is visible right
+      // above the bar (set dots + prefilled steppers).
+      rest.start(restSecondsFor(current.type))
     }
   }
 
@@ -449,9 +446,9 @@ function ActiveWorkoutSession({
   // finish (if it was the last unresolved exercise) or advance to the next one,
   // prefilling the logging panel from its targets. Mirrors advanceAfterFeedback.
   const handleSkip = () => {
-    // Abandoning the current exercise must not leave the island counting down
+    // Abandoning the current exercise must not leave the rest bar counting down
     // toward it (final-review fix, mezo-8141 — Ride-along A).
-    clearRest()
+    rest.skip()
     const exId = current.id // skip the VIEWED exercise (free navigation)
     if (workoutId) skipExercise(workoutId, exId)
     const afterSkip = skipExerciseModel(session, exId)
@@ -948,26 +945,6 @@ function ActiveWorkoutSession({
             })}
           </div>
 
-          {/* Current-set kind tag (mezo-eerq): the logging surface itself says
-              warmup vs working — the tiny set-dot label alone was missed. */}
-          {currentTarget && (
-            <div className="row mt-sm" style={{ justifyContent: 'center' }}>
-              <span
-                className="stag"
-                style={{
-                  fontSize: 10,
-                  padding: '4px 10px',
-                  background: `color-mix(in srgb, ${isWarmupSet ? 'var(--warning)' : 'var(--coral)'} 14%, transparent)`,
-                  color: isWarmupSet ? 'var(--warning)' : 'var(--coral-deep)',
-                }}
-              >
-                {isWarmupSet
-                  ? `Bemelegítő · B${cursor + 1}`
-                  : `Working · ${cursor + 1 - warmupCount}/${currentSetCount - warmupCount}`}
-              </span>
-            </div>
-          )}
-
           {/* Giant steppers — the single logging surface (spec §4.5). Only
               genuinely load-less exercises (plyo) hide the kg stepper. */}
           <div className="steprow">
@@ -1010,9 +987,20 @@ function ActiveWorkoutSession({
             onChange={(e) => setNote(e.target.value)}
           />
 
-          <button type="button" className="donebtn np-press" onClick={completeSet}>
-            Szett kész ✓
-          </button>
+          {rest.status === 'idle' ? (
+            <button type="button" className="donebtn np-press" onClick={completeSet}>
+              Szett kész ✓
+            </button>
+          ) : (
+            <RestTimerBar
+              remaining={rest.remaining}
+              total={rest.total}
+              paused={rest.status === 'paused'}
+              onPause={rest.pause}
+              onResume={rest.resume}
+              onSkip={rest.skip}
+            />
+          )}
         </div>
 
         {/* Two-way pager bar (mockup B) — big tap targets, neighbour name + live n/m. */}
