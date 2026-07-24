@@ -1410,6 +1410,20 @@ button.dynamic-island { border: 0; padding: 0; font: inherit; }
 :root[data-theme="dark"] .setdots .sd.wu:not(.don):not(.cur) { color: #E8B36B; }
 .setdots .sd.extra:not(.don):not(.cur) { background: transparent; border: 1.5px dashed var(--coral); box-sizing: border-box; color: var(--coral-deep); }
 .donebtn { margin-top: 16px; width: 100%; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); color: #fff; border-radius: 999px; padding: 16px 0; text-align: center; font-weight: 800; font-size: 16px; border: 0; cursor: pointer; font-family: inherit; box-shadow: 0 10px 24px color-mix(in srgb, var(--cta-g2) 35%, transparent), inset 0 1px 0 rgba(255,255,255,.25); }
+
+/* ===== In-card rest timer bar (CTA-morph, mezo-xt65) — swaps in for .donebtn while a
+   rest runs. Same pill radius + rendered height as .donebtn => zero layout shift on the
+   morph. Label is var(--ink): readable over BOTH the coral fill and the exposed warm
+   track (a white label would strand on cream once the fill drains past it). ===== */
+.restbar { position: relative; margin-top: 16px; border-radius: 999px; overflow: hidden; background: var(--warm); box-shadow: inset 0 1px 3px rgba(43,33,24,.08); }
+.restbar .fill { position: absolute; top: 0; bottom: 0; left: 0; background: linear-gradient(135deg, var(--cta-g1), var(--cta-g2)); transition: width .5s linear; }
+.restbar.paused .fill { background: var(--faint); transition: none; }
+.restbar .lay { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 7px 6px 18px; min-height: 53px; box-sizing: border-box; }
+.restbar .t { text-align: left; font-weight: 800; font-size: 16px; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.restbar .t small { display: block; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; opacity: .75; font-weight: 800; }
+.restbar .btns { display: flex; gap: 7px; flex: none; }
+.restbar .btns button { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--surface); color: var(--coral-deep); font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 6px rgba(43,33,24,.18); font-family: inherit; }
+@media (prefers-reduced-motion: reduce) { .restbar .fill { transition: none; } }
 /* Active workout · two-way pager bar (spec 2026-07-15, mockup B) — replaces the
    old one-way .nextex row. Big tap targets; ends disable at the list edges. */
 .pagerbar { display: flex; gap: 8px; margin: 10px 24px 6px; }
