@@ -1,18 +1,22 @@
 // ============================================================
 // Mezo · SettingsSheet — Megjelenés
-// Téma váltás (useTheme) — the only real, persisted setting.
+// Téma választó (useTheme) — the only real, persisted setting.
 // Opened by the Profil gear chip (parent owns open/close state).
 // ============================================================
 import { Sheet } from '@/shared/ui/Sheet'
 import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
-import { Toggle } from '@/shared/ui/Toggle'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { useTheme } from '@/app/ThemeProvider'
+import type { ThemeMode } from '@/shared/lib/theme'
 
 export function SettingsSheet({ onClose }: { onClose: () => void }) {
-  const { theme, toggle } = useTheme()
-  const light = theme === 'light'
+  const { mode, setMode } = useTheme()
+  const OPTIONS: { key: ThemeMode; icon: 'sun' | 'moon' | 'sparkle'; label: string; desc: string }[] = [
+    { key: 'light', icon: 'sun', label: 'Világos', desc: 'Mindig nappali felület' },
+    { key: 'dark', icon: 'moon', label: 'Sötét', desc: 'Mindig sötét felület' },
+    { key: 'auto', icon: 'sparkle', label: 'Cirkadián', desc: 'Este a tompítással (lefekvés −90 p) sötétre vált, ébredés előtt 30 perccel vissza világosra. Az alváscélodat követi.' },
+  ]
   return (
     <Sheet onClose={onClose} labelledBy="settings-title">
       {(close) => (
@@ -32,21 +36,26 @@ export function SettingsSheet({ onClose }: { onClose: () => void }) {
 
           <div className="col gap-sm">
             <span style={SECTION_LABEL}>Téma</span>
-            <div className="card row" style={{ justifyContent: 'space-between', padding: 14, gap: 12 }}>
-              <div className="row gap-md">
-                <span style={{
-                  width: 36, height: 36, borderRadius: '50%',
-                  display: 'grid', placeItems: 'center',
-                  background: light ? 'var(--wash-amber)' : 'var(--wash-lav)',
-                }}>
-                  <Icon name={light ? 'sun' : 'moon'} size={16} color={light ? 'var(--warning)' : 'var(--lav-deep)'} />
-                </span>
-                <div className="col">
-                  <span>{light ? 'Light mód' : 'Dark mód'}</span>
-                  <span style={SECTION_LABEL}>{light ? 'Világos felület · nappali nézet' : 'Sötét felület · opcionális'}</span>
-                </div>
-              </div>
-              <Toggle on={light} onToggle={toggle} ariaLabel="Téma váltás" />
+            <div className="col gap-sm">
+              {OPTIONS.map((o) => (
+                <button key={o.key} className="card row" aria-pressed={mode === o.key}
+                  onClick={() => setMode(o.key)}
+                  style={{
+                    justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left',
+                    borderColor: mode === o.key ? 'var(--lav-deep)' : 'var(--border-subtle)',
+                    background: mode === o.key ? 'var(--wash-lav)' : undefined,
+                  }}>
+                  <div className="row gap-md" style={{ alignItems: 'flex-start' }}>
+                    <span style={{ width: 36, height: 36, borderRadius: '50%', display: 'grid', placeItems: 'center', flexShrink: 0, background: mode === o.key ? 'var(--wash-lav)' : 'var(--surface-2)' }}>
+                      <Icon name={o.icon} size={16} color={mode === o.key ? 'var(--lav-deep)' : 'var(--text-tertiary)'} />
+                    </span>
+                    <div className="col">
+                      <span>{o.label}</span>
+                      <span style={SECTION_LABEL}>{o.desc}</span>
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>

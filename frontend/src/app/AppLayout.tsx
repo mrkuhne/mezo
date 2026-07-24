@@ -1,4 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom'
+import { CircadianTheme } from '@/app/CircadianTheme'
 import { PhoneFrame } from '@/app/PhoneFrame'
 import { LiveActivityProvider } from '@/app/providers/LiveActivityProvider'
 import { ScreenContent } from '@/app/ScreenContent'
@@ -17,6 +18,7 @@ export function AppLayout() {
   const hideTabBar = ['/train/session', '/me/sleep/night'].includes(location.pathname)
   return (
     <LiveActivityProvider>
+      <CircadianTheme />
       <PhoneFrame anchor={anchor}>
         <ToastProvider>
           <LevelUpProvider>

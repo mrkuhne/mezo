@@ -24,3 +24,20 @@ export function applyTheme(theme: Theme): void {
   else root.removeAttribute('data-theme')
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', THEME_COLOR[theme])
 }
+
+/** Circadian mode (spec D9): 'auto' resolves dark inside [bed-90, wake-30) — the same
+ *  windows the WindDownBanner uses (features/today/logic/windDown.ts). Default: auto. */
+export type ThemeMode = Theme | 'auto'
+export const DEFAULT_MODE: ThemeMode = 'auto'
+
+export function readStoredMode(): ThemeMode | null {
+  try {
+    const t = localStorage.getItem(THEME_KEY)
+    return t === 'light' || t === 'dark' || t === 'auto' ? t : null
+  } catch {
+    return null
+  }
+}
+export function writeStoredMode(mode: ThemeMode): void {
+  try { localStorage.setItem(THEME_KEY, mode) } catch { /* ignore */ }
+}

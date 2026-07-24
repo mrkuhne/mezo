@@ -1,4 +1,5 @@
 import { readStoredTheme, writeStoredTheme, applyTheme, THEME_KEY, DEFAULT_THEME } from '@/shared/lib/theme'
+import { DEFAULT_MODE, readStoredMode, writeStoredMode } from '@/shared/lib/theme'
 
 beforeEach(() => {
   localStorage.clear()
@@ -30,4 +31,20 @@ test('applyTheme syncs the browser-chrome theme-color meta', () => {
   expect(meta.getAttribute('content')).toBe('#191614')
   applyTheme('light')
   expect(meta.getAttribute('content')).toBe('#FBF6EF')
+})
+
+describe('theme mode storage (mezo-d71m)', () => {
+  beforeEach(() => localStorage.clear())
+
+  test('default mode is auto', () => {
+    expect(DEFAULT_MODE).toBe('auto')
+  })
+  test('round-trips all three modes, legacy values stay valid', () => {
+    for (const m of ['light', 'dark', 'auto'] as const) {
+      writeStoredMode(m)
+      expect(readStoredMode()).toBe(m)
+    }
+    localStorage.setItem(THEME_KEY, 'garbage')
+    expect(readStoredMode()).toBeNull()
+  })
 })
