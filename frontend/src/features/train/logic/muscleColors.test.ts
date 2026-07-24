@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { muscleColor } from '@/features/train/logic/muscleColors'
+import { muscleColor, muscleRegion, REGION_LABELS, REGION_ORDER } from '@/features/train/logic/muscleColors'
 
 describe('muscleColor', () => {
   it('maps chest to the coral family', () => {
@@ -26,5 +26,30 @@ describe('muscleColor', () => {
     expect(muscleColor('unknown-muscle')).toEqual({
       rail: 'var(--text-tertiary)', wash: 'var(--surface-2)', deep: 'var(--text-secondary)',
     })
+  })
+})
+
+describe('muscleRegion (mezo-ly27)', () => {
+  it('maps every catalog muscle to its color-family region', () => {
+    expect(muscleRegion('chest')).toBe('coral')
+    expect(muscleRegion('lats')).toBe('sky')
+    expect(muscleRegion('back')).toBe('sky') // legacy key
+    expect(muscleRegion('rear-delt')).toBe('lav')
+    expect(muscleRegion('triceps')).toBe('rose')
+    expect(muscleRegion('calf')).toBe('sage')
+    expect(muscleRegion('core')).toBe('amber')
+  })
+  it('returns null for unknown muscles', () => {
+    expect(muscleRegion('sport')).toBeNull()
+    expect(muscleRegion('')).toBeNull()
+  })
+  it('labels + order cover the six regions', () => {
+    expect(REGION_ORDER).toEqual(['coral', 'sky', 'lav', 'rose', 'sage', 'amber'])
+    expect(REGION_LABELS.coral).toBe('Mell')
+    expect(REGION_LABELS.sky).toBe('Hát')
+    expect(REGION_LABELS.lav).toBe('Váll')
+    expect(REGION_LABELS.rose).toBe('Kar')
+    expect(REGION_LABELS.sage).toBe('Láb')
+    expect(REGION_LABELS.amber).toBe('Core')
   })
 })

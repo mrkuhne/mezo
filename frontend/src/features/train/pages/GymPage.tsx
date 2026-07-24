@@ -6,23 +6,27 @@
 // Napiv coral vocabulary: --wash-gym/--tag-gym accents.
 // Ported from prototype train-views.jsx (GymPage + sub-components).
 // ============================================================
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useWeekWorkouts } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import type { MesoDay } from '@/data/types'
+import { MUSCLE_LABELS } from '@/data/train/train'
+import { muscleColor } from '@/features/train/logic/muscleColors'
+import { muscleRegionGroups, muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
 import { GymStat } from '@/features/train/components/GymStat'
 import { PhaseDots } from '@/features/train/components/PhaseDots'
 import { GymDayCard } from '@/features/train/components/GymDayCard'
 import { GymDaySheet } from '@/features/train/sheets/GymDaySheet'
 import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
+import { MuscleWeekSheet } from '@/features/train/sheets/MuscleWeekSheet'
 import GymSkeleton from '@/features/train/pages/GymSkeleton'
 
 export function GymPage() {
-  const { activeMeso, gymSlots, saveGymSchedule, workoutPending, todaySession } = useTrain()
+  const { activeMeso, gymSlots, saveGymSchedule, workoutPending, todaySession, sport } = useTrain()
   // Cross-day start (mezo-p7rp): map each template day to its completed instance of the
   // current Mon–Sun week (any date) — drives the sheet's review state (D5). listWorkouts
   // returns completed instances only; empty in mock.
@@ -31,6 +35,7 @@ export function GymPage() {
   const [openDay, setOpenDay] = useState<MesoDay | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
+  const [muscleOpen, setMuscleOpen] = useState(false)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) are
   // unresolved, render the layout-matched skeleton before the empty-state. Placed
@@ -63,6 +68,8 @@ export function GymPage() {
   const days = activeMeso.days ?? []
   const gymDays = days.filter((d) => d.exerciseCount > 0)
   const totalSets = gymDays.reduce((acc, d) => acc + d.exercises.reduce((b, e) => b + e.workingSets, 0), 0)
+  // Region-grouped per-muscle weekly breakdown for the meta-card grid (mezo-ly27).
+  const muscleGroups = muscleRegionGroups(muscleWeekFromMeso(days))
 
   // Current phase for the active week (Week 3 ⇒ phaseCurve[2] ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
@@ -103,15 +110,49 @@ export function GymPage() {
         </div>
       </div>
 
-      {/* Meso meta */}
+      {/* Meso meta — the card is a button since mezo-ly27: tap → MuscleWeekSheet */}
       <div style={{ padding: '0 24px 12px' }}>
-        <div className="card" style={{ padding: 16 }}>
+        <button
+          type="button"
+          className="card np-press"
+          onClick={() => setMuscleOpen(true)}
+          aria-label="Heti izomterhelés — részletek"
+          style={{ padding: 16, width: '100%', textAlign: 'left', display: 'block' }}
+        >
           <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
             <GymStat label="Fázis" val={currentPhase} sub={`hét ${activeMeso.currentWeek}`} color="var(--tag-gym)" />
             <GymStat label="Split" val={splitHead} sub={splitTail ?? ''} color="var(--text-primary)" />
             <GymStat label="Szetek" val={totalSets} sub="heti összesen" color="var(--cat-physiology)" />
             <GymStat label="Gym napok" val={gymDays.length} sub="hét" color="var(--cat-preference)" />
           </div>
+          {/* Region-grouped muscle grid (mezo-ly27) — every trained muscle, working sets. */}
+          {muscleGroups.length > 0 && (
+            <div style={{
+              marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border-subtle)',
+              display: 'grid', gridTemplateColumns: '44px 1fr', rowGap: 8, columnGap: 8, alignItems: 'baseline',
+            }}>
+              {muscleGroups.map((g) => (
+                <Fragment key={g.region}>
+                  <span className="label-mono" style={{ fontSize: 8.5, fontWeight: 800, color: muscleColor(g.rows[0].muscle).deep }}>
+                    {g.label}
+                  </span>
+                  <span className="row" style={{ flexWrap: 'wrap', gap: 6 }}>
+                    {g.rows.map((r) => {
+                      const fam = muscleColor(r.muscle)
+                      return (
+                        <span key={r.muscle} style={{
+                          fontSize: 10.5, fontWeight: 700, padding: '3px 9px', borderRadius: 999,
+                          background: fam.wash, color: fam.deep, whiteSpace: 'nowrap',
+                        }}>
+                          {MUSCLE_LABELS[r.muscle] ?? r.muscle} {r.workingSets}
+                        </span>
+                      )
+                    })}
+                  </span>
+                </Fragment>
+              ))}
+            </div>
+          )}
           <div
             className="row gap-md mt-md"
             style={{ paddingTop: 12, borderTop: '1px solid var(--border-subtle)', alignItems: 'center' }}
@@ -122,6 +163,9 @@ export function GymPage() {
             </span>
             <PhaseDots phases={activeMeso.phaseCurve} current={activeMeso.currentWeek - 1} />
           </div>
+        </button>
+        <div className="label-mono text-tertiary" style={{ fontSize: 9, textAlign: 'center', marginTop: 8 }}>
+          tap → heti izomterhelés
         </div>
       </div>
 
@@ -160,6 +204,13 @@ export function GymPage() {
         />
       )}
       {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
+      {muscleOpen && (
+        <MuscleWeekSheet
+          meso={activeMeso}
+          sportSlots={sport.schedule?.volleyball.sessions ?? []}
+          onClose={() => setMuscleOpen(false)}
+        />
+      )}
     </>
   )
 }

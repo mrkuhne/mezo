@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http } from 'msw'
@@ -40,6 +40,22 @@ test('the Saját header chip opens the custom workout sheet (mezo-ws2x)', () => 
   renderView()
   fireEvent.click(screen.getByRole('button', { name: /Saját$/ }))
   expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
+})
+
+// Muscle-week (mezo-ly27) — region grid on the meta card + tap → MuscleWeekSheet.
+test('meta card shows the region-grouped muscle grid', () => {
+  renderView()
+  const card = screen.getByRole('button', { name: 'Heti izomterhelés — részletek' })
+  // The mock meso trains ham/glute/calf → the sage region label "Láb" is on the card.
+  expect(within(card).getByText('Láb')).toBeInTheDocument()
+  // Pills carry "{label} {sets}" — the lats pill (Lat Pulldown, 3 working sets).
+  expect(within(card).getByText(/^Lat \d+$/)).toBeInTheDocument()
+})
+
+test('tapping the meta card opens the MuscleWeekSheet', () => {
+  renderView()
+  fireEvent.click(screen.getByRole('button', { name: 'Heti izomterhelés — részletek' }))
+  expect(screen.getByRole('heading', { name: 'Heti izomterhelés' })).toBeInTheDocument()
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the GymSkeleton (role="status")
