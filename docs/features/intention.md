@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-07-20
+updated: 2026-07-24
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -45,7 +45,7 @@ Mounted directly **under `GreetingHeader`, above `DayArc`** (`TodayPage.tsx:54`)
 
 ### Two DERIVED habits in `RoutineCard` ([habit.md](habit.md))
 - **`daily_intention`** (MORNING, position 7, „Napi szándék", anchor „reggeli rutin után", xp 10) — its `Logolás` button opens `IntentionSheet` (add a focus). The habit completes **derived** off `intention_focus_set` (today has ≥ 1 focus), never self-claimed.
-- **`intention_reflect`** (EVENING, position 5, „Szándékkal éltem?", anchor „lefekvés előtt", xp 5) — its button opens a tiny `ReflectSheet` (the 3 choices), completing derived off `intention_reflected` (today's reflection is set).
+- **`intention_reflect`** (EVENING, position 3, „Szándékkal éltem?", anchor „lefekvés előtt", xp 5) — its button opens a tiny `ReflectSheet` (the 3 choices), completing derived off `intention_reflected` (today's reflection is set).
 
 Both map to the `mindset` LIFE skill. The CTA kinds are `intention-sheet` / `intention-reflect` in `features/today/logic/habitAction.ts` (the `sleep-sheet`/`meal-sheet` precedent — the sheet is the honest log surface, the habit stays DERIVED).
 
@@ -164,7 +164,7 @@ await reflect('partial')                                        // yes | partial
 
 - **Backend** (`backend/src/main/java/io/mrkuhne/mezo/feature/intention/`): `service/IntentionService.java` · `controller/IntentionController.java` (implements `IntentionApi`) · `entity/{IntentionCreedEntity,IntentionFocusEntity,DailyIntentionEntity}.java` · `repository/{IntentionCreedRepository,IntentionFocusRepository,DailyIntentionRepository}.java` · `mapper/IntentionMapper.java` · `config/IntentionProperties.java`. Switch: `techcore/configuration/FeaturesConfiguration.INTENTION_SWITCH`. Evaluator seams: `feature/habit/service/HabitEvaluator.java` (`intention_focus_set`/`intention_reflected` cases + `INTRADAY_METRICS`) · `feature/quest/service/QuestEvaluator.java` (`intention_focus_set` case).
 - **Migration:** `backend/src/main/resources/db/changelog/1.0.0/script/202607201200_mezo-a686_create_intention.sql` (3 tables) · messages `INTENTION_TEXT_REQUIRED`/`INTENTION_FOCUS_CAP`/`INTENTION_FOCUS_NOT_FOUND`/`INTENTION_REFLECTION_INVALID` in `messages.properties`.
-- **Catalog:** `content/habit-catalog.json` (`daily_intention` MORNING/pos7/xp10 + `intention_reflect` EVENING/pos5/xp5) · `content/quest-catalog.json` (`growth_intention` GROWTH/xp20).
+- **Catalog:** `content/habit-catalog.json` (`daily_intention` MORNING/pos7/xp10 + `intention_reflect` EVENING/pos3/xp5) · `content/quest-catalog.json` (`growth_intention` GROWTH/xp20).
 - **Contract:** `api/feature/intention/intention.yml` (tag `Intention`, 5 endpoints, `IntentionDayResponse`/`IntentionCreedResponse`/`IntentionFocusResponse`/`SetCreedRequest`/`AddFocusRequest`/`ReflectRequest`).
 - **FE data:** `frontend/src/data/intention/{intentionApi,intentionMock,intentionHooks}.ts` (+ barrel line in `data/hooks.ts:37`; types `Reflection`/`IntentionFocus`/`IntentionDay` in `data/types.ts`).
 - **FE UI:** `frontend/src/features/today/components/IntentionBanner.tsx` (mounted `TodayPage.tsx:54`) · `features/today/sheets/{IntentionSheet,CreedSheet,ReflectSheet}.tsx` · `features/today/logic/habitAction.ts` (`intention-sheet`/`intention-reflect` kinds) · `.intent-*`/`.reflect`/`.fx-*` CSS in `prototype.css`.
