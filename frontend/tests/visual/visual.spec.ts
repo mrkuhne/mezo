@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Self-baselined visual goldens: 14 key screens × 2 themes = 28 snapshots.
+ * Self-baselined visual goldens: 15 key screens × 2 themes = 30 snapshots.
  *
  * Determinism levers (all must hold or the shots flake):
  *  - clock frozen to 2026-05-21T13:42 (délután) BEFORE goto → the daypart-derived
@@ -19,6 +19,7 @@ const SCREENS: Array<[string, string]> = [
   ['today', '/today'],
   ['train', '/train'],
   ['train-gym', '/train/gym'],
+  ['train-session', '/train/session'],
   ['fuel', '/fuel'],
   ['fuel-terv', '/fuel/plan'],
   ['me', '/me'],

@@ -51,6 +51,24 @@ describe('useChallenges (real mode)', () => {
     expect(result.current.challenges).toEqual([])
   })
 
+  // The lazy-on-prep LLM generation gap (1-3s, observed in prod 2026-07-24) — the carousel
+  // must render a visible skeleton for this window instead of silently showing nothing.
+  // NOTE: kept BEFORE "stays disabled" below — that test's `vi.spyOn(fetch)` is never
+  // restored, so it persists as a shared spy for the rest of the file; a real fetch fired
+  // after it would pollute its call count for any later fetch-spy assertion.
+  test('pending is true while the list query is in flight (the lazy generation gap)', () => {
+    server.use(http.get(`${API_BASE}/api/proactive/challenge`, () => new Promise(() => {}))) // never resolves
+    const { result } = renderHook(() => useChallenges(SESSION, DATE), { wrapper: makeHookWrapper() })
+    expect(result.current.pending).toBe(true)
+    expect(result.current.challenges).toEqual([])
+  })
+
+  test('pending flips to false once the list resolves (even to the honest empty array)', async () => {
+    const { result } = renderHook(() => useChallenges(SESSION, DATE), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.pending).toBe(false))
+    expect(result.current.challenges).toEqual([])
+  })
+
   test('stays disabled (no fetch) until a templateSessionId exists', () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch')
     const { result } = renderHook(() => useChallenges(null, DATE), { wrapper: makeHookWrapper() })
@@ -69,6 +87,11 @@ describe('useChallenges (mock mode)', () => {
     expect(result.current.mode).toBe('mock')
     expect(result.current.challenges.length).toBeGreaterThan(0)
     expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  test('pending is always false (the seed resolves synchronously)', () => {
+    const { result } = renderHook(() => useChallenges(null, DATE), { wrapper: makeHookWrapper() })
+    expect(result.current.pending).toBe(false)
   })
 })
 

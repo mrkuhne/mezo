@@ -9,6 +9,8 @@ const key = (t: string | null, d: string) => ['challenges', t, d]
 export interface ChallengesView {
   challenges: Challenge[]
   mode: 'mock' | 'live'
+  /** Real mode: the list query is in flight (the lazy LLM generation) — render the skeleton. */
+  pending: boolean
 }
 
 /**
@@ -30,9 +32,9 @@ export function useChallenges(templateSessionId: string | null, date: string): C
     retry: false,
   })
   if (mock) {
-    return { challenges: mockWorkout.challenges, mode: 'mock' }
+    return { challenges: mockWorkout.challenges, mode: 'mock', pending: false }
   }
-  return { challenges: q.data ?? [], mode: 'live' }
+  return { challenges: q.data ?? [], mode: 'live', pending: q.isPending }
 }
 
 /**

@@ -12,27 +12,25 @@ import { useTrain, useWeekWorkouts } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
-import type { MesoDay } from '@/data/types'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { muscleRegionGroups, muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
+import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { GymStat } from '@/features/train/components/GymStat'
 import { PhaseDots } from '@/features/train/components/PhaseDots'
 import { GymDayCard } from '@/features/train/components/GymDayCard'
-import { GymDaySheet } from '@/features/train/sheets/GymDaySheet'
 import { GymScheduleSheet } from '@/features/train/sheets/GymScheduleSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { MuscleWeekSheet } from '@/features/train/sheets/MuscleWeekSheet'
 import GymSkeleton from '@/features/train/pages/GymSkeleton'
 
 export function GymPage() {
-  const { activeMeso, gymSlots, saveGymSchedule, workoutPending, todaySession, sport } = useTrain()
-  // Cross-day start (mezo-p7rp): map each template day to its completed instance of the
-  // current Mon–Sun week (any date) — drives the sheet's review state (D5). listWorkouts
-  // returns completed instances only; empty in mock.
+  const { activeMeso, gymSlots, saveGymSchedule, workoutPending, sport } = useTrain()
+  // Direct-start flow (mezo-bxpg): map each template day to its completed instance of the
+  // current Mon–Sun week (any date) — a day-card tap for an already-done day routes straight
+  // to its review instead of restarting. listWorkouts returns completed instances only; empty in mock.
   const { workouts: weekWorkouts } = useWeekWorkouts()
   const navigate = useNavigate()
-  const [openDay, setOpenDay] = useState<MesoDay | null>(null)
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
   const [muscleOpen, setMuscleOpen] = useState(false)
@@ -177,25 +175,25 @@ export function GymPage() {
         </div>
         <div className="col gap-sm">
           {days.map((d) => (
-            <GymDayCard key={d.day} day={d} onOpen={() => setOpenDay(d)} />
+            <GymDayCard
+              key={d.day}
+              day={d}
+              onOpen={() => {
+                // Direct-start flow (spec D6, mezo-bxpg): a day already completed this
+                // Mon–Sun week (by template id, any date — pull-forward safe) routes
+                // straight to its review; otherwise a day with exercises starts the
+                // session (pinning the template on a non-today, real-mode day via
+                // ?day=); a rest day (no exercises) is a no-op — GymDayCard already
+                // gates the tap so onOpen never fires for those. Shared with
+                // TrainTodayPage's weekly row via gymDayTarget (mezo-bxpg — Finding 1).
+                const target = gymDayTarget(d, weekWorkouts)
+                if (target) navigate(target)
+              }}
+            />
           ))}
         </div>
       </div>
 
-      {openDay && (
-        <GymDaySheet
-          day={openDay}
-          completedThisWeek={(() => {
-            const done = weekWorkouts.find((w) => w.templateSessionId && w.templateSessionId === openDay.id)
-            return done ? { id: done.id, date: done.date } : null
-          })()}
-          openTemplateSessionId={todaySession?.openWorkout?.templateSessionId ?? null}
-          openWorkoutTitle={
-            days.find((d) => d.id && d.id === todaySession?.openWorkout?.templateSessionId)?.type ?? null
-          }
-          onClose={() => setOpenDay(null)}
-        />
-      )}
       {scheduleOpen && (
         <GymScheduleSheet
           slots={gymSlots}

@@ -42,8 +42,27 @@ async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>) {
 test('prep screen shows the workout title, challenges carousel and the start CTA', () => {
   setup()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  expect(screen.getByText('Mai kihívások · proposál')).toBeInTheDocument()
+  expect(screen.getByText('⚔ A mai küldetések · 3')).toBeInTheDocument()
   expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
+})
+
+// --- mission-briefing prep phase (mezo-bxpg, T4): hero, muscle sections, 1RM honesty ---
+
+test('mock mode: prep renders the mission-briefing hero (VÁRHATÓ XP) and the muscle-sectioned exercise cards', () => {
+  setup()
+  expect(screen.getByText('VÁRHATÓ XP')).toBeInTheDocument()
+  // Pull Day (mock): ex1/ex2/ex3 back-mid+lats+back-mid -> Hát (3), ex4 biceps -> Kar (1),
+  // ex5 rear-delt -> Váll (1) — plan-order-preserving muscle-color family sections.
+  expect(screen.getByText('Hát · 3 gyakorlat')).toBeInTheDocument()
+  expect(screen.getByText('Kar · 1 gyakorlat')).toBeInTheDocument()
+  expect(screen.getByText('Váll · 1 gyakorlat')).toBeInTheDocument()
+  expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+})
+
+test('mock mode: the 1RM badge is omitted (mock exerciseRecords is always empty — never fabricated)', () => {
+  setup()
+  expect(screen.queryByText('1RM REKORD')).not.toBeInTheDocument()
+  expect(screen.queryByText(/🏆/)).not.toBeInTheDocument()
 })
 
 // Byte-parity guard: the Phase-1 mock seed still renders its fabricated confidence
@@ -658,6 +677,30 @@ function useRealHandlers(today: typeof REAL_TODAY, calls: string[]) {
   )
 }
 
+// D3: the 1RM badge is sourced from the record engine, matched by catalogId-else-name —
+// `/today` exercises never carry a catalogId (see TodayExercise/toWorkoutPlan), so the
+// match falls to name; the fixture record below deliberately omits catalogId too.
+test('real mode: the 1RM badge renders when an exercise record matches the workout exercise by name', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const calls: string[] = []
+  useRealHandlers(REAL_TODAY, calls)
+  server.use(
+    http.get(`${API_BASE}/api/train/exercise-records`, () =>
+      HttpResponse.json([
+        {
+          name: 'Chest Supported Row', muscle: 'back', type: 'compound',
+          bestE1rm: { value: 133, set: { weightKg: 100, reps: 8, date: '2026-06-01' } },
+          totalVolume: 0, totalSets: 0, totalReps: 0, sessionCount: 0,
+          repRecords: [], recentTopSets: [],
+        },
+      ]),
+    ),
+  )
+  setup()
+  expect(await screen.findByText('🏆 133 kg')).toBeInTheDocument()
+  expect(screen.getByText('1RM REKORD')).toBeInTheDocument()
+})
+
 test('real mode: starting creates the instance and Szett kész posts the set', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
@@ -1090,8 +1133,8 @@ test('real mode: a custom workout with NO active meso renders the prep screen in
       </MemoryRouter>
     </QueryWrapper>,
   )
-  // Title renders in more than one spot (PageTitle + the no-meso week-label fallback
-  // chip + the start CTA) — assert presence, not uniqueness.
+  // Title renders in more than one spot (the hero title + the no-meso week-label
+  // fallback in the hero over-line, both W.title) — assert presence, not uniqueness.
   expect((await screen.findAllByText('Saját HIIT')).length).toBeGreaterThan(0)
   expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
 })
@@ -1167,16 +1210,16 @@ test('real mode: a proposed challenge with null confidence renders "tanulom" and
   // prep screen — the carousel shows the live challenge
   expect(await screen.findByText('conf tanulom')).toBeInTheDocument()
   expect(screen.queryByText(/get_pr_history/)).not.toBeInTheDocument() // live sends no tools
-  expect(screen.getByText('Vállaljuk')).toBeInTheDocument()
+  expect(screen.getByText('⚔ Elfogadom')).toBeInTheDocument()
 })
 
-test('real mode: clicking "Vállaljuk" POSTs an accept decision for the challenge', async () => {
+test('real mode: clicking "⚔ Elfogadom" POSTs an accept decision for the challenge', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire()], calls)
   const user = userEvent.setup()
   setup()
-  await user.click(await screen.findByText('Vállaljuk'))
+  await user.click(await screen.findByText('⚔ Elfogadom'))
   await waitFor(() => expect(calls).toContain('decide:chal-1:accept'))
 })
 
@@ -1191,7 +1234,7 @@ test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + o
   expect(await screen.findByText('✓ Megerősítve')).toBeInTheDocument()
   expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
   // the workout is decided → the accept/skip row is hidden
-  expect(screen.queryByText('Vállaljuk')).not.toBeInTheDocument()
+  expect(screen.queryByText('⚔ Elfogadom')).not.toBeInTheDocument()
   expect(screen.queryByText('Elfogadva')).not.toBeInTheDocument()
 })
 

@@ -1,6 +1,7 @@
 // ============================================================
 // Mezo · GymDayCard — one day row in the GymPage weekly split.
-// Training days are tappable (open the GymDaySheet); rest days
+// Training days are tappable (direct-start flow, mezo-bxpg: navigate straight
+// to the session, or to the review when already done this week); rest days
 // (exerciseCount === 0) render dashed + italic with their note and
 // are not interactive. Today's card ("current") is gym-coral-accented
 // (--tag-gym/--wash-gym, Napiv vocabulary).

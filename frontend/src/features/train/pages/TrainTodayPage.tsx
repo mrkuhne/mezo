@@ -18,11 +18,10 @@ import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
-import { GymDaySheet } from '@/features/train/sheets/GymDaySheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
-import type { MesoDay } from '@/data/types'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import { daySessions } from '@/features/train/logic/agenda'
+import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
 import { LoadTiles } from '@/features/train/components/LoadTiles'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
@@ -40,7 +39,6 @@ export function TrainTodayPage() {
   const { showLevelUp } = useLevelUp()
   const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
-  const [openGymDay, setOpenGymDay] = useState<MesoDay | null>(null)
   const [customOpen, setCustomOpen] = useState(false)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
@@ -448,8 +446,18 @@ export function TrainTodayPage() {
               onStartGym={openSession}
               onReviewGym={workoutIdByDate[a.date!] ? () => navigate(`/train/review/${workoutIdByDate[a.date!]}`) : undefined}
               onOpenGymDay={(() => {
+                // Direct-start flow (spec D6, mezo-bxpg): routes via the shared
+                // gymDayTarget — a template day completed THIS week routes to its
+                // review even when pulled forward to another date (this row is only
+                // date-done, not template-done, so without this a completed-elsewhere
+                // day would dead-end into a 409 on "Kezdjük el" — Finding 1); otherwise
+                // a non-today, not-yet-done gym day starts straight into the session,
+                // pinning the template via ?day= in real mode (mock MesoDay fixtures
+                // carry no `id`, so mock always resolves plain).
                 const md = activeMeso.days?.find((d) => d.day === a.day && d.exerciseCount > 0)
-                return md ? () => setOpenGymDay(md) : undefined
+                if (!md) return undefined
+                const target = gymDayTarget(md, weekWorkouts)
+                return target ? () => navigate(target) : undefined
               })()}
               onLogSport={(s) => setSportLogSport(sportOf(s))}
               onReviewCustom={(wid) => navigate(`/train/review/${wid}`)}
@@ -505,20 +513,6 @@ export function TrainTodayPage() {
           ctx={runLogCtx}
           onClose={() => setRunLogCtx(null)}
           onSave={(body, done) => logRunSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
-        />
-      )}
-      {openGymDay && (
-        <GymDaySheet
-          day={openGymDay}
-          completedThisWeek={(() => {
-            const done = weekWorkouts.find((w) => w.templateSessionId && w.templateSessionId === openGymDay.id)
-            return done ? { id: done.id, date: done.date } : null
-          })()}
-          openTemplateSessionId={todaySession?.openWorkout?.templateSessionId ?? null}
-          openWorkoutTitle={
-            activeMeso.days?.find((d) => d.id && d.id === todaySession?.openWorkout?.templateSessionId)?.type ?? null
-          }
-          onClose={() => setOpenGymDay(null)}
         />
       )}
     </>

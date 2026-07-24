@@ -10,9 +10,21 @@ import { API_BASE } from '@/test/msw/handlers'
 import { DAY_ORDER } from '@/data/train/train'
 import { localDateString } from '@/shared/lib/dates'
 
+// Weekly-row gym taps route straight to the session/review (direct-start flow,
+// mezo-bxpg) via useNavigate; mock it so we can assert the exact target
+// without a full route tree (idiom already used by GoalsPage.test.tsx).
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 // Asserts Phase-1 mock meso/gym data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  mockNavigate.mockReset()
+})
 afterEach(() => vi.unstubAllEnvs())
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
@@ -49,13 +61,13 @@ test('no volleyball session today (Csü) ⇒ today-volleyball block is absent', 
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
-test('a non-today weekly gym row opens the GymDaySheet with the cross-day start CTA (mezo-j3x0)', () => {
+test('a non-today weekly gym row navigates straight to the session (mezo-j3x0 / mezo-bxpg)', () => {
   renderView()
   // Mock today = Csü (fixture flag); the Hét row shows the Push Day slot → non-today gym row.
   fireEvent.click(screen.getByRole('button', { name: /Push Day/ }))
-  // The sheet renders the day's first exercise and the non-today start CTA.
-  expect(screen.getByText('Barbell Bench Press')).toBeInTheDocument()
-  expect(screen.getByText(/Indítsuk · ma/)).toBeInTheDocument()
+  // Mock MesoDay fixtures carry no `id` (real mode only), so the `!day.id` branch wins
+  // regardless of the non-today `?day=` rule — plain /train/session, not /train/session?day=.
+  expect(mockNavigate).toHaveBeenCalledWith('/train/session')
 })
 
 test('the weekly-plan footer opens the Saját edzés sheet (mezo-ws2x)', () => {
@@ -395,6 +407,34 @@ test('real mode: prescribed run logged today ⇒ run hero flips to the done summ
   expect(await screen.findByText('🏃 FUTÁS')).toBeInTheDocument()
   expect(screen.getByText(/Logolva · RPE 9/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
+})
+
+// A template day completed THIS week but pulled forward to another date (not its own
+// weekday's date) must still route the weekly-row tap to its review, not restart it
+// into a fresh session (409 TRAIN_DAY_DONE_THIS_WEEK) — the date-only workoutIdByDate
+// match misses it, so the row falls back to onOpenGymDay, which must resolve via
+// gymDayTarget's templateSessionId check (final-review fix, mezo-bxpg — Finding 1).
+test('real mode: a weekly gym row completed this week on ANOTHER date routes to its review, not a restart', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const otherDayLabel = DAY_ORDER[(DAY_ORDER.indexOf(todayLabel()) + 1) % 7]
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(otherDayLabel)])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+    // today itself is empty — unrelated to this row's own weekday
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    // completed this week, same template (d-1), but on TODAY's date — not the row's
+    // own weekday date — so the date-keyed workoutIdByDate lookup can't match it.
+    http.get(`${API_BASE}/api/train/workouts`, () =>
+      HttpResponse.json([
+        { id: 'w-pulled', templateSessionId: 'd-1', date: localDateString(), status: 'completed', origin: 'meso' },
+      ]),
+    ),
+  )
+  renderView()
+  fireEvent.click(await screen.findByRole('button', { name: /Pull Day/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-pulled')
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the TrainTodaySkeleton (role="status")
