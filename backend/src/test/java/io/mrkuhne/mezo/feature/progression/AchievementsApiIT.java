@@ -59,7 +59,7 @@ class AchievementsApiIT extends ApiIntegrationTest {
             "LIFE", "sleep_target", new BigDecimal("7.5"), 25, DailyQuestEntity.STATUS_EXPIRED);
         activityPopulator.financialActivity(owner, d, "Spórolás", 120000L);
         // one LIFE XP grant so all_life_active counts exactly 1 of 8
-        progressionService.applyActivity(owner, new ActivitySignal(UUID.randomUUID(), "learning", 15, "Teszt"));
+        progressionService.applyActivity(owner, new ActivitySignal(UUID.randomUUID(), "learning", 15, "Teszt", d));
 
         AchievementsResponse res = getForBody("/api/progression/achievements",
             ownerAuthHeaders(), HttpStatus.OK, AchievementsResponse.class);

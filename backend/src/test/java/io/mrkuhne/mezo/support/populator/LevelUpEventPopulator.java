@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.support.populator;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpEventEntity;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
@@ -21,6 +22,7 @@ public class LevelUpEventPopulator {
         e.setCreatedBy(createdBy);
         e.setSourceType(sourceType);
         e.setSourceRefId(sourceRefId);
+        e.setOccurredOn(LocalDate.now());
         e.setTotalXp(payload.totalXp());
         e.setPayload(payload);
         return repository.saveAndFlush(e);

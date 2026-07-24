@@ -43,12 +43,11 @@ public class LevelUpEventEntity extends OwnedEntity {
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
 
-    // mezo-huzd: business date for streak/day aggregation (spec D7). Defaulted here so every
-    // existing writer between this task and Task 3 stays valid; Task 3's award path assigns
-    // the real business date explicitly, overriding this default.
+    // mezo-huzd: business date for streak/day aggregation (spec D7), set explicitly by the
+    // award(...) tail in ProgressionService — never defaulted here.
     @NotNull
     @Column(name = "occurred_on", nullable = false)
-    private LocalDate occurredOn = LocalDate.now();
+    private LocalDate occurredOn;
 
     @Column(name = "total_xp", nullable = false)
     private long totalXp;

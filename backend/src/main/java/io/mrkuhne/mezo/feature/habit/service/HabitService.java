@@ -215,7 +215,7 @@ public class HabitService {
         repository.save(row);
         if (progressionGate.getIfAvailable() != null) {
             return List.of(progressionService.applyHabit(row.getCreatedBy(),
-                new HabitSignal(row.getId(), def.skillKey(), def.xp(), def.title())));
+                new HabitSignal(row.getId(), def.skillKey(), def.xp(), def.title(), row.getHabitDate())));
         }
         return List.of();
     }

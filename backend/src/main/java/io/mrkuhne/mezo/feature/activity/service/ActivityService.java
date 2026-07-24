@@ -155,7 +155,7 @@ public class ActivityService {
         repository.save(e);
         if (grant > 0 && progressionGate.getIfAvailable() != null) {
             levelUps.add(progressionService.applyActivity(userId,
-                new ActivitySignal(e.getId(), e.getSkillKey(), grant, label(e.getText()))));
+                new ActivitySignal(e.getId(), e.getSkillKey(), grant, label(e.getText()), e.getOccurredOn())));
         }
     }
 

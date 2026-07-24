@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ class ProgressionQuestIT extends AbstractIntegrationTest {
     void testApplyQuest_shouldCreateLifeSkillRowAndBeIdempotent_whenAppliedTwice() {
         UUID owner = userPopulator.createUser("quest-xp@test.hu").getId();
         UUID questId = UUID.randomUUID();
-        QuestSignal signal = new QuestSignal(questId, "recovery", "LIFE", 20, "Teszt küldetés");
+        QuestSignal signal = new QuestSignal(questId, "recovery", "LIFE", 20, "Teszt küldetés", LocalDate.now());
 
         LevelUpResult first = progressionService.applyQuest(owner, signal);
         LevelUpResult second = progressionService.applyQuest(owner, signal);

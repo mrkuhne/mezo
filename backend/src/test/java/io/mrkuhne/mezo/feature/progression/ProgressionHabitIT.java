@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +26,7 @@ class ProgressionHabitIT extends AbstractIntegrationTest {
     void testApplyHabit_shouldAwardOnceAndRevertCleanly_whenCalledTwiceThenReverted() {
         UUID owner = userPopulator.createUser("habit-xp@test.hu").getId();
         UUID habitDayId = UUID.randomUUID();
-        HabitSignal signal = new HabitSignal(habitDayId, "recovery", 10, "Reggeli napfény");
+        HabitSignal signal = new HabitSignal(habitDayId, "recovery", 10, "Reggeli napfény", LocalDate.now());
 
         LevelUpResult first = progressionService.applyHabit(owner, signal);
         assertThat(first.source()).isEqualTo("HABIT");
@@ -45,5 +46,15 @@ class ProgressionHabitIT extends AbstractIntegrationTest {
 
         LevelUpResult again = progressionService.applyHabit(owner, signal);
         assertThat(again.totalXp()).isEqualTo(10);
+    }
+
+    @Test
+    void testApplyHabit_shouldStampBusinessDate_whenAwarded() {
+        UUID owner = userPopulator.createUser("habit-date@test.hu").getId();
+        LocalDate businessDate = LocalDate.now().minusDays(1);
+        progressionService.applyHabit(owner,
+            new HabitSignal(UUID.randomUUID(), "mindset", 10, "Napzárás", businessDate));
+        var events = levelUpEventRepository.findByCreatedByAndOccurredOn(owner, businessDate);
+        assertThat(events).hasSize(1);
     }
 }

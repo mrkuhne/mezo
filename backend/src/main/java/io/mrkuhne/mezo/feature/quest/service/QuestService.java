@@ -102,7 +102,7 @@ public class QuestService {
                 repository.save(q);
                 if (progressionGate.getIfAvailable() != null) {
                     levelUps.add(progressionService.applyQuest(q.getCreatedBy(), new QuestSignal(
-                        q.getId(), q.getSkillKey(), q.getSkillKind(), q.getXp(), q.getTitle())));
+                        q.getId(), q.getSkillKey(), q.getSkillKind(), q.getXp(), q.getTitle(), q.getQuestDate())));
                 }
             } else if (q.getQuestDate().isBefore(today)) {
                 q.setStatus(DailyQuestEntity.STATUS_EXPIRED); // quiet — no failure state (ADR 0010)
@@ -162,7 +162,7 @@ public class QuestService {
                 repository.save(q);
                 LevelUpResult levelUp = progressionGate.getIfAvailable() != null
                     ? progressionService.applyQuest(userId, new QuestSignal(
-                        q.getId(), q.getSkillKey(), q.getSkillKind(), q.getXp(), q.getTitle()))
+                        q.getId(), q.getSkillKey(), q.getSkillKind(), q.getXp(), q.getTitle(), q.getQuestDate()))
                     : null;
                 return new ActivityQuestCompletion(q, levelUp);
             });
