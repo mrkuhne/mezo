@@ -14,11 +14,15 @@ ingest.
 
 ## Entities
 
-_No pages yet — filed on first ingest._
+- [Matthew Walker](entities/matthew-walker.md) — *Why We Sleep* / UC Berkeley; the DOAC interview source behind mezo's Sleep cluster (QQRT, regularity, debunks). `confidence: medium`.
+- [Jeremy Ethier](entities/jeremy-ethier.md) — kinesiology-based fitness educator; the morning-routine video that seeded the habit engine. `confidence: medium`.
 
 ## Concepts
 
-_No pages yet — filed on first ingest._
+- [Sleep Regularity](concepts/sleep-regularity.md) — "regularity is king"; UK Biobank −49/−57/−39, beats quantity; drives the ±15 min regularity score. `confidence: medium`.
+- [QQRT](concepts/qqrt.md) — Quantity·Quality·Regularity·Timing; the four legs and how each maps to a mezo surface. `confidence: medium`.
+- [Sleep Debunks](concepts/sleep-debunks.md) — the myth list (smart-wake, blue light, magnesium, melatonin, Z-drugs) mezo deliberately builds nothing on. `confidence: medium`.
+- [Morning Routine (Ethier six recs)](concepts/morning-routine.md) — the six morning recs → their mezo habits; the Walker/Ethier division of labor. `confidence: medium`.
 
 ## Comparisons
 
