@@ -1,7 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { CircadianTheme } from '@/app/CircadianTheme'
 import { PhoneFrame } from '@/app/PhoneFrame'
-import { LiveActivityProvider } from '@/app/providers/LiveActivityProvider'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
@@ -17,7 +16,7 @@ export function AppLayout() {
   // and the extra-dark night page (its light would defeat the <30 lux point).
   const hideTabBar = ['/train/session', '/me/sleep/night'].includes(location.pathname)
   return (
-    <LiveActivityProvider>
+    <>
       <CircadianTheme />
       <PhoneFrame anchor={anchor}>
         <ToastProvider>
@@ -33,6 +32,6 @@ export function AppLayout() {
           </LevelUpProvider>
         </ToastProvider>
       </PhoneFrame>
-    </LiveActivityProvider>
+    </>
   )
 }
