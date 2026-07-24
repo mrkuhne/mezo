@@ -115,4 +115,8 @@ public class FeaturesConfiguration {
 
     /** Fuel planner settings (mezo-53su) — eating cadence + caffeine cutoff singleton. Gates /api/fuel/settings (the caffeine resolver stays on). */
     public static final String FUEL_SETTINGS_SWITCH = "mezo.feature.fuel-settings.enabled";
+
+    /** Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
+     *  and the AccountProgressPort adapter is absent (progression awards fire no coin hook). */
+    public static final String GAMIFICATION_SWITCH = "mezo.feature.gamification.enabled";
 }

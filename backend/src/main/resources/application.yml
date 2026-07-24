@@ -206,6 +206,10 @@ mezo:
     # Fuel planner settings (mezo-53su): eating cadence + caffeine cutoff singleton.
     fuel-settings:
       enabled: true
+    # Account gamification ledger (bd mezo-huzd) — coins/streak/titles; off ⇒ /api/gamification 404s,
+    # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
+    gamification:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
@@ -567,6 +571,15 @@ mezo:
   ritual:
     lead-min: 75        # the window opens bed − 75'
     prep-lead-min: 45   # sleep-prep display anchor: bed − 45'
+  # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
+  # AccountProgressPort adapter fires. Binds onto GamificationProperties.
+  gamification:
+    saver-price: 200
+    max-savers: 2
+    level-up-coins: 50
+    quest-coins: 10
+    all3-coins: 20
+    milestone-coins: { 7: 50, 30: 150, 100: 500 }
   # Sleep goal defaults (mezo-dbsr): the config-default "ghost" served before the user saves a goal,
   # plus the regularity band default. Binds onto SleepGoalProperties.
   sleep:
