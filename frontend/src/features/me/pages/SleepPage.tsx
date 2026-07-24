@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { ScoreRing } from '@/shared/ui/ScoreRing'
@@ -86,6 +87,16 @@ export function SleepPage() {
             </span>
           </div>
         </section>
+
+        {/* Night-mode entry — always visible (spec D3); the Today banner is the timed twin. */}
+        <Link to="/me/sleep/night" className="wdb-night" style={{ margin: '8px 0 0' }}>
+          <span className="wdb-night-moon" aria-hidden="true">🌙</span>
+          <span className="wdb-night-tx">
+            <span className="wdb-night-t1">Éjszakai mód</span>
+            <span className="wdb-night-t2">Eszközök éjszakai ébredéshez — 20 perces szabály, légzés, 4K-séta.</span>
+          </span>
+          <span className="wdb-night-chev" aria-hidden="true">›</span>
+        </Link>
 
         {/* Two score rings — regularity (14-night) + last-night efficiency */}
         <div className="row gap-sm" style={{ marginTop: 8 }}>
