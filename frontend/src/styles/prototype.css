@@ -1960,3 +1960,10 @@ a.hab-link:hover { opacity: 0.85; }
 .sesc-lead { font: 600 13.5px/1.5 var(--ff-body); color: var(--ink); }
 .sesc-body { font: 500 12px/1.65 var(--ff-body); color: var(--sub); }
 .sesc-body b { color: var(--ink); }
+.sesc { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; padding: 16px;
+        border-radius: 20px; background: linear-gradient(150deg, var(--wash-amber) 0%, var(--surface) 75%);
+        box-shadow: 0 1px 3px rgba(43,33,24,.06); }
+.sesc-actions { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+.sesc-cta { background: var(--amber-deep); color: var(--text-inverse); font: 700 12px/1 var(--ff-body);
+            padding: 10px 16px; border-radius: 999px; }
+.sesc-quiet { font: 600 11.5px/1 var(--ff-body); color: var(--faint); padding: 10px 8px; }

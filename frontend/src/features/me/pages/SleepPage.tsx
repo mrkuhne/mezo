@@ -14,8 +14,13 @@ import {
 import { SleepStat } from '@/features/me/components/SleepStat'
 import { SleepLogRow } from '@/features/me/components/SleepLogRow'
 import { SleepChart } from '@/features/me/components/SleepChart'
+import { SleepStatCard } from '@/features/me/components/SleepStatCard'
+import { SleepEscalationCard } from '@/features/me/components/SleepEscalationCard'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { SleepGoalSheet } from '@/features/me/sheets/SleepGoalSheet'
+import { SleepStatsSheet } from '@/features/me/sheets/SleepStatsSheet'
+import { evaluateEscalation, isSnoozed, snooze } from '@/features/me/logic/sleepEscalation'
+import { localDateString } from '@/shared/lib/dates'
 
 type Period = '7d' | '14d'
 const PERIODS: Period[] = ['7d', '14d']
@@ -26,6 +31,10 @@ export function SleepPage() {
   const [period, setPeriod] = useState<Period>('14d')
   const [logOpen, setLogOpen] = useState(false)
   const [goalOpen, setGoalOpen] = useState(false)
+  const [statsOpen, setStatsOpen] = useState(false)
+  const [snoozed, setSnoozed] = useState(() => isSnoozed(localDateString()))
+  const escalation = evaluateEscalation(sleepLog, localDateString())
+  const showEscalation = escalation.triggered && !snoozed
 
   // The goal card + score rings are the day's anchor and render ALWAYS (goal
   // always exists — mock seed or backend ghost). The log-dependent sections
@@ -114,6 +123,18 @@ export function SleepPage() {
             <span style={{ fontSize: 9, color: 'var(--faint)' }}>cél ≥ {EFFICIENCY_TARGET_PCT}%</span>
           </section>
         </div>
+
+        {/* Walker education — the escalation card takes priority over the daily stat card
+            while the trigger holds and isn't snoozed (spec D3/D4). */}
+        {showEscalation ? (
+          <SleepEscalationCard
+            reason={escalation.reason}
+            onDetails={() => setStatsOpen(true)}
+            onSnooze={() => { snooze(localDateString()); setSnoozed(true) }}
+          />
+        ) : (
+          <SleepStatCard onOpen={() => setStatsOpen(true)} />
+        )}
       </div>
 
       {lastNight ? (
@@ -253,6 +274,12 @@ export function SleepPage() {
 
       {logOpen && <SleepLogSheet onClose={() => setLogOpen(false)} onSave={logSleep} />}
       {goalOpen && <SleepGoalSheet onClose={() => setGoalOpen(false)} />}
+      {statsOpen && (
+        <SleepStatsSheet
+          escalation={showEscalation ? escalation.reason : null}
+          onClose={() => setStatsOpen(false)}
+        />
+      )}
     </>
   )
 }
