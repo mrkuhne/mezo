@@ -655,11 +655,16 @@ function ActiveWorkoutSession({
           </div>
         </div>
 
-        <div style={{ padding: '24px' }}>
+        {/* Sticky CTA (final-review fix, mezo-bxpg — Finding 2): the sticky rule must
+            sit on the wrapper, not the button — a single-child wrapper sized exactly
+            to its content gives `position: sticky` no scroll range to stick within,
+            so the old button-level sticky was structurally inert. `var(--canvas)` is
+            the same page-background token `.sticky-top`/`.status-bar` use so scrolled
+            content can never bleed through underneath the pinned CTA. */}
+        <div style={{ position: 'sticky', bottom: 0, padding: '16px 24px 24px', background: 'var(--canvas)' }}>
           <button
             type="button"
             className="np-cta np-press"
-            style={{ position: 'sticky', bottom: 12 }}
             onClick={beginWorkout}
           >
             ⚡ Kezdjük el →
