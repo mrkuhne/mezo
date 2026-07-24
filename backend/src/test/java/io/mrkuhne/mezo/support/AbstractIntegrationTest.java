@@ -33,6 +33,7 @@ import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.LevelUpEventPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
+import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
@@ -72,7 +73,7 @@ import org.springframework.context.annotation.Import;
     WeeklySuggestionPopulator.class, MemoirPopulator.class, HeartbeatNotePopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
-    IntentionPopulator.class,
+    IntentionPopulator.class, RitualPopulator.class,
     TrainPopulator.class, RunningPopulator.class, GoalPopulator.class, GoalPlanLinkPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     SleepGoalPopulator.class,
