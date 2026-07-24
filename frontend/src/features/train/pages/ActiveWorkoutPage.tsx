@@ -285,7 +285,7 @@ function ActiveWorkoutSession({
   // in live (status-derived accepted map + decide()).
   const localToday = localDateString()
   const templateSessionId = todaySession?.templateSessionId ?? null
-  const { challenges, mode: challengeMode } = useChallenges(templateSessionId, localToday)
+  const { challenges, mode: challengeMode, pending: challengesPending } = useChallenges(templateSessionId, localToday)
   const { decide } = useChallengeActions(templateSessionId, localToday)
   const isMock = challengeMode === 'mock'
 
@@ -533,11 +533,12 @@ function ActiveWorkoutSession({
           </div>
         )}
 
-        {/* Mai kihívások — companion proposes, user approves */}
+        {/* ⚔ A mai küldetések — companion proposes, user approves */}
         <ChallengesCarousel
           challenges={challenges}
           accepted={acceptedMap}
           onToggle={toggleChallenge}
+          pending={challengesPending}
         />
 
         {/* Warmup block */}
