@@ -7,9 +7,21 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
+// GymDayCard taps route straight to the session/review (direct-start flow,
+// mezo-bxpg) via useNavigate; mock it so we can assert the exact target
+// without a full route tree (idiom already used by GoalsPage.test.tsx).
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate }
+})
+
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
-beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+beforeEach(() => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  mockNavigate.mockReset()
+})
 afterEach(() => vi.unstubAllEnvs())
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><GymPage /></MemoryRouter></QueryWrapper>)
@@ -26,14 +38,14 @@ test('meso meta card shows the phase stat', () => {
   expect(screen.getByText('Fázis')).toBeInTheDocument()
 })
 
-test('tapping the current training day (Csü Pull) opens the detail sheet', () => {
+test('tapping the current training day (Csü Pull) navigates straight to the session (mezo-bxpg)', () => {
   renderView()
   // The day cards are unambiguous via aria-label "{type} · {day}".
-  // The active meso's Csü day has type "Pull" (the Pull Day).
+  // The active meso's Csü day is `current` AND (mock fixtures carry no `id`,
+  // real mode only) — either condition alone routes to plain /train/session.
   const pullDay = screen.getByRole('button', { name: /Pull · Csü/ })
   fireEvent.click(pullDay)
-  // Sheet now shows the first exercise of that day.
-  expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+  expect(mockNavigate).toHaveBeenCalledWith('/train/session')
 })
 
 test('the Saját header chip opens the custom workout sheet (mezo-ws2x)', () => {

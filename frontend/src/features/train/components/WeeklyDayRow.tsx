@@ -34,7 +34,7 @@ interface WeeklyDayRowProps {
   onStartGym: () => void
   /** A completed (non-today or today) gym day was tapped — open its review. */
   onReviewGym?: () => void
-  /** A non-today, not-done gym day was tapped — open its GymDaySheet (cross-day start, mezo-j3x0). */
+  /** A non-today, not-done gym day was tapped — start its session directly (direct-start flow, mezo-j3x0 / mezo-bxpg). */
   onOpenGymDay?: () => void
   onLogSport?: (s: VolleyballSession) => void
   onLogRun?: (s: RunPrescribedSession) => void
@@ -72,8 +72,8 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             // days from each other AND from the TrainTodayPage hero's own `time · Xp` line.
             const meta = [gym.time, gym.duration ? `${gym.duration}p` : null, gym.type].filter(Boolean).join(' · ')
             // A completed (kész) gym day — today OR a past day — opens its review;
-            // today's not-yet-logged row starts the session; any other day opens
-            // its GymDaySheet via onOpenGymDay (cross-day start, mezo-j3x0).
+            // today's not-yet-logged row starts the session; any other day starts
+            // it directly via onOpenGymDay (direct-start flow, mezo-j3x0 / mezo-bxpg).
             return (
               <button key="gym" type="button" className="s" onClick={gymLogged ? onReviewGym : isToday ? onStartGym : onOpenGymDay}>
                 <span className="stag stag-gym">GYM</span>

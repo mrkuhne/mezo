@@ -18,9 +18,7 @@ import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
-import { GymDaySheet } from '@/features/train/sheets/GymDaySheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
-import type { MesoDay } from '@/data/types'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import { daySessions } from '@/features/train/logic/agenda'
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
@@ -40,7 +38,6 @@ export function TrainTodayPage() {
   const { showLevelUp } = useLevelUp()
   const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
-  const [openGymDay, setOpenGymDay] = useState<MesoDay | null>(null)
   const [customOpen, setCustomOpen] = useState(false)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
@@ -448,8 +445,12 @@ export function TrainTodayPage() {
               onStartGym={openSession}
               onReviewGym={workoutIdByDate[a.date!] ? () => navigate(`/train/review/${workoutIdByDate[a.date!]}`) : undefined}
               onOpenGymDay={(() => {
+                // Direct-start flow (spec D6, mezo-bxpg): a non-today, not-yet-done gym
+                // row (WeeklyDayRow already routes a done row to onReviewGym above) starts
+                // straight into the session, pinning the template via ?day= in real mode
+                // (mock MesoDay fixtures carry no `id`, so mock always resolves plain).
                 const md = activeMeso.days?.find((d) => d.day === a.day && d.exerciseCount > 0)
-                return md ? () => setOpenGymDay(md) : undefined
+                return md ? () => navigate(md.current || !md.id ? '/train/session' : `/train/session?day=${md.id}`) : undefined
               })()}
               onLogSport={(s) => setSportLogSport(sportOf(s))}
               onReviewCustom={(wid) => navigate(`/train/review/${wid}`)}
@@ -505,20 +506,6 @@ export function TrainTodayPage() {
           ctx={runLogCtx}
           onClose={() => setRunLogCtx(null)}
           onSave={(body, done) => logRunSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
-        />
-      )}
-      {openGymDay && (
-        <GymDaySheet
-          day={openGymDay}
-          completedThisWeek={(() => {
-            const done = weekWorkouts.find((w) => w.templateSessionId && w.templateSessionId === openGymDay.id)
-            return done ? { id: done.id, date: done.date } : null
-          })()}
-          openTemplateSessionId={todaySession?.openWorkout?.templateSessionId ?? null}
-          openWorkoutTitle={
-            activeMeso.days?.find((d) => d.id && d.id === todaySession?.openWorkout?.templateSessionId)?.type ?? null
-          }
-          onClose={() => setOpenGymDay(null)}
         />
       )}
     </>
