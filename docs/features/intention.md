@@ -45,7 +45,7 @@ Mounted directly **under `GreetingHeader`, above `DayArc`** (`TodayPage.tsx:54`)
 
 ### Two DERIVED habits in `RoutineCard` ([habit.md](habit.md))
 - **`daily_intention`** (MORNING, position 7, „Napi szándék", anchor „reggeli rutin után", xp 10) — its `Logolás` button opens `IntentionSheet` (add a focus). The habit completes **derived** off `intention_focus_set` (today has ≥ 1 focus), never self-claimed.
-- **`intention_reflect`** (EVENING, position 3, „Szándékkal éltem?", anchor „lefekvés előtt", xp 5) — its button opens a tiny `ReflectSheet` (the 3 choices), completing derived off `intention_reflected` (today's reflection is set).
+- **`intention_reflect`** (EVENING, position 3, „Szándékkal éltem?", anchor „konyhazárás után", xp 5) — its button opens a tiny `ReflectSheet` (the 3 choices), completing derived off `intention_reflected` (today's reflection is set).
 
 Both map to the `mindset` LIFE skill. The CTA kinds are `intention-sheet` / `intention-reflect` in `features/today/logic/habitAction.ts` (the `sleep-sheet`/`meal-sheet` precedent — the sheet is the honest log surface, the habit stays DERIVED).
 
