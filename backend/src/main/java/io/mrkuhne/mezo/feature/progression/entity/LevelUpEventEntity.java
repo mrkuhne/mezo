@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
@@ -41,6 +42,13 @@ public class LevelUpEventEntity extends OwnedEntity {
     @CreationTimestamp
     @Column(name = "occurred_at", nullable = false, updatable = false)
     private Instant occurredAt;
+
+    // mezo-huzd: business date for streak/day aggregation (spec D7). Defaulted here so every
+    // existing writer between this task and Task 3 stays valid; Task 3's award path assigns
+    // the real business date explicitly, overriding this default.
+    @NotNull
+    @Column(name = "occurred_on", nullable = false)
+    private LocalDate occurredOn = LocalDate.now();
 
     @Column(name = "total_xp", nullable = false)
     private long totalXp;
