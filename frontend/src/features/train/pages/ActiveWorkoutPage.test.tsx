@@ -5,8 +5,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { ActiveWorkoutPage } from '@/features/train/pages/ActiveWorkoutPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
-import { LiveActivityProvider } from '@/app/providers/LiveActivityProvider'
-import { DynamicIsland } from '@/app/DynamicIsland'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -16,31 +14,28 @@ import { API_BASE } from '@/test/msw/handlers'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-// The page itself has no LiveActivityProvider (that's AppLayout's job in the real
-// app router) — mount it here alongside a bare <DynamicIsland/> so rest-wiring
-// tests (mezo-8141) can observe the island without double-wrapping AppLayout.
 function setup() {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session']}>
         <LevelUpProvider>
-          <LiveActivityProvider>
-            <DynamicIsland />
-            <ActiveWorkoutPage />
-          </LiveActivityProvider>
+          <ActiveWorkoutPage />
         </LevelUpProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )
 }
 
-// Set counts now vary per exercise (warmup + working sets), so a fixed loop is
-// fragile. Click "Szett kész ✓" until the exercise's debrief CTA appears (always
-// the last set); returns before re-clicking so the button behind the modal is untouched.
+// Set counts vary per exercise (warmup + working sets), so a fixed loop is fragile.
+// Click "Szett kész ✓" until the exercise's debrief CTA appears (always the last set).
+// CTA-morph (mezo-xt65): a mid-exercise log swaps the CTA for the rest bar, so skip
+// the rest each round to get the button back.
 async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>) {
   for (let i = 0; i < 12; i++) {
     await user.click(screen.getByText('Szett kész ✓'))
     if (screen.queryByText(/Mentés · tovább|Edzés vége →/)) return
+    const skip = screen.queryByRole('button', { name: 'Pihenő kihagyása' })
+    if (skip) await user.click(skip)
   }
 }
 
@@ -115,17 +110,40 @@ test('completing a set advances the set-dot cursor and the header counter', asyn
   expect(screen.getByText('▾ 1/5 gyakorlat · 1/22 szett')).toBeInTheDocument()
 })
 
-// ---- rest wiring: "Szett kész ✓" starts the island rest (mezo-8141) ----
+// ---- rest wiring: "Szett kész ✓" morphs into the in-card rest bar (mezo-xt65) ----
 
-test('mock mode: logging a mid-exercise set starts the island rest ("Pihenő")', async () => {
+test('mock mode: logging a mid-exercise set morphs the CTA into the rest bar', async () => {
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  expect(container.querySelector('.restbar')).toBeNull()
   // ex1 (Chest Supported Row, compound): 2 warmup + 3 working = 5 planned sets.
   // Logging the first (a warmup) leaves 4 sets remaining -> the exercise continues.
   await user.click(screen.getByText('Szett kész ✓'))
-  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
+  expect(container.querySelector('.restbar')).not.toBeNull()
+  expect(screen.getByText('Pihenő')).toBeInTheDocument()
+  // The morph: while resting there is no Szett kész CTA.
+  expect(screen.queryByText('Szett kész ✓')).toBeNull()
+})
+
+test('mock mode: skip restores the Szett kész CTA', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  expect(container.querySelector('.restbar')).toBeNull()
+  expect(screen.getByText('Szett kész ✓')).toBeInTheDocument()
+})
+
+test('mock mode: pause freezes the bar into Szünetel; resume brings Pihenő back', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByRole('button', { name: 'Pihenő szüneteltetése' }))
+  expect(screen.getByText('Szünetel')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Pihenő folytatása' }))
   expect(screen.getByText('Pihenő')).toBeInTheDocument()
 })
 
@@ -133,46 +151,30 @@ test('mock mode: logging an exercise\'s final set (opens the feedback modal) sta
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // Drive through ex1's 4 non-final sets — each is mid-exercise, so each restarts
-  // the island rest (overwrite semantics, asserted separately below).
-  await user.click(screen.getByText('Szett kész ✓'))
-  await user.click(screen.getByText('Szett kész ✓'))
-  await user.click(screen.getByText('Szett kész ✓'))
-  await user.click(screen.getByText('Szett kész ✓'))
-  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
-  // Clear the leftover mid-exercise rest (tap-to-skip) so it can't mask the
-  // assertion below — isolates "does THIS click start a rest" from "one is
-  // already live from an earlier click".
-  await user.click(screen.getByRole('button', { name: 'Pihenő átugrása' }))
-  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  // Drive through ex1's 4 non-final sets, skipping each rest to re-reveal the CTA.
+  for (let i = 0; i < 4; i++) {
+    await user.click(screen.getByText('Szett kész ✓'))
+    await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  }
   // The 5th (last) set completes the exercise -> feedback modal opens, no rest.
   await user.click(screen.getByText('Szett kész ✓'))
   expect(await screen.findByText(/Mentés · tovább|Edzés vége →/)).toBeInTheDocument()
-  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  expect(container.querySelector('.restbar')).toBeNull()
 })
 
-test('mock mode: exiting the workout clears a live rest', async () => {
+test('mock mode: the rest bar rides along when navigating to another exercise', async () => {
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  await user.click(screen.getByText('Szett kész ✓'))
-  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
-  await user.click(screen.getByRole('button', { name: 'Vissza' }))
-  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  await user.click(screen.getByText('Szett kész ✓')) // rest starts on ex1
+  expect(container.querySelector('.restbar')).not.toBeNull()
+  // Free navigation: page to ex2 — the rest is the user's, so the bar stays.
+  await user.click(screen.getByRole('button', { name: 'Következő: Lat Pulldown · Pronated' }))
+  expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
+  expect(container.querySelector('.restbar')).not.toBeNull()
 })
 
-test('mock mode: a new rest replaces (does not stack with) an already-live one', async () => {
-  const user = userEvent.setup()
-  const { container } = setup()
-  await user.click(screen.getByText(/Kezdjük el/))
-  await user.click(screen.getByText('Szett kész ✓')) // warmup 1 -> rest starts
-  expect(container.querySelectorAll('.dynamic-island.live')).toHaveLength(1)
-  await user.click(screen.getByText('Szett kész ✓')) // warmup 2 -> replaces, not stacks
-  expect(container.querySelectorAll('.dynamic-island.live')).toHaveLength(1)
-  expect(screen.getByText('Pihenő')).toBeInTheDocument()
-})
-
-test('mock mode: reaching the summary screen (workout end) clears a live rest', async () => {
+test('mock mode: reaching the summary screen (workout end) shows no rest bar', async () => {
   const user = userEvent.setup()
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
@@ -182,44 +184,12 @@ test('mock mode: reaching the summary screen (workout end) clears a live rest', 
   await screen.findByText('Lat Pulldown · Pronated')
   for (let ex = 0; ex < 4; ex++) {
     await completeExerciseSets(user)
-    if (ex < 3) {
-      // Mid-way through, a rest should be live (proves the loop is actually logging
-      // mid-exercise sets, not just skipping straight to the debrief).
-      expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
-    }
     const cta = await screen.findByText(/Mentés · tovább|Edzés vége →/)
     await user.click(cta)
     if (ex < 3) await waitFor(() => expect(document.querySelector('.setdots .sd.don')).toBeNull())
   }
-  // The last debrief lands on the summary (phase -> summary) — any leftover live rest
-  // is cleared (the closing summary's eyebrow reads "Edzés vége · <title>"). The clear
-  // is effect-driven (phase -> summary), so wait for the island re-render to flush.
   expect(await screen.findByText(/Edzés vége ·/)).toBeInTheDocument()
-  await waitFor(() => expect(container.querySelector('.dynamic-island.live')).toBeNull())
-})
-
-test('mock mode: unmounting the workout session clears a live rest', async () => {
-  const user = userEvent.setup()
-  function Harness({ mounted }: { mounted: boolean }) {
-    return (
-      <QueryWrapper>
-        <MemoryRouter initialEntries={['/train/session']}>
-          <LevelUpProvider>
-            <LiveActivityProvider>
-              <DynamicIsland />
-              {mounted && <ActiveWorkoutPage />}
-            </LiveActivityProvider>
-          </LevelUpProvider>
-        </MemoryRouter>
-      </QueryWrapper>
-    )
-  }
-  const { container, rerender } = render(<Harness mounted />)
-  await user.click(screen.getByText(/Kezdjük el/))
-  await user.click(screen.getByText('Szett kész ✓'))
-  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
-  rerender(<Harness mounted={false} />)
-  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  await waitFor(() => expect(container.querySelector('.restbar')).toBeNull())
 })
 
 test('mock mode: the giant steppers pre-fill the current set from the prescribed target', async () => {
@@ -230,6 +200,15 @@ test('mock mode: the giant steppers pre-fill the current set from the prescribed
   await screen.findByRole('button', { name: 'Súly növelése' }) // wait for the active phase
   expect(container.querySelector('.steprow')).toHaveTextContent('52,5') // first warmup target
   expect(container.querySelector('.steprow')).toHaveTextContent('10')
+})
+
+test('the kind chip under the set-dots is gone — the dots alone carry warmup/working (mezo-xt65)', async () => {
+  const user = userEvent.setup()
+  const { container } = setup()
+  await user.click(screen.getByText(/Kezdjük el/))
+  await screen.findByRole('button', { name: 'Súly növelése' })
+  expect(container.querySelector('.setdots .sd.cur')).toHaveTextContent('B1')
+  expect(container.querySelector('.excard .stag')).toBeNull()
 })
 
 test('mock mode: the current set-dot shows a B-prefixed label on a warmup set', async () => {
@@ -273,24 +252,27 @@ test('mock mode: warmup sets render up-front as amber "Bemel." rows (spec §6)',
 
 // ---- warmup vs working distinction on the logging card (mezo-eerq) ----
 
-test('mock mode: a warmup set shows the Bemelegítő tag and hides the RIR row', async () => {
+test('mock mode: a warmup set hides the RIR row (effort tracking is working-set-only)', async () => {
   const user = userEvent.setup()
-  setup()
+  const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  // ex1 set 1 is a warmup (B1): amber kind tag on the card, no RIR selector.
-  expect(await screen.findByText('Bemelegítő · B1')).toBeInTheDocument()
+  // ex1 set 1 is a warmup (B1) — signalled by the set dot alone (mezo-xt65
+  // deleted the kind chip); no RIR selector on the logging card.
+  await screen.findByRole('button', { name: 'Súly növelése' })
+  expect(container.querySelector('.setdots .sd.cur')).toHaveTextContent('B1')
   expect(screen.queryByText('RIR')).not.toBeInTheDocument() // the rirrow label
   expect(screen.queryByRole('button', { name: 'RIR 0' })).not.toBeInTheDocument()
 })
 
-test('mock mode: a working set shows the Working tag and the RIR row', async () => {
+test('mock mode: a working set shows the RIR row', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(screen.getByText('Szett kész ✓')) // B1
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // B2
-  expect(await screen.findByText('Working · 1/3')).toBeInTheDocument()
-  expect(screen.getByText('RIR')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  expect(await screen.findByText('RIR')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'RIR 0' })).toBeInTheDocument()
 })
 
@@ -299,14 +281,16 @@ test('mock mode: a deviated working-set weight carries into the next working set
   const { container } = setup()
   await user.click(screen.getByText(/Kezdjük el/))
   await user.click(screen.getByText('Szett kész ✓')) // B1 (52.5)
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // B2 (77.5)
-  await screen.findByText('Working · 1/3')
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
+  await screen.findByText('RIR') // the first working set is on deck
   expect(container.querySelector('.steprow')).toHaveTextContent('105') // engine seeds working 1
   await user.click(screen.getByRole('button', { name: 'Súly növelése' })) // 105 -> 107.5
   await user.click(screen.getByText('Szett kész ✓')) // log working 1 at 107.5
-  await screen.findByText('Working · 2/3')
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   // The next working set inherits the deviated 107.5, not the static 105 target.
-  expect(container.querySelector('.steprow')).toHaveTextContent('107,5')
+  await waitFor(() => expect(container.querySelector('.steprow')).toHaveTextContent('107,5'))
 })
 
 test('real mode: null engine targets never reset the weight — the next set inherits it', async () => {
@@ -380,6 +364,7 @@ test('real mode: a warmup set posts without rir, a working set posts with it', a
   await user.click(await screen.findByText(/Kezdjük el/))
   await waitFor(() => expect(calls).toContain('start:d-1'))
   await user.click(screen.getByText('Szett kész ✓')) // B1 — warmup, no RIR logged
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // working set (opens the debrief)
   await waitFor(() => expect(bodies).toHaveLength(2))
   expect(bodies[0].kind).toBe('warmup')
@@ -395,7 +380,9 @@ test('logging a PR-weight third set on the first exercise fires the PR toast', a
   // ex1: 2 warmups, then the working sets are prescribed at 105 kg. Set 3 (the first
   // working set) auto-prefills to 105 → clears the PR threshold vs lastWeek 102.5.
   await user.click(screen.getByText('Szett kész ✓')) // warmup 1
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // warmup 2
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // working set (setIndex 2) -> PR
   expect(screen.getByText('Personal Record')).toBeInTheDocument()
   expect(screen.getByText('+2.5 kg')).toBeInTheDocument()
@@ -460,17 +447,17 @@ test('⋯ Kihagyás advances to the next exercise without opening the debrief', 
   await user.click(screen.getByText(/Kezdjük el/))
   expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
   // Start a mid-exercise rest before skipping — skip must clear it (final-review
-  // fix, mezo-8141 — Ride-along A), not leave the island counting toward an
+  // fix, mezo-8141 — Ride-along A), not leave the bar counting toward an
   // abandoned exercise.
   await user.click(screen.getByText('Szett kész ✓'))
-  expect(container.querySelector('.dynamic-island.live')).not.toBeNull()
+  expect(container.querySelector('.restbar')).not.toBeNull()
   await user.click(screen.getByRole('button', { name: 'Gyakorlat műveletek' }))
   await user.click(screen.getByText('Kihagyás'))
   // Advances straight to the next exercise — no FeedbackModal / debrief CTA.
   expect(await screen.findByText('Lat Pulldown · Pronated')).toBeInTheDocument()
   expect(screen.queryByText('Mentés · tovább')).not.toBeInTheDocument()
   expect(screen.queryByText('Edzés vége →')).not.toBeInTheDocument()
-  expect(container.querySelector('.dynamic-island.live')).toBeNull()
+  expect(container.querySelector('.restbar')).toBeNull()
 })
 
 test('a skipped exercise is marked "kihagyva" in the recap', async () => {
@@ -817,6 +804,7 @@ test('real mode: ＋ Szett grows a 1-set exercise to 2 and the extra set posts w
   expect(container.querySelectorAll('.setdots .sd')).toHaveLength(2) // the extra set grew the count to 2
   await user.click(screen.getByText('Szett kész ✓')) // set 1 (setIndex 0)
   expect(container.querySelectorAll('.setdots .sd.don')).toHaveLength(1) // still mid-exercise, not overflowed
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓')) // extra set (setIndex 1) -> last set, opens FeedbackModal
   await waitFor(() => expect(calls.some((c) => c.startsWith('set:w-1:e-1:1'))).toBe(true))
 })
@@ -1062,12 +1050,10 @@ test('real mode: a completed today instance redirects the session route to the r
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session']}>
         <LevelUpProvider>
-          <LiveActivityProvider>
-            <Routes>
-              <Route path="/train/session" element={<ActiveWorkoutPage />} />
-              <Route path="/train/review/:workoutId" element={<div>REVIEW PROBE</div>} />
-            </Routes>
-          </LiveActivityProvider>
+          <Routes>
+            <Route path="/train/session" element={<ActiveWorkoutPage />} />
+            <Route path="/train/review/:workoutId" element={<div>REVIEW PROBE</div>} />
+          </Routes>
         </LevelUpProvider>
       </MemoryRouter>
     </QueryWrapper>,
@@ -1099,10 +1085,7 @@ test('real mode: a custom workout with NO active meso renders the prep screen in
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session?day=cw-1']}>
         <LevelUpProvider>
-          <LiveActivityProvider>
-            <DynamicIsland />
-            <ActiveWorkoutPage />
-          </LiveActivityProvider>
+          <ActiveWorkoutPage />
         </LevelUpProvider>
       </MemoryRouter>
     </QueryWrapper>,
@@ -1218,7 +1201,9 @@ test('a logged working set shows its RIR chip in the read-only set list', async 
   await user.click(screen.getByText(/Kezdjük el/))
   // ex1 has 2 warmups first: log 3 sets so ONE working set (index 2) is done.
   await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   await user.click(screen.getByText('Szett kész ✓'))
+  await user.click(screen.getByRole('button', { name: 'Pihenő kihagyása' }))
   // the current (3rd) set is a working set — select RIR 1, then log it
   await user.click(screen.getByRole('button', { name: 'RIR 1' }))
   await user.click(screen.getByText('Szett kész ✓'))

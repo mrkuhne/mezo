@@ -1,6 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { PhoneFrame } from '@/app/PhoneFrame'
-import { LiveActivityProvider } from '@/app/providers/LiveActivityProvider'
 import { ScreenContent } from '@/app/ScreenContent'
 import { TabBar } from '@/app/TabBar'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
@@ -16,21 +15,19 @@ export function AppLayout() {
   // and exercise dots) — the bottom tab bar would just be dead chrome underneath it.
   const hideTabBar = location.pathname === '/train/session'
   return (
-    <LiveActivityProvider>
-      <PhoneFrame anchor={anchor}>
-        <ToastProvider>
-          <LevelUpProvider>
-            <ScreenContent>
-              {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
-                  (TabBar) stays usable and navigating away (resetKey) recovers. */}
-              <ErrorBoundary resetKey={location.pathname}>
-                <Outlet />
-              </ErrorBoundary>
-            </ScreenContent>
-            {!hideTabBar && <TabBar />}
-          </LevelUpProvider>
-        </ToastProvider>
-      </PhoneFrame>
-    </LiveActivityProvider>
+    <PhoneFrame anchor={anchor}>
+      <ToastProvider>
+        <LevelUpProvider>
+          <ScreenContent>
+            {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
+                (TabBar) stays usable and navigating away (resetKey) recovers. */}
+            <ErrorBoundary resetKey={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
+          </ScreenContent>
+          {!hideTabBar && <TabBar />}
+        </LevelUpProvider>
+      </ToastProvider>
+    </PhoneFrame>
   )
 }
