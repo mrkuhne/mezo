@@ -62,7 +62,13 @@ export function prepForecast(day: MesoDay, athletic: SkillLevel[]): PrepForecast
   const forecast = growthForecast({ days: [day], slots: [], runSessions: [], athletic })
   const skillXp = forecast.skills.reduce((sum, s) => sum + s.xpEst, 0)
   const muscleXp = Object.values(forecast.muscleXp).reduce((sum, xp) => sum + xp, 0)
-  return { totalXp: skillXp + muscleXp, skills: forecast.skills.slice(0, 3) }
+  // D2: growthForecast defaults a skill with no athletic-profile row to level 1/0 XP,
+  // so it can still cross the level-1→2 threshold and claim a level-up chance — never
+  // fabricate one for a skill mezo has no real profile row for (cold-load/switch-off/
+  // fresh-profile — final-review fix, mezo-bxpg — Finding 3).
+  const known = new Set(athletic.map((s) => s.skillKey))
+  const skills = forecast.skills.map((s) => (known.has(s.skillKey) ? s : { ...s, willLevelUp: false }))
+  return { totalXp: skillXp + muscleXp, skills: skills.slice(0, 3) }
 }
 
 /** catalogId-else-name identity key — 'c:'+id when catalog-linked, else 'n:'+name. */

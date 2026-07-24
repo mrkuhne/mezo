@@ -113,6 +113,19 @@ describe('prepForecast', () => {
     expect(f.skills.find((s) => s.skillKey === 'strength_endurance')).toMatchObject({ willLevelUp: true })
     expect(f.skills.find((s) => s.skillKey === 'max_strength')).toMatchObject({ willLevelUp: false })
   })
+
+  // D2 (final-review fix, mezo-bxpg — Finding 3): growthForecast defaults a skill with
+  // no athletic-profile row to level 1/0 XP, so max_strength's xpEst (266, well over the
+  // level-1→2 threshold of 100) would otherwise fabricate a level-up badge on an empty
+  // profile — a cold load, a switched-off skill, or a genuinely fresh profile.
+  it('never fabricates willLevelUp for a skill with no real athletic-profile row, even when xpEst is well past the threshold', () => {
+    const day = mesoDay([gymEx('chest', 3, { anchorWeightKg: 100 })])
+    const f = prepForecast(day, [])
+    expect(f.skills.length).toBeGreaterThan(0)
+    expect(f.skills.every((s) => s.willLevelUp === false)).toBe(true)
+    // sanity: xpEst really did cross the naive threshold, so this isn't a vacuous pass
+    expect(f.skills.some((s) => s.xpEst >= 100)).toBe(true)
+  })
 })
 
 describe('identityKeyOf', () => {
