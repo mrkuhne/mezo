@@ -383,7 +383,7 @@ evaluator**. Design of record:
   `CHALLENGE_MARKER_MIRROR = "EDZES-KIHIVAS-FELADAT"` (§9 gotcha a), planted via a check-in note.
 - **The FE surface (`ActiveWorkoutPage` challenge carousel un-mocks)** — `useChallenges()` +
   `useChallengeActions()` (`data/train/challengeHooks.ts`); the prep carousel renders the live list,
-  „Vállaljuk" is a real L2 decision, confidence-null reads „tanulom", the `tools` chips are hidden in
+  „⚔ Elfogadom" (pre-bxpg: „Vállaljuk") is a real L2 decision, confidence-null reads „tanulom", the `tools` chips are hidden in
   live, and resolved challenges show the outcome chip (✓/◯/◌). Details: [train.md §Active workout](train.md).
 
 **Status per layer:**
@@ -492,7 +492,7 @@ cards, the inert propose CTA). See [insights.md §2.7](insights.md).
 The companion **proposes per-exercise micro-challenges** (PR/Depth/Volume) on the prep screen before
 „Kezdjük el". Each `ChallengeCard` (`features/train/components/ChallengeCard.tsx`) is honest: confidence
 reads **„tanulom"** on null (no fabricated %), the **tool-transparency chips are gone** (live sends no
-`tools` — the W1/W2 false-affordance lesson), and **„Vállaljuk" is a real L2 decision** — it `POST`s
+`tools` — the W1/W2 false-affordance lesson), and **„⚔ Elfogadom" (pre-bxpg: „Vállaljuk") is a real L2 decision** — it `POST`s
 accept/dismiss (`useChallengeActions.decide`) and the accepted state derives from the server `status`
 (`accepted | hit | miss`). Once the workout is decided the card shows the **outcome chip + line** and
 **hides the accept/skip row**: `hit → ✓ Megerősítve` (success), `miss → ◯ Nem igazolódott` (muted, no
