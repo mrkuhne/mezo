@@ -58,13 +58,13 @@ class HabitServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetDay_shouldLazilyCreateFourteenPendingRows_whenTodayFirstRead() {
+    void testGetDay_shouldLazilyCreateFifteenPendingRows_whenTodayFirstRead() {
         UUID owner = owner();
         HabitDayResponse day = habitService.getDay(owner, LocalDate.now());
-        assertThat(day.getHabits()).hasSize(14);
+        assertThat(day.getHabits()).hasSize(15);
         assertThat(day.getHabits())
             .allSatisfy(h -> assertThat(h.getStatus().getValue()).isIn("pending", "done"));
-        assertThat(repository.findByCreatedByAndHabitDate(owner, LocalDate.now())).hasSize(14);
+        assertThat(repository.findByCreatedByAndHabitDate(owner, LocalDate.now())).hasSize(15);
     }
 
     @Test
@@ -217,11 +217,12 @@ class HabitServiceIT extends AbstractIntegrationTest {
         habitPopulator.row(owner, day, "morning_workout", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "protein_breakfast", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "daily_intention", HabitDayEntity.STATUS_DONE);
-        // only 4 of 5 EVENING keys done (bed_on_time missed) -> no perfect evening
+        // only 5 of 6 EVENING keys done (bed_on_time missed) -> no perfect evening
         habitPopulator.row(owner, day, "caffeine_cutoff", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "kitchen_close", HabitDayEntity.STATUS_DONE);
-        habitPopulator.row(owner, day, "wind_down", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "intention_reflect", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, day, "evening_ritual", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, day, "wind_down", HabitDayEntity.STATUS_DONE);
         habitPopulator.row(owner, day, "bed_on_time", HabitDayEntity.STATUS_MISSED);
 
         HabitSummaryResponse summary = habitService.summary(owner);
