@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sleep slice C-éj — jóváhagyott mockupok (mezo-d71m, 2026-07-24)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  /* Global reset — standalone mockup (see memory: button/input native bg breaks dark panels) */
+  *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+  button { appearance:none; -webkit-appearance:none; border:none; background:none; font:inherit; color:inherit; cursor:pointer; }
+
+  :root { --canvas:#FBF6EF; --surface:#FFFFFF; --warm:#F4EBDF; --line:#EFE5D8;
+          --ink:#2B2118; --sub:#8A7A6A; --faint:#A5978A;
+          --lav:#9B8FC4; --lav-deep:#7A6DA8; --wash-lav:#EEEBF6;
+          --sage-deep:#5F7A52; --wash-sage:#EAF0E3; --amber-deep:#9A6A12; --wash-amber:#FFF3E4;
+          --nightbg:#0E0B09; --nightsurf:#1A1613; --nightsurf2:#221E1B;
+          --nink:#F5EFE6; --nsub:#B7A899; --nfaint:#6E6156;
+          --nlav:#B9ACD9; --nlavdim:rgba(185,172,217,.14); --nlavmid:rgba(185,172,217,.32);
+          --namber:rgba(255,190,96,.75);
+          --ffd:"Bricolage Grotesque",sans-serif; --ffb:"Plus Jakarta Sans",-apple-system,system-ui,sans-serif; }
+
+  body { font-family:var(--ffb); color:var(--ink); background:#E6E1D8; padding:32px 20px 60px; }
+  .wrap { max-width:1120px; margin:0 auto; }
+  h1 { font:700 26px/1.3 var(--ffd); margin-bottom:6px; }
+  .meta { font:500 13px/1.6 var(--ffb); color:var(--sub); margin-bottom:34px; }
+  h2 { font:600 19px/1.3 var(--ffd); margin:44px 0 4px; }
+  .sub { font:500 13px/1.6 var(--ffb); color:var(--sub); margin-bottom:12px; }
+
+  .phones { display:flex; gap:24px; flex-wrap:wrap; margin-top:14px; }
+  .capwrap { width:330px; }
+  .phone { width:330px; background:var(--canvas); border-radius:30px; padding:18px 16px 22px;
+           box-shadow:0 2px 6px rgba(43,33,24,.08), 0 12px 28px rgba(43,33,24,.12); }
+  .phone.dk { background:var(--nightbg); min-height:560px; padding:26px 20px 24px;
+              display:flex; flex-direction:column;
+              box-shadow:0 2px 6px rgba(0,0,0,.4), 0 14px 34px rgba(0,0,0,.5); }
+  .phcap { text-align:center; font:700 12px/1.3 var(--ffb); color:var(--sub); letter-spacing:.06em;
+           text-transform:uppercase; margin-bottom:12px; }
+  .phcap b { color:var(--lav-deep); }
+
+  .ghost { background:var(--surface); border-radius:16px; padding:12px 14px; opacity:.35;
+           margin-bottom:12px; box-shadow:0 1px 2px rgba(43,33,24,.05); }
+  .ghost .g1 { font:600 10px/1 var(--ffb); color:var(--lav-deep); letter-spacing:.08em; margin-bottom:4px; }
+  .ghost .g2 { font:500 12px/1.3 var(--ffb); color:var(--ink); }
+
+  /* ===== 1 · WindDownBanner (v3 — jóváhagyott) ===== */
+  .wdb { border-radius:22px; padding:20px 18px; margin-bottom:12px;
+         background:linear-gradient(150deg, var(--wash-lav) 0%, var(--surface) 70%);
+         box-shadow:0 1px 3px rgba(43,33,24,.06), 0 8px 22px rgba(122,109,168,.14); }
+  .wdb-hd { display:flex; align-items:center; gap:8px; }
+  .wdb-eye { font:700 10.5px/1 var(--ffb); letter-spacing:.11em; color:var(--lav-deep); text-transform:uppercase; }
+  .wdb-pill { margin-left:auto; background:var(--wash-lav); color:var(--lav-deep);
+              font:700 11.5px/1 var(--ffb); padding:7px 12px; border-radius:999px; white-space:nowrap; }
+  .wdb-title { font:600 20px/1.3 var(--ffd); color:var(--ink); margin-top:14px; }
+  .wdb-list { margin-top:14px; display:flex; flex-direction:column; gap:10px; }
+  .tip { display:flex; align-items:center; gap:11px; }
+  .tip .ic { width:32px; height:32px; border-radius:10px; background:var(--warm);
+             display:flex; align-items:center; justify-content:center; font-size:15px; flex-shrink:0; }
+  .tip .tx { font:500 13px/1.45 var(--ffb); color:var(--sub); }
+  .tip .tx b { color:var(--ink); font-weight:600; }
+  .wdb-foot { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
+  .wdb-stat { font:500 12px/1.6 var(--ffb); color:var(--faint); }
+  .wdb-stat b { color:var(--sage-deep); font-weight:700; }
+  .wdb-hab { display:flex; align-items:center; gap:12px; background:var(--surface);
+             border:1px solid var(--line); border-radius:16px; padding:12px 14px; }
+  .wdb-hab .st { color:var(--faint); font-size:14px; }
+  .wdb-hab .tx { flex:1; }
+  .wdb-hab .t1 { font:600 13.5px/1.3 var(--ffb); color:var(--ink); }
+  .wdb-hab .t2 { font:500 10.5px/1.5 var(--ffb); color:var(--faint); }
+  .wdb-hab .xp { font:700 10.5px/1 var(--ffb); color:var(--amber-deep); background:var(--wash-amber);
+                 padding:5px 8px; border-radius:999px; }
+  .wdb-pipa { background:var(--lav-deep); color:#fff; font:700 12.5px/1 var(--ffb);
+              padding:11px 18px; border-radius:999px; box-shadow:0 2px 8px rgba(122,109,168,.32); }
+  .wdb-done { display:flex; align-items:center; gap:9px; background:var(--wash-sage);
+              border-radius:16px; padding:12px 14px; font:600 13px/1.4 var(--ffb); color:var(--sage-deep); }
+  .wdb-night { background:linear-gradient(140deg, #1A1622 0%, var(--nightsurf2) 82%);
+               border-radius:22px; padding:20px 18px; margin-bottom:12px; display:flex; align-items:center; gap:14px;
+               box-shadow:0 2px 8px rgba(0,0,0,.28); }
+  .wdb-night .moon { font-size:22px; filter:drop-shadow(0 0 7px rgba(185,172,217,.45)); }
+  .wdb-night .tx { flex:1; }
+  .wdb-night .t1 { font:600 16px/1.3 var(--ffd); color:var(--nink); margin-bottom:4px; }
+  .wdb-night .t2 { font:500 11.5px/1.55 var(--ffb); color:var(--nsub); }
+  .wdb-night .chev { color:var(--nlav); font-size:17px; }
+
+  .tl { max-width:720px; margin:10px 0 6px; }
+  .tl-bar { display:flex; height:26px; border-radius:999px; overflow:hidden;
+            font:700 9.5px/26px var(--ffb); text-align:center; letter-spacing:.04em; color:#fff; }
+  .tl-none { flex:2.2; background:#D9CFC0; color:#8A7A6A; }
+  .tl-dim  { flex:1.1; background:var(--lav); }
+  .tl-wd   { flex:1.6; background:var(--lav-deep); }
+  .tl-nt   { flex:2.6; background:#2A2233; color:var(--nlav); }
+  .tl-marks { display:flex; font:600 9.5px/1 var(--ffb); color:var(--sub); margin-top:4px; }
+
+  /* ===== 2 · NightPage ===== */
+  .n-eye { font:700 10px/1 var(--ffb); letter-spacing:.14em; color:var(--nfaint); text-transform:uppercase;
+           text-align:center; margin-bottom:10px; }
+  .n-back { font:600 11px/1 var(--ffb); color:var(--nfaint); text-align:left; margin-bottom:22px; }
+  .n-moon { text-align:center; font-size:34px; margin:26px 0 18px;
+            filter:drop-shadow(0 0 14px rgba(185,172,217,.35)); }
+  .n-title { font:600 26px/1.25 var(--ffd); color:var(--nink); text-align:center; margin-bottom:14px; }
+  .n-body { font:500 13.5px/1.75 var(--ffb); color:var(--nsub); text-align:center; margin:0 8px 26px; }
+  .n-cta { display:block; width:100%; padding:18px; border-radius:999px; text-align:center;
+           background:var(--nlavdim); border:1px solid var(--nlavmid);
+           font:700 16px/1 var(--ffb); color:var(--nlav); margin-top:auto; }
+  .n-quiet { display:block; width:100%; text-align:center; font:600 12px/1 var(--ffb);
+             color:var(--nfaint); margin-top:16px; }
+  .n-orbwrap { display:flex; justify-content:center; margin:22px 0 20px; }
+  .n-orb { width:118px; height:118px; border-radius:50%;
+           background:radial-gradient(circle at 50% 42%, rgba(185,172,217,.30), rgba(185,172,217,.05) 68%);
+           box-shadow:0 0 42px rgba(185,172,217,.16); position:relative; }
+  .n-orb::after { content:''; position:absolute; inset:26px; border-radius:50%;
+                  background:radial-gradient(circle, rgba(185,172,217,.34), transparent 72%); }
+  .n-tools { display:flex; flex-direction:column; gap:12px; margin-top:6px; }
+  .n-tool { display:flex; align-items:center; gap:14px; padding:16px;
+            background:var(--nightsurf); border-radius:18px; border:1px solid rgba(245,239,230,.05); }
+  .n-tool .ic { font-size:19px; opacity:.85; }
+  .n-tool .tx { flex:1; text-align:left; }
+  .n-tool .t1 { font:600 14px/1.2 var(--ffb); color:var(--nink); margin-bottom:2px; }
+  .n-tool .t2 { font:500 10.5px/1.5 var(--ffb); color:var(--nfaint); }
+  .n-tool .chev { color:var(--nfaint); }
+  .g-glow { text-align:center; font-size:30px; margin:24px 0 16px;
+            filter:drop-shadow(0 0 12px rgba(255,190,96,.28)); }
+  .g-steps { display:flex; flex-direction:column; gap:14px; margin:4px 6px 24px; }
+  .g-step { display:flex; gap:12px; align-items:flex-start; }
+  .g-step .dot { width:6px; height:6px; border-radius:50%; background:var(--namber); margin-top:7px; flex-shrink:0; }
+  .g-step .tx { font:500 13px/1.65 var(--ffb); color:var(--nsub); text-align:left; }
+  .g-step .tx b { color:var(--nink); font-weight:600; }
+  .arrowrow { display:flex; align-items:center; justify-content:center; gap:8px; margin:16px 0 2px;
+              font:700 12px/1 var(--ffb); color:#8A7A6A; }
+
+  /* ===== 3 · Toolkit ===== */
+  .b-stage { position:relative; height:270px; display:flex; align-items:center; justify-content:center; }
+  .b-orb { width:190px; height:190px; border-radius:50%;
+           background:radial-gradient(circle at 50% 42%, rgba(185,172,217,.34), rgba(185,172,217,.06) 70%);
+           box-shadow:0 0 52px rgba(185,172,217,.18);
+           animation:mzbreath 18s ease-in-out infinite; }
+  @keyframes mzbreath {
+    0%{transform:scale(.52)} 27.8%{transform:scale(1)} 61.1%{transform:scale(1)} 100%{transform:scale(.52)}
+  }
+  .b-label { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+  .b-label span { position:absolute; font:600 21px/1 var(--ffd); color:var(--nink); opacity:0; }
+  .b-in   { animation:mzlbin 18s linear infinite; }
+  .b-hold { animation:mzlbhold 18s linear infinite; }
+  .b-out  { animation:mzlbout 18s linear infinite; }
+  @keyframes mzlbin   { 0%{opacity:.9} 25%{opacity:.9} 29%{opacity:0} 100%{opacity:0} }
+  @keyframes mzlbhold { 0%{opacity:0} 27%{opacity:0} 31%{opacity:.9} 58%{opacity:.9} 63%{opacity:0} 100%{opacity:0} }
+  @keyframes mzlbout  { 0%{opacity:0} 60%{opacity:0} 64%{opacity:.9} 97%{opacity:.9} 100%{opacity:0} }
+  @media (prefers-reduced-motion: reduce) {
+    .b-orb, .b-in, .b-hold, .b-out { animation:none; }
+    .b-in { opacity:.9; }
+  }
+  .b-hint { font:500 12.5px/1.7 var(--ffb); color:var(--nsub); text-align:center; margin-top:10px; }
+  .s-card { background:var(--nightsurf); border:1px solid rgba(245,239,230,.05); border-radius:20px;
+            padding:26px 20px; margin-top:26px; text-align:center; }
+  .s-part { font:600 20px/1.3 var(--ffd); color:var(--nink); margin-bottom:12px; }
+  .s-tx { font:500 13.5px/1.75 var(--ffb); color:var(--nsub); }
+  .s-dots { display:flex; gap:7px; justify-content:center; margin-top:26px; }
+  .s-dot { width:5px; height:5px; border-radius:50%; background:rgba(245,239,230,.14); }
+  .s-dot.on { background:var(--nlav); }
+  .s-hint { font:500 11.5px/1.6 var(--ffb); color:var(--nfaint); text-align:center; margin-top:14px; }
+  .w-setup { background:var(--nightsurf); border:1px solid rgba(245,239,230,.05); border-radius:20px;
+             padding:22px 20px; margin-top:18px; }
+  .w-t { font:600 17px/1.35 var(--ffd); color:var(--nink); margin-bottom:10px; }
+  .w-tx { font:500 13px/1.7 var(--ffb); color:var(--nsub); }
+  .w-remind { border:1px dashed rgba(185,172,217,.22); border-radius:20px; padding:18px 20px; margin-top:14px; }
+  .w-rtx { font:500 13px/1.7 var(--ffb); color:var(--nsub); font-style:italic; }
+  .w-note { font:500 11.5px/1.6 var(--ffb); color:var(--nfaint); text-align:center; margin-top:14px; }
+
+  /* ===== 4 · Belépők / reggel / settings ===== */
+  .card { background:var(--surface); border-radius:20px; padding:16px; margin-bottom:12px;
+          box-shadow:0 1px 3px rgba(43,33,24,.06); }
+  .arc { display:flex; align-items:center; justify-content:space-between; margin:6px 0 10px; }
+  .arc .end { text-align:center; font:600 15px/1.3 var(--ffb); color:var(--ink); }
+  .arc .end small { display:block; font:600 9.5px/1 var(--ffb); color:var(--faint); letter-spacing:.08em; margin-bottom:4px; }
+  .arc .mid { background:var(--wash-lav); color:var(--lav-deep); font:700 12px/1 var(--ffb);
+              padding:8px 13px; border-radius:999px; }
+  .chiprow { display:flex; gap:8px; align-items:center; }
+  .chip { font:600 10.5px/1 var(--ffb); color:var(--sub); background:var(--warm); padding:6px 10px; border-radius:999px; }
+  .chip.edit { color:var(--lav-deep); background:var(--wash-lav); margin-left:auto; }
+  .nightrow { background:linear-gradient(140deg, #1A1622 0%, var(--nightsurf2) 82%);
+              border-radius:20px; padding:16px; margin-bottom:12px; display:flex; align-items:center; gap:13px;
+              box-shadow:0 2px 8px rgba(0,0,0,.22); }
+  .nightrow .moon { font-size:19px; filter:drop-shadow(0 0 6px rgba(185,172,217,.45)); }
+  .nightrow .tx { flex:1; }
+  .nightrow .t1 { font:600 14px/1.3 var(--ffd); color:var(--nink); margin-bottom:2px; }
+  .nightrow .t2 { font:500 10.5px/1.5 var(--ffb); color:var(--nsub); }
+  .nightrow .chev { color:var(--nlav); }
+  .rings { display:flex; gap:12px; }
+  .ring { flex:1; text-align:center; padding:12px 8px; }
+  .ringc { width:56px; height:56px; border-radius:50%; margin:0 auto 7px; position:relative;
+           background:conic-gradient(var(--lav-deep) 0 76%, var(--line) 76% 100%); }
+  .ringc::after { content:'76'; position:absolute; inset:6px; background:var(--surface); border-radius:50%;
+                  display:flex; align-items:center; justify-content:center; font:700 14px/1 var(--ffd); color:var(--ink); }
+  .ring.g .ringc { background:conic-gradient(var(--sage-deep) 0 91%, var(--line) 91% 100%); }
+  .ring.g .ringc::after { content:'91'; }
+  .ringl { font:600 10px/1.3 var(--ffb); color:var(--sub); letter-spacing:.04em; }
+  .sheet { background:var(--surface); border-radius:24px 24px 20px 20px; padding:18px 16px;
+           box-shadow:0 -2px 18px rgba(43,33,24,.10); }
+  .sh-grab { width:38px; height:4px; border-radius:999px; background:var(--line); margin:0 auto 14px; }
+  .sh-title { font:600 17px/1.3 var(--ffd); margin-bottom:12px; }
+  .seg { display:flex; background:var(--warm); border-radius:999px; padding:3px; margin-bottom:14px; }
+  .seg span { flex:1; text-align:center; font:700 11.5px/1 var(--ffb); padding:8px 0; border-radius:999px; color:var(--sub); }
+  .seg .on { background:var(--surface); color:var(--lav-deep); box-shadow:0 1px 3px rgba(43,33,24,.08); }
+  .fld { margin-bottom:12px; }
+  .fldl { font:600 10px/1 var(--ffb); color:var(--sub); letter-spacing:.08em; text-transform:uppercase; margin-bottom:7px; }
+  .awrow { display:flex; gap:7px; }
+  .aw { flex:1; text-align:center; font:700 13px/1 var(--ffb); color:var(--sub); background:var(--warm);
+        padding:11px 0; border-radius:12px; }
+  .aw.on { background:var(--lav-deep); color:#fff; box-shadow:0 2px 7px rgba(122,109,168,.32); }
+  .nighthint { display:flex; gap:9px; align-items:flex-start; background:var(--wash-lav); border-radius:14px;
+               padding:11px 13px; margin-top:9px; }
+  .nighthint .ic { font-size:13px; margin-top:1px; }
+  .nighthint .tx { font:500 11.5px/1.55 var(--ffb); color:var(--lav-deep); }
+  .set-row { display:flex; flex-direction:column; gap:9px; }
+  .opt { display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:16px; padding:13px 14px; }
+  .opt .ic { font-size:16px; }
+  .opt .tx { flex:1; }
+  .opt .t1 { font:600 13.5px/1.2 var(--ffb); }
+  .opt .t2 { font:500 10.5px/1.5 var(--ffb); color:var(--faint); }
+  .opt .rad { width:18px; height:18px; border-radius:50%; border:2px solid var(--line); }
+  .opt.on { border-color:var(--lav-deep); background:var(--wash-lav); }
+  .opt.on .rad { border-color:var(--lav-deep); background:radial-gradient(circle, var(--lav-deep) 0 40%, transparent 45%); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Sleep slice C-éj — jóváhagyott mockupok</h1>
+  <p class="meta">bd <b>mezo-d71m</b> · 2026-07-24 · a <a href="2026-07-24-sleep-night-layer-design.md">design spec</a> vizuális melléklete.
+  Brainstorm visual-companion körökben jóváhagyva (banner: v3). Példa-horgony: lefekvés 22:00 · ébredés 06:00.</p>
+
+  <!-- ============ 1 ============ -->
+  <h2>1 · WindDownBanner — a Today esti/éjszakai sávja (D2–D3)</h2>
+  <p class="sub">Egy komponens, három idő-fázis a bed-horgonyból. A halvány kártyák a Today-környezet.</p>
+  <div class="tl">
+    <div class="tl-bar">
+      <div class="tl-none">napközben — semmi</div>
+      <div class="tl-dim">T-90</div>
+      <div class="tl-wd">T-60 → bed</div>
+      <div class="tl-nt">bed → wake−30 🌙</div>
+    </div>
+    <div class="tl-marks">
+      <span style="flex:2.2"></span><span style="flex:1.1">20:30</span>
+      <span style="flex:1.6">21:00</span><span style="flex:2.6">22:00</span>
+    </div>
+  </div>
+  <div class="phones">
+    <div class="capwrap">
+      <div class="phcap">1 · <b>Tompítás</b> · 20:30–21:00</div>
+      <div class="phone">
+        <div class="ghost"><div class="g1">✦ VEZÉRELV</div><div class="g2">„Erős test, nyugodt elme."</div></div>
+        <div class="wdb">
+          <div class="wdb-hd"><span>🕯️</span><span class="wdb-eye">Esti ráhangolódás</span><span class="wdb-pill">🛏️ még 1 ó 12 p</span></div>
+          <div class="wdb-title">Tompítsd a fényeket</div>
+          <div class="wdb-list">
+            <div class="tip"><span class="ic">💡</span><span class="tx"><b>30 lux alá</b> — félhomály, nem sötét</span></div>
+            <div class="tip"><span class="ic">🔶</span><span class="tx"><b>Meleg, sárga fény</b> — hideg-fehér le</span></div>
+            <div class="tip"><span class="ic">❄️</span><span class="tx"><b>Hűtsd a szobát</b> — 18 °C felé</span></div>
+          </div>
+          <div class="wdb-foot"><div class="wdb-stat">A tompított, meleg este <b>+18% REM</b>-et ad — Walker mérése.</div></div>
+        </div>
+        <div class="ghost"><div class="g1">MAI KÜLDETÉSEK</div><div class="g2">Napi quest kártya…</div></div>
+      </div>
+    </div>
+    <div class="capwrap">
+      <div class="phcap">2 · <b>Wind-down</b> · 21:00–22:00</div>
+      <div class="phone">
+        <div class="ghost"><div class="g1">✦ VEZÉRELV</div><div class="g2">„Erős test, nyugodt elme."</div></div>
+        <div class="wdb">
+          <div class="wdb-hd"><span>🌙</span><span class="wdb-eye">Esti leállás</span><span class="wdb-pill">🛏️ még 38 p</span></div>
+          <div class="wdb-title">Kapcsolj le</div>
+          <div class="wdb-list">
+            <div class="tip"><span class="ic">📵</span><span class="tx"><b>Képernyők le</b> — az agy hadd unatkozzon</span></div>
+            <div class="tip"><span class="ic">🕯️</span><span class="tx"><b>Fények tompítva</b> maradnak</span></div>
+          </div>
+          <div class="wdb-foot">
+            <div class="wdb-hab">
+              <span class="st">◦</span>
+              <div class="tx"><div class="t1">Esti leállás</div><div class="t2">vacsora után</div></div>
+              <span class="xp">+10 XP</span>
+              <button class="wdb-pipa">Pipa</button>
+            </div>
+          </div>
+        </div>
+        <div class="ghost"><div class="g1">MAI KÜLDETÉSEK</div><div class="g2">Napi quest kártya…</div></div>
+      </div>
+    </div>
+    <div class="capwrap">
+      <div class="phcap">3 · <b>Éjszakai belépő</b> + ✓ állapot</div>
+      <div class="phone">
+        <div class="ghost"><div class="g1">✦ VEZÉRELV</div><div class="g2">„Erős test, nyugodt elme."</div></div>
+        <div class="wdb-night">
+          <span class="moon">🌙</span>
+          <div class="tx"><div class="t1">Éjszakai mód</div><div class="t2">Felébredtél? Ne nézd az órát — gyere ide.</div></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="ghost"><div class="g1">MAI KÜLDETÉSEK</div><div class="g2">Napi quest kártya…</div></div>
+        <div style="margin-top:16px; padding:14px; border-radius:18px; background:var(--warm);">
+          <div style="font:700 10px/1 var(--ffb); color:var(--sub); letter-spacing:.08em; margin-bottom:10px;">HA A PIPA MÁR MEGVOLT (✓ ÁLLAPOT)</div>
+          <div class="wdb" style="margin:0;">
+            <div class="wdb-hd"><span>🌙</span><span class="wdb-eye">Esti leállás</span><span class="wdb-pill">🛏️ még 24 p</span></div>
+            <div class="wdb-foot" style="margin-top:14px;"><div class="wdb-done">✓ <span>Leállás megvolt — már csak az ágy van hátra.</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 2 ============ -->
+  <h2>2 · NightPage — az egyesített 20 perces flow (D4–D5)</h2>
+  <p class="sub">/me/sleep/night — full-screen, tab-sáv nélkül, témától függetlenül extra-sötét. Sehol óra, sehol számláló.</p>
+  <div class="phones">
+    <div class="capwrap">
+      <div class="phcap">1 · <b>idle</b> — belépéskor</div>
+      <div class="phone dk">
+        <div class="n-back">← vissza</div>
+        <div class="n-eye">Éjszakai mód</div>
+        <div class="n-moon">🌙</div>
+        <div class="n-title">Felébredtél?</div>
+        <div class="n-body">Ne nézd meg az órát — nem számít, mennyi az idő.<br><br>Ha úgy érzed, már jó ideje ébren fekszel, szólj — innentől én figyelem az időt helyetted.</div>
+        <button class="n-cta">Ébren vagyok</button>
+        <span class="n-quiet">csak körülnézek ›</span>
+      </div>
+    </div>
+    <div class="capwrap">
+      <div class="phcap">2 · <b>waiting</b> — néma őr-timer + eszközök</div>
+      <div class="phone dk">
+        <div class="n-back">← vissza</div>
+        <div class="n-eye">Én figyelem az időt</div>
+        <div class="n-orbwrap"><div class="n-orb"></div></div>
+        <div class="n-body" style="margin-bottom:18px;">Maradj az ágyban, lazíts.<br>Ha segít, válassz egyet:</div>
+        <div class="n-tools">
+          <button class="n-tool"><span class="ic">🫁</span><div class="tx"><div class="t1">Légzés</div><div class="t2">be 5 · tartsd 6 · ki 7 — vezetett ütem</div></div><span class="chev">›</span></button>
+          <button class="n-tool"><span class="ic">🧘</span><div class="tx"><div class="t1">Testpásztázás</div><div class="t2">fejtől lábujjig, lassú vezetéssel</div></div><span class="chev">›</span></button>
+          <button class="n-tool"><span class="ic">🚶</span><div class="tx"><div class="t1">4K-séta</div><div class="t2">járj végig fejben egy jól ismert utat</div></div><span class="chev">›</span></button>
+        </div>
+        <span class="n-quiet" style="margin-top:auto;">elalszom · kilépek</span>
+      </div>
+    </div>
+    <div class="capwrap">
+      <div class="phcap">3 · <b>getUp</b> — ~20 perc után</div>
+      <div class="phone dk">
+        <div class="n-back">← vissza</div>
+        <div class="n-eye">Ideje felkelni</div>
+        <div class="g-glow">🕯️</div>
+        <div class="n-title" style="font-size:23px;">Kelj fel — ez most a jobb út</div>
+        <div class="g-steps">
+          <div class="g-step"><span class="dot"></span><span class="tx"><b>Menj át</b> egy másik, félhomályos helyre.</span></div>
+          <div class="g-step"><span class="dot"></span><span class="tx"><b>Csinálj valami csendeset</b> — olvass papírról, hallgass halk podcastot.</span></div>
+          <div class="g-step"><span class="dot"></span><span class="tx"><b>Csak akkor gyere vissza,</b> ha tényleg álmos vagy. Az ágy az alvásé.</span></div>
+        </div>
+        <button class="n-cta">Visszafeküdtem</button>
+        <span class="n-quiet">elalszom · kilépek</span>
+      </div>
+    </div>
+  </div>
+  <div class="arrowrow">idle →「Ébren vagyok」→ waiting → (némán, ~20 p) → getUp →「Visszafeküdtem」→ új waiting kör</div>
+
+  <!-- ============ 3 ============ -->
+  <h2>3 · A calm-toolkit három eszköze (D6)</h2>
+  <p class="sub">A waiting képernyőből nyílnak, az őr-timer közben fut tovább. A légzés-pacer élőben animál (18 mp-es ciklus).</p>
+  <div class="phones">
+    <div class="capwrap">
+      <div class="phcap">1 · <b>Légzés</b> — élő pacer</div>
+      <div class="phone dk">
+        <div class="n-back">← eszközök</div>
+        <div class="n-eye">Légzés · 5 – 6 – 7</div>
+        <div class="b-stage">
+          <div class="b-orb"></div>
+          <div class="b-label"><span class="b-in">Be…</span><span class="b-hold">Tartsd…</span><span class="b-out">Ki…</span></div>
+        </div>
+        <div class="b-hint">Kövesd a kört a légzéseddel.<br>A hosszú kilégzés nyugtatja az idegrendszert.</div>
+        <span class="n-quiet" style="margin-top:auto;">megállítom ›</span>
+      </div>
+    </div>
+    <div class="capwrap">
+      <div class="phcap">2 · <b>Testpásztázás</b> — lassú léptetés</div>
+      <div class="phone dk">
+        <div class="n-back">← eszközök</div>
+        <div class="n-eye">Testpásztázás</div>
+        <div class="s-card">
+          <div class="s-part">A vállaid</div>
+          <div class="s-tx">Engedd le őket a füledtől. Vedd észre, hol tartasz feszültséget — és kilégzéssel hagyd, hogy kioldódjon.</div>
+        </div>
+        <div class="s-dots">
+          <span class="s-dot"></span><span class="s-dot"></span><span class="s-dot on"></span>
+          <span class="s-dot"></span><span class="s-dot"></span><span class="s-dot"></span>
+          <span class="s-dot"></span><span class="s-dot"></span><span class="s-dot"></span><span class="s-dot"></span>
+        </div>
+        <div class="s-hint">Magától lép tovább (~40 mp) — koppintásra is léphetsz.</div>
+        <span class="n-quiet" style="margin-top:auto;">megállítom ›</span>
+      </div>
+    </div>
+    <div class="capwrap">
+      <div class="phcap">3 · <b>4K-séta</b> — önnarrálás-keret</div>
+      <div class="phone dk">
+        <div class="n-back">← eszközök</div>
+        <div class="n-eye">4K-séta</div>
+        <div class="w-setup">
+          <div class="w-t">Válassz egy jól ismert utat</div>
+          <div class="w-tx">A séta a házatok körül, az út a régi iskolába, egy ösvény, amit ezerszer bejártál. Indulj el rajta — fejben, lépésről lépésre.</div>
+        </div>
+        <div class="w-remind"><div class="w-rtx">„Meséld magadnak, mint egy filmet — 4K-ban. Milyen színű a kapu? Mit hallasz? Milyen a levegő?"</div></div>
+        <div class="w-remind"><div class="w-rtx">„Ha elkalandozol, csak térj vissza az útra. Nem baj — ez a séta lényege."</div></div>
+        <div class="w-note">A kártyák nagyon lassan, maguktól váltanak.<br>Alison Harvey módszere — gyorsítja a visszaalvást.</div>
+        <span class="n-quiet" style="margin-top:auto;">megállítom ›</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 4 ============ -->
+  <h2>4 · Belépők, reggeli előtöltés, cirkadián téma (D3 · D7 · D9)</h2>
+  <p class="sub">Nappali nézetek: az Alvás oldal állandó belépője, a reggeli SleepLogSheet a soft-nyom hinttel, és a Settings téma-választó (Cirkadián = default).</p>
+  <div class="phones">
+    <div class="capwrap">
+      <div class="phcap">1 · <b>Alvás oldal</b> — állandó belépő</div>
+      <div class="phone">
+        <div class="card">
+          <div class="chiprow" style="margin-bottom:4px;">
+            <span style="font:700 10.5px/1 var(--ffb); letter-spacing:.1em; color:var(--lav-deep);">ALVÁSCÉL</span>
+            <span class="chip edit">szerkeszt</span>
+          </div>
+          <div class="arc">
+            <div class="end"><small>LEFEKVÉS</small>🛏️ 22:00</div>
+            <div class="mid">8 ó cél</div>
+            <div class="end"><small>ÉBREDÉS</small>☀️ 06:00</div>
+          </div>
+          <div class="chiprow"><span class="chip">±15 p sáv</span></div>
+        </div>
+        <div class="nightrow">
+          <span class="moon">🌙</span>
+          <div class="tx"><div class="t1">Éjszakai mód</div><div class="t2">Eszközök éjszakai ébredéshez — 20 perces szabály, légzés, 4K-séta.</div></div>
+          <span class="chev">›</span>
+        </div>
+        <div class="card ghost">
+          <div class="rings">
+            <div class="ring"><div class="ringc"></div><div class="ringl">RENDSZERESSÉG</div></div>
+            <div class="ring g"><div class="ringc"></div><div class="ringl">HATÉKONYSÁG</div></div>
+          </div>
+        </div>
+        <div class="card ghost" style="font:500 12px/1.4 var(--ffb); color:var(--sub);">Múlt éjszaka · 7 ó 29 p · hero…</div>
+      </div>
+    </div>
+    <div class="capwrap">
+      <div class="phcap">2 · <b>Reggeli naplózás</b> — soft-nyom előtöltés</div>
+      <div class="phone" style="display:flex; align-items:flex-end; background:linear-gradient(180deg, rgba(43,33,24,.16), rgba(43,33,24,.05)), var(--canvas);">
+        <div class="sheet" style="width:100%;">
+          <div class="sh-grab"></div>
+          <div class="sh-title">Alvás naplózása</div>
+          <div class="seg"><span class="on">Kézi</span><span>Screenshot</span></div>
+          <div class="fld ghost">
+            <div class="fldl">Lefekvés · Ébredés · Időtartam</div>
+            <div style="height:38px; background:var(--warm); border-radius:12px;"></div>
+          </div>
+          <div class="fld ghost">
+            <div class="fldl">Minőség</div>
+            <div style="height:34px; background:var(--warm); border-radius:12px;"></div>
+          </div>
+          <div class="fld">
+            <div class="fldl">Ébredések</div>
+            <div class="awrow"><span class="aw">0</span><span class="aw on">1</span><span class="aw">2</span><span class="aw">3</span><span class="aw">4+</span></div>
+            <div class="nighthint">
+              <span class="ic">🌙</span>
+              <span class="tx">Az éjjel <b>1×</b> jártál az éjszakai módban — előtöltöttem. Írd felül, ha máshogy emlékszel.</span>
+            </div>
+          </div>
+          <div class="fld ghost">
+            <div class="fldl">Megjegyzés</div>
+            <div style="height:30px; background:var(--warm); border-radius:12px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="capwrap">
+      <div class="phcap">3 · <b>Beállítások</b> — cirkadián téma (default)</div>
+      <div class="phone">
+        <div class="card">
+          <div style="font:600 15px/1.3 var(--ffd); margin-bottom:12px;">Téma</div>
+          <div class="set-row">
+            <div class="opt"><span class="ic">☀️</span><div class="tx"><div class="t1">Világos</div></div><span class="rad"></span></div>
+            <div class="opt"><span class="ic">🌑</span><div class="tx"><div class="t1">Sötét</div></div><span class="rad"></span></div>
+            <div class="opt on">
+              <span class="ic">🌗</span>
+              <div class="tx">
+                <div class="t1">Cirkadián</div>
+                <div class="t2">Este a tompítással (lefekvés −90 p) sötétre vált, ébredés előtt 30 perccel vissza világosra. Az alváscélodat követi.</div>
+              </div>
+              <span class="rad"></span>
+            </div>
+          </div>
+        </div>
+        <div class="card ghost" style="font:500 12px/1.4 var(--ffb); color:var(--sub);">További beállítások…</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
