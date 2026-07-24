@@ -1157,10 +1157,15 @@ CONSUMING feature's data folder — `useChallenges(templateSessionId|null, date)
 In real mode `useChallenges` fetches `GET /api/proactive/challenge?templateSessionId=&date=` via
 `challengeApi.list` (`data/train/challengeApi.ts`, `toChallenge` wire→FE `Challenge` — `confidence ??
 null`, `outcomeGood: null → undefined`), disabled until a `templateSessionId` exists; mock returns the
-`train.ts` seed. `useChallengeActions().decide` POSTs accept/dismiss and invalidates the list (no-op in
-mock, a local toggle keeps byte-parity). The accepted state derives from the server `status`
-(`accepted|hit|miss`); resolved challenges render the outcome chip (✓/◯/◌). The FE `Challenge` type
-gained a **nullable `confidence`**, a `status`, the structured target fields, and `outcome`/`outcomeGood`.
+`train.ts` seed. **Since the mission-briefing prep redesign (`mezo-bxpg`) the hook also surfaces a
+`pending: boolean`** (real: the list query's `isPending` — the lazy backend LLM generation still in
+flight; mock: always `false`) so `ChallengesCarousel` can render a visible **`"Kihívások generálása…"`
+skeleton** instead of a silent empty gap while the proposal is being generated — see
+[train.md §Active workout](train.md). `useChallengeActions().decide` POSTs accept/dismiss and
+invalidates the list (no-op in mock, a local toggle keeps byte-parity). The accepted state derives
+from the server `status` (`accepted|hit|miss`); resolved challenges render the outcome chip (✓/◯/◌).
+The FE `Challenge` type gained a **nullable `confidence`**, a `status`, the structured target fields,
+and `outcome`/`outcomeGood`.
 The proactive→train coupling is strictly one-way (the backend evaluator reads Train repositories; Train
 never imports proactive — challenges are NOT in `WorkoutPlan`, sourced separately by the page).
 
