@@ -21,6 +21,7 @@ import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import { daySessions } from '@/features/train/logic/agenda'
+import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
 import { LoadTiles } from '@/features/train/components/LoadTiles'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
@@ -445,12 +446,18 @@ export function TrainTodayPage() {
               onStartGym={openSession}
               onReviewGym={workoutIdByDate[a.date!] ? () => navigate(`/train/review/${workoutIdByDate[a.date!]}`) : undefined}
               onOpenGymDay={(() => {
-                // Direct-start flow (spec D6, mezo-bxpg): a non-today, not-yet-done gym
-                // row (WeeklyDayRow already routes a done row to onReviewGym above) starts
-                // straight into the session, pinning the template via ?day= in real mode
-                // (mock MesoDay fixtures carry no `id`, so mock always resolves plain).
+                // Direct-start flow (spec D6, mezo-bxpg): routes via the shared
+                // gymDayTarget — a template day completed THIS week routes to its
+                // review even when pulled forward to another date (this row is only
+                // date-done, not template-done, so without this a completed-elsewhere
+                // day would dead-end into a 409 on "Kezdjük el" — Finding 1); otherwise
+                // a non-today, not-yet-done gym day starts straight into the session,
+                // pinning the template via ?day= in real mode (mock MesoDay fixtures
+                // carry no `id`, so mock always resolves plain).
                 const md = activeMeso.days?.find((d) => d.day === a.day && d.exerciseCount > 0)
-                return md ? () => navigate(md.current || !md.id ? '/train/session' : `/train/session?day=${md.id}`) : undefined
+                if (!md) return undefined
+                const target = gymDayTarget(md, weekWorkouts)
+                return target ? () => navigate(target) : undefined
               })()}
               onLogSport={(s) => setSportLogSport(sportOf(s))}
               onReviewCustom={(wid) => navigate(`/train/review/${wid}`)}

@@ -409,6 +409,34 @@ test('real mode: prescribed run logged today ⇒ run hero flips to the done summ
   expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
 })
 
+// A template day completed THIS week but pulled forward to another date (not its own
+// weekday's date) must still route the weekly-row tap to its review, not restart it
+// into a fresh session (409 TRAIN_DAY_DONE_THIS_WEEK) — the date-only workoutIdByDate
+// match misses it, so the row falls back to onOpenGymDay, which must resolve via
+// gymDayTarget's templateSessionId check (final-review fix, mezo-bxpg — Finding 1).
+test('real mode: a weekly gym row completed this week on ANOTHER date routes to its review, not a restart', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const otherDayLabel = DAY_ORDER[(DAY_ORDER.indexOf(todayLabel()) + 1) % 7]
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(otherDayLabel)])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+    // today itself is empty — unrelated to this row's own weekday
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    // completed this week, same template (d-1), but on TODAY's date — not the row's
+    // own weekday date — so the date-keyed workoutIdByDate lookup can't match it.
+    http.get(`${API_BASE}/api/train/workouts`, () =>
+      HttpResponse.json([
+        { id: 'w-pulled', templateSessionId: 'd-1', date: localDateString(), status: 'completed', origin: 'meso' },
+      ]),
+    ),
+  )
+  renderView()
+  fireEvent.click(await screen.findByRole('button', { name: /Pull Day/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-pulled')
+})
+
 // Loading skeleton (mezo-f2z) — real mode shows the TrainTodaySkeleton (role="status")
 // while the meso/today queries are unresolved (workoutPending); mock seeds → no skeleton.
 describe('TrainTodayPage (real mode, pending)', () => {

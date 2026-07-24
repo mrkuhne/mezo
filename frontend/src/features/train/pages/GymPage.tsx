@@ -15,6 +15,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { muscleRegionGroups, muscleWeekFromMeso } from '@/features/train/logic/muscleWeek'
+import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { GymStat } from '@/features/train/components/GymStat'
 import { PhaseDots } from '@/features/train/components/PhaseDots'
 import { GymDayCard } from '@/features/train/components/GymDayCard'
@@ -179,18 +180,14 @@ export function GymPage() {
               day={d}
               onOpen={() => {
                 // Direct-start flow (spec D6, mezo-bxpg): a day already completed this
-                // Mon–Sun week routes straight to its review; otherwise a day with
-                // exercises starts the session (pinning the template on a non-today,
-                // real-mode day via ?day=); a rest day (no exercises) is a no-op —
-                // GymDayCard already gates the tap so onOpen never fires for those.
-                const done = weekWorkouts.find((w) => w.templateSessionId && w.templateSessionId === d.id)
-                if (done) {
-                  navigate(`/train/review/${done.id}`)
-                  return
-                }
-                if (d.exerciseCount > 0) {
-                  navigate(d.current || !d.id ? '/train/session' : `/train/session?day=${d.id}`)
-                }
+                // Mon–Sun week (by template id, any date — pull-forward safe) routes
+                // straight to its review; otherwise a day with exercises starts the
+                // session (pinning the template on a non-today, real-mode day via
+                // ?day=); a rest day (no exercises) is a no-op — GymDayCard already
+                // gates the tap so onOpen never fires for those. Shared with
+                // TrainTodayPage's weekly row via gymDayTarget (mezo-bxpg — Finding 1).
+                const target = gymDayTarget(d, weekWorkouts)
+                if (target) navigate(target)
               }}
             />
           ))}
