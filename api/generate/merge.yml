@@ -27,4 +27,5 @@ inputs:
   - inputFile: ../feature/sleep-shot/sleep-shot.yml
   - inputFile: ../feature/fuel-settings/fuel-settings.yml
   - inputFile: ../feature/ritual/ritual.yml
+  - inputFile: ../feature/gamification/gamification.yml
 output: ../openapi.yml
