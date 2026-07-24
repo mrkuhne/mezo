@@ -15,6 +15,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -56,7 +57,7 @@ public class RitualService {
             RitualDayEntity e = new RitualDayEntity();
             e.setCreatedBy(userId);
             e.setRitualDate(date);
-            e.setClosedAt(Instant.now());
+            e.setClosedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the pre/post-persist responses match
             return ritualDayRepository.saveAndFlush(e);
         } catch (DataIntegrityViolationException ex) {
             // lost the race against a concurrent close() call — the row exists now
