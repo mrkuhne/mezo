@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,14 +47,21 @@ public class RitualService {
             throw ritualNotToday();
         }
         RitualDayEntity row = ritualDayRepository.findByCreatedByAndRitualDate(userId, date)
-            .orElseGet(() -> {
-                RitualDayEntity e = new RitualDayEntity();
-                e.setCreatedBy(userId);
-                e.setRitualDate(date);
-                e.setClosedAt(Instant.now());
-                return ritualDayRepository.save(e);
-            });
+            .orElseGet(() -> insertOrReread(userId, date));
         return toResponse(userId, date, row);
+    }
+
+    private RitualDayEntity insertOrReread(UUID userId, LocalDate date) {
+        try {
+            RitualDayEntity e = new RitualDayEntity();
+            e.setCreatedBy(userId);
+            e.setRitualDate(date);
+            e.setClosedAt(Instant.now());
+            return ritualDayRepository.saveAndFlush(e);
+        } catch (DataIntegrityViolationException ex) {
+            // lost the race against a concurrent close() call — the row exists now
+            return ritualDayRepository.findByCreatedByAndRitualDate(userId, date).orElseThrow();
+        }
     }
 
     private RitualDayResponse toResponse(UUID userId, LocalDate date, RitualDayEntity row) {
