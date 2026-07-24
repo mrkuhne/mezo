@@ -2,8 +2,10 @@ package io.mrkuhne.mezo.support.populator;
 
 import io.mrkuhne.mezo.feature.gamification.entity.CoinEventEntity;
 import io.mrkuhne.mezo.feature.gamification.entity.GamificationProfileEntity;
+import io.mrkuhne.mezo.feature.gamification.entity.OwnedTitleEntity;
 import io.mrkuhne.mezo.feature.gamification.repository.CoinEventRepository;
 import io.mrkuhne.mezo.feature.gamification.repository.GamificationProfileRepository;
+import io.mrkuhne.mezo.feature.gamification.repository.OwnedTitleRepository;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ public class GamificationPopulator {
 
     private final GamificationProfileRepository gamificationProfileRepository;
     private final CoinEventRepository coinEventRepository;
+    private final OwnedTitleRepository ownedTitleRepository;
 
     public GamificationProfileEntity profile(UUID owner, int coins, int streakDays, int savers,
         LocalDate lastStreakDate) {
@@ -36,5 +39,13 @@ public class GamificationPopulator {
         e.setSourceRefId(sourceRefId);
         e.setOccurredOn(occurredOn);
         return coinEventRepository.saveAndFlush(e);
+    }
+
+    public OwnedTitleEntity ownedTitle(UUID owner, String titleKey) {
+        OwnedTitleEntity e = new OwnedTitleEntity();
+        e.setCreatedBy(owner);
+        e.setTitleKey(titleKey);
+        // acquiredAt deliberately NOT set; should be stamped by @CreationTimestamp
+        return ownedTitleRepository.saveAndFlush(e);
     }
 }

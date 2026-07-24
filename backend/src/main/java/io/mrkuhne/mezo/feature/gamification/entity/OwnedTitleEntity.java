@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
 
@@ -35,7 +36,7 @@ public class OwnedTitleEntity extends OwnedEntity {
     @Column(name = "title_key", nullable = false)
     private String titleKey;
 
-    @NotNull
-    @Column(name = "acquired_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "acquired_at", nullable = false, updatable = false)
     private Instant acquiredAt;
 }

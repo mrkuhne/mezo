@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.feature.gamification.repository.GamificationProfileRepository;
+import io.mrkuhne.mezo.feature.gamification.repository.OwnedTitleRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -19,6 +20,7 @@ class GamificationEntityIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private GamificationPopulator gamificationPopulator;
     @Autowired private GamificationProfileRepository gamificationProfileRepository;
+    @Autowired private OwnedTitleRepository ownedTitleRepository;
 
     private UUID ownerId() {
         return userPopulator.createUser("gami-a@test.hu").getId();
@@ -56,5 +58,17 @@ class GamificationEntityIT extends AbstractIntegrationTest {
         assertThatThrownBy(() ->
             gamificationPopulator.coinEvent(ownerId(), "quest", 10, "q-1", LocalDate.now()))
             .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void testOwnedTitle_shouldStampAcquiredAt_whenNotSet() {
+        UUID owner = ownerId();
+        var saved = gamificationPopulator.ownedTitle(owner, "premium");
+
+        assertThat(ownedTitleRepository.findById(saved.getId()))
+            .hasValueSatisfying(title -> {
+                assertThat(title.getTitleKey()).isEqualTo("premium");
+                assertThat(title.getAcquiredAt()).isNotNull();
+            });
     }
 }
