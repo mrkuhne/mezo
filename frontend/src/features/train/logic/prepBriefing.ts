@@ -18,13 +18,12 @@ export interface PrepStats {
   muscleCount: number
 }
 
-/** First working prescribed target weight, or null (plyo / no anchor / switch off). */
+/** First working prescribed target weight, or null (plyo / no anchor / switch off).
+ * This is the engine's TODAY recommendation (used for the display pill) — distinct
+ * from `e.anchorWeightKg`, the established anchor `pseudoDayFromPlan` forecasts from. */
 export function startWeightOf(e: LoggedWorkoutExercise): number | null {
   return e.prescribedSets?.find((p) => p.kind === 'working')?.targetWeightKg ?? null
 }
-
-const warmupCountOf = (e: LoggedWorkoutExercise): number =>
-  e.prescribedSets?.filter((p) => p.kind === 'warmup').length ?? 0
 
 export function prepStats(W: WorkoutPlan): PrepStats {
   let workSets = 0
@@ -32,9 +31,9 @@ export function prepStats(W: WorkoutPlan): PrepStats {
   let repsEst = 0
   const muscles = new Set<string>()
   for (const e of W.exercises) {
-    workSets += e.sets
-    warmupSets += warmupCountOf(e)
-    repsEst += e.sets * Math.round((e.repMin + e.repMax) / 2)
+    workSets += e.workingSets
+    warmupSets += e.warmupSets
+    repsEst += e.workingSets * Math.round((e.repMin + e.repMax) / 2)
     if (e.muscle && e.muscle !== 'sport') muscles.add(e.muscle)
   }
   return { workSets, warmupSets, repsEst, durationEst: W.durationEst, muscleCount: muscles.size }
@@ -46,13 +45,13 @@ export function pseudoDayFromPlan(W: WorkoutPlan): MesoDay {
     id: e.id,
     name: e.name,
     muscle: e.muscle,
-    warmupSets: warmupCountOf(e),
-    workingSets: e.sets,
+    warmupSets: e.warmupSets,
+    workingSets: e.workingSets,
     repMin: e.repMin,
     repMax: e.repMax,
     targetRIR: e.targetRIR,
     type: e.type,
-    anchorWeightKg: startWeightOf(e),
+    anchorWeightKg: e.anchorWeightKg ?? null,
   }))
   return { day: '', type: W.title, muscle: '', exerciseCount: exercises.length, exercises }
 }

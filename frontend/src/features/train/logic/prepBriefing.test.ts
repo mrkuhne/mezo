@@ -12,11 +12,13 @@ import {
 } from '@/features/train/logic/prepBriefing'
 
 // --- WorkoutPlan fixture: 2 exercises — one with prescribedSets (1 warmup + 3 working
-// @ 26 kg), one plyo without prescriptions (plyo/switch-off exercises carry none). ---
+// @ 26 kg — today's bumped target, deliberately ≠ anchorWeightKg 24 to prove
+// pseudoDayFromPlan's anchor and startWeightOf's pill are independently sourced),
+// one plyo without prescriptions (plyo/switch-off exercises carry none). ---
 const anchoredExercise: LoggedWorkoutExercise = {
   id: 'ex1', name: 'Leg Press', muscle: 'quad', type: 'compound',
   warmupSets: 1, workingSets: 3, repMin: 8, repMax: 12, targetRIR: 2,
-  anchorWeightKg: null, sets: 4,
+  anchorWeightKg: 24, sets: 4,
   prescribedSets: [
     { kind: 'warmup', targetWeightKg: 20, targetReps: 12, targetRIR: null },
     { kind: 'working', targetWeightKg: 26, targetReps: 10, targetRIR: 2 },
@@ -40,11 +42,11 @@ const plan: WorkoutPlan = {
 }
 
 describe('prepStats', () => {
-  it('sums sets, warmup counts (from prescriptions), reps estimate and distinct muscles', () => {
-    // workSets = 4+3=7; warmupSets = 1 (ex1's 1 warmup entry) + 0 (ex2 has none) = 1;
-    // repsEst = 4×round((8+12)/2)=40 + 3×round((4+6)/2)=15 → 55; muscleCount = {quad} → 1.
+  it('sums working sets, warmup sets, reps estimate and distinct muscles', () => {
+    // workSets = e.workingSets: 3+3=6; warmupSets = e.warmupSets: 1+0=1;
+    // repsEst = 3×round((8+12)/2)=30 + 3×round((4+6)/2)=15 → 45; muscleCount = {quad} → 1.
     const s = prepStats(plan)
-    expect(s).toEqual({ workSets: 7, warmupSets: 1, repsEst: 55, durationEst: 45, muscleCount: 1 })
+    expect(s).toEqual({ workSets: 6, warmupSets: 1, repsEst: 45, durationEst: 45, muscleCount: 1 })
   })
 
   it('excludes empty and "sport" muscles from muscleCount but counts other distinct ones', () => {
@@ -62,7 +64,7 @@ describe('prepStats', () => {
 })
 
 describe('pseudoDayFromPlan', () => {
-  it('wraps the plan as a single MesoDay, mapping working sets and the prescribed anchor', () => {
+  it('wraps the plan as a single MesoDay, passing through warmup/working sets and the exercise anchorWeightKg', () => {
     const d = pseudoDayFromPlan(plan)
     expect(d.day).toBe('')
     expect(d.type).toBe('Leg Day')
@@ -70,9 +72,11 @@ describe('pseudoDayFromPlan', () => {
     expect(d.exerciseCount).toBe(2)
     expect(d.exercises).toEqual<GymExercise[]>([
       {
+        // anchorWeightKg 24 = e.anchorWeightKg (the established anchor), NOT the
+        // prescribedSets working target of 26 (that's startWeightOf's TODAY pill).
         id: 'ex1', name: 'Leg Press', muscle: 'quad',
-        warmupSets: 1, workingSets: 4, repMin: 8, repMax: 12, targetRIR: 2,
-        type: 'compound', anchorWeightKg: 26,
+        warmupSets: 1, workingSets: 3, repMin: 8, repMax: 12, targetRIR: 2,
+        type: 'compound', anchorWeightKg: 24,
       },
       {
         id: 'ex2', name: 'Box Jump', muscle: 'quad',
