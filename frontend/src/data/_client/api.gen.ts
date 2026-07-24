@@ -1919,6 +1919,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ritual/day/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The day's closing-ritual state + evening window (Ritual) */
+        get: operations["getRitualDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ritual/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close the day (idempotent; today only) (Ritual) */
+        post: operations["closeRitualDay"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4179,6 +4213,35 @@ export interface components {
         SetFuelSettingsRequest: {
             mealsPerDay: number;
             caffeineCutoff: string;
+        };
+        RitualWindow: {
+            /**
+             * @description bed − lead-min, HH:mm
+             * @example 21:15
+             */
+            opensAt: string;
+            /**
+             * @description bed − prep-lead-min, HH:mm
+             * @example 21:45
+             */
+            prepStartsAt: string;
+            /**
+             * @description the sleep anchor's bed time, HH:mm
+             * @example 22:30
+             */
+            bedTime: string;
+        };
+        RitualDayResponse: {
+            /** Format: date */
+            date: string;
+            closed: boolean;
+            /** Format: date-time */
+            closedAt?: string | null;
+            window: components["schemas"]["RitualWindow"];
+        };
+        RitualCloseRequest: {
+            /** Format: date */
+            date: string;
         };
     };
     responses: never;
@@ -9827,6 +9890,70 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getRitualDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ritual state for the day (never 404 for a valid date) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RitualDayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    closeRitualDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RitualCloseRequest"];
+            };
+        };
+        responses: {
+            /** @description The (now) closed day — same response on repeat close */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RitualDayResponse"];
+                };
+            };
+            /** @description RITUAL_NOT_TODAY */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

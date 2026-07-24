@@ -4668,6 +4668,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/ritual/day/{date}':
+    get:
+      tags:
+        - Ritual
+      operationId: getRitualDay
+      summary: The day's closing-ritual state + evening window (Ritual)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Ritual state for the day (never 404 for a valid date)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RitualDayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/ritual/close:
+    post:
+      tags:
+        - Ritual
+      operationId: closeRitualDay
+      summary: Close the day (idempotent; today only) (Ritual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RitualCloseRequest'
+      responses:
+        '200':
+          description: The (now) closed day — same response on repeat close
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RitualDayResponse'
+        '409':
+          description: RITUAL_NOT_TODAY
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
 components:
   securitySchemes:
     bearerAuth:
@@ -10437,3 +10488,48 @@ components:
         caffeineCutoff:
           type: string
           pattern: '^([01]\d|2[0-3]):[0-5]\d$'
+    RitualWindow:
+      type: object
+      required:
+        - opensAt
+        - prepStartsAt
+        - bedTime
+      properties:
+        opensAt:
+          type: string
+          example: '21:15'
+          description: 'bed − lead-min, HH:mm'
+        prepStartsAt:
+          type: string
+          example: '21:45'
+          description: 'bed − prep-lead-min, HH:mm'
+        bedTime:
+          type: string
+          example: '22:30'
+          description: 'the sleep anchor''s bed time, HH:mm'
+    RitualDayResponse:
+      type: object
+      required:
+        - date
+        - closed
+        - window
+      properties:
+        date:
+          type: string
+          format: date
+        closed:
+          type: boolean
+        closedAt:
+          type: string
+          format: date-time
+          nullable: true
+        window:
+          $ref: '#/components/schemas/RitualWindow'
+    RitualCloseRequest:
+      type: object
+      required:
+        - date
+      properties:
+        date:
+          type: string
+          format: date

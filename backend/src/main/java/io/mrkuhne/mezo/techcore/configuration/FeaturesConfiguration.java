@@ -104,6 +104,9 @@ public class FeaturesConfiguration {
     /** Daily intention (creed + foci + reflection, mezo-a686). Gates /api/intention + services. */
     public static final String INTENTION_SWITCH = "mezo.feature.intention.enabled";
 
+    /** Napzárás closing ritual (bd mezo-hvmx) — off ⇒ the /api/ritual surface 404s, no ritual beans exist. */
+    public static final String RITUAL_SWITCH = "mezo.feature.ritual.enabled";
+
     /** Sleep goal + day-anchor (mezo-dbsr). Gates /api/sleep/goal + SleepGoalService (the anchor resolver stays on). */
     public static final String SLEEP_GOAL_SWITCH = "mezo.feature.sleep-goal.enabled";
 

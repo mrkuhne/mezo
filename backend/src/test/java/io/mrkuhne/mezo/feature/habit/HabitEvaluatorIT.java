@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
@@ -45,6 +46,7 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     @Autowired private FuelSettingsPopulator fuelSettingsPopulator;
     @Autowired private MealPopulator mealPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private RitualPopulator ritualPopulator;
 
     private UUID owner() {
         return userPopulator.createUser("habit-eval@test.hu").getId();
@@ -181,5 +183,14 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     @Test
     void testSatisfied_shouldReturnFalse_whenMetricUnknown() {
         assertThat(evaluator.satisfied("nope", owner(), LocalDate.now())).isFalse();
+    }
+
+    @Test
+    void testSatisfied_shouldCompleteRitualClosed_whenRitualDayRowExists() {
+        UUID owner = owner();
+        LocalDate d = LocalDate.now();
+        assertThat(evaluator.satisfied("ritual_closed", owner, d)).isFalse();
+        ritualPopulator.closedDay(owner, d);
+        assertThat(evaluator.satisfied("ritual_closed", owner, d)).isTrue();
     }
 }
