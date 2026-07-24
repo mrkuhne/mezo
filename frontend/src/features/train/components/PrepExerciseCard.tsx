@@ -54,7 +54,7 @@ export function PrepExerciseCard({ exercise, oneRmKg, accentChallenge }: {
 
           {oneRmKg != null && (
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 800, color: 'var(--text-primary)' }}>
+              <div style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 800, color: 'var(--amber)' }}>
                 🏆 {oneRmKg} kg
               </div>
               <div className="label-mono" style={{ fontSize: 7, color: 'var(--amber)', marginTop: 2 }}>1RM REKORD</div>

@@ -1,7 +1,9 @@
 // ============================================================
 // Mezo · ActiveWorkoutPage — full-screen active-workout mode
 // (sibling route /train/session, NO sub-nav). Four-phase state machine:
-//   prep    → niggle pre-flag · challenges · warmup · exercise list · CTA
+//   prep    → mission-briefing hero (XP/skill forecast) · niggle pre-flag ·
+//             challenges (quest cards + pending state) · warmup · muscle-sectioned
+//             exercise cards (1RM badges) · sticky start CTA (mezo-bxpg)
 //   active  → per-set logging (weight/reps/RIR), Múlt hét comparison,
 //             set dots, today's set history, PR toast + feedback debrief
 //   summary → explicit-finish WorkoutSummary (closing): stats + challenge
@@ -13,11 +15,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { useChallengeActions, useChallenges, useTrain } from '@/data/hooks'
-import { localDateString } from '@/shared/lib/dates'
+import { useChallengeActions, useChallenges, useProgressionProfile, useTrain } from '@/data/hooks'
+import { huWeekdayFull, localDateString } from '@/shared/lib/dates'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { useLiveActivity } from '@/app/providers/LiveActivityProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
+import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
+import { REGION_LABELS, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import {
@@ -34,9 +38,7 @@ import {
   seedFromOpen,
   skipExercise as skipExerciseModel,
 } from '@/features/train/logic/workoutState'
-import { PageTitle } from '@/shared/ui/PageTitle'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
-import { Chip } from '@/shared/ui/Chip'
 import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SetStepper } from '@/features/train/components/SetStepper'
@@ -48,6 +50,8 @@ import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
 import { ChallengesCarousel } from '@/features/train/components/ChallengesCarousel'
 import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet'
 import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/sheets/ExerciseOverviewSheet'
+import { PrepHero } from '@/features/train/components/PrepHero'
+import { PrepExerciseCard } from '@/features/train/components/PrepExerciseCard'
 
 type Phase = 'prep' | 'active' | 'summary' | 'complete'
 type Side = 'L' | 'B' | 'R'
@@ -60,12 +64,38 @@ const WARMUP_ROWS = [
 
 const AMBER_TINT_6 = 'color-mix(in srgb, var(--warning) 6%, transparent)'
 const AMBER_BORDER = 'color-mix(in srgb, var(--warning) 30%, transparent)'
-const CORAL_TINT_4 = 'color-mix(in srgb, var(--coral) 4%, transparent)'
 
 // PR demo (prototype-scripted moment): the 3rd set of exercise 0 at/above this
 // weight triggers the Personal Record toast, which auto-hides after PR_TOAST_MS.
 const PR_DEMO_THRESHOLD_KG = 105
 const PR_TOAST_MS = 4500
+
+// Mission-briefing exercise sectioning (mezo-bxpg, T4): a simple group-by over the
+// muscle-color family key, preserving PLAN order (first-appearance order of each
+// family, not the fixed REGION_ORDER used by the muscle-week card grid) — the
+// "simpler" option the plan offers over adapting muscleRegionGroups' MuscleWeekRow
+// shape. Unmapped/off-day muscle keys (custom/saját exercises, e.g. 'full') fall
+// into a single neutral catch-all so no exercise is ever silently dropped.
+interface PrepExerciseGroup { key: string; label: string; deep: string; exercises: LoggedWorkoutExercise[] }
+function groupExercisesByRegion(exercises: LoggedWorkoutExercise[]): PrepExerciseGroup[] {
+  const order: string[] = []
+  const groups = new Map<string, PrepExerciseGroup>()
+  for (const e of exercises) {
+    const region = muscleRegion(e.muscle)
+    const key = region ?? 'other'
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        label: region ? REGION_LABELS[region] : 'Egyéb',
+        deep: region ? regionColor(region).deep : 'var(--text-secondary)',
+        exercises: [],
+      })
+      order.push(key)
+    }
+    groups.get(key)!.exercises.push(e)
+  }
+  return order.map((k) => groups.get(k)!)
+}
 
 // Guard wrapper: the session screen's hooks (useState×N) are initialized from
 // workout data, so the null case must redirect BEFORE the inner component mounts
@@ -289,6 +319,13 @@ function ActiveWorkoutSession({
   const { decide } = useChallengeActions(templateSessionId, localToday)
   const isMock = challengeMode === 'mock'
 
+  // Mission-briefing prep data (mezo-bxpg, T4): the record engine's e1RM badges +
+  // the progression profile's skill levels for the XP/skill forecast. Both are hook
+  // calls, so — mirroring useChallenges above — they're read here unconditionally
+  // even though only the 'prep' phase below renders them.
+  const { exerciseRecords } = useTrain()
+  const { data: progressionProfile } = useProgressionProfile()
+
   const acceptedMap: Record<string, boolean> = isMock
     ? Object.fromEntries(acceptedChallenges.map((id) => [id, true]))
     : Object.fromEntries(
@@ -472,8 +509,27 @@ function ActiveWorkoutSession({
     }
   }
 
-  // ---------- PREP ----------
+  // ---------- PREP ("mission briefing", mezo-bxpg) ----------
   if (phase === 'prep') {
+    // D2: today's actual MesoDay when the active meso has one AND it is genuinely
+    // the plan being trained now (its exercises are a subset of W's, by id) — else
+    // a pseudo-day adapted from W itself (custom/saját templates + no-meso sessions,
+    // and the defensive fallback when a meso day drifted from what's on screen).
+    const todayMesoDay = activeMeso?.days?.find((d) => d.current) ?? null
+    const isPlannedDay = !!todayMesoDay
+      && todayMesoDay.exercises.length > 0
+      && todayMesoDay.exercises.every((ex) => W.exercises.some((e) => e.id === ex.id))
+    const forecastDay = todayMesoDay && isPlannedDay ? todayMesoDay : pseudoDayFromPlan(W)
+    const athletic = progressionProfile?.athletic ?? []
+    const rawForecast = prepForecast(forecastDay, athletic)
+    // Honest estimates (D2/spec): never fabricate a ring from an empty profile with
+    // no actual XP behind it (growthForecast already omits zero-xp skills, so this
+    // is effectively "no skills at all", kept explicit per the plan's wording).
+    const forecast = athletic.length === 0 && rawForecast.skills.every((s) => s.xpEst === 0) ? null : rawForecast
+    const stats = prepStats(W)
+    const oneRmMap = oneRmByIdentity(exerciseRecords)
+    const exerciseGroups = groupExercisesByRegion(W.exercises)
+
     return (
       <div>
         {/* Breadcrumb — pinned below the status bar like native nav chrome (mezo-wdk) */}
@@ -483,14 +539,11 @@ function ActiveWorkoutSession({
             <span className="eyebrow">Vissza</span>
           </button>
         </div>
+
+        {/* Hero — over-line ({day} · week/phase label) + title + XP ring/skill bars
+            (forecast null-hides the ring, honest-empty-safe) + the szett/rep/perc pill. */}
         <div style={{ padding: '6px 24px' }}>
-          <div className="mt-sm">
-            <PageTitle>{W.title}</PageTitle>
-          </div>
-          <div className="row gap-sm mt-sm flex-wrap">
-            <Chip variant="brand">{weekLabel}</Chip>
-            <Chip>{W.exercises.length} gyakorlat</Chip>
-          </div>
+          <PrepHero overline={`${huWeekdayFull()} · ${weekLabel}`} title={W.title} forecast={forecast} stats={stats} />
         </div>
 
         {/* Niggle pre-flag — dismissed once acknowledged ("Értem · jó így") */}
@@ -574,65 +627,42 @@ function ActiveWorkoutSession({
           </div>
         </div>
 
-        {/* Exercise list */}
+        {/* Gyakorlatok, izomcsoport-szekciókban — muscle-color family sections (plan
+            order preserved), each exercise a bigger PrepExerciseCard (1RM badge +
+            accepted-challenge accent, ported from the old flat list's sparkle idiom). */}
         <div style={{ padding: '16px 24px' }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>
-            Gyakorlatsor
-          </div>
-          <div className="col gap-sm">
-            {W.exercises.map((e, i) => {
-              const exChallenge = challenges.find(
-                (c) => c.exerciseId === e.id && acceptedMap[c.id],
-              )
-              return (
-                <div
-                  key={i}
-                  style={{
-                    padding: 12,
-                    borderRadius: 20,
-                    boxShadow: 'var(--np-shadow-row)',
-                    background: exChallenge ? CORAL_TINT_4 : 'var(--surface)',
-                    position: 'relative',
-                    overflow: 'hidden',
-                  }}
-                >
-                  {exChallenge && (
-                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--coral)' }} />
-                  )}
-                  <div
-                    className="row"
-                    style={{ justifyContent: 'space-between', alignItems: 'flex-start', paddingLeft: exChallenge ? 6 : 0 }}
-                  >
-                    <div className="col flex-1">
-                      <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{e.name}</span>
-                      {exChallenge && (
-                        <div className="row gap-sm mt-xs" style={{ alignItems: 'center' }}>
-                          <Icon name="sparkle" size={10} color="var(--coral)" />
-                          <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral-deep)' }}>
-                            {exChallenge.typeLabel} · {exChallenge.target}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)' }}>
-                      {e.sets} × {e.repMin}-{e.repMax}
-                    </span>
-                  </div>
-                  <div className="row mt-sm gap-sm" style={{ paddingLeft: exChallenge ? 6 : 0 }}>
-                    <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>RIR {e.targetRIR}</span>
-                    <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>{e.muscle}</span>
-                  </div>
+          <div className="col gap-md">
+            {exerciseGroups.map((group) => (
+              <div key={group.key} className="col gap-sm">
+                <div className="eyebrow" style={{ color: group.deep }}>
+                  {group.label} · {group.exercises.length} gyakorlat
                 </div>
-              )
-            })}
+                <div className="col gap-sm">
+                  {group.exercises.map((e) => {
+                    const exChallenge = challenges.find((c) => c.exerciseId === e.id && acceptedMap[c.id]) ?? null
+                    return (
+                      <PrepExerciseCard
+                        key={e.id}
+                        exercise={e}
+                        oneRmKg={oneRmMap.get(identityKeyOf(e)) ?? null}
+                        accentChallenge={exChallenge ? { typeLabel: exChallenge.typeLabel, target: exChallenge.target } : null}
+                      />
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
         <div style={{ padding: '24px' }}>
-          <button type="button" className="np-cta np-press" onClick={beginWorkout}>
-            <span>Kezdjük el</span>
-            <span style={{ opacity: 0.5, fontWeight: 400 }}>·</span>
-            <span>{W.title}</span>
+          <button
+            type="button"
+            className="np-cta np-press"
+            style={{ position: 'sticky', bottom: 12 }}
+            onClick={beginWorkout}
+          >
+            ⚡ Kezdjük el →
           </button>
         </div>
       </div>
