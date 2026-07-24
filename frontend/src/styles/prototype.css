@@ -1913,3 +1913,38 @@ a.hab-link:hover { opacity: 0.85; }
 .nw-t { display: block; font: 600 17px/1.35 var(--ff-display); color: #F5EFE6; margin-bottom: 10px; }
 .nw-tx { display: block; font: 500 13px/1.7 var(--ff-body); color: #B7A899; }
 .nw-rtx { display: block; font: 500 13px/1.7 var(--ff-body); color: #B7A899; font-style: italic; }
+
+/* ===== NightPage — full-screen, forced extra-dark, no clock (mezo-d71m, spec D4/D5) ===== */
+.night { display: flex; flex-direction: column; min-height: 100%; padding: 26px 20px 24px;
+         background: #0E0B09; }
+.night-back { font: 600 11px/1 var(--ff-body); color: #6E6156; text-decoration: none; margin-bottom: 20px; }
+.night-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.night-eye { font: 700 10px/1 var(--ff-body); letter-spacing: .14em; color: #6E6156;
+             text-transform: uppercase; text-align: center; margin-bottom: 10px; }
+.night-moon { text-align: center; font-size: 34px; margin: 26px 0 18px;
+              filter: drop-shadow(0 0 14px rgba(185,172,217,.35)); }
+.night-glow { text-align: center; font-size: 30px; margin: 24px 0 16px;
+              filter: drop-shadow(0 0 12px rgba(255,190,96,.28)); }
+.night-title { font: 600 26px/1.25 var(--ff-display); color: #F5EFE6; text-align: center; margin-bottom: 14px; }
+.night-title-sm { font-size: 23px; }
+.night-tx { font: 500 13.5px/1.75 var(--ff-body); color: #B7A899; text-align: center; margin: 0 8px 26px; }
+.night-cta { display: block; width: 100%; padding: 18px; border-radius: 999px; text-align: center;
+             background: rgba(185,172,217,.14); border: 1px solid rgba(185,172,217,.32);
+             font: 700 16px/1 var(--ff-body); color: #B9ACD9; margin-top: auto; }
+.night-quiet { display: block; width: 100%; text-align: center; font: 600 12px/1 var(--ff-body);
+               color: #6E6156; margin-top: 16px; background: none; border: none; text-decoration: none; }
+.night-orb { width: 118px; height: 118px; border-radius: 50%; margin: 22px auto 20px;
+             background: radial-gradient(circle at 50% 42%, rgba(185,172,217,.30), rgba(185,172,217,.05) 68%);
+             box-shadow: 0 0 42px rgba(185,172,217,.16); animation: nb-breath 18s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .night-orb { animation: none; } }
+.night-tools { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; }
+.night-tool { display: flex; align-items: center; gap: 14px; padding: 16px; text-align: left;
+              background: #1A1613; border-radius: 18px; border: 1px solid rgba(245,239,230,.05); }
+.night-tool-tx { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.night-tool-tx b { font: 600 14px/1.2 var(--ff-body); color: #F5EFE6; }
+.night-tool-tx i { font: 500 10.5px/1.5 var(--ff-body); color: #6E6156; font-style: normal; }
+.night-steps { list-style: none; display: flex; flex-direction: column; gap: 14px; margin: 4px 6px 24px; padding: 0; }
+.night-steps li { position: relative; padding-left: 18px; font: 500 13px/1.65 var(--ff-body); color: #B7A899; }
+.night-steps li::before { content: ''; position: absolute; left: 0; top: 7px; width: 6px; height: 6px;
+                          border-radius: 50%; background: rgba(255,190,96,.75); }
+.night-steps b { color: #F5EFE6; font-weight: 600; }

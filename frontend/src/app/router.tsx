@@ -34,6 +34,7 @@ import { PredictionsPage } from '@/features/insights/pages/PredictionsPage'
 import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 import { MeSection } from '@/features/me/pages/MeSection'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
+import { NightPage } from '@/features/me/pages/NightPage'
 import { ProfilePage } from '@/features/me/pages/ProfilePage'
 import { GrowthPage } from '@/features/me/pages/GrowthPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
@@ -114,6 +115,8 @@ export const routes: RouteObject[] = [
         ],
       },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },
+      // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.
+      { path: 'me/sleep/night', element: <NightPage /> },
       { path: '*', element: <Navigate to="/today" replace /> },
     ],
   },
