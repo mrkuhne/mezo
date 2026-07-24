@@ -50,3 +50,8 @@ export const REGION_LABELS: Record<RegionKey, string> = {
 export function muscleRegion(muscle: string): RegionKey | null {
   return MUSCLE_FAMILY[muscle] ?? null
 }
+
+/** Color tokens of a region — the family itself (region == family). */
+export function regionColor(region: RegionKey): MuscleColorFamily {
+  return FAMILIES[region]
+}
