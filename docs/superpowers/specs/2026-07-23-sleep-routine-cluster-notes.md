@@ -3,7 +3,7 @@
 > **This is a LIVING handoff/roadmap doc, not a frozen spec.** It captures the whole
 > sleep+routine effort so a fresh session (post-`/clear`) can continue without re-deriving
 > context. Companion to the dated specs it references. Update it as slices land.
-> **Last updated:** 2026-07-23.
+> **Last updated:** 2026-07-24.
 
 ## 0. TL;DR — where we are right now
 
@@ -14,7 +14,7 @@
   - Spec (approved, D1–D8): [`2026-07-23-sleep-shot-design.md`](2026-07-23-sleep-shot-design.md)
 - **Landed on main:** `mezo-53su` — **Fuel „Mai" slot-timing fix + `fuel_settings` + slot-level AI** (the FIRST anchor consumer). Commits `71aebab2..9f3d001c` on `feat/fuel-slot-timing`: the `fuel_settings` per-user singleton (`GET/PUT /api/fuel/settings`, tag `FuelSettings`, config-ghost 4/"14:00") relocating `mealsPerDay` + the caffeine cutoff off the weight goal / habit config into a Fuel-owned home; the **ungated `CaffeineCutoffPort`/`CaffeineCutoffResolver`** the habit `no_stim_after` metric now reads (`HabitProperties.caffeineCutoff` + its yml key removed — the `SleepAnchorPort` idiom, third port instance); now-aware re-flow of pending meal windows in `buildDayPlan` (`FuelSlot.slotKey` identity, `MOCK_NOW_HHMM='13:30'`, the static `fuelPlan.today` seed retired so both modes compute the timeline); the Mai `.fuelchips` `szerkeszt` chip → `FuelSettingsSheet`; `EditGoalSheet` loses its "Napi ritmus" section; and the slot-level `AI` chip → `AiLogSheet` with slot-lock. Living docs updated ([`fuel.md`](../../features/fuel.md) §1/§2/§3/§4/§5/§10 · [`habit.md`](../../features/habit.md) §4/§5/§9/§10 · [`me.md`](../../features/me.md) §2/§3 · [`_platform-api-backend.md`](../../features/_platform-api-backend.md) · [`_platform-data-layer.md`](../../features/_platform-data-layer.md)); D4 tie-break codified in the slice spec.
   - Spec (approved, D1–D8): [`2026-07-23-fuel-slot-timing-design.md`](2026-07-23-fuel-slot-timing-design.md)
-- **In progress:** `mezo-d71m` — **slice C-éj** (branch `feat/sleep-night`): slice C was decomposed (2026-07-24 brainstorm) into **C-éj = C1 evening + C2 night layer in ONE slice** (WindDownBanner T-90/T-60/night phases carrying the `wind_down` check + full-screen extra-dark NightPage with the unified 20-minute flow + 3 calm tools + localStorage night-trace → morning SleepLogSheet prefill + **circadian auto-theme**, default on) — FE-only, no backend change; **C3** (education/motivation stat cards + escalation), **C4** (sleep-banking), **C5** (7-day A/B) stay reserved as separate slices. Spec (approved, D1–D9): [`2026-07-24-sleep-night-layer-design.md`](2026-07-24-sleep-night-layer-design.md) + mockup [`2026-07-24-sleep-night-layer-mockup.html`](2026-07-24-sleep-night-layer-mockup.html).
+- **Implemented on `feat/sleep-night` (PR pending):** `mezo-d71m` — **slice C-éj**: slice C was decomposed (2026-07-24 brainstorm) into **C-éj = C1 evening + C2 night layer in ONE slice** — and it is now built (commits `64ec47b5..253f5cb7` on `feat/sleep-night`, awaiting the self-PR + CI gate): the `WindDownBanner` T-90/T-60/night phases carrying the `wind_down` check (over the single time source `features/today/logic/windDown.ts`), the full-screen extra-dark `NightPage` (`/me/sleep/night`) with the unified 20-minute watchdog flow + 3 calm tools (breathing/body-scan/4K-walk) + the localStorage night-trace → morning `SleepLogSheet` awakenings prefill, and the **circadian auto-theme** (`ThemeMode` gains `'auto'`, default on; `CircadianTheme` flips dark exactly inside `isDarkWindow`). FE-only, no backend change. **C3** (education/motivation stat cards + escalation), **C4** (sleep-banking), **C5** (7-day A/B) stay reserved as separate slices. Spec (approved, D1–D9): [`2026-07-24-sleep-night-layer-design.md`](2026-07-24-sleep-night-layer-design.md) + mockup [`2026-07-24-sleep-night-layer-mockup.html`](2026-07-24-sleep-night-layer-mockup.html). Feature docs updated: [`today.md`](../../features/today.md) §2/§10 · [`me.md`](../../features/me.md) §2/§10 · [`habit.md`](../../features/habit.md) §5/§9 · [`_platform-design-system.md`](../../features/_platform-design-system.md) §2/§3/§10.
 - **Next after C-éj:** C3–C5 (§4) + the remaining anchor **consumer** (morning-training reschedule). See §3/§5.
 
 ## 1. How we got here — the two source videos
@@ -53,7 +53,7 @@ SLEEP CLUSTER (the new foundation — video 2):
    A. Sleep goal + day-anchor + enriched log + manual  ✅ DONE (mezo-dbsr, PR #43)
    B. Sleep Cycle SCREENSHOT ingestion (LLM-vision) ... ✅ DONE (mezo-66ab, PR #48) — lands into A's model
    C. Video-2 practical layers — DECOMPOSED (2026-07-24):
-      C-éj (C1 evening + C2 night in one slice) ....... 🔄 IN PROGRESS (mezo-d71m, spec approved)
+      C-éj (C1 evening + C2 night in one slice) ....... ✅ BUILT on feat/sleep-night (mezo-d71m, PR pending)
       C3 education/motivation cards · C4 sleep-banking · C5 A/B experiment ... ⏳ RESERVED (§4)
 
 CONSUMERS of the anchor (were video-1 ③④):
