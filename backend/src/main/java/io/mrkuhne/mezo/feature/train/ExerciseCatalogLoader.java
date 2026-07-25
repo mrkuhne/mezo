@@ -31,8 +31,10 @@ import tools.jackson.databind.ObjectMapper;
 public class ExerciseCatalogLoader implements CommandLineRunner {
 
     private static final Set<String> MUSCLES = Set.of(
-        "back-mid", "lats", "chest", "shoulder", "rear-delt", "biceps", "triceps",
-        "quad", "ham", "glute", "calf", "core", "traps");
+        "chest-upper", "chest-mid", "chest-lower", "back-wide", "back-mid", "back-lower", "traps",
+        "shoulder-front", "shoulder-side", "shoulder-rear", "biceps-long", "biceps-short",
+        "biceps-brachialis", "triceps-long", "triceps-lateral", "triceps-medial",
+        "quad", "ham", "glute", "calf", "core");
     private static final Set<String> TYPES = Set.of("compound", "isolation", "plyo");
 
     private final ExerciseCatalogRepository repository;

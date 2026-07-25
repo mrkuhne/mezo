@@ -1525,7 +1525,7 @@ components:
           minLength: 1
         muscle:
           type: string
-          enum: [back-mid, lats, chest, shoulder, rear-delt, biceps, triceps, quad, ham, glute, calf, core, traps]
+          enum: [chest-upper, chest-mid, chest-lower, back-wide, back-mid, back-lower, traps, shoulder-front, shoulder-side, shoulder-rear, biceps-long, biceps-short, biceps-brachialis, triceps-long, triceps-lateral, triceps-medial, quad, ham, glute, calf, core]
         type:
           type: string
           enum: [compound, isolation, plyo]

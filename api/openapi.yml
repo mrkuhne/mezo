@@ -5667,19 +5667,27 @@ components:
         muscle:
           type: string
           enum:
+            - chest-upper
+            - chest-mid
+            - chest-lower
+            - back-wide
             - back-mid
-            - lats
-            - chest
-            - shoulder
-            - rear-delt
-            - biceps
-            - triceps
+            - back-lower
+            - traps
+            - shoulder-front
+            - shoulder-side
+            - shoulder-rear
+            - biceps-long
+            - biceps-short
+            - biceps-brachialis
+            - triceps-long
+            - triceps-lateral
+            - triceps-medial
             - quad
             - ham
             - glute
             - calf
             - core
-            - traps
         type:
           type: string
           enum:

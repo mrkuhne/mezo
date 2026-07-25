@@ -1,9 +1,11 @@
 // ============================================================
 // Mezo · muscleColors — muscle key → color-family tokens for the Train
-// exercise cards (mezo-kaui PR-card redesign). 13 live catalog muscles
-// (ck_exercise_catalog_muscle) + legacy 'back' → 6 existing token families;
-// unknown keys get a neutral fallback. Values are CSS custom-property
-// references so both themes work with zero new tokens.
+// exercise cards (mezo-kaui PR-card redesign). 21 live catalog muscles
+// (mezo-wu1s head/zone-specific taxonomy) + legacy coarse keys (back, chest,
+// shoulder, lats, rear-delt, biceps, triceps — still emitted by the volume
+// log) → 6 existing token families; unknown keys get a neutral fallback.
+// Values are CSS custom-property references so both themes work with zero
+// new tokens.
 // ============================================================
 
 export interface MuscleColorFamily {
@@ -24,11 +26,18 @@ const FAMILIES = {
 
 // Values are non-neutral families only (RegionKey) — muscleRegion() relies on this.
 const MUSCLE_FAMILY: Record<string, RegionKey> = {
-  chest: 'coral',
-  'back-mid': 'sky', lats: 'sky', traps: 'sky', back: 'sky',
-  shoulder: 'lav', 'rear-delt': 'lav',
-  biceps: 'rose', triceps: 'rose',
+  // Mell → coral
+  'chest-upper': 'coral', 'chest-mid': 'coral', 'chest-lower': 'coral', chest: 'coral',
+  // Hát → sky
+  'back-wide': 'sky', 'back-mid': 'sky', 'back-lower': 'sky', traps: 'sky', lats: 'sky', back: 'sky',
+  // Váll → lav
+  'shoulder-front': 'lav', 'shoulder-side': 'lav', 'shoulder-rear': 'lav', shoulder: 'lav', 'rear-delt': 'lav',
+  // Kar → rose
+  'biceps-long': 'rose', 'biceps-short': 'rose', 'biceps-brachialis': 'rose',
+  'triceps-long': 'rose', 'triceps-lateral': 'rose', 'triceps-medial': 'rose', biceps: 'rose', triceps: 'rose',
+  // Láb → sage
   quad: 'sage', ham: 'sage', glute: 'sage', calf: 'sage',
+  // Core → amber
   core: 'amber',
 }
 
@@ -55,3 +64,20 @@ export function muscleRegion(muscle: string): RegionKey | null {
 export function regionColor(region: RegionKey): MuscleColorFamily {
   return FAMILIES[region]
 }
+
+// --- Live taxonomy grouped by region (mezo-wu1s) --------------------------------------------
+// The 21 head/zone-specific tokens a user can pick/filter, in display order, grouped under
+// their region. Single source for the two-level ExercisePickerSheet filter and the region-
+// grouped CatalogExerciseSheet picker. Legacy coarse keys (chest, back, …) are deliberately
+// absent — they render on read (labels/colors) but are never offered for authoring/filtering.
+export const REGION_MUSCLES: { region: RegionKey; muscles: string[] }[] = [
+  { region: 'coral', muscles: ['chest-upper', 'chest-mid', 'chest-lower'] },
+  { region: 'sky', muscles: ['back-wide', 'back-mid', 'back-lower', 'traps'] },
+  { region: 'lav', muscles: ['shoulder-front', 'shoulder-side', 'shoulder-rear'] },
+  { region: 'rose', muscles: ['biceps-long', 'biceps-short', 'biceps-brachialis', 'triceps-long', 'triceps-lateral', 'triceps-medial'] },
+  { region: 'sage', muscles: ['quad', 'ham', 'glute', 'calf'] },
+  { region: 'amber', muscles: ['core'] },
+]
+
+/** Flat list of the 21 live tokens in region display order. */
+export const LIVE_MUSCLES: string[] = REGION_MUSCLES.flatMap((g) => g.muscles)

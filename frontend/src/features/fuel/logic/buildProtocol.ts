@@ -57,7 +57,7 @@ export function buildProtocol(
     if (morningCaff)
       wakeItems.push({
         refId: morningCaff.id,
-        name: morningCaff === coffee ? 'Espresso · 1 shot' : 'Koffein 200mg',
+        name: morningCaff.name,
         dose: morningCaff.dose,
         color: 'var(--warning)',
       })
@@ -95,13 +95,19 @@ export function buildProtocol(
     })
   }
 
-  // Pre-workout stack
+  // Pre-workout stack — a combined PWO product wins; separate AAKG/Beta-Alanin
+  // items stay the fallback for stashes that carry them individually.
+  const pwo = find('pwo', 'pre-workout')
   const aakg = find('aakg')
   const beta = find('beta-alanin', 'betaalanin', 'béta-alanin')
-  if (aakg || beta) {
+  if (pwo || aakg || beta) {
     const preItems: ProtocolSlotItem[] = []
-    if (aakg) preItems.push({ refId: aakg.id, name: 'AAKG · L-Arginine', dose: aakg.dose, color: 'var(--warning)' })
-    if (beta) preItems.push({ refId: beta.id, name: 'Beta-Alanin', dose: beta.dose, color: 'var(--warning)' })
+    if (pwo) {
+      preItems.push({ refId: pwo.id, name: pwo.name, dose: pwo.dose, color: 'var(--warning)' })
+    } else {
+      if (aakg) preItems.push({ refId: aakg.id, name: 'AAKG · L-Arginine', dose: aakg.dose, color: 'var(--warning)' })
+      if (beta) preItems.push({ refId: beta.id, name: 'Beta-Alanin', dose: beta.dose, color: 'var(--warning)' })
+    }
     slots.push({
       time: preWorkoutTime,
       window: 'T-40min',

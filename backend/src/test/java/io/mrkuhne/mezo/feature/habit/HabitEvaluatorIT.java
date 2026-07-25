@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.RitualPopulator;
+import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
@@ -29,10 +30,10 @@ import org.springframework.beans.factory.annotation.Autowired;
  * pure repo read, never a self-claim, and an unknown metric degrades to {@code false}. Data is
  * deterministic (populators + backdated timestamps), independent of the wall clock.
  *
- * <p>{@code training_done_today} is asserted via the GYM branch (a completed instance dated today,
- * no time gate — spec's "a gym session finished"): the RUN branch keys off the log's
- * {@code created_at} against {@code workout-cutoff 12:00}, which a populator cannot pin without
- * backdating, so a run-based happy path would be time-of-day flaky.
+ * <p>{@code training_done_today}'s gym branch is asserted via a completed instance dated today
+ * (timestamp-less date-presence, no time gate); the RUN branch keys off the log's
+ * {@code created_at} against the wake-anchored cutoff (wake + workout-window-hours), pinned
+ * deterministically via {@link RunningPopulator#createRunLogAt}.
  */
 class HabitEvaluatorIT extends AbstractIntegrationTest {
 
@@ -47,6 +48,7 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     @Autowired private MealPopulator mealPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private RitualPopulator ritualPopulator;
+    @Autowired private RunningPopulator runningPopulator;
 
     private UUID owner() {
         return userPopulator.createUser("habit-eval@test.hu").getId();
@@ -111,6 +113,36 @@ class HabitEvaluatorIT extends AbstractIntegrationTest {
     void testSatisfied_shouldFailTraining_whenNothingTrainedToday() {
         UUID owner = owner();
         assertThat(evaluator.satisfied("training_done_today", owner, LocalDate.now())).isFalse();
+    }
+
+    @Test
+    void testSatisfied_shouldPassTraining_whenRunLoggedBeforeAnchoredCutoff() {
+        UUID owner = owner();
+        LocalDate d = LocalDate.now();
+        sleepGoalPopulator.goal(owner, 450, "WAKE", "05:00", 15); // cutoff = 05:00 + 6h = 11:00
+        var block = runningPopulator.createBlock(owner, "Sprint blokk", "active");
+        runningPopulator.createRunLogAt(owner, block.getId(), d, at(d, "10:30"));
+        assertThat(evaluator.satisfied("training_done_today", owner, d)).isTrue();
+    }
+
+    @Test
+    void testSatisfied_shouldFailTraining_whenRunLoggedAfterAnchoredCutoff() {
+        UUID owner = owner();
+        LocalDate d = LocalDate.now();
+        sleepGoalPopulator.goal(owner, 450, "WAKE", "05:00", 15); // cutoff = 11:00
+        var block = runningPopulator.createBlock(owner, "Sprint blokk", "active");
+        runningPopulator.createRunLogAt(owner, block.getId(), d, at(d, "11:30"));
+        assertThat(evaluator.satisfied("training_done_today", owner, d)).isFalse();
+    }
+
+    @Test
+    void testSatisfied_shouldUseGhostWakeCutoff_whenNoSleepGoal() {
+        UUID owner = owner();
+        LocalDate d = LocalDate.now();
+        // no goal -> ghost wake 06:00 -> cutoff 12:00 (exactly the retired static value)
+        var block = runningPopulator.createBlock(owner, "Sprint blokk", "active");
+        runningPopulator.createRunLogAt(owner, block.getId(), d, at(d, "11:30"));
+        assertThat(evaluator.satisfied("training_done_today", owner, d)).isTrue();
     }
 
     @Test

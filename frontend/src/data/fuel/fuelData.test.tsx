@@ -30,10 +30,11 @@ test('useFuelTimeline returns a computed plan with one now-slot + getScoredMeal 
   const mealSlot = result.current.plan.slots.find(s => s.kind === 'meal' && s.mealName && s.state === 'done')!
   expect(result.current.getScoredMeal(mealSlot)?.breakdown).toBeDefined()
 })
-test('useStack returns 10 stash items, useProtocol returns v3', () => {
-  // NOTE: task text said 11, but prototype data.js 337–348 has 10 stash items — data is source of truth.
+test('useStack returns 9 stash items, useProtocol returns v3', () => {
+  // NOTE: the mock stash is the source of truth — the generic aakg/betaalanin/caffeine200
+  // trio was replaced by the two real stim products (Tasty Dose + Origin PWO), 10 → 9 (mezo-67rb).
   // useStack/useProtocol became dual-mode TanStack queries (mezo-09g) — they need a QueryClient.
-  expect(renderHook(() => useStack(), { wrapper: QueryWrapper }).result.current.stash).toHaveLength(10)
+  expect(renderHook(() => useStack(), { wrapper: QueryWrapper }).result.current.stash).toHaveLength(9)
   expect(renderHook(() => useProtocol(), { wrapper: QueryWrapper }).result.current.protocol.version).toBe(3)
 })
 

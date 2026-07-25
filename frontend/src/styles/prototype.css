@@ -2126,3 +2126,15 @@ a.hab-link:hover { opacity: 0.85; }
   .rz-skill-bar i { animation: none; transform: none; } /* bar fill freezes at its final width */
   .rz-conf { display: none; } /* decorative burst only — no motion, no point showing it static */
 }
+
+/* ===== Morning-training reschedule nudge (mezo-67rb): Train · Mai anchor-consumer card ===== */
+.mtr { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; padding: 16px;
+       border-radius: 20px; background: linear-gradient(150deg, var(--wash-sage) 0%, var(--surface) 75%);
+       box-shadow: 0 1px 3px rgba(43,33,24,.06); }
+.mtr-eye { font: 700 10px/1 var(--ff-body); letter-spacing: .1em; color: var(--sage-deep); text-transform: uppercase; }
+.mtr-lead { font: 600 13.5px/1.5 var(--ff-body); color: var(--ink); }
+.mtr-body { font: 500 12.5px/1.6 var(--ff-body); color: var(--sub); }
+.mtr-actions { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+.mtr-cta { background: var(--sage-deep); color: var(--text-inverse); font: 700 12px/1 var(--ff-body);
+           padding: 10px 16px; border-radius: 999px; }
+.mtr-quiet { font: 600 11.5px/1 var(--ff-body); color: var(--faint); padding: 10px 8px; }

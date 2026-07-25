@@ -201,7 +201,7 @@ export const ingredients: Ingredient[] = [
     micros: [{ name: 'L-Arginine AKG', pct: 100 }],
     nova: 4, stock: { qty: 108, unit: 'g', expires: '2026.11' },
     lastUsed: '5 napja', usedInRecipes: 0,
-    stashRefId: 'aakg', scrapedAt: 'Máj 02 · 21:15', warning: 'stim',
+    scrapedAt: 'Máj 02 · 21:15', warning: 'stim',
   },
 ]
 

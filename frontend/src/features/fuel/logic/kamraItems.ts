@@ -5,7 +5,7 @@
 // Merges the scraped grocery/supplement ingredients (food) with the supplement
 // stash (supplement/stim/med) into one PantryItem shape for KamraCard. Stash
 // items already linked to an ingredient via `stashRefId` are skipped to avoid
-// duplicate cards (whey/kreatin/aakg are both in `ingredients` and the stash).
+// duplicate cards (whey/kreatin are both in `ingredients` and the stash).
 // ============================================================
 import type { Ingredient, PantryItem, PantryItemKind, SupplementStashItem } from '@/data/types'
 

@@ -66,7 +66,7 @@ class ExerciseRecordServiceIT extends AbstractIntegrationTest {
         ExerciseRecordResponse r = records.get(0);
         assertThat(r.getCatalogId()).isEqualTo(catalogId);
         assertThat(r.getName()).isEqualTo("Barbell Bench Press");
-        assertThat(r.getMuscle()).isEqualTo("chest"); // catalog-sourced display
+        assertThat(r.getMuscle()).isEqualTo("chest-mid"); // catalog-sourced display (mezo-wu1s taxonomy)
         assertThat(r.getBestSet().getWeightKg()).isEqualByComparingTo("110");
         assertThat(r.getBestSet().getReps()).isEqualTo(5);
         assertThat(r.getBestE1rm().getValue()).isEqualByComparingTo("140.0");

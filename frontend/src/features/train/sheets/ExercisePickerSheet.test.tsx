@@ -30,13 +30,16 @@ test('plyo chip filters by type in real mode (API catalog)', async () => {
   expect(screen.queryByText('Hip Thrust')).not.toBeInTheDocument()
 })
 
-test('calf and core chips filter the API catalog by muscle', async () => {
+test('region → muscle sub-filter narrows the API catalog by muscle', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   render(<ExercisePickerSheet onClose={() => {}} onPick={() => {}} />, { wrapper: QueryWrapper })
   await screen.findByText('Box Jump')
+  // Láb (sage) region shows level-2 sub-chips; Vádli (calf) narrows to calf only.
+  await userEvent.click(screen.getByRole('button', { name: 'Láb' }))
   await userEvent.click(screen.getByRole('button', { name: 'Vádli' }))
   expect(screen.getByText('Standing Calf Raise')).toBeInTheDocument()
-  expect(screen.queryByText('Box Jump')).not.toBeInTheDocument()
+  expect(screen.queryByText('Box Jump')).not.toBeInTheDocument() // Box Jump is quad
+  // Core region has a single muscle → the top chip filters directly (no sub-row).
   await userEvent.click(screen.getByRole('button', { name: 'Core' }))
   expect(screen.getByText('Cable Crunch')).toBeInTheDocument()
 })

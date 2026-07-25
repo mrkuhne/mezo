@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { muscleColor, muscleRegion, REGION_LABELS, REGION_ORDER } from '@/features/train/logic/muscleColors'
+import {
+  muscleColor, muscleRegion, REGION_LABELS, REGION_ORDER, REGION_MUSCLES, LIVE_MUSCLES,
+} from '@/features/train/logic/muscleColors'
 
 describe('muscleColor', () => {
   it('maps chest to the coral family', () => {
@@ -26,6 +28,26 @@ describe('muscleColor', () => {
     expect(muscleColor('unknown-muscle')).toEqual({
       rail: 'var(--text-tertiary)', wash: 'var(--surface-2)', deep: 'var(--text-secondary)',
     })
+  })
+  it('maps the 21 head-specific tokens (mezo-wu1s) to their region family', () => {
+    for (const m of ['chest-upper', 'chest-mid', 'chest-lower']) expect(muscleColor(m).rail).toBe('var(--coral)')
+    for (const m of ['back-wide', 'back-mid', 'back-lower', 'traps']) expect(muscleColor(m).rail).toBe('var(--sky)')
+    for (const m of ['shoulder-front', 'shoulder-side', 'shoulder-rear']) expect(muscleColor(m).rail).toBe('var(--lav)')
+    for (const m of ['biceps-long', 'biceps-short', 'biceps-brachialis', 'triceps-long', 'triceps-lateral', 'triceps-medial'])
+      expect(muscleColor(m).rail).toBe('var(--rose)')
+  })
+})
+
+describe('REGION_MUSCLES / LIVE_MUSCLES (mezo-wu1s)', () => {
+  it('groups all 21 live tokens under the six regions in order', () => {
+    expect(REGION_MUSCLES.map((g) => g.region)).toEqual(REGION_ORDER)
+    expect(LIVE_MUSCLES).toHaveLength(21)
+    expect(new Set(LIVE_MUSCLES).size).toBe(21) // no duplicates
+  })
+  it('every live token resolves to the region it is grouped under', () => {
+    for (const g of REGION_MUSCLES) {
+      for (const m of g.muscles) expect(muscleRegion(m)).toBe(g.region)
+    }
   })
 })
 
