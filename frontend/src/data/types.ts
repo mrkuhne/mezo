@@ -219,7 +219,11 @@ export interface UserMeta {
   memberDays: number
   streakDays: number
 }
-export interface TodayScenario { dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean }
+export interface TodayScenario {
+  dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
+  /** `?ritual=` demo override (mezo-ilsj) — wins over RitualCard's derived waiting/open/done state. */
+  ritual: 'waiting' | 'open' | 'done' | null
+}
 
 // --- Pantry (Kamra) + Recipes (Receptek) ---
 export interface PantryCategoryMeta { label: string; color: string }

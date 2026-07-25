@@ -81,6 +81,25 @@ test('action-first zones: both dividers render, quests sit between the hero and 
   }
 })
 
+test('Teendők ma order: TodayQuestsCard → RitualCard → RoutineCard (mezo-ilsj)', () => {
+  // Forced to mock mode: TodayQuestsCard/RoutineCard ghost (render null) on an empty quest/habit
+  // day, and the real-mode ambient MSW default IS an honest-empty day (server.ts:346) — this
+  // test is about mount ORDER, not dual-mode data, so it needs both cards populated regardless
+  // of which ambient mode the gate is currently running. ?ritual=open forces a deterministic
+  // RitualCard render regardless of the clock — the URL override wins over the derived state.
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  renderAt('/today?ritual=open')
+  const quests = screen.getByText('⚡ Napi küldetések')
+  const ritual = screen.getByText('Napzárás')
+  const routine = screen.getByText(/rutin/i) // RoutineCard's only "rutin"-bearing text, any daypart
+  const order = [quests, ritual, routine]
+  for (let i = 0; i + 1 < order.length; i += 1) {
+    // eslint-disable-next-line no-bitwise
+    expect(order[i].compareDocumentPosition(order[i + 1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  }
+  vi.unstubAllEnvs()
+})
+
 test('the GrowthTodayRow summary row is retired (its job moved into the quest card header)', () => {
   renderAt('/today')
   expect(screen.queryByText('Növekedés ma')).not.toBeInTheDocument()

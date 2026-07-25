@@ -44,7 +44,10 @@ export function useTodayScenario(): TodayScenario {
   const retaDay = Number.isFinite(retaRaw) ? Math.min(7, Math.max(1, retaRaw)) : base
   const niggle = params.get('niggle') !== 'off'
   const vulnerable = params.get('vulnerable') === 'on'
-  return { dayState, retaDay, niggle, vulnerable, anchorMode: dayState === 'rough' }
+  const ritualRaw = params.get('ritual')
+  const ritual: TodayScenario['ritual'] =
+    ritualRaw === 'waiting' || ritualRaw === 'open' || ritualRaw === 'done' ? ritualRaw : null
+  return { dayState, retaDay, niggle, vulnerable, anchorMode: dayState === 'rough', ritual }
 }
 
 export function resolveBriefing(dayState: DayState): Briefing {

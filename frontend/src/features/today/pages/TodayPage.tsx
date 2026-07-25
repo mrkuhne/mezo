@@ -14,6 +14,7 @@ import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard
 import { FuelTimelinePreview } from '@/features/today/components/FuelTimelinePreview'
 import { QuickStatsRow } from '@/features/today/components/QuickStatsRow'
 import { TodayQuestsCard } from '@/features/today/components/TodayQuestsCard'
+import { RitualCard } from '@/features/today/components/RitualCard'
 import { RoutineCard } from '@/features/today/components/RoutineCard'
 import { ZoneDivider } from '@/features/today/components/ZoneDivider'
 import { CheckInStrip } from '@/features/today/components/CheckInStrip'
@@ -65,6 +66,7 @@ export function TodayPage() {
       <TodayQuestsCard
         onCheckIn={nextCheckinIdx >= 0 ? () => setCheckInIdx(nextCheckinIdx) : undefined}
       />
+      <RitualCard />
       <RoutineCard />
       <CheckInStrip checkins={checkins} onCheckIn={setCheckInIdx} />
       <ZoneDivider label="A napod" />
