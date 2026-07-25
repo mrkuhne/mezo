@@ -77,13 +77,20 @@ public class HabitEvaluator {
                 .orElse(false);
             case "stim_intake_before" -> stimIntakes(userId, date).stream()
                 .anyMatch(t -> t.isBefore(LocalTime.parse(properties.morningWindowEnd())));
-            case "training_done_today" ->
-                !workoutSessionRepository.findDoneInstanceDates(userId, date, date).isEmpty()
-                    || runSessionLogRepository
-                        .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
-                        .stream()
-                        .anyMatch(r -> date.equals(r.getDate()) && localTime(r.getCreatedAt())
-                            .isBefore(LocalTime.parse(properties.workoutCutoff())));
+            case "training_done_today" -> {
+                if (!workoutSessionRepository.findDoneInstanceDates(userId, date, date).isEmpty()) {
+                    yield true;
+                }
+                // Run logs carry created_at, so the wake-anchored cutoff applies here (spec D2);
+                // gym completion stays date-presence (no completed_at — honest fallback).
+                LocalTime cutoff = habitTargets.resolve(userId).wake()
+                    .plusHours(properties.workoutWindowHours());
+                yield runSessionLogRepository
+                    .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
+                    .stream()
+                    .anyMatch(r -> date.equals(r.getDate())
+                        && localTime(r.getCreatedAt()).isBefore(cutoff));
+            }
             case "breakfast_protein" -> fuelDayService.getDay(userId, date).getMeals().stream()
                 .filter(m -> "breakfast".equals(m.getSlot()))
                 .map(m -> m.getMacros().getP())
