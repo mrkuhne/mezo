@@ -212,6 +212,24 @@ export function TrainTodayPage() {
         </div>
       </div>
 
+      {/* Mezociklus overview entry card (active meso only) */}
+      <div style={{ padding: '0 24px 12px' }}>
+        <button
+          type="button"
+          className="card np-press"
+          onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
+          aria-label={`Mezociklus áttekintő · ${activeMeso.shortTitle}`}
+          style={{ padding: '12px 14px', width: '100%', textAlign: 'left', display: 'block' }}
+        >
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
+              🗓 {activeMeso.shortTitle} · {currentPhase} · W{activeMeso.currentWeek}/{activeMeso.weeks}
+            </span>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>→</span>
+          </div>
+        </button>
+      </div>
+
       {/* Today's hero cards, ordered by time-of-day (gym / volleyball / running).
           A morning run hero appears above an evening gym hero. Each hero keeps
           its bespoke markup; the gym hero additionally requires the /today workout. */}
