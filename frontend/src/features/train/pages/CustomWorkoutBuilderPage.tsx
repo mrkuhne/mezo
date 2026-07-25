@@ -7,6 +7,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useCustomWorkouts, useCustomWorkoutActions } from '@/data/hooks'
 import type { CustomWorkoutUpsertRequest } from '@/data/train/trainApi'
 import type { CustomWorkout, ExerciseLibraryItem, GymExercise } from '@/data/types'
@@ -32,6 +33,7 @@ function toUpsert(name: string, exercises: GymExercise[]): CustomWorkoutUpsertRe
 export function CustomWorkoutBuilderPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const goBack = useBackNav('/train/gym')
   const { customWorkouts } = useCustomWorkouts()
   const { createCustomWorkout, updateCustomWorkout, savePending } = useCustomWorkoutActions()
   const existing: CustomWorkout | null = customWorkouts.find((w) => w.id === id) ?? null
@@ -72,7 +74,7 @@ export function CustomWorkoutBuilderPage() {
         <div>
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={goBack}
             className="over"
             style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
           >
@@ -135,7 +137,7 @@ export function CustomWorkoutBuilderPage() {
         <button
           type="button"
           disabled={!valid || savePending}
-          onClick={() => save(() => navigate(-1))}
+          onClick={() => save(() => goBack())}
           className="card np-press"
           style={{ flex: 1, padding: '12px 16px', textAlign: 'center', fontSize: 12, color: 'var(--text-primary)' }}
         >

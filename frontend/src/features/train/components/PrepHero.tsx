@@ -8,6 +8,8 @@
 // ============================================================
 import { clampPct } from '@/shared/lib/pct'
 import { ATHLETIC_META } from '@/features/progression/logic/levelUpMeta'
+import { MUSCLE_LABELS } from '@/data/train/train'
+import { muscleColor } from '@/features/train/logic/muscleColors'
 import type { PrepForecast, PrepStats } from '@/features/train/logic/prepBriefing'
 
 export function PrepHero({ overline, title, forecast, stats }: {
@@ -66,6 +68,28 @@ export function PrepHero({ overline, title, forecast, stats }: {
               })}
             </div>
           )}
+        </div>
+      )}
+
+      {/* „Ma építed" — top muscle-volume XP chips (mezo-87d2); hidden when the
+          forecast has no weighted volume to attribute (no anchors/targets). */}
+      {forecast && forecast.muscles.length > 0 && (
+        <div className="row" style={{ justifyContent: 'center', gap: 6, marginTop: 12, flexWrap: 'wrap' }}>
+          <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)', alignSelf: 'center' }}>
+            MA ÉPÍTED
+          </span>
+          {forecast.muscles.map((m) => {
+            const fam = muscleColor(m.muscle)
+            return (
+              <span
+                key={m.muscle}
+                className="chip"
+                style={{ fontSize: 9.5, background: fam.wash, color: fam.deep, border: 'none' }}
+              >
+                {MUSCLE_LABELS[m.muscle] ?? m.muscle} +{m.xp} XP
+              </span>
+            )
+          })}
         </div>
       )}
 

@@ -172,3 +172,25 @@ describe('startWeightOf', () => {
     expect(startWeightOf(plyoExercise)).toBeNull()
   })
 })
+
+describe('mezo-87d2 QA round 2', () => {
+  it('pseudoDayFromPlan falls back to the prescribed working target when no anchor exists', () => {
+    const noAnchor = {
+      ...anchoredExercise,
+      id: 'na-1',
+      anchorWeightKg: null,
+    }
+    const day = pseudoDayFromPlan({ ...plan, exercises: [noAnchor] })
+    // prescribed working target (26) becomes the forecast anchor when anchorWeightKg is null
+    expect(day.exercises[0].anchorWeightKg).toBe(26)
+  })
+
+  it('prepForecast returns the top muscle-XP entries (desc, max 3, zero-xp dropped)', () => {
+    const day = pseudoDayFromPlan(plan)
+    const f = prepForecast(day, [])
+    for (const m of f.muscles) expect(m.xp).toBeGreaterThan(0)
+    const xs = f.muscles.map((m) => m.xp)
+    expect([...xs].sort((a, b) => b - a)).toEqual(xs)
+    expect(f.muscles.length).toBeLessThanOrEqual(3)
+  })
+})
