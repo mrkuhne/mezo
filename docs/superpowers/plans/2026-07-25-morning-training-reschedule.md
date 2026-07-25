@@ -396,7 +396,7 @@ public class ProtocolSeedData implements CommandLineRunner {
         e.setName(TASTY_DOSE_NAME);
         e.setBrand("Tasty Dose");
         e.setSource("manual");
-        e.setCategory("caffeine");
+        e.setCategory("supplement"); // valid ck_pantry_item_category member — caffeine semantics live in kind+caffeine flag
         e.setDose("8 g");
         e.setForm("por · 1 púpozott mérőkanál · 200 ml forró vízbe");
         e.setStockQty(new BigDecimal("30"));
@@ -419,7 +419,7 @@ public class ProtocolSeedData implements CommandLineRunner {
         e.setName(ORIGIN_PWO_NAME);
         e.setBrand("Origin");
         e.setSource("manual");
-        e.setCategory("caffeine");
+        e.setCategory("supplement"); // valid ck_pantry_item_category member — caffeine semantics live in kind+caffeine flag
         e.setDose("20 g");
         e.setForm("por · 1 napi adag · kékmálna");
         e.setStockQty(new BigDecimal("25")); // estimated, not from the label — correctable in the Kamra
