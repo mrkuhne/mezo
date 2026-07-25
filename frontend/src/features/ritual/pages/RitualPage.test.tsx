@@ -53,3 +53,17 @@ test('the ✕ exit (Kilépés) navigates straight to /today, consequence-free fr
   await user.click(screen.getByRole('button', { name: 'Kilépés' }))
   expect(await screen.findByText(/briefing/i)).toBeInTheDocument()
 })
+
+test('act 3 (Nyitott hurkok): the journal invite mounts ActivityLogSheet at the page level', async () => {
+  stubReduced()
+  const user = userEvent.setup()
+  renderApp()
+  await user.click(screen.getByText(/Kezdjük/))
+  await user.click(screen.getByText('Tovább')) // act 2 (DayStoryStep) -> act 3 (LoopsStep)
+  expect(screen.getByText('Nyitott hurkok')).toBeInTheDocument()
+
+  // The journal invite is evergreen (LoopsStep.tsx) — always present regardless of check-in/
+  // reflect state, so this is deterministic without stubbing checkins/intention data.
+  await user.click(screen.getByRole('button', { name: 'Napló' }))
+  expect(await screen.findByText('Mi történt ma?')).toBeInTheDocument()
+})

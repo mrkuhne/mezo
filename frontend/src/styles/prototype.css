@@ -2012,6 +2012,26 @@ a.hab-link:hover { opacity: 0.85; }
 .rz-ev-meta { color: var(--faint); font-size: 11px; }
 .rz-ev-meta.ok { color: var(--sage); }
 
+/* Loops act (act 3): open check-in / reflect / journal rows (np-anim reuse), a dim ✓ summary
+   once a row closes, and the single "Minden hurok zárva" beat once nothing is left open. The
+   glow is a static wash + inset ring (no pulse) — the `.hab-row.now` / RoutineCard
+   first-pending idiom, not the animated `.hab-node.now` dot pulse. */
+.rz-loops-sub { font-family: var(--ff-body); font-size: 11.5px; font-weight: 500;
+  color: rgba(245,239,230,.5); margin: 6px 4px 14px; }
+.rz-loop { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; padding: 12px;
+  border-radius: 16px; background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
+.rz-loop.glow { background: rgba(171,159,210,.14); box-shadow: inset 0 0 0 1px rgba(171,159,210,.35); }
+.rz-loop-done { color: rgba(245,239,230,.5); }
+.rz-loop-mk { color: var(--sage); }
+.rz-loop-text { flex: 1; }
+.rz-loop-act { margin-left: auto; padding: 6px 13px; border-radius: 999px; border: 0;
+  background: var(--lav); color: #1d1927; font-family: var(--ff-body); font-weight: 700; font-size: 11px;
+  white-space: nowrap; }
+.rz-loop-chips { margin-left: auto; display: flex; gap: 5px; }
+.rz-loop-chip { padding: 5px 9px; border-radius: 999px; border: 0; background: rgba(245,239,230,.1);
+  color: #F5EFE6; font-family: var(--ff-body); font-weight: 600; font-size: 10.5px; }
+.rz-loop-beat { justify-content: center; text-align: center; color: rgba(245,239,230,.7); font-style: italic; }
+
 /* Release act (act 5): closing circle (np-draw reuse), companion note, evening handoff panel. */
 .rz-circle { display: block; margin: 56px auto 0; }
 .rz-ring { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round;
