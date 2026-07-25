@@ -38,17 +38,48 @@ function firstId(qc: QueryClient) {
   return result.current.recipes[0]
 }
 
-test('renders the hero, macro hero and ingredient contributions', async () => {
+test('default tab is Részletek: hero, macro hero and breakdown visible, ingredients hidden (mezo-n3xa)', async () => {
   const qc = newQc()
   const r = firstId(qc)
   renderDetail(r.id, qc)
   expect(await screen.findByText(r.name)).toBeInTheDocument()
   // whole-recipe kcal appears in the macro hero
   expect(screen.getByText(String(r.macros.kcal))).toBeInTheDocument()
-  // the deferred fit zone
-  expect(screen.getByText('PONTSZÁM')).toBeInTheDocument() // mezo-bw3y: the sparkle zone became the breakdown section
-  // first ingredient name from the snapshot (enriched lines always carry a name)
+  // the breakdown section is immediately visible on the default tab
+  expect(screen.getByText('PONTSZÁM')).toBeInTheDocument()
+  // ingredient rows moved to the Hozzávalók tab
+  expect(screen.queryByText(r.ingredients[0].name!)).toBeNull()
+  // tablist renders with Részletek selected
+  expect(screen.getByRole('tab', { name: 'Részletek' })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: /Hozzávalók/ })).toHaveAttribute('aria-selected', 'false')
+})
+
+test('switching to Hozzávalók shows the ingredient lines and keeps the actions (mezo-n3xa)', async () => {
+  const qc = newQc()
+  const r = firstId(qc)
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  await userEvent.click(screen.getByRole('tab', { name: /Hozzávalók/ }))
   expect(screen.getByText(r.ingredients[0].name!)).toBeInTheDocument()
+  // breakdown content hides with the tab
+  expect(screen.queryByText('PONTSZÁM')).toBeNull()
+  // the tab label carries the line count
+  expect(screen.getByRole('tab', { name: /Hozzávalók/ }).textContent).toContain(String(r.ingredients.length))
+  // page actions stay below the tab content on both tabs
+  expect(screen.getByRole('button', { name: /mai étkezéshez/i })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Törlés/ })).toBeInTheDocument()
+})
+
+test('the hero meta line carries the NOVA value and the meta strip is gone (mezo-n3xa)', async () => {
+  const qc = newQc()
+  const r = firstId(qc)
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  // NOVA moved into the hero meta line (textContent spans the colored child span)
+  expect(screen.getByText(/létrehozva/).textContent).toContain(`NOVA ${r.novaDominant}`)
+  // the old 4-cell meta strip is deleted
+  expect(screen.queryByText('Idő')).toBeNull()
+  expect(screen.queryByText('Hozzáv.')).toBeNull()
 })
 
 // Napiv de-darkening (mezo-8141): the hero title/meta moved OFF the media band onto
