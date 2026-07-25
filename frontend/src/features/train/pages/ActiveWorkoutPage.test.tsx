@@ -42,7 +42,7 @@ async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>) {
 test('prep screen shows the workout title, challenges carousel and the start CTA', () => {
   setup()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  expect(screen.getByText('⚔ A mai küldetések · 3')).toBeInTheDocument()
+  expect(screen.getByText('⚔️ A mai küldetések · 3')).toBeInTheDocument()
   expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
 })
 
@@ -1210,16 +1210,16 @@ test('real mode: a proposed challenge with null confidence renders "tanulom" and
   // prep screen — the carousel shows the live challenge
   expect(await screen.findByText('conf tanulom')).toBeInTheDocument()
   expect(screen.queryByText(/get_pr_history/)).not.toBeInTheDocument() // live sends no tools
-  expect(screen.getByText('⚔ Elfogadom')).toBeInTheDocument()
+  expect(screen.getByText('⚔️ Elfogadom')).toBeInTheDocument()
 })
 
-test('real mode: clicking "⚔ Elfogadom" POSTs an accept decision for the challenge', async () => {
+test('real mode: clicking "⚔️ Elfogadom" POSTs an accept decision for the challenge', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
   useChallengeHandlers([challengeWire()], calls)
   const user = userEvent.setup()
   setup()
-  await user.click(await screen.findByText('⚔ Elfogadom'))
+  await user.click(await screen.findByText('⚔️ Elfogadom'))
   await waitFor(() => expect(calls).toContain('decide:chal-1:accept'))
 })
 
@@ -1234,7 +1234,7 @@ test('real mode: a resolved (hit) challenge shows the ✓ Megerősítve chip + o
   expect(await screen.findByText('✓ Megerősítve')).toBeInTheDocument()
   expect(screen.getByText('110 kg × 8 — cél igazolva (+2.5 kg)')).toBeInTheDocument()
   // the workout is decided → the accept/skip row is hidden
-  expect(screen.queryByText('⚔ Elfogadom')).not.toBeInTheDocument()
+  expect(screen.queryByText('⚔️ Elfogadom')).not.toBeInTheDocument()
   expect(screen.queryByText('Elfogadva')).not.toBeInTheDocument()
 })
 

@@ -34,6 +34,12 @@ describe('PrepHero', () => {
     expect(screen.getByText('12 szett · ~96 rep · ~52 perc · 4 izomcsoport')).toBeInTheDocument()
   })
 
+  it('omits the perc pill segment when the day has no duration estimate (mezo-vlr9)', () => {
+    render(<PrepHero overline="X" title="Y" forecast={null} stats={{ ...stats, durationEst: 0 }} />)
+    expect(screen.getByText('12 szett · ~96 rep · 4 izomcsoport')).toBeInTheDocument()
+    expect(screen.queryByText(/perc/)).not.toBeInTheDocument()
+  })
+
   it('does not render the level-up micro-badge for a skill that is not about to level up', () => {
     const noLevelUp: PrepForecast = { totalXp: 90, skills: [{ skillKey: 'max_strength', xpEst: 90, level: 4, progressPct: 62, willLevelUp: false }] }
     render(<PrepHero overline="X" title="Y" forecast={noLevelUp} stats={stats} />)

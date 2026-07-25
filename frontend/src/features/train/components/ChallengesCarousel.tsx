@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · ChallengesCarousel — pre-workout L2 decisions, restyled as the
-// "⚔ A mai küldetések" quest section (mission-briefing redesign, mezo-bxpg).
+// "⚔️ A mai küldetések" quest section (mission-briefing redesign, mezo-bxpg).
 // The companion proposes low-stakes micro-experiments; the user approves/skips
 // freely. Three states, in render-priority order: pending (the lazy LLM
 // generation is in flight — a visible skeleton closes the old silent-gap bug),
@@ -51,7 +51,7 @@ export function ChallengesCarousel({
         style={{ padding: '0 24px 12px', justifyContent: 'space-between', alignItems: 'flex-end' }}
       >
         <div className="col">
-          <Eyebrow brand>⚔ A mai küldetések{showCards ? ` · ${challenges.length}` : ''}</Eyebrow>
+          <Eyebrow brand>⚔️ A mai küldetések{showCards ? ` · ${challenges.length}` : ''}</Eyebrow>
           {showCards && (
             <span
               className="text-tertiary"

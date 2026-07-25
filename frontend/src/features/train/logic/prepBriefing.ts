@@ -9,6 +9,7 @@ import type { GymExercise, LoggedWorkoutExercise, MesoDay, WorkoutPlan } from '@
 import type { SkillLevel } from '@/data/progression/progressionApi'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import { growthForecast, type ForecastSkill } from '@/features/train/logic/growthForecast'
+import { muscleRegion } from '@/features/train/logic/muscleColors'
 
 export interface PrepStats {
   workSets: number
@@ -29,14 +30,16 @@ export function prepStats(W: WorkoutPlan): PrepStats {
   let workSets = 0
   let warmupSets = 0
   let repsEst = 0
-  const muscles = new Set<string>()
+  // Region count, not distinct-muscle count (mezo-vlr9): the pill must agree with the
+  // muscle-REGION section headers below it (quad+ham+glute+calf = 1 „Láb" section, not 4).
+  const regions = new Set<string>()
   for (const e of W.exercises) {
     workSets += e.workingSets
     warmupSets += e.warmupSets
     repsEst += e.workingSets * Math.round((e.repMin + e.repMax) / 2)
-    if (e.muscle && e.muscle !== 'sport') muscles.add(e.muscle)
+    if (e.muscle && e.muscle !== 'sport') regions.add(muscleRegion(e.muscle) ?? 'egyeb')
   }
-  return { workSets, warmupSets, repsEst, durationEst: W.durationEst, muscleCount: muscles.size }
+  return { workSets, warmupSets, repsEst, durationEst: W.durationEst, muscleCount: regions.size }
 }
 
 /** MesoDay adapter so growthForecast can score ONE workout (meso day or custom/saját plan). */
