@@ -8,6 +8,7 @@ import { ReleaseStep } from '@/features/ritual/components/ReleaseStep'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { localDateString } from '@/shared/lib/dates'
+import { useTheme } from '@/app/ThemeProvider'
 import { useCheckins, useDayRecap, useHabitActions, useHabitDay, useRitualActions, useRitualDay } from '@/data/hooks'
 
 const ACT_COUNT = 5
@@ -43,6 +44,18 @@ export function RitualPage() {
   // The return value is unused; mounting the hook IS the fix. On first mount this fires one
   // harmless GET (ritual_closed=false → evening_ritual stays pending, no completion yet).
   useHabitDay(date)
+
+  // mezo-tr5v: the ritual is a dark-takeover surface (rz-screen is hard-dark regardless of
+  // theme), but the sheets it portals (CheckInSheet, ActivityLogSheet) and any XP-award overlay
+  // (LevelUpScreen) are theme-aware and would render light for a light-mode user — clashing.
+  // Force data-theme=dark for the whole flow so everything is consistent, then revert to the
+  // user's real theme on exit. This does NOT touch the persisted preference (setForceTheme).
+  const { setForceTheme } = useTheme()
+  useEffect(() => {
+    setForceTheme('dark')
+    return () => setForceTheme(null)
+  }, [setForceTheme])
+
   const [act, setAct] = useState(1)
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
   const [journalOpen, setJournalOpen] = useState(false)

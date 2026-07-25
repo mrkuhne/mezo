@@ -95,6 +95,8 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
         </div>
       )}
 
+      {/* mezo-tr5v: the reward block centers vertically; the CTA below stays pinned to the bottom. */}
+      <div className="rz-harvest-body">
       <div className="rz-xp-wrap np-anim" style={{ animationDelay: `${xpStage.delayMs}ms` }}>
         <div className="rz-story-eyebrow">A MAI TERMÉS</div>
         <CountUp to={day.xpTotal} className="rz-xp-num" />
@@ -146,6 +148,7 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
         style={{ animationDelay: `${streakStage.delayMs}ms` }}
       >
         🔥 {day.streakDays} napos sorozat{day.streakAlive ? ' él' : ' — megszakadt'}
+      </div>
       </div>
 
       <button className="rz-cta" onClick={onNext}>Tovább</button>
