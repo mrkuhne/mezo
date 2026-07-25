@@ -746,6 +746,33 @@ export interface VolumeProfile {
 export interface VolumeChange { muscle: string; change: string; reason: string; warning?: boolean }
 export interface VolumeRecompute { lastRun: string; nextRun: string; trigger: string; changes: VolumeChange[] }
 
+// Whole-mesocycle volume arc (Phase B, Task B3): per-muscle planned scaffold (DA7) laid
+// alongside logged actuals, week-by-week — future weeks carry `actual: null`.
+export interface VolumeArcWeek {
+  week: number
+  phase: MesoPhase
+  planned: number
+  actual: number | null // null for future weeks with no logged data yet
+  isCurrent: boolean
+}
+export interface MuscleVolumeArc {
+  muscle: string  // coarse volume-group key (chest/back/shoulder/biceps/triceps/quad/ham/glute/calf/core)
+  region: string  // color-family region key (coral/sky/lav/rose/sage/amber)
+  mrv: number
+  weeks: VolumeArcWeek[]
+}
+export interface MesoVolumeArc {
+  mesocycleId: string
+  title: string
+  currentWeek: number
+  weeks: number
+  startDate: string
+  endDate: string
+  status: MesoStatus
+  phaseCurve: MesoPhase[]
+  muscles: MuscleVolumeArc[]
+}
+
 export interface Mesocycle {
   id: string
   status: MesoStatus
