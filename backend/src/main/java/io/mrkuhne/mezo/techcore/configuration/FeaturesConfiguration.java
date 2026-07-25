@@ -77,6 +77,9 @@ public class FeaturesConfiguration {
     /** Hypertrophy Drive — pre-populated prescribed sets + dynamic weight/rep recommendation. */
     public static final String HYPERTROPHY_DRIVE_SWITCH = "mezo.feature.hypertrophy-drive.enabled";
 
+    /** Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume rollover + deload/grind logic. */
+    public static final String VOLUME_PROGRESSION_SWITCH = "mezo.feature.volume-progression.enabled";
+
     /** Fix zárás (closing block) — configured closing exercises (mezo.closing-block) lazily
      *  ensured at the END of every template gym day of the active meso on GET /workouts/today. */
     public static final String CLOSING_BLOCK_SWITCH = "mezo.feature.closing-block.enabled";
