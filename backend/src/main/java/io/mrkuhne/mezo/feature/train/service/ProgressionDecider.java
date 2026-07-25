@@ -57,7 +57,7 @@ public final class ProgressionDecider {
     }
 
     private static BigDecimal round(BigDecimal x, BigDecimal step) {
-        BigDecimal rounded = x.divide(step, 1, RoundingMode.HALF_UP).multiply(step);
+        BigDecimal rounded = x.divide(step, 0, RoundingMode.HALF_UP).multiply(step);
         return rounded.max(BigDecimal.ZERO).min(BigDecimal.valueOf(999));
     }
 

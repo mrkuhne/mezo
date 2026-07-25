@@ -65,7 +65,7 @@ class ProgressionDeciderTest {
     void decide_shouldRegress_whenDeloadWeek() {
         Decision d = ProgressionDecider.decide(ref("60", 8, 2), 6, 8, 2, INC, STEP, true);
         assertThat(d.lever()).isEqualTo(Lever.DELOAD);
-        assertThat(d.base()).isEqualByComparingTo("54"); // round(0.9 * 60)
+        assertThat(d.base()).isEqualByComparingTo("55"); // round(0.9 * 60) = 55 (54 → nearest 2.5 plate)
         assertThat(d.deltaKg().signum()).isNegative();
         assertThat(d.rationale()).contains("Deload");
     }
@@ -75,5 +75,14 @@ class ProgressionDeciderTest {
         // reps in range, rir unknown → slack 0 → hold (never fabricate an "easy" bump)
         Decision d = ProgressionDecider.decide(ref("62.5", 7, null), 6, 10, 2, INC, STEP, false);
         assertThat(d.lever()).isEqualTo(Lever.HOLD);
+    }
+
+    @Test
+    void decide_shouldSnapDeloadToPlateStep_whenRawWeightIsNotAMultiple() {
+        // 57.5 × 0.9 = 51.75 → 51.75/2.5 = 20.7 → HALF_UP 21 → ×2.5 = 52.5
+        Decision d = ProgressionDecider.decide(ref("57.5", 8, 2), 6, 8, 2, INC, STEP, true);
+        assertThat(d.lever()).isEqualTo(Lever.DELOAD);
+        assertThat(d.base()).isEqualByComparingTo("52.5");
+        assertThat(d.deltaKg()).isEqualByComparingTo("-5");
     }
 }
