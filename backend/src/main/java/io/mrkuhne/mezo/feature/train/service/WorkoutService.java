@@ -339,9 +339,13 @@ public class WorkoutService {
     /**
      * Each exercise's effective working-set count (DA6): a muscle group's volume-log
      * {@code currentSets} distributed across today's exercises of that group, proportional to
-     * each exercise's template {@code workingSets} (largest-remainder to the biggest template
-     * count), never below 1. An exercise whose group carries no log row is absent from the
-     * returned map — the caller falls back to the template {@code workingSets} (DA5-style).
+     * each exercise's template {@code workingSets}. Base-1 + largest-remainder: every exercise
+     * gets a floor of 1 set, then the rest of the target is handed out proportionally with
+     * largest-remainder rounding — so {@code sum(effective) == currentSets} exactly whenever
+     * {@code currentSets >= exerciseCount} (below that, every exercise still gets its floor of 1,
+     * so the sum can only exceed the target, never fall short). An exercise whose group carries
+     * no log row is absent from the returned map — the caller falls back to the template
+     * {@code workingSets} (DA5-style).
      */
     private Map<UUID, Integer> effectiveWorkingSets(
             List<ExerciseEntity> exercises, List<MuscleGroupVolumeLogEntity> logs) {
@@ -357,26 +361,51 @@ public class WorkoutService {
                 continue; // no log row for this group — caller keeps the template count
             }
             List<ExerciseEntity> groupExercises = entry.getValue();
-            int templateSum = groupExercises.stream().mapToInt(ExerciseEntity::getWorkingSets).sum();
-            if (templateSum <= 0) {
-                groupExercises.forEach(e -> out.put(e.getId(), Math.max(1, e.getWorkingSets())));
+            int exerciseCount = groupExercises.size();
+            if (exerciseCount == 0) {
                 continue;
             }
-            int distributed = 0;
-            Map<UUID, Integer> shares = new java.util.HashMap<>();
-            for (ExerciseEntity e : groupExercises) {
-                int share = (int) Math.floor(targetSets * (double) e.getWorkingSets() / templateSum);
-                shares.put(e.getId(), share);
-                distributed += share;
+            if (targetSets <= exerciseCount) {
+                // Can't sum below exerciseCount with a >=1 floor per exercise (degenerate).
+                groupExercises.forEach(e -> out.put(e.getId(), 1));
+                continue;
             }
-            // Largest-remainder: whatever floor-rounding left on the table goes to the exercise
-            // with the biggest template workingSets (ties -> first in list order).
-            int remainder = targetSets - distributed;
-            ExerciseEntity largest = groupExercises.stream()
-                .max(Comparator.comparingInt(ExerciseEntity::getWorkingSets))
-                .orElseThrow();
-            shares.merge(largest.getId(), remainder, Integer::sum);
-            groupExercises.forEach(e -> out.put(e.getId(), Math.max(1, shares.get(e.getId()))));
+            int templateSum = groupExercises.stream().mapToInt(ExerciseEntity::getWorkingSets).sum();
+            int remaining = targetSets - exerciseCount; // reserve 1 set/exercise up front
+            Map<UUID, Integer> extra = new java.util.HashMap<>();
+            Map<UUID, Double> fraction = new java.util.HashMap<>();
+            if (templateSum <= 0) {
+                // No template signal to weigh by — split the remainder as evenly as possible.
+                int base = remaining / exerciseCount;
+                int evenRemainder = remaining % exerciseCount;
+                int idx = 0;
+                for (ExerciseEntity e : groupExercises) {
+                    extra.put(e.getId(), base + (idx < evenRemainder ? 1 : 0));
+                    idx++;
+                }
+            } else {
+                int distributedExtra = 0;
+                for (ExerciseEntity e : groupExercises) {
+                    double exact = remaining * (double) e.getWorkingSets() / templateSum;
+                    int floor = (int) Math.floor(exact);
+                    extra.put(e.getId(), floor);
+                    fraction.put(e.getId(), exact - floor);
+                    distributedExtra += floor;
+                }
+                // Largest-remainder: hand out what floor-rounding left on the table, one set at a
+                // time, to the biggest fractional share (ties -> bigger template workingSets, then
+                // stable list order).
+                int leftover = remaining - distributedExtra;
+                List<ExerciseEntity> byFractionDesc = groupExercises.stream()
+                    .sorted(Comparator.<ExerciseEntity>comparingDouble(e -> fraction.get(e.getId()))
+                        .reversed()
+                        .thenComparing(Comparator.comparingInt(ExerciseEntity::getWorkingSets).reversed()))
+                    .toList();
+                for (int i = 0; i < leftover; i++) {
+                    extra.merge(byFractionDesc.get(i).getId(), 1, Integer::sum);
+                }
+            }
+            groupExercises.forEach(e -> out.put(e.getId(), 1 + extra.get(e.getId())));
         }
         return out;
     }

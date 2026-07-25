@@ -55,12 +55,13 @@ class VolumeEffectiveSetsIT extends AbstractIntegrationTest {
 
         WorkoutTodayResponse res = workoutService.getToday(owner, null);
 
-        // 14 distributed proportionally to template share (3:2), remainder to the largest:
-        // floor(14*3/5)=8, floor(14*2/5)=5 -> 13 distributed, +1 remainder to benchPress (ws=3).
+        // Base-1 + largest-remainder: base 1/1 (remaining 12), shares 12*3/5=7.2, 12*2/5=4.8 ->
+        // floors 7/4 (sum 11, leftover 1) -> leftover to the larger fraction (flye 0.8) ->
+        // extra 7/5 -> effective 8/6 (sum 14).
         TodayExercise benchTe = byId(res, benchPress.getId());
         TodayExercise flyeTe = byId(res, flye.getId());
-        assertThat(benchTe.getWorkingSets()).isEqualTo(9);
-        assertThat(flyeTe.getWorkingSets()).isEqualTo(5);
+        assertThat(benchTe.getWorkingSets()).isEqualTo(8);
+        assertThat(flyeTe.getWorkingSets()).isEqualTo(6);
         assertThat(benchTe.getWorkingSets() + flyeTe.getWorkingSets()).isEqualTo(14);
         // Both template counts (3 and 2) are exceeded by the effective distribution.
         assertThat(benchTe.getWorkingSets()).isGreaterThan(3);
@@ -69,9 +70,49 @@ class VolumeEffectiveSetsIT extends AbstractIntegrationTest {
         long workingRows = benchTe.getPrescribedSets().stream()
             .filter(p -> p.getKind() == io.mrkuhne.mezo.api.dto.PrescribedSet.KindEnum.WORKING)
             .count();
-        assertThat(workingRows).isEqualTo(9);
+        assertThat(workingRows).isEqualTo(8);
         // The closing-block's back exercises carry no "back" volume-log row -> untouched (DA5).
         assertThat(res.getExercises()).anySatisfy(e -> assertThat(e.getMuscle()).contains("back"));
+    }
+
+    @Test
+    void testGetToday_shouldPreserveGroupTargetSum_whenThreeExercisesShareTheGroup() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        // Three chest exercises, template workingSets 5 + 4 + 1 (sum 10), group currentSets(9) —
+        // below the template sum, so a naive floor-then-clamp-to->=1 distribution overshoots
+        // (regression case for mezo-hi9m: 6/3/1 = 10 != 9). Base-1 + largest-remainder must land
+        // on exactly 9: base 1/1/1 (remaining 6), shares 6*5/10=3.0, 6*4/10=2.4, 6*1/10=0.6 ->
+        // floors 3/2/0 (sum 5, leftover 1) -> leftover goes to the largest fraction (0.6) ->
+        // extra 3/2/1 -> effective 4/3/2.
+        ExerciseEntity benchPress = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        benchPress.setWorkingSets(5);
+        train.save(benchPress);
+        ExerciseEntity inclinePress = train.createExercise(owner, day.getId(), "Ferde nyomás", "chest", "compound");
+        inclinePress.setWorkingSets(4);
+        train.save(inclinePress);
+        ExerciseEntity flye = train.createExercise(owner, day.getId(), "Cable Flye", "chest", "isolation");
+        flye.setWorkingSets(1);
+        train.save(flye);
+        train.createVolumeLog(owner, meso.getId(), "chest", 9);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        TodayExercise benchTe = byId(res, benchPress.getId());
+        TodayExercise inclineTe = byId(res, inclinePress.getId());
+        TodayExercise flyeTe = byId(res, flye.getId());
+        assertThat(benchTe.getWorkingSets()).isEqualTo(4);
+        assertThat(inclineTe.getWorkingSets()).isEqualTo(3);
+        assertThat(flyeTe.getWorkingSets()).isEqualTo(2);
+        // The invariant that actually matters: the group must sum to exactly its target, not
+        // overshoot it — this is what mezo-hi9m's clamp-after-remainder bug violated.
+        assertThat(benchTe.getWorkingSets() + inclineTe.getWorkingSets() + flyeTe.getWorkingSets())
+            .isEqualTo(9);
+        assertThat(benchTe.getWorkingSets()).isGreaterThanOrEqualTo(1);
+        assertThat(inclineTe.getWorkingSets()).isGreaterThanOrEqualTo(1);
+        assertThat(flyeTe.getWorkingSets()).isGreaterThanOrEqualTo(1);
     }
 
     @Test
