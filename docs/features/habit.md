@@ -159,5 +159,3 @@ A whole new chain or custom/user-edited habits are **out of scope** in v1 (the d
 - **FE UI:** `frontend/src/features/today/components/RoutineCard.tsx` (mounted `TodayPage.tsx:64`) + `features/today/logic/habitAction.ts` (DERIVED-row CTA map) · `frontend/src/features/me/components/RoutinesTab.tsx` (Rutin tab, `GrowthPage.tsx:78/115`).
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/habit/{HabitCatalogIT,HabitDayEntityIT,HabitEvaluatorIT,HabitServiceIT,HabitApiIT,HabitJobIT}.java` + `feature/habit/service/HabitTargetsSleepIT.java` (`mezo-dbsr` — anchors re-centre on the sleep goal via `SleepAnchorPort`) + `feature/progression/ProgressionHabitIT.java` + `support/populator/HabitPopulator.java` · `frontend/src/data/habit/habitHooks.test.tsx`.
 - **Docs:** spec [`docs/superpowers/specs/2026-07-19-morning-evening-routine-habit-engine-design.md`](../superpowers/specs/2026-07-19-morning-evening-routine-habit-engine-design.md) · ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md).
-</content>
-</invoke>
