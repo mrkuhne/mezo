@@ -1,7 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
-import { useFuelWeek, useFuelWeekActions, mondayIso, deriveWeekTitle, toRetaCells, withDefaultDuration, gymDaysToSlots, deriveWeeklyStats } from '@/data/fuel/fuelWeekHooks'
-import { trainApi } from '@/data/train/trainApi'
+import { useFuelWeek, mondayIso, deriveWeekTitle, toRetaCells, withDefaultDuration, deriveWeeklyStats } from '@/data/fuel/fuelWeekHooks'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import type { FuelWeekDay } from '@/data/fuel/mealApi'
 import type { GymScheduleDay, MedicationCycleCell } from '@/data/types'
@@ -42,20 +41,6 @@ test('withDefaultDuration fills only active timed days missing a duration', () =
   expect(withDefaultDuration(timed).duration).toBe(75)
 })
 
-test('gymDaysToSlots keeps only active days with a time, mapped to DAY_ORDER indices', () => {
-  const days: GymScheduleDay[] = [
-    { day: 'Hét', type: 'Push', time: '07:30', duration: 75, active: true },
-    { day: 'Kedd', type: 'Legs', time: null, duration: null, active: true }, // no time -> dropped
-    { day: 'Sze', type: 'Pull', time: '07:30', duration: 75, active: false }, // off -> dropped
-    { day: 'Vas', type: null, time: '18:00', duration: null, active: true },
-    { day: '???', type: null, time: '18:00', duration: null, active: true }, // unknown label -> dropped
-  ]
-  expect(gymDaysToSlots(days)).toEqual([
-    { dayOfWeek: 0, time: '07:30' },
-    { dayOfWeek: 6, time: '18:00' },
-  ])
-})
-
 test('deriveWeeklyStats averages logged days, counts protein hits, defers adherence', () => {
   const targets = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
   const day = (kcal: number, p: number): FuelWeekDay => ({ date: '2026-06-29', targets, consumed: { kcal, p, c: 0, f: 0, water: 0 } })
@@ -86,14 +71,6 @@ describe('useFuelWeek (mock mode)', () => {
     expect(result.current.patterns).toHaveLength(4)
     expect(result.current.weeklyStats.supplementsAdherence).toBe(92)
     expect(result.current.weeklyNote).toContain('középmagas-protein')
-  })
-
-  it('saveGymSchedule does not hit the API (Train mock no-op)', () => {
-    const spy = vi.spyOn(trainApi, 'replaceGymSchedule')
-    const { result } = renderHook(() => useFuelWeekActions(), { wrapper: makeHookWrapper() })
-    result.current.saveGymSchedule([{ day: 'Hét', type: 'Push', time: '07:30', duration: 75, active: true }])
-    expect(spy).not.toHaveBeenCalled()
-    spy.mockRestore()
   })
 })
 
@@ -131,16 +108,5 @@ describe('useFuelWeek (real mode)', () => {
     expect(result.current.weeklyNote).toBeNull()
     expect(result.current.title).not.toBe('Máj 18 – 24')
     expect(result.current.title).toBe(deriveWeekTitle(mondayIso()))
-  })
-
-  it('saveGymSchedule writes through to PUT /api/train/gym-schedule with mapped slots', async () => {
-    const spy = vi.spyOn(trainApi, 'replaceGymSchedule')
-    const { result } = renderHook(() => useFuelWeekActions(), { wrapper: makeHookWrapper() })
-    result.current.saveGymSchedule([
-      { day: 'Hét', type: 'Push', time: '07:30', duration: 75, active: true },
-      { day: 'Szo', type: null, time: null, duration: null, active: false },
-    ])
-    await waitFor(() => expect(spy).toHaveBeenCalledWith([{ dayOfWeek: 0, time: '07:30' }]))
-    spy.mockRestore()
   })
 })

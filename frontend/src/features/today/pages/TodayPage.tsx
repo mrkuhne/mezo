@@ -46,10 +46,7 @@ export function TodayPage() {
     <>
       <AppHero
         utilities={
-          <>
-            <button className="chip" aria-label="Keresés"><Icon name="search" size={12} /></button>
-            <Link to="/insights" aria-label="Insights" className="icon-btn"><Icon name="sparkle" size={18} /></Link>
-          </>
+          <Link to="/insights" aria-label="Insights" className="icon-btn"><Icon name="sparkle" size={18} /></Link>
         }
       />
       <GreetingHeader today={today} user={user} retaDay={scenario.retaDay} />

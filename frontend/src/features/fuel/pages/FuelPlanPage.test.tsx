@@ -1,9 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
-import { trainApi } from '@/data/train/trainApi'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 // FuelPlanPage reads the composed dual-mode useFuelWeek() (Train + medication + week rollup
@@ -29,17 +27,12 @@ describe('FuelPlanPage (mock mode)', () => {
     expect(screen.getByText('92%')).toBeInTheDocument()
   })
 
-  it('Idők opens the gym schedule sheet', async () => {
-    renderView()
-    await userEvent.click(screen.getByRole('button', { name: 'Idők' }))
-    expect(await screen.findByText('Heti gym idők')).toBeInTheDocument()
-  })
-
-  it('own header: pghead-np sage over + h1 + pgact-np action chip', () => {
+  it('own header: pghead-np sage over + h1 (read-only, no gym-time editor)', () => {
     const { container } = renderView()
     expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
     expect(screen.getByText('Fuel · Heti terv')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Idők' })).toHaveClass('pgact-np', 'np-press')
+    expect(screen.queryByRole('button', { name: 'Idők' })).toBeNull()
+    expect(screen.queryByText('Heti gym idők')).toBeNull()
   })
 })
 
@@ -61,19 +54,5 @@ describe('FuelPlanPage (real mode)', () => {
     expect(screen.queryByText('Heti supplement-térkép')).not.toBeInTheDocument()
     // the Reta card IS present: the medication fixture provides a real cycle (D3)
     expect(await screen.findByText(/Reta cycle · 7 nap/)).toBeInTheDocument()
-  })
-
-  it('saving the sheet writes through to Train (PUT /api/train/gym-schedule)', async () => {
-    const spy = vi.spyOn(trainApi, 'replaceGymSchedule')
-    renderView()
-    // wait for the Train-derived week (meso fixture: Csü) — the sheet copies it on mount
-    await waitFor(() => expect(screen.getAllByText('Csü').length).toBeGreaterThan(0))
-    await userEvent.click(screen.getByRole('button', { name: 'Idők' }))
-    expect(await screen.findByText('Heti gym idők')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-    await waitFor(() => expect(spy).toHaveBeenCalled())
-    // only active timed days round-trip: the fixture week has exactly Csü (dayOfWeek 3, 18:30)
-    expect(spy).toHaveBeenLastCalledWith([{ dayOfWeek: 3, time: '18:30' }])
-    spy.mockRestore()
   })
 })

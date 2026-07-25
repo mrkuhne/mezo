@@ -24,6 +24,8 @@ public record MealScoringProperties(
     @NotNull @Valid NovaGroupScores nova,
     /** Macro fit: score = max(0, 1 − totalVariation(meal vs target kcal-shares) × slope). */
     @DecimalMin("0.5") @DecimalMax("10.0") double macroDeviationSlope,
+    /** Penalty factor on the protein-SURPLUS side of the macro deviation: 0 = overshoot forgiven (fitness-app policy, mezo-8ms6), 1 = symmetric. Deficits always count in full. */
+    @DecimalMin("0.0") @DecimalMax("1.0") double macroProteinSurplusPenalty,
     @NotNull @Valid MicroRefs micro,
     @NotNull @Valid WhoRefs who,
     @NotNull @Valid FatQualityRefs fatQuality,
