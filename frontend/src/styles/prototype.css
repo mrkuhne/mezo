@@ -1990,6 +1990,28 @@ a.hab-link:hover { opacity: 0.85; }
 @keyframes rz-fall { 0% { opacity: 0; transform: translateY(0) rotate(0); } 8% { opacity: 1; }
   100% { opacity: 0; transform: translateY(520px) rotate(560deg); } }
 
+/* Day-story act (act 2): arc redraw (np-draw reuse) + recap event rows (np-anim reuse). */
+.rz-story-eyebrow { font-family: var(--ff-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--lav); margin: 6px 4px 0; }
+.rz-arc { display: block; margin: 20px auto 0; }
+.rz-arc-path { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round; opacity: .9;
+  stroke-dasharray: 400; stroke-dashoffset: 400; animation: np-draw 1.4s var(--np-ease-ios) .2s forwards; }
+.rz-arc-dot { transform-box: fill-box; transform-origin: center; opacity: 0;
+  animation: np-pop .5s var(--np-ease-spring) forwards; }
+.rz-arc-checkin-done { fill: var(--sage); }
+.rz-arc-checkin-now { fill: #241f1c; stroke: var(--coral); stroke-width: 2.5; }
+.rz-arc-checkin-pending { fill: #241f1c; stroke: var(--faint); stroke-width: 2.5; }
+.rz-arc-workout { fill: #241f1c; stroke: var(--coral); stroke-width: 2.5; }
+.rz-arc-sleep { fill: #241f1c; stroke: var(--lav); stroke-width: 2.5; }
+.rz-thin { font-family: var(--ff-body); font-style: italic; font-size: 12.5px; text-align: center;
+  color: rgba(245,239,230,.65); margin: 18px 6px 0; }
+.rz-events { display: flex; flex-direction: column; gap: 9px; margin-top: 18px; }
+.rz-ev { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 14px;
+  background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
+.rz-ev-label { flex: 1; }
+.rz-ev-meta { color: var(--faint); font-size: 11px; }
+.rz-ev-meta.ok { color: var(--sage); }
+
 /* Release act (act 5): closing circle (np-draw reuse), companion note, evening handoff panel. */
 .rz-circle { display: block; margin: 56px auto 0; }
 .rz-ring { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round;
@@ -2014,4 +2036,7 @@ a.hab-link:hover { opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) {
   .rz-moon, .rz-cta, .rz-ring, .rz-circle-moon, .rz-handoff-cta { animation: none; }
   .rz-ring { stroke-dashoffset: 0; } /* np-draw is a one-shot reveal — freeze at "fully drawn", not hidden */
+  .rz-arc-path, .rz-arc-dot { animation: none; }
+  .rz-arc-path { stroke-dashoffset: 0; }
+  .rz-arc-dot { opacity: 1; transform: none; }
 }

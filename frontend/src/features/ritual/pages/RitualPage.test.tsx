@@ -36,12 +36,13 @@ test('act 1 (Megérkezés) renders the fixed arrival line and no tab bar', () =>
   expect(container.querySelector('.tab-bar')).toBeNull()
 })
 
-test('clicking Kezdjük advances from act 1 to the act-2 placeholder', async () => {
+test('clicking Kezdjük advances from act 1 to act 2 (DayStoryStep)', async () => {
   stubReduced()
   const user = userEvent.setup()
   renderApp()
   await user.click(screen.getByText(/Kezdjük/))
-  expect(screen.getByTestId('act-2')).toBeInTheDocument()
+  expect(screen.getByText('A napod íve')).toBeInTheDocument()
+  expect(screen.getByRole('img', { name: 'A napod íve — összegzés' })).toBeInTheDocument()
   expect(screen.queryByText('A nap véget ért.')).not.toBeInTheDocument()
 })
 
