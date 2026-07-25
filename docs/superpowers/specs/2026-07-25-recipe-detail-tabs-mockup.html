@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Recept-detail · két-tabos újratervezés</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+  button, input { font:inherit; color:inherit; background:none; border:none; appearance:none; }
+  button { cursor:pointer; }
+  :root {
+    --canvas:#FBF6EF; --surface-1:#FFFFFF; --surface-2:#F4EBDF; --surface-glass:rgba(0,0,0,0.03);
+    --border-subtle:rgba(43,33,24,0.08); --border-strong:rgba(43,33,24,0.18);
+    --text-primary:#2B2118; --text-secondary:#5F5346; --text-tertiary:#8A7A6A; --text-inverse:#FFFFFF;
+    --ink:#2B2118; --faint:#A5978A;
+    --coral:#FF6B4A; --coral-deep:#C4622F; --sage:#7FA48A; --sage-deep:#5F7A52;
+    --success:var(--sage-deep); --warning:#B8862B; --error:#D9534F;
+    --cat-meat:#C96F5A; --cat-dairy:#C9A84C; --cat-veg:#7FA48A; --cat-oil:#A8A353; --cat-fish:#6A93B8;
+    --ff-display:"Bricolage Grotesque",sans-serif; --ff-body:"Plus Jakarta Sans",system-ui,sans-serif; --ff-mono:"JetBrains Mono",monospace;
+  }
+  html, body { background:#F1E9DD; color:var(--text-primary); font-family:var(--ff-body); line-height:1.5; min-height:100vh; padding:40px 28px 80px; background-image:radial-gradient(1200px 600px at 50% -200px,#FBF6EF 0%,#F1E9DD 70%); }
+  .pagehead { max-width:1000px; margin:0 auto 28px; text-align:center; }
+  .pagehead .eyebrow { font-family:var(--ff-mono); font-size:11px; font-weight:600; letter-spacing:.22em; text-transform:uppercase; color:var(--coral-deep); margin-bottom:12px; }
+  .pagehead h1 { font-family:var(--ff-display); font-size:34px; font-weight:600; text-transform:uppercase; line-height:1; margin-bottom:12px; }
+  .pagehead p { font-size:14px; color:var(--text-secondary); line-height:1.6; max-width:760px; margin:0 auto; }
+  .pagehead p strong { color:var(--text-primary); font-weight:600; }
+
+  .stage { display:flex; gap:38px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+  .frame-col { width:362px; display:flex; flex-direction:column; align-items:center; }
+  .frame-col .head { font-family:var(--ff-display); font-size:18px; font-weight:600; text-transform:uppercase; margin-bottom:3px; }
+  .frame-col .head.a { color:var(--coral-deep); } .frame-col .head.b { color:var(--text-secondary); }
+  .frame-col .head .k { font-family:var(--ff-mono); font-size:9px; letter-spacing:.14em; color:var(--text-tertiary); display:block; margin-top:3px; text-transform:none; }
+  .phone-box { width:362px; height:792px; position:relative; margin:12px 0 4px; }
+  .iphone { width:440px; height:956px; border-radius:60px; background:linear-gradient(180deg,#3A342E 0%,#241F1B 100%); padding:12px; position:absolute; top:0; left:0; transform:scale(0.822); transform-origin:top left; box-shadow:0 0 0 1.5px #6B6158 inset,0 40px 110px -30px rgba(43,33,24,.45); }
+  .iphone::after { content:""; position:absolute; top:24px; left:50%; transform:translateX(-50%); width:120px; height:34px; background:#000; border-radius:20px; z-index:30; }
+  .iphone-screen { width:100%; height:100%; border-radius:50px; overflow:hidden; position:relative; background:var(--canvas); }
+  .home-indicator { position:absolute; bottom:8px; left:50%; transform:translateX(-50%); width:130px; height:5px; background:rgba(43,33,24,.35); border-radius:3px; z-index:40; }
+  .status { height:50px; padding:17px 30px 0; display:flex; justify-content:space-between; font-family:var(--ff-mono); font-size:14px; font-weight:600; position:relative; z-index:20; }
+  .content { height:calc(100% - 50px); overflow-y:auto; padding:4px 16px 24px; }
+  .content::-webkit-scrollbar { display:none; }
+
+  .card { background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:16px; }
+  .label-mono { font:700 11px/1.2 var(--ff-body); letter-spacing:.06em; text-transform:uppercase; color:var(--faint); }
+
+  /* ===== top bar ===== */
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:6px 2px 12px; }
+  .topbar .ic { width:34px; height:34px; display:grid; place-items:center; background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:16px; color:var(--text-secondary); font-size:18px; line-height:1; }
+  .topbar .eyb { font-family:var(--ff-mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--text-tertiary); }
+
+  /* ===== hero ===== */
+  .hero { position:relative; margin-bottom:14px; overflow:hidden; border-radius:24px; background:var(--surface-1); }
+  .hero .img { position:relative; height:150px; background:linear-gradient(135deg,#16323a,#0f2027); }
+  .hero .img::before { content:""; position:absolute; inset:0; background:repeating-linear-gradient(125deg,rgba(255,255,255,.025) 0 16px,rgba(255,255,255,0) 16px 32px); }
+  .hero .tl { position:absolute; top:11px; left:12px; z-index:3; display:flex; gap:6px; align-items:center; }
+  .chipb { display:inline-flex; padding:3px 7px; font-size:8px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; border-radius:999px; background:color-mix(in srgb, var(--coral) 14%, #fff); color:var(--coral-deep); border:1px solid var(--coral); }
+  .hero .star { color:var(--warning); display:flex; }
+  .fitb { position:absolute; top:10px; right:11px; z-index:4; min-width:44px; padding:6px 6px 5px; text-align:center; background:rgba(8,12,16,.72); backdrop-filter:blur(6px); border-radius:16px; box-shadow:0 0 0 1px color-mix(in srgb,var(--sage) 25%,transparent),0 6px 16px -6px color-mix(in srgb,var(--sage) 50%,transparent); }
+  .fitb .num { font-family:var(--ff-display); font-size:22px; font-weight:600; line-height:1; color:var(--coral); }
+  .fitb .fl { font-family:var(--ff-mono); font-size:6.5px; letter-spacing:.16em; text-transform:uppercase; color:#B7A899; margin-top:3px; }
+  .hero .body { padding:14px 16px 16px; }
+  .hero .hnm { font-family:var(--ff-display); font-size:26px; font-weight:600; text-transform:uppercase; line-height:1.05; color:var(--ink); }
+  .hero .hsub { margin-top:6px; font-family:var(--ff-mono); font-variant-numeric:tabular-nums; font-size:9px; letter-spacing:.06em; color:var(--faint); }
+  .hero .hsub .nova { color:var(--success); font-weight:600; }
+
+  /* ===== serving toggle + macro hero ===== */
+  .segtoggle { display:flex; gap:5px; padding:4px; background:var(--surface-2); border-radius:12px; margin-bottom:12px; }
+  .seg { flex:1; text-align:center; padding:7px 0; font-family:var(--ff-mono); font-size:9px; letter-spacing:.06em; color:var(--text-tertiary); border-radius:9px; }
+  .seg.active { background:var(--surface-1); color:var(--text-primary); font-weight:600; box-shadow:0 1px 4px rgba(43,33,24,.10); }
+  .mhgrid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .mh { text-align:center; padding:10px 2px; background:var(--surface-glass); border-radius:16px; }
+  .mh .v { font-family:var(--ff-display); font-size:24px; font-weight:600; line-height:1; color:var(--text-primary); } .mh .v.p { color:var(--success); }
+  .mh .l { font-size:8px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-tertiary); margin-top:5px; }
+
+  /* ===== main tabs (the NEW element) ===== */
+  .maintabs { display:flex; gap:3px; padding:3px; background:var(--surface-2); border:1px solid var(--border-subtle); border-radius:14px; margin:14px 0 16px; }
+  .mtab { flex:1; text-align:center; font-size:10px; font-weight:800; letter-spacing:1px; text-transform:uppercase; padding:9px 0; border-radius:11px; color:var(--text-tertiary); }
+  .mtab.on { background:color-mix(in srgb, var(--coral) 12%, #fff); color:var(--coral-deep); }
+  .mtab .cnt { font-family:var(--ff-mono); font-weight:600; margin-left:4px; color:var(--coral); }
+  .mtab.on .cnt { color:var(--coral-deep); }
+
+  /* ===== section head ===== */
+  .sech { display:flex; align-items:center; gap:9px; padding:0 2px 10px; font-family:var(--ff-mono); font-size:10px; font-weight:600; letter-spacing:.2em; text-transform:uppercase; color:var(--text-tertiary); margin-top:4px; }
+  .sech .count { color:var(--coral); } .sech .right { margin-left:auto; letter-spacing:.04em; font-size:9px; }
+  .sech::after { content:none; }
+  .sech .rule { flex:1; height:1px; background:linear-gradient(90deg,var(--border-subtle),transparent); }
+
+  /* ===== AI olvasat ===== */
+  .aicard { border-radius:16px; border:1px solid var(--border-subtle); background:color-mix(in srgb, var(--sage) 6%, #fff); padding:12px; margin-bottom:16px; display:flex; gap:10px; align-items:flex-start; }
+  .aicard .spark { color:var(--coral); flex:none; margin-top:2px; animation:tw 2.2s ease-in-out infinite; }
+  @keyframes tw { 0%,100%{opacity:.45;transform:scale(.9)} 50%{opacity:1;transform:scale(1.08)} }
+  .aicard .eyb { font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--coral-deep); }
+  .aicard p { font-size:12.5px; line-height:1.5; margin-top:6px; color:var(--text-primary); }
+  .aicard .chips { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+  .aicard .chips .chipb { font-size:9px; padding:3px 8px; }
+
+  /* ===== dimension card ===== */
+  .dim { padding:14px; margin-bottom:12px; }
+  .dim .dl { font-size:9px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; }
+  .dim .drow { display:flex; align-items:baseline; gap:8px; margin-top:4px; }
+  .dim .dscore { font-family:var(--ff-display); font-size:26px; font-weight:600; line-height:1; }
+  .dim .dw { font-size:9px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--text-tertiary); }
+  .dim .bar { float:right; width:80px; height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden; margin-top:8px; }
+  .dim .bar i { display:block; height:100%; border-radius:3px; }
+  .dim p { font-size:12.5px; line-height:1.5; margin-top:12px; color:var(--text-primary); clear:both; }
+
+  /* ===== improve card ===== */
+  .imp { padding:4px; margin-bottom:16px; }
+  .imp .row { display:flex; gap:10px; padding:10px 12px; align-items:flex-start; border-bottom:1px solid var(--border-subtle); }
+  .imp .row:last-child { border-bottom:none; }
+  .imp .n { width:18px; height:18px; display:flex; align-items:center; justify-content:center; font-family:var(--ff-mono); font-size:9px; color:var(--warning); background:color-mix(in srgb, var(--warning) 12%, transparent); border-radius:4px; flex:none; margin-top:1px; }
+  .imp .t { font-size:12.5px; line-height:1.45; flex:1; }
+  .imp .i { font-size:9px; font-weight:700; color:var(--warning); white-space:nowrap; margin-top:2px; }
+
+  /* ===== log row ===== */
+  .logrow { display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:7px; }
+  .logrow .tm { font-family:var(--ff-mono); font-size:10px; color:var(--text-tertiary); flex:none; }
+  .logrow .nm { font-size:12.5px; flex:1; }
+  .logrow .sc { font-family:var(--ff-mono); font-size:11px; font-weight:600; color:var(--sage-deep); }
+
+  /* ===== ingredient row ===== */
+  .ing { padding:10px 12px; margin-bottom:7px; border-left:2px solid var(--cat-veg); }
+  .ing .top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .ing .nm { font-size:13px; color:var(--text-primary); }
+  .ing .sub { font-family:var(--ff-mono); font-size:8.5px; color:var(--text-tertiary); margin-top:3px; display:flex; gap:6px; align-items:center; }
+  .ing .src { color:var(--coral-deep); }
+  .ing .amt { font-family:var(--ff-mono); font-size:14px; font-weight:600; color:var(--text-primary); flex:none; } .ing .amt .u { font-size:9px; color:var(--text-tertiary); margin-left:1px; }
+  .mcells { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:9px; }
+  .mc { text-align:center; padding:5px 2px; background:var(--surface-glass); border-radius:8px; }
+  .mc .v { font-family:var(--ff-mono); font-size:10px; font-weight:600; } .mc .l { font-size:6.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-tertiary); margin-top:2px; }
+
+  /* ===== actions ===== */
+  .cta { width:100%; padding:14px 20px; margin:4px 0 9px; background:linear-gradient(135deg,var(--coral),var(--coral-deep)); color:#fff; border-radius:999px; box-shadow:0 8px 20px color-mix(in srgb,var(--coral-deep) 35%,transparent); font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:7px; }
+  .act-row { display:flex; gap:8px; }
+  .ghost { flex:1; padding:11px 10px; display:flex; align-items:center; justify-content:center; gap:6px; font-size:11px; font-weight:700; border:1px solid var(--border-subtle); border-radius:999px; background:var(--surface-2); color:var(--ink); }
+  .ghost.danger { color:var(--error); border-color:color-mix(in srgb,var(--error) 25%,transparent); }
+
+  .askbar { max-width:980px; margin:34px auto 0; background:var(--surface-1); border:1px solid var(--border-subtle); border-left:3px solid var(--coral); border-radius:16px; padding:18px 22px; }
+  .askbar h3 { font-family:var(--ff-mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--coral-deep); margin-bottom:10px; }
+  .askbar p { font-size:13px; color:var(--text-secondary); line-height:1.6; } .askbar p b { color:var(--text-primary); font-weight:600; }
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <div class="eyebrow">Fuel ▸ Receptek · Recept-detail újratervezés · 2026-07-25</div>
+  <h1>Recept-detail · két fő tab</h1>
+  <p>A hosszú egy-görgetéses oldal helyett: <strong>hero + makrók közös fejléc</strong>, alatta két fő tab — <strong>Részletek</strong> (default: AI-olvasat + pontszám + logok) és <strong>Hozzávalók</strong>. A meta csík megszűnt: a NOVA a hero meta sorába költözött, az adag/idő már ott volt, a hozzávaló-szám a tab címkéjén. Az akciógombok mindkét tabon fixen az oldal alján.</p>
+</div>
+
+<div class="stage">
+
+  <!-- ============ A · RÉSZLETEK (default) ============ -->
+  <div class="frame-col">
+    <div class="head a">A · Részletek tab<span class="k">default nézet — az AI-értékelés azonnal látszik</span></div>
+    <div class="phone-box"><div class="iphone"><div class="iphone-screen">
+      <div class="status"><span>9:41</span><span>5G ▴ 84%</span></div>
+      <div class="content">
+        <div class="topbar">
+          <button class="ic">‹</button>
+          <span class="eyb">Recept</span>
+          <div style="width:34px"></div>
+        </div>
+
+        <div class="hero">
+          <div class="img">
+            <div class="tl"><span class="chipb">Ebéd</span><span class="star"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span></div>
+            <div class="fitb"><div class="num">82</div><div class="fl">fit</div></div>
+          </div>
+          <div class="body">
+            <div class="hnm">Tonhalsaláta</div>
+            <div class="hsub">2 adag · 12 perc · <span class="nova">NOVA 1</span> · létrehozva Jún 18</div>
+          </div>
+        </div>
+
+        <div class="segtoggle"><div class="seg active">1 adag</div><div class="seg">Egész · 2 adag</div></div>
+        <div class="mhgrid">
+          <div class="mh"><div class="v">420</div><div class="l">kcal</div></div>
+          <div class="mh"><div class="v p">38</div><div class="l">Fehérje</div></div>
+          <div class="mh"><div class="v">12</div><div class="l">Szénh.</div></div>
+          <div class="mh"><div class="v">22</div><div class="l">Zsír</div></div>
+        </div>
+
+        <div class="maintabs">
+          <div class="mtab on">Részletek</div>
+          <div class="mtab">Hozzávalók<span class="cnt">5</span></div>
+        </div>
+
+        <div class="aicard">
+          <span class="spark"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>
+          <div style="flex:1">
+            <div class="eyb">Mezo · sablon-olvasat</div>
+            <p>Fehérjében erős, alacsony NOVA-terhelésű sablon — post-WO ebédnek ideális. A zsír főleg az avokádóból és az olívaolajból jön, minőségi forrás.</p>
+            <div class="chips"><span class="chipb">● post-WO</span><span class="chipb">● magas fehérje</span></div>
+          </div>
+        </div>
+
+        <div class="sech"><span>Pontszám</span><span class="rule"></span><span class="right">3 szempont · megbízh. 82%</span></div>
+
+        <div class="card dim">
+          <div class="bar"><i style="width:88%;background:var(--sage-deep)"></i></div>
+          <div class="dl" style="color:var(--sage-deep)">Makró-egyensúly</div>
+          <div class="drow"><span class="dscore" style="color:var(--sage-deep)">88</span><span class="dw">× súly 45% = 39,6 pt</span></div>
+          <p>A fehérje-arány kiemelkedő (38 g / adag), a szénhidrát alacsony — a post-WO slothoz jól illik.</p>
+        </div>
+        <div class="card dim">
+          <div class="bar"><i style="width:95%;background:var(--sage-deep)"></i></div>
+          <div class="dl" style="color:var(--sage-deep)">NOVA-tisztaság</div>
+          <div class="drow"><span class="dscore" style="color:var(--sage-deep)">95</span><span class="dw">× súly 30% = 28,5 pt</span></div>
+          <p>Minden hozzávaló NOVA 1–2 — feldolgozott elem nincs a sablonban.</p>
+        </div>
+
+        <div class="sech" style="margin-top:10px"><span style="color:var(--warning)">Lehetne jobb</span><span class="rule"></span></div>
+        <div class="card imp">
+          <div class="row"><span class="n">1</span><span class="t">Egy marék leveles zöld (spenót/rukkola) emelné a mikró-pontot.</span><span class="i">+3 pt</span></div>
+        </div>
+
+        <div class="sech"><span>Logok</span><span class="count">1</span><span class="rule"></span></div>
+        <div class="card logrow"><span class="tm">12:40</span><span class="nm">Ebéd · 1 adag</span><span class="sc">85 ▲</span></div>
+
+        <button class="cta">＋ Mai étkezéshez</button>
+        <div class="act-row">
+          <button class="ghost"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg> Csillag le</button>
+          <button class="ghost" style="flex:1.4">Szerkesztés</button>
+          <button class="ghost danger">✕ Törlés</button>
+        </div>
+        <div style="height:18px"></div>
+      </div>
+      <div class="home-indicator"></div>
+    </div></div></div>
+  </div>
+
+  <!-- ============ B · HOZZÁVALÓK ============ -->
+  <div class="frame-col">
+    <div class="head b">B · Hozzávalók tab<span class="k">ugyanaz a fejléc — csak a tab-tartalom vált</span></div>
+    <div class="phone-box"><div class="iphone"><div class="iphone-screen">
+      <div class="status"><span>9:41</span><span>5G ▴ 84%</span></div>
+      <div class="content">
+        <div class="topbar">
+          <button class="ic">‹</button>
+          <span class="eyb">Recept</span>
+          <div style="width:34px"></div>
+        </div>
+
+        <div class="hero">
+          <div class="img">
+            <div class="tl"><span class="chipb">Ebéd</span><span class="star"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg></span></div>
+            <div class="fitb"><div class="num">82</div><div class="fl">fit</div></div>
+          </div>
+          <div class="body">
+            <div class="hnm">Tonhalsaláta</div>
+            <div class="hsub">2 adag · 12 perc · <span class="nova">NOVA 1</span> · létrehozva Jún 18</div>
+          </div>
+        </div>
+
+        <div class="segtoggle"><div class="seg active">1 adag</div><div class="seg">Egész · 2 adag</div></div>
+        <div class="mhgrid">
+          <div class="mh"><div class="v">420</div><div class="l">kcal</div></div>
+          <div class="mh"><div class="v p">38</div><div class="l">Fehérje</div></div>
+          <div class="mh"><div class="v">12</div><div class="l">Szénh.</div></div>
+          <div class="mh"><div class="v">22</div><div class="l">Zsír</div></div>
+        </div>
+
+        <div class="maintabs">
+          <div class="mtab">Részletek</div>
+          <div class="mtab on">Hozzávalók<span class="cnt">5</span></div>
+        </div>
+
+        <div class="card ing" style="border-left-color:var(--cat-fish)">
+          <div class="top"><div><div class="nm">Tonhal · konzerv</div><div class="sub"><span class="src">tesco.hu</span><span>· Rio Mare</span></div></div><div class="amt">160<span class="u">g</span></div></div>
+          <div class="mcells"><div class="mc"><div class="v">190</div><div class="l">kcal</div></div><div class="mc"><div class="v">42</div><div class="l">P</div></div><div class="mc"><div class="v">0</div><div class="l">C</div></div><div class="mc"><div class="v">2</div><div class="l">F</div></div></div>
+        </div>
+        <div class="card ing" style="border-left-color:var(--cat-dairy)">
+          <div class="top"><div><div class="nm">Görög joghurt</div><div class="sub"><span class="src">kifli.hu</span><span>· Milli</span></div></div><div class="amt">100<span class="u">g</span></div></div>
+          <div class="mcells"><div class="mc"><div class="v">59</div><div class="l">kcal</div></div><div class="mc"><div class="v">10</div><div class="l">P</div></div><div class="mc"><div class="v">4</div><div class="l">C</div></div><div class="mc"><div class="v">0</div><div class="l">F</div></div></div>
+        </div>
+        <div class="card ing" style="border-left-color:var(--cat-veg)">
+          <div class="top"><div><div class="nm">Avokádó</div><div class="sub"><span class="src">kifli.hu</span><span>· friss</span></div></div><div class="amt">80<span class="u">g</span></div></div>
+          <div class="mcells"><div class="mc"><div class="v">128</div><div class="l">kcal</div></div><div class="mc"><div class="v">2</div><div class="l">P</div></div><div class="mc"><div class="v">7</div><div class="l">C</div></div><div class="mc"><div class="v">12</div><div class="l">F</div></div></div>
+        </div>
+        <div class="card ing" style="border-left-color:var(--cat-veg)">
+          <div class="top"><div><div class="nm">Uborka</div><div class="sub"><span class="src">kifli.hu</span><span>· friss</span></div></div><div class="amt">120<span class="u">g</span></div></div>
+          <div class="mcells"><div class="mc"><div class="v">19</div><div class="l">kcal</div></div><div class="mc"><div class="v">1</div><div class="l">P</div></div><div class="mc"><div class="v">4</div><div class="l">C</div></div><div class="mc"><div class="v">0</div><div class="l">F</div></div></div>
+        </div>
+        <div class="card ing" style="border-left-color:var(--cat-oil)">
+          <div class="top"><div><div class="nm">Olívaolaj · e.szűz</div><div class="sub"><span class="src">kifli.hu</span><span>· Monini</span></div></div><div class="amt">10<span class="u">ml</span></div></div>
+          <div class="mcells"><div class="mc"><div class="v">88</div><div class="l">kcal</div></div><div class="mc"><div class="v">0</div><div class="l">P</div></div><div class="mc"><div class="v">0</div><div class="l">C</div></div><div class="mc"><div class="v">10</div><div class="l">F</div></div></div>
+        </div>
+
+        <button class="cta">＋ Mai étkezéshez</button>
+        <div class="act-row">
+          <button class="ghost"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12v18l-6-4-6 4z"/></svg> Csillag le</button>
+          <button class="ghost" style="flex:1.4">Szerkesztés</button>
+          <button class="ghost danger">✕ Törlés</button>
+        </div>
+        <div style="height:18px"></div>
+      </div>
+      <div class="home-indicator"></div>
+    </div></div></div>
+  </div>
+
+</div>
+
+<div class="askbar">
+  <h3>Mit nézz meg</h3>
+  <p><b>A (Részletek, default):</b> a hero + makrók után azonnal jön a Mezo-olvasat és a pontszám — nincs többé hosszú görgetés. A NOVA a hero meta sorában (zöld), a meta csík törölve. <b>B (Hozzávalók):</b> ugyanaz a fejléc, a tab címkéjén a darabszám. Az akciógombok mindkét nézetben az oldal alján. A tab-váltó a GrowthPage szegmentált mintáját követi, coral kiemeléssel.</p>
+</div>
+
+</body>
+</html>
