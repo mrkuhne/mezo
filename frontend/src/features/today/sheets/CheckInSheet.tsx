@@ -3,7 +3,7 @@
 // 4×/nap dimenziók: Energia · Stressz · Testi · Mentális tisztaság
 // + opcionális voice/free note
 // ============================================================
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import type { CheckinSlot, CheckinValues } from '@/data/types'
@@ -69,6 +69,7 @@ export function CheckInSheet({
   )
   const [note, setNote] = useState('')
   const [step, setStep] = useState(0) // 0..3 = dim, 4 = note
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const isLast = step >= CHECKIN_DIMS.length
   const dim = CHECKIN_DIMS[step]
@@ -77,8 +78,19 @@ export function CheckInSheet({
     if (!dim) return
     setValues(v => ({ ...v, [dim.id]: val }))
     // Auto-advance after a tick — feels native
-    setTimeout(() => setStep(s => s + 1), 200)
+    advanceTimer.current = setTimeout(() => setStep(s => s + 1), 200)
   }
+
+  // The auto-advance timer must not outlive the component: a timer surviving
+  // unmount calls setStep (a parent-less but still post-teardown setState)
+  // after the test environment tears down — the nondeterministic
+  // "window is not defined" CI failure (mezo-91rw class, see Sheet.tsx).
+  useEffect(
+    () => () => {
+      if (advanceTimer.current != null) clearTimeout(advanceTimer.current)
+    },
+    [],
+  )
 
   const save = (close: () => void) => {
     onSave({
