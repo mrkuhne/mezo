@@ -1629,6 +1629,8 @@ button.hab-row:active { background: var(--surface-glass); }
 a.hab-link { color: var(--lav-deep); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 a.hab-link:hover { opacity: 0.85; }
 .hab-row.done .hab-title { color: var(--sub); }
+/* passive-row explainer (why a no-CTA derived row ticks by itself) */
+.hab-note { font: 500 10px/1.3 var(--ff-body); font-style: italic; color: var(--text-quaternary); margin-top: 2px; }
 .hab-right { display: flex; align-items: center; gap: 8px; justify-self: end; padding-left: 6px; }
 
 /* XP as a quiet tinted pill — a garnish (ADR 0010), coloured by state */

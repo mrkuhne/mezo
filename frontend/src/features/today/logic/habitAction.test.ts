@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { habitAction } from '@/features/today/logic/habitAction'
+import { habitAction, habitHint } from '@/features/today/logic/habitAction'
 import { mockHabitDay } from '@/data/habit/habitMock'
 
 const byKey = (k: string) => mockHabitDay.find((h) => h.key === k)!
@@ -36,6 +36,12 @@ describe('habitAction', () => {
   })
   test('done/missed habits have no action', () => {
     expect(habitAction(byKey('wake_on_time'))).toEqual({ kind: 'none' }) // seed status: done
+  })
+  test('pending bed_on_time carries the auto-resolve hint; done rows and other keys do not', () => {
+    expect(habitHint({ ...byKey('wake_on_time'), key: 'bed_on_time', status: 'pending' }))
+      .toMatch(/holnap reggel/)
+    expect(habitHint({ ...byKey('wake_on_time'), key: 'bed_on_time' })).toBeNull() // seed: done
+    expect(habitHint({ ...byKey('kitchen_close'), status: 'pending' })).toBeNull()
   })
   test('evening_ritual navigates to /ritual', () => {
     expect(habitAction({ ...byKey('morning_sunlight'), mode: 'DERIVED', key: 'evening_ritual', status: 'pending' }))

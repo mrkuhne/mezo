@@ -23,6 +23,18 @@ const NAV_BY_KEY: Record<string, string> = {
  */
 const SLEEP_KEYS = new Set(['wake_on_time'])
 
+/**
+ * Quiet per-key explainer for passive DERIVED rows (no CTA): why the row will tick by
+ * itself. Without it the evening bed_on_time row — decided only by TOMORROW morning's
+ * sleep log (E4) — reads as broken (mezo-o5hx).
+ */
+export function habitHint(h: HabitItem): string | null {
+  if (h.status === 'pending' && h.key === 'bed_on_time') {
+    return 'holnap reggel, az alvásnaplódból derül ki'
+  }
+  return null
+}
+
 export function habitAction(h: HabitItem): HabitAction {
   if (h.status !== 'pending') {
     return { kind: 'none' }
