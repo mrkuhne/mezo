@@ -15,6 +15,7 @@ import {
   KITCHEN_CLOSE_OFFSET_MIN,
   MET_BY_KIND,
   MIN_SLOT_GAP_MIN,
+  NEAT_BASELINE,
   POST_WORKOUT_SNAP_MIN,
   PRE_WORKOUT_SNAP_MIN,
   RECIPE_FIT_TOLERANCE,
@@ -100,18 +101,44 @@ export function activityKcal(blocks: PlannerBlock[], weightKg: number): number {
 }
 
 // ── deriveDailyBudget ────────────────────────────────────────────────────────
-// From the active Goal prescription segment (kcal + proteinG) derive carbs/fat with the fixed
-// split (fat = 27.5% of kcal ÷ 9, carbs = remainder ÷ 4). No segment → the config fallback passes
-// through (water is dropped — the planner budget carries no water field).
+export interface EnergyInputs { bmr: number | null; tdee: number | null; weightKg: number; blocks: PlannerBlock[] }
+export interface DayBudget extends Macro4 { energy: { base: number; activity: number; balance: number; target: number } }
+
+/**
+ * Daily budget. Static path (no BMR → no biometric profile) keeps today's behavior. Dynamic path
+ * (mezo-1oy5): target = BMR×NEAT_BASELINE + Σ MET activity + goal balance, floored at BMR. Protein is
+ * fixed (bodyweight-based), fat is tied to the BASE segment kcal (stable), carbs absorb the activity bonus.
+ * balance = segment.kcal − static tdee (the TDEE-independent goal deficit/surplus, isolated from the wire).
+ */
 export function deriveDailyBudget(
   segment: { kcal: number; proteinG: number } | null,
   fallback: MacroSet,
-): Macro4 {
-  if (!segment) return { kcal: fallback.kcal, p: fallback.p, c: fallback.c, f: fallback.f }
-  const { kcal, proteinG: p } = segment
-  const f = Math.round((kcal * FAT_KCAL_SHARE) / 9)
-  const c = Math.round((kcal - p * 4 - f * 9) / 4)
-  return { kcal, p, c, f }
+  energy?: EnergyInputs,
+): DayBudget {
+  const baseKcal = segment?.kcal ?? fallback.kcal
+  const proteinG = segment?.proteinG ?? fallback.p
+  const fat = Math.round((baseKcal * FAT_KCAL_SHARE) / 9)
+  const carbs = (kcal: number) => Math.max(0, Math.round((kcal - proteinG * 4 - fat * 9) / 4))
+
+  if (!energy || energy.bmr == null) {
+    // Static path (no biometric profile) keeps today's behavior: no segment → the fallback MacroSet
+    // passes through verbatim (only water dropped); a segment carries kcal+proteinG, so derive c/f.
+    if (!segment) {
+      return { kcal: fallback.kcal, p: fallback.p, c: fallback.c, f: fallback.f, energy: { base: fallback.kcal, activity: 0, balance: 0, target: fallback.kcal } }
+    }
+    return { kcal: baseKcal, p: proteinG, c: carbs(baseKcal), f: fat, energy: { base: baseKcal, activity: 0, balance: 0, target: baseKcal } }
+  }
+  const balance = segment && energy.tdee != null ? segment.kcal - energy.tdee : 0
+  const maintenance = energy.bmr * NEAT_BASELINE
+  const eat = activityKcal(energy.blocks, energy.weightKg)
+  const target = Math.max(energy.bmr, maintenance + eat + balance) // KCAL_FLOOR = BMR
+  return {
+    kcal: Math.round(target),
+    p: proteinG,
+    c: carbs(target),
+    f: fat,
+    energy: { base: Math.round(maintenance), activity: Math.round(eat), balance: Math.round(balance), target: Math.round(target) },
+  }
 }
 
 // ── placeWindows ─────────────────────────────────────────────────────────────

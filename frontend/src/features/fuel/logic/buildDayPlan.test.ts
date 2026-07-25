@@ -13,7 +13,7 @@ import {
   type PlannedWindow,
   type PlannerBlock,
 } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, MacroSet, ProtocolSlotData, Recipe } from '@/data/types'
+import type { FuelMeal, ProtocolSlotData, Recipe } from '@/data/types'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 
 // ── fixture factories ────────────────────────────────────────────────────────
@@ -64,6 +64,7 @@ function proto(over: Partial<ProtocolSlotData> & { kind: string; time: string })
   }
 }
 const NO_BUDGET: Macro4 = { kcal: 2400, p: 180, c: 240, f: 73 }
+const FB = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
 function baseInput(over: Partial<DayPlanInput> = {}): DayPlanInput {
   return {
     wake: '06:00',
@@ -170,14 +171,35 @@ test('splitBudget rounds per macro and lands the drift on the dinner window', ()
 })
 
 // ── deriveDailyBudget ────────────────────────────────────────────────────────
-test('deriveDailyBudget derives carbs/fat from a prescription segment', () => {
-  const fallback: MacroSet = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  // f = round(2150×0.275/9) = 66 ; c = round((2150 − 163×4 − 66×9)/4) = 226
-  expect(deriveDailyBudget({ kcal: 2150, proteinG: 163 }, fallback)).toEqual({ kcal: 2150, p: 163, c: 226, f: 66 })
+test('deriveDailyBudget (no energy) keeps the static base kcal + derived carbs/fat', () => {
+  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
+  expect(deriveDailyBudget({ kcal: 2150, proteinG: 163 }, fallback)).toMatchObject({ kcal: 2150, p: 163, c: 226, f: 66 })
 })
-test('deriveDailyBudget passes the fallback MacroSet through (no water) when there is no segment', () => {
-  const fallback: MacroSet = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  expect(deriveDailyBudget(null, fallback)).toEqual({ kcal: 3100, p: 220, c: 380, f: 95 })
+test('deriveDailyBudget (no energy, no segment) passes the fallback MacroSet through', () => {
+  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
+  expect(deriveDailyBudget(null, fallback)).toMatchObject({ kcal: 3100, p: 220, c: 380, f: 95 })
+})
+
+const ENERGY = (blocks: PlannerBlock[]) => ({ bmr: 1720, tdee: 2666, weightKg: 78.6, blocks })
+test('dynamic budget — rest day floors at BMR (raw 2064−516=1548 < 1720)', () => {
+  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163 }, FB, ENERGY([]))
+  expect(b.energy).toMatchObject({ base: 2064, activity: 0, balance: -516, target: 1720 })
+  expect(b.kcal).toBe(1720)
+  expect(b.p).toBe(163) // protein fixed
+  expect(b.f).toBe(66) // fat from the BASE segment, not the floored target
+  expect(b.c).toBe(Math.round((1720 - 163 * 4 - 66 * 9) / 4)) // 119 — carbs absorb
+})
+test('dynamic budget — big training day adds activity, carbs absorb the bonus', () => {
+  const blocks: PlannerBlock[] = [
+    { kind: 'gym', time: '18:00', durationMin: 60, label: 'Plyo Leg' },
+    { kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' },
+  ]
+  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163 }, FB, ENERGY(blocks))
+  expect(b.energy.activity).toBeGreaterThan(1800)
+  expect(b.energy.target).toBeGreaterThan(3300)
+  expect(b.kcal).toBe(b.energy.target)
+  expect(b.f).toBe(66) // fat stable (base-tied)
+  expect(b.c).toBeGreaterThan(500) // big carb day
 })
 
 // ── recipe fit ───────────────────────────────────────────────────────────────
