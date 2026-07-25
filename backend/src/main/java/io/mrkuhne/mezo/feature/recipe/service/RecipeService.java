@@ -76,7 +76,9 @@ public class RecipeService {
      */
     private RecipeResponse withFit(RecipeEntity e, RecipeResponse resp,
                                    Map<UUID, PantryItemEntity> pantryById) {
-        resp.getMezoFit().setScore(scoringService.recipeFit(e.getSlot(), fitLines(e, pantryById)));
+        // Portion budget is keyed on the canonical breakfast|lunch|dinner|snack `category` (non-null,
+        // contract-validated) — NOT the free-form nullable `slot` display label (mezo-7797).
+        resp.getMezoFit().setScore(scoringService.recipeFit(e.getCategory(), fitLines(e, pantryById)));
         return resp;
     }
 

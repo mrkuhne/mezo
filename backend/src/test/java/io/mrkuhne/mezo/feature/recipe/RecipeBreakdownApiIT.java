@@ -70,6 +70,13 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         return r;
     }
 
+    /** Same recipe request but with an explicit canonical category (slot stays unset — null). */
+    private RecipeRequest recipeReq(String name, UUID pantryItemId, String category) {
+        RecipeRequest r = recipeReq(name, pantryItemId);
+        r.setCategory(category);
+        return r;
+    }
+
     private UUID createRecipe(HttpHeaders auth, String name, UUID pantryItemId) {
         return postForBody("/api/recipe", recipeReq(name, pantryItemId), auth,
             HttpStatus.CREATED, RecipeResponse.class).getId();
@@ -131,6 +138,28 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         assertThat(entity.getFitsFor()).containsExactly("Post-workout · este", "Fehérje-fókusz");
         // and the recipe read now carries the persisted fitsFor
         assertThat(detail.getMezoFit().getFitsFor()).containsExactly("Post-workout · este", "Fehérje-fókusz");
+    }
+
+    @Test
+    void testGetBreakdown_shouldBudgetPortionFromCategory_notTheFreeFormSlot() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Csirkemell", "165");
+        // Canonical category 'lunch' (share 0.35); `slot` is never set (null on FE create). A
+        // slot-keyed portion budget would wrongly fall back to the .30 default share (930 kcal /
+        // "alap 30%"). Keyed on `category` the budget is targets.kcal 3100 × 0.35 = 1085 kcal, and
+        // slotLabel(lunch)="ebéd" → the row must read "1085 kcal (ebéd 35%)".
+        UUID recipe = postForBody("/api/recipe", recipeReq("Ebéd tál", food, "lunch"), auth,
+            HttpStatus.CREATED, RecipeResponse.class).getId();
+
+        RecipeBreakdownResponse res = getBreakdown(auth, recipe);
+
+        var portion = res.getBreakdown().getDimensions().stream()
+            .filter(d -> "portion".equals(d.getId())).findFirst().orElseThrow();
+        assertThat(portion.getContext())
+            .anySatisfy(row -> {
+                assertThat(row.getLabel()).isEqualTo("Slot-büdzsé");
+                assertThat(row.getValue()).isEqualTo("1085 kcal (ebéd 35%)");
+            });
     }
 
     @Test

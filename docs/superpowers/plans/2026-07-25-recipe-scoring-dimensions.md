@@ -550,9 +550,9 @@ Add the private helper to `RecipeService`:
 ```
 NOTE: the fit lines are per-serving scaled by `factor` — the gram amount must scale the same way: pass `gramAmount(...)` through the same `factor` multiplication the macros use (`mul(gramAmount(line.getAmount(), line.getUnit()), factor)` — reuse the file's existing `mul` helper; keep null-safe).
 
-(b) `RecipeService` call sites of `recipeFit(...)`/`recipeTemplateBreakdown(...)` gain the recipe's slot as first arg (`recipe.getSlot()` — the entity field backing the contract `slot`; grep `recipeFit(` in the file).
+(b) `RecipeService` call sites of `recipeFit(...)`/`recipeTemplateBreakdown(...)` gain the recipe's canonical slot as first arg (`recipe.getCategory()` — the non-null breakfast|lunch|dinner|snack field; `slot` is a free-form display label, corrected at final review; grep `recipeFit(` in the file).
 
-(c) `RecipeBreakdownService.getOrGenerate` (~line 50): `scoringService.recipeTemplateBreakdown(recipe.getSlot(), recipeService.fitLines(...))`.
+(c) `RecipeBreakdownService.getOrGenerate` (~line 50): `scoringService.recipeTemplateBreakdown(recipe.getCategory(), recipeService.fitLines(...))`.
 
 (d) `MealService` (~line 179): the `Facts` record gains `String category` and the composer computes `amountG` the same way — extend `Facts` to `Facts(BigDecimal fiber, BigDecimal sugar, BigDecimal salt, BigDecimal satFat, boolean present, String category)` with `NONE = new Facts(null, null, null, null, false, null)`; `pantryFacts` passes `p.getCategory()`, `recipeFacts` passes `null` (a recipe line inside a meal is a composite — no single category; honest null). The `new ScoredLine(...)` gains `facts.category(), gramAmount(item.getAmount(), item.getUnit())` — add the same `gramAmount` helper to `MealService` (duplicate of the RecipeService one; both private, two small copies acceptable per house norm of feature-local helpers).
 

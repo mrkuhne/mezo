@@ -45,7 +45,8 @@ public class RecipeBreakdownService {
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
 
-        MealBreakdownJson fresh = scoringService.recipeTemplateBreakdown(recipe.getSlot(),
+        // Portion budget keyed on the canonical `category`, not the free-form `slot` label (mezo-7797).
+        MealBreakdownJson fresh = scoringService.recipeTemplateBreakdown(recipe.getCategory(),
             recipeService.fitLines(recipe, recipeService.pantryByIdFor(List.of(recipe))));
         if (fresh == null) { // no kcal — pending-sparkle territory, nothing to explain
             return response(null, List.of());
