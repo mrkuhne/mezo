@@ -71,7 +71,13 @@ export function PrepHero({ overline, title, forecast, stats }: {
 
       <div className="row" style={{ justifyContent: 'center', marginTop: 16 }}>
         <span className="chip" style={{ fontSize: 10.5 }}>
-          {stats.workSets} szett · ~{stats.repsEst} rep · ~{stats.durationEst} perc · {stats.muscleCount} izomcsoport
+          {[
+            `${stats.workSets} szett`,
+            `~${stats.repsEst} rep`,
+            // No fabricated numbers: a day without a duration estimate shows no perc pill (mezo-vlr9).
+            stats.durationEst > 0 ? `~${stats.durationEst} perc` : null,
+            `${stats.muscleCount} izomcsoport`,
+          ].filter(Boolean).join(' · ')}
         </span>
       </div>
     </div>

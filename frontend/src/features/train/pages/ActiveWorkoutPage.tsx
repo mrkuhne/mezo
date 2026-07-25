@@ -178,7 +178,7 @@ function ActiveWorkoutSession({
   // No active meso (custom/saját template, mezo-ws2x D4) ⇒ no week/phase to show —
   // fall back to the day title instead of dereferencing a null activeMeso.
   const weekLabel = activeMeso
-    ? `Week ${activeMeso.currentWeek} · ${activeMeso.phaseCurve[activeMeso.currentWeek - 1]}`
+    ? `W${activeMeso.currentWeek} · ${activeMeso.phaseCurve[activeMeso.currentWeek - 1]} hét`
     : W.title
   const niggleActive = !!W.niggleWarning
 
@@ -583,7 +583,7 @@ function ActiveWorkoutSession({
           </div>
         )}
 
-        {/* ⚔ A mai küldetések — companion proposes, user approves */}
+        {/* ⚔️ A mai küldetések — companion proposes, user approves */}
         <ChallengesCarousel
           challenges={challenges}
           accepted={acceptedMap}
@@ -658,7 +658,9 @@ function ActiveWorkoutSession({
             so the old button-level sticky was structurally inert. `var(--canvas)` is
             the same page-background token `.sticky-top`/`.status-bar` use so scrolled
             content can never bleed through underneath the pinned CTA. */}
-        <div style={{ position: 'sticky', bottom: 0, padding: '16px 24px 24px', background: 'var(--canvas)' }}>
+        {/* np-ctarow: .np-cta is flex:1, so it is full-width ONLY inside this flex row —
+            without it the sticky CTA collapsed to a narrow pill (mezo-vlr9 QA fix). */}
+        <div className="np-ctarow" style={{ position: 'sticky', bottom: 0, marginTop: 0, padding: '16px 24px 24px', background: 'var(--canvas)' }}>
           <button
             type="button"
             className="np-cta np-press"

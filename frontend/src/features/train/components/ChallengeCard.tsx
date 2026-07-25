@@ -141,7 +141,7 @@ export function ChallengeCard({
                 Elfogadva
               </>
             ) : (
-              '⚔ Elfogadom'
+              '⚔️ Elfogadom'
             )}
           </button>
           {!accepted && (
