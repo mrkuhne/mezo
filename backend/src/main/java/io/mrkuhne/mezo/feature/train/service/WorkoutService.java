@@ -81,6 +81,7 @@ public class WorkoutService {
     // when mezo.feature.hypertrophy-drive.enabled=true, so an absent provider ⇔ switch off (mirrors
     // progressionGate); off ⇒ getToday attaches no prescribedSets and the FE falls back to the logger.
     private final SetRecommendationService setRecommendationService;
+    private final ExerciseHistoryResolver historyResolver;
     private final ObjectProvider<HypertrophyDriveGate> hypertrophyGate;
     // Fix zárás (mezo-z2ul): lazy closing-exercise ensure behind its own switch. The gate bean
     // exists ONLY when mezo.feature.closing-block.enabled=true (mirrors hypertrophyGate).
@@ -136,7 +137,7 @@ public class WorkoutService {
         if (exercises.isEmpty()) {
             return empty; // rest day
         }
-        Map<UUID, LastWeekRef> lastWeek = lastWeekRefs(createdBy, day.getId());
+        Map<UUID, LastWeekRef> lastWeek = lastWeekRefs(createdBy, exercises);
         // Demo videos: one batched catalog fetch for the day's linked exercises (catalog_id →
         // video_url), never per-exercise. Map keyed by catalog id; nulls filtered out.
         Map<UUID, String> videoByCatalog = catalogVideoResolver.resolve(exercises.stream()
@@ -159,7 +160,7 @@ public class WorkoutService {
                     t.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
                 }
                 if (hypertrophyGate.getIfAvailable() != null) {
-                    Prescription p = setRecommendationService.prescribe(createdBy, e, day.getId());
+                    Prescription p = setRecommendationService.prescribe(createdBy, e);
                     t.setPrescribedSets(p.sets());
                     t.setRationale(p.rationale());
                 }
@@ -276,20 +277,17 @@ public class WorkoutService {
     }
 
     /**
-     * "Last week" reference per exercise: the TOP set (max weight, ties broken by insertion order)
-     * of the most recent COMPLETED instance of the same template day.
+     * "Last week" reference per exercise: the TOP working set (max weight) of the most recent
+     * COMPLETED session where the exercise's IDENTITY was trained — identity-resolved
+     * (mezo-eq4w) so a day edit's row swap never blanks the comparison line.
      */
-    private Map<UUID, LastWeekRef> lastWeekRefs(UUID createdBy, UUID templateSessionId) {
-        return workoutSessionRepository
-            .findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
-                createdBy, templateSessionId, "completed")
-            .map(prev -> exerciseSetRepository
-                .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, prev.getId()).stream()
-                .filter(s -> "working".equals(s.getKind())
-                    && s.getWeightKg() != null && s.getReps() != null && s.getRir() != null)
-                .collect(Collectors.toMap(ExerciseSetEntity::getExerciseId, this::toLastWeekRef,
-                    (a, b) -> b.getWeightKg().compareTo(a.getWeightKg()) > 0 ? b : a)))
-            .orElse(Map.of());
+    private Map<UUID, LastWeekRef> lastWeekRefs(UUID createdBy, List<ExerciseEntity> exercises) {
+        Map<UUID, LastWeekRef> out = new java.util.HashMap<>();
+        historyResolver.latestCompletedWorkingSets(createdBy, exercises).forEach((exId, sets) -> sets.stream()
+            .filter(s -> s.getWeightKg() != null && s.getReps() != null && s.getRir() != null)
+            .max(java.util.Comparator.comparing(ExerciseSetEntity::getWeightKg))
+            .ifPresent(top -> out.put(exId, toLastWeekRef(top))));
+        return out;
     }
 
     private LastWeekRef toLastWeekRef(ExerciseSetEntity set) {
