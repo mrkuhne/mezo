@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.RecipeBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.recipe.repository.RecipeRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
@@ -69,6 +70,13 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         return r;
     }
 
+    /** Same recipe request but with an explicit canonical category (slot stays unset — null). */
+    private RecipeRequest recipeReq(String name, UUID pantryItemId, String category) {
+        RecipeRequest r = recipeReq(name, pantryItemId);
+        r.setCategory(category);
+        return r;
+    }
+
     private UUID createRecipe(HttpHeaders auth, String name, UUID pantryItemId) {
         return postForBody("/api/recipe", recipeReq(name, pantryItemId), auth,
             HttpStatus.CREATED, RecipeResponse.class).getId();
@@ -90,15 +98,31 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         assertThat(res.getBreakdown()).isNotNull();
         assertThat(res.getBreakdown().getSummary()).isEqualTo("Fake sablon-olvasat.");
         assertThat(res.getFitsFor()).containsExactly("Post-workout · este", "Fehérje-fókusz");
-        // 4 dimensions: 3 live (renormalized weights) + the degraded context card last
-        assertThat(res.getBreakdown().getDimensions()).hasSize(4);
-        var context = res.getBreakdown().getDimensions().get(3);
-        assertThat(context.getId()).isEqualTo("context");
-        assertThat(context.getWeight()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(context.getScore()).isEqualByComparingTo(BigDecimal.ZERO);
+        // 8 template dimensions (mezo-7797): the meal surface minus context, plus portion last;
+        // weights renormalized over the live ones (there is NO context row in a template envelope)
+        assertThat(res.getBreakdown().getDimensions()).extracting(d -> d.getId())
+            .containsExactly("macro", "micro", "who", "fat_quality", "nova",
+                "plant_diversity", "energy_density", "portion");
+        // this plain food carries no facts/NOVA/category -> micro/who/fat_quality/nova/plant_diversity
+        // degrade honestly (weight 0); macro/energy_density/portion stay live
+        assertThat(res.getBreakdown().getDimensions())
+            .filteredOn(d -> d.getWeight().signum() == 0)
+            .extracting(d -> d.getId())
+            .containsExactly("micro", "who", "fat_quality", "nova", "plant_diversity");
         var macro = res.getBreakdown().getDimensions().getFirst();
         assertThat(macro.getId()).isEqualTo("macro");
         assertThat(macro.getDetail()).isEqualTo("Fake makró magyarázat.");
+        // energy-density arithmetic PINNED end-to-end through RecipeService.fitLines: the 250 g line
+        // of a 110 kcal/100 g food over 2 servings -> per-serving 137.5 kcal / 125 g (grams scale by
+        // 1/servings only) -> 137.5 / 125 * 100 = 110 kcal/100g. A bug re-applying amount/per to the
+        // gram mass would blow this up ~88x, so this row is the only IT guard on the composer.
+        var energyDensity = res.getBreakdown().getDimensions().get(6);
+        assertThat(energyDensity.getId()).isEqualTo("energy_density");
+        assertThat(energyDensity.getContext())
+            .anySatisfy(row -> {
+                assertThat(row.getLabel()).isEqualTo("Sűrűség");
+                assertThat(row.getValue()).isEqualTo("110 kcal/100g");
+            });
         assertThat(res.getBreakdown().getImprove()).hasSize(1);
         assertThat(res.getBreakdown().getImprove().getFirst().getImpact()).isEqualTo("+rost");
         assertThat(res.getBreakdown().getTools())
@@ -114,6 +138,28 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         assertThat(entity.getFitsFor()).containsExactly("Post-workout · este", "Fehérje-fókusz");
         // and the recipe read now carries the persisted fitsFor
         assertThat(detail.getMezoFit().getFitsFor()).containsExactly("Post-workout · este", "Fehérje-fókusz");
+    }
+
+    @Test
+    void testGetBreakdown_shouldBudgetPortionFromCategory_notTheFreeFormSlot() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Csirkemell", "165");
+        // Canonical category 'lunch' (share 0.35); `slot` is never set (null on FE create). A
+        // slot-keyed portion budget would wrongly fall back to the .30 default share (930 kcal /
+        // "alap 30%"). Keyed on `category` the budget is targets.kcal 3100 × 0.35 = 1085 kcal, and
+        // slotLabel(lunch)="ebéd" → the row must read "1085 kcal (ebéd 35%)".
+        UUID recipe = postForBody("/api/recipe", recipeReq("Ebéd tál", food, "lunch"), auth,
+            HttpStatus.CREATED, RecipeResponse.class).getId();
+
+        RecipeBreakdownResponse res = getBreakdown(auth, recipe);
+
+        var portion = res.getBreakdown().getDimensions().stream()
+            .filter(d -> "portion".equals(d.getId())).findFirst().orElseThrow();
+        assertThat(portion.getContext())
+            .anySatisfy(row -> {
+                assertThat(row.getLabel()).isEqualTo("Slot-büdzsé");
+                assertThat(row.getValue()).isEqualTo("1085 kcal (ebéd 35%)");
+            });
     }
 
     @Test
@@ -144,8 +190,8 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
 
         // drop the sentinel (fresh LLM pass would degrade) AND drift the pantry numbers.
         // NOTE: macros are frozen line SNAPSHOTS (a pantry kcal edit does NOT move the fit) — the
-        // live-read inputs are NOVA + the four nutrition-quality facts; adding sugar wakes the
-        // until-now degraded micro dimension, so the envelope numbers genuinely change.
+        // live-read inputs are NOVA + the four nutrition-quality facts; assigning a NOVA class wakes
+        // the until-now degraded nova dimension (weight .18), so the envelope numbers genuinely change.
         var entity = recipeRepository.findById(recipe).orElseThrow();
         entity.setName("Túrós tál");
         recipeRepository.saveAndFlush(entity);
@@ -154,7 +200,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         upd.setName("Túró");
         upd.setUnit("g"); // per-kind validation: food requires unit + kcal even on partial update
         upd.setKcal(new BigDecimal("110"));
-        upd.setSugarG(new BigDecimal("50"));
+        upd.setNova(4);
         putForBody("/api/pantry/" + food, upd, auth, HttpStatus.OK, PantryItemResponse.class);
 
         RecipeBreakdownResponse res = getBreakdown(auth, recipe);
@@ -167,6 +213,41 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         var stored = recipeRepository.findById(recipe).orElseThrow().getBreakdown();
         assertThat(stored.summary()).isEqualTo("Fake sablon-olvasat.");
         assertThat(stored.value()).isEqualByComparingTo(first.getBreakdown().getValue());
+    }
+
+    @Test
+    void testGetBreakdown_shouldRegenerateAndReplace_whenCachedEnvelopeHasStaleDimensionCount() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Túró", "110");
+        UUID recipe = createRecipe(auth, SENTINEL_NAME, food);
+
+        // Seed a pre-mezo-7797 4-dimension envelope straight onto the entity (the old shape a
+        // persisted cache could still hold across the widening). Its dimension COUNT (4) differs
+        // from the fresh template run (8), which the matches() size guard cannot reconcile.
+        var entity = recipeRepository.findById(recipe).orElseThrow();
+        entity.setBreakdown(new MealBreakdownJson(new BigDecimal("0.50"), new BigDecimal("0.50"),
+            "Régi 4-dimenziós olvasat.",
+            List.of(staleDim("macro"), staleDim("micro"), staleDim("nova"), staleDim("context")),
+            List.of(), List.of()));
+        entity.setFitsFor(List.of("régi"));
+        recipeRepository.saveAndFlush(entity);
+
+        RecipeBreakdownResponse res = getBreakdown(auth, recipe);
+
+        // size mismatch (4 != 8) forces a regenerate -> the fresh 8-dimension template envelope
+        assertThat(res.getBreakdown().getDimensions()).extracting(d -> d.getId())
+            .containsExactly("macro", "micro", "who", "fat_quality", "nova",
+                "plant_diversity", "energy_density", "portion");
+        // regenerated + prose-enriched (sentinel present) -> the stale cache is replaced, not served
+        var restored = recipeRepository.findById(recipe).orElseThrow().getBreakdown();
+        assertThat(restored.dimensions()).hasSize(8);
+        assertThat(restored.summary()).isEqualTo("Fake sablon-olvasat.");
+    }
+
+    /** A minimal old-shape dimension for seeding a stale 4-dim cache. */
+    private static MealBreakdownJson.Dimension staleDim(String id) {
+        return new MealBreakdownJson.Dimension(id, id, new BigDecimal("0.25"),
+            new BigDecimal("0.50"), "régi", null, null, null, null);
     }
 
     @Test

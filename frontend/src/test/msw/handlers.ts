@@ -51,22 +51,31 @@ const recipeLogFixture = {
   ],
 }
 
-// Recipe template-breakdown fixture (mezo-bw3y) mirroring RecipeBreakdownResponse: the enriched
-// envelope — 3 live dims (renormalized weights) + the degraded context card the template view keeps.
+// Recipe template-breakdown fixture (mezo-bw3y, 8-dim since mezo-7797) mirroring
+// RecipeBreakdownResponse: the enriched envelope — the seven meal-shared dims plus a real `portion`
+// card (which replaces the old weight-0 degraded context the template view used to keep).
 const recipeBreakdownFixture = {
   breakdown: {
     value: 0.91,
     confidence: 0.86,
     summary: 'MSW sablon-olvasat.',
     dimensions: [
-      { id: 'macro', label: 'Kcal & makró arány', weight: 0.38, score: 0.92, detail: 'MSW makró detail.',
+      { id: 'macro', label: 'Kcal & makró arány', weight: 0.22, score: 0.92, detail: 'MSW makró detail.',
         macro: { ratioP: 30, ratioC: 40, ratioF: 30, targetP: '~27%', targetC: '~46%', targetF: '~27%', kcalShareOfDay: 24.5, notes: null } },
-      { id: 'micro', label: 'Mikro–makro balance', weight: 0.31, score: 0.88, detail: 'MSW mikró detail.',
+      { id: 'micro', label: 'Rost & mikro', weight: 0.10, score: 0.88, detail: 'MSW mikró detail.',
         micros: [{ name: 'Rost', value: '9.5 g', pct: 82, status: 'good' }] },
-      { id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.31, score: 0.94, detail: 'MSW nova detail.',
+      { id: 'who', label: 'Ajánlások · WHO', weight: 0.14, score: 0.9, detail: 'MSW WHO detail.',
+        context: [{ label: 'Cukor', value: '6 E% / 10 E% limit' }, { label: 'Só', value: '0.8 g / 1.5 g keret' }] },
+      { id: 'fat_quality', label: 'Zsírminőség', weight: 0.10, score: 0.85, detail: 'MSW zsír detail.',
+        context: [{ label: 'Telített E%', value: '5% / 10% limit' }, { label: 'Telített/összzsír', value: '24% (ref. 33%)' }] },
+      { id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.18, score: 0.94, detail: 'MSW nova detail.',
         nova: { dominant: 1, stack: [{ nova: 1, pct: 100, label: 'Zab' }], items: [{ name: 'Zabpehely 70g', nova: 1, warning: false }] } },
-      { id: 'context', label: 'Időzítés & kontextus', weight: 0, score: 0,
-        detail: 'Sablon szinten nincs időzítési adat — a kontextust a logolt étkezéseknél értékeljük.', context: [] },
+      { id: 'plant_diversity', label: 'Növényi diverzitás', weight: 0.08, score: 1.0, detail: 'MSW növényi detail.',
+        context: [{ label: 'Növényi kategóriák', value: 'grains · fruits · nuts_seeds' }, { label: 'Összesen', value: '3 / 3 cél' }] },
+      { id: 'energy_density', label: 'Energia-sűrűség', weight: 0.06, score: 0.78, detail: 'MSW sűrűség detail.',
+        context: [{ label: 'Sűrűség', value: '182 kcal/100g' }, { label: 'Lefedettség', value: '100% gramm-alapú' }] },
+      { id: 'portion', label: 'Adag-arány', weight: 0.12, score: 0.95, detail: 'Egy adag a reggeli büdzsé 89%-a.',
+        context: [{ label: 'Adag kcal', value: '689 kcal' }, { label: 'Slot-büdzsé', value: '775 kcal (reggeli 25%)' }] },
     ],
     improve: [{ text: 'MSW javaslat.', impact: '+rost' }],
     tools: [

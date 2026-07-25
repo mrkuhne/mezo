@@ -2,9 +2,9 @@
 // Mezo · ContextPanel (időzítés & kontextus dimension)
 // Label/value rows for the meal's contextual factors
 // ============================================================
-import type { ContextDimension } from '@/data/types'
+import type { ContextDimension, RowsDimension } from '@/data/types'
 
-export function ContextPanel({ dim }: { dim: ContextDimension }) {
+export function ContextPanel({ dim }: { dim: ContextDimension | RowsDimension }) {
   return (
     <div className="col gap-xs mt-md" style={{
       paddingTop: 10,

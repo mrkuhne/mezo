@@ -4,8 +4,8 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Typed envelope for the {@code meal.breakdown} jsonb column — the deterministic 4-dimension
- * meal score (mezo-yta, ADR 0006). Mirrors the FE {@code MealBreakdown} shape minus the
+ * Typed envelope for the {@code meal.breakdown} jsonb column — the deterministic meal score
+ * (8-dimension set since mezo-7797) (mezo-yta, ADR 0006). Mirrors the FE {@code MealBreakdown} shape minus the
  * presentation-only {@code color} (the FE mapper injects the constant per-dimension colors).
  * Mapped via {@code @JdbcTypeCode(SqlTypes.JSON)} (the Train {@code ProvenanceEnvelope} pattern).
  *
