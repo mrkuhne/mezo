@@ -99,6 +99,7 @@ Tip: steps 1–3 can be rehearsed locally on **k3d/minikube** with zero VPS cost
 | Public URL | `https://46.225.112.172.sslip.io/` (Let's Encrypt via cert-manager) |
 | Images | `ghcr.io/mrkuhne/mezo-backend:0.0.1`, `ghcr.io/mrkuhne/mezo-frontend:0.0.1` (private; pulled with `ghcr-pull` secret) |
 | Owner login | `owner@mezo.local` / `owner` (demodata seed; baked into the frontend build) |
+| Backend timezone | `TZ=Europe/Budapest` on the backend Deployment env (`k8s/backend/deployment.yaml`) — pins the JVM default zone so business-date columns (`level_up_event.occurred_on`, gamification streak/coin rollover) and every `@Scheduled` cron run on Budapest wall-clock, not the eclipse-temurin UTC default. Without it, a 00:00–02:00 log lands on the previous business date (mezo-k0t2) and the crons fire 1–2 h off their intended local time. Matches `k8s/postgres/backup-cronjob.yaml`'s `timeZone`. |
 | Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed). Planned: `GEMINI_API_KEY` joins `mezo-app` + the backend Deployment env when the Phase-3 companion first deploys (ADR 0008) — until then the backend boots on its dummy-key default. |
 
 Local admin access:
