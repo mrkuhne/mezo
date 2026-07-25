@@ -287,6 +287,7 @@ export const workout: WorkoutPlan = {
   title: 'Pull Day',
   tag: 'Week 3 · MAV',
   durationEst: 78,
+  overloadSummary: { weightUp: 2, repUp: 1, hold: 0 },
   exercises: [
     {
       id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
@@ -301,6 +302,7 @@ export const workout: WorkoutPlan = {
         { kind: 'working', targetWeightKg: 105, targetReps: 10, targetRIR: 0 },
       ],
       lastWeek: { weight: 102.5, reps: 9, rir: 2 },
+      progression: { lever: 'weight', deltaKg: 2.5, deltaReps: null, targetWeightKg: 105, targetReps: 10, rationale: 'Múlt hét 9 × 102,5 kg → +2,5 kg' },
     },
     {
       id: 'ex2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
@@ -315,6 +317,7 @@ export const workout: WorkoutPlan = {
         { kind: 'working', targetWeightKg: 74.5, targetReps: 12, targetRIR: 1 },
       ],
       lastWeek: { weight: 72, reps: 11, rir: 2 },
+      progression: { lever: 'weight', deltaKg: 2.5, deltaReps: null, targetWeightKg: 74.5, targetReps: 12, rationale: 'Múlt hét 11 × 72 kg → +2,5 kg' },
     },
     {
       id: 'ex3', name: 'Cable Pull-Around', muscle: 'back-mid', type: 'isolation',
@@ -328,6 +331,7 @@ export const workout: WorkoutPlan = {
         { kind: 'working', targetWeightKg: 22, targetReps: 15, targetRIR: 1 },
       ],
       lastWeek: { weight: 22, reps: 13, rir: 1 },
+      progression: { lever: 'rep', deltaKg: null, deltaReps: 1, targetWeightKg: 22, targetReps: 15, rationale: 'Múlt hét könnyen ment → +1 rep' },
     },
     {
       id: 'ex4', name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation',

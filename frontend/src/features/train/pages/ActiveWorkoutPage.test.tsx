@@ -254,11 +254,13 @@ test('mock mode: the excard renders a per-set note input that clears after loggi
   expect(await screen.findByLabelText('Szett megjegyzés')).toHaveValue('')
 })
 
-test('mock mode: renders the rationale line instead of the static hint', async () => {
+test('mock mode: renders the progression banner rationale line instead of the static hint', async () => {
   const user = userEvent.setup()
   setup()
   await user.click(screen.getByText(/Kezdjük el/))
-  expect(await screen.findByText(/→ \+2\.5 kg/)).toBeInTheDocument() // ex1.rationale
+  // ex1 has a progression signal (mezo-5pfe), so the ProgressionBanner renders
+  // (progression.rationale, Hungarian comma decimal) instead of the plain .aistrip.
+  expect(await screen.findByText(/→ \+2,5 kg/)).toBeInTheDocument() // ex1.progression.rationale
 })
 
 test('mock mode: warmup sets render up-front as amber "Bemel." rows (spec §6)', async () => {

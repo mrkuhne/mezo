@@ -76,8 +76,21 @@ export function toWorkoutPlan(r: WorkoutTodayResponse | null | undefined): Worko
       lastWeek: e.lastWeek
         ? { weight: Number(e.lastWeek.weightKg), reps: e.lastWeek.reps, rir: e.lastWeek.rir }
         : null,
+      progression: e.progression
+        ? {
+            lever: e.progression.lever,
+            deltaKg: e.progression.deltaKg ?? null,
+            deltaReps: e.progression.deltaReps ?? null,
+            targetWeightKg: e.progression.targetWeightKg ?? null,
+            targetReps: e.progression.targetReps,
+            rationale: e.progression.rationale,
+          }
+        : null,
     })),
     challenges: [],
+    overloadSummary: r.overloadSummary
+      ? { weightUp: r.overloadSummary.weightUp, repUp: r.overloadSummary.repUp, hold: r.overloadSummary.hold }
+      : null,
   }
 }
 

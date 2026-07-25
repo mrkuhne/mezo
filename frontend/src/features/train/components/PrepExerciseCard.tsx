@@ -74,6 +74,23 @@ export function PrepExerciseCard({ exercise, oneRmKg, accentChallenge }: {
           {startWeight != null && (
             <span className="chip" style={{ fontSize: 9, padding: '3px 8px' }}>↑ {startWeight} kg-ról indul</span>
           )}
+          {e.progression && (e.progression.deltaKg || e.progression.deltaReps) != null && (
+            <span
+              className="chip"
+              style={{
+                fontSize: 9, padding: '3px 8px', fontWeight: 700,
+                background:
+                  e.progression.lever === 'rep' ? 'var(--sage)'
+                  : e.progression.lever === 'deload' ? 'var(--amber-deep)'
+                  : 'var(--coral)',
+                color: 'var(--surface-1)', border: 'none',
+              }}
+            >
+              {e.progression.deltaKg != null && e.progression.deltaKg !== 0
+                ? `${e.progression.deltaKg > 0 ? '+' : '−'}${Math.abs(e.progression.deltaKg).toLocaleString('hu-HU')} kg`
+                : `+${e.progression.deltaReps} rep`}
+            </span>
+          )}
         </div>
       </div>
     </div>
