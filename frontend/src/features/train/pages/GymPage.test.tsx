@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http } from 'msw'
@@ -92,5 +92,21 @@ describe('GymPage (mock mode)', () => {
   it('renders content with no skeleton (synchronous seed)', () => {
     renderView()
     expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('shows the "Időpontok" chip in mock mode and reflects a save via local override', async () => {
+    renderView()
+    const chip = screen.getByRole('button', { name: /Időpontok/ })
+    expect(chip).toBeInTheDocument()
+    fireEvent.click(chip)
+    expect(screen.getByRole('heading', { name: 'Heti gym-időpontok' })).toBeInTheDocument()
+    // edit Hét + save
+    fireEvent.change(screen.getByLabelText('Hét időpont'), { target: { value: '06:30' } })
+    fireEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+    // Sheet closes with an exit animation → wait it out
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Heti gym-időpontok' })).toBeNull())
+    // reopen -> the in-session override kept the edit
+    fireEvent.click(screen.getByRole('button', { name: /Időpontok/ }))
+    expect((screen.getByLabelText('Hét időpont') as HTMLInputElement).value).toBe('06:30')
   })
 })

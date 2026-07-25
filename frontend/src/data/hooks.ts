@@ -17,7 +17,7 @@ export { useKnowledge, useKnowledgeActions } from '@/data/insights/knowledgeHook
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
 export { useChat, useChatActions } from '@/data/insights/chatHooks'
 export { useFuelTimeline } from '@/data/fuel/timelineHooks'
-export { useFuelWeek, useFuelWeekActions } from '@/data/fuel/fuelWeekHooks'
+export { useFuelWeek } from '@/data/fuel/fuelWeekHooks'
 export { useReplanScenarios, useStackRecommendations } from '@/data/fuel/fuelReadHooks'
 export { useStack, useProtocol, useStackActions, useProtocolActions, useStackContext } from '@/data/fuel/stackHooks'
 export { useTrain } from '@/data/train/trainHooks'

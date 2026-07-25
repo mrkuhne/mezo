@@ -9,7 +9,7 @@
 import { Fragment, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useWeekWorkouts } from '@/data/hooks'
-import { isMockMode } from '@/data/_client/mode'
+import type { GymScheduleSlot } from '@/data/types'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
 import { MUSCLE_LABELS } from '@/data/train/train'
@@ -34,6 +34,9 @@ export function GymPage() {
   const [scheduleOpen, setScheduleOpen] = useState(false)
   const [customOpen, setCustomOpen] = useState(false)
   const [muscleOpen, setMuscleOpen] = useState(false)
+  // Optimistic local copy of a schedule save; null = render the hook's (query-backed) slots.
+  // Real mode also invalidates + refetches; the override keeps mock edits visible in-session.
+  const [gymOverride, setGymOverride] = useState<GymScheduleSlot[] | null>(null)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) are
   // unresolved, render the layout-matched skeleton before the empty-state. Placed
@@ -90,18 +93,16 @@ export function GymPage() {
           >
             <Icon name="plus" size={12} /> Saját
           </button>
-          {/* saveGymSchedule is a no-op in mock mode (trainHooks) — hide the
-              editor entry there, mirroring SportPage's mock-mode gating. */}
-          {!isMockMode() && (
-            <button
-              type="button"
-              onClick={() => setScheduleOpen(true)}
-              className="pgact-np np-press"
-              style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
-            >
-              <Icon name="today" size={12} /> Időpontok
-            </button>
-          )}
+          {/* Always available (mezo-4t43): the planner sets times at plan time, this chip
+              is the mid-cycle editor. Mock save no-ops → the local override keeps it visible. */}
+          <button
+            type="button"
+            onClick={() => setScheduleOpen(true)}
+            className="pgact-np np-press"
+            style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
+          >
+            <Icon name="today" size={12} /> Időpontok
+          </button>
           <span className="label-mono" style={{ fontSize: 9 }}>
             W{activeMeso.currentWeek} / {activeMeso.weeks}
           </span>
@@ -196,8 +197,11 @@ export function GymPage() {
 
       {scheduleOpen && (
         <GymScheduleSheet
-          slots={gymSlots}
-          onSave={saveGymSchedule}
+          slots={gymOverride ?? gymSlots}
+          onSave={(next) => {
+            setGymOverride(next)
+            saveGymSchedule(next)
+          }}
           onClose={() => setScheduleOpen(false)}
         />
       )}

@@ -10,7 +10,7 @@
 //   Step 4 · Set & rep       → day-tabbed recipe editor (MesoDayTabsEditor) + save
 // Ported from prototype meso-planner.jsx MesocyclePlannerPage + its step parts.
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain } from '@/data/hooks'
 import type { ExerciseLibraryItem, GoalPreset, GymExercise, MesoPhase, SplitOption } from '@/data/types'
@@ -42,7 +42,7 @@ const PAGE_TITLES = [
 
 export function MesocyclePlannerPage() {
   const navigate = useNavigate()
-  const { createMesocycle, mesoMutationPending } = useTrain()
+  const { createMesocycle, mesoMutationPending, gymSlots, saveGymSchedule } = useTrain()
   const [step, setStep] = useState(0)
   const [goal, setGoal] = useState<GoalPreset | null>(null)
   const [name, setName] = useState('')
@@ -61,6 +61,22 @@ export function MesocyclePlannerPage() {
   const [daysTouched, setDaysTouched] = useState(false)
   // Lifted from Step3 so the terminal save buttons can read the reviewed/edited program.
   const [program, setProgram] = useState<PlannerDay[] | null>(null)
+
+  // Gym times (mezo-4t43): each selected day prefills from the standing weekly schedule
+  // (gymSlots, the Train-owned WHEN); a day with no slot defaults to 18:00. `dayTimes` holds
+  // only the user's explicit edits — render + save fall back through the slot, then the default.
+  const [dayTimes, setDayTimes] = useState<Record<string, string>>({})
+  const slotTimeByDay = useMemo(() => {
+    const m: Record<string, string> = {}
+    for (const s of gymSlots) {
+      const label = DAY_ORDER[s.dayOfWeek]
+      if (label) m[label] = s.time
+    }
+    return m
+  }, [gymSlots])
+  const timeForDay = (day: string) => dayTimes[day] ?? slotTimeByDay[day] ?? '18:00'
+  const setTimeForDay = (day: string, time: string) =>
+    setDayTimes((cur) => ({ ...cur, [day]: time }))
 
   // Program generation lives at page level behind an input-signature guard so
   // step round-trips never wipe user edits; only real input changes regenerate.
@@ -195,6 +211,13 @@ export function MesocyclePlannerPage() {
         })),
       })),
     }
+    // Persist the standing weekly gym schedule from the planner picks (mezo-4t43): one slot
+    // per selected training day (all carry a time — default 18:00), replace-all. Mock no-ops.
+    saveGymSchedule(
+      selectedDays
+        .map((d) => ({ dayOfWeek: DAY_ORDER.indexOf(d as (typeof DAY_ORDER)[number]), time: timeForDay(d) }))
+        .filter((s) => s.dayOfWeek >= 0),
+    )
     createMesocycle(request, { onSuccess: backToLibrary })
   }
 
@@ -281,6 +304,8 @@ export function MesocyclePlannerPage() {
           setDays={pickDays}
           selectedDays={selectedDays}
           toggleDay={toggleDay}
+          timeForDay={timeForDay}
+          onTimeChange={setTimeForDay}
         />
       )}
       {step === 3 && (
@@ -634,6 +659,8 @@ function Step2Split({
   setDays,
   selectedDays,
   toggleDay,
+  timeForDay,
+  onTimeChange,
 }: {
   goal: GoalPreset | null
   split: SplitOption | null
@@ -642,6 +669,8 @@ function Step2Split({
   setDays: (v: number) => void
   selectedDays: string[]
   toggleDay: (d: string) => void
+  timeForDay: (d: string) => string
+  onTimeChange: (d: string, t: string) => void
 }) {
   return (
     <div style={{ padding: '8px 24px' }}>
@@ -758,6 +787,38 @@ function Step2Split({
           </span>
         )}
       </div>
+
+      {/* Gym times — one time per selected day; prefilled from the standing schedule (mezo-4t43) */}
+      {selectedDays.length > 0 && (
+        <div className="col gap-sm mt-xl">
+          <span className="label-mono">Időpontok · mikor mész</span>
+          <p className="text-tertiary" style={{ fontSize: 11, lineHeight: 1.5 }}>
+            Ebből számolja a Fuel a pre/post-workout étkezést és supplement-timing-ot.
+          </p>
+          <div className="col gap-sm">
+            {DAY_ORDER.filter((d) => selectedDays.includes(d)).map((d) => (
+              <div key={d} className="card" style={{ padding: 10 }}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span className="label-mono" style={{ width: 36, color: 'var(--coral)' }}>
+                    {d}
+                  </span>
+                  <input
+                    type="time"
+                    aria-label={`${d} időpont`}
+                    value={timeForDay(d)}
+                    onChange={(e) => onTimeChange(d, e.target.value)}
+                    style={{
+                      background: 'var(--surface-2)', border: '1px solid var(--border-subtle)',
+                      color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums', fontSize: 16,
+                      padding: '8px 10px', width: 130,
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Exercise auto-fill option */}
       <div className="card mt-xl" style={{ padding: 14, background: CORAL_TINT }}>
