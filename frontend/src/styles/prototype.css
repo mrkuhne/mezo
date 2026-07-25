@@ -2032,6 +2032,32 @@ a.hab-link:hover { opacity: 0.85; }
   color: #F5EFE6; font-family: var(--ff-body); font-weight: 600; font-size: 10.5px; }
 .rz-loop-beat { justify-content: center; text-align: center; color: rgba(245,239,230,.7); font-style: italic; }
 
+/* Harvest act (act 4): XP count-up (the shared CountUp primitive), per-source/coin chips
+   (np-pop reuse via .rz-pop), an optional LIFE skill highlight (bar-only — honest-absence,
+   no fabricated "N XP to next level" hint), the streak flame (AppHero .cnt.fire dim
+   precedent, opacity .45), and a one-shot confetti burst (rz-fall reuse) gated on xpTotal > 0. */
+.rz-harvest { position: relative; }
+.rz-xp-wrap { text-align: center; margin-top: 26px; }
+.rz-xp-num { display: block; font-family: var(--ff-display); font-size: 52px; line-height: 1; font-weight: 700; color: var(--amber); }
+.rz-xp-unit { font-family: var(--ff-body); font-size: 15px; font-weight: 600; color: var(--faint); margin-top: 4px; }
+.rz-src-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 4px 0; }
+.rz-chip { padding: 6px 10px; border-radius: 999px; background: rgba(245,239,230,.07);
+  font-family: var(--ff-body); font-weight: 600; font-size: 11px; }
+.rz-coin-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.rz-coin-chip { padding: 7px 12px; border-radius: 999px; background: rgba(255,190,96,.14); color: var(--amber);
+  font-family: var(--ff-body); font-weight: 700; font-size: 12px; }
+.rz-pop { opacity: 0; animation: np-pop .5s var(--np-ease-spring) forwards; }
+.rz-skill-row { margin: 20px 4px 0; font-family: var(--ff-body); font-weight: 600; font-size: 12px; }
+.rz-skill-lv { color: var(--lav-deep); font-weight: 700; }
+.rz-skill-bar { height: 7px; border-radius: 99px; background: rgba(245,239,230,.1); margin-top: 6px; overflow: hidden; }
+.rz-skill-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--lav), var(--lav-deep));
+  transform-origin: left; transform: scaleX(0); animation: np-grow .9s var(--np-ease-ios) forwards; }
+.rz-streak { text-align: center; margin-top: 18px; font-family: var(--ff-body); font-weight: 700; font-size: 13px; color: var(--coral); }
+.rz-streak.dim { opacity: .45; }
+.rz-conf { position: absolute; inset: 0; pointer-events: none; }
+.rz-conf i { position: absolute; top: -8px; width: 6px; height: 10px; border-radius: 2px; opacity: 0;
+  animation: rz-fall 2.6s ease-in forwards; }
+
 /* Release act (act 5): closing circle (np-draw reuse), companion note, evening handoff panel. */
 .rz-circle { display: block; margin: 56px auto 0; }
 .rz-ring { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round;
@@ -2059,4 +2085,7 @@ a.hab-link:hover { opacity: 0.85; }
   .rz-arc-path, .rz-arc-dot { animation: none; }
   .rz-arc-path { stroke-dashoffset: 0; }
   .rz-arc-dot { opacity: 1; transform: none; }
+  .rz-pop { animation: none; opacity: 1; } /* source/coin chips: settle visible, not stuck at opacity 0 */
+  .rz-skill-bar i { animation: none; transform: none; } /* bar fill freezes at its final width */
+  .rz-conf { display: none; } /* decorative burst only — no motion, no point showing it static */
 }
