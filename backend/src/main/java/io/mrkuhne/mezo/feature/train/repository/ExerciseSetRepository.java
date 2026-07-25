@@ -28,6 +28,27 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, 
     /** Every logged (reps present) set of the owner — record aggregation input. */
     List<ExerciseSetEntity> findByCreatedByAndRepsNotNull(UUID createdBy);
 
+    /**
+     * WORKING-set history across a set of exercise rows, restricted to COMPLETED instances,
+     * newest instance first — the identity-based history read (mezo-eq4w): callers pass every
+     * row id sharing an exercise identity (soft-deleted day-edit rows included) so a day edit
+     * never severs the double-progression / "múlt hét" base.
+     */
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT s FROM ExerciseSetEntity s, WorkoutSessionEntity w
+        WHERE s.createdBy = :createdBy
+          AND s.exerciseId IN :exerciseIds
+          AND s.workoutSessionId = w.id
+          AND w.status = 'completed'
+          AND s.skipped = false
+          AND s.kind = 'working'
+          AND s.reps IS NOT NULL
+        ORDER BY w.date DESC, w.createdAt DESC, s.setIndex ASC
+        """)
+    List<ExerciseSetEntity> findCompletedWorkingHistory(
+        @org.springframework.data.repository.query.Param("createdBy") UUID createdBy,
+        @org.springframework.data.repository.query.Param("exerciseIds") List<UUID> exerciseIds);
+
     /** Working sets only (record aggregation input — warmups excluded). */
     List<ExerciseSetEntity> findByCreatedByAndRepsNotNullAndKind(UUID createdBy, String kind);
 }

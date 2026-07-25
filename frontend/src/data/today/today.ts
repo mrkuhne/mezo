@@ -96,10 +96,10 @@ export const workout: Workout = {
   durationEst: 78,
   exercises: [
     { id: 'ex1', name: 'Chest Supported Row', sets: 4, targetReps: '8-10', targetRIR: 1, type: 'compound', muscle: 'back-mid' },
-    { id: 'ex2', name: 'Lat Pulldown · Pronated', sets: 3, targetReps: '10-12', targetRIR: 2, type: 'compound', muscle: 'lats' },
+    { id: 'ex2', name: 'Lat Pulldown · Pronated', sets: 3, targetReps: '10-12', targetRIR: 2, type: 'compound', muscle: 'back-wide' },
     { id: 'ex3', name: 'Cable Pull-Around', sets: 3, targetReps: '12-15', targetRIR: 1, type: 'isolation', muscle: 'back-mid' },
-    { id: 'ex4', name: 'Hammer Curl', sets: 3, targetReps: '10-12', targetRIR: 1, type: 'isolation', muscle: 'biceps' },
-    { id: 'ex5', name: 'Face Pull', sets: 3, targetReps: '15-20', targetRIR: 1, type: 'isolation', muscle: 'rear-delt' },
+    { id: 'ex4', name: 'Hammer Curl', sets: 3, targetReps: '10-12', targetRIR: 1, type: 'isolation', muscle: 'biceps-brachialis' },
+    { id: 'ex5', name: 'Face Pull', sets: 3, targetReps: '15-20', targetRIR: 1, type: 'isolation', muscle: 'shoulder-rear' },
   ],
   niggleWarning: {
     muscle: 'right-shoulder',

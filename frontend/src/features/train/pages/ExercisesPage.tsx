@@ -14,7 +14,9 @@ import { useState, type ReactNode } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { muscleColor } from '@/features/train/logic/muscleColors'
-import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '@/features/train/logic/muscleFilters'
+import {
+  TOP_FILTERS, TOP_FILTER_LABELS, subMuscles, matchesMuscleFilter, type TopFilter,
+} from '@/features/train/logic/muscleFilters'
 import type { ExerciseRecordResponse } from '@/data/train/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -235,7 +237,9 @@ function GhostRow({ item, onVideo, onEdit }: {
 export function ExercisesPage() {
   const { exerciseRecords, exerciseLibrary, exercisesPending } = useTrain()
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState('all')
+  // Two-level filter: top = 'all'|'plyo'|region, sub = a muscle token within a region (or null).
+  const [top, setTop] = useState<TopFilter>('all')
+  const [sub, setSub] = useState<string | null>(null)
   const [openRecord, setOpenRecord] = useState<ExerciseRecordResponse | null>(null)
   // null = closed · {} = author a new exercise · { edit } = edit an owned row.
   const [catalog, setCatalog] = useState<{ edit?: ExerciseLibraryItem } | null>(null)
@@ -247,8 +251,9 @@ export function ExercisesPage() {
   // all hooks. Mock mode seeds synchronously → never pending → no skeleton.
   if (exercisesPending) return <ExercisesSkeleton />
 
-  const searching = search !== '' || filter !== 'all'
+  const searching = search !== '' || top !== 'all'
   const q = search.toLowerCase()
+  const subs = subMuscles(top)
 
   // Resolve a record's catalog row by id, falling back to name: the live
   // backend returns NO catalogId on name-grouped records (logged exercise row
@@ -260,7 +265,7 @@ export function ExercisesPage() {
     exerciseLibrary.find((e) => e.name.toLowerCase() === r.name.toLowerCase())
 
   const records = exerciseRecords.filter(
-    (r) => matchesMuscleFilter(r.muscle, r.type, filter) && (q === '' || r.name.toLowerCase().includes(q)),
+    (r) => matchesMuscleFilter(r.muscle, r.type, top, sub) && (q === '' || r.name.toLowerCase().includes(q)),
   )
   // catalog items with no record yet (identity match by catalogId, then by name)
   const recordKeys = new Set(
@@ -270,7 +275,7 @@ export function ExercisesPage() {
     ? exerciseLibrary.filter(
         (e) =>
           !recordKeys.has(e.catalogId ?? '') && !recordKeys.has(e.name.toLowerCase()) &&
-          matchesMuscleFilter(e.muscle, e.type, filter) &&
+          matchesMuscleFilter(e.muscle, e.type, top, sub) &&
           (q === '' || e.name.toLowerCase().includes(q)),
       )
     : []
@@ -303,20 +308,36 @@ export function ExercisesPage() {
             style={{ flex: 1, fontSize: 13, padding: '6px 0' }}
           />
         </div>
-        {/* Muscle / plyo filter chips */}
-        <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 4, paddingBottom: 4 }}>
-          {MUSCLE_FILTERS.map((m) => (
+        {/* Muscle filter — level 1: régiók */}
+        <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: subs.length ? 6 : 4, paddingBottom: 4 }}>
+          {TOP_FILTERS.map((m) => (
             <button
               key={m}
-              onClick={() => setFilter(m)}
-              aria-pressed={filter === m}
-              className={cn('chip', filter === m && 'brand')}
+              onClick={() => { setTop(m); setSub(null) }}
+              aria-pressed={top === m}
+              className={cn('chip', top === m && 'brand')}
               style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
             >
-              {FILTER_LABELS[m] ?? MUSCLE_LABELS[m] ?? m}
+              {TOP_FILTER_LABELS[m] ?? m}
             </button>
           ))}
         </div>
+        {/* Muscle filter — level 2: fej-specifikus al-szűrők (csak régió kiválasztásakor) */}
+        {subs.length > 0 && (
+          <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 4, paddingBottom: 4 }}>
+            {subs.map((m) => (
+              <button
+                key={m}
+                onClick={() => setSub(sub === m ? null : m)}
+                aria-pressed={sub === m}
+                className={cn('chip', sub === m && 'brand')}
+                style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
+              >
+                {MUSCLE_LABELS[m] ?? m}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ padding: '0 24px 32px' }}>

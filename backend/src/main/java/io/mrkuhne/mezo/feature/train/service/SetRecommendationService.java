@@ -4,9 +4,6 @@ import io.mrkuhne.mezo.api.dto.PrescribedSet;
 import io.mrkuhne.mezo.feature.train.config.HypertrophyProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
-import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
-import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
-import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -25,12 +22,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class SetRecommendationService {
 
-    private final WorkoutSessionRepository workoutSessionRepository;
-    private final ExerciseSetRepository exerciseSetRepository;
+    private final ExerciseHistoryResolver historyResolver;
     private final HypertrophyProperties props;
 
-    public Prescription prescribe(UUID createdBy, ExerciseEntity ex, UUID templateSessionId) {
-        ExerciseSetEntity ref = referenceWorkingSet(createdBy, ex.getId(), templateSessionId);
+    public Prescription prescribe(UUID createdBy, ExerciseEntity ex) {
+        ExerciseSetEntity ref = referenceWorkingSet(createdBy, ex);
         BigDecimal base;
         String rationale;
 
@@ -83,19 +79,14 @@ public class SetRecommendationService {
         return new Prescription(sets, rationale);
     }
 
-    /** Top WORKING set of the most recent completed instance of this exercise (max weight, then reps). */
-    private ExerciseSetEntity referenceWorkingSet(UUID createdBy, UUID exerciseId, UUID templateSessionId) {
-        WorkoutSessionEntity prev = workoutSessionRepository
-            .findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
-                createdBy, templateSessionId, "completed")
-            .orElse(null);
-        if (prev == null) {
-            return null;
-        }
-        return exerciseSetRepository
-            .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, prev.getId()).stream()
-            .filter(s -> exerciseId.equals(s.getExerciseId()))
-            .filter(s -> "working".equals(s.getKind()) && !s.isSkipped() && s.getReps() != null)
+    /**
+     * Top WORKING set of the most recent completed session where this exercise's IDENTITY was
+     * trained (max weight, then reps). Identity-resolved (mezo-eq4w) so a day edit's row swap
+     * never resets double progression — the pre-edit rows' history still anchors the target.
+     */
+    private ExerciseSetEntity referenceWorkingSet(UUID createdBy, ExerciseEntity ex) {
+        return historyResolver.latestCompletedWorkingSets(createdBy, List.of(ex))
+            .getOrDefault(ex.getId(), List.of()).stream()
             .max(Comparator
                 .comparing((ExerciseSetEntity s) -> s.getWeightKg() != null ? s.getWeightKg() : BigDecimal.valueOf(-1))
                 .thenComparing(ExerciseSetEntity::getReps))

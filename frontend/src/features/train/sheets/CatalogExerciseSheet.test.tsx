@@ -29,12 +29,12 @@ test('create mode shows no delete button', () => {
 test('create mode builds the request and calls createCatalogExercise', async () => {
   render(<CatalogExerciseSheet onClose={vi.fn()} />)
   await userEvent.type(screen.getByLabelText('Név'), 'DB Row')
-  await userEvent.click(screen.getByRole('button', { name: 'Lat' })) // muscle -> lats
+  await userEvent.click(screen.getByRole('button', { name: 'Hát (széles)' })) // muscle -> back-wide
   await userEvent.click(screen.getByRole('button', { name: 'isolation' })) // type
   await userEvent.click(screen.getByRole('button', { name: 'Stim növelése' })) // 0.7 -> 0.75
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(createCatalogExercise).toHaveBeenCalledWith(
-    { name: 'DB Row', muscle: 'lats', type: 'isolation', stim: 0.75, fatigue: 0.3, videoUrl: null },
+    { name: 'DB Row', muscle: 'back-wide', type: 'isolation', stim: 0.75, fatigue: 0.3, videoUrl: null },
     { onSuccess: expect.any(Function), onError: expect.any(Function) },
   )
   expect(updateCatalogExercise).not.toHaveBeenCalled()

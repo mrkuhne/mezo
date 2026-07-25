@@ -12,6 +12,7 @@
 import { useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
+import { REGION_MUSCLES, REGION_LABELS } from '@/features/train/logic/muscleColors'
 import type { CatalogExerciseCreateRequest } from '@/data/train/trainApi'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
@@ -20,13 +21,11 @@ import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { cn } from '@/shared/lib/cn'
 
-// The 13 catalog muscle tokens, in the contract's union order. `as const` keeps
-// the literal types so the built request satisfies the strict API muscle union.
-const MUSCLE_KEYS = [
-  'back-mid', 'lats', 'chest', 'shoulder', 'rear-delt', 'biceps', 'triceps',
-  'quad', 'ham', 'glute', 'calf', 'core', 'traps',
-] as const
-type MuscleKey = (typeof MUSCLE_KEYS)[number]
+// The 21 head/zone-specific catalog muscle tokens (mezo-wu1s), region-grouped for the
+// picker below. This mirrors the contract's CatalogExerciseCreateRequest.muscle enum;
+// the built request body is validated against that union by `satisfies`.
+type MuscleKey = CatalogExerciseCreateRequest['muscle']
+const DEFAULT_MUSCLE: MuscleKey = 'back-mid'
 
 const TYPES = ['compound', 'isolation', 'plyo'] as const
 type ExType = (typeof TYPES)[number]
@@ -75,7 +74,7 @@ interface CatalogExerciseSheetProps {
 export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProps) {
   const { createCatalogExercise, updateCatalogExercise, deleteCatalogExercise } = useTrain()
   const [name, setName] = useState(edit?.name ?? '')
-  const [muscle, setMuscle] = useState<MuscleKey>((edit?.muscle as MuscleKey) ?? 'back-mid')
+  const [muscle, setMuscle] = useState<MuscleKey>((edit?.muscle as MuscleKey) ?? DEFAULT_MUSCLE)
   const [type, setType] = useState<ExType>((edit?.type as ExType) ?? 'compound')
   const [stim, setStim] = useState(edit?.stim ?? 0.7)
   const [fatigue, setFatigue] = useState(edit?.fatigue ?? 0.3)
@@ -135,21 +134,30 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
             />
           </div>
 
-          {/* Muscle segmented picker (13 tokens, wraps) */}
+          {/* Muscle picker (21 tokens, region-grouped) */}
           <div className="col gap-sm" style={{ marginBottom: 14 }}>
             <span className="label-mono">Izomcsoport</span>
-            <div className="row gap-xs" style={{ flexWrap: 'wrap' }} role="group" aria-label="Izomcsoport">
-              {MUSCLE_KEYS.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  aria-pressed={muscle === m}
-                  onClick={() => setMuscle(m)}
-                  className={cn('chip', muscle === m && 'brand')}
-                  style={{ fontSize: 10, padding: '6px 10px' }}
-                >
-                  {MUSCLE_LABELS[m] ?? m}
-                </button>
+            <div className="col gap-sm" role="group" aria-label="Izomcsoport">
+              {REGION_MUSCLES.map((g) => (
+                <div key={g.region} className="col gap-xs">
+                  <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>
+                    {REGION_LABELS[g.region]}
+                  </span>
+                  <div className="row gap-xs" style={{ flexWrap: 'wrap' }}>
+                    {g.muscles.map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        aria-pressed={muscle === m}
+                        onClick={() => setMuscle(m as MuscleKey)}
+                        className={cn('chip', muscle === m && 'brand')}
+                        style={{ fontSize: 10, padding: '6px 10px' }}
+                      >
+                        {MUSCLE_LABELS[m] ?? m}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
