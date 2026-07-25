@@ -475,6 +475,9 @@ mezo:
         group4: 0.20
       # Macro dim: score = max(0, 1 - totalVariation(P/C/F kcal-shares vs mezo.nutrition targets) * slope)
       macro-deviation-slope: 2.0
+      # Protein-surplus side of the macro deviation: 0.0 = protein overshoot forgiven (fitness-app
+      # policy, mezo-8ms6), 1.0 = old symmetric penalty. Protein DEFICIT always counts in full.
+      macro-protein-surplus-penalty: 0.0
       micro:                      # fiber TARGET only since mezo-7797 (sugar/salt/satFat → who/fat-quality)
         fiber-g: 38
       who:                        # WHO guideline dimension

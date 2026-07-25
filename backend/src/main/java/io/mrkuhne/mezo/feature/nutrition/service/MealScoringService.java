@@ -161,7 +161,11 @@ public class MealScoringService {
         double tp = targets.p() * 4 / targetMacroKcal;
         double tc = targets.c() * 4 / targetMacroKcal;
         double tf = targets.f() * 9 / targetMacroKcal;
-        double deviation = (Math.abs(sp - tp) + Math.abs(sc - tc) + Math.abs(sf - tf)) / 2;
+        // Protein SURPLUS is discounted (0.0 = forgiven — fitness-app policy, mezo-8ms6); a protein
+        // deficit and any carb/fat deviation count in full. Factor 1.0 restores total variation.
+        double proteinDeviation = sp > tp
+            ? (sp - tp) * props.macroProteinSurplusPenalty() : tp - sp;
+        double deviation = (proteinDeviation + Math.abs(sc - tc) + Math.abs(sf - tf)) / 2;
         double score = Math.max(0, 1 - deviation * props.macroDeviationSlope());
         double kcalShare = kcal / targets.kcal();
 

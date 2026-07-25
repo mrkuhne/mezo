@@ -38,7 +38,9 @@ public class RecipeBreakdownProseService {
          "details":{"macro":string,"micro":string,"who":string,"fat_quality":string,"nova":string,"plant_diversity":string,"energy_density":string,"portion":string},
          "improve":[{"text":string,"impact":string}]}
         DIMENZIÓK (a details.<id> kulcsai — mit magyarázz dimenziónként):
-        - macro: Kcal & makró arány — a P/C/F energia-arány a napi célhoz képest.
+        - macro: Kcal & makró arány — a P/C/F energia-arány a napi célhoz képest. A fehérje-TÖBBLETET
+          a pontozás szándékosan nem bünteti (fitness-fókusz) — többlet-fehérjét sose ródd fel
+          hibaként; csak fehérjehiányt és szénhidrát/zsír-eltérést magyarázz.
         - micro: Rost & mikro — a rost a napi keret arányában.
         - who: Ajánlások · WHO — cukor az energia %-ában (≤10% cél) és só-keret; magyarázd, mely hozzávaló viszi a cukrot/sót.
         - fat_quality: Zsírminőség — telített zsír energia-aránya (≤10%) és a telített/összzsír arány; nevezd meg a fő zsírforrásokat.
