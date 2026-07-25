@@ -761,6 +761,15 @@ export interface Mesocycle {
 }
 
 export interface LastWeekSet { weight: number; reps: number; rir: number }
+export interface ProgressionSignal {
+  lever: 'weight' | 'rep' | 'hold' | 'deload'
+  deltaKg: number | null
+  deltaReps: number | null
+  targetWeightKg: number | null
+  targetReps: number
+  rationale: string
+}
+export interface OverloadSummary { weightUp: number; repUp: number; hold: number }
 export interface LoggedWorkoutExercise {
   id: string
   name: string
@@ -775,6 +784,7 @@ export interface LoggedWorkoutExercise {
   sets: number // derived total (warmupSets + workingSets) — drives workoutState set count
   prescribedSets: PrescribedSet[] | null
   rationale: string | null
+  progression?: ProgressionSignal | null
   lastWeek: LastWeekSet | null // null on the first-ever workout (no previous completed instance)
   note?: string | null // durable per-exercise note (F4); absent in Phase-1 statics
   videoUrl?: string | null // demo video (catalog-resolved); absent in Phase-1 statics
@@ -811,6 +821,7 @@ export interface WorkoutPlan {
   exercises: LoggedWorkoutExercise[]
   niggleWarning?: NiggleWarning
   challenges: Challenge[]
+  overloadSummary?: OverloadSummary | null
 }
 
 export interface GymSchedule { weeklyTimes: GymScheduleDay[] }
