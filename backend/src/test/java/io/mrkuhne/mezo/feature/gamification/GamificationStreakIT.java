@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  * saver-bridged gap, unsaved reset, the streak_7 milestone, and the honest streakAlive projection
  * (clause 1) on a fresh day. Awards are applied strictly oldest-to-newest per occurredOn, as the
  * rollover logic processes transitions from the profile's current lastStreakDate as they arrive.
+ * NOT @Transactional: committed multi-transaction replay scenarios (gap bridging with saver,
+ * rollover on different days) require real transaction boundaries between test methods.
  */
 class GamificationStreakIT extends AbstractIntegrationTest {
 

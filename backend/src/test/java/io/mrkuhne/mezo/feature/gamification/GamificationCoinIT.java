@@ -23,6 +23,9 @@ import org.springframework.transaction.IllegalTransactionStateException;
 /**
  * GamificationAccountAdapter coin awards, driven through real {@link ProgressionService} XP grants
  * (bd mezo-huzd, behavior contract clause 3: quest/all3/level_up coins + the idempotency backstop).
+ * NOT @Transactional: MANDATORY propagation proof (onXpAwarded refuses to join outside a tx) and
+ * committed multi-transaction replay scenarios (idempotency via external checks) require real
+ * transaction boundaries and rollback isolation between test methods.
  */
 class GamificationCoinIT extends AbstractIntegrationTest {
 

@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.GamificationDayResponse;
 import io.mrkuhne.mezo.api.dto.GamificationProfileResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.gamification.repository.CoinEventRepository;
 import io.mrkuhne.mezo.feature.progression.habit.HabitSignal;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -27,6 +28,7 @@ class GamificationApiIT extends ApiIntegrationTest {
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private GamificationPopulator gamificationPopulator;
+    @Autowired private CoinEventRepository coinEventRepository;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -105,6 +107,8 @@ class GamificationApiIT extends ApiIntegrationTest {
         assertThat(res.getCoins()).isEqualTo(100); // 200 - 100 (kezdo-kanal price)
         assertThat(res.getOwnedTitleKeys()).contains("kezdo-kanal");
         assertThat(res.getEquippedTitleKey()).isEqualTo("kezdo-kanal");
+        assertThat(coinEventRepository.existsByCreatedByAndReasonAndSourceRefId(
+            owner, "purchase", "buy-kezdo-kanal")).isTrue();
     }
 
     @Test
@@ -211,5 +215,10 @@ class GamificationApiIT extends ApiIntegrationTest {
 
         assertThat(res.getCoins()).isEqualTo(300); // 500 - 200 (saver price)
         assertThat(res.getStreakSavers()).isEqualTo(1);
+        assertThat(coinEventRepository.findByCreatedByAndOccurredOnOrderByCreatedAtAsc(owner, LocalDate.now()))
+            .anySatisfy(e -> {
+                assertThat(e.getReason()).isEqualTo("purchase");
+                assertThat(e.getAmount()).isEqualTo(-200);
+            });
     }
 }
