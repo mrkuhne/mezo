@@ -204,6 +204,20 @@ export const handlers = [
       coins: 45, streakDays: 4, streakAlive: true, streakSavers: 2,
       equippedTitleKey: 'kovetkezetes', ownedTitleKeys: [],
     })),
+  // Ritual day (R3, mezo-ilsj) — open window, not yet closed. Tests override with
+  // server.use() for the closed-day / custom-window assertions.
+  http.get(`${API_BASE}/api/ritual/day/:date`, ({ params }) =>
+    HttpResponse.json({
+      date: String(params.date), closed: false, closedAt: null,
+      window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+    })),
+  http.post(`${API_BASE}/api/ritual/close`, async ({ request }) => {
+    const body = (await request.json()) as { date: string }
+    return HttpResponse.json({
+      date: body.date, closed: true, closedAt: '2026-07-25T20:24:00Z',
+      window: { opensAt: '21:15', prepStartsAt: '21:45', bedTime: '22:30' },
+    })
+  }),
 
   http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
