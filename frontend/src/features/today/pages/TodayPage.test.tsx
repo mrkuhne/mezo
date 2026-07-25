@@ -90,7 +90,10 @@ test('Teendők ma order: TodayQuestsCard → RitualCard → RoutineCard (mezo-il
   vi.stubEnv('VITE_USE_MOCK', 'true')
   renderAt('/today?ritual=open')
   const quests = screen.getByText('⚡ Napi küldetések')
-  const ritual = screen.getByText('Napzárás')
+  // In the ESTE daypart, RoutineCard also renders the evening_ritual habit row (title
+  // "Napzárás"), so 'Napzárás' matches twice; RitualCard mounts before RoutineCard in
+  // TodayPage's JSX, so [0] is always the RitualCard node regardless of daypart.
+  const ritual = screen.getAllByText('Napzárás')[0]
   const routine = screen.getByText(/rutin/i) // RoutineCard's only "rutin"-bearing text, any daypart
   const order = [quests, ritual, routine]
   for (let i = 0; i + 1 < order.length; i += 1) {
