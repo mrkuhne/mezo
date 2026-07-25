@@ -29,10 +29,19 @@ export function useRitualActions(date: string): { close: () => Promise<RitualDay
         return next
       }
       const day = await ritualApi.close(date)
-      for (const key of [['ritualDay', date], ['habitDay', date], ['dailyQuests', date],
-        ['gamificationDay', date], ['gamification'], ['progressionProfile']]) {
-        qc.invalidateQueries({ queryKey: key })
-      }
+      // mezo-ywz1: the derived evening_ritual completion (+10 XP + level_up) is persisted ONLY by
+      // the GET /api/habit/day the server gates it on. RitualPage mounts useHabitDay so this
+      // invalidation refetches; await it so the +10 lands in level_up_event BEFORE the harvest reads.
+      await qc.invalidateQueries({ queryKey: ['habitDay', date] })
+      // Now the +10 exists → re-read the harvest aggregate + account rollup (they must NOT run
+      // concurrently with the habitDay refetch, or they race the award persistence).
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ['gamificationDay', date] }),
+        qc.invalidateQueries({ queryKey: ['gamification'] }),
+        qc.invalidateQueries({ queryKey: ['progressionProfile'] }),
+      ])
+      qc.invalidateQueries({ queryKey: ['dailyQuests', date] }) // not harvest-critical — fire-and-forget
+      qc.invalidateQueries({ queryKey: ['ritualDay', date] })
       return day
     },
   })

@@ -8,7 +8,7 @@ import { ReleaseStep } from '@/features/ritual/components/ReleaseStep'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { localDateString } from '@/shared/lib/dates'
-import { useCheckins, useDayRecap, useHabitActions, useRitualActions, useRitualDay } from '@/data/hooks'
+import { useCheckins, useDayRecap, useHabitActions, useHabitDay, useRitualActions, useRitualDay } from '@/data/hooks'
 
 const ACT_COUNT = 5
 
@@ -35,6 +35,14 @@ export function RitualPage() {
   const { checkins, saveCheckIn } = useCheckins()
   const { close } = useRitualActions(date)
   const { consumeLevelUps } = useHabitActions(date)
+  // mezo-ywz1: mount an active observer on ['habitDay', date] — with none, close()'s
+  // invalidateQueries(['habitDay', date]) only marks the key stale and never actually
+  // refetches, so the server-derived evening_ritual completion (+10 XP + level_up_event,
+  // produced ONLY by GET /api/habit/day) never lands in the cache. useHabitDay uses
+  // staleTime:0 in real mode, so this mount is exactly what makes that invalidation refetch.
+  // The return value is unused; mounting the hook IS the fix. On first mount this fires one
+  // harmless GET (ritual_closed=false → evening_ritual stays pending, no completion yet).
+  useHabitDay(date)
   const [act, setAct] = useState(1)
   const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
   const [journalOpen, setJournalOpen] = useState(false)
@@ -46,10 +54,13 @@ export function RitualPage() {
     if (act === 4 && !closedRef.current) {
       closedRef.current = true
       close().then(() => {
-        // The Harvest act (HarvestStep, Task 6) already displays today's XP/coins/streak as
-        // the ritual's own celebration — consume (silently drop) any habit levelUps sitting
-        // in the cache so RoutineCard's effect doesn't fire the global LevelUpScreen a
-        // second time once the user lands back on /today.
+        // mezo-ywz1: in real mode close() now awaits the ['habitDay', date] refetch (see
+        // useRitualActions), so by the time this runs the ritual's own +10/level_up_event is
+        // already sitting in the habitDay cache — not just an earlier-in-the-day one. The
+        // Harvest act (HarvestStep, Task 6) already displays today's XP/coins/streak as the
+        // ritual's own celebration, so consume (silently drop) it here, so RoutineCard's
+        // effect doesn't fire the global LevelUpScreen a second time once the user lands
+        // back on /today.
         consumeLevelUps()
       })
     }
