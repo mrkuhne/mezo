@@ -74,4 +74,12 @@ describe('PrepExerciseCard', () => {
     }} />)
     expect(screen.getByText(/\+2[.,]5 kg/)).toBeInTheDocument()
   })
+
+  it('renders a +1 rep chip for a rep-lever progression signal', () => {
+    render(<PrepExerciseCard oneRmKg={null} accentChallenge={null} exercise={{
+      ...anchoredExercise,
+      progression: { lever: 'rep', deltaKg: null, deltaReps: 1, targetWeightKg: 22, targetReps: 15, rationale: '' },
+    }} />)
+    expect(screen.getByText('+1 rep')).toBeInTheDocument()
+  })
 })

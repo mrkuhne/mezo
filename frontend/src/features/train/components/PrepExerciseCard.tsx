@@ -79,7 +79,10 @@ export function PrepExerciseCard({ exercise, oneRmKg, accentChallenge }: {
               className="chip"
               style={{
                 fontSize: 9, padding: '3px 8px', fontWeight: 700,
-                background: e.progression.lever === 'rep' ? 'var(--sage)' : 'var(--coral)',
+                background:
+                  e.progression.lever === 'rep' ? 'var(--sage)'
+                  : e.progression.lever === 'deload' ? 'var(--amber-deep)'
+                  : 'var(--coral)',
                 color: 'var(--surface-1)', border: 'none',
               }}
             >

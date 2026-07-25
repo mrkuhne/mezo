@@ -59,4 +59,30 @@ describe('PrepHero', () => {
     render(<PrepHero overline="X" title="Y" forecast={noLevelUp} stats={stats} />)
     expect(screen.queryByText('⚡ szintlépés-esély!')).not.toBeInTheDocument()
   })
+
+  it('renders the overload chip with both halves when weightUp and repUp are both nonzero', () => {
+    render(<PrepHero overline="X" title="Y" forecast={null} stats={stats} overload={{ weightUp: 2, repUp: 1, hold: 0 }} />)
+    expect(screen.getByText('⚡ Túlterhelés: 2× +súly · 1× +rep')).toBeInTheDocument()
+  })
+
+  it('hides the overload chip when overload is null', () => {
+    render(<PrepHero overline="X" title="Y" forecast={null} stats={stats} overload={null} />)
+    expect(screen.queryByText(/Túlterhelés/)).not.toBeInTheDocument()
+  })
+
+  it('hides the overload chip when overload is omitted', () => {
+    render(<PrepHero overline="X" title="Y" forecast={null} stats={stats} />)
+    expect(screen.queryByText(/Túlterhelés/)).not.toBeInTheDocument()
+  })
+
+  it('hides the overload chip when weightUp and repUp are both zero', () => {
+    render(<PrepHero overline="X" title="Y" forecast={null} stats={stats} overload={{ weightUp: 0, repUp: 0, hold: 0 }} />)
+    expect(screen.queryByText(/Túlterhelés/)).not.toBeInTheDocument()
+  })
+
+  it('omits the +rep half of the overload chip when only weightUp is nonzero', () => {
+    render(<PrepHero overline="X" title="Y" forecast={null} stats={stats} overload={{ weightUp: 2, repUp: 0, hold: 0 }} />)
+    expect(screen.getByText(/2× \+súly/)).toBeInTheDocument()
+    expect(screen.queryByText(/\+rep/)).not.toBeInTheDocument()
+  })
 })
