@@ -26,6 +26,7 @@ class MealScoringServiceTest {
         new MealScoringProperties.Weights(0.22, 0.10, 0.14, 0.10, 0.18, 0.08, 0.06, 0.12, 0.12),
         new MealScoringProperties.NovaGroupScores(1.0, 0.85, 0.55, 0.20),
         2.0,
+        0.0,
         new MealScoringProperties.MicroRefs(38),
         new MealScoringProperties.WhoRefs(0.10, 5),
         new MealScoringProperties.FatQualityRefs(0.10, 0.33),
@@ -81,6 +82,40 @@ class MealScoringServiceTest {
         assertThat(macro.score()).isEqualByComparingTo("1.00");
         assertThat(macro.macro().kcalShareOfDay().doubleValue()).isCloseTo(35.0, within(0.5));
         assertThat(macro.macro().notes()).isNull();
+    }
+
+    @Test
+    void testScoreMeal_shouldNotPenalizeProteinOvershoot_whenSurplusPenaltyZero() {
+        // 60p/40c/10f on 490 macro-kcal → shares 49/33/18% vs targets ~27/47/26%: protein +22pp
+        // is FORGIVEN (fitness-app policy, mezo-8ms6); only the carb (−14pp) and fat (−8pp)
+        // deficits count → deviation (0.1404+0.0790)/2 → score 1 − 2·0.1097 = 0.78 (symmetric: 0.56)
+        var lines = List.of(line("Csirkés tál", 620, 60, 40, 10, 1, 5.0, 8.0, 0.5, 3.0));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "macro");
+        assertThat(dim.score()).isEqualByComparingTo("0.78");
+    }
+
+    @Test
+    void testScoreMeal_shouldStillPenalizeProteinDeficit_whenSurplusPenaltyZero() {
+        // 20p/100c/15f on 615 macro-kcal → shares 13/65/22%: the protein DEFICIT (−14pp) and the
+        // carb surplus (+18pp) count in full → deviation 0.1834 → score 1 − 2·0.1834 = 0.63
+        var lines = List.of(line("Tésztás tál", 620, 20, 100, 15, 1, 5.0, 8.0, 0.5, 3.0));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "macro");
+        assertThat(dim.score()).isEqualByComparingTo("0.63");
+    }
+
+    @Test
+    void testScoreMeal_shouldReproduceSymmetricPenalty_whenSurplusPenaltyOne() {
+        // surplus-penalty 1.0 must reproduce the old total-variation score for the SAME
+        // protein-heavy line as the forgiveness test: (0.2194+0.1404+0.0790)/2 → 0.56
+        MealScoringProperties symmetric = new MealScoringProperties(
+            props.weights(), props.nova(), props.macroDeviationSlope(), 1.0, props.micro(),
+            props.who(), props.fatQuality(), props.plantDiversity(), props.energyDensity(),
+            props.portion(), props.slotShares(), props.slotWindows(), props.slotShareTolerance());
+        MealScoringService symmetricService = new MealScoringService(symmetric, targets);
+
+        var lines = List.of(line("Csirkés tál", 620, 60, 40, 10, 1, 5.0, 8.0, 0.5, 3.0));
+        var dim = dimension(symmetricService.scoreMeal("lunch", lines, LocalTime.NOON), "macro");
+        assertThat(dim.score()).isEqualByComparingTo("0.56");
     }
 
     @Test
