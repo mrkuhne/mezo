@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { useIntentionDay, useIntentionActions } from '@/data/intention/intentionHooks'
 import { API_BASE } from '@/data/_client/api'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
+import type { HabitDay } from '@/data/habit/habitApi'
 import type { IntentionDay } from '@/data/types'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -69,6 +70,28 @@ describe('useIntentionDay (mock mode)', () => {
 
     // A second focus is NOT the first of the day → no further award.
     await act(() => actions.result.current.addFocus('Második fókusz.'))
+    expect(awardMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('reflect stores the value and completes the intention_reflect habit exactly once (+5 XP)', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['intentionDay', DATE], dayWith([]))
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    )
+    const actions = renderHook(() => useIntentionActions(DATE), { wrapper })
+
+    await act(() => actions.result.current.reflect('yes'))
+    expect(client.getQueryData<IntentionDay>(['intentionDay', DATE])?.reflection).toBe('yes')
+    // the DERIVED intention_reflect habit flips in the habitDay cache (server-derivation mirror)
+    const habits = client.getQueryData<HabitDay>(['habitDay', DATE])?.habits
+    expect(habits?.find((h) => h.key === 'intention_reflect')?.status).toBe('done')
+    expect(awardMock).toHaveBeenCalledTimes(1)
+    expect(awardMock).toHaveBeenCalledWith(expect.anything(), { type: 'HABIT', xpOverride: 5 })
+
+    // re-reflect updates the stored value but never re-awards
+    await act(() => actions.result.current.reflect('partial'))
+    expect(client.getQueryData<IntentionDay>(['intentionDay', DATE])?.reflection).toBe('partial')
     expect(awardMock).toHaveBeenCalledTimes(1)
   })
 

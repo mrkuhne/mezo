@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import { habitApi, type HabitDay } from '@/data/habit/habitApi'
@@ -14,6 +14,26 @@ const EMPTY_DAY: HabitDay = { habits: [], levelUps: [] }
 
 export interface HabitDayView extends HabitDay {
   mode: 'mock' | 'live'
+}
+
+/**
+ * Mock-mode mirror of a server-side DERIVED completion (real mode re-derives the row on the
+ * next habitDay read; the mock has no evaluator, so the owning surface's mutation flips the
+ * chain row here — mezo-o5hx). Seeds the day from the mock seed when no surface mounted it
+ * yet. Returns whether the row actually flipped, so callers can gate a one-time XP award.
+ */
+export function completeMockDerivedHabit(qc: QueryClient, date: string, habitKey: string): boolean {
+  const day = qc.getQueryData<HabitDay>(key(date)) ?? MOCK_DAY
+  const target = day.habits.find((h) => h.key === habitKey)
+  if (!target || target.status !== 'pending') {
+    return false
+  }
+  qc.setQueryData<HabitDay>(key(date), {
+    ...day,
+    habits: day.habits.map((h) =>
+      h.key === habitKey ? { ...h, status: 'done', doneAt: new Date().toISOString() } : h),
+  })
+  return true
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
+import { completeMockDerivedHabit } from '@/data/habit/habitHooks'
 import { intentionApi } from '@/data/intention/intentionApi'
 import { mockIntentionDay } from '@/data/intention/intentionMock'
 import type { IntentionDay, Reflection } from '@/data/types'
@@ -63,7 +64,16 @@ export function useIntentionActions(date: string) {
   })
   const reflectM = useMutation({
     mutationFn: async (value: Reflection) => {
-      if (mock) { patch((d) => ({ ...d, reflection: value })); return }
+      if (mock) {
+        patch((d) => ({ ...d, reflection: value }))
+        // Mock mirror of the server-side intention_reflected derivation (real mode re-derives
+        // on the habitDay invalidation below): the first reflection also completes the DERIVED
+        // intention_reflect chain row + awards its catalog XP (the ritual-close precedent).
+        if (completeMockDerivedHabit(qc, date, 'intention_reflect')) {
+          awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 5 })
+        }
+        return
+      }
       return intentionApi.reflect(date, value).then(() => undefined)
     },
     onSuccess: mock ? undefined : invalidate,

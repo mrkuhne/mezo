@@ -1,6 +1,14 @@
 import type { HabitItem, HabitSummary } from '@/data/types'
 
-/** Static seed mirroring content/habit-catalog.json; demo state: 3 morning items done. */
+/**
+ * Static seed mirroring content/habit-catalog.json; demo state: 3 morning items done.
+ * Deliberate mock deviations (there is no evaluator / nightly close / "tomorrow" in the
+ * static mock day, so honest server-side derivation has no mock equivalent):
+ * - caffeine_cutoff + kitchen_close are MANUAL here (real catalog: DERIVED END_OF_DAY) so
+ *   the evening chain stays playable;
+ * - bed_on_time (E4 — decided by TOMORROW's sleep log) is omitted entirely: it could never
+ *   complete and would sit as a permanently dead row (mezo-o5hx).
+ */
 export const mockHabitDay: HabitItem[] = [
   { key: 'wake_on_time', chain: 'MORNING', position: 1, title: 'Ébredés időben',
     why: 'A napfelkeltéhez igazított ébredés indítja az esti melatonint — a mély alvás reggel kezdődik.',
@@ -29,10 +37,10 @@ export const mockHabitDay: HabitItem[] = [
     anchorCopy: 'edzés után', mode: 'DERIVED', status: 'pending', xp: 10, strengthPct: 79 },
   { key: 'caffeine_cutoff', chain: 'EVENING', position: 1, title: 'Koffein-cutoff',
     why: 'A koffein felezési ideje ~6 óra — a délutáni kávé az éjszakádból vesz el.',
-    anchorCopy: 'a lánc kezdete', mode: 'DERIVED', status: 'pending', xp: 10, strengthPct: 86 },
+    anchorCopy: 'a lánc kezdete', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 86 },
   { key: 'kitchen_close', chain: 'EVENING', position: 2, title: 'Konyha zárva',
     why: 'Az utolsó falat és a lefekvés közti 90 perc a mély alvásod védőzónája.',
-    anchorCopy: 'vacsora után', mode: 'DERIVED', status: 'pending', xp: 10, strengthPct: 68 },
+    anchorCopy: 'vacsora után', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 68 },
   { key: 'intention_reflect', chain: 'EVENING', position: 3, title: 'Szándékkal éltem?',
     why: 'A napzáró őszinte pillantás tanít a legtöbbet — tartás vagy sodródás volt?',
     anchorCopy: 'konyhazárás után', mode: 'DERIVED', status: 'pending', xp: 5, strengthPct: 55 },
@@ -42,9 +50,6 @@ export const mockHabitDay: HabitItem[] = [
   { key: 'wind_down', chain: 'EVENING', position: 5, title: 'Wind-down, képernyő le',
     why: 'A tompuló fény jelzi az agyadnak: jöhet a melatonin.',
     anchorCopy: 'napzárás után', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 43 },
-  { key: 'bed_on_time', chain: 'EVENING', position: 6, title: 'Lefekvés időben',
-    why: 'A fix lefekvés a teljes lánc záróköve — ettől lesz holnap is reggeled.',
-    anchorCopy: 'wind-down után', mode: 'DERIVED', status: 'pending', xp: 15, strengthPct: 61 },
 ]
 
 export const mockHabitSummary: HabitSummary = {

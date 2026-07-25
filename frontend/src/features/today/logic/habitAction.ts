@@ -16,8 +16,12 @@ const NAV_BY_KEY: Record<string, string> = {
   morning_workout: '/train',
 }
 
-/** Sleep-derived habits open the sleep log inline (the chain shouldn't dead-end on a nav away). */
-const SLEEP_KEYS = new Set(['wake_on_time', 'bed_on_time'])
+/**
+ * Sleep-derived habits open the sleep log inline (the chain shouldn't dead-end on a nav away).
+ * bed_on_time is deliberately NOT here: tonight's row is decided by TOMORROW's sleep log
+ * (E4 bedtime_next_day) — an evening sleep-log CTA would log last night, not tonight.
+ */
+const SLEEP_KEYS = new Set(['wake_on_time'])
 
 export function habitAction(h: HabitItem): HabitAction {
   if (h.status !== 'pending') {
