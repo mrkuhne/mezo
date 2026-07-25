@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.train.ClosingBlockGate;
 import io.mrkuhne.mezo.feature.train.HypertrophyDriveGate;
+import io.mrkuhne.mezo.feature.train.VolumeProgressionGate;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
@@ -23,12 +24,14 @@ import io.mrkuhne.mezo.feature.train.signal.GymSignalCalculator;
 import io.mrkuhne.mezo.feature.progression.mapper.LevelUpResultMapper;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseFeedbackRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
+import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -91,6 +94,12 @@ public class WorkoutService {
     // Session flow fix (mezo-cd8s): lazily settle abandoned instances at the top of getToday — its
     // own @Transactional bean (getToday is a read), always on (no feature gate).
     private final WorkoutAutoCloseService workoutAutoCloseService;
+    // Volume Progression (Plan 2 Phase A, mezo-hi9m): weekly per-muscle set-target rollover + the
+    // effective per-exercise working-set distribution in getToday. The gate bean exists ONLY when
+    // mezo.feature.volume-progression.enabled=true (mirrors hypertrophyGate/closingBlockGate).
+    private final VolumeProgressionService volumeProgressionService;
+    private final MuscleGroupVolumeLogRepository muscleGroupVolumeLogRepository;
+    private final ObjectProvider<VolumeProgressionGate> volumeGate;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -103,6 +112,13 @@ public class WorkoutService {
         MesocycleEntity activeMeso = mesocycleRepository
             .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
             .stream().findFirst().orElse(null);
+        // Volume progression (mezo-hi9m): lazy weekly rollover, own @Transactional bean — mutates
+        // activeMeso in place (currentWeek/volumeRecompute + each muscle's currentSets), so no
+        // re-read is needed. MUST run before deloadWeek below (reads activeMeso.currentWeek) and
+        // before the effective-set distribution (reads the volume logs' currentSets).
+        if (activeMeso != null && volumeGate.getIfAvailable() != null) {
+            volumeProgressionService.rolloverIfDue(createdBy, activeMeso);
+        }
         // Fix zárás: idempotent ensure across ALL template days of the active meso, BEFORE
         // today's exercise list is resolved — its own @Transactional (getToday itself is a read).
         if (activeMeso != null && closingBlockGate.getIfAvailable() != null) {
@@ -149,14 +165,30 @@ public class WorkoutService {
         // redirect, so it stays null for custom-origin days (mezo-ws2x D4).
         WorkoutSessionEntity completedToday =
             "custom".equals(day.getOrigin()) ? null : completedThisWeek(createdBy, day.getId());
-        // Deload-week detection (mezo-5pfe): the active meso's phaseCurve[currentWeek], bound-checked
-        // since currentWeek can point past the curve (e.g. the default test meso: currentWeek=3 over
-        // a 3-element curve) — out-of-bounds resolves to non-deload rather than throwing.
+        // Deload-week detection (mezo-5pfe, DA1 fix mezo-hi9m): phaseCurve is 1-based against the
+        // active meso's 1-based currentWeek (calendar week — see VolumeProgressionService/MesoWeeks)
+        // — index currentWeek-1, bound-checked since currentWeek can point past the curve —
+        // out-of-bounds resolves to non-deload rather than throwing.
+        int phaseIdx = activeMeso != null ? activeMeso.getCurrentWeek() - 1 : -1;
         boolean deloadWeek = activeMeso != null
             && activeMeso.getPhaseCurve() != null
-            && activeMeso.getCurrentWeek() >= 0
-            && activeMeso.getCurrentWeek() < activeMeso.getPhaseCurve().size()
-            && "Deload".equalsIgnoreCase(activeMeso.getPhaseCurve().get(activeMeso.getCurrentWeek()));
+            && phaseIdx >= 0
+            && phaseIdx < activeMeso.getPhaseCurve().size()
+            && "Deload".equalsIgnoreCase(activeMeso.getPhaseCurve().get(phaseIdx));
+        // Effective per-exercise working sets (DA6): when the volume switch is on and the active
+        // meso carries volume-log rows, each exercise's working-set count is its muscle group's
+        // currentSets distributed across today's same-group exercises (proportional to template
+        // workingSets, remainder to the largest, never below 1). Groups without a log row — and
+        // every exercise when the switch is off or there are no log rows at all — keep the
+        // template workingSets (unchanged Plan-1 behavior).
+        Map<UUID, Integer> effectiveSets = Map.of();
+        if (activeMeso != null && volumeGate.getIfAvailable() != null) {
+            List<MuscleGroupVolumeLogEntity> logs = muscleGroupVolumeLogRepository
+                .findByCreatedByAndMesocycleIdInOrderByMuscleAsc(createdBy, List.of(activeMeso.getId()));
+            if (!logs.isEmpty()) {
+                effectiveSets = effectiveWorkingSets(exercises, logs);
+            }
+        }
         int weightUp = 0;
         int repUp = 0;
         int hold = 0;
@@ -167,8 +199,10 @@ public class WorkoutService {
             if (e.getCatalogId() != null) {
                 t.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
             }
+            int effective = effectiveSets.getOrDefault(e.getId(), e.getWorkingSets());
+            t.setWorkingSets(effective);
             if (hypertrophyGate.getIfAvailable() != null) {
-                Prescription p = setRecommendationService.prescribe(createdBy, e, deloadWeek);
+                Prescription p = setRecommendationService.prescribe(createdBy, e, deloadWeek, effective);
                 t.setPrescribedSets(p.sets());
                 t.setRationale(p.rationale());
                 t.setProgression(p.progression());
@@ -300,6 +334,80 @@ public class WorkoutService {
         LocalDate today = LocalDate.now();
         LocalDate monday = today.minusDays(today.getDayOfWeek().getValue() - 1L);
         return workoutSessionRepository.findMesoDoneInstanceDates(createdBy, monday, monday.plusDays(6));
+    }
+
+    /**
+     * Each exercise's effective working-set count (DA6): a muscle group's volume-log
+     * {@code currentSets} distributed across today's exercises of that group, proportional to
+     * each exercise's template {@code workingSets}. Base-1 + largest-remainder: every exercise
+     * gets a floor of 1 set, then the rest of the target is handed out proportionally with
+     * largest-remainder rounding — so {@code sum(effective) == currentSets} exactly whenever
+     * {@code currentSets >= exerciseCount} (below that, every exercise still gets its floor of 1,
+     * so the sum can only exceed the target, never fall short). An exercise whose group carries
+     * no log row is absent from the returned map — the caller falls back to the template
+     * {@code workingSets} (DA5-style).
+     */
+    private Map<UUID, Integer> effectiveWorkingSets(
+            List<ExerciseEntity> exercises, List<MuscleGroupVolumeLogEntity> logs) {
+        Map<String, Integer> targetSetsByGroup = logs.stream()
+            .collect(Collectors.toMap(MuscleGroupVolumeLogEntity::getMuscle,
+                MuscleGroupVolumeLogEntity::getCurrentSets, (a, b) -> a));
+        Map<String, List<ExerciseEntity>> byGroup = exercises.stream()
+            .collect(Collectors.groupingBy(e -> MuscleGroup.of(e.getMuscle())));
+        Map<UUID, Integer> out = new java.util.HashMap<>();
+        for (Map.Entry<String, List<ExerciseEntity>> entry : byGroup.entrySet()) {
+            Integer targetSets = targetSetsByGroup.get(entry.getKey());
+            if (targetSets == null) {
+                continue; // no log row for this group — caller keeps the template count
+            }
+            List<ExerciseEntity> groupExercises = entry.getValue();
+            int exerciseCount = groupExercises.size();
+            if (exerciseCount == 0) {
+                continue;
+            }
+            if (targetSets <= exerciseCount) {
+                // Can't sum below exerciseCount with a >=1 floor per exercise (degenerate).
+                groupExercises.forEach(e -> out.put(e.getId(), 1));
+                continue;
+            }
+            int templateSum = groupExercises.stream().mapToInt(ExerciseEntity::getWorkingSets).sum();
+            int remaining = targetSets - exerciseCount; // reserve 1 set/exercise up front
+            Map<UUID, Integer> extra = new java.util.HashMap<>();
+            Map<UUID, Double> fraction = new java.util.HashMap<>();
+            if (templateSum <= 0) {
+                // No template signal to weigh by — split the remainder as evenly as possible.
+                int base = remaining / exerciseCount;
+                int evenRemainder = remaining % exerciseCount;
+                int idx = 0;
+                for (ExerciseEntity e : groupExercises) {
+                    extra.put(e.getId(), base + (idx < evenRemainder ? 1 : 0));
+                    idx++;
+                }
+            } else {
+                int distributedExtra = 0;
+                for (ExerciseEntity e : groupExercises) {
+                    double exact = remaining * (double) e.getWorkingSets() / templateSum;
+                    int floor = (int) Math.floor(exact);
+                    extra.put(e.getId(), floor);
+                    fraction.put(e.getId(), exact - floor);
+                    distributedExtra += floor;
+                }
+                // Largest-remainder: hand out what floor-rounding left on the table, one set at a
+                // time, to the biggest fractional share (ties -> bigger template workingSets, then
+                // stable list order).
+                int leftover = remaining - distributedExtra;
+                List<ExerciseEntity> byFractionDesc = groupExercises.stream()
+                    .sorted(Comparator.<ExerciseEntity>comparingDouble(e -> fraction.get(e.getId()))
+                        .reversed()
+                        .thenComparing(Comparator.comparingInt(ExerciseEntity::getWorkingSets).reversed()))
+                    .toList();
+                for (int i = 0; i < leftover; i++) {
+                    extra.merge(byFractionDesc.get(i).getId(), 1, Integer::sum);
+                }
+            }
+            groupExercises.forEach(e -> out.put(e.getId(), 1 + extra.get(e.getId())));
+        }
+        return out;
     }
 
     /**

@@ -53,7 +53,13 @@ class WorkoutTodayProgressionIT extends AbstractIntegrationTest {
         UUID owner = ownerId();
         MesocycleEntity meso = train.createActiveMeso(owner);
         meso.setPhaseCurve(List.of("Deload"));
-        meso.setCurrentWeek(0);
+        // 1-based currentWeek (calendar week, DA1): index 0 of a 1-element curve == week 1.
+        meso.setCurrentWeek(1);
+        // Volume rollover (mezo-hi9m) runs at the top of getToday whenever the switch is on
+        // (default) — pin lastRun far ahead of any calendar week this fixture's startDate could
+        // ever clamp to, so the rollover is a guaranteed no-op and this currentWeek sticks.
+        meso.setVolumeRecompute(new io.mrkuhne.mezo.feature.train.entity.VolumeRecomputeJson(
+            "W999", "W1000", "batch", List.of()));
         mesocycleRepository.saveAndFlush(meso);
         String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
         var day = train.createTemplateDay(owner, meso.getId(), todayLabel);

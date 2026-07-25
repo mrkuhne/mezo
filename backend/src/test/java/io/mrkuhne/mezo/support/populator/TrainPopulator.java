@@ -158,6 +158,30 @@ public class TrainPopulator {
         return createMesocycle(createdBy, "P1 meso", "active");
     }
 
+    /**
+     * An active mesocycle whose {@code startDate} sits {@code weeksAgo} full weeks in the past —
+     * the volume-rollover trigger's scenario builder (calendar week now sits ahead of week 1).
+     * {@code volumeRecompute} starts {@code null} (never recomputed), {@code currentWeek} at 1.
+     */
+    public MesocycleEntity activeMesoStartedWeeksAgo(
+        UUID createdBy, int weeksAgo, int weeks, List<String> phaseCurve) {
+        MesocycleEntity m = new MesocycleEntity();
+        m.setCreatedBy(createdBy);
+        m.setTitle("Volume rollover meso");
+        m.setShortTitle("Volume rollover meso");
+        m.setStatus("active");
+        LocalDate start = LocalDate.now().minusWeeks(weeksAgo);
+        m.setStartDate(start);
+        m.setEndDate(start.plusWeeks(weeks).minusDays(1));
+        m.setWeeks(weeks);
+        m.setCurrentWeek(1);
+        m.setSplit("Pull / Push / Legs · 5×/hét");
+        m.setStyle("RP · " + weeks + " hét");
+        m.setPhaseCurve(phaseCurve);
+        m.setVolumeRecompute(null);
+        return mesocycleRepository.saveAndFlush(m);
+    }
+
     /** A template day (templateSessionId null) hanging off a meso — logSet's exercise chain root. */
     public WorkoutSessionEntity createTemplateDay(UUID createdBy, UUID mesocycleId, String dayLabel) {
         return createWorkoutSession(createdBy, mesocycleId, dayLabel, "gym", 0, "active");
@@ -341,6 +365,31 @@ public class TrainPopulator {
             s.setSetIndex(setIndex++);
             s.setDoneAt(Instant.now());
             exerciseSetRepository.saveAndFlush(s);
+        }
+        return instance;
+    }
+
+    /**
+     * A completed instance dated inside 1-based week {@code week}'s {@code startDate}-anchored
+     * window, carrying {@code nSets} chest working sets at {@code rir} against a fresh chest
+     * exercise (own template day, {@code targetRir} set explicitly) — the volume-rollover
+     * trigger's "last week's performance" scenario builder ({@code VolumeProgressionServiceIT}).
+     * Uses {@link #createWorkoutInstance} + {@link #createLoggedSet} directly (unlike
+     * {@link #completedInstanceWithSets}, which hardcodes {@code now()}) so the instance lands in
+     * an arbitrary past/future week.
+     */
+    public WorkoutSessionEntity completedChestSetsInWeek(
+        UUID createdBy, MesocycleEntity meso, int week, int nSets, int rir, int targetRir) {
+        WorkoutSessionEntity template = createWorkoutSession(
+            createdBy, meso.getId(), "Mell nap", "gym", 0, "planned");
+        ExerciseEntity exercise = createExercise(createdBy, template.getId(), "Fekvenyomás", "chest", "compound");
+        exercise.setTargetRir(targetRir);
+        save(exercise);
+
+        LocalDate date = meso.getStartDate().plusWeeks(week - 1L);
+        WorkoutSessionEntity instance = createWorkoutInstance(createdBy, template, date, "completed");
+        for (int i = 0; i < nSets; i++) {
+            createLoggedSet(createdBy, exercise.getId(), instance.getId(), i, "60", 8, rir);
         }
         return instance;
     }

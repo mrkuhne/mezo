@@ -23,8 +23,6 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -119,7 +117,7 @@ public class TrainService {
         m.setEndDate(req.getStartDate().plusWeeks(req.getWeeks()));
         m.setWeeks(req.getWeeks());
         m.setCurrentWeek(req.getStatus() == MesocycleCreateRequest.StatusEnum.ACTIVE
-            ? clampWeek(req.getStartDate(), req.getWeeks())
+            ? MesoWeeks.clampWeek(req.getStartDate(), req.getWeeks())
             : 0);
         m.setSplit(req.getSplit());
         m.setStyle(req.getStyle());
@@ -164,7 +162,7 @@ public class TrainService {
             // Single-active invariant (spec rule): activating archives every other active meso.
             archiveActiveMesos(createdBy);
             target.setStatus("active");
-            target.setCurrentWeek(clampWeek(target.getStartDate(), target.getWeeks()));
+            target.setCurrentWeek(MesoWeeks.clampWeek(target.getStartDate(), target.getWeeks()));
         }
         return assembleResponse(createdBy, target);
     }
@@ -287,12 +285,6 @@ public class TrainService {
     /** Ownership gate: a missing row and a foreign row are indistinguishable to the caller (404). */
     private MesocycleEntity ownedMesoOrThrow(UUID createdBy, UUID id) {
         return OwnershipGuard.ownedOrThrow(mesocycleRepository.findById(id), createdBy);
-    }
-
-    /** Week containing today, clamped to [1, weeks] — week 1 before the start date. */
-    private int clampWeek(LocalDate startDate, int weeks) {
-        long week = ChronoUnit.DAYS.between(startDate, LocalDate.now()) / 7 + 1;
-        return (int) Math.max(1, Math.min(weeks, week));
     }
 
     private ExerciseEntity toExerciseEntity(UUID createdBy, UUID workoutSessionId, GymExerciseInput in, int orderIndex) {

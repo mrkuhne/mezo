@@ -147,6 +147,9 @@ mezo:
     # Hypertrophy Drive — pre-populated prescribed sets + dynamic recommendation on GET /workouts/today.
     hypertrophy-drive:
       enabled: true
+    # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume rollover + deload/grind logic.
+    volume-progression:
+      enabled: true
     # Fix zárás (closing block) — dead hang + back extension lazily ensured at the end of every
     # template gym day of the active meso on GET /workouts/today (idempotent; mezo.closing-block).
     closing-block:
@@ -628,6 +631,11 @@ mezo:
     warmup-ramp:
       - { pct: 0.50, reps-factor: 1.0 }   # 50% × repMax
       - { pct: 0.75, reps-factor: 0.5 }   # 75% × ⌈repMax/2⌉
+  # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
+  volume:
+    step: 2                 # sets added per productive week
+    deload-fraction: 0.5    # deload target = round(prevSets * this)
+    grind-rir-gap: 2        # RIR-below-target gap that counts as a grind
   # Fix zárás — closing exercises ensured on every gym day of the active meso; slug references
   # master exercise-catalog rows (content/exercise-catalog.json). Dead-hang reps are SECONDS
   # (plyo type -> weightless, reps-only logging on the FE).
