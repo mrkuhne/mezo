@@ -193,12 +193,12 @@ public class TrainSeedData implements CommandLineRunner {
         // 7 template days (train.ts:152-219). Status "planned" everywhere except Csü = "active".
         WorkoutSessionEntity het = session(by, mesoId, "Hét", "Push", "chest+shoulder+tricep",
             false, null, "planned", 0);
-        exercise(by, het, "Barbell Bench Press", "chest", 4, "6-8", 1, "compound", null, 0);
-        exercise(by, het, "Incline DB Press", "chest", 3, "8-10", 1, "compound", null, 1);
-        exercise(by, het, "Overhead Press", "shoulder", 3, "8-10", 2, "compound",
+        exercise(by, het, "Barbell Bench Press", "chest-mid", 4, "6-8", 1, "compound", null, 0);
+        exercise(by, het, "Incline DB Press", "chest-upper", 3, "8-10", 1, "compound", null, 1);
+        exercise(by, het, "Overhead Press", "shoulder-front", 3, "8-10", 2, "compound",
             "Niggle-kíméletes verzió · cable variánssal helyettesítve", 2);
-        exercise(by, het, "Lateral Raise", "shoulder", 3, "12-15", 1, "isolation", null, 3);
-        exercise(by, het, "Tricep Pushdown", "triceps", 3, "10-12", 1, "isolation", null, 4);
+        exercise(by, het, "Lateral Raise", "shoulder-side", 3, "12-15", 1, "isolation", null, 3);
+        exercise(by, het, "Tricep Pushdown", "triceps-medial", 3, "10-12", 1, "isolation", null, 4);
 
         WorkoutSessionEntity kedd = session(by, mesoId, "Kedd", "Legs A", "quad+ham+glute",
             false, "Reggeli 07:30 gym · este 17:00 volleyball", "planned", 1);
@@ -220,18 +220,18 @@ public class TrainSeedData implements CommandLineRunner {
         WorkoutSessionEntity csu = session(by, mesoId, "Csü", "Pull", "back+bicep",
             true, null, "active", 3);
         exercise(by, csu, "Chest Supported Row", "back-mid", 4, "8-10", 1, "compound", null, 0);
-        exercise(by, csu, "Lat Pulldown · Pronated", "lats", 3, "10-12", 2, "compound",
+        exercise(by, csu, "Lat Pulldown · Pronated", "back-wide", 3, "10-12", 2, "compound",
             "Pronated grif · csukló-kíméletes", 1);
         exercise(by, csu, "Cable Pull-Around", "back-mid", 3, "12-15", 1, "isolation", null, 2);
-        exercise(by, csu, "Hammer Curl", "biceps", 3, "10-12", 1, "isolation", null, 3);
-        exercise(by, csu, "Face Pull", "rear-delt", 3, "15-20", 1, "isolation", null, 4);
+        exercise(by, csu, "Hammer Curl", "biceps-brachialis", 3, "10-12", 1, "isolation", null, 3);
+        exercise(by, csu, "Face Pull", "shoulder-rear", 3, "15-20", 1, "isolation", null, 4);
 
         WorkoutSessionEntity pen = session(by, mesoId, "Pén", "Push · light", "chest+shoulder",
             false, null, "planned", 4);
-        exercise(by, pen, "Incline DB Press", "chest", 3, "10-12", 2, "compound", null, 0);
-        exercise(by, pen, "Cable Fly", "chest", 3, "12-15", 1, "isolation", null, 1);
-        exercise(by, pen, "Lateral Raise", "shoulder", 3, "12-15", 1, "isolation", null, 2);
-        exercise(by, pen, "Overhead Tricep Ext", "triceps", 3, "10-12", 1, "isolation", null, 3);
+        exercise(by, pen, "Incline DB Press", "chest-upper", 3, "10-12", 2, "compound", null, 0);
+        exercise(by, pen, "Cable Fly", "chest-mid", 3, "12-15", 1, "isolation", null, 1);
+        exercise(by, pen, "Lateral Raise", "shoulder-side", 3, "12-15", 1, "isolation", null, 2);
+        exercise(by, pen, "Overhead Tricep Ext", "triceps-long", 3, "10-12", 1, "isolation", null, 3);
 
         // Szo + Vas — no exercises.
         session(by, mesoId, "Szo", "Volleyball · meccs", "sport",

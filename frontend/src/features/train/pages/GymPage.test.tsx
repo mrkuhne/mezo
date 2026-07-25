@@ -60,8 +60,8 @@ test('meta card shows the region-grouped muscle grid', () => {
   const card = screen.getByRole('button', { name: 'Heti izomterhelés — részletek' })
   // The mock meso trains ham/glute/calf → the sage region label "Láb" is on the card.
   expect(within(card).getByText('Láb')).toBeInTheDocument()
-  // Pills carry "{label} {sets}" — the lats pill (Lat Pulldown, 3 working sets).
-  expect(within(card).getByText(/^Lat \d+$/)).toBeInTheDocument()
+  // Pills carry "{label} {sets}" — the back-wide pill (Lat Pulldown, 3 working sets).
+  expect(within(card).getByText(/^Hát \(széles\) \d+$/)).toBeInTheDocument()
 })
 
 test('tapping the meta card opens the MuscleWeekSheet', () => {

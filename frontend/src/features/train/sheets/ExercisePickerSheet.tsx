@@ -13,7 +13,9 @@ import { useEffect, useRef, useState } from 'react'
 import { useTrain } from '@/data/hooks'
 import { MUSCLE_LABELS } from '@/data/train/train'
 
-import { MUSCLE_FILTERS, FILTER_LABELS, matchesMuscleFilter } from '@/features/train/logic/muscleFilters'
+import {
+  TOP_FILTERS, TOP_FILTER_LABELS, subMuscles, matchesMuscleFilter, type TopFilter,
+} from '@/features/train/logic/muscleFilters'
 import type { ExerciseLibraryItem } from '@/data/types'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
@@ -29,7 +31,9 @@ interface ExercisePickerSheetProps {
 
 export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePickerSheetProps) {
   const { exerciseLibrary } = useTrain()
-  const [filter, setFilter] = useState('all')
+  // Two-level filter: top = 'all'|'plyo'|region, sub = a muscle token within a region (or null).
+  const [top, setTop] = useState<TopFilter>('all')
+  const [sub, setSub] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   // Multi-add: the sheet stays open across picks; count + a short per-row flash
   // give the feedback the auto-close used to provide.
@@ -38,11 +42,11 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => () => { if (flashTimer.current) clearTimeout(flashTimer.current) }, [])
 
-  const muscles = MUSCLE_FILTERS
+  const subs = subMuscles(top)
 
   const filtered = exerciseLibrary.filter(
     (e) =>
-      matchesMuscleFilter(e.muscle, e.type, filter) &&
+      matchesMuscleFilter(e.muscle, e.type, top, sub) &&
       (search === '' || e.name.toLowerCase().includes(search.toLowerCase())),
   )
 
@@ -96,23 +100,43 @@ export function ExercisePickerSheet({ onClose, onPick, dayLabel }: ExercisePicke
             />
           </div>
 
-          {/* Muscle filter */}
+          {/* Muscle filter — level 1: régiók */}
           <div
             className="row gap-xs"
-            style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 14, paddingBottom: 4 }}
+            style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: subs.length ? 8 : 14, paddingBottom: 4 }}
           >
-            {muscles.map((m) => (
+            {TOP_FILTERS.map((m) => (
               <button
                 key={m}
-                onClick={() => setFilter(m)}
-                aria-pressed={filter === m}
-                className={cn('chip', filter === m && 'brand')}
+                onClick={() => { setTop(m); setSub(null) }}
+                aria-pressed={top === m}
+                className={cn('chip', top === m && 'brand')}
                 style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
               >
-                {FILTER_LABELS[m] ?? MUSCLE_LABELS[m] ?? m}
+                {TOP_FILTER_LABELS[m] ?? m}
               </button>
             ))}
           </div>
+
+          {/* Muscle filter — level 2: fej-specifikus al-szűrők (csak régió kiválasztásakor) */}
+          {subs.length > 0 && (
+            <div
+              className="row gap-xs"
+              style={{ overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 14, paddingBottom: 4 }}
+            >
+              {subs.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setSub(sub === m ? null : m)}
+                  aria-pressed={sub === m}
+                  className={cn('chip', sub === m && 'brand')}
+                  style={{ fontSize: 9, padding: '6px 10px', flexShrink: 0 }}
+                >
+                  {MUSCLE_LABELS[m] ?? m}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* List */}
           <div className="col gap-sm">

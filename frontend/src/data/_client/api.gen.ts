@@ -2377,7 +2377,7 @@ export interface components {
         CatalogExerciseCreateRequest: {
             name: string;
             /** @enum {string} */
-            muscle: "back-mid" | "lats" | "chest" | "shoulder" | "rear-delt" | "biceps" | "triceps" | "quad" | "ham" | "glute" | "calf" | "core" | "traps";
+            muscle: "chest-upper" | "chest-mid" | "chest-lower" | "back-wide" | "back-mid" | "back-lower" | "traps" | "shoulder-front" | "shoulder-side" | "shoulder-rear" | "biceps-long" | "biceps-short" | "biceps-brachialis" | "triceps-long" | "triceps-lateral" | "triceps-medial" | "quad" | "ham" | "glute" | "calf" | "core";
             /** @enum {string} */
             type: "compound" | "isolation" | "plyo";
             stim: number;

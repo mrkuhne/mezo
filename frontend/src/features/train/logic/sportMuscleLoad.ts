@@ -15,10 +15,13 @@ import { muscleRegion, REGION_LABELS, REGION_ORDER, type RegionKey } from '@/fea
 export type SportLoadKind = 'volleyball' | 'cross' | 'trx' | 'run-steady' | 'run-sprint'
 export type LoadLevel = 1 | 2 | 3
 
+// Tokens are on the mezo-wu1s head-specific taxonomy (display is region-aggregated anyway):
+// old shoulder→shoulder-front, rear-delt→shoulder-rear, lats→back-wide, biceps→biceps-long,
+// triceps→triceps-medial.
 const LOAD_TABLE: Record<SportLoadKind, Record<string, LoadLevel>> = {
-  volleyball: { shoulder: 3, 'rear-delt': 1, quad: 2, calf: 2, core: 1 },
-  cross: { quad: 2, glute: 2, core: 2, shoulder: 1, triceps: 1 },
-  trx: { core: 3, 'back-mid': 2, lats: 1, biceps: 1, triceps: 1, shoulder: 1 },
+  volleyball: { 'shoulder-front': 3, 'shoulder-rear': 1, quad: 2, calf: 2, core: 1 },
+  cross: { quad: 2, glute: 2, core: 2, 'shoulder-front': 1, 'triceps-medial': 1 },
+  trx: { core: 3, 'back-mid': 2, 'back-wide': 1, 'biceps-long': 1, 'triceps-medial': 1, 'shoulder-front': 1 },
   'run-steady': { quad: 2, ham: 1, calf: 2, core: 1 },
   'run-sprint': { quad: 3, ham: 3, glute: 2, calf: 2, core: 1 },
 }
