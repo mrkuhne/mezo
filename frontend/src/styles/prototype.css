@@ -791,11 +791,19 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .lu-body {
   position: relative;
   z-index: 2;
-  padding: 56px 22px 24px;
+  padding: 24px 22px;
   text-align: center;
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+/* mezo-tr5v: the content block centers vertically (auto block margins absorb the free space
+   evenly), leaving the CTA pinned to the bottom — instead of top-loading with empty space
+   below. On overflow (many skills) the auto margins collapse to 0 and it scrolls normally. */
+.lu-content {
+  display: flex;
+  flex-direction: column;
+  margin-block: auto;
 }
 .levelup .lu-anim { opacity: 0; animation: levelup-fade-up 0.55s ease forwards; }
 .levelup .lu-pop { opacity: 0; animation: levelup-pop 0.55s cubic-bezier(0.2, 1.25, 0.4, 1) forwards; }
@@ -990,7 +998,7 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .lu-robust .lu-r-tx b { color: var(--text-primary); font-weight: 500; }
 .lu-robust .lu-r-xp { font-family: var(--ff-body); font-size: 11px; color: var(--success); font-weight: 600; }
 
-.lu-ctas { margin-top: auto; padding-top: 16px; }
+.lu-ctas { margin-top: 0; padding-top: 16px; } /* mezo-tr5v: bottom-pinned by .lu-content's margin-block:auto */
 .lu-cta {
   width: 100%;
   padding: 14px;
@@ -2074,6 +2082,10 @@ a.hab-link:hover { opacity: 0.85; }
    no fabricated "N XP to next level" hint), the streak flame (AppHero .cnt.fire dim
    precedent, opacity .45), and a one-shot confetti burst (rz-fall reuse) gated on xpTotal > 0. */
 .rz-harvest { position: relative; }
+/* mezo-tr5v: reward block vertically centered (auto block margins), CTA pinned to the bottom
+   (overriding the shared .rz-cta top margin) — instead of top-loading with empty space below. */
+.rz-harvest-body { display: flex; flex-direction: column; margin-block: auto; }
+.rz-harvest .rz-cta { margin-top: 0; }
 .rz-xp-wrap { text-align: center; margin-top: 26px; }
 .rz-xp-num { display: block; font-family: var(--ff-display); font-size: 52px; line-height: 1; font-weight: 700; color: var(--amber); }
 .rz-xp-unit { font-family: var(--ff-body); font-size: 15px; font-weight: 600; color: var(--faint); margin-top: 4px; }

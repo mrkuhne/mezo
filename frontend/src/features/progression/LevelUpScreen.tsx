@@ -138,6 +138,9 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
       <div className="lu-glow" aria-hidden="true" />
 
       <div className="lu-body">
+        {/* mezo-tr5v: content block is vertically centered (margin-block:auto) while the CTA
+            below stays pinned to the bottom — no more top-loaded empty space. */}
+        <div className="lu-content">
         <div className="lu-chip lu-anim" style={animStyle(next(0.18))}>
           <span aria-hidden="true">{chipIcon}</span> {chipText}
         </div>
@@ -243,6 +246,8 @@ export function LevelUpScreen({ result, onContinue }: { result: LevelUpResult; o
             <span className="lu-r-xp">+{result.robustness.xpGained}</span>
           </div>
         )}
+
+        </div>
 
         <div className="lu-ctas lu-anim" style={animStyle(next(0.16))}>
           <button type="button" className="lu-cta" onClick={onContinue}>

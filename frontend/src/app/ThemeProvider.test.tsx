@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { ThemeProvider, useTheme } from '@/app/ThemeProvider'
 
 function Probe() {
-  const { theme, mode, setMode, setAutoTheme } = useTheme()
+  const { theme, mode, setMode, setAutoTheme, setForceTheme } = useTheme()
   return (
     <div>
       <span data-testid="state">{mode}/{theme}</span>
@@ -12,6 +12,8 @@ function Probe() {
       <button onClick={() => setMode('light')}>mode-light</button>
       <button onClick={() => setMode('auto')}>mode-auto</button>
       <button onClick={() => setAutoTheme('dark')}>auto-dark</button>
+      <button onClick={() => setForceTheme('dark')}>force-dark</button>
+      <button onClick={() => setForceTheme(null)}>force-clear</button>
     </div>
   )
 }
@@ -48,5 +50,19 @@ describe('ThemeProvider (mode API, mezo-d71m)', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBeNull()
     fireEvent.click(screen.getByText('auto-dark')) // ignored while manual
     expect(document.documentElement.getAttribute('data-theme')).toBeNull()
+  })
+
+  // mezo-tr5v: the ritual forces dark for the duration of its flow, then clears it on exit.
+  test('setForceTheme(dark) wins over the mode and does NOT persist; null reverts', () => {
+    localStorage.setItem('mezo-theme', 'light')
+    renderProbe()
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull() // manual light
+
+    fireEvent.click(screen.getByText('force-dark'))
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark') // override wins
+    expect(localStorage.getItem('mezo-theme')).toBe('light') // preference untouched
+
+    fireEvent.click(screen.getByText('force-clear'))
+    expect(document.documentElement.getAttribute('data-theme')).toBeNull() // back to light
   })
 })
