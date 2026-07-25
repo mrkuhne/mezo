@@ -68,7 +68,8 @@ public class ProtocolSeedData implements CommandLineRunner {
         }
     }
 
-    /** By-name idempotency: an item the owner already has (however edited) is never re-seeded. */
+    /** By-name idempotency: an item whose NAME the owner still has (however its stock/notes are
+     *  edited) is never re-seeded — a renamed item would be seeded again as a new row. */
     private UUID ensureItem(UUID ownerId, PantryItemEntity candidate) {
         return pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(ownerId).stream()
             .filter(p -> candidate.getName().equals(p.getName()))
