@@ -538,7 +538,7 @@ function ActiveWorkoutSession({
         {/* Hero — over-line ({day} · week/phase label) + title + XP ring/skill bars
             (forecast null-hides the ring, honest-empty-safe) + the szett/rep/perc pill. */}
         <div style={{ padding: '6px 24px' }}>
-          <PrepHero overline={`${huWeekdayFull()} · ${weekLabel}`} title={W.title} forecast={forecast} stats={stats} />
+          <PrepHero overline={`${huWeekdayFull()} · ${weekLabel}`} title={W.title} forecast={forecast} stats={stats} overload={W.overloadSummary ?? null} />
         </div>
 
         {/* Niggle pre-flag — dismissed once acknowledged ("Értem · jó így") */}

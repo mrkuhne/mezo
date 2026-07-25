@@ -11,12 +11,14 @@ import { ATHLETIC_META } from '@/features/progression/logic/levelUpMeta'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import type { PrepForecast, PrepStats } from '@/features/train/logic/prepBriefing'
+import type { OverloadSummary } from '@/data/types'
 
-export function PrepHero({ overline, title, forecast, stats }: {
+export function PrepHero({ overline, title, forecast, stats, overload }: {
   overline: string
   title: string
   forecast: PrepForecast | null
   stats: PrepStats
+  overload?: OverloadSummary | null
 }) {
   return (
     <div className="card" style={{ padding: 16 }}>
@@ -104,6 +106,17 @@ export function PrepHero({ overline, title, forecast, stats }: {
           ].filter(Boolean).join(' · ')}
         </span>
       </div>
+
+      {overload && (overload.weightUp + overload.repUp) > 0 && (
+        <div className="row" style={{ justifyContent: 'center', marginTop: 10 }}>
+          <span className="chip" style={{ fontSize: 10.5, background: 'color-mix(in srgb, var(--coral) 10%, transparent)', color: 'var(--coral-deep)', borderColor: 'var(--coral-deep)' }}>
+            ⚡ Túlterhelés: {[
+              overload.weightUp > 0 ? `${overload.weightUp}× +súly` : null,
+              overload.repUp > 0 ? `${overload.repUp}× +rep` : null,
+            ].filter(Boolean).join(' · ')}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

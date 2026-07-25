@@ -66,4 +66,12 @@ describe('PrepExerciseCard', () => {
     rerender(<PrepExerciseCard exercise={anchoredExercise} oneRmKg={null} accentChallenge={null} />)
     expect(screen.queryByText(/PR-kísérlet/)).not.toBeInTheDocument()
   })
+
+  it('renders an overload delta chip from the progression signal', () => {
+    render(<PrepExerciseCard oneRmKg={null} accentChallenge={null} exercise={{
+      ...anchoredExercise,
+      progression: { lever: 'weight', deltaKg: 2.5, deltaReps: null, targetWeightKg: 62.5, targetReps: 6, rationale: '' },
+    }} />)
+    expect(screen.getByText(/\+2[.,]5 kg/)).toBeInTheDocument()
+  })
 })
