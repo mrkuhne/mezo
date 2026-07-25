@@ -42,6 +42,7 @@ const baseCtx = {
   workout: { type: '', start: '—', end: '—', duration: 0 },
   volleyball: { start: '—', end: '—', noneToday: true },
   bedtime: '23:00', kitchenClose: '21:30', caffeineCutoff: '14:00',
+  energy: { base: 2400, activity: 0, balance: 0, target: 2400 },
 }
 
 test('tapping a recipe-suggestion slot opens LogMealSheet pre-filled from that recipe', async () => {
