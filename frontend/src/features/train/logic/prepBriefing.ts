@@ -54,12 +54,19 @@ export function pseudoDayFromPlan(W: WorkoutPlan): MesoDay {
     repMax: e.repMax,
     targetRIR: e.targetRIR,
     type: e.type,
-    anchorWeightKg: e.anchorWeightKg ?? null,
+    // Anchor fallback (mezo-87d2): anchor-less plans (the common case) borrow the
+      // recommendation engine's first working target so the forecast sees real load.
+      anchorWeightKg: e.anchorWeightKg ?? startWeightOf(e),
   }))
   return { day: '', type: W.title, muscle: '', exerciseCount: exercises.length, exercises }
 }
 
-export interface PrepForecast { totalXp: number; skills: ForecastSkill[] }
+export interface PrepForecast {
+  totalXp: number
+  skills: ForecastSkill[]
+  /** Top muscle-volume XP estimates (max 3, xp desc) — the „Ma építed" chips (mezo-87d2). */
+  muscles: { muscle: string; xp: number }[]
+}
 
 export function prepForecast(day: MesoDay, athletic: SkillLevel[]): PrepForecast {
   const forecast = growthForecast({ days: [day], slots: [], runSessions: [], athletic })
@@ -71,7 +78,12 @@ export function prepForecast(day: MesoDay, athletic: SkillLevel[]): PrepForecast
   // fresh-profile — final-review fix, mezo-bxpg — Finding 3).
   const known = new Set(athletic.map((s) => s.skillKey))
   const skills = forecast.skills.map((s) => (known.has(s.skillKey) ? s : { ...s, willLevelUp: false }))
-  return { totalXp: skillXp + muscleXp, skills: skills.slice(0, 3) }
+  const muscles = Object.entries(forecast.muscleXp)
+    .map(([muscle, xp]) => ({ muscle, xp }))
+    .filter((m) => m.xp > 0)
+    .sort((a, b) => b.xp - a.xp)
+    .slice(0, 3)
+  return { totalXp: skillXp + muscleXp, skills: skills.slice(0, 3), muscles }
 }
 
 /** catalogId-else-name identity key — 'c:'+id when catalog-linked, else 'n:'+name. */

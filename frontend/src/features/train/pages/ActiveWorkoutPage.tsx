@@ -13,10 +13,11 @@
 // Ported from prototype train.jsx (the active-workout TrainSection).
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useChallengeActions, useChallenges, useProgressionProfile, useTrain } from '@/data/hooks'
 import { huWeekdayFull, localDateString } from '@/shared/lib/dates'
+import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { restSecondsFor } from '@/features/train/logic/restTimer'
 import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromPlan } from '@/features/train/logic/prepBriefing'
@@ -165,14 +166,14 @@ function ActiveWorkoutSession({
   workout, activeMeso, todaySession, startWorkout, logSet, skipExercise, saveExerciseNote, saveWorkoutFeedback, finishWorkout, saveDayExercises,
 }: SessionProps) {
   const W = workout
-  const navigate = useNavigate()
+  const goBack = useBackNav('/train')
   const qc = useQueryClient()
   const rest = useRestTimer()
   // Exiting the session (Bezárás / back / Mentés — all route through here) drops any
   // running rest; the state is page-local so unmount alone would clear it too.
   const onExit = () => {
     rest.skip()
-    navigate('/train')
+    goBack()
   }
 
   // No active meso (custom/saját template, mezo-ws2x D4) ⇒ no week/phase to show —
@@ -508,15 +509,11 @@ function ActiveWorkoutSession({
 
   // ---------- PREP ("mission briefing", mezo-bxpg) ----------
   if (phase === 'prep') {
-    // D2: today's actual MesoDay when the active meso has one AND it is genuinely
-    // the plan being trained now (its exercises are a subset of W's, by id) — else
-    // a pseudo-day adapted from W itself (custom/saját templates + no-meso sessions,
-    // and the defensive fallback when a meso day drifted from what's on screen).
-    const todayMesoDay = activeMeso?.days?.find((d) => d.current) ?? null
-    const isPlannedDay = !!todayMesoDay
-      && todayMesoDay.exercises.length > 0
-      && todayMesoDay.exercises.every((ex) => W.exercises.some((e) => e.id === ex.id))
-    const forecastDay = todayMesoDay && isPlannedDay ? todayMesoDay : pseudoDayFromPlan(W)
+    // The forecast day is ALWAYS the pseudo-day adapted from W (mezo-87d2): it carries
+    // the same recipe as the meso day PLUS the recommendation engine's target weights
+    // as an anchor fallback — so anchor-less plans (the common case) still yield
+    // e1RM/volume XP instead of collapsing to a sets-only Erő-állóképesség estimate.
+    const forecastDay = pseudoDayFromPlan(W)
     const athletic = progressionProfile?.athletic ?? []
     const rawForecast = prepForecast(forecastDay, athletic)
     // Honest estimates (D2/spec): never fabricate a ring from an empty profile with
@@ -652,15 +649,11 @@ function ActiveWorkoutSession({
           </div>
         </div>
 
-        {/* Sticky CTA (final-review fix, mezo-bxpg — Finding 2): the sticky rule must
-            sit on the wrapper, not the button — a single-child wrapper sized exactly
-            to its content gives `position: sticky` no scroll range to stick within,
-            so the old button-level sticky was structurally inert. `var(--canvas)` is
-            the same page-background token `.sticky-top`/`.status-bar` use so scrolled
-            content can never bleed through underneath the pinned CTA. */}
-        {/* np-ctarow: .np-cta is flex:1, so it is full-width ONLY inside this flex row —
-            without it the sticky CTA collapsed to a narrow pill (mezo-vlr9 QA fix). */}
-        <div className="np-ctarow" style={{ position: 'sticky', bottom: 0, marginTop: 0, padding: '16px 24px 24px', background: 'var(--canvas)' }}>
+        {/* In-flow CTA at the END of the list (mezo-87d2): `position: sticky; bottom`
+            proved platform-fragile on the device scroller (it pinned mid-content on
+            iOS PWA), and the approved B mockup had the CTA after the content anyway.
+            np-ctarow: .np-cta is flex:1 — full-width only inside this flex row. */}
+        <div className="np-ctarow" style={{ marginTop: 0, padding: '16px 24px 32px' }}>
           <button
             type="button"
             className="np-cta np-press"

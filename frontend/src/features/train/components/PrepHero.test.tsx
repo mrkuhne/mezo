@@ -9,6 +9,7 @@ import { PrepHero } from '@/features/train/components/PrepHero'
 const stats: PrepStats = { workSets: 12, warmupSets: 2, repsEst: 96, durationEst: 52, muscleCount: 4 }
 const forecast: PrepForecast = {
   totalXp: 140,
+  muscles: [],
   skills: [
     { skillKey: 'strength_endurance', xpEst: 50, level: 2, progressPct: 88, willLevelUp: true },
     { skillKey: 'max_strength', xpEst: 90, level: 4, progressPct: 62, willLevelUp: false },
@@ -40,8 +41,21 @@ describe('PrepHero', () => {
     expect(screen.queryByText(/perc/)).not.toBeInTheDocument()
   })
 
+  it('renders the „Ma építed" muscle-XP chips when the forecast attributes volume (mezo-87d2)', () => {
+    const withMuscles: PrepForecast = { ...forecast, muscles: [{ muscle: 'chest', xp: 34 }, { muscle: 'lats', xp: 42 }] }
+    render(<PrepHero overline="X" title="Y" forecast={withMuscles} stats={stats} />)
+    expect(screen.getByText('MA ÉPÍTED')).toBeInTheDocument()
+    expect(screen.getByText('Mell +34 XP')).toBeInTheDocument()
+    expect(screen.getByText('Lat +42 XP')).toBeInTheDocument()
+  })
+
+  it('hides the muscle-chip row entirely when no volume is attributable', () => {
+    render(<PrepHero overline="X" title="Y" forecast={forecast} stats={stats} />)
+    expect(screen.queryByText('MA ÉPÍTED')).not.toBeInTheDocument()
+  })
+
   it('does not render the level-up micro-badge for a skill that is not about to level up', () => {
-    const noLevelUp: PrepForecast = { totalXp: 90, skills: [{ skillKey: 'max_strength', xpEst: 90, level: 4, progressPct: 62, willLevelUp: false }] }
+    const noLevelUp: PrepForecast = { totalXp: 90, muscles: [], skills: [{ skillKey: 'max_strength', xpEst: 90, level: 4, progressPct: 62, willLevelUp: false }] }
     render(<PrepHero overline="X" title="Y" forecast={noLevelUp} stats={stats} />)
     expect(screen.queryByText('⚡ szintlépés-esély!')).not.toBeInTheDocument()
   })

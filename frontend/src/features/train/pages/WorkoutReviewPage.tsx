@@ -4,6 +4,7 @@
 // Data: GET /api/train/workouts/{id} + the day's challenges (server
 // outcomes). Renders the shared WorkoutSummary in 'closed' mode.
 // ============================================================
+import { useBackNav } from '@/shared/hooks/useBackNav'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useChallenges, useWorkoutDetail } from '@/data/hooks'
 import { huMonthDayDow } from '@/shared/lib/dates'
@@ -14,6 +15,7 @@ import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/f
 export function WorkoutReviewPage() {
   const { workoutId } = useParams()
   const navigate = useNavigate()
+  const goBack = useBackNav('/train')
   const { detail, pending, error } = useWorkoutDetail(workoutId ?? null)
   const { challenges } = useChallenges(detail?.templateSessionId ?? null, detail?.date ?? '')
 
@@ -51,7 +53,7 @@ export function WorkoutReviewPage() {
       showSetLines
       exercises={exercises}
       challenges={challengeRows}
-      onExit={() => navigate('/train')}
+      onExit={goBack}
     />
   )
 }
