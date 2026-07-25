@@ -46,6 +46,7 @@ Status legend: ✅ done · 🔶 mock-only (Phase-1 FE, no real backend yet) · �
 | [`me.md`](me.md) | Me (`/me`, "Én") | mixed — `Cél`/`Alvás` ✅ backed; `Profil`/`Emberek`/`Tudás` 🔶 | Profile + biometrics + relationships hub. Weight (`Cél`) and sleep (`Alvás`) are real; profile, People, and the Knowledge alias are mock. |
 | [`companion.md`](companion.md) | Companion (AI chat brain, Phase-3) | mixed — backend ✅ V0.2 spine; FE 🔶 mock | The Phase-3 AI companion: persisted conversations + a sync Hungarian chat endpoint over the `CompanionLlm` port (Spring AI 2 / Gemini). No FE surface yet — the ChatPage stays the mock `insights` chat until V0.4. |
 | [`growth.md`](growth.md) | Growth (daily quests, no own route — Today card) | ✅ E1 done | Gamified growth layer per ADR 0010: deterministic catalog-driven daily quests (BODY+FUELBIO), derived completion → XP via the progression award tail, LIFE band seed (`recovery`), reroll, cron backstops. E2 (LIFE band + activity log + GrowthCard) planned. |
+| [`ritual.md`](ritual.md) | Ritual (`/ritual`, sleep-anchored Napzárás closing flow) | ✅ BE+FE done (visual goldens pending R4) | Full-screen 5-act evening closing ritual (Megérkezés → A napod íve → Nyitott hurkok → Termés → Elengedés) entered via Today's `RitualCard` or the `evening_ritual` habit row; closes open loops (check-in/reflection), stages the day's XP/coin/skill Harvest, hands off into sleep-prep. No new progression source — rides the HABIT tail. |
 
 ### Platform docs (cross-cutting, `_`-prefixed — no route/tab of their own)
 
