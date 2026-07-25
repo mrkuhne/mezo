@@ -54,7 +54,9 @@ export function DimensionCard({ dim }: { dim: MealDimension }) {
       {dim.id === 'macro' && <MacroPanel dim={dim} />}
       {dim.id === 'micro' && <MicroPanel dim={dim} />}
       {dim.id === 'nova' && <NovaPanel dim={dim} />}
-      {dim.id === 'context' && <ContextPanel dim={dim} />}
+      {(dim.id === 'context' || dim.id === 'who' || dim.id === 'fat_quality'
+        || dim.id === 'plant_diversity' || dim.id === 'energy_density' || dim.id === 'portion')
+        && <ContextPanel dim={dim} />}
     </div>
   )
 }

@@ -25,6 +25,11 @@ const DIMENSION_COLOR: Record<MealDimension['id'], string> = {
   micro: 'var(--cat-physiology)',
   nova: 'var(--cat-tendency)',
   context: 'var(--cat-preference)',
+  who: 'var(--sky)',
+  fat_quality: 'var(--amber-deep)',
+  plant_diversity: 'var(--sage-deep)',
+  energy_density: 'var(--lav)',
+  portion: 'var(--coral-deep)',
 }
 
 /** Contract dimension → the FE discriminated union. A DEGRADED dimension (weight 0, no per-kind
@@ -64,6 +69,10 @@ function fromDimension(d: MealScoreDimensionResponse, keepDegraded = false): Mea
         items: d.nova.items.map(i => ({ name: i.name, nova: i.nova as NovaGroup, warning: i.warning || undefined })),
       },
     }
+  }
+  if ((d.id === 'who' || d.id === 'fat_quality' || d.id === 'plant_diversity'
+    || d.id === 'energy_density' || d.id === 'portion') && d.context && d.context.length > 0) {
+    return { id: d.id, ...base, context: d.context.map(c => ({ label: c.label, value: c.value })) } as MealDimension
   }
   if (d.id === 'context' && d.context && (d.context.length > 0 || keepDegraded)) {
     return { id: 'context', ...base, context: d.context.map(c => ({ label: c.label, value: c.value })) }
