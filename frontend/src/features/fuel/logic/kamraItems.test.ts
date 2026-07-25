@@ -26,10 +26,11 @@ test('carries macros / nutrients / price / source from a supplement stash item o
 
 test('skips stash items already linked via an ingredient stashRefId, yielding 25 unified items', () => {
   const items = buildKamraItems(ingredients, supplementsStash)
-  expect(items).toHaveLength(25) // 18 ingredients + (10 stash − 3 linked: whey/kreatin/aakg)
+  expect(items).toHaveLength(25) // 18 ingredients + (9 stash − 2 linked: whey/kreatin)
   // linked stash twins are NOT duplicated as stash-only items
   const stashOnlyIds = items.filter(i => i.isStashOnly).map(i => i.id)
   expect(stashOnlyIds).not.toContain('stash-whey')
   expect(stashOnlyIds).not.toContain('stash-kreatin')
-  expect(stashOnlyIds).not.toContain('stash-aakg')
+  expect(stashOnlyIds).toContain('stash-tastydose')
+  expect(stashOnlyIds).toContain('stash-origin-pwo')
 })

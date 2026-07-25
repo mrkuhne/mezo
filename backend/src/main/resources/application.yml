@@ -553,7 +553,7 @@ mezo:
     wake-window-min: 45
     weigh-in-cutoff: "09:00"
     morning-window-end: "10:00"
-    workout-cutoff: "12:00"
+    workout-window-hours: 6   # M5 cutoff = sleep-anchor wake + this many hours (ghost wake 06:00 -> 12:00)
     protein-target-g: 25
     bed-grace-min: 30
     kitchen-close-offset-min: 90

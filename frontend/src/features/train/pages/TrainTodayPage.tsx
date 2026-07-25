@@ -5,9 +5,20 @@
 // Thin TrainSection shell ⇒ this view owns its own .page-header.
 // Ported from prototype train-views.jsx (TrainTodayPage + buildWeeklyAgenda).
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useTrain, useRunning, useWeekWorkouts } from '@/data/hooks'
+import { useQueryClient } from '@tanstack/react-query'
+import { useTrain, useRunning, useWeekWorkouts, useSleepGoal } from '@/data/hooks'
+import { isMockMode } from '@/data/_client/mode'
+import { MorningTrainingCard } from '@/features/train/components/MorningTrainingCard'
+import {
+  isSnoozed,
+  morningWindow,
+  offendingSlots,
+  rescheduledSlots,
+  snooze,
+  snoozeHash,
+} from '@/features/train/logic/morningWindow'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
@@ -30,7 +41,7 @@ import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, type SportKind } from '
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
 export function TrainTodayPage() {
-  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending, todaySession, completedTodayWorkout } = useTrain()
+  const { workout, gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending, todaySession, completedTodayWorkout, gymSlots, saveGymSchedule } = useTrain()
   const { activeRunningBlock, runSessions, logRunSession, runningPending } = useRunning()
   // Completed workout summaries for this Mon–Sun week — maps each done day's ISO
   // date to its instance id so a weekly gym row can open the review (real mode).
@@ -40,6 +51,24 @@ export function TrainTodayPage() {
   const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
   const [runLogCtx, setRunLogCtx] = useState<RunLogCtx | null>(null)
   const [customOpen, setCustomOpen] = useState(false)
+  const { goal: sleepGoal } = useSleepGoal()
+  const qc = useQueryClient()
+  // Morning-training reschedule (mezo-67rb): wake-anchored window over the raw gym slots.
+  const mtrWindow = morningWindow(sleepGoal.wakeTime)
+  const mtrOffending = offendingSlots(gymSlots, mtrWindow)
+  const mtrHash = snoozeHash(sleepGoal.wakeTime, mtrOffending)
+  const [mtrSnoozed, setMtrSnoozed] = useState(false)
+  useEffect(() => setMtrSnoozed(false), [mtrHash])
+  const showMtr = mtrOffending.length > 0 && !mtrSnoozed && !isSnoozed(mtrHash)
+  const applyMtr = () => {
+    const moved = rescheduledSlots(gymSlots, mtrWindow)
+    saveGymSchedule(moved)
+    if (isMockMode()) qc.setQueryData(['train', 'gymSchedule'], moved) // mock parity: the mock mutation no-ops
+  }
+  const snoozeMtr = () => {
+    snooze(mtrHash)
+    setMtrSnoozed(true)
+  }
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
   // the running block query are unresolved, render the layout-matched skeleton
@@ -427,6 +456,16 @@ export function TrainTodayPage() {
 
       {/* Weekly load summary tiles (renders null on an empty week) */}
       <LoadTiles tiles={weeklyLoad(agenda)} />
+
+      {showMtr && (
+        <MorningTrainingCard
+          offending={mtrOffending}
+          windowStart={mtrWindow.start}
+          windowEnd={mtrWindow.end}
+          onApply={applyMtr}
+          onSnooze={snoozeMtr}
+        />
+      )}
 
       {/* Weekly combined timeline */}
       <div style={{ padding: '0 24px 16px' }}>

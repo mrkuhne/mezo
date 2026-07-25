@@ -3,7 +3,7 @@
 > **This is a LIVING handoff/roadmap doc, not a frozen spec.** It captures the whole
 > sleep+routine effort so a fresh session (post-`/clear`) can continue without re-deriving
 > context. Companion to the dated specs it references. Update it as slices land.
-> **Last updated:** 2026-07-24.
+> **Last updated:** 2026-07-25.
 
 ## 0. TL;DR — where we are right now
 
@@ -16,7 +16,9 @@
   - Spec (approved, D1–D8): [`2026-07-23-fuel-slot-timing-design.md`](2026-07-23-fuel-slot-timing-design.md)
 - **Implemented on `feat/sleep-night` (PR pending):** `mezo-d71m` — **slice C-éj**: slice C was decomposed (2026-07-24 brainstorm) into **C-éj = C1 evening + C2 night layer in ONE slice** — and it is now built (commits `64ec47b5..253f5cb7` on `feat/sleep-night`, awaiting the self-PR + CI gate): the `WindDownBanner` T-90/T-60/night phases carrying the `wind_down` check (over the single time source `features/today/logic/windDown.ts`), the full-screen extra-dark `NightPage` (`/me/sleep/night`) with the unified 20-minute watchdog flow + 3 calm tools (breathing/body-scan/4K-walk) + the localStorage night-trace → morning `SleepLogSheet` awakenings prefill, and the **circadian auto-theme** (`ThemeMode` gains `'auto'`, default on; `CircadianTheme` flips dark exactly inside `isDarkWindow`). FE-only, no backend change. **C3** (education/motivation stat cards + escalation), **C4** (sleep-banking), **C5** (7-day A/B) stay reserved as separate slices. Spec (approved, D1–D9): [`2026-07-24-sleep-night-layer-design.md`](2026-07-24-sleep-night-layer-design.md) + mockup [`2026-07-24-sleep-night-layer-mockup.html`](2026-07-24-sleep-night-layer-mockup.html). Feature docs updated: [`today.md`](../../features/today.md) §2/§10 · [`me.md`](../../features/me.md) §2/§10 · [`habit.md`](../../features/habit.md) §5/§9 · [`_platform-design-system.md`](../../features/_platform-design-system.md) §2/§3/§10.
 - **Implemented on `feat/sleep-c3` (PR pending):** `mezo-hd8k` — **slice C3**: the Walker education/motivation layer — a daily-rotating `SleepStatCard` (7 motivational stats, §4 list; the heavy clinical stats deliberately excluded from rotation) + full-deck `SleepStatsSheet`, a gentle data-driven **escalation card** (trailing-14d avg <6.0h OR avg quality ≤4, min 5 samples, 14-day snooze `mezo-sleep-escal-snooze` — the heavy stats + CBT-I path live HERE, only in the sheet's escalation section), and the **§7 research-ingest** of both source videos into `docs/research/` (knowledge-base skill — DONE, §7). FE-only. Five new FE files (`logic/{sleepEducation,sleepEscalation}.ts`, `components/{SleepStatCard,SleepEscalationCard}.tsx`, `sheets/SleepStatsSheet.tsx`), mounted in `SleepPage.tsx`. DEBUNK/myth cards stay reserved. Feature docs updated: [`me.md`](../../features/me.md) §2/§10. Spec (approved, D1–D7): [`2026-07-24-sleep-c3-education-design.md`](2026-07-24-sleep-c3-education-design.md).
-- **Next after C3:** C4 sleep-banking · C5 A/B experiment (§4) + the remaining anchor **consumer** (morning-training reschedule). See §3/§5.
+- **Implemented on `feat/morning-training` (PR pending):** `mezo-67rb` — **the last video-1 slice ④** (morning-training reschedule + Tasty Dose/Origin protocol setup, the final anchor **consumer**). Three parts: the habit **M5 `training_done_today` run-branch cutoff is now wake-anchored** (`SleepAnchorPort` wake + `mezo.habit.workout-window-hours`, default 6 — replacing the static `workout-cutoff` 12:00, which + its yml key were removed; ghost wake 06:00 reproduces the old value); a Train `Mai` **`MorningTrainingCard`** that one-tap-reschedules gym slots falling after the wake-derived [wake+60′, wake+6h] window (`morningWindow.ts`, content-keyed `localStorage` snooze), reading `useSleepGoal().goal.wakeTime`; and a `demodata` **`ProtocolSeedData`** (`@Order(65)`) that by-name-idempotently seeds the owner's two real stim products (Tasty Dose gombakávé + Origin PWO) and activates a v1 protocol only when none is active (prod runs demodata → the live DB gets them on the next deploy). FE + backend, no schema change. Living docs updated: [`habit.md`](../../features/habit.md) §5/§8/§9/§10 · [`train.md`](../../features/train.md) §2/§5/§8/§10 · [`fuel.md`](../../features/fuel.md) §4/§9 · [`me.md`](../../features/me.md) §5.3 · [`_platform-design-system.md`](../../features/_platform-design-system.md) §3.
+  - Plan: [`../plans/2026-07-25-morning-training-reschedule.md`](../plans/2026-07-25-morning-training-reschedule.md)
+- **Next after C3:** C4 sleep-banking · C5 A/B experiment (§4). See §3/§5.
 
 ## 1. How we got here — the two source videos
 
@@ -60,7 +62,7 @@ SLEEP CLUSTER (the new foundation — video 2):
 
 CONSUMERS of the anchor (were video-1 ③④):
    Fuel "Mai" slot-timing fix + slot-level AI logging  ✅ DONE (mezo-53su) — consumes the anchor; relocated mealsPerDay + caffeine cutoff to Fuel
-   Morning-training reschedule + Tasty Dose/Origin protocol setup ⏳ NEXT (consumes the wake anchor)
+   Morning-training reschedule + Tasty Dose/Origin protocol setup ✅ DONE (mezo-67rb) — consumes the wake anchor
 ```
 
 **Why sleep-first (Daniel's insight):** the day's timing anchor (wake/bed) currently lives
@@ -145,18 +147,18 @@ Framework he gives = **QQRT**: **Q**uantity · **Q**uality · **R**egularity · 
 
 ## 5. Next-session playbook (post-`/clear`)
 
-1. **Slice B AND the first anchor consumer are merged — pick up slice C or the morning-training reschedule.** Slice A
-   is merged (**PR #43**); slice B (`mezo-66ab`, **PR #48**) and the Fuel „Mai" slot-timing consumer (`mezo-53su`) are
-   merged too. Two threads remain off the now-anchored model — see item 2.
-2. **Next work — slice C and/or the morning-training reschedule (the next brainstorm + spec).** Two ready threads, both
-   off the now-anchored model: **slice C** = the Walker practical layers (§4 — wind-down/dim nudges, temperature card,
-   the 20-minute rule, 3am toolkit, sleep-banking, education/A-B scaffolds; heed the DEBUNKS list), and **the remaining
-   anchor consumer** = the morning-training reschedule + Tasty Dose/Origin protocol setup (reads the wake anchor via
-   `useSleepGoal()` / `SleepAnchorPort`). The Fuel „Mai" slot-timing fix + slot-level AI consumer is **already done**
-   (`mezo-53su` — it relocated `mealsPerDay` + the caffeine cutoff to a Fuel-owned `fuel_settings` singleton). Kick off
-   with **`superpowers:brainstorming`** → `writing-plans` → `subagent-driven-development` (the mezo-d1jb / mezo-dbsr /
-   mezo-66ab / mezo-53su loop: task-brief → implementer → task-reviewer → fix-wave → ledger; whole-branch review;
-   runtime-verify via chrome-devtools mock FE).
+1. **Both anchor consumers are handled — the remaining thread is slice C's C4/C5.** Slice A (**PR #43**), slice B
+   (`mezo-66ab`, **PR #48**), the Fuel „Mai" slot-timing consumer (`mezo-53su`), C-éj (`mezo-d71m`) + C3 (`mezo-hd8k`),
+   and now the morning-training reschedule (`mezo-67rb`, `feat/morning-training`) are all built/merged — see §2/§3. What
+   remains off the now-anchored model is **slice C's C4/C5** — see item 2.
+2. **Next work — slice C's remaining layers (C4/C5, the next brainstorm + spec).** One ready thread: **slice C** = the
+   Walker practical layers not yet built (§4 — **C4 sleep-banking** + **C5 the 7-day A/B self-experiment** scaffold; heed
+   the DEBUNKS list). Both anchor **consumers** are done — the Fuel „Mai" slot-timing fix + slot-level AI (`mezo-53su`,
+   which relocated `mealsPerDay` + the caffeine cutoff to a Fuel-owned `fuel_settings` singleton) and the morning-training
+   reschedule + Tasty Dose/Origin protocol setup (`mezo-67rb`, reading the wake anchor via `useSleepGoal()` /
+   `SleepAnchorPort`). Kick off with **`superpowers:brainstorming`** → `writing-plans` → `subagent-driven-development`
+   (the mezo-d1jb / mezo-dbsr / mezo-66ab / mezo-53su / mezo-67rb loop: task-brief → implementer → task-reviewer →
+   fix-wave → ledger; whole-branch review; runtime-verify via chrome-devtools mock FE).
 3. **Slice A locked decisions (now SHIPPED — reference, don't re-litigate):** sleep goal = target + fixed
    `WAKE|BED` → derive the other end; ±15 regularity band (score only); `sleep_goal` = the single anchor source
    via the ungated `SleepAnchorPort`, repointing `HabitTargets` + the Fuel timeline; enriched `sleep_log`

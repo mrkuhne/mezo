@@ -9,11 +9,15 @@ import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure.RunSegment;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure.RunWeek;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Test data factory for the Running aggregate (block + logged run session) — see
@@ -26,6 +30,10 @@ public class RunningPopulator {
 
     private final RunningBlockRepository blockRepository;
     private final RunSessionLogRepository logRepository;
+
+    /** JPA-managed shared EntityManager — the {@code @CreationTimestamp} backdate needs a native update. */
+    @PersistenceContext
+    private EntityManager em;
 
     public RunningBlockEntity createBlock(UUID createdBy, String title, String status) {
         RunningBlockEntity e = new RunningBlockEntity();
@@ -119,6 +127,18 @@ public class RunningPopulator {
         e.setSprintLandmark(sprintLandmark);
         e.setDurationMin(durationMin);
         return logRepository.saveAndFlush(e);
+    }
+
+    /** created_at backdate needs its own transaction — the base IT is non-transactional
+     *  (the WeightLogPopulator.createWeightLogAt idiom). */
+    @Transactional
+    public RunSessionLogEntity createRunLogAt(UUID createdBy, UUID blockId, LocalDate date,
+        Instant createdAt) {
+        RunSessionLogEntity e = createRunLog(createdBy, blockId, 1, "tue-sprint", date, 6, 8, null, null, 30);
+        em.createNativeQuery("update run_session_log set created_at = :at where id = :id")
+            .setParameter("at", createdAt).setParameter("id", e.getId()).executeUpdate();
+        em.clear();
+        return logRepository.findById(e.getId()).orElseThrow();
     }
 
     public RunSessionLogEntity createLog(UUID createdBy, UUID blockId, int week, String key) {
