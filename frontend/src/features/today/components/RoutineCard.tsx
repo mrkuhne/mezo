@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useHabitDay, useHabitActions, useSleep, useIntentionActions, useIntentionDay } from '@/data/hooks'
 import type { HabitItem } from '@/data/types'
-import { habitAction, type HabitAction } from '@/features/today/logic/habitAction'
+import { habitAction, habitHint, type HabitAction } from '@/features/today/logic/habitAction'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
@@ -120,10 +120,12 @@ export function RoutineCard() {
     ) : (
       <div className="hab-title">{h.title}</div>
     )
+    const hint = habitHint(h)
     const main = (
       <div className="hab-main">
         <div className="hab-anchor">{h.anchorCopy}</div>
         {titleEl}
+        {hint && <div className="hab-note">{hint}</div>}
       </div>
     )
 

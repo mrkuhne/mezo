@@ -4,6 +4,7 @@ import { HttpResponse, http } from 'msw'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { useRitualDay, useRitualActions } from '@/data/ritual/ritualHooks'
+import type { HabitDay } from '@/data/habit/habitApi'
 import { useHabitDay } from '@/data/habit/habitHooks'
 import { API_BASE } from '@/data/_client/api'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
@@ -66,6 +67,20 @@ describe('useRitualDay (mock mode)', () => {
     // Idempotent: closing an already-closed day does NOT award a second time.
     await act(() => actions.result.current.close())
     expect(awardMock).toHaveBeenCalledTimes(1)
+  })
+
+  test('close completes the DERIVED evening_ritual habit row in the habitDay cache', async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['ritualDay', DATE], dayWith(false))
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    )
+    const actions = renderHook(() => useRitualActions(DATE), { wrapper })
+
+    await act(() => actions.result.current.close())
+    // mock mirror of the server-side ritual_closed derivation — the chain row must tick
+    const habits = client.getQueryData<HabitDay>(['habitDay', DATE])?.habits
+    expect(habits?.find((h) => h.key === 'evening_ritual')?.status).toBe('done')
   })
 })
 

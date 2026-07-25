@@ -16,8 +16,24 @@ const NAV_BY_KEY: Record<string, string> = {
   morning_workout: '/train',
 }
 
-/** Sleep-derived habits open the sleep log inline (the chain shouldn't dead-end on a nav away). */
-const SLEEP_KEYS = new Set(['wake_on_time', 'bed_on_time'])
+/**
+ * Sleep-derived habits open the sleep log inline (the chain shouldn't dead-end on a nav away).
+ * bed_on_time is deliberately NOT here: tonight's row is decided by TOMORROW's sleep log
+ * (E4 bedtime_next_day) — an evening sleep-log CTA would log last night, not tonight.
+ */
+const SLEEP_KEYS = new Set(['wake_on_time'])
+
+/**
+ * Quiet per-key explainer for passive DERIVED rows (no CTA): why the row will tick by
+ * itself. Without it the evening bed_on_time row — decided only by TOMORROW morning's
+ * sleep log (E4) — reads as broken (mezo-o5hx).
+ */
+export function habitHint(h: HabitItem): string | null {
+  if (h.status === 'pending' && h.key === 'bed_on_time') {
+    return 'holnap reggel, az alvásnaplódból derül ki'
+  }
+  return null
+}
 
 export function habitAction(h: HabitItem): HabitAction {
   if (h.status !== 'pending') {

@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
+import { completeMockDerivedHabit } from '@/data/habit/habitHooks'
 import { EMPTY_RITUAL_DAY, mockRitualDay } from '@/data/ritual/ritualMock'
 import { ritualApi } from '@/data/ritual/ritualApi'
 import type { RitualDay } from '@/data/types'
@@ -25,6 +26,9 @@ export function useRitualActions(date: string): { close: () => Promise<RitualDay
         if (prev.closed) return prev // idempotent: no second award
         const next = { ...prev, closed: true, closedAt: new Date().toISOString() }
         qc.setQueryData(['ritualDay', date], next)
+        // Mock mirror of the server-side ritual_closed derivation (real mode refetches
+        // habitDay below): the close also ticks the DERIVED evening_ritual chain row.
+        completeMockDerivedHabit(qc, date, 'evening_ritual')
         awardGamificationEvent(qc, { type: 'HABIT', xpOverride: 10 }) // the evening_ritual catalog XP
         return next
       }

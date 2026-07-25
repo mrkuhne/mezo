@@ -14,7 +14,8 @@ describe('useHabitDay (mock mode)', () => {
 
   test('serves the seed synchronously', () => {
     const { result } = renderHook(() => useHabitDay(DATE), { wrapper: makeHookWrapper() })
-    expect(result.current.habits).toHaveLength(14)
+    // 8 MORNING + 5 EVENING — bed_on_time is deliberately absent from the mock (mezo-o5hx)
+    expect(result.current.habits).toHaveLength(13)
     expect(result.current.habits.filter((h) => h.chain === 'MORNING')).toHaveLength(8)
   })
 
