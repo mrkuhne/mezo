@@ -27,7 +27,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         ex.setAnchorWeightKg(BigDecimal.valueOf(60));
         train.save(ex);
 
-        Prescription p = svc.prescribe(owner, ex, day.getId());
+        Prescription p = svc.prescribe(owner, ex);
 
         // 2 warmup + 3 working; working weight = anchor 60
         assertThat(p.sets()).hasSize(5);
@@ -50,7 +50,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
         ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
 
-        Prescription p = svc.prescribe(owner, ex, day.getId());
+        Prescription p = svc.prescribe(owner, ex);
 
         // base==null must NOT suppress warmups (mezo-eerq): the FE needs the warmup rows to label
         // B1/B2 and hide RIR — they simply carry a null target weight, like the working sets.
@@ -78,7 +78,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
             sets.add(train.set("working", BigDecimal.valueOf(80), 8, 0));
         });
 
-        Prescription p = svc.prescribe(owner, ex, day.getId());
+        Prescription p = svc.prescribe(owner, ex);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
     }
@@ -97,7 +97,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
             sets.add(train.set("working", BigDecimal.valueOf(80), 8, 0));
         });
 
-        Prescription p = svc.prescribe(owner, ex, day.getId());
+        Prescription p = svc.prescribe(owner, ex);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
     }
@@ -112,7 +112,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
             BigDecimal.valueOf(77.5), 8, 0);
 
-        Prescription p = svc.prescribe(owner, ex, day.getId());
+        Prescription p = svc.prescribe(owner, ex);
 
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(82.5)); // 77.5 + 5
@@ -128,7 +128,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
             BigDecimal.valueOf(80), 7, 0); // 7 in [6,8) → hold
 
-        Prescription p = svc.prescribe(owner, ex, day.getId());
+        Prescription p = svc.prescribe(owner, ex);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(80));
     }
@@ -142,7 +142,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
             BigDecimal.valueOf(80), 4, 0); // 4 < 6 → -5
 
-        Prescription p = svc.prescribe(owner, ex, day.getId());
+        Prescription p = svc.prescribe(owner, ex);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(75));
     }
@@ -159,7 +159,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
             sets.add(train.set("working", BigDecimal.valueOf(80), 8, 0));
         });
 
-        Prescription p = svc.prescribe(owner, ex, day.getId());
+        Prescription p = svc.prescribe(owner, ex);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
     }
