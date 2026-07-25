@@ -290,6 +290,9 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     queryKey: ['train', 'gymSchedule'],
     queryFn: mock ? async () => gymScheduleMock : () => trainApi.gymSchedule().then(toGymSlots),
     initialData: mock ? gymScheduleMock : undefined,
+    // Mock is a client-owned cache: the morning-training reschedule (mezo-67rb) edits it via
+    // setQueryData, which a stale-triggered refetch would clobber (the pantry/useDualQuery pattern).
+    staleTime: mock ? Infinity : undefined,
   })
   // Exercise catalog — master data; one fetch per app session is plenty.
   const { data: catalogData, isPending: catalogPending } = useQuery({

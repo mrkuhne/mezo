@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -8,6 +8,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { DAY_ORDER } from '@/data/train/train'
+import { SNOOZE_KEY } from '@/features/train/logic/morningWindow'
 import { localDateString } from '@/shared/lib/dates'
 
 // Weekly-row gym taps route straight to the session/review (direct-start flow,
@@ -24,6 +25,7 @@ vi.mock('react-router-dom', async () => {
 beforeEach(() => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   mockNavigate.mockReset()
+  localStorage.removeItem(SNOOZE_KEY) // the morning-training card state must not leak between tests
 })
 afterEach(() => vi.unstubAllEnvs())
 
@@ -75,6 +77,26 @@ test('the weekly-plan footer opens the Saját edzés sheet (mezo-ws2x)', () => {
   fireEvent.click(screen.getAllByRole('button', { name: /Saját edzés/ })[0])
   expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
   expect(screen.getByText('Pihenőnapi felső')).toBeInTheDocument()
+})
+
+test('morning-training card lists the late gym slots and one-tap reschedules them', async () => {
+  renderView()
+  // mock gym slots Kedd/Csü 18:30 vs mock wake 06:45 -> window 07:45–12:45
+  expect(screen.getByText(/Kedd 18:30 · Csü 18:30/)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Áthelyezés a reggeli ablakba' }))
+  // cache mutated (setQueryData) -> both slots at 07:45 -> nothing offending -> card gone.
+  // waitFor: the RQ observer notification lands past the click's synchronous act flush
+  // (the codebase's mock-setQueryData assertion idiom, cf. AddPantryItemSheet.test.tsx).
+  await waitFor(() => expect(screen.queryByText(/Kedd 18:30/)).toBeNull())
+})
+
+test('morning-training card snooze survives a remount for the same schedule+wake', () => {
+  const first = renderView()
+  fireEvent.click(screen.getByRole('button', { name: 'Maradjon így' }))
+  expect(screen.queryByText(/Kedd 18:30/)).toBeNull()
+  first.unmount()
+  renderView()
+  expect(screen.queryByText(/Kedd 18:30/)).toBeNull()
 })
 
 // ---- real-mode block: agenda derives from the active meso, /today drives the hero ----
