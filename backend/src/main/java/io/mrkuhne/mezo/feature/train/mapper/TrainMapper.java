@@ -70,6 +70,7 @@ public interface TrainMapper {
     @Mapping(target = "lastWeek", ignore = true)
     @Mapping(target = "prescribedSets", ignore = true)
     @Mapping(target = "rationale", ignore = true)
+    @Mapping(target = "progression", ignore = true)
     TodayExercise toTodayExercise(ExerciseEntity entity);
 
     @Mapping(target = "status", expression = "java(WorkoutSummaryResponse.StatusEnum.fromValue(entity.getStatus()))")
