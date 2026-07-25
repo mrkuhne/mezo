@@ -11,6 +11,8 @@ export type GamificationProfile = {
   xpForNext: number
   coins: number
   streakDays: number
+  /** Whether today still keeps the streak alive (honest flame state, mezo-huzd). */
+  streakAlive: boolean
   /** Held streak savers, 0..2 (spec §6.2). */
   streakSavers: number
   activeTitleKey: string
@@ -29,4 +31,15 @@ export type Title = {
   priceCoins?: number
   owned: boolean
   equipped: boolean
+}
+
+/** The day's XP-by-source + coin events + streak — the ritual Harvest read (mezo-huzd R3). */
+export type GamificationDay = {
+  date: string
+  xpBySource: { source: XpEventType; xp: number }[]
+  xpTotal: number
+  coinEvents: { reason: string; amount: number }[]
+  coinTotal: number
+  streakDays: number
+  streakAlive: boolean
 }

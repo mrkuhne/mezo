@@ -82,6 +82,8 @@ tags:
       rides POST /api/biometrics/sleep)
   - name: FuelSettings
     description: Fuel-owned per-user planner settings (eating cadence + caffeine cutoff)
+  - name: Gamification
+    description: 'User progression system — XP, levels, coins, titles, and daily streaks'
 paths:
   /api/auth/login:
     post:
@@ -4715,6 +4717,124 @@ paths:
                 $ref: '#/components/schemas/RitualDayResponse'
         '409':
           description: RITUAL_NOT_TODAY
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/gamification/profile:
+    get:
+      tags:
+        - Gamification
+      operationId: getGamificationProfile
+      summary: Account XP/level/coins/streak/titles (Gamification)
+      responses:
+        '200':
+          description: The account profile (ghost-shaped zeros before any activity)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationProfileResponse'
+  '/api/gamification/day/{date}':
+    get:
+      tags:
+        - Gamification
+      operationId: getGamificationDay
+      summary: >-
+        The day's XP-by-source + coin events + streak — the ritual Harvest read
+        (Gamification)
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Day aggregate (honest zeros, never 404)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationDayResponse'
+  '/api/gamification/title/{key}/buy':
+    post:
+      tags:
+        - Gamification
+      operationId: buyTitle
+      summary: Buy a shop title (auto-equips) (Gamification)
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationProfileResponse'
+        '404':
+          description: GAMIFICATION_TITLE_UNKNOWN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            GAMIFICATION_TITLE_OWNED / GAMIFICATION_COINS_INSUFFICIENT /
+            GAMIFICATION_TITLE_NOT_SHOP
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/gamification/title/{key}/equip':
+    post:
+      tags:
+        - Gamification
+      operationId: equipTitle
+      summary: Equip an owned/unlocked title (Gamification)
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationProfileResponse'
+        '404':
+          description: GAMIFICATION_TITLE_UNKNOWN
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: GAMIFICATION_TITLE_LOCKED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/gamification/saver/buy:
+    post:
+      tags:
+        - Gamification
+      operationId: buyStreakSaver
+      summary: 'Buy a streak saver (200 coins, max 2 held) (Gamification)'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GamificationProfileResponse'
+        '409':
+          description: GAMIFICATION_COINS_INSUFFICIENT / GAMIFICATION_SAVER_LIMIT
           content:
             application/json:
               schema:
@@ -10533,3 +10653,98 @@ components:
         date:
           type: string
           format: date
+    GamificationProfileResponse:
+      type: object
+      required:
+        - totalXp
+        - level
+        - xpInLevel
+        - xpForNext
+        - coins
+        - streakDays
+        - streakAlive
+        - streakSavers
+        - equippedTitleKey
+        - ownedTitleKeys
+      properties:
+        totalXp:
+          type: integer
+          format: int64
+        level:
+          type: integer
+        xpInLevel:
+          type: integer
+          format: int64
+        xpForNext:
+          type: integer
+          format: int64
+        coins:
+          type: integer
+        streakDays:
+          type: integer
+        streakAlive:
+          type: boolean
+        streakSavers:
+          type: integer
+        equippedTitleKey:
+          type: string
+        ownedTitleKeys:
+          type: array
+          items:
+            type: string
+          description: shop titles bought (ladder unlocks are level-derived)
+    XpBySource:
+      type: object
+      required:
+        - source
+        - xp
+      properties:
+        source:
+          type: string
+          description: GYM|RUN|SPORT|QUEST|ACTIVITY|HABIT
+        xp:
+          type: integer
+          format: int64
+    CoinEventResponse:
+      type: object
+      required:
+        - reason
+        - amount
+      properties:
+        reason:
+          type: string
+          description: >-
+            quest|all3|level_up|streak_7|streak_30|streak_100|saver_used|purchase
+        amount:
+          type: integer
+    GamificationDayResponse:
+      type: object
+      required:
+        - date
+        - xpBySource
+        - xpTotal
+        - coinEvents
+        - coinTotal
+        - streakDays
+        - streakAlive
+      properties:
+        date:
+          type: string
+          format: date
+        xpBySource:
+          type: array
+          items:
+            $ref: '#/components/schemas/XpBySource'
+        xpTotal:
+          type: integer
+          format: int64
+        coinEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoinEventResponse'
+        coinTotal:
+          type: integer
+        streakDays:
+          type: integer
+        streakAlive:
+          type: boolean

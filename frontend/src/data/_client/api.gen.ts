@@ -1953,6 +1953,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/gamification/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Account XP/level/coins/streak/titles (Gamification) */
+        get: operations["getGamificationProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gamification/day/{date}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The day's XP-by-source + coin events + streak — the ritual Harvest read (Gamification) */
+        get: operations["getGamificationDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gamification/title/{key}/buy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buy a shop title (auto-equips) (Gamification) */
+        post: operations["buyTitle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gamification/title/{key}/equip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Equip an owned/unlocked title (Gamification) */
+        post: operations["equipTitle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/gamification/saver/buy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buy a streak saver (200 coins, max 2 held) (Gamification) */
+        post: operations["buyStreakSaver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4242,6 +4327,44 @@ export interface components {
         RitualCloseRequest: {
             /** Format: date */
             date: string;
+        };
+        GamificationProfileResponse: {
+            /** Format: int64 */
+            totalXp: number;
+            level: number;
+            /** Format: int64 */
+            xpInLevel: number;
+            /** Format: int64 */
+            xpForNext: number;
+            coins: number;
+            streakDays: number;
+            streakAlive: boolean;
+            streakSavers: number;
+            equippedTitleKey: string;
+            /** @description shop titles bought (ladder unlocks are level-derived) */
+            ownedTitleKeys: string[];
+        };
+        XpBySource: {
+            /** @description GYM|RUN|SPORT|QUEST|ACTIVITY|HABIT */
+            source: string;
+            /** Format: int64 */
+            xp: number;
+        };
+        CoinEventResponse: {
+            /** @description quest|all3|level_up|streak_7|streak_30|streak_100|saver_used|purchase */
+            reason: string;
+            amount: number;
+        };
+        GamificationDayResponse: {
+            /** Format: date */
+            date: string;
+            xpBySource: components["schemas"]["XpBySource"][];
+            /** Format: int64 */
+            xpTotal: number;
+            coinEvents: components["schemas"]["CoinEventResponse"][];
+            coinTotal: number;
+            streakDays: number;
+            streakAlive: boolean;
         };
     };
     responses: never;
@@ -9953,6 +10076,157 @@ export interface operations {
                 };
             };
             /** @description RITUAL_NOT_TODAY */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getGamificationProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The account profile (ghost-shaped zeros before any activity) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GamificationProfileResponse"];
+                };
+            };
+        };
+    };
+    getGamificationDay: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                date: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Day aggregate (honest zeros, never 404) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GamificationDayResponse"];
+                };
+            };
+        };
+    };
+    buyTitle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GamificationProfileResponse"];
+                };
+            };
+            /** @description GAMIFICATION_TITLE_UNKNOWN */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description GAMIFICATION_TITLE_OWNED / GAMIFICATION_COINS_INSUFFICIENT / GAMIFICATION_TITLE_NOT_SHOP */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    equipTitle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GamificationProfileResponse"];
+                };
+            };
+            /** @description GAMIFICATION_TITLE_UNKNOWN */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description GAMIFICATION_TITLE_LOCKED */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    buyStreakSaver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Updated profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GamificationProfileResponse"];
+                };
+            };
+            /** @description GAMIFICATION_COINS_INSUFFICIENT / GAMIFICATION_SAVER_LIMIT */
             409: {
                 headers: {
                     [name: string]: unknown;

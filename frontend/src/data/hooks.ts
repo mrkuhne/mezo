@@ -38,4 +38,4 @@ export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/q
 export { useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habitHooks'
 export { useIntentionDay, useIntentionActions } from '@/data/intention/intentionHooks'
 export { useActivities, useActivityActions, useActivityHistory } from '@/data/activity/activityHooks'
-export { useGamification, useTitles, useGamificationActions } from '@/data/gamification/gamificationHooks'
+export { useGamification, useTitles, useGamificationActions, useGamificationDay } from '@/data/gamification/gamificationHooks'

@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
 import io.mrkuhne.mezo.api.dto.RadarAxis;
 import io.mrkuhne.mezo.api.dto.SkillLevel;
 import io.mrkuhne.mezo.api.dto.SkillRef;
+import io.mrkuhne.mezo.feature.progression.AccountProgressPort;
 import io.mrkuhne.mezo.feature.progression.ActivityLedgerSource;
 import io.mrkuhne.mezo.feature.progression.PerkCatalog;
 import io.mrkuhne.mezo.feature.progression.ProgressionCurve;
@@ -65,6 +66,7 @@ public class ProgressionService {
     private final ProgressionProperties properties;
     private final TraitCalculator traitCalculator;
     private final ObjectProvider<ActivityLedgerSource> activityLedgerSource;
+    private final ObjectProvider<AccountProgressPort> accountProgressPort;
 
     @Transactional
     public LevelUpResult applyGym(UUID createdBy, GymSignal signal) {
@@ -100,7 +102,7 @@ public class ProgressionService {
         }
 
         return award(createdBy, SOURCE_GYM, signal.instanceId(), deltas, kinds,
-            "Klasszik kondi", null, null);
+            "Klasszik kondi", null, null, LocalDate.now());
     }
 
     @Transactional
@@ -128,7 +130,7 @@ public class ProgressionService {
 
         String label = sprint ? "Sprint futás" : "Futás";
         return award(createdBy, SOURCE_RUN, signal.logId(), deltas, kinds,
-            label, signal.durationMin(), signal.rpeActual());
+            label, signal.durationMin(), signal.rpeActual(), LocalDate.now());
     }
 
     /** Quest completion → single-skill XP through the shared idempotent tail (source QUEST). */
@@ -141,7 +143,7 @@ public class ProgressionService {
             kinds.put(signal.skillKey(), signal.skillKind());
         }
         return award(createdBy, SOURCE_QUEST, signal.questId(), deltas, kinds,
-            signal.label(), null, null);
+            signal.label(), null, null, signal.occurredOn());
     }
 
     /** Categorized activity → single-LIFE-skill XP through the shared idempotent tail (source ACTIVITY). */
@@ -154,7 +156,7 @@ public class ProgressionService {
             kinds.put(signal.skillKey(), "LIFE");
         }
         return award(createdBy, SOURCE_ACTIVITY, signal.activityId(), deltas, kinds,
-            signal.label(), null, null);
+            signal.label(), null, null, signal.occurredOn());
     }
 
     /**
@@ -193,7 +195,7 @@ public class ProgressionService {
             kinds.put(signal.skillKey(), "LIFE");
         }
         return award(createdBy, SOURCE_HABIT, signal.habitDayId(), deltas, kinds,
-            signal.label(), null, null);
+            signal.label(), null, null, signal.occurredOn());
     }
 
     /**
@@ -250,7 +252,7 @@ public class ProgressionService {
         }
 
         return award(createdBy, SOURCE_SPORT, signal.sessionId(), deltas, kinds,
-            label, signal.durationMin(), signal.rpe());
+            label, signal.durationMin(), signal.rpe(), LocalDate.now());
     }
 
     /**
@@ -355,7 +357,7 @@ public class ProgressionService {
      */
     private LevelUpResult award(UUID createdBy, String sourceType, UUID sourceRefId,
         Map<String, Long> deltas, Map<String, String> kinds, String label,
-        Integer durationMin, Integer rpe) {
+        Integer durationMin, Integer rpe, LocalDate occurredOn) {
 
         // Idempotency: a workout grants XP once — return the stored payload on re-apply.
         var existing = levelUpEventRepository
@@ -409,9 +411,12 @@ public class ProgressionService {
         event.setCreatedBy(createdBy);
         event.setSourceType(sourceType);
         event.setSourceRefId(sourceRefId);
+        event.setOccurredOn(occurredOn);
         event.setTotalXp(totalXp);
         event.setPayload(payload);
         levelUpEventRepository.save(event);
+        accountProgressPort.ifAvailable(p ->
+            p.onXpAwarded(createdBy, sourceType, sourceRefId, occurredOn));
 
         return payload;
     }

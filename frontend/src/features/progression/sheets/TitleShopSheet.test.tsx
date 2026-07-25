@@ -45,9 +45,20 @@ describe('mock mode', () => {
 describe('real mode', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
-  test('shop segment shows the backend-coming empty state', async () => {
+  test('shop segment renders the live shop; unaffordable titles are disabled, not a placeholder', async () => {
     renderSheet()
+    await waitFor(() => expect(screen.getByText('🪙 45')).toBeInTheDocument()) // MSW default profile
     await userEvent.click(screen.getByRole('button', { name: 'Bolt' }))
-    expect(screen.getByText('A bolt a backend-szelettel érkezik.')).toBeInTheDocument()
+    expect(screen.queryByText('A bolt a backend-szelettel érkezik.')).not.toBeInTheDocument()
+    const row = screen.getByText('Csirkemell Csodája').closest('.row') as HTMLElement
+    // 150 coins > the 45 held → disabled, but the buy affordance is live (canMutate: true).
+    expect(within(row).getByRole('button', { name: 'Megveszem' })).toBeDisabled()
+    expect(screen.getByText(/nálad: 1\/2/)).toBeInTheDocument()
+  })
+
+  test('ladder segment reflects the equipped MSW title', async () => {
+    renderSheet()
+    await waitFor(() => expect(screen.getByText('Viselve')).toBeInTheDocument())
+    expect(screen.getByText('A Következetes')).toBeInTheDocument()
   })
 })

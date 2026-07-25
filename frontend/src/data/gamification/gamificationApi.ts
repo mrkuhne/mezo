@@ -1,21 +1,47 @@
-import { ApiError } from '@/data/_client/api'
-import { levelFromTotalXp } from '@/data/gamification/levelCurve'
-import { GHOST_GAMIFICATION } from '@/data/gamification/gamificationMock'
-import type { GamificationProfile } from '@/data/gamification/gamificationTypes'
-import { progressionApi, type ProgressionProfileResponse } from '@/data/progression/progressionApi'
+import { apiFetch } from '@/data/_client/api'
+import type { components } from '@/data/_client/api.gen'
+import type { GamificationDay, GamificationProfile } from '@/data/gamification/gamificationTypes'
 
-/** Real-mode interim (spec §8, until mezo-huzd): account XP/level derived from the real
- *  progression profile (Σ cumulativeXp over every skill); coins/streak/titles stay ghost.
- *  Mirrors the sanctioned useProfile static exception (mezo-lfw): documented, temporary. */
-export async function fetchDerivedGamification(): Promise<GamificationProfile> {
-  let p: ProgressionProfileResponse
-  try {
-    p = await progressionApi.getProfile()
-  } catch (err) {
-    if (err instanceof ApiError && err.status === 404) return GHOST_GAMIFICATION
-    throw err
-  }
-  const totalXp = [...p.athletic, ...p.muscle, ...p.life].reduce((s, x) => s + x.cumulativeXp, 0)
-  const { level, xpInLevel, xpForNext } = levelFromTotalXp(totalXp)
-  return { ...GHOST_GAMIFICATION, level, totalXp, xpInLevel, xpForNext }
+type ProfileWire = components['schemas']['GamificationProfileResponse']
+type DayWire = components['schemas']['GamificationDayResponse']
+
+const toProfile = (w: ProfileWire): GamificationProfile => ({
+  level: w.level,
+  totalXp: w.totalXp,
+  xpInLevel: w.xpInLevel,
+  xpForNext: w.xpForNext,
+  coins: w.coins,
+  streakDays: w.streakDays,
+  streakAlive: w.streakAlive,
+  streakSavers: w.streakSavers,
+  activeTitleKey: w.equippedTitleKey,
+  ownedShopTitleKeys: w.ownedTitleKeys,
+  lastActiveDate: null,
+  dayCounters: { date: '', counts: {} },
+})
+
+const toDay = (w: DayWire): GamificationDay => ({
+  date: w.date,
+  xpBySource: w.xpBySource as GamificationDay['xpBySource'],
+  xpTotal: w.xpTotal,
+  coinEvents: w.coinEvents,
+  coinTotal: w.coinTotal,
+  streakDays: w.streakDays,
+  streakAlive: w.streakAlive,
+})
+
+/** Real-mode gamification endpoints (mezo-huzd Task 5/7): account profile, the day
+ *  Harvest read, and the three mutations (shop buy, equip, streak-saver buy) —
+ *  every write echoes the fresh profile so callers can invalidate and refetch. */
+export const gamificationApi = {
+  profile: async (): Promise<GamificationProfile> =>
+    toProfile(await apiFetch<ProfileWire>('/api/gamification/profile')),
+  day: async (date: string): Promise<GamificationDay> =>
+    toDay(await apiFetch<DayWire>(`/api/gamification/day/${date}`)),
+  buyTitle: (key: string): Promise<ProfileWire> =>
+    apiFetch<ProfileWire>(`/api/gamification/title/${key}/buy`, { method: 'POST' }),
+  equipTitle: (key: string): Promise<ProfileWire> =>
+    apiFetch<ProfileWire>(`/api/gamification/title/${key}/equip`, { method: 'POST' }),
+  buySaver: (): Promise<ProfileWire> =>
+    apiFetch<ProfileWire>('/api/gamification/saver/buy', { method: 'POST' }),
 }

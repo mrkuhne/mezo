@@ -159,6 +159,7 @@ class ArchitectureTest {
         "io.mrkuhne.mezo.feature.progression.PerkCatalog",
         "io.mrkuhne.mezo.feature.quest.QuestCatalog",
         "io.mrkuhne.mezo.feature.habit.HabitCatalog",
+        "io.mrkuhne.mezo.feature.gamification.TitleCatalog",
         "io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm");
 
     private static final Set<String> RAW_EXCEPTION_TYPES = Set.of(

@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -81,6 +82,7 @@ class ProgressionPersistenceIT extends AbstractIntegrationTest {
         evt.setCreatedBy(user);
         evt.setSourceType("GYM");
         evt.setSourceRefId(workoutRef);
+        evt.setOccurredOn(LocalDate.now());
         evt.setTotalXp(480L);
         evt.setPayload(payload);
         LevelUpEventEntity saved = levelUpEventRepository.saveAndFlush(evt);
@@ -103,6 +105,7 @@ class ProgressionPersistenceIT extends AbstractIntegrationTest {
         evt.setCreatedBy(user);
         evt.setSourceType("RUN");
         evt.setSourceRefId(workoutRef);
+        evt.setOccurredOn(LocalDate.now());
         evt.setTotalXp(120L);
         evt.setPayload(new LevelUpResult("RUN", "Futás", 40, 6, 120L,
             List.of(), List.of(), List.of(), new LevelUpResult.Robustness(0L, 5)));

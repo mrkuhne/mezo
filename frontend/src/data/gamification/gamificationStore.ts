@@ -60,7 +60,7 @@ export function awardGamificationEvent(
     } else {
       next = { ...next, streakDays: 1 }
     }
-    next = { ...next, lastActiveDate: today }
+    next = { ...next, lastActiveDate: today, streakAlive: true }
     milestone = STREAK_MILESTONE_COINS[next.streakDays] ?? 0
     coinsAwarded += milestone
   }

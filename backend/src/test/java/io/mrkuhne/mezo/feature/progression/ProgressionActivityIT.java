@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
 import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ class ProgressionActivityIT extends AbstractIntegrationTest {
     @Test
     void testApplyActivity_shouldCreateLifeRowAndBeIdempotent_whenAppliedTwice() {
         UUID owner = userPopulator.createUser("act-xp@test.hu").getId();
-        ActivitySignal signal = new ActivitySignal(UUID.randomUUID(), "learning", 15, "Olvastam 30 percet");
+        ActivitySignal signal = new ActivitySignal(UUID.randomUUID(), "learning", 15, "Olvastam 30 percet", LocalDate.now());
 
         LevelUpResult first = progressionService.applyActivity(owner, signal);
         LevelUpResult second = progressionService.applyActivity(owner, signal);
@@ -43,7 +44,7 @@ class ProgressionActivityIT extends AbstractIntegrationTest {
     void testMoveActivityXp_shouldShiftCumulativeXp_whenOverridingCategory() {
         UUID owner = userPopulator.createUser("act-move@test.hu").getId();
         progressionService.applyActivity(owner,
-            new ActivitySignal(UUID.randomUUID(), "learning", 20, "Teszt"));
+            new ActivitySignal(UUID.randomUUID(), "learning", 20, "Teszt", LocalDate.now()));
 
         progressionService.moveActivityXp(owner, "learning", "mindset", 20);
 

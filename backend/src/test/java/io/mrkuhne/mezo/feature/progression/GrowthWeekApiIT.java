@@ -43,7 +43,8 @@ class GrowthWeekApiIT extends ApiIntegrationTest {
         questPopulator.quest(owner, monday.minusDays(1), DailyQuestEntity.SLOT_FUELBIO, "bio_sleep", "recovery",
             "LIFE", "sleep_target", new java.math.BigDecimal("7.5"), 25, DailyQuestEntity.STATUS_COMPLETED);
         // LIFE XP: a real award this week (occurredAt = now → in the current week)
-        progressionService.applyActivity(owner, new ActivitySignal(UUID.randomUUID(), "learning", 15, "Teszt"));
+        progressionService.applyActivity(owner,
+            new ActivitySignal(UUID.randomUUID(), "learning", 15, "Teszt", LocalDate.now()));
         // activities: 1 financial + 1 plain, both in-week
         activityPopulator.financialActivity(owner, monday, "Spórolás", 50000L);
         activityPopulator.activity(owner, monday.plusDays(1), "Olvastam", "learning", 15,

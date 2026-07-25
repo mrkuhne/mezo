@@ -433,3 +433,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607241000_mezo-hvmx_create_ritual_day.sql
+  - changeSet:
+      id: "1.0.0:202607241100_mezo-huzd_create_gamification"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607241100_mezo-huzd_create_gamification.sql
+  - changeSet:
+      id: "1.0.0:202607241130_mezo-huzd_level_up_event_occurred_on"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607241130_mezo-huzd_level_up_event_occurred_on.sql
