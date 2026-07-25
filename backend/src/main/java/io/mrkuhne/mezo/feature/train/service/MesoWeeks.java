@@ -14,8 +14,13 @@ final class MesoWeeks {
 
     /** Week containing today, clamped to [1, weeks] — week 1 before the start date. */
     static int clampWeek(LocalDate startDate, int weeks) {
-        long week = ChronoUnit.DAYS.between(startDate, LocalDate.now()) / 7 + 1;
-        return (int) Math.max(1, Math.min(weeks, week));
+        return weekOf(startDate, LocalDate.now(), weeks);
+    }
+
+    /** 1-based meso-week containing {@code date}, clamped [1, weeks]. */
+    static int weekOf(LocalDate startDate, LocalDate date, int weeks) {
+        long wk = ChronoUnit.DAYS.between(startDate, date) / 7 + 1;
+        return (int) Math.max(1, Math.min(weeks, wk));
     }
 
     /** The {@code [from, to]} LocalDate range covering 1-based week {@code w}, anchored on {@code startDate}. */
