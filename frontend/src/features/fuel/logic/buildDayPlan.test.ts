@@ -1,4 +1,6 @@
 import {
+  activityKcal,
+  blockKcal,
   buildDayPlan,
   deriveDailyBudget,
   mealSlotKey,
@@ -413,4 +415,18 @@ describe('slot identity + now-aware re-flow (mezo-53su)', () => {
     const plan = buildDayPlan({ ...base, caffeineCutoff: '12:30', nowHHmm: '06:00' })
     expect(plan.caffeineCutoff).toBe('12:30')
   })
+})
+
+// ── MET-based activity energy (mezo-1oy5) ────────────────────────────────────
+test('blockKcal = MET × kg × hours; null duration falls back per kind', () => {
+  expect(blockKcal('gym', 60, 78.6)).toBeCloseTo(6.0 * 78.6 * 1, 1) // ≈472
+  expect(blockKcal('sport', 240, 78.6)).toBeCloseTo(4.5 * 78.6 * 4, 1) // ≈1415
+  expect(blockKcal('run', null, 78.6)).toBeCloseTo(9.5 * 78.6 * (45 / 60), 1) // DEFAULT_RUN_MIN
+})
+test('activityKcal sums every scheduled block (gym + sport + run all count)', () => {
+  const blocks = [
+    { kind: 'gym' as const, time: '18:00', durationMin: 60, label: 'Plyo Leg' },
+    { kind: 'sport' as const, time: '18:00', durationMin: 240, label: 'Volleyball' },
+  ]
+  expect(activityKcal(blocks, 78.6)).toBeCloseTo(6.0 * 78.6 + 4.5 * 78.6 * 4, 0) // ≈1887
 })

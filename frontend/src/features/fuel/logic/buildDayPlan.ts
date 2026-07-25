@@ -9,9 +9,11 @@
 
 import {
   DEFAULT_BLOCK_MIN,
+  DEFAULT_RUN_MIN,
   EATING_START_OFFSET_MIN,
   FAT_KCAL_SHARE,
   KITCHEN_CLOSE_OFFSET_MIN,
+  MET_BY_KIND,
   MIN_SLOT_GAP_MIN,
   POST_WORKOUT_SNAP_MIN,
   PRE_WORKOUT_SNAP_MIN,
@@ -83,6 +85,18 @@ export function mealSlotKey(m: FuelMeal): SlotKey | null {
   if (s === 'dinner' || s.includes('vacsora')) return 'dinner'
   if (s === 'snack' || s.includes('snack')) return 'snack'
   return null
+}
+
+// ── MET-based activity energy ────────────────────────────────────────────────
+/** MET-based kcal for one training block. Null duration → DEFAULT_RUN_MIN for runs, DEFAULT_BLOCK_MIN otherwise. */
+export function blockKcal(kind: PlannerBlock['kind'], durationMin: number | null, weightKg: number): number {
+  const met = MET_BY_KIND[kind] ?? MET_BY_KIND.default
+  const min = durationMin ?? (kind === 'run' ? DEFAULT_RUN_MIN : DEFAULT_BLOCK_MIN)
+  return met * weightKg * (min / 60)
+}
+/** Total scheduled activity energy (kcal) for the day — every gym/sport/run block. */
+export function activityKcal(blocks: PlannerBlock[], weightKg: number): number {
+  return blocks.reduce((s, b) => s + blockKcal(b.kind, b.durationMin, weightKg), 0)
 }
 
 // ── deriveDailyBudget ────────────────────────────────────────────────────────
