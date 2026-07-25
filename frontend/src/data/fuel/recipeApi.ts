@@ -76,11 +76,11 @@ export const recipeApi = {
   get: (id: string): Promise<Recipe> =>
     apiFetch<RecipeResponse>(`/api/recipe/${id}`).then(fromResponse),
   // Template breakdown (mezo-bw3y): lazily materializing GET — the first call may take LLM
-  // seconds. keepDegraded: the template view SHOWS the weight-0 context card (spec D3), unlike
-  // the meal sheet which drops degraded dimensions.
+  // seconds. Since mezo-7797 the template envelope carries a real `portion` dimension in place of
+  // the old degraded context card, so it maps through the same drop-degraded path as a meal.
   getBreakdown: (id: string): Promise<RecipeBreakdownData> =>
     apiFetch<RecipeBreakdownResponse>(`/api/recipe/${id}/breakdown`).then(r => ({
-      breakdown: r.breakdown ? fromBreakdown(r.breakdown, { keepDegraded: true }) : null,
+      breakdown: r.breakdown ? fromBreakdown(r.breakdown) : null,
       fitsFor: r.fitsFor,
     })),
   create: (input: RecipeInput): Promise<void> =>

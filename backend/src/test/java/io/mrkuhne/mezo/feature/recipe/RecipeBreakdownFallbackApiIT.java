@@ -63,7 +63,11 @@ class RecipeBreakdownFallbackApiIT extends ApiIntegrationTest {
         assertThat(res.getBreakdown().getValue()).isNotNull();
         assertThat(res.getBreakdown().getSummary()).isNull(); // no prose without the LLM
         assertThat(res.getBreakdown().getImprove()).isEmpty();
-        assertThat(res.getBreakdown().getDimensions()).hasSize(4); // 3 live + degraded context
+        // 8 template dimensions on the prose-less path (mezo-7797): macro..energy_density + portion,
+        // NO context; the deterministic envelope is served whole even without the LLM
+        assertThat(res.getBreakdown().getDimensions()).extracting(d -> d.getId())
+            .containsExactly("macro", "micro", "who", "fat_quality", "nova",
+                "plant_diversity", "energy_density", "portion");
         assertThat(res.getFitsFor()).isEmpty();
         // prose-less envelopes are never persisted — prose self-heals when the LLM returns
         assertThat(recipeRepository.findById(recipe).orElseThrow().getBreakdown()).isNull();

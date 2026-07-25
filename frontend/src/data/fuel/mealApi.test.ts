@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { mealApi, toRequest, fromResponse } from '@/data/fuel/mealApi'
+import { mealApi, toRequest, fromResponse, fromBreakdown } from '@/data/fuel/mealApi'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { MealInput } from '@/data/types'
@@ -69,7 +69,7 @@ describe('fromResponse', () => {
               micros: null, nova: null, context: null,
             },
             { // degraded micro: weight 0, no payload → must be DROPPED by the mapper
-              id: 'micro', label: 'Mikro–makro balance', weight: 0, score: 0, detail: 'Nincs tápanyag-adat.',
+              id: 'micro', label: 'Rost & mikro', weight: 0, score: 0, detail: 'Nincs tápanyag-adat.',
               macro: null, micros: null, nova: null, context: null,
             },
             {
@@ -106,6 +106,53 @@ describe('fromResponse', () => {
     expect(nova).toMatchObject({ id: 'nova', color: 'var(--cat-tendency)' })
     expect(nova.id === 'nova' && nova.nova.items[1].warning).toBe(true)
     expect(meal.breakdown!.tools[0]).toEqual({ type: 'compute', name: 'macroFit(mezo.nutrition)' })
+  })
+})
+
+describe('fromBreakdown — 8-dimension envelope rows dimensions (mezo-7797)', () => {
+  it('maps a WHO rows dimension to a RowsDimension with the injected var(--sky) color; drops a degraded new-id dimension', () => {
+    const envelope = {
+      value: 0.9, confidence: 0.9, summary: null,
+      dimensions: [
+        {
+          id: 'who', label: 'Ajánlások · WHO', weight: 0.14, score: 0.9, detail: 'x',
+          macro: null, micros: null, nova: null,
+          context: [{ label: 'Cukor', value: '6 E%' }],
+        },
+        { // degraded new-id dimension: weight 0, empty context → must be DROPPED
+          id: 'portion', label: 'Adag-arány', weight: 0, score: 0, detail: 'Nincs adag-adat.',
+          macro: null, micros: null, nova: null, context: [],
+        },
+      ],
+      improve: [], tools: [],
+    }
+
+    const b = fromBreakdown(envelope)
+
+    expect(b.dimensions.map(d => d.id)).toEqual(['who']) // degraded portion dropped
+    const who = b.dimensions[0]
+    expect(who).toMatchObject({ id: 'who', color: 'var(--sky)', weight: 0.14, score: 0.9 })
+    expect(who.id === 'who' && who.context).toEqual([{ label: 'Cukor', value: '6 E%' }])
+  })
+
+  it('injects each new dimension its constant color', () => {
+    const mk = (id: string) => ({
+      id, label: id, weight: 0.1, score: 0.8, detail: 'd',
+      macro: null, micros: null, nova: null, context: [{ label: 'a', value: 'b' }],
+    })
+    const envelope = {
+      value: 0.8, confidence: 0.8, summary: null,
+      dimensions: [mk('who'), mk('fat_quality'), mk('plant_diversity'), mk('energy_density'), mk('portion')],
+      improve: [], tools: [],
+    }
+    const colors = Object.fromEntries(fromBreakdown(envelope).dimensions.map(d => [d.id, d.color]))
+    expect(colors).toEqual({
+      who: 'var(--sky)',
+      fat_quality: 'var(--amber-deep)',
+      plant_diversity: 'var(--sage-deep)',
+      energy_density: 'var(--lav)',
+      portion: 'var(--coral-deep)',
+    })
   })
 })
 

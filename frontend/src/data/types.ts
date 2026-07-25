@@ -46,13 +46,15 @@ export interface FuelSettings {
 }
 export interface MacroSet { kcal: number; p: number; c: number; f: number; water: number }
 export type ToolType = 'read' | 'compute' | 'write'
-export interface MealDimensionBase { id: 'macro' | 'micro' | 'nova' | 'context'; label: string; weight: number; score: number; color: string; detail: string }
+export interface MealDimensionBase { id: 'macro' | 'micro' | 'nova' | 'context' | 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; label: string; weight: number; score: number; color: string; detail: string }
 export interface MacroDimension extends MealDimensionBase { id: 'macro'; macroRatio: { p: number; c: number; f: number }; macroTargets: { p: string; c: string; f: string }; kcalShareOfDay: number; notes?: string }
 export type MicroStatus = 'good' | 'ok' | 'low'
 export interface MicroDimension extends MealDimensionBase { id: 'micro'; micros: { name: string; value: string; pct: number; status: MicroStatus }[] }
 export interface NovaDimension extends MealDimensionBase { id: 'nova'; nova: { dominant: NovaGroup; stack: { nova: NovaGroup; pct: number; label: string }[]; items: { name: string; nova: NovaGroup; warning?: boolean }[] } }
 export interface ContextDimension extends MealDimensionBase { id: 'context'; context: { label: string; value: string }[] }
-export type MealDimension = MacroDimension | MicroDimension | NovaDimension | ContextDimension
+/** Generic label/value-row dimensions (mezo-7797): WHO, zsírminőség, növényi diverzitás, energia-sűrűség, adag-arány. Same payload shape as ContextDimension. */
+export interface RowsDimension extends MealDimensionBase { id: 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; context: { label: string; value: string }[] }
+export type MealDimension = MacroDimension | MicroDimension | NovaDimension | ContextDimension | RowsDimension
 export interface MealBreakdown {
   confidence: number
   summary: string | null // deterministic v0 ships null — the prose is P8 (mezo-yta)
@@ -219,7 +221,11 @@ export interface UserMeta {
   memberDays: number
   streakDays: number
 }
-export interface TodayScenario { dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean }
+export interface TodayScenario {
+  dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
+  /** `?ritual=` demo override (mezo-ilsj) — wins over RitualCard's derived waiting/open/done state. */
+  ritual: 'waiting' | 'open' | 'done' | null
+}
 
 // --- Pantry (Kamra) + Recipes (Receptek) ---
 export interface PantryCategoryMeta { label: string; color: string }
@@ -914,6 +920,10 @@ export interface IntentionDay {
   reflection: Reflection | null
   focusCap: number
 }
+
+// ── Daily closing ritual — sleep-anchored evening window (R3, mezo-ilsj) ────
+export interface RitualWindow { opensAt: string; prepStartsAt: string; bedTime: string }
+export interface RitualDay { date: string; closed: boolean; closedAt: string | null; window: RitualWindow }
 
 // ── Activity log (gamified growth E2, mezo-jzca) ─────────────────────────────
 export type LifeSkillKey =

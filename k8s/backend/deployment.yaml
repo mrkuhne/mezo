@@ -20,10 +20,19 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:0.118.2
+          image: ghcr.io/mrkuhne/mezo-backend:0.123.0
           ports:
             - containerPort: 8090
           env:
+            # Pin the JVM default zone so business dates (level_up_event.occurred_on,
+            # gamification streak/coin rollover) and every @Scheduled cron run on Budapest
+            # wall-clock, not the eclipse-temurin UTC default. The occurred_on backfill
+            # (migration 202607241130) committed Budapest-local dates, so runtime stamps
+            # must match or a 00:00–02:00 log lands on the previous business date and earns
+            # no streak credit (bd mezo-k0t2). Also fires the crons (02:20/02:40/05:45…) at
+            # their intended Budapest wall-clock. Matches k8s/postgres/backup-cronjob's zone.
+            - name: TZ
+              value: Europe/Budapest
             # demodata = seed the single owner user on first boot.
             - name: SPRING_PROFILES_ACTIVE
               value: demodata

@@ -1,17 +1,23 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Self-baselined visual goldens: 15 key screens × 2 themes = 30 snapshots.
+ * Self-baselined visual goldens: 16 goto screens + the /ritual Harvest click-through
+ * = 17 screens × 2 themes = 34 snapshots per platform (mezo-mzbz added the two /ritual
+ * shots: Arrival act 1 via the SCREENS list + the Harvest act 4 via the click-through test).
  *
  * Determinism levers (all must hold or the shots flake):
  *  - clock frozen to 2026-05-21T13:42 (délután) BEFORE goto → the daypart-derived
  *    sky tint (PhoneFrame) + greeting (GreetingHeader) stay fixed even as the 60s
  *    re-derive interval keeps firing (setFixedTime keeps timers running but pins
- *    `new Date()`), and it matches the StatusBar's hardcoded 13:42.
+ *    `new Date()`), and it matches the StatusBar's hardcoded 13:42. The /ritual flow is
+ *    reachable any time (ADR 0010 D2 — the window nudges, never locks), so it renders at 13:42.
  *  - theme via localStorage `mezo-theme` set in an init script BEFORE goto → the
  *    pre-paint script in index.html sees it and stamps data-theme.
  *  - reducedMotion 'reduce' (config) + toHaveScreenshot's default animations
- *    'disabled' → no in-flight transitions.
+ *    'disabled' → no in-flight transitions. The /ritual rz-* animation family is fully
+ *    neutralized under reduced-motion (asserted by reducedMotionGuard.test.ts), so both
+ *    /ritual shots settle to a deterministic end state — confetti is display:none, the
+ *    Harvest CountUp renders its final value immediately, np-anim/rz-pop settle visible.
  *  - wait for `document.fonts.ready` → the self-hosted fonts (Bricolage + Jakarta) are in
  *    before the pixel compare, else the first paint uses fallback metrics.
  */
@@ -31,6 +37,9 @@ const SCREENS: Array<[string, string]> = [
   ['insights-chat', '/insights/chat'],
   ['insights-elorejelzesek', '/insights/predictions'],
   ['insights-kiserletek', '/insights/experiments'],
+  // Napzárás act 1 (Megérkezés): goto /ritual lands on the Arrival act directly. Harvest
+  // (act 4) is a separate click-through test below (it can't be reached by a bare goto).
+  ['ritual-arrival', '/ritual'],
 ]
 
 for (const theme of ['light', 'dark'] as const) {
@@ -46,5 +55,33 @@ for (const theme of ['light', 'dark'] as const) {
         await expect(page).toHaveScreenshot(`${name}-${theme}.png`)
       })
     }
+
+    // Napzárás act 4 (Termés/Harvest): not reachable by a bare goto — drive the flow to it.
+    // No production `?act=` deep-link exists (and none should be added just for a test); each
+    // act mounts exactly one `.rz-cta` advance button and only one act renders at a time, so
+    // clicking the labelled advance CTA three times walks Arrival → A napod íve → Nyitott
+    // hurkok → Termés. The Harvest read is a fixed mock day seed and CountUp renders its final
+    // value immediately under reduced motion, so the end state is deterministic.
+    test('ritual-harvest', async ({ page }) => {
+      await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+      await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
+      await page.goto('/ritual')
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('button', { name: 'Kezdjük 🌙' }).click()  // act 1 → 2
+      await page.getByRole('button', { name: 'Tovább' }).click()       // act 2 → 3
+      await page.getByRole('button', { name: 'Tovább' }).click()       // act 3 → 4
+      await page.locator('.rz-harvest .rz-xp-num').waitFor()           // Harvest XP total rendered
+      // Entering Harvest fires the mock close() award, which pops a transient streak-milestone
+      // toast (a mock-only side effect — real mode derives account XP, never emits this). It
+      // overlaps the XP total, so wait it out: let it appear (grace), then auto-dismiss
+      // (ToastProvider AUTO_HIDE_MS), capturing a clean Harvest. `setFixedTime` keeps timers
+      // running, so the auto-hide fires in wall-clock time. The `.toast` is position:fixed, so
+      // its removal causes no layout shift.
+      const toast = page.locator('.toast')
+      await toast.waitFor({ state: 'visible', timeout: 2000 }).catch(() => {})
+      await toast.waitFor({ state: 'detached' })
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`ritual-harvest-${theme}.png`)
+    })
   })
 }

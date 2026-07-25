@@ -1793,6 +1793,42 @@ a.hab-link:hover { opacity: 0.85; }
   .quests-progress > i, .quest-cta { transition: none; }
 }
 
+/* ===== Napzárás entry card — Today "Teendők ma" zone (R3, mezo-ilsj) =====
+   RitualCard's waiting/open states (evening-timing.html mockup phones 1-2, adapted to the
+   light Today surface / theme tokens rather than the dark /ritual screen's literal colours).
+   "open" reuses --wash-lav for its glow — the SAME token that lights up `.hab-row.now`
+   (RoutineCard's first-pending idiom); "waiting" stays a quiet, muted card. */
+.ritcard {
+  display: block; margin: 8px 24px; padding: 14px 16px; border-radius: 18px;
+  background: var(--wash-lav);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lav) 40%, transparent);
+  text-decoration: none; font-family: var(--ff-body);
+}
+.ritcard.waiting {
+  background: var(--surface-1);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+}
+.ritcard-ttl {
+  display: flex; align-items: center; gap: 8px;
+  font: 700 14px var(--ff-display); color: var(--ink);
+}
+.ritcard-moon { font-size: 20px; display: inline-block; }
+@media (prefers-reduced-motion: no-preference) {
+  .ritcard:not(.waiting) .ritcard-moon { animation: ritcard-breath 4s ease-in-out infinite; }
+}
+@keyframes ritcard-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.ritcard-sub { font: 500 11.5px/1.5 var(--ff-body); color: var(--sub); margin-top: 5px; }
+.ritcard-cta {
+  display: block; margin-top: 12px; padding: 10px; border-radius: 999px; text-align: center;
+  font: 700 12.5px var(--ff-body); color: var(--text-inverse);
+  background: linear-gradient(120deg, var(--lav), var(--lav-deep));
+}
+.ritcard.waiting .ritcard-cta { background: var(--warm); color: var(--text-quaternary); }
+.ritcard-done {
+  display: flex; align-items: center; gap: 6px; margin: 8px 24px; padding: 11px 16px;
+  font: 600 13px var(--ff-body); color: var(--text-tertiary);
+}
+
 /* ===== Daily intention banner (mezo-a686) ===== */
 .intent {
   background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 20px;
@@ -1989,3 +2025,138 @@ a.hab-link:hover { opacity: 0.85; }
 .sesc-cta { background: var(--amber-deep); color: var(--text-inverse); font: 700 12px/1 var(--ff-body);
             padding: 10px 16px; border-radius: 999px; }
 .sesc-quiet { font: 600 11.5px/1 var(--ff-body); color: var(--faint); padding: 10px 8px; }
+
+/* ===== Ritual — Napzárás full-screen flow (mezo-ilsj, spec §4) ===== */
+.rz-screen { position: absolute; inset: 0; display: flex; flex-direction: column; overflow-y: auto;
+  background: radial-gradient(120% 90% at 50% -10%, #2A2521 0%, #241f1c 55%, #1a1614 100%); color: #F5EFE6; z-index: 30; }
+.rz-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 0; }
+.rz-dots { display: flex; gap: 6px; }
+.rz-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(245,239,230,.18); }
+.rz-dot.on { background: var(--lav); }
+.rz-exit { background: none; border: 0; padding: 4px; color: rgba(245,239,230,.5); font-size: 15px; line-height: 1; }
+.rz-act { flex: 1; display: flex; flex-direction: column; padding: 0 20px 28px; }
+.rz-moon { width: 84px; height: 84px; border-radius: 50%; margin: 72px auto 0;
+  background: radial-gradient(circle at 34% 30%, #efe9dc 0%, #cfc4e2 55%, var(--lav) 100%);
+  box-shadow: 0 0 40px 6px rgba(171,159,210,.35); animation: rz-breath 4.2s ease-in-out infinite; }
+@keyframes rz-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.rz-line1 { font-family: var(--ff-display); font-size: 24px; text-align: center; margin-top: 40px; }
+.rz-line2 { color: rgba(245,239,230,.55); text-align: center; margin-top: 8px; }
+.rz-cta { margin: 56px auto 0; padding: 13px 34px; border-radius: 999px; border: 0;
+  background: linear-gradient(120deg, var(--lav), var(--lav-deep)); color: #1d1927; font-weight: 700;
+  animation: rz-glowp 3s ease-in-out infinite; }
+@keyframes rz-glowp { 0%, 100% { box-shadow: 0 0 18px 2px rgba(171,159,210,.35); } 50% { box-shadow: 0 0 30px 8px rgba(171,159,210,.55); } }
+@keyframes rz-fall { 0% { opacity: 0; transform: translateY(0) rotate(0); } 8% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(520px) rotate(560deg); } }
+
+/* Day-story act (act 2): arc redraw (np-draw reuse) + recap event rows (np-anim reuse). */
+.rz-story-eyebrow { font-family: var(--ff-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--lav); margin: 6px 4px 0; }
+.rz-arc { display: block; margin: 20px auto 0; }
+.rz-arc-path { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round; opacity: .9;
+  stroke-dasharray: 400; stroke-dashoffset: 400; animation: np-draw 1.4s var(--np-ease-ios) .2s forwards; }
+.rz-arc-dot { transform-box: fill-box; transform-origin: center; opacity: 0;
+  animation: np-pop .5s var(--np-ease-spring) forwards; }
+.rz-arc-checkin-done { fill: var(--sage); }
+.rz-arc-checkin-now { fill: #241f1c; stroke: var(--coral); stroke-width: 2.5; }
+.rz-arc-checkin-pending { fill: #241f1c; stroke: var(--faint); stroke-width: 2.5; }
+.rz-arc-workout { fill: #241f1c; stroke: var(--coral); stroke-width: 2.5; }
+.rz-arc-sleep { fill: #241f1c; stroke: var(--lav); stroke-width: 2.5; }
+.rz-thin { font-family: var(--ff-body); font-style: italic; font-size: 12.5px; text-align: center;
+  color: rgba(245,239,230,.65); margin: 18px 6px 0; }
+.rz-events { display: flex; flex-direction: column; gap: 9px; margin-top: 18px; }
+.rz-ev { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 14px;
+  background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
+.rz-ev-icon { font-size: 15px; }
+.rz-ev-label { flex: 1; }
+.rz-ev-meta { color: var(--faint); font-size: 11px; }
+.rz-ev-meta.ok { color: var(--sage); }
+
+/* Loops act (act 3): open check-in / reflect / journal rows (np-anim reuse), a dim ✓ summary
+   once a row closes, and the single "Minden hurok zárva" beat once nothing is left open. The
+   glow is a static wash + inset ring (no pulse) — the `.hab-row.now` / RoutineCard
+   first-pending idiom, not the animated `.hab-node.now` dot pulse. */
+.rz-loops-sub { font-family: var(--ff-body); font-size: 11.5px; font-weight: 500;
+  color: rgba(245,239,230,.5); margin: 6px 4px 14px; }
+.rz-loop { display: flex; align-items: center; gap: 10px; margin: 0 4px 10px; padding: 12px;
+  border-radius: 16px; background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
+.rz-loop.glow { background: rgba(171,159,210,.14); box-shadow: inset 0 0 0 1px rgba(171,159,210,.35); }
+.rz-loop-done { color: rgba(245,239,230,.5); }
+.rz-loop-mk { color: var(--sage); }
+.rz-loop-text { flex: 1; }
+.rz-loop-act { margin-left: auto; padding: 6px 13px; border-radius: 999px; border: 0;
+  background: var(--lav); color: #1d1927; font-family: var(--ff-body); font-weight: 700; font-size: 11px;
+  white-space: nowrap; }
+.rz-loop-chips { margin-left: auto; display: flex; gap: 5px; }
+.rz-loop-chip { padding: 5px 9px; border-radius: 999px; border: 0; background: rgba(245,239,230,.1);
+  color: #F5EFE6; font-family: var(--ff-body); font-weight: 600; font-size: 10.5px; }
+.rz-loop-beat { justify-content: center; text-align: center; color: rgba(245,239,230,.7); font-style: italic; }
+
+/* Harvest act (act 4): XP count-up (the shared CountUp primitive), per-source/coin chips
+   (np-pop reuse via .rz-pop), an optional LIFE skill highlight (bar-only — honest-absence,
+   no fabricated "N XP to next level" hint), the streak flame (AppHero .cnt.fire dim
+   precedent, opacity .45), and a one-shot confetti burst (rz-fall reuse) gated on xpTotal > 0. */
+.rz-harvest { position: relative; }
+.rz-xp-wrap { text-align: center; margin-top: 26px; }
+.rz-xp-num { display: block; font-family: var(--ff-display); font-size: 52px; line-height: 1; font-weight: 700; color: var(--amber); }
+.rz-xp-unit { font-family: var(--ff-body); font-size: 15px; font-weight: 600; color: var(--faint); margin-top: 4px; }
+.rz-src-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 16px 4px 0; }
+.rz-chip { padding: 6px 10px; border-radius: 999px; background: rgba(245,239,230,.07);
+  font-family: var(--ff-body); font-weight: 600; font-size: 11px; }
+.rz-coin-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 14px; }
+.rz-coin-chip { padding: 7px 12px; border-radius: 999px; background: rgba(255,190,96,.14); color: var(--amber);
+  font-family: var(--ff-body); font-weight: 700; font-size: 12px; }
+.rz-pop { opacity: 0; animation: np-pop .5s var(--np-ease-spring) forwards; }
+.rz-skill-row { margin: 20px 4px 0; font-family: var(--ff-body); font-weight: 600; font-size: 12px; }
+.rz-skill-lv { color: var(--lav-deep); font-weight: 700; }
+.rz-skill-bar { height: 7px; border-radius: 99px; background: rgba(245,239,230,.1); margin-top: 6px; overflow: hidden; }
+.rz-skill-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--lav), var(--lav-deep));
+  transform-origin: left; transform: scaleX(0); animation: np-grow .9s var(--np-ease-ios) forwards; }
+.rz-streak { text-align: center; margin-top: 18px; font-family: var(--ff-body); font-weight: 700; font-size: 13px; color: var(--coral); }
+.rz-streak.dim { opacity: .45; }
+.rz-conf { position: absolute; inset: 0; pointer-events: none; }
+.rz-conf i { position: absolute; top: -8px; width: 6px; height: 10px; border-radius: 2px; opacity: 0;
+  animation: rz-fall 2.6s ease-in forwards; }
+
+/* Release act (act 5): closing circle (np-draw reuse), companion note, evening handoff panel. */
+.rz-circle { display: block; margin: 56px auto 0; }
+.rz-ring { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round;
+  stroke-dasharray: 264; stroke-dashoffset: 264; transform: rotate(-90deg); transform-origin: center;
+  animation: np-draw 2s var(--np-ease-ios) .3s forwards; }
+.rz-circle-moon { animation: rz-breath 4.2s ease-in-out infinite; transform-origin: center; }
+.rz-end { font-family: var(--ff-display); font-size: 19px; line-height: 1.35; text-align: center; margin: 28px 26px 0; }
+.rz-note { margin: 22px 4px 0; padding: 13px 14px; border-radius: 16px; background: rgba(245,239,230,.05);
+  font-style: italic; font-size: 12px; line-height: 1.55; }
+.rz-note-eyebrow { display: block; font-family: var(--ff-body); font-style: normal; font-size: 9.5px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--lav); margin-bottom: 6px; }
+.rz-handoff { margin: 22px 4px 0; padding: 16px 14px; border-radius: 18px; background: rgba(245,239,230,.05); }
+.rz-handoff-eyebrow { font-family: var(--ff-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--lav); }
+.rz-handoff-steps { display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
+  font-family: var(--ff-body); font-size: 12.5px; line-height: 1.5; color: rgba(245,239,230,.9); }
+.rz-handoff-steps em { font-style: normal; color: var(--faint); font-size: 11px; }
+.rz-handoff-cta { margin-top: 14px; width: 100%; padding: 13px; border: 0; border-radius: 999px;
+  background: linear-gradient(120deg, var(--lav), var(--lav-deep)); color: #1d1927; font-weight: 700; font-size: 13px;
+  animation: rz-glowp 3s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rz-moon, .rz-cta, .rz-ring, .rz-circle-moon, .rz-handoff-cta { animation: none; }
+  .rz-ring { stroke-dashoffset: 0; } /* np-draw is a one-shot reveal — freeze at "fully drawn", not hidden */
+  .rz-arc-path, .rz-arc-dot { animation: none; }
+  .rz-arc-path { stroke-dashoffset: 0; }
+  .rz-arc-dot { opacity: 1; transform: none; }
+  .rz-pop { animation: none; opacity: 1; } /* source/coin chips: settle visible, not stuck at opacity 0 */
+  .rz-skill-bar i { animation: none; transform: none; } /* bar fill freezes at its final width */
+  .rz-conf { display: none; } /* decorative burst only — no motion, no point showing it static */
+}
+
+/* ===== Morning-training reschedule nudge (mezo-67rb): Train · Mai anchor-consumer card ===== */
+.mtr { display: flex; flex-direction: column; gap: 7px; margin-top: 8px; padding: 16px;
+       border-radius: 20px; background: linear-gradient(150deg, var(--wash-sage) 0%, var(--surface) 75%);
+       box-shadow: 0 1px 3px rgba(43,33,24,.06); }
+.mtr-eye { font: 700 10px/1 var(--ff-body); letter-spacing: .1em; color: var(--sage-deep); text-transform: uppercase; }
+.mtr-lead { font: 600 13.5px/1.5 var(--ff-body); color: var(--ink); }
+.mtr-body { font: 500 12.5px/1.6 var(--ff-body); color: var(--sub); }
+.mtr-actions { display: flex; gap: 10px; align-items: center; margin-top: 4px; }
+.mtr-cta { background: var(--sage-deep); color: var(--text-inverse); font: 700 12px/1 var(--ff-body);
+           padding: 10px 16px; border-radius: 999px; }
+.mtr-quiet { font: 600 11.5px/1 var(--ff-body); color: var(--faint); padding: 10px 8px; }

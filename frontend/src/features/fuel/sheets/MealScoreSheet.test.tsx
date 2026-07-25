@@ -17,11 +17,11 @@ function renderSheet(onClose = () => {}) {
   render(<MealScoreSheet meal={meal} onClose={onClose} />)
   return meal
 }
-test('renders the score hero, summary and 4 dimension cards', () => {
+test('renders the score hero, summary and 8 dimension cards', () => {
   const meal = renderSheet()
   expect(screen.getByText(meal.title)).toBeInTheDocument()
   expect(screen.getByText('Súlyozott bontás')).toBeInTheDocument()
-  expect(screen.getByText('4 dimenzió')).toBeInTheDocument()
+  expect(screen.getByText('8 dimenzió')).toBeInTheDocument()
 })
 test('summary section renders (SafeMarkdown, no innerHTML)', () => {
   renderSheet()

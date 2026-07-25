@@ -181,14 +181,27 @@ public class MealService {
             scaled(item.getSnapshotKcal(), factor), scaled(item.getSnapshotProteinG(), factor),
             scaled(item.getSnapshotCarbsG(), factor), scaled(item.getSnapshotFatG(), factor),
             item.getSnapshotNova(),
-            facts.fiber(), facts.sugar(), facts.salt(), facts.satFat(), facts.present());
+            facts.fiber(), facts.sugar(), facts.salt(), facts.satFat(), facts.present(),
+            facts.category(), gramAmount(item.getAmount(), item.getUnit()));
     }
 
     /** Nutrition-quality facts of one line, already scaled to the logged amount. */
     private record Facts(BigDecimal fiber, BigDecimal sugar, BigDecimal salt, BigDecimal satFat,
-                         boolean present) {
+                         boolean present, String category) {
 
-        static final Facts NONE = new Facts(null, null, null, null, false);
+        static final Facts NONE = new Facts(null, null, null, null, false, null);
+    }
+
+    /** Line amount in grams for mass units (ml≈g); null for discrete units (db etc.). */
+    private static BigDecimal gramAmount(BigDecimal amount, String unit) {
+        if (amount == null || unit == null) {
+            return null;
+        }
+        return switch (unit.trim().toLowerCase()) {
+            case "g", "ml" -> amount;
+            case "kg", "l" -> amount.multiply(BigDecimal.valueOf(1000));
+            default -> null;
+        };
     }
 
     /** Pantry arm: the live item's per-basis facts × the line factor (missing/deleted → none). */
@@ -200,7 +213,8 @@ public class MealService {
                     return Facts.NONE;
                 }
                 return new Facts(scaleFact(p.getFiberG(), factor), scaleFact(p.getSugarG(), factor),
-                    scaleFact(p.getSaltG(), factor), scaleFact(p.getSaturatedFatG(), factor), true);
+                    scaleFact(p.getSaltG(), factor), scaleFact(p.getSaturatedFatG(), factor), true,
+                    p.getCategory());
             })
             .orElse(Facts.NONE);
     }
@@ -247,8 +261,9 @@ public class MealService {
         BigDecimal servings = BigDecimal.valueOf(
             recipe.getServings() == null || recipe.getServings() < 1 ? 1 : recipe.getServings());
         BigDecimal mult = servingsLogged.divide(servings, 6, RoundingMode.HALF_UP);
+        // a recipe line inside a meal is a composite — no single pantry category (honest null)
         return new Facts(fiber.multiply(mult), sugar.multiply(mult), salt.multiply(mult),
-            satFat.multiply(mult), true);
+            satFat.multiply(mult), true, null);
     }
 
     private static BigDecimal scaleFact(BigDecimal v, BigDecimal factor) {

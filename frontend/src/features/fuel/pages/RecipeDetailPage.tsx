@@ -1,15 +1,14 @@
 // ============================================================
 // Mezo · RecipeDetailPage (Receptek — recipe detail PAGE)
-// Approved full-page detail (docs/design/recipes-detail.html · "A" phone),
-// consistent with the Kamra item detail being a route. Single scroll, v1-honest:
-// editorial hero (image band + name/meta on the card surface below it, var(--ink)/
-// var(--faint) — Napiv de-darkening, mezo-8141: the retired dark-media text tokens) →
-// /adag↔egész macro hero → meta strip → Hozzávalók (per-line contribution in
-// MacroCells) → Logok (RecipeLogsList ← useRecipeLogs) → Mezo · sablon-olvasat +
-// PONTSZÁM (useRecipeBreakdown, mezo-bw3y: deterministic dims + lazy AI prose,
-// ScoreBreakdownBody shared with MealScoreSheet) → actions. Star / Szerkesztés /
-// Törlés / + Mai étkezéshez are all
-// LIVE (useRecipeActions / LogMealSheet). Route guard relies on useRecipes().recipes: mock is
+// Two-tab redesign (mezo-n3xa, docs/superpowers/specs/2026-07-25-recipe-detail-tabs-design.md,
+// approved mockup …-mockup.html): shared header — editorial hero (image band + name/meta on the
+// card surface, var(--ink)/var(--faint); meta line carries NOVA since the meta strip's removal)
+// → /adag↔egész macro hero — then two in-page tabs (GrowthPage SegButton tablist pattern, local
+// state, NOT routed): „Részletek" (default: Mezo · sablon-olvasat + PONTSZÁM — mezo-bw3y
+// deterministic dims + lazy AI prose, ScoreBreakdownBody shared with MealScoreSheet — then Logok
+// ← useRecipeLogs) and „Hozzávalók · N" (per-line contribution in MacroCells). Actions below the
+// tab content on both tabs: Star / Szerkesztés / Törlés / + Mai étkezéshez, all LIVE
+// (useRecipeActions / LogMealSheet). Route guard relies on useRecipes().recipes: mock is
 // synchronous via initialData; real mode briefly shows the not-found fallback on
 // a cold deep-link until the list resolves.
 // ============================================================
@@ -29,6 +28,8 @@ import { ServingToggle, type ServingBasis } from '@/features/fuel/components/Ser
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 
 const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--warning)', 4: 'var(--error)' }
+
+type DetailTab = 'reszletek' | 'hozzavalok'
 
 // Build a complete RecipeInput from a Recipe — prefills every field so a star
 // toggle (or the editor) preserves untouched values. The editor reuses this.
@@ -62,6 +63,28 @@ function MacroHeroCell({ value, label, accent }: { value: number; label: string;
   )
 }
 
+// The GrowthPage SegButton pattern with the Fuel (coral) accent wash.
+function DetailTabButton({ on, onClick, count, children }: { on: boolean; onClick: () => void; count?: number; children: string }) {
+  return (
+    <button
+      role="tab" aria-selected={on} onClick={onClick}
+      style={{
+        flex: 1, textAlign: 'center', fontSize: 10, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase',
+        padding: '9px 0', borderRadius: 11,
+        color: on ? 'var(--coral-deep)' : 'var(--text-tertiary)',
+        background: on ? 'var(--wash-gym)' : 'transparent',
+      }}
+    >
+      {children}
+      {count != null && (
+        <span style={{ fontFamily: 'var(--ff-mono)', fontWeight: 600, fontVariantNumeric: 'tabular-nums', marginLeft: 4, color: on ? 'var(--coral-deep)' : 'var(--coral)' }}>
+          {count}
+        </span>
+      )}
+    </button>
+  )
+}
+
 export function RecipeDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -74,6 +97,7 @@ export function RecipeDetailPage() {
   const { update, remove } = useRecipeActions()
   const [basis, setBasis] = useState<ServingBasis>('serving')
   const [logOpen, setLogOpen] = useState(false)
+  const [tab, setTab] = useState<DetailTab>('reszletek')
   // Today's logs of this recipe (mezo-cki) + the template breakdown (mezo-bw3y). Called with
   // `id ?? ''` alongside the other top-level hooks — BEFORE the not-found early return — so hook
   // order stays stable on a cold/not-found render.
@@ -127,7 +151,8 @@ export function RecipeDetailPage() {
 
       {/* Hero — image band on top (no text overlay); name/meta live on the card
           surface below it (var(--ink)/var(--faint) — Napiv de-darkening, mezo-8141:
-          the retired dark-media text tokens). */}
+          the retired dark-media text tokens). The meta line carries NOVA since the
+          meta strip's removal (mezo-n3xa). */}
       <div className="rad-24" style={{ position: 'relative', marginBottom: 14, overflow: 'hidden', background: 'var(--surface-1)' }}>
         <div style={{ position: 'relative', height: 150, background: 'linear-gradient(135deg,#16323a,#0f2027)' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg,rgba(255,255,255,0.025) 0 16px,rgba(255,255,255,0) 16px 32px)' }} />
@@ -142,7 +167,7 @@ export function RecipeDetailPage() {
             {recipe.name}
           </div>
           <div style={{ marginTop: 6, fontVariantNumeric: 'tabular-nums', fontSize: 9, letterSpacing: '0.06em', color: 'var(--faint)' }}>
-            {recipe.servings} adag · {totalMins} perc · létrehozva {recipe.createdDate}
+            {recipe.servings} adag · {totalMins} perc · <span style={{ color: NOVA_COLOR[recipe.novaDominant], fontWeight: 600 }}>NOVA {recipe.novaDominant}</span> · létrehozva {recipe.createdDate}
           </div>
         </div>
       </div>
@@ -158,116 +183,107 @@ export function RecipeDetailPage() {
         <MacroHeroCell value={byBasis(macros.f, basis, recipe.servings)} label="Zsír" />
       </div>
 
-      {/* Meta strip */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 7, margin: '12px 0 16px' }}>
-        {[
-          { v: String(recipe.servings), l: 'Adag', c: undefined as string | undefined },
-          { v: `${totalMins}p`, l: 'Idő', c: undefined },
-          { v: String(recipe.novaDominant), l: 'NOVA', c: NOVA_COLOR[recipe.novaDominant] },
-          { v: String(recipe.ingredients.length), l: 'Hozzáv.', c: undefined },
-        ].map(m => (
-          <div key={m.l} className="rad-12" style={{ textAlign: 'center', padding: '9px 2px', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}>
-            <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: 13, fontWeight: 600, color: m.c ?? 'var(--text-primary)' }}>{m.v}</div>
-            <div className="label-mono" style={{ fontSize: 7, letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginTop: 3 }}>{m.l}</div>
-          </div>
-        ))}
+      {/* Main tabs (mezo-n3xa) — Részletek (default) / Hozzávalók */}
+      <div className="row" role="tablist" aria-label="Recept nézetek" style={{ background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 14, padding: 3, gap: 3, margin: '14px 0 16px' }}>
+        <DetailTabButton on={tab === 'reszletek'} onClick={() => setTab('reszletek')}>Részletek</DetailTabButton>
+        <DetailTabButton on={tab === 'hozzavalok'} onClick={() => setTab('hozzavalok')} count={recipe.ingredients.length}>Hozzávalók</DetailTabButton>
       </div>
 
-      {/* Hozzávalók */}
-      <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 10px' }}>
-        <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>HOZZÁVALÓK</span>
-        <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>{recipe.ingredients.length}</span>
-        <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
-      </div>
-      <div className="col gap-sm" style={{ marginBottom: 16 }}>
-        {recipe.ingredients.map((line, i) => {
-          const src = sourceOf(line.refId)
-          return (
-            <div key={i} className="card" style={{ padding: '10px 12px', borderLeft: '2px solid ' + catColor(ingredients.find(ii => ii.id === line.refId)?.category ?? '') }}>
-              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                <div className="col flex-1" style={{ minWidth: 0 }}>
-                  <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{line.name}</span>
-                  <span className="row gap-xs" style={{ fontSize: 8.5, color: 'var(--text-tertiary)', marginTop: 3, alignItems: 'center' }}>
-                    {src && <SourceBadge source={src} />}
-                    {line.note && <span>· {line.note}</span>}
-                  </span>
+      {tab === 'reszletek' && (
+        <>
+          {/* Mezo · sablon-olvasat + Pontszám (mezo-bw3y) — deterministic numbers + lazy AI prose.
+              Real mode: the FIRST open runs the LLM (seconds) → twinkle card; later opens serve the
+              jsonb cache. Prose-less envelope (flag/companion off, LLM error) renders cards only. */}
+          {breakdownPending && (
+            <div className="card" style={{ margin: '0 0 16px', padding: 16, textAlign: 'center' }}>
+              <div className="np-twinkle" style={{ color: 'var(--coral)', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
+                <Icon name="sparkle" size={20} />
+              </div>
+              <span className="text-tertiary" style={{ fontSize: 11.5 }}>Mezo értékeli a receptet…</span>
+            </div>
+          )}
+          {!breakdownPending && breakdown?.summary && (
+            <div className="card" style={{ margin: '0 0 16px', padding: 12, background: 'color-mix(in srgb, var(--sage) 6%, transparent)' }}>
+              <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
+                <Icon name="sparkle" size={12} color="var(--coral)" />
+                <div className="col flex-1">
+                  <Eyebrow brand>Mezo · sablon-olvasat</Eyebrow>
+                  <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
+                    <SafeMarkdown text={breakdown.summary} />
+                  </p>
+                  {fitsFor.length > 0 && (
+                    <div className="row gap-xs" style={{ marginTop: 8, flexWrap: 'wrap' }}>
+                      {fitsFor.map(t => (
+                        <span key={t} className="chip brand" style={{ fontSize: 9, padding: '3px 8px' }}>● {t}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', flexShrink: 0 }}>
-                  {line.amount}<span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 1 }}>{line.unit}</span>
+              </div>
+            </div>
+          )}
+          {!breakdownPending && breakdown && (
+            <>
+              <div className="row" style={{ alignItems: 'center', gap: 9, margin: '0 2px 10px' }}>
+                <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>PONTSZÁM</span>
+                <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
+                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                  {breakdown.dimensions.length} szempont · megbízh. {Math.round(breakdown.confidence * 100)}%
                 </span>
               </div>
-              <div style={{ marginTop: 9 }}>
-                <MacroCells macros={line.contribution ?? { kcal: 0, p: 0, c: 0, f: 0 }} />
+              <div style={{ marginBottom: 16 }}>
+                <ScoreBreakdownBody breakdown={breakdown} />
               </div>
+            </>
+          )}
+          {!breakdownPending && !breakdown && (
+            <div className="card" style={{ margin: '0 0 16px', padding: 16, textAlign: 'center' }}>
+              <span className="text-tertiary" style={{ fontSize: 11.5 }}>
+                Sablon-pontszámhoz még nincs elég adat (kcal nélküli hozzávalók).
+              </span>
             </div>
-          )
-        })}
-      </div>
+          )}
 
-      {/* Logok — today's logs of this recipe (mezo-cki) */}
-      <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 10px' }}>
-        <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>LOGOK</span>
-        {logs.length > 0 && <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>{logs.length}</span>}
-        <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
-      </div>
-      <div style={{ marginBottom: 16 }}>
-        <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
-      </div>
-
-      {/* Mezo · sablon-olvasat + Pontszám (mezo-bw3y) — deterministic numbers + lazy AI prose.
-          Real mode: the FIRST open runs the LLM (seconds) → twinkle card; later opens serve the
-          jsonb cache. Prose-less envelope (flag/companion off, LLM error) renders cards only. */}
-      {breakdownPending && (
-        <div className="card" style={{ margin: '16px 0', padding: 16, textAlign: 'center' }}>
-          <div className="np-twinkle" style={{ color: 'var(--coral)', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
-            <Icon name="sparkle" size={20} />
-          </div>
-          <span className="text-tertiary" style={{ fontSize: 11.5 }}>Mezo értékeli a receptet…</span>
-        </div>
-      )}
-      {!breakdownPending && breakdown?.summary && (
-        <div className="card" style={{ margin: '16px 0', padding: 12, background: 'color-mix(in srgb, var(--sage) 6%, transparent)' }}>
-          <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-            <Icon name="sparkle" size={12} color="var(--coral)" />
-            <div className="col flex-1">
-              <Eyebrow brand>Mezo · sablon-olvasat</Eyebrow>
-              <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
-                <SafeMarkdown text={breakdown.summary} />
-              </p>
-              {fitsFor.length > 0 && (
-                <div className="row gap-xs" style={{ marginTop: 8, flexWrap: 'wrap' }}>
-                  {fitsFor.map(t => (
-                    <span key={t} className="chip brand" style={{ fontSize: 9, padding: '3px 8px' }}>● {t}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-      {!breakdownPending && breakdown && (
-        <>
-          <div className="row" style={{ alignItems: 'center', gap: 9, margin: '16px 2px 10px' }}>
-            <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>PONTSZÁM</span>
+          {/* Logok — today's logs of this recipe (mezo-cki) */}
+          <div className="row" style={{ alignItems: 'center', gap: 9, margin: '4px 2px 10px' }}>
+            <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>LOGOK</span>
+            {logs.length > 0 && <span className="label-mono" style={{ fontSize: 10, color: 'var(--coral)' }}>{logs.length}</span>}
             <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
-            <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-              {breakdown.dimensions.length} szempont · megbízh. {Math.round(breakdown.confidence * 100)}%
-            </span>
           </div>
           <div style={{ marginBottom: 16 }}>
-            <ScoreBreakdownBody breakdown={breakdown} />
+            <RecipeLogsList logs={logs} baselineScore={recipe.mezoFit.score ?? 0} />
           </div>
         </>
       )}
-      {!breakdownPending && !breakdown && (
-        <div className="card" style={{ margin: '16px 0', padding: 16, textAlign: 'center' }}>
-          <span className="text-tertiary" style={{ fontSize: 11.5 }}>
-            Sablon-pontszámhoz még nincs elég adat (kcal nélküli hozzávalók).
-          </span>
+
+      {tab === 'hozzavalok' && (
+        <div className="col gap-sm" style={{ marginBottom: 16 }}>
+          {recipe.ingredients.map((line, i) => {
+            const src = sourceOf(line.refId)
+            return (
+              <div key={i} className="card" style={{ padding: '10px 12px', borderLeft: '2px solid ' + catColor(ingredients.find(ii => ii.id === line.refId)?.category ?? '') }}>
+                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <div className="col flex-1" style={{ minWidth: 0 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>{line.name}</span>
+                    <span className="row gap-xs" style={{ fontSize: 8.5, color: 'var(--text-tertiary)', marginTop: 3, alignItems: 'center' }}>
+                      {src && <SourceBadge source={src} />}
+                      {line.note && <span>· {line.note}</span>}
+                    </span>
+                  </div>
+                  <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', flexShrink: 0 }}>
+                    {line.amount}<span style={{ fontSize: 9, color: 'var(--text-tertiary)', marginLeft: 1 }}>{line.unit}</span>
+                  </span>
+                </div>
+                <div style={{ marginTop: 9 }}>
+                  <MacroCells macros={line.contribution ?? { kcal: 0, p: 0, c: 0, f: 0 }} />
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
-      {/* Actions */}
+      {/* Actions — below the tab content on BOTH tabs, normal page flow (not sticky) */}
       <button className="cta-primary" onClick={() => setLogOpen(true)} style={{ marginBottom: 9 }}>
         <Icon name="plus" size={14} /> Mai étkezéshez
       </button>

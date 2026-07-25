@@ -151,16 +151,21 @@ class MealApiIT extends ApiIntegrationTest {
         assertThat(created.getMacros().getKcal()).isEqualByComparingTo("330");
         assertThat(created.getMacros().getP()).isEqualByComparingTo("69");
         assertThat(created.getMacros().getF()).isEqualByComparingTo("5");
-        // deterministic score at write (mezo-yta): scalar + 4-dim envelope; these plain foods carry
-        // no NOVA / nutrition facts -> micro + nova degrade honestly (weight 0), macro/context real
+        // deterministic score at write (mezo-yta): scalar + 8-dim envelope (mezo-7797). These plain
+        // foods carry no NOVA / nutrition facts / category -> micro/who/fat_quality/nova/
+        // plant_diversity degrade honestly (weight 0); macro + context stay real and energy_density
+        // lights up from the 200 g gram-based pantry arm.
         assertThat(created.getScore().getValue()).isNotNull();
         assertThat(created.getScore().getValue().doubleValue()).isBetween(0.0, 1.0);
         MealBreakdown breakdown = created.getScore().getBreakdown();
         assertThat(breakdown).isNotNull();
         assertThat(breakdown.getDimensions()).extracting(MealScoreDimension::getId)
-            .containsExactly("macro", "micro", "nova", "context");
-        assertThat(breakdown.getDimensions().get(1).getWeight()).isEqualByComparingTo("0");
-        assertThat(breakdown.getDimensions().get(2).getWeight()).isEqualByComparingTo("0");
+            .containsExactly("macro", "micro", "who", "fat_quality", "nova",
+                "plant_diversity", "energy_density", "context");
+        assertThat(breakdown.getDimensions())
+            .filteredOn(d -> d.getWeight().signum() == 0)
+            .extracting(MealScoreDimension::getId)
+            .containsExactly("micro", "who", "fat_quality", "nova", "plant_diversity");
         assertThat(breakdown.getSummary()).isNull();   // P8 prose stays honest-empty
         assertThat(breakdown.getImprove()).isEmpty();
         assertThat(breakdown.getConfidence().doubleValue()).isLessThan(1.0);
@@ -178,7 +183,7 @@ class MealApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testCreate_shouldScoreAllFourDimensions_whenSourcesCarryNovaAndFacts() {
+    void testCreate_shouldScoreAllLiveDimensions_whenSourcesCarryNovaAndFacts() {
         HttpHeaders auth = ownerAuthHeaders();
         // NOVA-1 food WITH nutrition facts per 100 g (fiber/sugar/salt/satFat)
         PantryItemRequest r = new PantryItemRequest();
@@ -202,21 +207,28 @@ class MealApiIT extends ApiIntegrationTest {
             "/api/meal", mealReq(pantryItem(oats, "100")), auth, HttpStatus.CREATED, MealResponse.class);
 
         MealBreakdown b = created.getScore().getBreakdown();
+        // 8-dim meal surface (mezo-7797): every dimension lives EXCEPT plant_diversity — the food
+        // carries no category — which degrades to weight 0. Meal weights are RAW (not renormalized).
+        assertThat(b.getDimensions()).extracting(MealScoreDimension::getId)
+            .containsExactly("macro", "micro", "who", "fat_quality", "nova",
+                "plant_diversity", "energy_density", "context");
         assertThat(b.getDimensions()).extracting(MealScoreDimension::getWeight)
             .extracting(BigDecimal::doubleValue)
-            .containsExactly(0.30, 0.25, 0.25, 0.20); // full coverage -> no degrade
+            .containsExactly(0.22, 0.10, 0.14, 0.10, 0.18, 0.00, 0.06, 0.12);
+        // confidence stays 1.00: the degraded plant_diversity drops out of the renormalized sum,
+        // and every live dimension has full coverage
         assertThat(b.getConfidence()).isEqualByComparingTo("1.00");
-        // micro rows frozen into the envelope: fiber 10 g on a 370 kcal breakfast -> over-allotment
+        // micro carries the single fiber row since mezo-7797: fiber 10 g on a 370 kcal breakfast -> good
         MealScoreDimension micro = b.getDimensions().get(1);
-        assertThat(micro.getMicros()).hasSize(4);
+        assertThat(micro.getMicros()).hasSize(1);
         assertThat(micro.getMicros().getFirst().getName()).isEqualTo("Rost");
         assertThat(micro.getMicros().getFirst().getStatus()).isEqualTo("good");
         // NOVA detail: single NOVA-1 line dominates
-        MealScoreDimension nova = b.getDimensions().get(2);
+        MealScoreDimension nova = b.getDimensions().get(4);
         assertThat(nova.getNova().getDominant()).isEqualTo(1);
         assertThat(nova.getScore()).isEqualByComparingTo("1.00");
         // context rows present (timing 13:20 is outside the breakfast window -> penalized, not absent)
-        assertThat(b.getDimensions().get(3).getContext()).hasSize(3);
+        assertThat(b.getDimensions().get(7).getContext()).hasSize(3);
         assertThat(b.getTools()).extracting(t -> t.getType()).contains("read", "compute");
     }
 

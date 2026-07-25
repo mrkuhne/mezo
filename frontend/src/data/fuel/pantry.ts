@@ -201,7 +201,7 @@ export const ingredients: Ingredient[] = [
     micros: [{ name: 'L-Arginine AKG', pct: 100 }],
     nova: 4, stock: { qty: 108, unit: 'g', expires: '2026.11' },
     lastUsed: '5 napja', usedInRecipes: 0,
-    stashRefId: 'aakg', scrapedAt: 'Máj 02 · 21:15', warning: 'stim',
+    scrapedAt: 'Máj 02 · 21:15', warning: 'stim',
   },
 ]
 
@@ -385,7 +385,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
       'Esti omega-3 sztori. Lazac D3 + EPA/DHA, barna rizs slow-release, brokkoli sulforaphane — három szövet-szintű hatás egy tálban. Heti 2× kötelező a post-workout vacsorához.',
     dimensions: [
       {
-        id: 'macro', label: 'Kcal & makró arány', weight: 0.30, score: 0.92,
+        id: 'macro', label: 'Kcal & makró arány', weight: 0.22, score: 0.92,
         color: 'var(--coral)',
         detail:
           'P/C/F 25/38/37%. Vacsora-profil — magas fat (omega-3-ra szándékos), elegendő carb a glikogén-pótlásra a post-workout ablakban.',
@@ -394,20 +394,17 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
         kcalShareOfDay: 24.5,
       },
       {
-        id: 'micro', label: 'Mikro–makro balance', weight: 0.25, score: 0.96,
+        id: 'micro', label: 'Rost & mikro', weight: 0.10, score: 0.96,
         color: 'var(--cat-physiology)',
-        detail:
-          'Omega-3 EPA+DHA ~2.4g (whole-food whey supplement!), Sulforaphane (brokkoli), Mg+B-komplex (barna rizs). Heti micro-density top 3.',
+        detail: 'Rost 8.4g egy adagban — barna rizs + brokkoli adja, a napi rostcél kb. 70%-a.',
         micros: [
-          { name: 'Omega-3', value: '2.4g', pct: 96, status: 'good' },
-          { name: 'Mg', value: '120mg', pct: 48, status: 'ok' },
-          { name: 'D3', value: '11µg', pct: 72, status: 'good' },
-          { name: 'Sulforaphane', value: 'magas', pct: 90, status: 'good' },
-          { name: 'Fiber', value: '8.4g', pct: 70, status: 'good' },
+          { name: 'Rost', value: '8.4g', pct: 70, status: 'good' },
         ],
       },
+      { id: 'who', label: 'Ajánlások · WHO', weight: 0.14, score: 0.9, color: 'var(--sky)', detail: 'Cukor az energia 6%-a (WHO ≤10%) · só a keret 55%-án.', context: [ { label: 'Cukor', value: '6 E% / 10 E% limit' }, { label: 'Só', value: '0.8 g / 1.5 g keret' } ] },
+      { id: 'fat_quality', label: 'Zsírminőség', weight: 0.10, score: 0.85, color: 'var(--amber-deep)', detail: 'Telített zsír az energia 5%-a · az összzsír 24%-a.', context: [ { label: 'Telített E%', value: '5% / 10% limit' }, { label: 'Telített/összzsír', value: '24% (ref. 33%)' } ] },
       {
-        id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.25, score: 0.96,
+        id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.18, score: 0.96,
         color: 'var(--cat-tendency)',
         detail: '100% whole foods, olívaolaj az egyetlen NOVA 2. Ideális vacsora-profil.',
         nova: {
@@ -426,18 +423,9 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
           ],
         },
       },
-      {
-        id: 'context', label: 'Időzítés & kontextus', weight: 0.20, score: 0.94,
-        color: 'var(--cat-preference)',
-        detail:
-          'Post-workout vacsora-ablakra textbook. Csü volleyball + Pull Day stacked nap esetén 21:00 előtt kell hogy meglegyen — 21:30 kitchen close.',
-        context: [
-          { label: 'Időzítés', value: 'Post-workout · este' },
-          { label: 'Reta fázis', value: 'D3-D5 esték preferált' },
-          { label: 'Sport', value: 'Post-volleyball OK' },
-          { label: 'Glikémia', value: 'Slow-release' },
-        ],
-      },
+      { id: 'plant_diversity', label: 'Növényi diverzitás', weight: 0.08, score: 1.0, color: 'var(--sage-deep)', detail: '3 különböző növényi kategória a 3-s célhoz.', context: [ { label: 'Növényi kategóriák', value: 'grains · fruits · nuts_seeds' }, { label: 'Összesen', value: '3 / 3 cél' } ] },
+      { id: 'energy_density', label: 'Energia-sűrűség', weight: 0.06, score: 0.78, color: 'var(--lav)', detail: '182 kcal/100g (150 alatt teljes pont, 400 felett nulla).', context: [ { label: 'Sűrűség', value: '182 kcal/100g' }, { label: 'Lefedettség', value: '100% gramm-alapú' } ] },
+      { id: 'portion', label: 'Adag-arány', weight: 0.12, score: 0.95, color: 'var(--coral-deep)', detail: 'Egy adag a vacsora büdzsé 89%-a.', context: [ { label: 'Adag kcal', value: '689 kcal' }, { label: 'Slot-büdzsé', value: '775 kcal (vacsora 25%)' } ] },
     ],
     improve: [
       { text: 'Ha rest-day vacsora: rizs csökkenthető 50g-ra (kcal share 24% → 19%).', impact: 'context-adj' },
@@ -455,7 +443,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
       'Egyszerű, fehérje-súlyos, alacsony-carb reggeli. Rest-day vagy alacsony-volumen napra ideális — alacsony-C reggel + spenót K1 + tojás kolin együtt jó cognitive-load napra.',
     dimensions: [
       {
-        id: 'macro', label: 'Kcal & makró arány', weight: 0.30, score: 0.84,
+        id: 'macro', label: 'Kcal & makró arány', weight: 0.22, score: 0.84,
         color: 'var(--coral)',
         detail:
           'P/C/F 30/3/67%. Extrém alacsony-carb reggeli. Edzés-nap reggelire nem ideális, rest-day-re viszont igen.',
@@ -465,19 +453,17 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
         notes: 'Magas F arány — rest-day reggelire OK, edzés-napra emelni a C-t.',
       },
       {
-        id: 'micro', label: 'Mikro–makro balance', weight: 0.25, score: 0.92,
+        id: 'micro', label: 'Rost & mikro', weight: 0.10, score: 0.92,
         color: 'var(--cat-physiology)',
-        detail:
-          'Kolin (tojás · brain), K1 + folát (spenót), Vit E (olívaolaj). Micro-density meglepően magas a kis adag ellenére.',
+        detail: 'Rost 3.9g — a spenótból, a napi rostcél kb. 33%-a. A kolin/K1/folát a WHO-dimenzió alá esik.',
         micros: [
-          { name: 'Kolin', value: '390mg', pct: 88, status: 'good' },
-          { name: 'Vit K1', value: '240µg', pct: 100, status: 'good' },
-          { name: 'Folát', value: '165µg', pct: 70, status: 'good' },
-          { name: 'Fe', value: '3.1mg', pct: 64, status: 'ok' },
+          { name: 'Rost', value: '3.9g', pct: 33, status: 'ok' },
         ],
       },
+      { id: 'who', label: 'Ajánlások · WHO', weight: 0.14, score: 0.9, color: 'var(--sky)', detail: 'Cukor az energia 6%-a (WHO ≤10%) · só a keret 55%-án.', context: [ { label: 'Cukor', value: '6 E% / 10 E% limit' }, { label: 'Só', value: '0.8 g / 1.5 g keret' } ] },
+      { id: 'fat_quality', label: 'Zsírminőség', weight: 0.10, score: 0.85, color: 'var(--amber-deep)', detail: 'Telített zsír az energia 5%-a · az összzsír 24%-a.', context: [ { label: 'Telített E%', value: '5% / 10% limit' }, { label: 'Telített/összzsír', value: '24% (ref. 33%)' } ] },
       {
-        id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.25, score: 0.96,
+        id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.18, score: 0.96,
         color: 'var(--cat-tendency)',
         detail: '100% whole foods. Tojás, spenót, olívaolaj — ennél tisztább reggeli nem létezik.',
         nova: {
@@ -495,18 +481,9 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
           ],
         },
       },
-      {
-        id: 'context', label: 'Időzítés & kontextus', weight: 0.20, score: 0.74,
-        color: 'var(--cat-preference)',
-        detail:
-          'Reggeli-ablakra OK, de Pull/Push Day reggelin alacsony-carb suboptimális. Rest-day-re és déli edzésre tökéletes.',
-        context: [
-          { label: 'Időzítés', value: 'Reggel · 7-9h' },
-          { label: 'Edzés-nap', value: 'Rest preferált' },
-          { label: 'Reta fázis', value: 'Bármikor' },
-          { label: 'Glikémia', value: 'Fat-dominant flat' },
-        ],
-      },
+      { id: 'plant_diversity', label: 'Növényi diverzitás', weight: 0.08, score: 1.0, color: 'var(--sage-deep)', detail: '3 különböző növényi kategória a 3-s célhoz.', context: [ { label: 'Növényi kategóriák', value: 'grains · fruits · nuts_seeds' }, { label: 'Összesen', value: '3 / 3 cél' } ] },
+      { id: 'energy_density', label: 'Energia-sűrűség', weight: 0.06, score: 0.78, color: 'var(--lav)', detail: '182 kcal/100g (150 alatt teljes pont, 400 felett nulla).', context: [ { label: 'Sűrűség', value: '182 kcal/100g' }, { label: 'Lefedettség', value: '100% gramm-alapú' } ] },
+      { id: 'portion', label: 'Adag-arány', weight: 0.12, score: 0.95, color: 'var(--coral-deep)', detail: 'Egy adag a reggeli büdzsé 89%-a.', context: [ { label: 'Adag kcal', value: '689 kcal' }, { label: 'Slot-büdzsé', value: '775 kcal (reggeli 25%)' } ] },
     ],
     improve: [
       { text: '+1 szelet teljes kiőrlésű kenyér edzés-nap reggelin → C 3% → 28%.', impact: 'context-adj' },
@@ -523,7 +500,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
       'Esti casein-bomba. 37g protein, slow-digest, alacsony-fat — pont az amit a 21:00 esti étkezésre vársz Reta-cycle alatt. Áfonya antocianin + méz minimális glikémia-bump.',
     dimensions: [
       {
-        id: 'macro', label: 'Kcal & makró arány', weight: 0.30, score: 0.92,
+        id: 'macro', label: 'Kcal & makró arány', weight: 0.22, score: 0.92,
         color: 'var(--coral)',
         detail:
           'P/C/F 48/39/13%. Esti casein-súlyos snack. Kalória-density alacsony — Reta-cycle alatt pont a protein-target tartására.',
@@ -532,20 +509,17 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
         kcalShareOfDay: 10.0,
       },
       {
-        id: 'micro', label: 'Mikro–makro balance', weight: 0.25, score: 0.84,
+        id: 'micro', label: 'Rost & mikro', weight: 0.10, score: 0.84,
         color: 'var(--cat-physiology)',
-        detail:
-          'Ca (túró), B12 (túró), antocianin (áfonya), Casein-rich slow-protein. Mg-hez +½ ek tökmag ajánlott.',
+        detail: 'Rost 2.1g — az áfonyából, a napi rostcél kb. 18%-a; a túró rostszegény. Ca/B12 a WHO-dimenzió alá esik.',
         micros: [
-          { name: 'Ca', value: '240mg', pct: 92, status: 'good' },
-          { name: 'B12', value: '1.6µg', pct: 92, status: 'good' },
-          { name: 'Antocianin', value: 'magas', pct: 88, status: 'good' },
-          { name: 'Casein', value: '32g', pct: 96, status: 'good' },
-          { name: 'Mg', value: '32mg', pct: 14, status: 'low' },
+          { name: 'Rost', value: '2.1g', pct: 18, status: 'low' },
         ],
       },
+      { id: 'who', label: 'Ajánlások · WHO', weight: 0.14, score: 0.9, color: 'var(--sky)', detail: 'Cukor az energia 6%-a (WHO ≤10%) · só a keret 55%-án.', context: [ { label: 'Cukor', value: '6 E% / 10 E% limit' }, { label: 'Só', value: '0.8 g / 1.5 g keret' } ] },
+      { id: 'fat_quality', label: 'Zsírminőség', weight: 0.10, score: 0.85, color: 'var(--amber-deep)', detail: 'Telített zsír az energia 5%-a · az összzsír 24%-a.', context: [ { label: 'Telített E%', value: '5% / 10% limit' }, { label: 'Telített/összzsír', value: '24% (ref. 33%)' } ] },
       {
-        id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.25, score: 0.84,
+        id: 'nova', label: 'Feldolgozottság · NOVA', weight: 0.18, score: 0.84,
         color: 'var(--cat-tendency)',
         detail: "Túró NOVA 3 (kulturált tejtermék — élelmiszerként ez nem 'ultra'). Méz NOVA 2.",
         nova: {
@@ -563,18 +537,9 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
           ],
         },
       },
-      {
-        id: 'context', label: 'Időzítés & kontextus', weight: 0.20, score: 0.94,
-        color: 'var(--cat-preference)',
-        detail:
-          '21:00 esti casein-window. Kitchen close 21:30 előtt fontos, de ez egy 2-perces snack — nem konfliktusos.',
-        context: [
-          { label: 'Időzítés', value: 'Esti · 20-21h' },
-          { label: 'Sleep onset', value: 'T-2h előtt' },
-          { label: 'Reta fázis', value: 'D3-D5 ↑↑' },
-          { label: 'Glikémia', value: 'Low-impact' },
-        ],
-      },
+      { id: 'plant_diversity', label: 'Növényi diverzitás', weight: 0.08, score: 1.0, color: 'var(--sage-deep)', detail: '3 különböző növényi kategória a 3-s célhoz.', context: [ { label: 'Növényi kategóriák', value: 'grains · fruits · nuts_seeds' }, { label: 'Összesen', value: '3 / 3 cél' } ] },
+      { id: 'energy_density', label: 'Energia-sűrűség', weight: 0.06, score: 0.78, color: 'var(--lav)', detail: '182 kcal/100g (150 alatt teljes pont, 400 felett nulla).', context: [ { label: 'Sűrűség', value: '182 kcal/100g' }, { label: 'Lefedettség', value: '100% gramm-alapú' } ] },
+      { id: 'portion', label: 'Adag-arány', weight: 0.12, score: 0.95, color: 'var(--coral-deep)', detail: 'Egy adag az esti snack büdzsé 89%-a.', context: [ { label: 'Adag kcal', value: '689 kcal' }, { label: 'Slot-büdzsé', value: '775 kcal (snack 25%)' } ] },
     ],
     improve: [
       { text: '+½ ek tökmag → Mg 14% → 48%, NOVA stack változatlan.', impact: '+0.03 score' },

@@ -454,13 +454,20 @@ mezo:
       # with a computed value; until then it is config, never hardcoded in code.
       default-confidence: 0.86
     scoring:
-      # Deterministic meal-score v0 (mezo-yta, ADR 0006) — 4-dimension weighted model.
-      # Binds onto MealScoringProperties; formulas in specs/2026-07-05-fuel-p7-meal-scoring-design.md §3.
-      weights:                    # must sum to 1.0 (validated at startup)
-        macro: 0.30
-        micro: 0.25
-        nova: 0.25
-        context: 0.20
+      # Deterministic meal-score v0 (mezo-yta, ADR 0006). Binds onto MealScoringProperties;
+      # formulas in specs/2026-07-05-fuel-p7-meal-scoring-design.md §3.
+      # 8-dimension weighted model (mezo-7797) — meal uses all except portion, template all except
+      # context; BOTH subsets must sum to 1.0 (validated at startup).
+      weights:
+        macro: 0.22
+        micro: 0.10
+        who: 0.14
+        fat-quality: 0.10
+        nova: 0.18
+        plant-diversity: 0.08
+        energy-density: 0.06
+        context: 0.12
+        portion: 0.12
       nova:                       # quality score per NOVA class (1 unprocessed .. 4 ultra-processed)
         group1: 1.0
         group2: 0.85
@@ -468,11 +475,22 @@ mezo:
         group4: 0.20
       # Macro dim: score = max(0, 1 - totalVariation(P/C/F kcal-shares vs mezo.nutrition targets) * slope)
       macro-deviation-slope: 2.0
-      micro:                      # daily references; per-meal allotment scales by the meal's kcal-share
-        fiber-g: 38               # fiber TARGET (g/day) — more is better up to the allotment
-        sugar-limit-g: 78         # sugar LIMIT (g/day, ~10% of 3100 kcal)
-        salt-limit-g: 6           # salt LIMIT (g/day)
-        saturated-fat-limit-g: 34 # saturated-fat LIMIT (g/day, ~10% of kcal)
+      micro:                      # fiber TARGET only since mezo-7797 (sugar/salt/satFat → who/fat-quality)
+        fiber-g: 38
+      who:                        # WHO guideline dimension
+        sugar-energy-share-limit: 0.10   # free sugar ≤10% of energy (WHO strong recommendation)
+        salt-limit-g: 5                  # WHO 5 g/day, scaled by the meal's kcal-share
+      fat-quality:
+        sat-fat-energy-share-limit: 0.10 # saturated fat ≤10% of energy (WHO)
+        sat-fat-share-ref: 0.33          # saturated share of total fat reference (balanced thirds)
+      plant-diversity:
+        target-categories: 3             # distinct plant categories for a full score
+        plant-categories: [vegetables, fruits, grains, legumes, nuts_seeds]
+      energy-density:
+        good-kcal-per-100g: 150          # at/below → score 1.0
+        bad-kcal-per-100g: 400           # at/above → score 0 (linear between)
+      portion:
+        default-share: 0.30              # slot-less recipe: assumed kcal-share of the day
       slot-shares:                # expected kcal-share of the day per meal slot
         breakfast: 0.25
         lunch: 0.35
@@ -553,7 +571,7 @@ mezo:
     wake-window-min: 45
     weigh-in-cutoff: "09:00"
     morning-window-end: "10:00"
-    workout-cutoff: "12:00"
+    workout-window-hours: 6   # M5 cutoff = sleep-anchor wake + this many hours (ghost wake 06:00 -> 12:00)
     protein-target-g: 25
     bed-grace-min: 30
     kitchen-close-offset-min: 90

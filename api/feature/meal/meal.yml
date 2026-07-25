@@ -149,7 +149,7 @@ components:
         breakdown: { allOf: [ { $ref: '#/components/schemas/MealBreakdown' } ], nullable: true }
     MealBreakdown:
       type: object
-      description: Typed 4-dimension score envelope (deterministic v0, mezo-yta / ADR 0006). summary/improve are P8 prose — null/empty until then.
+      description: Typed weighted score envelope (deterministic engine, mezo-yta / ADR 0006; 8-dimension set since mezo-7797). summary/improve are LLM prose — null/empty until enriched.
       required: [value, confidence, dimensions, improve, tools]
       properties:
         value: { type: number, description: 'Weighted total 0..1 — duplicates meal.score by design (ADR 0006)' }
@@ -160,10 +160,10 @@ components:
         tools: { type: array, items: { $ref: '#/components/schemas/MealToolRow' } }
     MealScoreDimension:
       type: object
-      description: One weighted dimension; exactly one of macro/micros/nova/context is populated, matching id.
+      description: One weighted dimension; exactly one payload field is populated, matching id — macro/micros/nova for their ids, `context` carries the generic label/value rows for context, who, fat_quality, plant_diversity, energy_density and portion.
       required: [id, label, weight, score, detail]
       properties:
-        id: { type: string, pattern: '^(macro|micro|nova|context)$' }
+        id: { type: string, pattern: '^(macro|micro|nova|context|who|fat_quality|plant_diversity|energy_density|portion)$' }
         label: { type: string }
         weight: { type: number, description: '0 when the dimension degraded (no input coverage) — total renormalizes' }
         score: { type: number }

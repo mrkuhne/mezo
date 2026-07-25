@@ -8297,8 +8297,9 @@ components:
     MealBreakdown:
       type: object
       description: >-
-        Typed 4-dimension score envelope (deterministic v0, mezo-yta / ADR
-        0006). summary/improve are P8 prose — null/empty until then.
+        Typed weighted score envelope (deterministic engine, mezo-yta / ADR
+        0006; 8-dimension set since mezo-7797). summary/improve are LLM prose —
+        null/empty until enriched.
       required:
         - value
         - confidence
@@ -8330,8 +8331,10 @@ components:
     MealScoreDimension:
       type: object
       description: >-
-        One weighted dimension; exactly one of macro/micros/nova/context is
-        populated, matching id.
+        One weighted dimension; exactly one payload field is populated, matching
+        id — macro/micros/nova for their ids, `context` carries the generic
+        label/value rows for context, who, fat_quality, plant_diversity,
+        energy_density and portion.
       required:
         - id
         - label
@@ -8341,7 +8344,8 @@ components:
       properties:
         id:
           type: string
-          pattern: ^(macro|micro|nova|context)$
+          pattern: >-
+            ^(macro|micro|nova|context|who|fat_quality|plant_diversity|energy_density|portion)$
         label:
           type: string
         weight:

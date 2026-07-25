@@ -189,7 +189,7 @@ describe('useRecipeBreakdown (mock mode)', () => {
 describe('useRecipeBreakdown (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
-  it('resolves the MSW envelope with the degraded context card KEPT (mezo-bw3y)', async () => {
+  it('resolves the MSW 8-dim template envelope ending in a real portion dim (mezo-7797)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useRecipeBreakdown('r1'), { wrapper: Wrapper })
     expect(result.current.pending).toBe(true) // no mock fallback while loading
@@ -197,9 +197,12 @@ describe('useRecipeBreakdown (real mode)', () => {
     await waitFor(() => expect(result.current.pending).toBe(false))
     const b = result.current.breakdown!
     expect(b.summary).toBe('MSW sablon-olvasat.')
-    // 4 dimensions incl. the weight-0 context card (the meal mapper would drop it)
-    expect(b.dimensions.map(d => d.id)).toEqual(['macro', 'micro', 'nova', 'context'])
-    expect(b.dimensions[3].weight).toBe(0)
+    // 8 template dimensions ending in a real (non-degraded) portion card — no kept-degraded context
+    expect(b.dimensions.map(d => d.id)).toEqual(
+      ['macro', 'micro', 'who', 'fat_quality', 'nova', 'plant_diversity', 'energy_density', 'portion'])
+    const portion = b.dimensions[7]
+    expect(portion.id).toBe('portion')
+    expect(portion.weight).toBe(0.12)
     expect(b.improve).toHaveLength(1)
     expect(result.current.fitsFor).toEqual(['Post-workout · este'])
   })

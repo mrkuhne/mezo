@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -34,26 +35,37 @@ public class RecipeBreakdownProseService {
         You get the recipe and the DETERMINISTIC dimension scores already computed by the engine.
         Answer with ONE JSON object and nothing else, exactly these keys:
         {"summary":string,"fitsFor":[string],
-         "details":{"macro":string,"micro":string,"nova":string},
+         "details":{"macro":string,"micro":string,"who":string,"fat_quality":string,"nova":string,"plant_diversity":string,"energy_density":string,"portion":string},
          "improve":[{"text":string,"impact":string}]}
+        DIMENZIÓK (a details.<id> kulcsai — mit magyarázz dimenziónként):
+        - macro: Kcal & makró arány — a P/C/F energia-arány a napi célhoz képest.
+        - micro: Rost & mikro — a rost a napi keret arányában.
+        - who: Ajánlások · WHO — cukor az energia %-ában (≤10% cél) és só-keret; magyarázd, mely hozzávaló viszi a cukrot/sót.
+        - fat_quality: Zsírminőség — telített zsír energia-aránya (≤10%) és a telített/összzsír arány; nevezd meg a fő zsírforrásokat.
+        - nova: Feldolgozottság · NOVA — a kalóriák feldolgozottsági eloszlása; nevezd meg az ultra-feldolgozott tételeket.
+        - plant_diversity: Növényi diverzitás — hány különböző növényi kategória van a receptben (cél: 3+); javasolj konkrét bővítést.
+        - energy_density: Energia-sűrűség — kcal/100g; alacsonyabb = laktatóbb; jelezd, ha db-alapú tétel miatt részleges a lefedettség.
+        - portion: Adag-arány — egy adag kcal a slot-büdzséhez képest; jelezd, ha az adag túl nagy/kicsi a slothoz.
         Rules:
         - Write Hungarian, tegeződve, tömören.
         - summary: 2-3 mondat — a recept sablon-szintű olvasata (mire jó, hogyan illik a célokhoz).
         - details.*: 1-2 mondat dimenziónként; a megadott számok MAGYARÁZATA — soha ne mondj
-          ellent nekik és ne találj ki új számokat.
+          ellent nekik és ne találj ki új számokat. Degradált (nincs adat) dimenzióról ne írj.
         - fitsFor: 1-3 rövid címke, mikor/mire illik a recept (pl. "Post-workout · este").
         - improve: 0-3 konkrét javaslat; impact = rövid kvalitatív tag (pl. "+rost", "-NOVA4").
-        - A kontextus (időzítés) sablon szinten nem értékelhető — arról ne írj javaslatot.
+        - Az időzítés sablon szinten nem értékelhető — arról ne írj javaslatot.
         """;
 
-    /** LLM answer contract — permissive Strings; a malformed answer degrades, never errors. */
-    record ExtractedDetails(String macro, String micro, String nova) {
-    }
-
+    /** LLM answer contract — permissive shapes; a malformed answer degrades, never errors. */
     record ExtractedImprove(String text, String impact) {
     }
 
-    record ExtractedProse(String summary, List<String> fitsFor, ExtractedDetails details,
+    /**
+     * {@code details} is keyed by dimension id (macro, micro, who, fat_quality, nova,
+     * plant_diversity, energy_density, portion) — a Map, so any new dimension id narrates without a
+     * schema edit and the snake_case ids need no {@code @JsonProperty} plumbing.
+     */
+    record ExtractedProse(String summary, List<String> fitsFor, Map<String, String> details,
                           List<ExtractedImprove> improve) {
     }
 
@@ -111,15 +123,11 @@ public class RecipeBreakdownProseService {
         return sb.toString();
     }
 
-    /** Numbers untouched; prose replaces summary + the three live details + improve; llm tool row. */
+    /** Numbers untouched; prose replaces summary + the per-dimension details + improve; llm tool row. */
     private static MealBreakdownJson merge(MealBreakdownJson det, ExtractedProse prose) {
+        Map<String, String> details = prose.details() == null ? Map.of() : prose.details();
         List<Dimension> dims = det.dimensions().stream().map(d -> {
-            String text = switch (d.id()) {
-                case "macro" -> prose.details() == null ? null : prose.details().macro();
-                case "micro" -> prose.details() == null ? null : prose.details().micro();
-                case "nova" -> prose.details() == null ? null : prose.details().nova();
-                default -> null;
-            };
+            String text = details.get(d.id()); // keyed by dimension id — narrates all 8
             return text == null || text.isBlank() ? d
                 : new Dimension(d.id(), d.label(), d.weight(), d.score(), text,
                     d.macro(), d.micros(), d.nova(), d.context());

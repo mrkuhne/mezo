@@ -39,3 +39,5 @@ export { useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habi
 export { useIntentionDay, useIntentionActions } from '@/data/intention/intentionHooks'
 export { useActivities, useActivityActions, useActivityHistory } from '@/data/activity/activityHooks'
 export { useGamification, useTitles, useGamificationActions, useGamificationDay } from '@/data/gamification/gamificationHooks'
+export { useRitualDay, useRitualActions } from '@/data/ritual/ritualHooks'
+export { useDayRecap } from '@/data/ritual/recapHooks'

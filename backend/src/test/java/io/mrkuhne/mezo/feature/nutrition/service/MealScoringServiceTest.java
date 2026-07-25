@@ -23,10 +23,16 @@ class MealScoringServiceTest {
         new NutritionTargetsProperties(3100, 220, 380, 95, 4000);
 
     private final MealScoringProperties props = new MealScoringProperties(
-        new MealScoringProperties.Weights(0.30, 0.25, 0.25, 0.20),
+        new MealScoringProperties.Weights(0.22, 0.10, 0.14, 0.10, 0.18, 0.08, 0.06, 0.12, 0.12),
         new MealScoringProperties.NovaGroupScores(1.0, 0.85, 0.55, 0.20),
         2.0,
-        new MealScoringProperties.MicroRefs(38, 78, 6, 34),
+        new MealScoringProperties.MicroRefs(38),
+        new MealScoringProperties.WhoRefs(0.10, 5),
+        new MealScoringProperties.FatQualityRefs(0.10, 0.33),
+        new MealScoringProperties.PlantDiversityRefs(3,
+            List.of("vegetables", "fruits", "grains", "legumes", "nuts_seeds")),
+        new MealScoringProperties.EnergyDensityRefs(150, 400),
+        new MealScoringProperties.PortionRefs(0.30),
         new MealScoringProperties.SlotShares(0.25, 0.35, 0.30, 0.10),
         new MealScoringProperties.SlotWindows(5, 10, 11, 15, 17, 22),
         0.4);
@@ -38,23 +44,26 @@ class MealScoringServiceTest {
         return List.of(
             new ScoredLine("Zabkása", "300g",
                 bd(800), bd(41), bd(70), bd(18), (short) 1,
-                bd(10), bd(5), bd(1), bd(3), true),
+                bd(10), bd(5), bd(1), bd(3), true, null, null),
             new ScoredLine("Whey shake", "1 adag",
                 bd(285), bd(14), bd(25), bd(6), (short) 4,
-                null, null, null, null, false));
+                null, null, null, null, false, null, null));
     }
 
     @Test
-    void testScoreMeal_shouldEmitFourWeightedDimensions_whenAllCovered() {
+    void testScoreMeal_shouldEmitEightWeightedDimensions_whenLinesScored() {
         MealBreakdownJson b = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
 
+        // lunchLines carry no category/gram data → plant-diversity + energy-density degrade to weight 0
         assertThat(b.dimensions()).extracting(MealBreakdownJson.Dimension::id)
-            .containsExactly("macro", "micro", "nova", "context");
+            .containsExactly("macro", "micro", "who", "fat_quality", "nova",
+                "plant_diversity", "energy_density", "context");
         assertThat(b.dimensions()).extracting(d -> d.weight().doubleValue())
-            .containsExactly(0.30, 0.25, 0.25, 0.20);
+            .containsExactly(0.22, 0.10, 0.14, 0.10, 0.18, 0.0, 0.0, 0.12);
         // total = Σ w·s / Σ w recomputed from the emitted dimensions (self-consistency)
+        double weightSum = b.dimensions().stream().mapToDouble(d -> d.weight().doubleValue()).sum();
         double expected = b.dimensions().stream()
-            .mapToDouble(d -> d.weight().doubleValue() * d.score().doubleValue()).sum();
+            .mapToDouble(d -> d.weight().doubleValue() * d.score().doubleValue()).sum() / weightSum;
         assertThat(b.value().doubleValue()).isCloseTo(expected, within(0.02));
         assertThat(b.value().doubleValue()).isBetween(0.0, 1.0);
         // P8 prose stays honest-empty; tools list the deterministic provenance
@@ -78,7 +87,7 @@ class MealScoringServiceTest {
     void testScoreMeal_shouldEmitKcalWeightedNova_whenLinesCarryNova() {
         MealBreakdownJson b = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
 
-        MealBreakdownJson.Dimension nova = b.dimensions().get(2);
+        MealBreakdownJson.Dimension nova = dimension(b, "nova");
         // 0.7373·1.0 + 0.2627·0.20 = 0.79
         assertThat(nova.score()).isEqualByComparingTo("0.79");
         assertThat(nova.nova().dominant()).isEqualTo(1);
@@ -89,39 +98,36 @@ class MealScoringServiceTest {
     }
 
     @Test
-    void testScoreMeal_shouldBuildMicroRowsFromAllotments_whenFactsPresent() {
+    void testScoreMeal_shouldBuildFiberOnlyMicroRow_whenFactsPresent() {
         MealBreakdownJson b = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
 
-        MealBreakdownJson.Dimension micro = b.dimensions().get(1);
-        assertThat(micro.micros()).hasSize(4);
+        MealBreakdownJson.Dimension micro = dimension(b, "micro");
+        assertThat(micro.micros()).hasSize(1);
         MealBreakdownJson.MicroRow fiber = micro.micros().getFirst();
         // 10 g fiber vs 38·0.35 = 13.3 g allotment → 75% · ok
         assertThat(fiber.name()).isEqualTo("Rost");
         assertThat(fiber.pct()).isEqualTo(75);
         assertThat(fiber.status()).isEqualTo("ok");
-        // sugar 5 g vs 27.3 g allotment → 18% used · good
-        MealBreakdownJson.MicroRow sugar = micro.micros().get(1);
-        assertThat(sugar.pct()).isEqualTo(18);
-        assertThat(sugar.status()).isEqualTo("good");
-        // confidence = .30 + .25·(800/1085) + .25·1 + .20 = 0.93
-        assertThat(b.confidence()).isEqualByComparingTo("0.93");
+        // confidence = Σ(effWeight·coverage)/Σ effWeight over the live set = 0.90
+        assertThat(b.confidence()).isEqualByComparingTo("0.90");
     }
 
     @Test
     void testScoreMeal_shouldRenormalizeTotal_whenNovaCoverageZero() {
         List<ScoredLine> noNova = List.of(
             new ScoredLine("Házi étel", "400g", bd(800), bd(41), bd(70), bd(18), null,
-                bd(10), bd(5), bd(1), bd(3), true));
+                bd(10), bd(5), bd(1), bd(3), true, null, null));
 
         MealBreakdownJson b = service.scoreMeal("lunch", noNova, LocalTime.of(13, 0));
 
-        MealBreakdownJson.Dimension nova = b.dimensions().get(2);
+        MealBreakdownJson.Dimension nova = dimension(b, "nova");
         assertThat(nova.weight()).isEqualByComparingTo("0");
         assertThat(nova.score()).isEqualByComparingTo("0");
         assertThat(nova.detail()).contains("Nincs");
-        // total renormalizes over macro+micro+context only
+        // total renormalizes over the live dims only (nova/plant/energy degrade here)
+        double weightSum = b.dimensions().stream().mapToDouble(d -> d.weight().doubleValue()).sum();
         double expected = b.dimensions().stream()
-            .mapToDouble(d -> d.weight().doubleValue() * d.score().doubleValue()).sum() / 0.75;
+            .mapToDouble(d -> d.weight().doubleValue() * d.score().doubleValue()).sum() / weightSum;
         assertThat(b.value().doubleValue()).isCloseTo(expected, within(0.02));
     }
 
@@ -130,39 +136,143 @@ class MealScoringServiceTest {
         MealBreakdownJson inWindow = service.scoreMeal("breakfast", lunchLines(), LocalTime.of(7, 30));
         MealBreakdownJson late = service.scoreMeal("breakfast", lunchLines(), LocalTime.of(14, 0));
 
-        double inScore = inWindow.dimensions().get(3).score().doubleValue();
-        double lateScore = late.dimensions().get(3).score().doubleValue();
+        double inScore = dimension(inWindow, "context").score().doubleValue();
+        double lateScore = dimension(late, "context").score().doubleValue();
         assertThat(lateScore).isLessThan(inScore);
-        assertThat(late.dimensions().get(3).context()).isNotEmpty();
+        assertThat(dimension(late, "context").context()).isNotEmpty();
+    }
+
+    @Test
+    void testScoreMeal_shouldScoreWhoDimension_whenSugarAndSaltWithinLimits() {
+        // one 620-kcal line (20% of 3100): sugar 8g → 8*4/620 = 5.2 E% (≤10% → sub 1.0);
+        // salt allotment 5g*0.2 = 1.0g, salt 0.5g → ratio 0.5 → sub 1.0; score = 1.0
+        var lines = List.of(line("Zab", 620, 20, 80, 20, 1, 5.0, 8.0, 0.5, 3.0));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "who");
+        assertThat(dim.score()).isEqualByComparingTo("1.00");
+        assertThat(dim.label()).isEqualTo("Ajánlások · WHO");
+    }
+
+    @Test
+    void testScoreMeal_shouldPenalizeWhoDimension_whenSugarExceedsEnergyShareLimit() {
+        // sugar 31g → 31*4/620 = 20 E% → ratio 2.0 → limitSub 0; salt fine → sub 1.0; score 0.5
+        var lines = List.of(line("Édes", 620, 10, 100, 10, 2, 2.0, 31.0, 0.5, 2.0));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "who");
+        assertThat(dim.score()).isEqualByComparingTo("0.50");
+    }
+
+    @Test
+    void testScoreMeal_shouldScoreFatQuality_whenSaturatedShareLow() {
+        // satFat 3g of f=20g → share 0.15 (≤0.33 → sub 1.0); satFat E% = 27/620 = 4.4% → sub 1.0
+        var lines = List.of(line("Hal", 620, 40, 20, 20, 1, 2.0, 3.0, 0.5, 3.0));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "fat_quality");
+        assertThat(dim.score()).isEqualByComparingTo("1.00");
+    }
+
+    @Test
+    void testScoreMeal_shouldDegradeFatQuality_whenNoFatFacts() {
+        var lines = List.of(lineNoFacts("Rejtély", 620, 40, 20, 20, 1));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "fat_quality");
+        assertThat(dim.weight()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    void testScoreMeal_shouldCountDistinctPlantCategories_forPlantDiversity() {
+        var lines = List.of(
+            lineWithCategory("Zab", 300, "grains"), lineWithCategory("Áfonya", 100, "fruits"),
+            lineWithCategory("Mandula", 120, "nuts_seeds"), lineWithCategory("Túró", 200, "dairy"));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "plant_diversity");
+        assertThat(dim.score()).isEqualByComparingTo("1.00"); // 3 distinct plant cats / target 3
+    }
+
+    @Test
+    void testScoreMeal_shouldScorePartialPlantDiversity_whenBelowTarget() {
+        var lines = List.of(lineWithCategory("Zab", 300, "grains"), lineWithCategory("Túró", 200, "dairy"));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "plant_diversity");
+        assertThat(dim.score()).isEqualByComparingTo("0.33"); // 1/3
+    }
+
+    @Test
+    void testScoreMeal_shouldScoreEnergyDensity_fromGramLinesOnly() {
+        // 300 kcal over 200 g → 150 kcal/100g → score 1.0; a db-unit line is excluded from density
+        var lines = List.of(lineWithGrams("Saláta", 300, new BigDecimal("200")),
+            lineNoGrams("Tojás db", 150));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "energy_density");
+        assertThat(dim.score()).isEqualByComparingTo("1.00");
+    }
+
+    @Test
+    void testScoreMeal_shouldDegradeEnergyDensity_whenNoGramLines() {
+        var lines = List.of(lineNoGrams("Tojás db", 150));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "energy_density");
+        assertThat(dim.weight()).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    void testScoreMeal_shouldScoreEnergyDensity_forRealisticPerServingLine() {
+        // pins the density arithmetic the composers must feed: 300 kcal over 80 g → 375 kcal/100g;
+        // between good(150) and bad(400) → score = (400-375)/(400-150) = 0.10 (NOT amount/per-scaled).
+        // The recipe fitLines per-serving gram scaling that produces this is pinned by the Task 3 IT.
+        var lines = List.of(lineWithGrams("Zabkása adag", 300, new BigDecimal("80")));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "energy_density");
+        assertThat(dim.score()).isEqualByComparingTo("0.10");
+        assertThat(dim.context().getFirst().value()).isEqualTo("375 kcal/100g");
+    }
+
+    @Test
+    void testRecipeTemplateBreakdown_shouldEmitPortionDimension_withSlotBudget() {
+        // per-serving 775 kcal vs breakfast budget 3100*0.25 = 775 → rel 1.0 → score 1.0
+        var lines = List.of(line("Reggeli", 775, 40, 90, 25, 1, 5.0, 8.0, 0.8, 4.0));
+        var breakdown = service.recipeTemplateBreakdown("breakfast", lines);
+        var dim = dimension(breakdown, "portion");
+        assertThat(dim.score()).isEqualByComparingTo("1.00");
+        assertThat(breakdown.dimensions()).extracting(MealBreakdownJson.Dimension::id)
+            .doesNotContain("context");
+    }
+
+    @Test
+    void testRecipeTemplateBreakdown_shouldUseDefaultShare_whenRecipeHasNoSlot() {
+        // slot null → defaultShare 0.30 → budget 930; 930 kcal → rel 1.0 → score 1.0
+        var lines = List.of(line("Főétel", 930, 50, 100, 30, 1, 6.0, 9.0, 1.0, 5.0));
+        var dim = dimension(service.recipeTemplateBreakdown(null, lines), "portion");
+        assertThat(dim.score()).isEqualByComparingTo("1.00");
+    }
+
+    @Test
+    void testMicroDim_shouldScoreFiberOnly_afterRedistribution() {
+        // fiber-only micro: rows contain exactly one "Rost" row, no Cukor/Só/Telített zsír rows
+        var lines = List.of(line("Zab", 620, 20, 80, 20, 1, 7.6, 8.0, 0.5, 3.0));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "micro");
+        assertThat(dim.micros()).hasSize(1);
+        assertThat(dim.micros().get(0).name()).isEqualTo("Rost");
     }
 
     @Test
     void testRecipeFit_shouldScoreWithoutContext_andRenormalize() {
-        BigDecimal fit = service.recipeFit(lunchLines());
+        BigDecimal fit = service.recipeFit("lunch", lunchLines());
 
         assertThat(fit).isNotNull();
         assertThat(fit.doubleValue()).isBetween(0.0, 1.0);
-        // context excluded: fit reflects macro/micro/nova only — the lunch profile scores high
+        // context excluded (portion replaces it): fit reflects the template surface — scores high
         assertThat(fit.doubleValue()).isGreaterThan(0.7);
     }
 
     @Test
-    void testRecipeTemplateBreakdown_shouldMatchRecipeFitAndDegradeContext_whenLinesScored() {
-        MealBreakdownJson b = service.recipeTemplateBreakdown(lunchLines());
+    void testRecipeTemplateBreakdown_shouldMatchRecipeFitAndEmitPortion_whenLinesScored() {
+        MealBreakdownJson b = service.recipeTemplateBreakdown("lunch", lunchLines());
 
         assertThat(b).isNotNull();
         // hero ≡ envelope: recipeFit is a delegate of this method by construction (mezo-bw3y)
-        assertThat(b.value()).isEqualByComparingTo(service.recipeFit(lunchLines()));
+        assertThat(b.value()).isEqualByComparingTo(service.recipeFit("lunch", lunchLines()));
+        // template surface: portion instead of context, no context dimension at all
         assertThat(b.dimensions()).extracting(MealBreakdownJson.Dimension::id)
-            .containsExactly("macro", "micro", "nova", "context");
-        // live weights renormalized (÷ .80, then round2) and summing to ~1; context honest zero
-        assertThat(b.dimensions().get(0).weight().doubleValue()).isCloseTo(0.375, within(0.01));
-        assertThat(b.dimensions().get(1).weight().doubleValue()).isCloseTo(0.3125, within(0.01));
-        assertThat(b.dimensions().get(2).weight().doubleValue()).isCloseTo(0.3125, within(0.01));
-        MealBreakdownJson.Dimension context = b.dimensions().get(3);
-        assertThat(context.weight()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(context.score()).isEqualByComparingTo(BigDecimal.ZERO);
-        assertThat(context.context()).isEmpty();
+            .containsExactly("macro", "micro", "who", "fat_quality", "nova",
+                "plant_diversity", "energy_density", "portion");
+        // live weights renormalized over the present dims and summing to ~1
+        double weightSum = b.dimensions().stream().mapToDouble(d -> d.weight().doubleValue()).sum();
+        assertThat(weightSum).isCloseTo(1.0, within(0.01));
+        // plant/energy degrade (lunchLines carry no category/gram data) → honest zero weight
+        assertThat(dimension(b, "plant_diversity").weight()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(dimension(b, "energy_density").weight()).isEqualByComparingTo(BigDecimal.ZERO);
         // prose stays empty here (the LLM layer merges over it); confidence is a real coverage mix
         assertThat(b.summary()).isNull();
         assertThat(b.improve()).isEmpty();
@@ -173,11 +283,52 @@ class MealScoringServiceTest {
 
     @Test
     void testRecipeFit_shouldReturnNull_whenNoLineHasKcal() {
-        BigDecimal fit = service.recipeFit(List.of(
+        BigDecimal fit = service.recipeFit("lunch", List.of(
             new ScoredLine("Fűszer", "5g", bd(0), bd(0), bd(0), bd(0), null,
-                null, null, null, null, false)));
+                null, null, null, null, false, null, null)));
 
         assertThat(fit).isNull(); // honest: nothing to score → pending, never a fabricated number
+    }
+
+    // --- line builders (mirror the file's ScoredLine constructor style) --------------------------
+
+    /** Fully-covered line: nutrition facts + a plant-neutral category + a gram amount (who/fat/micro). */
+    private ScoredLine line(String name, double kcal, double p, double c, double f, int nova,
+            double fiber, double sugar, double salt, double satFat) {
+        return new ScoredLine(name, "adag", bd(kcal), bd(p), bd(c), bd(f), (short) nova,
+            bd(fiber), bd(sugar), bd(salt), bd(satFat), true, "other", bd(kcal));
+    }
+
+    /** kcal + pantry category only (plant-diversity input); no facts / grams. */
+    private ScoredLine lineWithCategory(String name, double kcal, String category) {
+        return new ScoredLine(name, "adag", bd(kcal), null, null, null, null,
+            null, null, null, null, false, category, null);
+    }
+
+    /** kcal + a gram amount (energy-density input); no facts / category. */
+    private ScoredLine lineWithGrams(String name, double kcal, BigDecimal amountG) {
+        return new ScoredLine(name, "adag", bd(kcal), null, null, null, null,
+            null, null, null, null, false, null, amountG);
+    }
+
+    /** kcal only, discrete unit (null amountG) — excluded from the energy-density mass. */
+    private ScoredLine lineNoGrams(String name, double kcal) {
+        return new ScoredLine(name, "adag", bd(kcal), null, null, null, null,
+            null, null, null, null, false, null, null);
+    }
+
+    /** Macros only, no nutrition-quality facts (hasMicroFacts=false) — degrades who/fat/micro. */
+    private ScoredLine lineNoFacts(String name, double kcal, double p, double c, double f, int nova) {
+        return new ScoredLine(name, "adag", bd(kcal), bd(p), bd(c), bd(f), (short) nova,
+            null, null, null, null, false, null, null);
+    }
+
+    /** Finds a dimension by id in the emitted envelope, or fails. */
+    private static MealBreakdownJson.Dimension dimension(MealBreakdownJson envelope, String id) {
+        return envelope.dimensions().stream()
+            .filter(d -> d.id().equals(id))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("no dimension with id " + id));
     }
 
     private static BigDecimal bd(double v) {
