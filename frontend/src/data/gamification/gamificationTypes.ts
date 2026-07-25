@@ -11,6 +11,8 @@ export type GamificationProfile = {
   xpForNext: number
   coins: number
   streakDays: number
+  /** Whether today still keeps the streak alive (honest flame state, mezo-huzd). */
+  streakAlive: boolean
   /** Held streak savers, 0..2 (spec §6.2). */
   streakSavers: number
   activeTitleKey: string

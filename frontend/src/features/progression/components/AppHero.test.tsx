@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { AppHero } from '@/features/progression/components/AppHero'
+import { GAMIFICATION_KEY } from '@/data/gamification/gamificationStore'
+import { gamificationProfileMock } from '@/data/gamification/gamificationMock'
 import { QueryWrapper } from '@/test/queryWrapper'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -51,6 +54,20 @@ test('🔥 opens the StreakSheet, 🪙 opens the TitleShopSheet', async () => {
   await userEvent.keyboard('{Escape}')
   await userEvent.click(screen.getByLabelText('240 érme'))
   expect(await screen.findByText('Title-ök')).toBeInTheDocument()
+})
+
+test('dead streak (streakAlive=false) dims the flame chip but keeps count and adds "megszakadt" to the label', () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  qc.setQueryData(GAMIFICATION_KEY, { ...gamificationProfileMock, streakAlive: false })
+  render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={['/today']}>
+        <AppHero />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  expect(screen.getByText('🔥 6')).toHaveStyle({ opacity: 0.45 })
+  expect(screen.getByLabelText('6 napos sorozat — megszakadt')).toBeInTheDocument()
 })
 
 test('avatar links to /me, level badge and quest counter link to /me/growth', () => {

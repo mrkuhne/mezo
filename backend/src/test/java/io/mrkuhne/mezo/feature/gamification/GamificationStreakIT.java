@@ -131,6 +131,6 @@ class GamificationStreakIT extends AbstractIntegrationTest {
         var res = gamificationService.getProfile(owner);
 
         assertThat(res.getStreakDays()).isEqualTo(3); // count preserved as stored...
-        assertThat(res.getStreakAlive()).isFalse();    // ...but the flame is dead (FE dims it)
+        assertThat(res.getStreakAlive()).isFalse();    // ...streakAlive=false — the FE dims the flame
     }
 }

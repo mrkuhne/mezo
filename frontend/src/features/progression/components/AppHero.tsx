@@ -52,7 +52,12 @@ export function AppHero({ utilities }: { utilities?: ReactNode }) {
         <div className="counters">
           <button
             type="button" className="cnt fire np-press"
-            aria-label={`${profile.streakDays} napos sorozat`}
+            style={{ opacity: profile.streakAlive === false ? 0.45 : 1 }}
+            aria-label={
+              profile.streakAlive === false
+                ? `${profile.streakDays} napos sorozat — megszakadt`
+                : `${profile.streakDays} napos sorozat`
+            }
             onClick={() => setSheet('streak')}
           >
             🔥 {profile.streakDays}

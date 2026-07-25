@@ -12,6 +12,7 @@ const toProfile = (w: ProfileWire): GamificationProfile => ({
   xpForNext: w.xpForNext,
   coins: w.coins,
   streakDays: w.streakDays,
+  streakAlive: w.streakAlive,
   streakSavers: w.streakSavers,
   activeTitleKey: w.equippedTitleKey,
   ownedShopTitleKeys: w.ownedTitleKeys,

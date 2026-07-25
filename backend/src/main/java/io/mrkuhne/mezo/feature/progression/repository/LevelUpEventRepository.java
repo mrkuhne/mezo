@@ -25,8 +25,4 @@ public interface LevelUpEventRepository extends JpaRepository<LevelUpEventEntity
 
     /** Day-scoped feed for the gamification ledger's coin/streak aggregation (mezo-huzd). */
     List<LevelUpEventEntity> findByCreatedByAndOccurredOn(UUID createdBy, LocalDate occurredOn);
-
-    /** Distinct business days with an award, most recent first — streak-day source of truth (mezo-huzd). */
-    @Query("select distinct e.occurredOn from LevelUpEventEntity e where e.createdBy = :createdBy order by e.occurredOn desc")
-    List<LocalDate> findDistinctOccurredOnDesc(@Param("createdBy") UUID createdBy);
 }

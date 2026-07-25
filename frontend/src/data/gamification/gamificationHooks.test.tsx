@@ -100,7 +100,7 @@ describe('real mode', () => {
     await waitFor(() => expect(result.current.profile.level).toBe(8))
     expect(result.current.profile).toMatchObject({
       totalXp: 1250, level: 8, xpInLevel: 90, xpForNext: 300,
-      coins: 77, streakDays: 9, streakSavers: 2,
+      coins: 77, streakDays: 9, streakAlive: true, streakSavers: 2,
       activeTitleKey: 'gainz-nagyur',
       ownedShopTitleKeys: ['gainz-nagyur', 'kezdo-kanal'],
     })
