@@ -13,7 +13,7 @@ test('useFuelDay returns macros, 4 meals, micronutrients', () => {
   const { result } = renderHook(() => useFuelDay(), { wrapper: QueryWrapper })
   expect(result.current.fuel.targets.kcal).toBe(3100)
   expect(result.current.fuel.meals).toHaveLength(4)
-  expect(result.current.fuel.meals[0].breakdown?.dimensions).toHaveLength(4)
+  expect(result.current.fuel.meals[0].breakdown?.dimensions).toHaveLength(8)
   expect(result.current.fuel.meals[3].score).toBeNull()
   expect(result.current.fuel.micronutrients).toHaveLength(5)
 })

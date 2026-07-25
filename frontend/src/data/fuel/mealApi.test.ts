@@ -69,7 +69,7 @@ describe('fromResponse', () => {
               micros: null, nova: null, context: null,
             },
             { // degraded micro: weight 0, no payload → must be DROPPED by the mapper
-              id: 'micro', label: 'Mikro–makro balance', weight: 0, score: 0, detail: 'Nincs tápanyag-adat.',
+              id: 'micro', label: 'Rost & mikro', weight: 0, score: 0, detail: 'Nincs tápanyag-adat.',
               macro: null, micros: null, nova: null, context: null,
             },
             {

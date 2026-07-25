@@ -35,9 +35,9 @@ const DIMENSION_COLOR: Record<MealDimension['id'], string> = {
 /** Contract dimension → the FE discriminated union. A DEGRADED dimension (weight 0, no per-kind
  *  payload — zero input coverage on the backend) returns null and is dropped: the sheet shows
  *  only the dimensions that were actually computable (honest absence, never an empty fake panel).
- *  Exception (mezo-bw3y): with `keepDegraded` the recipe template view KEEPS the degraded context
- *  card (empty rows) — it explains WHY the template carries no context weight. */
-function fromDimension(d: MealScoreDimensionResponse, keepDegraded = false): MealDimension | null {
+ *  Since mezo-7797 the recipe template carries a real `portion` dimension (not a degraded context),
+ *  so both surfaces drop degraded dims uniformly — no keep-degraded escape hatch. */
+function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
   const base = {
     label: d.label,
     weight: d.weight,
@@ -74,20 +74,20 @@ function fromDimension(d: MealScoreDimensionResponse, keepDegraded = false): Mea
     || d.id === 'energy_density' || d.id === 'portion') && d.context && d.context.length > 0) {
     return { id: d.id, ...base, context: d.context.map(c => ({ label: c.label, value: c.value })) } as MealDimension
   }
-  if (d.id === 'context' && d.context && (d.context.length > 0 || keepDegraded)) {
+  if (d.id === 'context' && d.context && d.context.length > 0) {
     return { id: 'context', ...base, context: d.context.map(c => ({ label: c.label, value: c.value })) }
   }
   return null
 }
 
-/** Contract envelope → FE MealBreakdown (colors injected; degraded dimensions dropped —
- *  except the recipe template view's degraded context card under `keepDegraded`, mezo-bw3y). */
-export function fromBreakdown(b: MealBreakdownResponse, opts?: { keepDegraded?: boolean }): MealBreakdown {
+/** Contract envelope → FE MealBreakdown (colors injected; degraded dimensions dropped on both the
+ *  meal and the recipe-template surface). */
+export function fromBreakdown(b: MealBreakdownResponse): MealBreakdown {
   return {
     confidence: b.confidence,
     summary: b.summary ?? null,
     dimensions: b.dimensions
-      .map(d => fromDimension(d, opts?.keepDegraded))
+      .map(d => fromDimension(d))
       .filter((d): d is MealDimension => d !== null),
     improve: b.improve.map(i => ({ text: i.text, impact: i.impact })),
     tools: b.tools.map(t => ({ type: t.type as ToolType, name: t.name })),
