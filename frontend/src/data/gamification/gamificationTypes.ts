@@ -30,3 +30,14 @@ export type Title = {
   owned: boolean
   equipped: boolean
 }
+
+/** The day's XP-by-source + coin events + streak — the ritual Harvest read (mezo-huzd R3). */
+export type GamificationDay = {
+  date: string
+  xpBySource: { source: XpEventType; xp: number }[]
+  xpTotal: number
+  coinEvents: { reason: string; amount: number }[]
+  coinTotal: number
+  streakDays: number
+  streakAlive: boolean
+}

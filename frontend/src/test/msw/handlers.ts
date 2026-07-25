@@ -169,6 +169,42 @@ export const handlers = [
       savingsHuf30d: null,
     }),
   ),
+  // Gamification profile (mezo-huzd) — populated default (never a 404 in the contract;
+  // the backend answers ghost-shaped zeros before any activity, not an HTTP error).
+  // Tests override with server.use() for specific field-mapping/mutation assertions.
+  http.get(`${API_BASE}/api/gamification/profile`, () =>
+    HttpResponse.json({
+      totalXp: 860, level: 6, xpInLevel: 60, xpForNext: 240,
+      coins: 45, streakDays: 4, streakAlive: true, streakSavers: 1,
+      equippedTitleKey: 'kovetkezetes', ownedTitleKeys: [],
+    })),
+  // Gamification day (mezo-huzd, the Harvest read) — honest-zero default; never a 404.
+  http.get(`${API_BASE}/api/gamification/day/:date`, ({ params }) =>
+    HttpResponse.json({
+      date: String(params.date), xpBySource: [], xpTotal: 0,
+      coinEvents: [], coinTotal: 0, streakDays: 0, streakAlive: false,
+    })),
+  // Shop/streak-saver mutations — default happy-path echoes the profile default above
+  // (unchanged); tests override with server.use() to capture payload/coins deltas.
+  http.post(`${API_BASE}/api/gamification/title/:key/buy`, ({ params }) =>
+    HttpResponse.json({
+      totalXp: 860, level: 6, xpInLevel: 60, xpForNext: 240,
+      coins: 45, streakDays: 4, streakAlive: true, streakSavers: 1,
+      equippedTitleKey: String(params.key), ownedTitleKeys: [String(params.key)],
+    })),
+  http.post(`${API_BASE}/api/gamification/title/:key/equip`, ({ params }) =>
+    HttpResponse.json({
+      totalXp: 860, level: 6, xpInLevel: 60, xpForNext: 240,
+      coins: 45, streakDays: 4, streakAlive: true, streakSavers: 1,
+      equippedTitleKey: String(params.key), ownedTitleKeys: [],
+    })),
+  http.post(`${API_BASE}/api/gamification/saver/buy`, () =>
+    HttpResponse.json({
+      totalXp: 860, level: 6, xpInLevel: 60, xpForNext: 240,
+      coins: 45, streakDays: 4, streakAlive: true, streakSavers: 2,
+      equippedTitleKey: 'kovetkezetes', ownedTitleKeys: [],
+    })),
+
   http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json({ ...body, tdeeBootstrap: null })
