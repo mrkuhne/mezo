@@ -2044,6 +2044,7 @@ a.hab-link:hover { opacity: 0.85; }
 .rz-events { display: flex; flex-direction: column; gap: 9px; margin-top: 18px; }
 .rz-ev { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 14px;
   background: rgba(245,239,230,.05); font-family: var(--ff-body); font-size: 12.5px; }
+.rz-ev-icon { font-size: 15px; }
 .rz-ev-label { flex: 1; }
 .rz-ev-meta { color: var(--faint); font-size: 11px; }
 .rz-ev-meta.ok { color: var(--sage); }

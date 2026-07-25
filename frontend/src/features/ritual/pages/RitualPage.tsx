@@ -85,7 +85,8 @@ export function RitualPage() {
         />
       )}
 
-      {checkInIdx !== null && (
+      {/* checkInIdx >= 0 guards a -1 findIndex miss (nextCheckinIdx) from rendering CheckInSheet with an undefined slot. */}
+      {checkInIdx !== null && checkInIdx >= 0 && (
         <CheckInSheet
           slot={checkins[checkInIdx]}
           slotIdx={checkInIdx}
