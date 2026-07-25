@@ -208,6 +208,17 @@ class MealScoringServiceTest {
     }
 
     @Test
+    void testScoreMeal_shouldScoreEnergyDensity_forRealisticPerServingLine() {
+        // pins the density arithmetic the composers must feed: 300 kcal over 80 g → 375 kcal/100g;
+        // between good(150) and bad(400) → score = (400-375)/(400-150) = 0.10 (NOT amount/per-scaled).
+        // The recipe fitLines per-serving gram scaling that produces this is pinned by the Task 3 IT.
+        var lines = List.of(lineWithGrams("Zabkása adag", 300, new BigDecimal("80")));
+        var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "energy_density");
+        assertThat(dim.score()).isEqualByComparingTo("0.10");
+        assertThat(dim.context().getFirst().value()).isEqualTo("375 kcal/100g");
+    }
+
+    @Test
     void testRecipeTemplateBreakdown_shouldEmitPortionDimension_withSlotBudget() {
         // per-serving 775 kcal vs breakfast budget 3100*0.25 = 775 → rel 1.0 → score 1.0
         var lines = List.of(line("Reggeli", 775, 40, 90, 25, 1, 5.0, 8.0, 0.8, 4.0));

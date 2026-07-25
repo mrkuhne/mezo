@@ -64,8 +64,11 @@ public class MealScoringService {
 
     /**
      * Scores a logged meal; {@code localTime} is the request's offset-local wall-clock time.
-     * Confidence is the weight-normalized coverage sum over the live dimensions (a degraded
-     * dimension carries weight 0 so it drops out of both the score and the confidence).
+     * Confidence is now weight-RENORMALIZED over the live dimensions (÷ the live weight sum,
+     * consistent with {@code value}) — a degraded dimension carries weight 0 and drops out of
+     * both. This differs from the old un-normalized {@code Σ(configWeight·coverage)}: it
+     * INTENTIONALLY reads higher for a degraded meal (the reading is now "confidence across the
+     * dimensions we could actually score", not "of the full weight budget").
      */
     public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime) {
         double kcal = sum(lines, ScoredLine::kcal);

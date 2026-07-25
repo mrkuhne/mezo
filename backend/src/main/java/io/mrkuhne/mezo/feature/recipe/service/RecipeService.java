@@ -100,6 +100,10 @@ public class RecipeService {
     List<ScoredLine> fitLines(RecipeEntity e, Map<UUID, PantryItemEntity> pantryById) {
         BigDecimal servings = BigDecimal.valueOf(
             e.getServings() == null || e.getServings() < 1 ? 1 : e.getServings());
+        // Grams are an ABSOLUTE mass — per-serving = amount ÷ servings ONLY. Unlike macros (whose
+        // snapshots are per-`per`-basis, needing the amount/per term), the gram amount must NOT
+        // carry amount/per, or the energy-density kcal/100g would be off by that factor.
+        BigDecimal servingScale = BigDecimal.ONE.divide(servings, 6, RoundingMode.HALF_UP);
         return e.getLines().stream().map(line -> {
             BigDecimal per = line.getSnapshotPer() == null || line.getSnapshotPer().signum() == 0
                 ? BigDecimal.ONE : line.getSnapshotPer();
@@ -126,7 +130,7 @@ public class RecipeService {
                 hasFacts ? mulOrNull(p.getSaturatedFatG(), factFactor) : null,
                 hasFacts,
                 p == null ? null : p.getCategory(),
-                mulOrNull(gramAmount(line.getAmount(), line.getUnit()), factor));
+                mulOrNull(gramAmount(line.getAmount(), line.getUnit()), servingScale));
         }).toList();
     }
 
