@@ -189,8 +189,10 @@ public class VolumeProgressionService {
             ProvenanceEnvelope source, int calWeek, VolumeDecider.Result result) {
         List<ProvenanceEnvelope.Adjustment> adjustments =
             new ArrayList<>(source.adjustments() != null ? source.adjustments() : List.of());
+        // kind must stay within the api contract's VolumeAdjustment.kind enum
+        // (^(pattern|recovery|niggle|sport-cross)$) — a weekly rollover is a pattern-driven move.
         adjustments.add(new ProvenanceEnvelope.Adjustment(
-            "rollover", "W" + calWeek + ": " + result.change(), Map.of(),
+            "pattern", "W" + calWeek + ": " + result.change(), Map.of(),
             result.lever() == VolumeDecider.Lever.DELOAD ? Boolean.TRUE : null));
         return new ProvenanceEnvelope(
             source.baseline(), adjustments, source.confidence(), source.note(), source.userOverride());
