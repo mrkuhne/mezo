@@ -3,17 +3,15 @@
 // Port: prototype/src/fuel-plan.jsx FuelPlanPage (49–216); real-mode wiring Fuel P4 (mezo-kpo).
 //
 // Adaptations vs prototype:
-//  - GymScheduleSheet saves go through useFuelWeekActions().saveGymSchedule (write-through to
-//    Train's PUT /api/train/gym-schedule per ADR P0a); the local gymOverride keeps the edit
-//    visible optimistically (and IS the demo persistence in mock mode, where the save no-ops).
+//  - Gym times are READ-ONLY here (mezo-4t43): the schedule is set in the mesocycle planner
+//    (Step 2) and the Gym-page "Időpontok" chip — Fuel only renders Train's derived week and
+//    feeds the Mai timeline. The old in-page GymScheduleSheet editor + write-through are gone.
 //  - WeekRhythmGrid owns its own section header ("Heti ritmus · 24h tengelyen")
 //    and legend, so they are not duplicated here.
 //  - Weekly stats/title/note come from the dual-mode useFuelWeek(); sections with no real
 //    source render honest-empty in real mode (hidden when [], `—` when null).
 // ============================================================
-import { useState } from 'react'
-import type { GymScheduleDay } from '@/data/types'
-import { useFuelWeek, useFuelWeekActions, useTodayScenario } from '@/data/hooks'
+import { useFuelWeek, useTodayScenario } from '@/data/hooks'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Icon } from '@/shared/ui/Icon'
 import { StatCell } from '@/shared/ui/StatCell'
@@ -22,19 +20,13 @@ import { RetaWeekStrip } from '@/features/fuel/components/RetaWeekStrip'
 import { WeekRhythmGrid } from '@/features/fuel/components/WeekRhythmGrid'
 import { PatternRow } from '@/features/fuel/components/PatternRow'
 import { WeeklySupplementGrid } from '@/features/fuel/components/WeeklySupplementGrid'
-import { GymScheduleSheet } from '@/features/fuel/sheets/GymScheduleSheet'
 
 export function FuelPlanPage() {
   const { title, retaWeek, gymSchedule, weeklySupplements, patterns, weeklyStats, volleyball, weeklyNote } = useFuelWeek()
-  const { saveGymSchedule } = useFuelWeekActions()
   const { retaDay } = useTodayScenario()
-  // Optimistic local copy of a sheet save; null = render the hook's (query-backed) schedule.
-  const [gymOverride, setGymOverride] = useState<GymScheduleDay[] | null>(null)
-  const [editOpen, setEditOpen] = useState(false)
-  const schedule = gymOverride ?? gymSchedule
 
   // Weekly aggregates
-  const activeGymDays = schedule.filter(d => d.active).length
+  const activeGymDays = gymSchedule.filter(d => d.active).length
   const vbCount = volleyball.length
   const weeklyKcalAvg = Math.round(weeklyStats.kcalTarget * weeklyStats.kcalAvgFactor)
 
@@ -46,14 +38,6 @@ export function FuelPlanPage() {
           <div className="over">Fuel · Heti terv</div>
           <h1>{title}</h1>
         </div>
-        <button
-          type="button"
-          onClick={() => setEditOpen(true)}
-          className="pgact-np np-press"
-          style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
-        >
-          <Icon name="settings" size={12} /> Idők
-        </button>
       </div>
 
       {/* Weekly stats card */}
@@ -132,7 +116,7 @@ export function FuelPlanPage() {
       )}
 
       {/* 7-day rhythm grid (includes its own header + legend) */}
-      <WeekRhythmGrid gymSchedule={schedule} volleyball={volleyball} />
+      <WeekRhythmGrid gymSchedule={gymSchedule} volleyball={volleyball} />
 
       {/* Recurring patterns — pattern-engine output is P8; hidden while empty (real mode) */}
       {patterns.length > 0 && (
@@ -159,17 +143,6 @@ export function FuelPlanPage() {
           </div>
           <WeeklySupplementGrid rows={weeklySupplements} />
         </div>
-      )}
-
-      {editOpen && (
-        <GymScheduleSheet
-          schedule={schedule}
-          onSave={(next) => {
-            setGymOverride(next)
-            saveGymSchedule(next)
-          }}
-          onClose={() => setEditOpen(false)}
-        />
       )}
     </>
   )

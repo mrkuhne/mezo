@@ -11,7 +11,6 @@
 // React rules of hooks: every hook below is called UNCONDITIONALLY in both modes; only the
 // returned value branches on `isMockMode()` (the P5 timelineHooks idiom).
 
-import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { localDateString, huMonthDay } from '@/shared/lib/dates'
@@ -27,10 +26,8 @@ import {
 } from '@/data/fuel/fuelWeek'
 import { volleyballSessions as mockVolleyball } from '@/data/today/today'
 import { DEFAULT_BLOCK_MIN } from '@/data/fuel/fuelConfig'
-import { DAY_ORDER } from '@/data/train/train'
 import { useTrain } from '@/data/train/trainHooks'
 import { useMedication } from '@/data/fuel/medicationHooks'
-import type { GymScheduleSlotInput } from '@/data/train/trainApi'
 import type {
   GymScheduleDay,
   MedicationCycleCell,
@@ -86,15 +83,6 @@ export function withDefaultDuration(d: GymScheduleDay): GymScheduleDay {
   return d.active && d.time && d.duration == null ? { ...d, duration: DEFAULT_BLOCK_MIN } : d
 }
 
-/** Sheet edits → Train's PUT body: one slot per active day with a time (day+time is all the
- *  gym-schedule contract persists; type/active live on the mesocycle template). */
-export function gymDaysToSlots(days: GymScheduleDay[]): GymScheduleSlotInput[] {
-  return days.flatMap((d) => {
-    const dayOfWeek = DAY_ORDER.indexOf(d.day as (typeof DAY_ORDER)[number])
-    return d.active && d.time && dayOfWeek >= 0 ? [{ dayOfWeek, time: d.time }] : []
-  })
-}
-
 /** Weekly stats from the 7-day rollup: kcal avg over days with any logged kcal; protein-hit =
  *  days meeting the protein target; adherence stays null (honest `—`) until P8. */
 export function deriveWeeklyStats(days: FuelWeekDay[]): WeeklyStats {
@@ -143,16 +131,4 @@ export function useFuelWeek(): FuelWeekView {
     volleyball: sport.schedule?.volleyball.sessions ?? [],
     weeklyNote: null,
   }
-}
-
-/** Gym-time write-through (P0a: Train owns the schedule, Fuel is a secondary editor).
- *  Mock: Train's saveGymSchedule no-ops (the page's local override carries the demo edit);
- *  real: PUT /api/train/gym-schedule + ['train','gymSchedule'] invalidation re-derives the week. */
-export function useFuelWeekActions() {
-  const { saveGymSchedule: saveTrainGymSchedule } = useTrain()
-  const saveGymSchedule = useCallback(
-    (days: GymScheduleDay[]) => saveTrainGymSchedule(gymDaysToSlots(days)),
-    [saveTrainGymSchedule],
-  )
-  return { saveGymSchedule }
 }
