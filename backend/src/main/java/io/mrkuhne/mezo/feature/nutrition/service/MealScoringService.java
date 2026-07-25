@@ -25,9 +25,10 @@ import org.springframework.stereotype.Service;
  * {@link ScoredLine} carriers + config — no repository access, fully unit-testable. Formulas:
  * docs/superpowers/specs/2026-07-05-fuel-p7-meal-scoring-design.md §3.
  *
- * <p>Two entry points share the dimension computations: {@link #scoreMeal} emits the full
- * persisted envelope (4 dimensions incl. slot/timing context); {@link #recipeFit} scores a
- * recipe's per-serving profile on macro+micro+NOVA only, weights renormalized.
+ * <p>The 8-dimension weighted model (mezo-7797): Macro · Rost · WHO · Zsírminőség · NOVA ·
+ * Növényi diverzitás · Energia-sűrűség · Context/Portion. {@link #scoreMeal} emits the meal
+ * surface (all except portion, incl. slot/timing context); {@link #recipeTemplateBreakdown}
+ * emits the template surface (all except context — portion replaces it), weights renormalized.
  *
  * <p>Honesty rules: a dimension with zero input coverage degrades to {@code weight 0, score 0}
  * with a "Nincs adat" detail (the total renormalizes); {@code summary}/{@code improve} stay
@@ -44,8 +45,10 @@ public class MealScoringService {
     /**
      * One meal/recipe line with its contribution + nutrition-quality facts ALREADY SCALED to the
      * line's amount (the caller owns the amount/per scaling — same formula as the macro snapshot).
-     * {@code hasMicroFacts} marks whether the source carried any of the four quality facts
-     * (drives the micro dimension's coverage → confidence).
+     * {@code hasMicroFacts} marks whether the source carried any of the quality facts
+     * (drives the micro/who/fat-quality dimensions' coverage → confidence). {@code category} feeds
+     * plant-diversity (null on estimate lines); {@code amountG} feeds energy-density (null for
+     * discrete units).
      */
     public record ScoredLine(
         String name,
@@ -53,67 +56,69 @@ public class MealScoringService {
         BigDecimal kcal, BigDecimal p, BigDecimal c, BigDecimal f,
         Short nova,
         BigDecimal fiberG, BigDecimal sugarG, BigDecimal saltG, BigDecimal saturatedFatG,
-        boolean hasMicroFacts
+        boolean hasMicroFacts,
+        String category,      // pantry category (plant-diversity input); null on estimate lines
+        BigDecimal amountG    // line amount in grams (g/ml≈g); null for discrete units
     ) {
     }
 
-    /** Scores a logged meal; {@code localTime} is the request's offset-local wall-clock time. */
+    /**
+     * Scores a logged meal; {@code localTime} is the request's offset-local wall-clock time.
+     * Confidence is the weight-normalized coverage sum over the live dimensions (a degraded
+     * dimension carries weight 0 so it drops out of both the score and the confidence).
+     */
     public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime) {
         double kcal = sum(lines, ScoredLine::kcal);
 
-        Dim macro = macroDim(lines, kcal);
-        Dim micro = microDim(lines, kcal);
-        Dim nova = novaDim(lines, kcal);
-        Dim context = contextDim(slot, lines, kcal, localTime);
-        List<Dim> dims = List.of(macro, micro, nova, context);
+        List<Dim> dims = List.of(
+            macroDim(lines, kcal), microDim(lines, kcal), whoDim(lines, kcal),
+            fatQualityDim(lines, kcal), novaDim(lines, kcal), plantDiversityDim(lines, kcal),
+            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime));
 
         double weightSum = dims.stream().mapToDouble(d -> d.effectiveWeight).sum();
         double value = weightSum == 0 ? 0
             : dims.stream().mapToDouble(d -> d.effectiveWeight * d.score).sum() / weightSum;
-        double confidence = props.weights().macro() * macro.coverage
-            + props.weights().micro() * micro.coverage
-            + props.weights().nova() * nova.coverage
-            + props.weights().context() * context.coverage;
+        double confidence = weightSum == 0 ? 0
+            : dims.stream().mapToDouble(d -> d.effectiveWeight * d.coverage).sum() / weightSum;
 
-        return new MealBreakdownJson(
-            round2(value),
-            round2(confidence),
-            null,      // P8 prose
-            dims.stream().map(Dim::toJson).toList(),
-            List.of(), // P8 prose
-            tools(slot, lines, micro, nova, localTime));
+        return new MealBreakdownJson(round2(value), round2(confidence), null,
+            dims.stream().map(Dim::toJson).toList(), List.of(),
+            tools(slot, lines, dims, localTime));
     }
 
     /**
-     * Deterministic recipe fit over the per-serving profile: macro+micro+NOVA, weights
-     * renormalized (no logged time/slot → no context dimension). Returns {@code null} when the
-     * profile carries no kcal at all — pending badge, never a fabricated number.
+     * Deterministic recipe fit over the per-serving profile: the template surface (all except
+     * context — portion replaces it), weights renormalized. Returns {@code null} when the profile
+     * carries no kcal at all — pending badge, never a fabricated number.
      *
      * <p>Since mezo-bw3y a thin delegate of {@link #recipeTemplateBreakdown}, so the fit badge and
-     * the template-breakdown envelope can never disagree.
+     * the template-breakdown envelope can never disagree. {@code slot} (nullable) budgets the
+     * portion dimension; a slot-less recipe falls back to the configured default share.
      */
-    public BigDecimal recipeFit(List<ScoredLine> perServingLines) {
-        MealBreakdownJson breakdown = recipeTemplateBreakdown(perServingLines);
+    public BigDecimal recipeFit(String slot, List<ScoredLine> perServingLines) {
+        MealBreakdownJson breakdown = recipeTemplateBreakdown(slot, perServingLines);
         return breakdown == null ? null : breakdown.value();
     }
 
     /**
-     * Full template envelope for a recipe (mezo-bw3y): the SAME three dimensions the fit scores
-     * (weights renormalized over the present ones, so the UI's {@code × súly = pt} rows sum to the
-     * total honestly) + an honest degraded context dimension (weight 0 — a template has no logged
-     * time/slot; context is evaluated on the meal side). {@code summary}/{@code improve} stay
+     * Full template envelope for a recipe (mezo-bw3y): the SAME dimensions the fit scores (weights
+     * renormalized over the present ones, so the UI's {@code × súly = pt} rows sum to the total
+     * honestly). The template surface is the meal surface minus context plus portion — a template
+     * has no logged time/slot, so timing/context is evaluated on the meal side, while portion
+     * scores the per-serving kcal against the slot budget. {@code summary}/{@code improve} stay
      * null/empty here — the AI prose layer merges over them (RecipeBreakdownProseService).
      * Null exactly when the profile carries no kcal / no scorable dimension.
      */
-    public MealBreakdownJson recipeTemplateBreakdown(List<ScoredLine> perServingLines) {
+    public MealBreakdownJson recipeTemplateBreakdown(String slot, List<ScoredLine> perServingLines) {
         double kcal = sum(perServingLines, ScoredLine::kcal);
         if (kcal <= 0) {
             return null;
         }
-        Dim macro = macroDim(perServingLines, kcal);
-        Dim micro = microDim(perServingLines, kcal);
-        Dim nova = novaDim(perServingLines, kcal);
-        List<Dim> live = List.of(macro, micro, nova);
+        List<Dim> live = List.of(
+            macroDim(perServingLines, kcal), microDim(perServingLines, kcal),
+            whoDim(perServingLines, kcal), fatQualityDim(perServingLines, kcal),
+            novaDim(perServingLines, kcal), plantDiversityDim(perServingLines, kcal),
+            energyDensityDim(perServingLines, kcal), portionDim(slot, kcal));
         double weightSum = live.stream().mapToDouble(d -> d.effectiveWeight).sum();
         if (weightSum == 0) {
             return null;
@@ -125,16 +130,11 @@ public class MealScoringService {
         for (Dim d : live) {
             dims.add(d.renormalized(weightSum).toJson());
         }
-        dims.add(new Dimension("context", "Időzítés & kontextus", round2(0), round2(0),
-            "Sablon szinten nincs időzítési adat — a kontextust a logolt étkezéseknél értékeljük.",
-            null, null, null, List.of()));
 
         List<ToolRow> tools = new ArrayList<>();
         tools.add(new ToolRow("read", "recipe.line_snapshots(n=" + perServingLines.size() + ")"));
         tools.add(new ToolRow("compute", "macroFit(mezo.nutrition)"));
-        if (nova.coverage > 0) {
-            tools.add(new ToolRow("compute", "novaDistribution(kcal_weighted)"));
-        }
+        tools.add(new ToolRow("compute", "guidelineFit(who, fat_quality)"));
         tools.add(new ToolRow("compute", "templateFit(weights_renormalized)"));
 
         return new MealBreakdownJson(round2(value), round2(confidence), null, dims, List.of(), tools);
@@ -174,39 +174,145 @@ public class MealScoringService {
             detail, null, null, null);
     }
 
-    // --- Micro (.25): nutrition-quality (fiber target + sugar/salt/satFat limits) --------------
+    // --- Micro (.10): fiber target (sugar/salt/satFat redistributed to who/fat-quality) ---------
 
     private Dim microDim(List<ScoredLine> lines, double kcal) {
         double coveredKcal = lines.stream().filter(ScoredLine::hasMicroFacts)
             .mapToDouble(l -> dbl(l.kcal())).sum();
         double coverage = kcal > 0 ? coveredKcal / kcal : 0;
         if (kcal <= 0 || coverage == 0) {
-            return Dim.degraded("micro", "Mikro–makro balance", props.weights().micro(),
-                "Nincs tápanyag-adat (rost/cukor/só) a tételekhez.");
+            return Dim.degraded("micro", "Rost & mikro", props.weights().micro(),
+                "Nincs rost-adat a tételekhez.");
         }
         double kcalShare = kcal / targets.kcal();
         double fiber = sum(lines, ScoredLine::fiberG);
+        double fiberRatio = fiber / (props.micro().fiberG() * kcalShare);
+        double score = Math.min(1, fiberRatio);
+        List<MicroRow> rows = List.of(
+            new MicroRow("Rost", grams(fiber), pct(fiberRatio), fiberStatus(fiberRatio)));
+        String text = String.format("Rost %s a(z) %s allotmenthez (%d%%).",
+            grams(fiber), grams(props.micro().fiberG() * kcalShare), pct(fiberRatio));
+        return new Dim("micro", "Rost & mikro", props.weights().micro(), score, coverage, text,
+            null, rows, null, null);
+    }
+
+    // --- WHO (.14): free-sugar energy-share + salt allotment (mezo-7797) -----------------------
+
+    private Dim whoDim(List<ScoredLine> lines, double kcal) {
+        double coveredKcal = lines.stream().filter(ScoredLine::hasMicroFacts)
+            .mapToDouble(l -> dbl(l.kcal())).sum();
+        double coverage = kcal > 0 ? coveredKcal / kcal : 0;
+        if (kcal <= 0 || coverage == 0) {
+            return Dim.degraded("who", "Ajánlások · WHO", props.weights().who(),
+                "Nincs cukor/só-adat a tételekhez.");
+        }
         double sugar = sum(lines, ScoredLine::sugarG);
         double salt = sum(lines, ScoredLine::saltG);
+        double sugarShare = sugar * 4 / kcal;
+        double sugarRatio = sugarShare / props.who().sugarEnergyShareLimit();
+        double saltRatio = salt / (props.who().saltLimitG() * (kcal / targets.kcal()));
+        double score = (limitSub(sugarRatio) + limitSub(saltRatio)) / 2;
+        List<ContextRow> rows = List.of(
+            new ContextRow("Cukor", String.format("%.0f E%% / %.0f E%% limit", sugarShare * 100,
+                props.who().sugarEnergyShareLimit() * 100)),
+            new ContextRow("Só", String.format("%s / %s keret", grams(salt),
+                grams(props.who().saltLimitG() * (kcal / targets.kcal())))));
+        String text = String.format("Cukor az energia %.0f%%-a (WHO ≤%.0f%%) · só a keret %d%%-án.",
+            sugarShare * 100, props.who().sugarEnergyShareLimit() * 100, pct(saltRatio));
+        return new Dim("who", "Ajánlások · WHO", props.weights().who(), score, coverage, text,
+            null, null, null, rows);
+    }
+
+    // --- Fat quality (.10): satFat energy-share + saturated share of total fat -----------------
+
+    private Dim fatQualityDim(List<ScoredLine> lines, double kcal) {
+        double coveredKcal = lines.stream().filter(ScoredLine::hasMicroFacts)
+            .mapToDouble(l -> dbl(l.kcal())).sum();
+        double coverage = kcal > 0 ? coveredKcal / kcal : 0;
+        double fat = sum(lines, ScoredLine::f);
+        if (kcal <= 0 || coverage == 0 || fat <= 0) {
+            return Dim.degraded("fat_quality", "Zsírminőség", props.weights().fatQuality(),
+                "Nincs zsír-összetétel adat a tételekhez.");
+        }
         double satFat = sum(lines, ScoredLine::saturatedFatG);
+        double satShare = Math.min(1, satFat / fat);
+        double satEnergyShare = satFat * 9 / kcal;
+        double score = (limitSub(satEnergyShare / props.fatQuality().satFatEnergyShareLimit())
+            + limitSub(satShare / props.fatQuality().satFatShareRef())) / 2;
+        List<ContextRow> rows = List.of(
+            new ContextRow("Telített E%", String.format("%.0f%% / %.0f%% limit",
+                satEnergyShare * 100, props.fatQuality().satFatEnergyShareLimit() * 100)),
+            new ContextRow("Telített/összzsír", String.format("%.0f%% (ref. %.0f%%)",
+                satShare * 100, props.fatQuality().satFatShareRef() * 100)));
+        String text = String.format("Telített zsír az energia %.0f%%-a · az összzsír %.0f%%-a.",
+            satEnergyShare * 100, satShare * 100);
+        return new Dim("fat_quality", "Zsírminőség", props.weights().fatQuality(), score, coverage,
+            text, null, null, null, rows);
+    }
 
-        double fiberRatio = fiber / (props.micro().fiberG() * kcalShare);
-        double sugarRatio = sugar / (props.micro().sugarLimitG() * kcalShare);
-        double saltRatio = salt / (props.micro().saltLimitG() * kcalShare);
-        double satFatRatio = satFat / (props.micro().saturatedFatLimitG() * kcalShare);
+    // --- Plant diversity (.08): distinct plant categories ---------------------------------------
 
-        double score = (Math.min(1, fiberRatio) + limitSub(sugarRatio) + limitSub(saltRatio)
-            + limitSub(satFatRatio)) / 4;
-        List<MicroRow> rows = List.of(
-            new MicroRow("Rost", grams(fiber), pct(fiberRatio), fiberStatus(fiberRatio)),
-            new MicroRow("Cukor", grams(sugar), pct(sugarRatio), limitStatus(sugarRatio)),
-            new MicroRow("Só", grams(salt), pct(saltRatio), limitStatus(saltRatio)),
-            new MicroRow("Telített zsír", grams(satFat), pct(satFatRatio), limitStatus(satFatRatio)));
-        String text = String.format("Rost %s a(z) %s allotmenthez; cukor/só/telített zsír a keret %d/%d/%d%%-án.",
-            grams(fiber), grams(props.micro().fiberG() * kcalShare),
-            pct(sugarRatio), pct(saltRatio), pct(satFatRatio));
-        return new Dim("micro", "Mikro–makro balance", props.weights().micro(), score, coverage, text,
-            null, rows, null, null);
+    private Dim plantDiversityDim(List<ScoredLine> lines, double kcal) {
+        List<ScoredLine> categorized = lines.stream().filter(l -> l.category() != null).toList();
+        double coveredKcal = categorized.stream().mapToDouble(l -> dbl(l.kcal())).sum();
+        double coverage = kcal > 0 ? coveredKcal / kcal : 0;
+        if (kcal <= 0 || coverage == 0) {
+            return Dim.degraded("plant_diversity", "Növényi diverzitás",
+                props.weights().plantDiversity(), "Nincs kategória-adat a tételekhez.");
+        }
+        List<String> plants = categorized.stream().map(ScoredLine::category).distinct()
+            .filter(props.plantDiversity().plantCategories()::contains).sorted().toList();
+        double score = Math.min(1, (double) plants.size() / props.plantDiversity().targetCategories());
+        List<ContextRow> rows = new ArrayList<>();
+        rows.add(new ContextRow("Növényi kategóriák", plants.isEmpty() ? "—" : String.join(" · ", plants)));
+        rows.add(new ContextRow("Összesen", plants.size() + " / " + props.plantDiversity().targetCategories() + " cél"));
+        String text = String.format("%d különböző növényi kategória a %d-s célhoz.",
+            plants.size(), props.plantDiversity().targetCategories());
+        return new Dim("plant_diversity", "Növényi diverzitás", props.weights().plantDiversity(),
+            score, coverage, text, null, null, null, rows);
+    }
+
+    // --- Energy density (.06): kcal/100g over gram-mass lines -----------------------------------
+
+    private Dim energyDensityDim(List<ScoredLine> lines, double kcal) {
+        List<ScoredLine> gramLines = lines.stream()
+            .filter(l -> l.amountG() != null && l.amountG().signum() > 0).toList();
+        double gramKcal = gramLines.stream().mapToDouble(l -> dbl(l.kcal())).sum();
+        double grams = gramLines.stream().mapToDouble(l -> l.amountG().doubleValue()).sum();
+        double coverage = kcal > 0 ? gramKcal / kcal : 0;
+        if (kcal <= 0 || grams <= 0 || coverage == 0) {
+            return Dim.degraded("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
+                "Nincs gramm-alapú mennyiség a tételekhez.");
+        }
+        double density = gramKcal / grams * 100;
+        double good = props.energyDensity().goodKcalPer100g();
+        double bad = props.energyDensity().badKcalPer100g();
+        double score = density <= good ? 1 : density >= bad ? 0 : (bad - density) / (bad - good);
+        List<ContextRow> rows = List.of(
+            new ContextRow("Sűrűség", String.format("%.0f kcal/100g", density)),
+            new ContextRow("Lefedettség", pct(coverage) + "% gramm-alapú"));
+        String text = String.format("%.0f kcal/100g (%.0f alatt teljes pont, %.0f felett nulla).",
+            density, good, bad);
+        return new Dim("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
+            score, coverage, text, null, null, null, rows);
+    }
+
+    // --- Portion (.12, template only): per-serving kcal vs the slot budget ----------------------
+
+    private Dim portionDim(String slot, double kcal) {
+        double share = slot == null ? props.portion().defaultShare() : props.slotShares().of(slot);
+        double budget = targets.kcal() * share;
+        double rel = kcal / budget;
+        double deviation = Math.max(0, Math.abs(rel - 1) - props.slotShareTolerance());
+        double score = Math.max(0, 1 - deviation);
+        List<ContextRow> rows = List.of(
+            new ContextRow("Adag kcal", String.format("%.0f kcal", kcal)),
+            new ContextRow("Slot-büdzsé", String.format("%.0f kcal (%s %.0f%%)",
+                budget, slot == null ? "alap" : slotLabel(slot), share * 100)));
+        String text = String.format("Egy adag a %s büdzsé %d%%-a.",
+            slot == null ? "alapértelmezett" : slotLabel(slot), (int) Math.round(rel * 100));
+        return new Dim("portion", "Adag-arány", props.weights().portion(), score, 1.0, text,
+            null, null, null, rows);
     }
 
     /** Limit subscore: 1.0 while inside the allotment, then linear to 0 at 2× the allotment. */
@@ -216,10 +322,6 @@ public class MealScoringService {
 
     private static String fiberStatus(double ratio) {
         return ratio >= 0.8 ? "good" : ratio >= 0.5 ? "ok" : "low";
-    }
-
-    private static String limitStatus(double ratio) {
-        return ratio <= 1.0 ? "good" : ratio <= 1.5 ? "ok" : "low";
     }
 
     // --- NOVA (.25): kcal-weighted processing-class distribution -------------------------------
@@ -314,16 +416,21 @@ public class MealScoringService {
     // --- Provenance ------------------------------------------------------------------------------
 
     /** Honest deterministic tool transparency — what the scorer actually read/computed. */
-    private List<ToolRow> tools(String slot, List<ScoredLine> lines, Dim micro, Dim nova, LocalTime t) {
+    private List<ToolRow> tools(String slot, List<ScoredLine> lines, List<Dim> dims, LocalTime t) {
         long factLines = lines.stream().filter(ScoredLine::hasMicroFacts).count();
+        double microCoverage = dims.stream().filter(d -> d.id().equals("micro")).findFirst()
+            .map(Dim::coverage).orElse(0.0);
+        double novaCoverage = dims.stream().filter(d -> d.id().equals("nova")).findFirst()
+            .map(Dim::coverage).orElse(0.0);
         List<ToolRow> tools = new ArrayList<>();
         tools.add(new ToolRow("read", "meal_item.snapshots(n=" + lines.size() + ")"));
-        if (micro.coverage > 0) {
+        if (microCoverage > 0) {
             tools.add(new ToolRow("read",
                 "pantry.nutrition_facts(" + factLines + "/" + lines.size() + " tétel)"));
         }
         tools.add(new ToolRow("compute", "macroFit(mezo.nutrition)"));
-        if (nova.coverage > 0) {
+        tools.add(new ToolRow("compute", "guidelineFit(who, fat_quality)"));
+        if (novaCoverage > 0) {
             tools.add(new ToolRow("compute", "novaDistribution(kcal_weighted)"));
         }
         tools.add(new ToolRow("compute", "contextFit(slot=" + slot + ", t=" + t + ")"));

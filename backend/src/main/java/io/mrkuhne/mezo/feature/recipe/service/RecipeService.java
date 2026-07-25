@@ -76,7 +76,7 @@ public class RecipeService {
      */
     private RecipeResponse withFit(RecipeEntity e, RecipeResponse resp,
                                    Map<UUID, PantryItemEntity> pantryById) {
-        resp.getMezoFit().setScore(scoringService.recipeFit(fitLines(e, pantryById)));
+        resp.getMezoFit().setScore(scoringService.recipeFit(e.getSlot(), fitLines(e, pantryById)));
         return resp;
     }
 
@@ -124,7 +124,9 @@ public class RecipeService {
                 hasFacts ? mulOrNull(p.getSugarG(), factFactor) : null,
                 hasFacts ? mulOrNull(p.getSaltG(), factFactor) : null,
                 hasFacts ? mulOrNull(p.getSaturatedFatG(), factFactor) : null,
-                hasFacts);
+                hasFacts,
+                p == null ? null : p.getCategory(),
+                mulOrNull(gramAmount(line.getAmount(), line.getUnit()), factor));
         }).toList();
     }
 
@@ -134,6 +136,18 @@ public class RecipeService {
 
     private static BigDecimal mulOrNull(BigDecimal v, BigDecimal factor) {
         return v == null ? null : v.multiply(factor);
+    }
+
+    /** Line amount in grams for mass units (ml≈g); null for discrete units (db etc.). */
+    private static BigDecimal gramAmount(BigDecimal amount, String unit) {
+        if (amount == null || unit == null) {
+            return null;
+        }
+        return switch (unit.trim().toLowerCase()) {
+            case "g", "ml" -> amount;
+            case "kg", "l" -> amount.multiply(BigDecimal.valueOf(1000));
+            default -> null;
+        };
     }
 
     /**
