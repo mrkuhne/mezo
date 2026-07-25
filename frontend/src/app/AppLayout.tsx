@@ -12,9 +12,10 @@ export function AppLayout() {
   const scenario = useTodayScenario()
   const location = useLocation()
   const anchor = scenario.anchorMode && location.pathname.startsWith('/today')
-  // Full-screen surfaces where the tab bar is dead chrome: the active workout session
-  // and the extra-dark night page (its light would defeat the <30 lux point).
-  const hideTabBar = ['/train/session', '/me/sleep/night'].includes(location.pathname)
+  // Full-screen surfaces where the tab bar is dead chrome: the active workout session,
+  // the extra-dark night page (its light would defeat the <30 lux point), and the
+  // Napzárás ritual flow (mezo-ilsj).
+  const hideTabBar = ['/train/session', '/me/sleep/night', '/ritual'].includes(location.pathname)
   return (
     <>
       <CircadianTheme />

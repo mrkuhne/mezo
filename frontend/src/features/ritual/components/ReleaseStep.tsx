@@ -1,0 +1,38 @@
+/**
+ * Napzárás act 5 — Elengedés (mezo-ilsj, spec §4). The closing circle (np-draw reuse),
+ * the fixed release line, an optional companion closingNote, then the evening handoff
+ * panel that reads straight from the ritual window (Task 1) — no new data, just the
+ * two remaining stops (prep + bed). `onFinish` navigates to /today, where the
+ * WindDownBanner + evening RoutineCard own the sleep-prep phase from there on
+ * (integration, not duplication — this component never renders prep-step UI itself).
+ */
+export function ReleaseStep({ prepStartsAt, bedTime, closingNote, onFinish }: {
+  prepStartsAt: string
+  bedTime: string
+  closingNote: string | null
+  onFinish: () => void
+}) {
+  return (
+    <div className="rz-act rz-release">
+      <svg className="rz-circle" viewBox="0 0 100 100" width="110" aria-hidden="true">
+        <circle className="rz-ring" cx="50" cy="50" r="42" />
+        <circle className="rz-circle-moon" cx="50" cy="50" r="17" fill="#cfc4e2" />
+      </svg>
+      <p className="rz-end">A nap le van zárva. Elengedheted. 🌙</p>
+      {closingNote != null && (
+        <p className="rz-note">
+          <span className="rz-note-eyebrow">Mezo · napzárás</span>
+          „{closingNote}"
+        </p>
+      )}
+      <div className="rz-handoff">
+        <div className="rz-handoff-eyebrow">MOST JÖN · ALVÁS-ELŐKÉSZÍTÉS</div>
+        <div className="rz-handoff-steps">
+          <span>🌌 Lecsendesítés — képernyők le · {prepStartsAt}</span>
+          <span>🛏 Villanyoltás · {bedTime}</span>
+        </div>
+        <button className="rz-handoff-cta" onClick={onFinish}>Esti rutin indítása →</button>
+      </div>
+    </div>
+  )
+}

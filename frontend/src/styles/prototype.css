@@ -1967,3 +1967,51 @@ a.hab-link:hover { opacity: 0.85; }
 .sesc-cta { background: var(--amber-deep); color: var(--text-inverse); font: 700 12px/1 var(--ff-body);
             padding: 10px 16px; border-radius: 999px; }
 .sesc-quiet { font: 600 11.5px/1 var(--ff-body); color: var(--faint); padding: 10px 8px; }
+
+/* ===== Ritual — Napzárás full-screen flow (mezo-ilsj, spec §4) ===== */
+.rz-screen { position: absolute; inset: 0; display: flex; flex-direction: column; overflow-y: auto;
+  background: radial-gradient(120% 90% at 50% -10%, #2A2521 0%, #241f1c 55%, #1a1614 100%); color: #F5EFE6; z-index: 30; }
+.rz-top { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 0; }
+.rz-dots { display: flex; gap: 6px; }
+.rz-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(245,239,230,.18); }
+.rz-dot.on { background: var(--lav); }
+.rz-exit { background: none; border: 0; padding: 4px; color: rgba(245,239,230,.5); font-size: 15px; line-height: 1; }
+.rz-act { flex: 1; display: flex; flex-direction: column; padding: 0 20px 28px; }
+.rz-moon { width: 84px; height: 84px; border-radius: 50%; margin: 72px auto 0;
+  background: radial-gradient(circle at 34% 30%, #efe9dc 0%, #cfc4e2 55%, var(--lav) 100%);
+  box-shadow: 0 0 40px 6px rgba(171,159,210,.35); animation: rz-breath 4.2s ease-in-out infinite; }
+@keyframes rz-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+.rz-line1 { font-family: var(--ff-display); font-size: 24px; text-align: center; margin-top: 40px; }
+.rz-line2 { color: rgba(245,239,230,.55); text-align: center; margin-top: 8px; }
+.rz-cta { margin: 56px auto 0; padding: 13px 34px; border-radius: 999px; border: 0;
+  background: linear-gradient(120deg, var(--lav), var(--lav-deep)); color: #1d1927; font-weight: 700;
+  animation: rz-glowp 3s ease-in-out infinite; }
+@keyframes rz-glowp { 0%, 100% { box-shadow: 0 0 18px 2px rgba(171,159,210,.35); } 50% { box-shadow: 0 0 30px 8px rgba(171,159,210,.55); } }
+@keyframes rz-fall { 0% { opacity: 0; transform: translateY(0) rotate(0); } 8% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(520px) rotate(560deg); } }
+
+/* Release act (act 5): closing circle (np-draw reuse), companion note, evening handoff panel. */
+.rz-circle { display: block; margin: 56px auto 0; }
+.rz-ring { fill: none; stroke: var(--lav); stroke-width: 2.5; stroke-linecap: round;
+  stroke-dasharray: 264; stroke-dashoffset: 264; transform: rotate(-90deg); transform-origin: center;
+  animation: np-draw 2s var(--np-ease-ios) .3s forwards; }
+.rz-circle-moon { animation: rz-breath 4.2s ease-in-out infinite; transform-origin: center; }
+.rz-end { font-family: var(--ff-display); font-size: 19px; line-height: 1.35; text-align: center; margin: 28px 26px 0; }
+.rz-note { margin: 22px 4px 0; padding: 13px 14px; border-radius: 16px; background: rgba(245,239,230,.05);
+  font-style: italic; font-size: 12px; line-height: 1.55; }
+.rz-note-eyebrow { display: block; font-family: var(--ff-body); font-style: normal; font-size: 9.5px; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--lav); margin-bottom: 6px; }
+.rz-handoff { margin: 22px 4px 0; padding: 16px 14px; border-radius: 18px; background: rgba(245,239,230,.05); }
+.rz-handoff-eyebrow { font-family: var(--ff-body); font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--lav); }
+.rz-handoff-steps { display: flex; flex-direction: column; gap: 6px; margin-top: 10px;
+  font-family: var(--ff-body); font-size: 12.5px; line-height: 1.5; color: rgba(245,239,230,.9); }
+.rz-handoff-steps em { font-style: normal; color: var(--faint); font-size: 11px; }
+.rz-handoff-cta { margin-top: 14px; width: 100%; padding: 13px; border: 0; border-radius: 999px;
+  background: linear-gradient(120deg, var(--lav), var(--lav-deep)); color: #1d1927; font-weight: 700; font-size: 13px;
+  animation: rz-glowp 3s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .rz-moon, .rz-cta, .rz-ring, .rz-circle-moon, .rz-handoff-cta { animation: none; }
+  .rz-ring { stroke-dashoffset: 0; } /* np-draw is a one-shot reveal — freeze at "fully drawn", not hidden */
+}
