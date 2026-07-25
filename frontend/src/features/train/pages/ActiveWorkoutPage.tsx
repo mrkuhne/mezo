@@ -24,6 +24,7 @@ import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromP
 import { REGION_LABELS, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
+import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { GymExerciseInput, SetLogRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
 import {
@@ -1052,15 +1053,16 @@ function ActiveWorkoutSession({
           </button>
         </div>
 
-        {/* Engine rationale — rendered whenever the engine returns one, INDEPENDENT
-            of lastWeek: a first-ever workout (no lastWeek) still surfaces its
-            rationale (e.g. "Kezdő súly (anchor)" / "Első alkalom — add meg a súlyt"). */}
-        {current.rationale && (
+        {/* Progressive-overload signal (mezo-5pfe): the structured banner when the engine
+            emits a progression, else the plain rationale strip (first session / anchor). */}
+        {current.progression ? (
+          <ProgressionBanner progression={current.progression} lastWeek={current.lastWeek} />
+        ) : current.rationale ? (
           <div className="aistrip">
             <span aria-hidden="true">✨</span>
             <p>{current.rationale}</p>
           </div>
-        )}
+        ) : null}
 
         {/* Prescribed set list (spec §6): demoted to read-only status rows now that
             logging lives in the excard above — targets for pending sets, logged
