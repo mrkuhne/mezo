@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.PrescribedSet;
+import io.mrkuhne.mezo.api.dto.ProgressionSignal;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.service.Prescription;
 import io.mrkuhne.mezo.feature.train.service.SetRecommendationService;
@@ -27,7 +28,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         ex.setAnchorWeightKg(BigDecimal.valueOf(60));
         train.save(ex);
 
-        Prescription p = svc.prescribe(owner, ex);
+        Prescription p = svc.prescribe(owner, ex, false);
 
         // 2 warmup + 3 working; working weight = anchor 60
         assertThat(p.sets()).hasSize(5);
@@ -50,7 +51,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
         ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
 
-        Prescription p = svc.prescribe(owner, ex);
+        Prescription p = svc.prescribe(owner, ex, false);
 
         // base==null must NOT suppress warmups (mezo-eerq): the FE needs the warmup rows to label
         // B1/B2 and hide RIR — they simply carry a null target weight, like the working sets.
@@ -78,7 +79,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
             sets.add(train.set("working", BigDecimal.valueOf(80), 8, 0));
         });
 
-        Prescription p = svc.prescribe(owner, ex);
+        Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
     }
@@ -97,7 +98,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
             sets.add(train.set("working", BigDecimal.valueOf(80), 8, 0));
         });
 
-        Prescription p = svc.prescribe(owner, ex);
+        Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
     }
@@ -112,7 +113,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
             BigDecimal.valueOf(77.5), 8, 0);
 
-        Prescription p = svc.prescribe(owner, ex);
+        Prescription p = svc.prescribe(owner, ex, false);
 
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(82.5)); // 77.5 + 5
@@ -128,7 +129,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
             BigDecimal.valueOf(80), 7, 0); // 7 in [6,8) → hold
 
-        Prescription p = svc.prescribe(owner, ex);
+        Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(80));
     }
@@ -142,7 +143,7 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
         train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
             BigDecimal.valueOf(80), 4, 0); // 4 < 6 → -5
 
-        Prescription p = svc.prescribe(owner, ex);
+        Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(75));
     }
@@ -159,9 +160,73 @@ class SetRecommendationServiceIT extends AbstractIntegrationTest {
             sets.add(train.set("working", BigDecimal.valueOf(80), 8, 0));
         });
 
-        Prescription p = svc.prescribe(owner, ex);
+        Prescription p = svc.prescribe(owner, ex, false);
         var work = p.sets().stream().filter(s -> s.getKind() == PrescribedSet.KindEnum.WORKING).toList();
         assertThat(work.get(0).getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(85)); // 80 + 5
+    }
+
+    @Test
+    void testPrescribe_shouldEmitWeightSignal_whenLastTopSetHitRepMax() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
+            BigDecimal.valueOf(60), 8, 0); // repMax hit → +5 (compound)
+
+        Prescription p = svc.prescribe(owner, ex, false);
+
+        assertThat(p.progression()).isNotNull();
+        assertThat(p.progression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.WEIGHT);
+        assertThat(p.progression().getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(65));
+        assertThat(p.progression().getDeltaKg()).isEqualByComparingTo(BigDecimal.valueOf(5));
+    }
+
+    @Test
+    void testPrescribe_shouldEmitRepSignal_whenInRange() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
+            BigDecimal.valueOf(60), 7, 0); // 7 in [6,8) → build a rep
+
+        Prescription p = svc.prescribe(owner, ex, false);
+
+        assertThat(p.progression()).isNotNull();
+        assertThat(p.progression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.REP);
+        assertThat(p.progression().getDeltaReps()).isEqualTo(1);
+        assertThat(p.progression().getTargetReps()).isEqualTo(8);
+    }
+
+    @Test
+    void testPrescribe_shouldEmitNullSignal_whenNoHistoryAndNoAnchor() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+
+        Prescription p = svc.prescribe(owner, ex, false);
+
+        assertThat(p.progression()).isNull();
+        assertThat(p.rationale()).contains("Első alkalom");
+    }
+
+    @Test
+    void testPrescribe_shouldRegress_whenDeloadWeek() {
+        UUID owner = ownerId();
+        var meso = train.createActiveMeso(owner);
+        var day = train.createTemplateDay(owner, meso.getId(), "Kedd");
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        train.completedInstanceWithWorkingSet(owner, day.getId(), ex.getId(),
+            BigDecimal.valueOf(60), 8, 0);
+
+        Prescription p = svc.prescribe(owner, ex, true);
+
+        assertThat(p.progression()).isNotNull();
+        assertThat(p.progression().getLever()).isEqualTo(ProgressionSignal.LeverEnum.DELOAD);
+        assertThat(p.progression().getTargetWeightKg()).isEqualByComparingTo(BigDecimal.valueOf(55));
+        assertThat(p.progression().getDeltaKg().signum()).isNegative();
     }
 
     /** Find-or-create yields the demodata-seeded owner's id — the single-user principal. */

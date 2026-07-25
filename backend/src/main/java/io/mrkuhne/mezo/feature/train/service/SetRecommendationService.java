@@ -1,9 +1,12 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.PrescribedSet;
+import io.mrkuhne.mezo.api.dto.ProgressionSignal;
 import io.mrkuhne.mezo.feature.train.config.HypertrophyProperties;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
+import io.mrkuhne.mezo.feature.train.service.ProgressionDecider.Decision;
+import io.mrkuhne.mezo.feature.train.service.ProgressionDecider.RefSet;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -25,35 +28,49 @@ public class SetRecommendationService {
     private final ExerciseHistoryResolver historyResolver;
     private final HypertrophyProperties props;
 
-    public Prescription prescribe(UUID createdBy, ExerciseEntity ex) {
+    public Prescription prescribe(UUID createdBy, ExerciseEntity ex, boolean deloadWeek) {
         ExerciseSetEntity ref = referenceWorkingSet(createdBy, ex);
         BigDecimal base;
+        int workingReps;
         String rationale;
+        ProgressionSignal progression;
 
         if (ref != null && ref.getWeightKg() != null) {
-            int rp = ref.getReps();
             BigDecimal inc = props.increment().getOrDefault(ex.getType(), props.defaultIncrement());
-            BigDecimal w = ref.getWeightKg();
-            if (rp >= ex.getRepMax()) {
-                base = w.add(inc);
-                rationale = "Múlt hét " + rp + " × " + strip(w) + " kg → +" + strip(inc) + " kg";
-            } else if (rp < ex.getRepMin()) {
-                base = w.subtract(inc);
-                rationale = "Múlt hét " + rp + " rep a cél alatt → −" + strip(inc) + " kg";
-            } else {
-                base = w;
-                rationale = "Múlt hét " + rp + " rep a tartományban → súly tart, cél +1 rep";
-            }
-            base = roundClamp(base);
+            Decision d = ProgressionDecider.decide(
+                new RefSet(ref.getWeightKg(), ref.getReps(), ref.getRir()),
+                ex.getRepMin(), ex.getRepMax(), ex.getTargetRir(), inc, props.plateStep(), deloadWeek);
+            base = d.base();
+            workingReps = d.workingReps();
+            rationale = d.rationale();
+            progression = ProgressionSignal.builder()
+                .lever(ProgressionSignal.LeverEnum.fromValue(d.lever().name().toLowerCase()))
+                .deltaKg(d.deltaKg())
+                .deltaReps(d.deltaReps())
+                .targetWeightKg(d.base())
+                .targetReps(d.workingReps())
+                .rationale(d.rationale())
+                .build();
         } else if (ref != null) {
             base = null; // weightless history (plyo/bodyweight)
+            workingReps = Math.min(ref.getReps() + 1, ex.getRepMax());
             rationale = "Testsúlyos — ismétlésre progresszálunk";
+            progression = ProgressionSignal.builder()
+                .lever(ProgressionSignal.LeverEnum.REP)
+                .deltaReps(1)
+                .targetReps(workingReps)
+                .rationale(rationale)
+                .build();
         } else if (ex.getAnchorWeightKg() != null) {
             base = roundClamp(ex.getAnchorWeightKg());
+            workingReps = ex.getRepMax();
             rationale = "Kezdő súly (anchor)";
+            progression = null;
         } else {
             base = null;
+            workingReps = ex.getRepMax();
             rationale = "Első alkalom — add meg a súlyt";
+            progression = null;
         }
 
         List<PrescribedSet> sets = new ArrayList<>();
@@ -72,11 +89,11 @@ public class SetRecommendationService {
             sets.add(PrescribedSet.builder()
                 .kind(PrescribedSet.KindEnum.WORKING)
                 .targetWeightKg(base)
-                .targetReps(ex.getRepMax())
+                .targetReps(workingReps)
                 .targetRIR(ex.getTargetRir())
                 .build());
         }
-        return new Prescription(sets, rationale);
+        return new Prescription(sets, rationale, progression);
     }
 
     /**
@@ -97,9 +114,5 @@ public class SetRecommendationService {
         BigDecimal step = props.plateStep();
         BigDecimal rounded = x.divide(step, 0, RoundingMode.HALF_UP).multiply(step);
         return rounded.max(BigDecimal.ZERO).min(BigDecimal.valueOf(999));
-    }
-
-    private String strip(BigDecimal x) {
-        return x.stripTrailingZeros().toPlainString();
     }
 }

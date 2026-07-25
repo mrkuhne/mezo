@@ -38,12 +38,11 @@ class ProgressionDeciderTest {
     }
 
     @Test
-    void decide_shouldHold_whenInRangeOnTargetRir() {
-        Decision d = ProgressionDecider.decide(ref("62.5", 7, 2), 6, 10, 2, INC, STEP, false);
+    void decide_shouldHold_whenInRangeAndGrind() {
+        Decision d = ProgressionDecider.decide(ref("62.5", 7, 0), 6, 10, 2, INC, STEP, false);
         assertThat(d.lever()).isEqualTo(Lever.HOLD);
         assertThat(d.base()).isEqualByComparingTo("62.5");
         assertThat(d.workingReps()).isEqualTo(7);
-        assertThat(d.deltaReps()).isNull();
     }
 
     @Test
@@ -72,9 +71,10 @@ class ProgressionDeciderTest {
 
     @Test
     void decide_shouldTreatNullRirAsNeutral() {
-        // reps in range, rir unknown → slack 0 → hold (never fabricate an "easy" bump)
+        // null rir → slack 0 (neutral) → default double-progression rep build, never a fabricated jump
         Decision d = ProgressionDecider.decide(ref("62.5", 7, null), 6, 10, 2, INC, STEP, false);
-        assertThat(d.lever()).isEqualTo(Lever.HOLD);
+        assertThat(d.lever()).isEqualTo(Lever.REP);
+        assertThat(d.workingReps()).isEqualTo(8);
     }
 
     @Test

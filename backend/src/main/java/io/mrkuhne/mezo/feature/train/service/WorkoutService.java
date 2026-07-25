@@ -160,7 +160,9 @@ public class WorkoutService {
                     t.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
                 }
                 if (hypertrophyGate.getIfAvailable() != null) {
-                    Prescription p = setRecommendationService.prescribe(createdBy, e);
+                    // TODO(mezo-5pfe follow-up): wire real deload-week detection (meso phase
+                    // curve / current week) through instead of this hardcoded false.
+                    Prescription p = setRecommendationService.prescribe(createdBy, e, false);
                     t.setPrescribedSets(p.sets());
                     t.setRationale(p.rationale());
                 }

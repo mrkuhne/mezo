@@ -39,16 +39,16 @@ public final class ProgressionDecider {
                 "Múlt hét " + rp + "×" + strip(w) + " kg a tartomány tetején → +" + strip(inc) + " kg");
         }
         if (rp >= repMin) {
-            if (slack >= 1) {
-                int reps = Math.min(rp + 1, repMax);
-                return new Decision(Lever.REP, w, reps, null, 1,
-                    "Múlt hét könnyen ment (RIR " + rir + ") → +1 rep");
+            if (slack < 0) { // grind: hit reps but harder than planned → consolidate
+                return new Decision(Lever.HOLD, w, rp, null, null,
+                    "Múlt hét RIR " + rir + " a cél alatt → tartás, konszolidálás");
             }
-            return new Decision(Lever.HOLD, w, rp, null, null,
-                "Múlt hét RIR " + rir + " a célon → tartás, konszolidálás");
+            int reps = Math.min(rp + 1, repMax); // double progression: build reps toward the top
+            return new Decision(Lever.REP, w, reps, null, 1,
+                "Múlt hét " + rp + " rep a tartományban → +1 rep");
         }
         // rp < repMin
-        if (slack < 0) {
+        if (slack <= 0) { // too heavy AND at/over target effort → drop load
             BigDecimal base = round(w.subtract(inc), plateStep);
             return new Decision(Lever.WEIGHT, base, repMin, inc.negate(), null,
                 "Múlt hét " + rp + " rep a cél alatt, grind → −" + strip(inc) + " kg");
