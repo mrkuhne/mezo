@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { afterEach, expect, test, vi } from 'vitest'
@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { trainApi } from '@/data/train/trainApi'
 import { MesocyclePlannerPage } from '@/features/train/pages/MesocyclePlannerPage'
 
 afterEach(() => vi.unstubAllEnvs())
@@ -50,6 +51,7 @@ test('the wizard persists the mesocycle in real mode and lands on the library', 
     }),
   )
   const user = userEvent.setup()
+  const putSpy = vi.spyOn(trainApi, 'replaceGymSchedule')
   const router = createMemoryRouter(routes, { initialEntries: ['/train/mesocycles/new'] })
   render(
     <QueryWrapper>
@@ -80,6 +82,12 @@ test('the wizard persists the mesocycle in real mode and lands on the library', 
   expect(posted!.startDate).toBe('2026-06-16')
   expect(posted!.weeks).toBeGreaterThan(0)
   expect(posted!.days).toHaveLength(7) // all template days travel, rest days included
+  // the planner also persists the standing gym schedule (mezo-4t43): one slot per selected day
+  await waitFor(() => expect(putSpy).toHaveBeenCalled())
+  const savedSlots = putSpy.mock.calls[0][0]
+  expect(savedSlots).toHaveLength(5) // Hypertrophy: 5 selected days, each carries a time
+  expect(savedSlots.every((s) => /^\d{2}:\d{2}$/.test(s.time))).toBe(true)
+  putSpy.mockRestore()
   // navigation: back on the (empty) library
   await waitFor(() => expect(screen.getByText(/Még nincs mesociklusod/i)).toBeInTheDocument())
 })
@@ -102,6 +110,37 @@ test('step 2 weekday picker: defaults match the split, Tovább gates on exact co
   // Select Szo instead -> gate opens again
   await user.click(screen.getByRole('button', { name: 'Szo' }))
   expect(screen.getByRole('button', { name: 'Tovább →' })).toBeEnabled()
+})
+
+test('step 2 shows a time input per selected day — standing slot prefills, others default 18:00', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true') // gymScheduleMock (Kedd + Csü 18:30) is the deterministic source
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
+  // Hypertrophy defaults: Hét..Pén selected -> one time input each
+  expect((screen.getByLabelText('Hét időpont') as HTMLInputElement).value).toBe('18:00') // no slot -> default
+  expect((screen.getByLabelText('Kedd időpont') as HTMLInputElement).value).toBe('18:30') // gymScheduleMock slot
+  expect((screen.getByLabelText('Csü időpont') as HTMLInputElement).value).toBe('18:30') // gymScheduleMock slot
+  // an unselected day has no time row
+  expect(screen.queryByLabelText('Szo időpont')).toBeNull()
+  // toggling the day set updates the rows: Pén off, Szo on
+  await user.click(screen.getByRole('button', { name: 'Pén' }))
+  expect(screen.queryByLabelText('Pén időpont')).toBeNull()
+  await user.click(screen.getByRole('button', { name: 'Szo' }))
+  expect(screen.getByLabelText('Szo időpont')).toBeInTheDocument()
+})
+
+test('editing a day time does not gate Tovább (time is optional)', async () => {
+  const user = userEvent.setup()
+  setup()
+  await user.click(screen.getByText('Hypertrophy'))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább →' })) // -> step 2
+  fireEvent.change(screen.getByLabelText('Hét időpont'), { target: { value: '06:30' } })
+  expect((screen.getByLabelText('Hét időpont') as HTMLInputElement).value).toBe('06:30')
+  expect(screen.getByRole('button', { name: 'Tovább →' })).toBeEnabled() // still gated only on day-count
 })
 
 test('the generated program lands on the selected weekdays', async () => {
