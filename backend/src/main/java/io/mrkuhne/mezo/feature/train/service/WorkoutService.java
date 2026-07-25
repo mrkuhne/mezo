@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.ExerciseSetResponse;
 import io.mrkuhne.mezo.api.dto.LastWeekRef;
+import io.mrkuhne.mezo.api.dto.OverloadSummary;
 import io.mrkuhne.mezo.api.dto.SetLogRequest;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
@@ -148,29 +149,52 @@ public class WorkoutService {
         // redirect, so it stays null for custom-origin days (mezo-ws2x D4).
         WorkoutSessionEntity completedToday =
             "custom".equals(day.getOrigin()) ? null : completedThisWeek(createdBy, day.getId());
+        // Deload-week detection (mezo-5pfe): the active meso's phaseCurve[currentWeek], bound-checked
+        // since currentWeek can point past the curve (e.g. the default test meso: currentWeek=3 over
+        // a 3-element curve) — out-of-bounds resolves to non-deload rather than throwing.
+        boolean deloadWeek = activeMeso != null
+            && activeMeso.getPhaseCurve() != null
+            && activeMeso.getCurrentWeek() >= 0
+            && activeMeso.getCurrentWeek() < activeMeso.getPhaseCurve().size()
+            && "Deload".equalsIgnoreCase(activeMeso.getPhaseCurve().get(activeMeso.getCurrentWeek()));
+        int weightUp = 0;
+        int repUp = 0;
+        int hold = 0;
+        List<TodayExercise> mapped = new ArrayList<>();
+        for (ExerciseEntity e : exercises) {
+            TodayExercise t = mapper.toTodayExercise(e);
+            t.setLastWeek(lastWeek.get(e.getId()));
+            if (e.getCatalogId() != null) {
+                t.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
+            }
+            if (hypertrophyGate.getIfAvailable() != null) {
+                Prescription p = setRecommendationService.prescribe(createdBy, e, deloadWeek);
+                t.setPrescribedSets(p.sets());
+                t.setRationale(p.rationale());
+                t.setProgression(p.progression());
+                if (p.progression() != null) {
+                    switch (p.progression().getLever()) {
+                        case WEIGHT -> weightUp++;
+                        case REP -> repUp++;
+                        default -> hold++; // HOLD, DELOAD
+                    }
+                }
+            }
+            mapped.add(t);
+        }
+        OverloadSummary overloadSummary = hypertrophyGate.getIfAvailable() != null
+            ? OverloadSummary.builder().weightUp(weightUp).repUp(repUp).hold(hold).build()
+            : null;
         return WorkoutTodayResponse.builder()
             .templateSessionId(day.getId())
             .dayLabel(day.getDayLabel())
             .title(day.getType())
             .durationEst(day.getDurationEst())
-            .exercises(exercises.stream().map(e -> {
-                TodayExercise t = mapper.toTodayExercise(e);
-                t.setLastWeek(lastWeek.get(e.getId()));
-                if (e.getCatalogId() != null) {
-                    t.setVideoUrl(videoByCatalog.get(e.getCatalogId()));
-                }
-                if (hypertrophyGate.getIfAvailable() != null) {
-                    // TODO(mezo-5pfe follow-up): wire real deload-week detection (meso phase
-                    // curve / current week) through instead of this hardcoded false.
-                    Prescription p = setRecommendationService.prescribe(createdBy, e, false);
-                    t.setPrescribedSets(p.sets());
-                    t.setRationale(p.rationale());
-                }
-                return t;
-            }).toList())
+            .exercises(mapped)
             .openWorkout(open != null ? toInstanceResponse(createdBy, open) : null)
             .completedWorkout(completedToday != null ? toInstanceResponse(createdBy, completedToday) : null)
             .weekDoneDates(weekDoneDates)
+            .overloadSummary(overloadSummary)
             .build();
     }
 
