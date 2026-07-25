@@ -30,8 +30,8 @@ Two halves, one slice:
 | # | Decision |
 |---|---|
 | D1 | **One window formula everywhere:** morning-training window = **[wake + 60′, wake + 6h]**, wake from the sleep anchor (`useSleepGoal()` on the FE, `SleepAnchorPort` on the BE). `wake + 6h` reproduces the current static 12:00 at the 06:00 config-ghost wake — zero behavior change until a goal is saved. |
-| D2 | **BE:** the `mezo.habit.workout-cutoff: "12:00"` yml key + `HabitProperties.workoutCutoff` are **removed**; new `mezo.habit.workout-window-hours: 6`. `HabitEvaluator` M5 (`morning_workout`) cutoff = anchor wake + window-hours — the `mezo-53su` CaffeineCutoffPort precedent (static key out, anchor-derived value in). The 60′ start offset is FE-only (the `buildDayPlan` "reggeli = wake+45" idiom); the habit metric needs only the cutoff. |
-| D3 | **FE nudge:** new `MorningTrainingCard` on `TrainTodayPage` + pure logic in `features/train/logic/morningWindow.ts`. The anchor always exists (`GET /api/sleep/goal` never 404s), so the card shows iff ≥1 gym slot's time falls outside the window. Gentle identity-vote copy (ADR 0010 — no red, no guilt). Lists offending slots („Kedd 18:00 → 07:00", target = window start), one CTA applies all moves via the existing `saveGymSchedule` replace-all `PUT /api/train/gym-schedule`. |
+| D2 | **BE:** the `mezo.habit.workout-cutoff: "12:00"` yml key + `HabitProperties.workoutCutoff` are **removed**; new `mezo.habit.workout-window-hours: 6`. `HabitEvaluator` M5 (`morning_workout`) cutoff = anchor wake + window-hours — the `mezo-53su` CaffeineCutoffPort precedent (static key out, anchor-derived value in). The cutoff binds exactly where the static one did: the **run branch** of `training_done_today` (a run log's `created_at` before the cutoff); the gym branch stays timestamp-less **date-presence** (the evaluator's honest-fallback contract). The 60′ start offset is FE-only (the `buildDayPlan` "reggeli = wake+45" idiom); the habit metric needs only the cutoff. |
+| D3 | **FE nudge:** new `MorningTrainingCard` on `TrainTodayPage` + pure logic in `features/train/logic/morningWindow.ts`. The anchor always exists (`GET /api/sleep/goal` never 404s), so the card shows iff ≥1 gym slot's time falls **after the window end** — a slot *earlier* than the window start is still morning training and is never nudged. The logic reads the raw `gymSlots` (`GymScheduleSlot { dayOfWeek, time }` — the exact shape the PUT takes), not the derived weekly agenda. Gentle identity-vote copy (ADR 0010 — no red, no guilt). Lists offending slots („Kedd 18:30 → 07:45", target = window start), one CTA applies all moves via the existing `saveGymSchedule` replace-all `PUT /api/train/gym-schedule`. |
 | D4 | **Dismiss = content-keyed snooze, not time-keyed:** „Maradjon így" writes a localStorage key holding a hash of (wake anchor + offending slot list). The card returns only when the schedule or the wake changes — never on a timer. |
 | D5 | **Sport slots untouched.** The rec is about gym training; volleyball/TRX slots are team-scheduled and not the user's to move. Only `gym_schedule_slot` rows are evaluated/moved. |
 | D6 | **Seed = demodata, which runs in prod:** a new idempotent seed (the `PantryCatalogLoader` pattern) with a **by-name guard** (the prod shelf is curated — the loader's "empty shelf" guard would never fire). Seeds (a) the two stim `pantry_item`s if absent by name, (b) an **active protocol** containing both **only if the owner has no active protocol** — an existing protocol is never touched (protocol curation stays a Stack-UI decision). The live k3s DB gets the rows on the next deploy; no manual data entry. |
@@ -49,8 +49,10 @@ goal wake 05:30   →  06:30 – 11:30
 
 - `morningWindow.ts` exports the window computation + the offending-slot filter as pure
   functions over `(wake: string, slots: GymScheduleSlot[])` — unit-testable, no hook coupling.
+  Offending = `slot.time > window.end` (HH:mm strings compare lexicographically); earlier-than-start
+  slots pass.
 - The card's one-tap builds the full replacement slot list: offending slots get the window-start
-  time (same weekday), in-window slots pass through unchanged → one `saveGymSchedule` call.
+  time (same weekday), non-offending slots pass through unchanged → one `saveGymSchedule` call.
 - **Mock mode:** `saveGymSchedule` is a no-op in mock, so the card's apply additionally updates
   the `['train','gymSchedule']` query cache (the D9 mock-parity idiom — the habit manual-check
   precedent), keeping the flow demonstrable end-to-end on the mock FE.
@@ -73,10 +75,12 @@ Both: `kind='stim'`, caffeine-flagged, real dose/form strings; seeded protocol =
 
 ## 5. Tests
 
-- **BE (focused ITs, the OOM-safe local gate):** M5 with a saved goal (wake 05:00 → a session
-  finished 11:30 does **not** complete; finished 10:30 does); ghost-wake back-compat (no goal →
-  cutoff 12:00, exactly today's behavior); seed idempotency (second run: no duplicate items, an
-  existing active protocol untouched, by-name guard holds when one item pre-exists).
+- **BE (focused ITs, the OOM-safe local gate):** M5 via the **run branch** with a saved goal
+  (wake 05:00 → a run logged 11:30 does **not** complete; logged 10:30 does — `created_at`
+  backdated via the `WeightLogPopulator.createWeightLogAt` native-update idiom); ghost-wake
+  back-compat (no goal → cutoff 12:00, exactly today's behavior); gym date-presence unchanged;
+  seed idempotency (second run: no duplicate items, an existing active protocol untouched,
+  by-name guard holds when one item pre-exists).
 - **FE (both modes):** `morningWindow` pure-function tests (window math, offending filter,
   replacement-list builder); card tests — hidden when all slots in-window, shown + apply calls
   `saveGymSchedule` with the moved list, snooze hides + schedule/wake change re-shows.
