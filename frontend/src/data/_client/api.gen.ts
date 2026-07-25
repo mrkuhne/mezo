@@ -2443,6 +2443,8 @@ export interface components {
             completedWorkout?: components["schemas"]["WorkoutInstanceResponse"];
             /** @description ISO dates within the current Mon–Sun week that have a COMPLETED gym workout instance (explicit finish). Drives the Mai gym done-state (today) and the weekly-row done chips (past days). Present even on rest days and when today is not a gym day. */
             weekDoneDates?: string[];
+            /** @description Day-level overload summary; null when hypertrophy-drive is off. */
+            overloadSummary?: components["schemas"]["OverloadSummary"] | null;
         };
         TodayExercise: {
             /** Format: uuid */
@@ -2467,6 +2469,8 @@ export interface components {
             prescribedSets?: components["schemas"]["PrescribedSet"][] | null;
             /** @description Short HU explanation of the recommendation (e.g. "Múlt hét 8 × 77.5 kg → +2.5 kg") */
             rationale?: string | null;
+            /** @description RIR-aware overload recommendation; null on first session / switch off. */
+            progression?: components["schemas"]["ProgressionSignal"] | null;
         };
         PrescribedSet: {
             /** @enum {string} */
@@ -2474,6 +2478,28 @@ export interface components {
             targetWeightKg?: number | null;
             targetReps: number;
             targetRIR?: number | null;
+        };
+        /** @description Per-exercise progressive-overload recommendation for TODAY vs the last completed session. Null when there is no meaningful progression (first session / no history) — the FE then shows the start-weight pill instead of the banner. */
+        ProgressionSignal: {
+            /**
+             * @description Which lever moved — weight up/down, rep build, hold/consolidate, or deload back-off.
+             * @enum {string}
+             */
+            lever: "weight" | "rep" | "hold" | "deload";
+            /** @description Signed kg change vs last week (+ up, − deload/back-off); null on rep/hold. */
+            deltaKg?: number | null;
+            /** @description Rep-target change vs last week (e.g. +1); null on weight/hold/deload. */
+            deltaReps?: number | null;
+            targetWeightKg?: number | null;
+            targetReps: number;
+            /** @description Short HU explanation (e.g. "Múlt hét könnyen ment (RIR 3) → +1 rep"). */
+            rationale: string;
+        };
+        /** @description Day-level count of how many exercises move via each lever (PrepHero chip). */
+        OverloadSummary: {
+            weightUp: number;
+            repUp: number;
+            hold: number;
         };
         /** @description Top set of the previous completed instance of the same template day */
         LastWeekRef: {

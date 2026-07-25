@@ -5849,6 +5849,11 @@ components:
           items:
             type: string
             format: date
+        overloadSummary:
+          allOf:
+            - $ref: '#/components/schemas/OverloadSummary'
+          nullable: true
+          description: Day-level overload summary; null when hypertrophy-drive is off.
     TodayExercise:
       type: object
       required:
@@ -5917,6 +5922,13 @@ components:
           description: >-
             Short HU explanation of the recommendation (e.g. "Múlt hét 8 × 77.5
             kg → +2.5 kg")
+        progression:
+          allOf:
+            - $ref: '#/components/schemas/ProgressionSignal'
+          nullable: true
+          description: >-
+            RIR-aware overload recommendation; null on first session / switch
+            off.
     PrescribedSet:
       type: object
       required:
@@ -5936,6 +5948,66 @@ components:
         targetRIR:
           type: integer
           nullable: true
+    ProgressionSignal:
+      type: object
+      description: >-
+        Per-exercise progressive-overload recommendation for TODAY vs the last
+        completed session. Null when there is no meaningful progression (first
+        session / no history) — the FE then shows the start-weight pill instead
+        of the banner.
+      required:
+        - lever
+        - targetReps
+        - rationale
+      properties:
+        lever:
+          type: string
+          enum:
+            - weight
+            - rep
+            - hold
+            - deload
+          description: >-
+            Which lever moved — weight up/down, rep build, hold/consolidate, or
+            deload back-off.
+        deltaKg:
+          type: number
+          nullable: true
+          description: >-
+            Signed kg change vs last week (+ up, − deload/back-off); null on
+            rep/hold.
+        deltaReps:
+          type: integer
+          nullable: true
+          description: >-
+            Rep-target change vs last week (e.g. +1); null on
+            weight/hold/deload.
+        targetWeightKg:
+          type: number
+          nullable: true
+        targetReps:
+          type: integer
+        rationale:
+          type: string
+          description: >-
+            Short HU explanation (e.g. "Múlt hét könnyen ment (RIR 3) → +1
+            rep").
+    OverloadSummary:
+      type: object
+      description: >-
+        Day-level count of how many exercises move via each lever (PrepHero
+        chip).
+      required:
+        - weightUp
+        - repUp
+        - hold
+      properties:
+        weightUp:
+          type: integer
+        repUp:
+          type: integer
+        hold:
+          type: integer
     LastWeekRef:
       type: object
       description: Top set of the previous completed instance of the same template day
