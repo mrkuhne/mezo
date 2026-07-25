@@ -219,7 +219,11 @@ export interface UserMeta {
   memberDays: number
   streakDays: number
 }
-export interface TodayScenario { dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean }
+export interface TodayScenario {
+  dayState: DayState; retaDay: number; niggle: boolean; vulnerable: boolean; anchorMode: boolean
+  /** `?ritual=` demo override (mezo-ilsj) — wins over RitualCard's derived waiting/open/done state. */
+  ritual: 'waiting' | 'open' | 'done' | null
+}
 
 // --- Pantry (Kamra) + Recipes (Receptek) ---
 export interface PantryCategoryMeta { label: string; color: string }
@@ -903,6 +907,10 @@ export interface IntentionDay {
   reflection: Reflection | null
   focusCap: number
 }
+
+// ── Daily closing ritual — sleep-anchored evening window (R3, mezo-ilsj) ────
+export interface RitualWindow { opensAt: string; prepStartsAt: string; bedTime: string }
+export interface RitualDay { date: string; closed: boolean; closedAt: string | null; window: RitualWindow }
 
 // ── Activity log (gamified growth E2, mezo-jzca) ─────────────────────────────
 export type LifeSkillKey =

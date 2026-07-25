@@ -43,3 +43,7 @@ test('the tab bar hides on the full-screen active-workout session (mezo-8141)', 
   const { container } = renderApp('/train/session')
   expect(container.querySelector('.tab-bar')).toBeNull()
 })
+test('the tab bar hides on the full-screen Napzárás ritual flow (mezo-ilsj)', () => {
+  const { container } = renderApp('/ritual')
+  expect(container.querySelector('.tab-bar')).toBeNull()
+})

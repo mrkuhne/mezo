@@ -22,13 +22,21 @@ const wrap = (path: string) => ({ children }: { children: ReactNode }) => {
 
 afterEach(() => vi.unstubAllEnvs())
 
-test('useTodayScenario defaults: medium, retaDay 3, niggle on, vulnerable off, not anchor', () => {
+test('useTodayScenario defaults: medium, retaDay 3, niggle on, vulnerable off, not anchor, no ritual override', () => {
   const { result } = renderHook(() => useTodayScenario(), { wrapper: wrap('/today') })
-  expect(result.current).toEqual({ dayState: 'medium', retaDay: 3, niggle: true, vulnerable: false, anchorMode: false })
+  expect(result.current).toEqual({ dayState: 'medium', retaDay: 3, niggle: true, vulnerable: false, anchorMode: false, ritual: null })
 })
 test('useTodayScenario parses params: rough → anchor, overrides', () => {
   const { result } = renderHook(() => useTodayScenario(), { wrapper: wrap('/today?day=rough&niggle=off&vulnerable=on&retaDay=6') })
-  expect(result.current).toEqual({ dayState: 'rough', retaDay: 6, niggle: false, vulnerable: true, anchorMode: true })
+  expect(result.current).toEqual({ dayState: 'rough', retaDay: 6, niggle: false, vulnerable: true, anchorMode: true, ritual: null })
+})
+test('useTodayScenario ?ritual= is whitelist-validated (mirrors the day/dayState idiom): valid values pass through, anything else falls back to null', () => {
+  const valid = (v: string) => renderHook(() => useTodayScenario(), { wrapper: wrap(`/today?ritual=${v}`) }).result.current.ritual
+  expect(valid('waiting')).toBe('waiting')
+  expect(valid('open')).toBe('open')
+  expect(valid('done')).toBe('done')
+  expect(valid('bogus')).toBeNull()
+  expect(renderHook(() => useTodayScenario(), { wrapper: wrap('/today') }).result.current.ritual).toBeNull()
 })
 
 test('useTodayScenario (real mode): retaDay derives from useMedication().cycle.retaDay', async () => {

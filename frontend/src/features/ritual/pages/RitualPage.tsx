@@ -1,0 +1,100 @@
+import { useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrivalStep } from '@/features/ritual/components/ArrivalStep'
+import { DayStoryStep } from '@/features/ritual/components/DayStoryStep'
+import { HarvestStep } from '@/features/ritual/components/HarvestStep'
+import { LoopsStep } from '@/features/ritual/components/LoopsStep'
+import { ReleaseStep } from '@/features/ritual/components/ReleaseStep'
+import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
+import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
+import { localDateString } from '@/shared/lib/dates'
+import { useCheckins, useDayRecap, useHabitActions, useRitualActions, useRitualDay } from '@/data/hooks'
+
+const ACT_COUNT = 5
+
+/**
+ * Full-screen Napzárás flow (/ritual, spec §4, mezo-ilsj) — a 5-act state machine over a
+ * forced-dark surface (train/session idiom: AppLayout hides the tab bar for this route).
+ * Nothing writes anything before act 4 — the ✕ exit is consequence-free at any point up to
+ * there. Entering act 4 (Task 6) is the one write in the whole flow: a `closedRef` guard
+ * fires `useRitualActions(date).close()` exactly once, then silently drops any habit
+ * levelUps accrued earlier today (see the effect below) — the Harvest stage IS the
+ * celebration, so the global LevelUpProvider overlay must never fire a second one on /today.
+ *
+ * Act 3 (LoopsStep) only SIGNALS (onOpenCheckIn/onOpenJournal) — the reused sheets
+ * (CheckInSheet, ActivityLogSheet) are mounted HERE, at the page level, exactly like
+ * TodayPage.tsx mounts CheckInSheet (TodayPage.tsx:37-42/76-83): this page keeps its own
+ * `useCheckins` + the same next-open-slot `findIndex` predicate so it can resolve
+ * onOpenCheckIn to a concrete slot index without LoopsStep needing to know or pass it.
+ */
+export function RitualPage() {
+  const navigate = useNavigate()
+  const date = localDateString()
+  const { data } = useRitualDay(date)
+  const { closingNote } = useDayRecap(date)
+  const { checkins, saveCheckIn } = useCheckins()
+  const { close } = useRitualActions(date)
+  const { consumeLevelUps } = useHabitActions(date)
+  const [act, setAct] = useState(1)
+  const [checkInIdx, setCheckInIdx] = useState<number | null>(null)
+  const [journalOpen, setJournalOpen] = useState(false)
+
+  const nextCheckinIdx = checkins.findIndex((c) => c.state === 'now' || c.state === 'pending')
+
+  const closedRef = useRef(false)
+  useEffect(() => {
+    if (act === 4 && !closedRef.current) {
+      closedRef.current = true
+      close().then(() => {
+        // The Harvest act (HarvestStep, Task 6) already displays today's XP/coins/streak as
+        // the ritual's own celebration — consume (silently drop) any habit levelUps sitting
+        // in the cache so RoutineCard's effect doesn't fire the global LevelUpScreen a
+        // second time once the user lands back on /today.
+        consumeLevelUps()
+      })
+    }
+  }, [act, close, consumeLevelUps])
+
+  return (
+    <div className="rz-screen">
+      <div className="rz-top">
+        <div className="rz-dots" aria-hidden="true">
+          {Array.from({ length: ACT_COUNT }, (_, i) => (
+            <span key={i} className={i < act ? 'rz-dot on' : 'rz-dot'} />
+          ))}
+        </div>
+        <button className="rz-exit" aria-label="Kilépés" onClick={() => navigate('/today')}>✕</button>
+      </div>
+
+      {act === 1 && <ArrivalStep onNext={() => setAct(2)} />}
+      {act === 2 && <DayStoryStep onNext={() => setAct(3)} />}
+      {act === 3 && (
+        <LoopsStep
+          onNext={() => setAct(4)}
+          onOpenCheckIn={() => setCheckInIdx(nextCheckinIdx)}
+          onOpenJournal={() => setJournalOpen(true)}
+        />
+      )}
+      {act === 4 && <HarvestStep onNext={() => setAct(5)} />}
+      {act === 5 && (
+        <ReleaseStep
+          prepStartsAt={data.window.prepStartsAt}
+          bedTime={data.window.bedTime}
+          closingNote={closingNote}
+          onFinish={() => navigate('/today')}
+        />
+      )}
+
+      {/* checkInIdx >= 0 guards a -1 findIndex miss (nextCheckinIdx) from rendering CheckInSheet with an undefined slot. */}
+      {checkInIdx !== null && checkInIdx >= 0 && (
+        <CheckInSheet
+          slot={checkins[checkInIdx]}
+          slotIdx={checkInIdx}
+          onClose={() => setCheckInIdx(null)}
+          onSave={(data) => saveCheckIn(checkInIdx, data)}
+        />
+      )}
+      {journalOpen && <ActivityLogSheet onClose={() => setJournalOpen(false)} />}
+    </div>
+  )
+}

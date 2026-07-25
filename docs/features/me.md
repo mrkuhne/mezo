@@ -119,7 +119,7 @@ Header is `.pghead-np lav` (over `Me · Tudás` / **h1 `Tudásgráf`** — copy 
 
 ## 3. Architecture & data flow
 
-The single FE↔data boundary is **`frontend/src/data/hooks.ts`**. Each hook branches on `isMockMode()` (`frontend/src/data/_client/mode.ts` — `import.meta.env.VITE_USE_MOCK !== 'false'`, **default mock**). Views import only from `@/data/hooks`, never deeper. (The barrel is app-wide shared — other domains' re-export additions, e.g. the `mezo-cd8s` train review hooks, move this key_file without changing anything Me consumes.)
+The single FE↔data boundary is **`frontend/src/data/hooks.ts`**. Each hook branches on `isMockMode()` (`frontend/src/data/_client/mode.ts` — `import.meta.env.VITE_USE_MOCK !== 'false'`, **default mock**). Views import only from `@/data/hooks`, never deeper. (The barrel is app-wide shared — other domains' re-export additions, e.g. the `mezo-cd8s` train review hooks or, most recently, the `mezo-ilsj` ritual/recap hooks, move this key_file without changing anything Me consumes.)
 
 ```
 WeightPage ─ useWeight() ┬─ mock:  initialWeightLog + mockWeightTrends (initialData, sync)
