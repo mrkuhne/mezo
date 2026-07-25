@@ -46,7 +46,7 @@ class CatalogVideoResolutionIT extends AbstractIntegrationTest {
         MesocycleEntity meso = train.createActiveMeso(owner);
         String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
         WorkoutSessionEntity day = train.createTemplateDay(owner, meso.getId(), todayLabel);
-        UUID catalogId = catalogWithVideo(owner, "Fekvenyomás", "chest", "compound", BENCH_VIDEO);
+        UUID catalogId = catalogWithVideo(owner, "Fekvenyomás", "chest-mid", "compound", BENCH_VIDEO);
         ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", 0, "chest", "compound", catalogId);
         ex.setAnchorWeightKg(BigDecimal.valueOf(60));
         train.save(ex);

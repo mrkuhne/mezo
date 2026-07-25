@@ -5,11 +5,24 @@ import type {
 import type { IconName } from '@/shared/ui/Icon'
 
 // --- label / colour maps (mesocycles.jsx module constants) ---
+// The 21 live per-exercise tokens (mezo-wu1s head/zone-specific taxonomy) PLUS the coarse
+// legacy keys still used by muscle_group_volume_log / MesoVolume (chest, back, shoulder,
+// biceps, triceps) and older summaries (lats, rear-delt).
 export const MUSCLE_LABELS: Record<string, string> = {
-  chest: 'Mell', back: 'Hát', 'back-mid': 'Hát (közép)', lats: 'Lat', shoulder: 'Váll',
+  // Mell
+  'chest-upper': 'Mell (felső)', 'chest-mid': 'Mell (közép)', 'chest-lower': 'Mell (alsó)',
+  // Hát
+  'back-wide': 'Hát (széles)', 'back-mid': 'Hát (közép)', 'back-lower': 'Hát (alsó)', traps: 'Trapéz',
+  // Váll
+  'shoulder-front': 'Váll (első)', 'shoulder-side': 'Váll (oldalsó)', 'shoulder-rear': 'Váll (hátsó)',
+  // Kar
+  'biceps-long': 'Bicepsz (hosszú fej)', 'biceps-short': 'Bicepsz (rövid fej)', 'biceps-brachialis': 'Brachialis',
+  'triceps-long': 'Tricepsz (hosszú fej)', 'triceps-lateral': 'Tricepsz (oldalsó fej)', 'triceps-medial': 'Tricepsz (mediális fej)',
+  // Láb + Core
+  quad: 'Comb', ham: 'Lábhajlító', glute: 'Far', calf: 'Vádli', core: 'Core',
+  // Legacy coarse keys (volume log + old summaries)
+  chest: 'Mell', back: 'Hát', lats: 'Lat', shoulder: 'Váll',
   'rear-delt': 'Hátsó váll', biceps: 'Bicep', triceps: 'Tricep',
-  quad: 'Comb', ham: 'Lábhajlító', glute: 'Far', calf: 'Vádli',
-  core: 'Core', traps: 'Trapéz',
 }
 export const DAY_LABELS: Record<string, string> = {
   Hét: 'Hétfő', Kedd: 'Kedd', Sze: 'Szerda', Csü: 'Csütörtök', Pén: 'Péntek', Szo: 'Szombat', Vas: 'Vasárnap',
@@ -155,11 +168,11 @@ export const mesocycles: Mesocycle[] = [
         day: 'Hét', type: 'Push', muscle: 'chest+shoulder+tricep',
         exerciseCount: 5,
         exercises: [
-          { id: 'ex-mo-1', name: 'Barbell Bench Press', muscle: 'chest', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
-          { id: 'ex-mo-2', name: 'Incline DB Press', muscle: 'chest', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
-          { id: 'ex-mo-3', name: 'Overhead Press', muscle: 'shoulder', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound', warning: 'Niggle-kíméletes verzió · cable variánssal helyettesítve' },
-          { id: 'ex-mo-4', name: 'Lateral Raise', muscle: 'shoulder', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
-          { id: 'ex-mo-5', name: 'Tricep Pushdown', muscle: 'triceps', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'ex-mo-1', name: 'Barbell Bench Press', muscle: 'chest-mid', warmupSets: 2, workingSets: 4, repMin: 6, repMax: 8, targetRIR: 1, type: 'compound' },
+          { id: 'ex-mo-2', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+          { id: 'ex-mo-3', name: 'Overhead Press', muscle: 'shoulder-front', warmupSets: 2, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound', warning: 'Niggle-kíméletes verzió · cable variánssal helyettesítve' },
+          { id: 'ex-mo-4', name: 'Lateral Raise', muscle: 'shoulder-side', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'ex-mo-5', name: 'Tricep Pushdown', muscle: 'triceps-medial', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
         ],
       },
       {
@@ -190,20 +203,20 @@ export const mesocycles: Mesocycle[] = [
         exerciseCount: 5, current: true,
         exercises: [
           { id: 'ex1', name: 'Chest Supported Row', muscle: 'back-mid', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
-          { id: 'ex2', name: 'Lat Pulldown · Pronated', muscle: 'lats', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound', warning: 'Pronated grif · csukló-kíméletes' },
+          { id: 'ex2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound', warning: 'Pronated grif · csukló-kíméletes' },
           { id: 'ex3', name: 'Cable Pull-Around', muscle: 'back-mid', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
-          { id: 'ex4', name: 'Hammer Curl', muscle: 'biceps', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
-          { id: 'ex5', name: 'Face Pull', muscle: 'rear-delt', warmupSets: 2, workingSets: 3, repMin: 15, repMax: 20, targetRIR: 1, type: 'isolation' },
+          { id: 'ex4', name: 'Hammer Curl', muscle: 'biceps-brachialis', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'ex5', name: 'Face Pull', muscle: 'shoulder-rear', warmupSets: 2, workingSets: 3, repMin: 15, repMax: 20, targetRIR: 1, type: 'isolation' },
         ],
       },
       {
         day: 'Pén', type: 'Push · light', muscle: 'chest+shoulder',
         exerciseCount: 4,
         exercises: [
-          { id: 'ex-fr-1', name: 'Incline DB Press', muscle: 'chest', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound' },
-          { id: 'ex-fr-2', name: 'Cable Fly', muscle: 'chest', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
-          { id: 'ex-fr-3', name: 'Lateral Raise', muscle: 'shoulder', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
-          { id: 'ex-fr-4', name: 'Overhead Tricep Ext', muscle: 'triceps', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
+          { id: 'ex-fr-1', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 2, type: 'compound' },
+          { id: 'ex-fr-2', name: 'Cable Fly', muscle: 'chest-mid', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'ex-fr-3', name: 'Lateral Raise', muscle: 'shoulder-side', warmupSets: 2, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+          { id: 'ex-fr-4', name: 'Overhead Tricep Ext', muscle: 'triceps-long', warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'isolation' },
         ],
       },
       {
@@ -290,7 +303,7 @@ export const workout: WorkoutPlan = {
       lastWeek: { weight: 102.5, reps: 9, rir: 2 },
     },
     {
-      id: 'ex2', name: 'Lat Pulldown · Pronated', muscle: 'lats', type: 'compound',
+      id: 'ex2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound',
       warmupSets: 2, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, anchorWeightKg: null,
       sets: 5,
       rationale: 'Múlt hét 11 × 72 kg → +2.5 kg',
@@ -317,7 +330,7 @@ export const workout: WorkoutPlan = {
       lastWeek: { weight: 22, reps: 13, rir: 1 },
     },
     {
-      id: 'ex4', name: 'Hammer Curl', muscle: 'biceps', type: 'isolation',
+      id: 'ex4', name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation',
       warmupSets: 1, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, anchorWeightKg: null,
       sets: 4,
       rationale: 'Múlt hét 11 × 18 kg → cél 12 ism.',
@@ -330,7 +343,7 @@ export const workout: WorkoutPlan = {
       lastWeek: { weight: 18, reps: 11, rir: 1 },
     },
     {
-      id: 'ex5', name: 'Face Pull', muscle: 'rear-delt', type: 'isolation',
+      id: 'ex5', name: 'Face Pull', muscle: 'shoulder-rear', type: 'isolation',
       warmupSets: 1, workingSets: 3, repMin: 15, repMax: 20, targetRIR: 1, anchorWeightKg: null,
       sets: 4,
       rationale: 'Múlt hét 17 × 27 kg → cél 20 ism.',
@@ -435,9 +448,9 @@ export const customWorkoutsMock: CustomWorkout[] = [
     id: 'custom-1',
     name: 'Pihenőnapi felső',
     exercises: [
-      { id: 'cw1-1', name: 'Incline DB Press', muscle: 'chest', warmupSets: 1, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
-      { id: 'cw1-2', name: 'Lat Pulldown', muscle: 'lats', warmupSets: 1, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'compound' },
-      { id: 'cw1-3', name: 'Lateral Raise', muscle: 'shoulder', warmupSets: 0, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
+      { id: 'cw1-1', name: 'Incline DB Press', muscle: 'chest-upper', warmupSets: 1, workingSets: 3, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound' },
+      { id: 'cw1-2', name: 'Lat Pulldown', muscle: 'back-wide', warmupSets: 1, workingSets: 3, repMin: 10, repMax: 12, targetRIR: 1, type: 'compound' },
+      { id: 'cw1-3', name: 'Lateral Raise', muscle: 'shoulder-side', warmupSets: 0, workingSets: 3, repMin: 12, repMax: 15, targetRIR: 1, type: 'isolation' },
     ],
   },
 ]
@@ -517,21 +530,21 @@ export const sport: Sport = {
 // --- exercise library (data.js:538-560) — all 21 items verbatim ---
 export const exerciseLibrary: ExerciseLibraryItem[] = [
   { id: 'exl-1', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, videoUrl: 'https://youtu.be/GZTvxN5fPBc', editable: false },
-  { id: 'exl-2', name: 'Lat Pulldown · Pronated', muscle: 'lats', type: 'compound', stim: 0.84, fatigue: 0.4 },
-  { id: 'exl-3', name: 'Lat Pulldown · Neutral', muscle: 'lats', type: 'compound', stim: 0.82, fatigue: 0.4 },
+  { id: 'exl-2', name: 'Lat Pulldown · Pronated', muscle: 'back-wide', type: 'compound', stim: 0.84, fatigue: 0.4 },
+  { id: 'exl-3', name: 'Lat Pulldown · Neutral', muscle: 'back-wide', type: 'compound', stim: 0.82, fatigue: 0.4 },
   { id: 'exl-4', name: 'T-Bar Row', muscle: 'back-mid', type: 'compound', stim: 0.88, fatigue: 0.65 },
   { id: 'exl-5', name: 'Cable Pull-Around', muscle: 'back-mid', type: 'isolation', stim: 0.72, fatigue: 0.25 },
-  { id: 'exl-6', name: 'Hammer Curl', muscle: 'biceps', type: 'isolation', stim: 0.68, fatigue: 0.2 },
-  { id: 'exl-7', name: 'Incline DB Curl', muscle: 'biceps', type: 'isolation', stim: 0.74, fatigue: 0.22 },
-  { id: 'exl-8', name: 'Face Pull', muscle: 'rear-delt', type: 'isolation', stim: 0.7, fatigue: 0.18 },
-  { id: 'exl-9', name: 'Reverse Pec Deck', muscle: 'rear-delt', type: 'isolation', stim: 0.66, fatigue: 0.18 },
-  { id: 'exl-10', name: 'Barbell Bench Press', muscle: 'chest', type: 'compound', stim: 0.94, fatigue: 0.7 },
-  { id: 'exl-11', name: 'Incline DB Press', muscle: 'chest', type: 'compound', stim: 0.86, fatigue: 0.5 },
-  { id: 'exl-12', name: 'Cable Fly', muscle: 'chest', type: 'isolation', stim: 0.74, fatigue: 0.25 },
-  { id: 'exl-13', name: 'Overhead Press', muscle: 'shoulder', type: 'compound', stim: 0.86, fatigue: 0.55 },
-  { id: 'exl-14', name: 'Lateral Raise', muscle: 'shoulder', type: 'isolation', stim: 0.72, fatigue: 0.2 },
-  { id: 'exl-15', name: 'Tricep Pushdown', muscle: 'triceps', type: 'isolation', stim: 0.7, fatigue: 0.2 },
-  { id: 'exl-16', name: 'Overhead Tricep Ext', muscle: 'triceps', type: 'isolation', stim: 0.74, fatigue: 0.22 },
+  { id: 'exl-6', name: 'Hammer Curl', muscle: 'biceps-brachialis', type: 'isolation', stim: 0.68, fatigue: 0.2 },
+  { id: 'exl-7', name: 'Incline DB Curl', muscle: 'biceps-long', type: 'isolation', stim: 0.74, fatigue: 0.22 },
+  { id: 'exl-8', name: 'Face Pull', muscle: 'shoulder-rear', type: 'isolation', stim: 0.7, fatigue: 0.18 },
+  { id: 'exl-9', name: 'Reverse Pec Deck', muscle: 'shoulder-rear', type: 'isolation', stim: 0.66, fatigue: 0.18 },
+  { id: 'exl-10', name: 'Barbell Bench Press', muscle: 'chest-mid', type: 'compound', stim: 0.94, fatigue: 0.7 },
+  { id: 'exl-11', name: 'Incline DB Press', muscle: 'chest-upper', type: 'compound', stim: 0.86, fatigue: 0.5 },
+  { id: 'exl-12', name: 'Cable Fly', muscle: 'chest-mid', type: 'isolation', stim: 0.74, fatigue: 0.25 },
+  { id: 'exl-13', name: 'Overhead Press', muscle: 'shoulder-front', type: 'compound', stim: 0.86, fatigue: 0.55 },
+  { id: 'exl-14', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2 },
+  { id: 'exl-15', name: 'Tricep Pushdown', muscle: 'triceps-medial', type: 'isolation', stim: 0.7, fatigue: 0.2 },
+  { id: 'exl-16', name: 'Overhead Tricep Ext', muscle: 'triceps-long', type: 'isolation', stim: 0.74, fatigue: 0.22 },
   { id: 'exl-17', name: 'Barbell Squat', muscle: 'quad', type: 'compound', stim: 0.94, fatigue: 0.85 },
   { id: 'exl-18', name: 'Leg Press', muscle: 'quad', type: 'compound', stim: 0.84, fatigue: 0.6 },
   { id: 'exl-19', name: 'Romanian Deadlift', muscle: 'ham', type: 'compound', stim: 0.9, fatigue: 0.75 },
@@ -570,7 +583,7 @@ export const workoutDetailMock = {
   durationEst: 62,
   exercises: [
     {
-      exerciseId: 'ex0', name: 'Chest Supported Row', muscle: 'hát', type: 'compound',
+      exerciseId: 'ex0', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
       warmupSets: 2, workingSets: 3, repMin: 6, repMax: 9, targetRIR: 1, skipped: false,
       sets: [
         { id: 's1', exerciseId: 'ex0', setIndex: 0, weightKg: 60, reps: 10, kind: 'warmup', skipped: false },
@@ -579,7 +592,7 @@ export const workoutDetailMock = {
       ],
     },
     {
-      exerciseId: 'ex1', name: 'Lat Pulldown', muscle: 'hát', type: 'compound',
+      exerciseId: 'ex1', name: 'Lat Pulldown', muscle: 'back-wide', type: 'compound',
       warmupSets: 1, workingSets: 3, repMin: 8, repMax: 12, targetRIR: 1, skipped: true, sets: [],
     },
   ],

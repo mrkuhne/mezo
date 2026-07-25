@@ -19,7 +19,7 @@ const runSession = (kind: string, workSegments: number): RunPrescribedSession =>
 describe('sportLoadForWeek', () => {
   it('aggregates repeated kinds per muscle with a count', () => {
     const r = sportLoadForWeek([slot('Hét'), slot('Kedd')], [])
-    expect(r.perMuscle.shoulder).toEqual([{ kind: 'volleyball', label: 'Röpi', load: 3, count: 2 }])
+    expect(r.perMuscle['shoulder-front']).toEqual([{ kind: 'volleyball', label: 'Röpi', load: 3, count: 2 }])
     expect(r.perMuscle.quad?.[0]).toMatchObject({ load: 2, count: 2 })
   })
   it('maps TRX and sprint-run loads onto their muscles', () => {
