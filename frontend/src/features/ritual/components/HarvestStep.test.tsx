@@ -83,7 +83,7 @@ describe('HarvestStep', () => {
     setup({ streakAlive: false })
     const { container } = render(<HarvestStep onNext={vi.fn()} />)
 
-    expect(screen.getByText('🔥 12 napos sorozat él — megszakadt')).toBeInTheDocument()
+    expect(screen.getByText('🔥 12 napos sorozat — megszakadt')).toBeInTheDocument()
     expect(container.querySelector('.rz-streak')).toHaveClass('dim')
   })
 

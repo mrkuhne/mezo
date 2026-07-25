@@ -8,9 +8,9 @@ import { localDateString } from '@/shared/lib/dates'
 type KnownSource = 'GYM' | 'RUN' | 'SPORT' | 'QUEST' | 'ACTIVITY' | 'HABIT'
 
 // HU chip label per source — icons are reused from levelUpMeta's CHIP_ICON_BY_SOURCE (the
-// same map the LevelUpScreen chip uses). Any OTHER XpEventType (MEAL/WEIGHT/SLEEP/CHECKIN/
-// MEDICATION, or a future backend addition) is defensively skipped: GamificationDay.
-// xpBySource[].source is the wire's open string type, not guaranteed to stay inside this list.
+// same map the LevelUpScreen chip uses). GamificationDay.xpBySource[].source is the closed
+// XpEventType union, but it has 5 members OTHER than the ones mapped here (MEAL/WEIGHT/
+// SLEEP/CHECKIN/MEDICATION) — those are defensively skipped rather than rendered unlabelled.
 const SOURCE_LABEL_HU: Record<KnownSource, string> = {
   QUEST: 'Küldetések',
   HABIT: 'Rutin',
@@ -145,7 +145,7 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
         className={day.streakAlive ? 'rz-streak np-anim' : 'rz-streak np-anim dim'}
         style={{ animationDelay: `${streakStage.delayMs}ms` }}
       >
-        🔥 {day.streakDays} napos sorozat él{day.streakAlive ? '' : ' — megszakadt'}
+        🔥 {day.streakDays} napos sorozat{day.streakAlive ? ' él' : ' — megszakadt'}
       </div>
 
       <button className="rz-cta" onClick={onNext}>Tovább</button>
