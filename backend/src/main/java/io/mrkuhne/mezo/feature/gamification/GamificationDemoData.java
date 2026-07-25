@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.gamification;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.gamification.config.GamificationProperties;
 import io.mrkuhne.mezo.feature.gamification.entity.CoinEventEntity;
 import io.mrkuhne.mezo.feature.gamification.entity.GamificationProfileEntity;
 import io.mrkuhne.mezo.feature.gamification.repository.CoinEventRepository;
@@ -53,7 +54,6 @@ public class GamificationDemoData implements CommandLineRunner {
     private static final String KIND_LADDER = "LADDER";
     private static final String REASON_QUEST = "quest";
     private static final String DEMO_QUEST_REF = "demo-seed-quest-1";
-    private static final int DEMO_QUEST_COINS = 10;
 
     private final AppUserRepository appUserRepository;
     private final OwnerProperties ownerProperties;
@@ -61,6 +61,7 @@ public class GamificationDemoData implements CommandLineRunner {
     private final CoinEventRepository coinEventRepository;
     private final SkillProgressRepository skillProgressRepository;
     private final TitleCatalog titleCatalog;
+    private final GamificationProperties gamificationProperties;
 
     @Override
     @Transactional
@@ -79,6 +80,9 @@ public class GamificationDemoData implements CommandLineRunner {
         GamificationProfileEntity profile = new GamificationProfileEntity();
         profile.setCreatedBy(ownerId);
         profile.setCoins(240);
+        // Deliberately "one log away from the 7-day streak milestone" — mirrors the FE mock seed
+        // (gamificationMock.ts): the demo user's FIRST real award rolls the streak to 7 and fires
+        // the +50 milestone. An intended demo beat, not an accident.
         profile.setStreakDays(6);
         profile.setStreakSavers(1);
         profile.setEquippedTitleKey(equippableTitleKey(accountLevel));
@@ -86,6 +90,9 @@ public class GamificationDemoData implements CommandLineRunner {
         profile.setAccountLevel(accountLevel);
         profileRepository.save(profile);
 
+        // The seeded balance (240) intentionally does NOT reconcile with the seeded ledger rows —
+        // coins=240 is the FE-mock story value; the single demo coin_event only makes the Harvest
+        // day-read non-empty. Any future lifetime-earned/audit feature must exclude demodata accounts.
         seedDemoQuestCoin(ownerId);
     }
 
@@ -105,7 +112,7 @@ public class GamificationDemoData implements CommandLineRunner {
                 .orElse(TitleCatalog.DEFAULT_TITLE_KEY));
     }
 
-    /** One "quest" +10 coin_event dated today, so a demo Harvest (day) read isn't empty. */
+    /** One "quest" coin_event dated today, so a demo Harvest (day) read isn't empty. */
     private void seedDemoQuestCoin(UUID ownerId) {
         if (coinEventRepository.existsByCreatedByAndReasonAndSourceRefId(ownerId, REASON_QUEST, DEMO_QUEST_REF)) {
             return;
@@ -113,7 +120,7 @@ public class GamificationDemoData implements CommandLineRunner {
         CoinEventEntity e = new CoinEventEntity();
         e.setCreatedBy(ownerId);
         e.setReason(REASON_QUEST);
-        e.setAmount(DEMO_QUEST_COINS);
+        e.setAmount(gamificationProperties.questCoins());
         e.setSourceRefId(DEMO_QUEST_REF);
         e.setOccurredOn(LocalDate.now());
         coinEventRepository.save(e);
