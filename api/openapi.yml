@@ -7042,23 +7042,39 @@ components:
           nullable: true
     TdeeBootstrap:
       type: object
-      description: Formula-TDEE bootstrap snapshot computed at first evaluation.
+      description: >-
+        Formula-TDEE bootstrap snapshot computed at first evaluation. tdee =
+        neatBaselineKcal + weeklyEatKcalPerDay.
       required:
         - bmr
+        - neat
+        - neatBaselineKcal
+        - weeklyEatKcalPerDay
         - tdee
-        - pal
         - formula
         - computedAt
       properties:
         bmr:
           type: number
           description: Basal metabolic rate (kcal/day)
+        neat:
+          type: number
+          description: >-
+            Non-exercise activity multiplier (lifestyle band
+            DESK/MIXED/PHYSICAL)
+        neatBaselineKcal:
+          type: number
+          description: bmr × neat — the non-exercise lifestyle maintenance (kcal/day)
+        weeklyEatKcalPerDay:
+          type: number
+          description: >-
+            Scheduled training energy (gym+sport+run), weekly total ÷ 7
+            (kcal/day)
         tdee:
           type: number
-          description: Total daily energy expenditure (kcal/day)
-        pal:
-          type: number
-          description: Physical-activity-level multiplier
+          description: >-
+            Total maintenance = neatBaselineKcal + weeklyEatKcalPerDay
+            (kcal/day)
         formula:
           type: string
           enum:
@@ -7107,6 +7123,7 @@ components:
         - sleepTargetH
         - restDays
         - projectedRateKgPerWk
+        - dailyEnergyBalanceKcal
         - rationale
       properties:
         fromWeek:
@@ -7127,6 +7144,11 @@ components:
             type: integer
         projectedRateKgPerWk:
           type: number
+        dailyEnergyBalanceKcal:
+          type: integer
+          description: >-
+            Goal deficit(−)/surplus(+) per day (kcal);
+            sign×rate%/100×kg×kcalPerKg÷7
         rationale:
           type: string
     GoalGuardStatus:
@@ -7428,11 +7450,9 @@ components:
         activityLevel:
           type: string
           enum:
-            - SEDENTARY
-            - LIGHT
-            - MODERATE
-            - VERY
-            - EXTRA
+            - DESK
+            - MIXED
+            - PHYSICAL
           nullable: true
         tdeeBootstrap:
           allOf:
@@ -7463,11 +7483,9 @@ components:
         activityLevel:
           type: string
           enum:
-            - SEDENTARY
-            - LIGHT
-            - MODERATE
-            - VERY
-            - EXTRA
+            - DESK
+            - MIXED
+            - PHYSICAL
           nullable: true
     PantryResponse:
       type: object

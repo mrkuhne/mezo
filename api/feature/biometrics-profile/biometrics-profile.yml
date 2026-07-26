@@ -37,8 +37,8 @@ components:
         birthDate: { type: string, format: date }
         bodyFatPct: { type: number, nullable: true }
         # Physical-activity level (PAL bucket) — a TDEE-bootstrap input. Nullable until set;
-        # defaulted to MODERATE server-side when absent.
-        activityLevel: { type: string, enum: [SEDENTARY, LIGHT, MODERATE, VERY, EXTRA], nullable: true }
+        # defaulted to MIXED server-side when absent.
+        activityLevel: { type: string, enum: [DESK, MIXED, PHYSICAL], nullable: true }
         # Derived (NOT persisted) base-TDEE bootstrap — computed from this profile + the latest
         # weigh-in. Null when there is no profile-and-weight pair. Cross-feature $ref to the goal
         # fragment's TdeeBootstrap (the merge flattens all fragments into one components.schemas).
@@ -51,5 +51,5 @@ components:
         heightCm: { type: number, minimum: 50, maximum: 260 }
         birthDate: { type: string, format: date }
         bodyFatPct: { type: number, nullable: true, minimum: 0, maximum: 75 }
-        # Optional PAL bucket; server defaults to MODERATE when omitted.
-        activityLevel: { type: string, enum: [SEDENTARY, LIGHT, MODERATE, VERY, EXTRA], nullable: true }
+        # Optional PAL bucket; server defaults to MIXED server-side when absent.
+        activityLevel: { type: string, enum: [DESK, MIXED, PHYSICAL], nullable: true }
