@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesocycleCreateRequest;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.MesocycleVolumeArcResponse;
 import io.mrkuhne.mezo.api.dto.RunSessionLogRequest;
 import io.mrkuhne.mezo.api.dto.RunSessionLogResponse;
 import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
@@ -37,6 +38,7 @@ import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
+import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
@@ -57,6 +59,7 @@ public class TrainController implements TrainApi {
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
     private final RunningService runningService;
+    private final VolumeArcService volumeArcService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -112,6 +115,11 @@ public class TrainController implements TrainApi {
     @Override
     public MesocycleResponse closeMesocycle(UUID id) {
         return service.closeMesocycle(currentUserId.get(), id);
+    }
+
+    @Override
+    public MesocycleVolumeArcResponse getMesocycleVolumeArc(UUID id) {
+        return volumeArcService.arc(currentUserId.get(), id);
     }
 
     @Override

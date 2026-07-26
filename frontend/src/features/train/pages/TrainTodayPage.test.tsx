@@ -63,6 +63,12 @@ test('no volleyball session today (Csü) ⇒ today-volleyball block is absent', 
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
+test('the Mezociklus card navigates to the overview (mezo-hi9m)', () => {
+  renderView()
+  fireEvent.click(screen.getByRole('button', { name: /Mezociklus áttekintő/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/meso-hyp-04/overview')
+})
+
 test('a non-today weekly gym row navigates straight to the session (mezo-j3x0 / mezo-bxpg)', () => {
   renderView()
   // Mock today = Csü (fixture flag); the Hét row shows the Push Day slot → non-today gym row.

@@ -84,7 +84,7 @@ export function GymPage() {
           <div className="over">Edzés · Gym</div>
           <h1>{activeMeso.shortTitle}</h1>
         </div>
-        <div className="row gap-sm" style={{ alignItems: 'center' }}>
+        <div className="row gap-sm" style={{ alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button
             type="button"
             onClick={() => setCustomOpen(true)}
@@ -103,9 +103,15 @@ export function GymPage() {
           >
             <Icon name="today" size={12} /> Időpontok
           </button>
-          <span className="label-mono" style={{ fontSize: 9 }}>
-            W{activeMeso.currentWeek} / {activeMeso.weeks}
-          </span>
+          <button
+            type="button"
+            onClick={() => navigate(`/train/mesocycles/${activeMeso.id}/overview`)}
+            className="pgact-np np-press"
+            aria-label={`Mezociklus áttekintő · W${activeMeso.currentWeek}/${activeMeso.weeks}`}
+            style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
+          >
+            📈 W{activeMeso.currentWeek}/{activeMeso.weeks} →
+          </button>
         </div>
       </div>
 

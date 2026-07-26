@@ -144,6 +144,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/mesocycles/{id}/volume-arc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read-only per-muscle volume arc (planned scaffold + actual logged working sets) for a mesocycle */
+        get: operations["getMesocycleVolumeArc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/mesocycles/{id}/days/{dayId}/exercises": {
         parameters: {
             query?: never;
@@ -2275,6 +2292,38 @@ export interface components {
             mrv: number;
             /** Format: date-time */
             at: string;
+        };
+        MesocycleVolumeArcResponse: {
+            /** Format: uuid */
+            mesocycleId: string;
+            title: string;
+            currentWeek: number;
+            weeks: number;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** @enum {string} */
+            status: "active" | "planned" | "archived";
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            muscles: components["schemas"]["MuscleVolumeArc"][];
+        };
+        MuscleVolumeArc: {
+            /** @description Coarse volume-group key (chest/back/shoulder/biceps/triceps/quad/ham/glute/calf/core) */
+            muscle: string;
+            /** @description Color-family region key (coral/sky/lav/rose/sage/amber) */
+            region: string;
+            mrv: number;
+            weeks: components["schemas"]["VolumeArcWeek"][];
+        };
+        VolumeArcWeek: {
+            week: number;
+            /** @enum {string} */
+            phase: "MEV" | "MAV" | "MRV" | "Deload";
+            planned: number;
+            /** @description Null for future weeks with no logged data yet */
+            actual?: number | null;
+            isCurrent: boolean;
         };
         MesoDay: {
             /**
@@ -4816,6 +4865,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMesocycleVolumeArc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mesocycle volume arc */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleVolumeArcResponse"];
                 };
             };
             /** @description Missing/invalid token */
