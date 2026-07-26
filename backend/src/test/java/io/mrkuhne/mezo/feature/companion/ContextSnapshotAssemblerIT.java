@@ -207,7 +207,31 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         assertThat(snapshot).contains("[Edzés]").contains("Holnap:");
         String tail = snapshot.substring(snapshot.indexOf("Holnap:"));
-        assertThat(tail).contains(tomorrowLabel).contains("Fekvenyomás").contains("volleyball");
+        // exact rendered exercise line (name + working-sets × rep-range), not just a name
+        // substring — pins exerciseLine's null-guarded formatting (TrainPopulator default
+        // exercise: workingSets=3, repMin=6, repMax=8).
+        assertThat(tail).contains(tomorrowLabel).contains("Fekvenyomás 3×6-8").contains("volleyball");
+    }
+
+    @Test
+    void testTrainBlock_shouldRenderRestDay_whenNoTemplateMatchesTodayOrTomorrowWeekday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LocalDate tomorrow = today.plusDays(1);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        String tomorrowLabel = WorkoutService.HU_DAY_LABELS.get(tomorrow.getDayOfWeek().getValue() - 1);
+        String restLabel = WorkoutService.HU_DAY_LABELS.stream()
+            .filter(label -> !label.equals(todayLabel) && !label.equals(tomorrowLabel))
+            .findFirst().orElseThrow();
+        // an active meso exists, but its only template day is neither today's nor tomorrow's HU
+        // weekday — a genuine rest day within a mesocycle (findPlannedTemplateForDate → empty).
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        trainPopulator.createWorkoutSession(owner, meso.getId(), restLabel, "upper", 0, "planned");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("Ma: pihenőnap");
+        assertThat(snapshot).contains("Holnap: pihenőnap (gym)");
     }
 
     @Test

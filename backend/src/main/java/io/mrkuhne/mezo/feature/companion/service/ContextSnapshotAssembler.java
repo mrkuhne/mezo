@@ -6,7 +6,6 @@ import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.ProtocolResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
-import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
@@ -192,7 +191,7 @@ public class ContextSnapshotAssembler {
         // Dated resolution (mezo-xixu, the flagship fix): what's ACTUALLY on today/tomorrow,
         // not just the recurring weekly pattern below — the chat's #1 hallucination source.
         List<SportScheduleSlotResponse> sport = sportService.getSchedule(userId);
-        b.append("; Ma: ").append(todayLine(userId));
+        b.append("; Ma: ").append(todayLine(userId, today));
         b.append("; Holnap: ").append(tomorrowLine(userId, today, sport));
         // Recurring weekly pattern + backward digest — kept as TRAILING background context.
         List<GymScheduleSlotResponse> gym = gymScheduleService.getSchedule(userId);
@@ -221,14 +220,26 @@ public class ContextSnapshotAssembler {
         return b.toString();
     }
 
-    /** Ma: today's resolved gym day (open instance > weekday template), day-label + exercises. */
-    private String todayLine(UUID userId) {
-        WorkoutTodayResponse todayWorkout = workoutService.getToday(userId, null);
-        if (todayWorkout.getExercises() == null || todayWorkout.getExercises().isEmpty()) {
+    /**
+     * Ma: today's DATED resolution — the active meso's template day for today's HU weekday
+     * (same read-only lookup as {@link #tomorrowLine}, mezo-xixu). Deliberately does NOT call
+     * {@link WorkoutService#getToday}: that method is write-transactional (auto-closes stale
+     * instances, ensures closing exercises) and the snapshot renders on every chat turn — a
+     * read triggering writes on every turn would violate this assembler's read-only contract.
+     */
+    private String todayLine(UUID userId, LocalDate today) {
+        Optional<WorkoutSessionEntity> todayTemplate = workoutService.findPlannedTemplateForDate(userId, today);
+        if (todayTemplate.isEmpty()) {
             return "pihenőnap";
         }
-        String label = todayWorkout.getDayLabel() != null ? todayWorkout.getDayLabel() : "gym";
-        return label + ": " + todayWorkout.getExercises().stream()
+        WorkoutSessionEntity t = todayTemplate.get();
+        List<ExerciseEntity> exercises = exerciseRepository
+                .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId()));
+        if (exercises.isEmpty()) {
+            return "pihenőnap";
+        }
+        String label = t.getDayLabel() != null ? t.getDayLabel() : "gym";
+        return label + ": " + exercises.stream()
                 .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
                 .collect(Collectors.joining(", "));
     }
@@ -287,9 +298,17 @@ public class ContextSnapshotAssembler {
                 .map(s -> "futás: " + s.label());
     }
 
-    /** "{name} {workingSets}×{repMin}-{repMax}" — the compact exercise descriptor for Ma:/Holnap:. */
+    /**
+     * "{name} {workingSets}×{repMin}-{repMax}" — the compact exercise descriptor for Ma:/Holnap:.
+     * Null-guarded: a missing rep range (or set count) must never render the literal "null" into
+     * the LLM prompt, so each piece is rendered only when present.
+     */
     private static String exerciseLine(String name, Integer workingSets, Integer repMin, Integer repMax) {
-        return name + " " + workingSets + "×" + repMin + "-" + repMax;
+        StringBuilder b = new StringBuilder(name).append(' ').append(workingSets != null ? workingSets : "?");
+        if (repMin != null && repMax != null) {
+            b.append('×').append(repMin).append('-').append(repMax);
+        }
+        return b.toString();
     }
 
     private String fuelBlock(UUID userId, LocalDate today) {
