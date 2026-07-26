@@ -28,9 +28,11 @@ test('useRecipes returns 6 recipes; logged + standalone recipes both carry a tem
   expect(result.current.recipes.find(r => r.id === 'rec-3')!.templateBreakdown).toBeDefined()
 })
 
-test('logged recipes (rec-1/2/4) carry recentLogs with non-empty loggedAt', () => {
+test('logged recipes (rec-1/2 — breakfast + lunch) carry recentLogs with non-empty loggedAt', () => {
+  // Partial mock day (mezo-1oy5): only breakfast (rec-1) + lunch (rec-2) are logged; the 16:00 snack
+  // (rec-4) is now a future/unlogged window, so rec-4 no longer carries a recentLog today.
   const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
-  const linked = ['rec-1', 'rec-2', 'rec-4']
+  const linked = ['rec-1', 'rec-2']
   for (const id of linked) {
     const recipe = result.current.recipes.find(r => r.id === id)!
     expect(recipe.recentLogs).toBeDefined()

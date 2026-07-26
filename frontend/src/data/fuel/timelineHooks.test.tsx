@@ -60,7 +60,12 @@ describe('useFuelTimeline / useFuelPreview (mock mode)', () => {
     const plan = result.current.plan
     // Same buildDayPlan composition as real mode, fed the mock seeds → a live-computed plan.
     expect(plan.slots.length).toBeGreaterThan(0)
-    expect(plan.slots.filter(s => s.state === 'now')).toHaveLength(1) // fixed mock now 13:30 → exactly one
+    // Fixed-plan state (mezo-1oy5): the partial mock day (breakfast + lunch logged, midday/evening
+    // open) has exactly one `now` slot at 13:30 — the next open MEAL window, not a supplement/block.
+    const nowSlots = plan.slots.filter(s => s.state === 'now')
+    expect(nowSlots).toHaveLength(1)
+    expect(nowSlots[0].slotKey).toBeDefined()                          // a meal window carries the `now`
+    expect(plan.slots.some(s => s.slotKey && s.state === 'pending')).toBe(true) // later windows stay pending
     expect(plan.caffeineCutoff).toBe('14:00')                          // fuel-settings ghost cutoff
     expect(plan.bedtime).toBe('23:15')                                 // mock sleep goal (wake 06:45 − 450m)
     expect(plan.kitchenClose).toBe('21:45')                            // bed 23:15 − 90m

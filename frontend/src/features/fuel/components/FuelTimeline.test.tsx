@@ -40,7 +40,7 @@ test('AI-score button opens the score sheet for a scored meal', async () => {
   const onOpenScore = vi.fn()
   setup(onOpenScore)
   const aiButtons = screen.getAllByRole('button', { name: /AI/ })
-  expect(aiButtons.length).toBeGreaterThanOrEqual(1)   // ≈3 scored meals (09:15 m1 + 13:00 m2 + 16:00 m3)
+  expect(aiButtons.length).toBeGreaterThanOrEqual(1)   // 2 scored meals in the partial mock day (09:15 m1 + 13:00 m2)
   await userEvent.click(aiButtons[0])
   expect(onOpenScore).toHaveBeenCalled()
 })
