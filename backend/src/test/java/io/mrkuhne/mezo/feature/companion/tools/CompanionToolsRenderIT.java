@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
@@ -152,6 +153,46 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         assertThat(audit.toRefsEnvelope().refs()).contains(
                 new RefsEnvelope.Ref("Sport", LocalDate.now().minusDays(1).toString()),
                 new RefsEnvelope.Ref("Run", LocalDate.now().minusDays(3).toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldResolvePlannedGymDayWithExercise_whenScopeToday() {
+        UUID owner = userPopulator.createUser().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "Pull A", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Húzódzkodás", 0);
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        assertThat(out).startsWith("Edzésterv (ma, " + LocalDate.now() + "):")
+                .contains(todayLabel).contains("Húzódzkodás");
+        assertThat(audit.toRefsEnvelope().refs())
+                .contains(new RefsEnvelope.Ref("TrainingPlan", LocalDate.now().toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldRenderActiveMesoStructure_whenScopeMeso() {
+        UUID owner = userPopulator.createUser().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), "Hét", "Pull A", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Húzódzkodás", 0);
+
+        String out = trainTools.getTrainingPlan("meso", null, ctx(owner));
+
+        assertThat(out).startsWith("Mezociklus terv: Blokk").contains("3/6. hét")
+                .contains("Hét").contains("Pull A").contains("Húzódzkodás");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("TrainingPlan", "Blokk"));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldRenderNincsAdat_whenNoActivePlan() {
+        UUID owner = userPopulator.createUser().getId();
+        assertThat(trainTools.getTrainingPlan(null, null, ctx(owner)))
+                .isEqualTo("Edzésterv (ma, " + LocalDate.now() + "): nincs adat");
     }
 
     @Test

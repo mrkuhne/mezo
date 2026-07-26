@@ -17,8 +17,8 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 
 > One-line: the Phase-3 AI companion — persisted conversations + a Hungarian chat over the
 > `CompanionLlm` port (Spring AI 2 / Gemini) with a deterministic cross-feature **context
-> snapshot** + the **top-N confirmed knowledge facts** in every system prompt, **8 read-only
-> tools** for history/aggregate questions (audited into the message envelopes, rendered as real
+> snapshot** + the **top-N confirmed knowledge facts** in every system prompt, **9 read-only
+> tools** for history/aggregate + forward-plan questions (audited into the message envelopes, rendered as real
 > FE chips), answered **sync JSON or streamed SSE**, and consumed by the **real dual-mode
 > ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
 > confirms on the **real KnowledgeListPage** (accept/refine/reject — L2). **Status: backend ✅
@@ -80,6 +80,16 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   rollups, `get_protocol_adherence`), `GoalTools` (`get_goal_progress`), `MedicationTools`
   (`get_reta_cycle`). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
   NEVER from model args), compact deterministic Hungarian text results, `nincs adat` absences.
+- **9th tool — `get_training_plan` (forward plan, mezo-xixu)**, added onto `TrainTools`: the
+  companion's first FORWARD-looking read (the other 8 are backward/aggregate). `scope ∈
+  {today, tomorrow, week, meso, date}` (default `today`) resolves the dated gym day via
+  `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (read-only — never
+  `WorkoutService.getToday`, which auto-closes stale instances/ensures closing exercises) plus the
+  active running block's prescribed session for that weekday (`RunningService.listBlocks` +
+  `RunningBlockStructure`, week derived from the block's `startDate`, not the stored
+  `currentWeek`); `scope=meso` renders the full active mesocycle (`TrainService.listMesocycles`) —
+  weeks/phases/day-templates. `nincs adat` only when there is neither an active mesocycle nor an
+  active running block at all; a real rest day within an active plan renders `pihenőnap`.
 - **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
   `RecordingToolCallback` (audit + per-turn budget, structurally unbypassable); the per-turn
   `ToolCallAudit` rides in the Spring AI `ToolContext`, collects `{type:'read', name, args}`
@@ -641,8 +651,9 @@ V0.5** on tool-using turns; a tool-less turn's null envelope still maps to `[]`,
 `CompanionMapper.toTools/toRefs`; `degraded` required boolean since V1.3 — always false on user
 rows), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
 carries the args baked in — `get_sleep(days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
-`Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`, and since
-V2.3 `Memory` — a recalled day's date),
+`Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`, since
+V2.3 `Memory` — a recalled day's date, and since mezo-xixu `TrainingPlan` — the resolved date, or
+the mesocycle title for `scope=meso`),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
@@ -654,6 +665,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 |---|---|---|
 | `get_recent_workouts(days)` | `WorkoutSessionRepository.findDoneInstancesBetween` (new finder) + per-instance sets → date, dayLabel, set count, Σ volume kg | `Workout`/date (≤5) |
 | `get_sport_sessions(days)` | sport + run since-date finders (existed) → sport/duration/intensity/RPE + run week/rounds | `Sport`+`Run`/date (≤3+3) |
+| `get_training_plan(scope, date)` (mezo-xixu) | FORWARD plan: `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (gym day, read-only — never `getToday`) + `RunningService.listBlocks`/`RunningBlockStructure` (prescribed run) + `TrainService.listMesocycles` (`scope=meso` full cycle) | `TrainingPlan`/date or meso title |
 | `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
 | `get_recent_meals(days)` | `FuelDayService.getDay` looped per day → kcal/F vs targets, meal count + titles (≤3) | `FuelDay`/date (≤5) |
 | `get_sleep(days)` | `SleepLogRepository` since-date finder (new) → duration, quality, awakenings | `Sleep`/date (≤5) |

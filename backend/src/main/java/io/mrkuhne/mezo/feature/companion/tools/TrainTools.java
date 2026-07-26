@@ -1,14 +1,23 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
+import io.mrkuhne.mezo.api.dto.MesoDay;
+import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.RunPrescribedSession;
+import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.RunningService;
+import io.mrkuhne.mezo.feature.train.service.TrainService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.model.ToolContext;
@@ -19,20 +28,35 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-/** V0.5 read tools over the train feature (gym instances + sport/run history). */
+/** V0.5 read tools over the train feature (gym instances + sport/run history + forward plan). */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class TrainTools {
+
+    /** get_training_plan's supported scope values; anything else (incl. null) falls back to "today". */
+    private static final List<String> PLAN_SCOPES = List.of("today", "tomorrow", "week", "meso", "date");
 
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseSetRepository exerciseSetRepository;
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
     private final CompanionProperties properties;
+    // Forward-plan collaborators (mezo-xixu): WorkoutService.findPlannedTemplateForDate (read-only —
+    // NEVER WorkoutService.getToday, which auto-closes stale instances + ensures closing exercises,
+    // the ContextSnapshotAssembler.todayLine precedent), TrainService.listMesocycles for scope=meso,
+    // RunningService.listBlocks for the active block's prescribed runs.
+    private final WorkoutService workoutService;
+    private final ExerciseRepository exerciseRepository;
+    private final TrainService trainService;
+    private final RunningService runningService;
 
     @Tool(name = "get_recent_workouts", description = "Gym-edzések az elmúlt napokra: dátum, edzésnap "
             + "(pl. Pull A), sorozatszám, összvolumen kg-ban. Kérdés edzésekről, edzésmennyiségről, volumenről.")
@@ -124,6 +148,196 @@ public class TrainTools {
                 ToolContexts.audit(toolContext).addRef("Sport", s.getDate().toString()));
         runs.stream().limit(3).forEach(r ->
                 ToolContexts.audit(toolContext).addRef("Run", r.getDate().toString()));
+        return b.toString();
+    }
+
+    @Tool(name = "get_training_plan", description = "Az ELŐRE ütemezett edzésterv adott ablakra: gym-nap + "
+            + "gyakorlatok, sport, futás; scope=meso a teljes aktív ciklus. Használd, amikor a user a "
+            + "MAI/HOLNAPI/heti/jövőbeli edzésről vagy a mezociklus tervéről kérdez. scope: today "
+            + "(alapértelmezés), tomorrow, week, meso, date.")
+    public String getTrainingPlan(
+            @ToolParam(required = false, description = "today|tomorrow|week|meso|date (alapértelmezés: today).")
+            String scope,
+            @ToolParam(required = false, description = "ISO dátum (ÉÉÉÉ-HH-NN) — csak scope=date esetén.")
+            String date,
+            ToolContext toolContext) {
+        UUID userId = ToolContexts.userId(toolContext);
+        String s = normalizeScope(scope);
+        if ("meso".equals(s)) {
+            return renderMeso(userId, toolContext);
+        }
+        if ("week".equals(s)) {
+            return renderWeek(userId, toolContext);
+        }
+        return renderDay(userId, s, resolveDate(s, date), toolContext);
+    }
+
+    private static String normalizeScope(String scope) {
+        if (scope == null) {
+            return "today";
+        }
+        String s = scope.trim().toLowerCase();
+        return PLAN_SCOPES.contains(s) ? s : "today";
+    }
+
+    private static LocalDate resolveDate(String scope, String date) {
+        LocalDate today = LocalDate.now();
+        return switch (scope) {
+            case "tomorrow" -> today.plusDays(1);
+            case "date" -> parseDate(date, today);
+            default -> today;
+        };
+    }
+
+    /** An unparsable/missing date param falls back to today rather than failing the whole call. */
+    private static LocalDate parseDate(String date, LocalDate fallback) {
+        if (date == null || date.isBlank()) {
+            return fallback;
+        }
+        try {
+            return LocalDate.parse(date.trim());
+        } catch (DateTimeParseException e) {
+            return fallback;
+        }
+    }
+
+    /**
+     * today/tomorrow/date renders: the resolved gym day (via {@link WorkoutService#findPlannedTemplateForDate}
+     * — read-only, never {@code WorkoutService.getToday}) + the active running block's prescribed session for
+     * that weekday. "nincs adat" only when there is NEITHER an active mesocycle NOR an active running block at
+     * all — a real rest day within an active plan renders "pihenőnap", never fabricated as "no data".
+     */
+    private String renderDay(UUID userId, String scope, LocalDate date, ToolContext toolContext) {
+        boolean hasActiveMeso = hasActiveMeso(userId);
+        List<RunningBlockResponse> activeBlocks = activeRunningBlocks(userId);
+        String header = "Edzésterv (" + dayHeaderLabel(scope, date) + "):";
+        if (!hasActiveMeso && activeBlocks.isEmpty()) {
+            return header + " " + ToolText.NO_DATA;
+        }
+        ToolContexts.audit(toolContext).addRef("TrainingPlan", date.toString());
+        return header + "\n" + dayContentLine(userId, date, activeBlocks);
+    }
+
+    /** The next 7 days (today..+6), one compact line per day — same content as {@link #renderDay}. */
+    private String renderWeek(UUID userId, ToolContext toolContext) {
+        LocalDate today = LocalDate.now();
+        boolean hasActiveMeso = hasActiveMeso(userId);
+        List<RunningBlockResponse> activeBlocks = activeRunningBlocks(userId);
+        String header = "Edzésterv (" + today + " – " + today.plusDays(6) + "):";
+        if (!hasActiveMeso && activeBlocks.isEmpty()) {
+            return header + " " + ToolText.NO_DATA;
+        }
+        StringBuilder b = new StringBuilder(header);
+        for (int i = 0; i < 7; i++) {
+            LocalDate d = today.plusDays(i);
+            b.append('\n').append(d).append(": ").append(dayContentLine(userId, d, activeBlocks));
+        }
+        ToolContexts.audit(toolContext).addRef("TrainingPlan", today + ".." + today.plusDays(6));
+        return b.toString();
+    }
+
+    /** "gym: {day-label}: {exercises}" (or "gym: pihenőnap") + an optional "; futás: {label}" tail. */
+    private String dayContentLine(UUID userId, LocalDate date, List<RunningBlockResponse> activeBlocks) {
+        Optional<WorkoutSessionEntity> template = workoutService.findPlannedTemplateForDate(userId, date);
+        List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
+                .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
+                .orElse(List.of());
+        StringBuilder line = new StringBuilder("gym: ");
+        if (template.isEmpty() || exercises.isEmpty()) {
+            line.append("pihenőnap");
+        } else {
+            WorkoutSessionEntity t = template.get();
+            line.append(t.getDayLabel() != null ? t.getDayLabel() : "gym").append(": ")
+                    .append(exercises.stream()
+                            .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                            .collect(Collectors.joining(", ")));
+        }
+        activeBlocks.stream().findFirst()
+                .flatMap(block -> runSessionLabel(block, date))
+                .ifPresent(label -> line.append("; futás: ").append(label));
+        return line.toString();
+    }
+
+    /** scope=meso: the active mesocycle's full structure — weeks/phases/day-templates. */
+    private String renderMeso(UUID userId, ToolContext toolContext) {
+        MesocycleResponse active = trainService.listMesocycles(userId).stream()
+                .filter(m -> m.getStatus() == MesocycleResponse.StatusEnum.ACTIVE)
+                .findFirst().orElse(null);
+        if (active == null) {
+            return "Mezociklus terv: " + ToolText.NO_DATA;
+        }
+        StringBuilder b = new StringBuilder("Mezociklus terv: ").append(active.getTitle())
+                .append(" — ").append(active.getCurrentWeek()).append('/').append(active.getWeeks()).append(". hét");
+        if (active.getSplit() != null) {
+            b.append(" (").append(active.getSplit()).append(')');
+        }
+        if (!active.getPhaseCurve().isEmpty()) {
+            b.append("; fázisok: ").append(active.getPhaseCurve().stream()
+                    .map(MesocycleResponse.PhaseCurveEnum::getValue).collect(Collectors.joining(", ")));
+        }
+        for (MesoDay day : active.getDays()) {
+            b.append('\n').append(day.getDay()).append(": ").append(day.getType());
+            if (!day.getExercises().isEmpty()) {
+                b.append(" — ").append(day.getExercises().stream()
+                        .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                        .collect(Collectors.joining(", ")));
+            }
+        }
+        ToolContexts.audit(toolContext).addRef("TrainingPlan", active.getTitle());
+        return b.toString();
+    }
+
+    private boolean hasActiveMeso(UUID userId) {
+        return trainService.listMesocycles(userId).stream()
+                .anyMatch(m -> m.getStatus() == MesocycleResponse.StatusEnum.ACTIVE);
+    }
+
+    private List<RunningBlockResponse> activeRunningBlocks(UUID userId) {
+        return runningService.listBlocks(userId).stream()
+                .filter(b -> b.getStatus() == RunningBlockResponse.StatusEnum.ACTIVE)
+                .toList();
+    }
+
+    private static String dayHeaderLabel(String scope, LocalDate date) {
+        return switch (scope) {
+            case "tomorrow" -> "holnap, " + date;
+            case "date" -> date.toString();
+            default -> "ma, " + date;
+        };
+    }
+
+    /**
+     * The active running block's prescribed session for {@code date}'s weekday — week derived from
+     * the block's startDate (the {@code TrainService.clampWeek}/{@code ContextSnapshotAssembler
+     * .tomorrowRunPart} idiom), not the stored currentWeek, so it resolves correctly for ANY date in
+     * the block's span (renderWeek walks 7 distinct dates, not just "today").
+     */
+    private static Optional<String> runSessionLabel(RunningBlockResponse block, LocalDate date) {
+        if (block.getStructure() == null || block.getStructure().getWeeks() == null
+                || block.getWeeks() == null || block.getWeeks() <= 0 || block.getStartDate() == null) {
+            return Optional.empty();
+        }
+        long week = Math.clamp(ChronoUnit.DAYS.between(block.getStartDate(), date) / 7 + 1, 1, block.getWeeks());
+        int dow = date.getDayOfWeek().getValue() - 1;
+        return block.getStructure().getWeeks().stream()
+                .filter(w -> w.getWeekNumber() != null && w.getWeekNumber() == week)
+                .findFirst()
+                .flatMap(w -> w.getSessions().stream()
+                        .filter(sess -> sess.getDayOfWeek() != null && sess.getDayOfWeek() == dow)
+                        .findFirst())
+                .map(RunPrescribedSession::getLabel);
+    }
+
+    /**
+     * "{name} {workingSets}×{repMin}-{repMax}" — the compact exercise descriptor (the
+     * ContextSnapshotAssembler idiom). Null-guarded: a missing rep range (or set count) must never
+     * render the literal "null" into the LLM prompt.
+     */
+    private static String exerciseLine(String name, Integer workingSets, Integer repMin, Integer repMax) {
+        StringBuilder b = new StringBuilder(name).append(' ').append(workingSets != null ? workingSets : "?");
+        if (repMin != null && repMax != null) {
+            b.append('×').append(repMin).append('-').append(repMax);
+        }
         return b.toString();
     }
 }
