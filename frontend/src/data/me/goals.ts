@@ -47,7 +47,9 @@ export const goalResponse: GoalResponse = {
   // segments (deficit during the gym blocks, taper near the target) + the guard
   // status the recept card renders. Mirrors the GoalPrescription contract so the
   // card renders offline in mock mode without a backend evaluate. (mezo-g1u)
-  tdeeBootstrap: { bmr: 1720, tdee: 2666, pal: 1.55, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z' },
+  // NEAT model (mezo-eujg): maintenance = bmr×neat = 2064 (neatBaselineKcal); tdee = neatBaselineKcal +
+  // weeklyEatKcalPerDay (scheduled training ÷ 7). Fuel's dynamic day-plan reads bmr+neat off this envelope.
+  tdeeBootstrap: { bmr: 1720, neat: 1.2, neatBaselineKcal: 2064, weeklyEatKcalPerDay: 602, tdee: 2666, formula: 'MSJ', computedAt: '2026-05-22T06:00:00Z' },
   prescription: {
     generatedAt: '2026-05-22T06:05:00Z',
     basis: 'formula',
@@ -61,6 +63,7 @@ export const goalResponse: GoalResponse = {
         sleepTargetH: 7.5,
         restDays: [3, 7],
         projectedRateKgPerWk: -0.55,
+        dailyEnergyBalanceKcal: -516,
         rationale: 'A Reta cycle alatt agresszívabb deficit fér bele — a fehérje magasan tartja az izmot, az alvás védi a regenerációt.',
       },
       {
@@ -72,6 +75,7 @@ export const goalResponse: GoalResponse = {
         sleepTargetH: 8,
         restDays: [4, 7],
         projectedRateKgPerWk: -0.35,
+        dailyEnergyBalanceKcal: -286,
         rationale: 'A célsúly közeledtével lassítunk, hogy az erő-gardot ne sértsük és a forma stabil maradjon a deadline-ra.',
       },
     ],

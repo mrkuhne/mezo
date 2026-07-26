@@ -68,7 +68,7 @@ function deriveBlocks(
 function currentSegment(
   goalResponse: GoalResponse | null,
   timeline: GoalTimelineResponse | null,
-): { kcal: number; proteinG: number } | null {
+): { kcal: number; proteinG: number; dailyEnergyBalanceKcal: number } | null {
   const segments = goalResponse?.prescription?.segments
   if (!segments?.length) return null
   const totalWeeks = timeline?.weeks ?? segments[segments.length - 1].toWeek
@@ -102,13 +102,14 @@ export function useFuelTimeline(date: string = localDateString()) {
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
   const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null
 
-  // Dynamic energy inputs (mezo-1oy5): current weigh-in drives the MET activity burn + the BMR
-  // floor; the static TDEE isolates the goal balance from the wire. When the biometric profile
-  // hasn't resolved (no BMR), deriveDailyBudget falls back to the static segment path.
+  // Dynamic energy inputs (mezo-1oy5 / mezo-eujg): current weigh-in drives the MET activity burn +
+  // the BMR floor; BMR×neat is the lifestyle maintenance and the segment's explicit
+  // dailyEnergyBalanceKcal is the goal deficit/surplus — both straight from the wire. When the
+  // biometric profile hasn't resolved (no BMR/neat), deriveDailyBudget falls back to the static path.
   const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
   const budget = deriveDailyBudget(currentSegment(goalResponse, timeline), fuel.targets, {
     bmr: goalResponse?.tdeeBootstrap?.bmr ?? null,
-    tdee: goalResponse?.tdeeBootstrap?.tdee ?? null,
+    neat: goalResponse?.tdeeBootstrap?.neat ?? null,
     weightKg,
     blocks,
   })

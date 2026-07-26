@@ -17,7 +17,6 @@ import {
   KITCHEN_CLOSE_OFFSET_MIN,
   MET_BY_KIND,
   MIN_SLOT_GAP_MIN,
-  NEAT_BASELINE,
   PERI_SNACK_MIN_DURATION,
   PERI_SNACK_MIN_KCAL,
   POST_WORKOUT_SNAP_MIN,
@@ -107,17 +106,18 @@ export function activityKcal(blocks: PlannerBlock[], weightKg: number): number {
 }
 
 // ── deriveDailyBudget ────────────────────────────────────────────────────────
-export interface EnergyInputs { bmr: number | null; tdee: number | null; weightKg: number; blocks: PlannerBlock[] }
+export interface EnergyInputs { bmr: number | null; neat: number | null; weightKg: number; blocks: PlannerBlock[] }
 export interface DayBudget extends Macro4 { energy: { base: number; activity: number; balance: number; target: number } }
 
 /**
- * Daily budget. Static path (no BMR → no biometric profile) keeps today's behavior. Dynamic path
- * (mezo-1oy5): target = BMR×NEAT_BASELINE + Σ MET activity + goal balance, floored at BMR. Protein is
+ * Daily budget. Static path (no BMR/NEAT → no biometric profile) keeps today's behavior. Dynamic path
+ * (mezo-1oy5 / mezo-eujg): target = BMR×neat + Σ MET activity + goal balance, floored at BMR. Protein is
  * fixed (bodyweight-based), fat is tied to the BASE segment kcal (stable), carbs absorb the activity bonus.
- * balance = segment.kcal − static tdee (the TDEE-independent goal deficit/surplus, isolated from the wire).
+ * balance = segment.dailyEnergyBalanceKcal (explicit goal deficit/surplus from the wire).
+ * maintenance = BMR×neat (NEAT lifestyle multiplier from the bootstrap).
  */
 export function deriveDailyBudget(
-  segment: { kcal: number; proteinG: number } | null,
+  segment: { kcal: number; proteinG: number; dailyEnergyBalanceKcal?: number } | null,
   fallback: MacroSet,
   energy?: EnergyInputs,
 ): DayBudget {
@@ -126,7 +126,7 @@ export function deriveDailyBudget(
   const fat = Math.round((baseKcal * FAT_KCAL_SHARE) / 9)
   const carbs = (kcal: number) => Math.max(0, Math.round((kcal - proteinG * 4 - fat * 9) / 4))
 
-  if (!energy || energy.bmr == null) {
+  if (!energy || energy.bmr == null || energy.neat == null) {
     // Static path (no biometric profile) keeps today's behavior: no segment → the fallback MacroSet
     // passes through verbatim (only water dropped); a segment carries kcal+proteinG, so derive c/f.
     if (!segment) {
@@ -134,8 +134,8 @@ export function deriveDailyBudget(
     }
     return { kcal: baseKcal, p: proteinG, c: carbs(baseKcal), f: fat, energy: { base: baseKcal, activity: 0, balance: 0, target: baseKcal } }
   }
-  const balance = segment && energy.tdee != null ? segment.kcal - energy.tdee : 0
-  const maintenance = energy.bmr * NEAT_BASELINE
+  const balance = segment?.dailyEnergyBalanceKcal ?? 0
+  const maintenance = energy.bmr * energy.neat
   const eat = activityKcal(energy.blocks, energy.weightKg)
   const target = Math.max(energy.bmr, maintenance + eat + balance) // KCAL_FLOOR = BMR
   return {

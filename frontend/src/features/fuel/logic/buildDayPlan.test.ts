@@ -181,9 +181,9 @@ test('deriveDailyBudget (no energy, no segment) passes the fallback MacroSet thr
   expect(deriveDailyBudget(null, fallback)).toMatchObject({ kcal: 3100, p: 220, c: 380, f: 95 })
 })
 
-const ENERGY = (blocks: PlannerBlock[]) => ({ bmr: 1720, tdee: 2666, weightKg: 78.6, blocks })
+const ENERGY = (blocks: PlannerBlock[]) => ({ bmr: 1720, neat: 1.2, weightKg: 78.6, blocks })
 test('dynamic budget — rest day floors at BMR (raw 2064−516=1548 < 1720)', () => {
-  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163 }, FB, ENERGY([]))
+  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY([]))
   expect(b.energy).toMatchObject({ base: 2064, activity: 0, balance: -516, target: 1720 })
   expect(b.kcal).toBe(1720)
   expect(b.p).toBe(163) // protein fixed
@@ -195,7 +195,7 @@ test('dynamic budget — big training day adds activity, carbs absorb the bonus'
     { kind: 'gym', time: '18:00', durationMin: 60, label: 'Plyo Leg' },
     { kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' },
   ]
-  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163 }, FB, ENERGY(blocks))
+  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY(blocks))
   expect(b.energy.activity).toBeGreaterThan(1800)
   expect(b.energy.target).toBeGreaterThan(3300)
   expect(b.kcal).toBe(b.energy.target)
