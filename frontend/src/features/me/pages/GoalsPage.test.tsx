@@ -33,7 +33,7 @@ const COMPLETE_PROFILE = {
   heightCm: 180,
   birthDate: '1991-03-01',
   bodyFatPct: 15,
-  activityLevel: 'MODERATE',
+  activityLevel: 'MIXED',
   tdeeBootstrap: null,
 }
 

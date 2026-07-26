@@ -111,8 +111,10 @@ export const biometricProfile: BiometricProfileResponse = {
   heightCm: 180,
   birthDate: '1991-03-01',
   bodyFatPct: 15,
-  activityLevel: 'MODERATE',
-  tdeeBootstrap: { bmr: 1910, tdee: 2960, pal: 1.55, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
+  activityLevel: 'MIXED',
+  // NEAT model (mezo-eujg): neatBaselineKcal = bmr × neat (1910 × 1.35 ≈ 2579);
+  // tdee = neatBaselineKcal + weeklyEatKcalPerDay (scheduled training ÷ 7).
+  tdeeBootstrap: { bmr: 1910, neat: 1.35, neatBaselineKcal: 2579, weeklyEatKcalPerDay: 421, tdee: 3000, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
 }
 
 // Static realism preview for mock mode (G6, mezo-06n) — a feasible draft so the
