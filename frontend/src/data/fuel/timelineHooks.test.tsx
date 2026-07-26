@@ -75,6 +75,22 @@ describe('useFuelTimeline / useFuelPreview (mock mode)', () => {
     expect(result2.current.plan).toEqual(plan)
   })
 
+  it('mock timeline carries a DYNAMIC energy breakdown (base + activity + balance → target)', () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+    const e = result.current.plan.energy
+    expect(e.base).toBeGreaterThan(0) // BMR×NEAT maintenance flows through
+    expect(Number.isFinite(e.activity)).toBe(true)
+    expect(Number.isFinite(e.balance)).toBe(true)
+    expect(e.target).toBeGreaterThan(0) // undefined/NaN energy (unplumbed) would fail here
+    // The mock day always carries a gym block (hardcoded today:true) → the DYNAMIC path
+    // (weightKg + blocks plumbed) burns real MET activity. The unwired static path leaves
+    // activity at 0, so this is the assertion that flips red→green when the inputs are wired.
+    expect(e.activity).toBeGreaterThan(0)
+    // Dynamic base is BMR×NEAT (1720×1.2 = 2064), NOT the segment kcal the static path echoed.
+    expect(e.base).toBe(2064)
+  })
+
   it('getScoredMeal resolves a done meal slot by id against the mock day (title-join is dead)', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })

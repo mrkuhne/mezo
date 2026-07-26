@@ -83,7 +83,7 @@ function currentSegment(
 export function useFuelTimeline(date: string = localDateString()) {
   const { fuel } = useFuelDay(date)
   const { recipes } = useRecipes()
-  const { goalResponse, timeline } = useGoal()
+  const { goal, goalResponse, timeline } = useGoal()
   const { goal: sleepGoal } = useSleepGoal()
   const { selectedIds } = useProtocol()
   const { stash } = useStack()
@@ -102,7 +102,16 @@ export function useFuelTimeline(date: string = localDateString()) {
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
   const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null
 
-  const budget = deriveDailyBudget(currentSegment(goalResponse, timeline), fuel.targets)
+  // Dynamic energy inputs (mezo-1oy5): current weigh-in drives the MET activity burn + the BMR
+  // floor; the static TDEE isolates the goal balance from the wire. When the biometric profile
+  // hasn't resolved (no BMR), deriveDailyBudget falls back to the static segment path.
+  const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
+  const budget = deriveDailyBudget(currentSegment(goalResponse, timeline), fuel.targets, {
+    bmr: goalResponse?.tdeeBootstrap?.bmr ?? null,
+    tdee: goalResponse?.tdeeBootstrap?.tdee ?? null,
+    weightKg,
+    blocks,
+  })
 
   // Protocol slots (P2 selection-only): the goal's selection, else all non-medication stash items;
   // anchor the slot times to the real day (wake, first-block − 40min, bedtime).
@@ -122,7 +131,7 @@ export function useFuelTimeline(date: string = localDateString()) {
     : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
   const plan = buildDayPlan({
-    wake, bed, mealsPerDay, blocks, budget,
+    wake, bed, mealsPerDay, blocks, budget, weightKg,
     meals: fuel.meals, recipes, protocolSlots, intakes,
     caffeineCutoff: settings.caffeineCutoff, nowHHmm,
   })
