@@ -95,8 +95,9 @@ public class GoalProjectionService {
 
     /**
      * One contiguous run of identical active load → one recept block (spec §5). {@code activeSystems}
-     * is the human-facing list of what's training in this stretch ({@code gym}/{@code run}; volleyball
-     * is ambient and noted in the rationale, not as a system that moves the numbers).
+     * is the human-facing list of what moves this stretch's boundaries ({@code run}); gym + volleyball
+     * count via the constant weekly schedule (no longer ambient), so they never split a segment and are
+     * not listed here.
      */
     public record ProjectionSegment(
         int fromWeek,

@@ -74,12 +74,12 @@ class BiometricProfileServiceIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("bp-pal@test.local");
 
         BiometricProfileResponse response = service.upsertProfile(user,
-            req("M").activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MODERATE).build());
+            req("M").activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MIXED).build());
 
         assertThat(response.getActivityLevel())
-            .isEqualTo(BiometricProfileResponse.ActivityLevelEnum.MODERATE);
+            .isEqualTo(BiometricProfileResponse.ActivityLevelEnum.MIXED);
         assertThat(repository.findByCreatedByAndDeletedFalse(user).orElseThrow().getActivityLevel())
-            .isEqualTo("MODERATE");
+            .isEqualTo("MIXED");
     }
 
     @Test
@@ -94,9 +94,9 @@ class BiometricProfileServiceIT extends AbstractIntegrationTest {
     @Test
     void testGetProfile_shouldDeriveTdeeBootstrap_whenProfileAndWeighInExist() {
         UUID user = databasePopulator.populateUser("bp-tdee@test.local");
-        // 84kg / 180cm / 15% bodyfat / MODERATE PAL — derived from this exact pair.
+        // 84kg / 180cm / 15% bodyfat / MIXED PAL — derived from this exact pair.
         service.upsertProfile(user,
-            req("M").activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MODERATE).build());
+            req("M").activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MIXED).build());
         weightLogPopulator.createWeightLog(user, LocalDate.of(2026, 6, 1), new BigDecimal("84.00"));
 
         BiometricProfileResponse response = service.getProfile(user);
@@ -133,7 +133,7 @@ class BiometricProfileServiceIT extends AbstractIntegrationTest {
 
         // Upserting the profile gives the engine its inputs → it recomputes the active goal.
         service.upsertProfile(user,
-            req("M").activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MODERATE).build());
+            req("M").activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MIXED).build());
 
         GoalEntity recomputed = goalRepository.findById(goal.getId()).orElseThrow();
         assertThat(recomputed.getPrescription()).isNotNull();

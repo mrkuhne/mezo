@@ -132,16 +132,19 @@ class GoalServiceIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("goal-engine@test.local");
         GoalEntity g = goalPopulator.createGoal(user, "cut", "active");
 
+        // bmr × neat = neatBaseline = tdee (weeklyEat 0): 1820.0 × 1.55 = 2821.0 → physically consistent.
         TdeeBootstrapJson tdee = new TdeeBootstrapJson(
-            new BigDecimal("1820.0"), new BigDecimal("2821.0"), new BigDecimal("1.55"),
+            new BigDecimal("1820.0"), new BigDecimal("1.55"), new BigDecimal("2821.0"),
+            BigDecimal.ZERO, new BigDecimal("2821.0"),
             "MSJ", OffsetDateTime.of(2026, 6, 19, 10, 0, 0, 0, ZoneOffset.UTC));
 
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(
             OffsetDateTime.of(2026, 6, 19, 10, 0, 0, 0, ZoneOffset.UTC),
             "formula",
+            // dailyEnergyBalanceKcal = intake − tdee = 2300 − 2821 = −521 (a cut).
             List.of(new GoalPrescriptionJson.Segment(
                 1, 4, "Indító deficit", 2300, 168, new BigDecimal("7.5"),
-                List.of(3, 6), new BigDecimal("-0.55"), "Mérsékelt deficit, erő megtartva.")),
+                List.of(3, 6), new BigDecimal("-0.55"), -521, "Mérsékelt deficit, erő megtartva.")),
             new GoalPrescriptionJson.GuardStatus(
                 new GoalPrescriptionJson.GuardStatus.Strength(
                     true, new BigDecimal("-1.20"), false, List.of("e1RM stabil")),

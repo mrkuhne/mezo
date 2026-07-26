@@ -119,8 +119,9 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         double balance = expectedDailyBalanceMagnitude();
         assertThat(runOn.tdeeEstimate().doubleValue() - runOn.targetKcal().doubleValue())
             .isCloseTo(balance, within(0.5));
-        // the daily energy balance is surfaced onto the segment (whole kcal), and run is the only system.
-        assertThat(segments.get(0).dailyEnergyBalanceKcal()).isNotNull();
+        // the daily energy balance is surfaced onto the segment (whole kcal, cut → negative), and run
+        // is the only system.
+        assertThat(segments.get(0).dailyEnergyBalanceKcal()).isNegative();
         assertThat(runOn.activeSystems()).contains("run");
         assertThat(runOff.activeSystems()).doesNotContain("run");
     }
