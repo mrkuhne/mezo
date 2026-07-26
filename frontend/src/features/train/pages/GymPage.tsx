@@ -84,7 +84,7 @@ export function GymPage() {
           <div className="over">Edzés · Gym</div>
           <h1>{activeMeso.shortTitle}</h1>
         </div>
-        <div className="row gap-sm" style={{ alignItems: 'center' }}>
+        <div className="row gap-sm" style={{ alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
           <button
             type="button"
             onClick={() => setCustomOpen(true)}
@@ -110,7 +110,7 @@ export function GymPage() {
             aria-label={`Mezociklus áttekintő · W${activeMeso.currentWeek}/${activeMeso.weeks}`}
             style={{ background: 'var(--wash-gym)', color: 'var(--tag-gym)' }}
           >
-            📈 Mezociklus W{activeMeso.currentWeek} / {activeMeso.weeks} →
+            📈 W{activeMeso.currentWeek}/{activeMeso.weeks} →
           </button>
         </div>
       </div>
