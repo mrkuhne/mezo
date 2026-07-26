@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import type { FuelSlot } from '@/data/types'
@@ -102,6 +102,29 @@ test('a done slot renders neither the Logolás nor the AI chip', () => {
     <SlotCard slot={doneSlot} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop} onLogMeal={vi.fn()} onAiLog={vi.fn()} />,
   )
   expect(screen.queryByRole('button', { name: /logolása/ })).not.toBeInTheDocument()
+})
+
+// ── Missed slot — faded, still-loggable retro-log (mezo-1oy5) ──────────────────
+test('a missed meal slot renders faded with a Pótlás (retro-log) action', () => {
+  const slot = { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed', kcal: 610, p: 46, c: 55, f: 20 } as FuelSlot
+  const onLogMeal = vi.fn()
+  render(<SlotCard slot={slot} meta={KIND_META.meal} scoredMeal={null} onLogMeal={onLogMeal} onOpenScore={() => {}} />)
+  expect(screen.getByText('kihagyott')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /pótlás/i }))
+  expect(onLogMeal).toHaveBeenCalledWith(slot)
+})
+
+test('a missed slot that still carries suggestedRecipeId renders ONLY Pótlás, never a 2nd Logolás', () => {
+  // buildDayPlan's state pass can reclassify a pending recipe-suggestion window to `missed` WITHOUT
+  // clearing suggestedRecipeId; `missed` must win so the card shows one CTA (Pótlás), not two.
+  const slot = {
+    time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
+    mealName: 'Túrós tészta', suggestedRecipeId: 'r1', kcal: 610, p: 46, c: 55, f: 20,
+  } as FuelSlot
+  render(<SlotCard slot={slot} meta={KIND_META.meal} scoredMeal={null} onLogMeal={vi.fn()} onOpenScore={noop} />)
+  expect(screen.getByRole('button', { name: /pótlás/i })).toBeInTheDocument()
+  // The suggestion "Logolás" CTA is gated off — exactly one log button, no second /logolás/i.
+  expect(screen.queryByRole('button', { name: /logolás/i })).not.toBeInTheDocument()
 })
 
 // ── Workout / sport duration guard ─────────────────────────────────────────────

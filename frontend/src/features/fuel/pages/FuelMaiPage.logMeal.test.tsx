@@ -17,7 +17,9 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   return {
     ...actual,
     useFuelTimeline: () =>
-      hoisted.plan ? { plan: hoisted.plan, getScoredMeal: () => null } : actual.useFuelTimeline(),
+      hoisted.plan
+        ? { plan: hoisted.plan, budget: { kcal: 2400, p: 180, c: 240, f: 73, energy: hoisted.plan.energy }, getScoredMeal: () => null }
+        : actual.useFuelTimeline(),
   }
 })
 
@@ -42,6 +44,7 @@ const baseCtx = {
   workout: { type: '', start: '—', end: '—', duration: 0 },
   volleyball: { start: '—', end: '—', noneToday: true },
   bedtime: '23:00', kitchenClose: '21:30', caffeineCutoff: '14:00',
+  energy: { base: 2400, activity: 0, balance: 0, target: 2400 },
 }
 
 test('tapping a recipe-suggestion slot opens LogMealSheet pre-filled from that recipe', async () => {

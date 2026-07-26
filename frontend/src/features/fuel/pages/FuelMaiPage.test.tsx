@@ -9,10 +9,11 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
-// The mock demo day (fixed now 13:30) is fully logged — every meal/snack slot is `done`, so no
-// per-slot log/AI chip renders. To page-test the slot-level AI chip (mezo-53su) we inject one
-// open meal/snack slot (slotKey set) into the composed timeline; default off, so every other test
-// sees the unmodified real timeline. Idiom mirrors AiLogSheet.test's hoisted single-hook override.
+// The mock demo day (fixed now 13:30) is a PARTIAL day (mezo-1oy5): breakfast + lunch logged, the
+// midday/evening windows open (now/pending). To page-test the slot-level AI chip (mezo-53su)
+// deterministically we still inject one known open meal/snack slot (slotKey set) into the composed
+// timeline; default off, so every other test sees the unmodified real timeline. Idiom mirrors
+// AiLogSheet.test's hoisted single-hook override.
 const hoisted = vi.hoisted(() => ({ injectOpenSlot: false }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -31,7 +32,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 })
 
 // FuelMaiPage reads the composed dual-mode useFuelDay (mezo-arb); pin mock mode for the static
-// Phase-1 seed (consumed 1840, scored meals with breakdowns) and provide a QueryClientProvider.
+// Phase-1 seed (consumed 1300 — breakfast+lunch logged, scored meals with breakdowns) and provide a QueryClientProvider.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => { vi.unstubAllEnvs(); hoisted.injectOpenSlot = false })
 
@@ -45,9 +46,9 @@ const renderView = () =>
 test('renders header, gauge, fuelchips, macro bars, timeline and micronutrients', () => {
   const { container } = renderView()
   expect(screen.getByRole('heading', { name: 'Mai pacing' })).toBeInTheDocument()
-  // Napiv kcal gauge — consumed value renders inside .gauge (mezo-8141).
+  // Napiv kcal gauge — consumed value renders inside .gauge (mezo-8141). Partial day → 1300 (mezo-1oy5).
   expect(container.querySelector('.gauge')).toBeInTheDocument()
-  expect(screen.getByText(/1840/)).toBeInTheDocument()
+  expect(screen.getByText(/1300/)).toBeInTheDocument()
   // fuelchips — coffee cutoff / kitchen close, moved off the retired context strip.
   expect(screen.getByText(/kávé cutoff/)).toBeInTheDocument()
   expect(screen.getByText(/konyha zár/)).toBeInTheDocument()
@@ -57,6 +58,14 @@ test('renders header, gauge, fuelchips, macro bars, timeline and micronutrients'
   expect(screen.getByText('Szénhidrát')).toBeInTheDocument()
   expect(screen.getByText('Zsír')).toBeInTheDocument()
   expect(screen.getByText('Mikrotápanyagok · heti')).toBeInTheDocument()
+})
+test('renders the dynamic target breakdown (base + activity + balance)', () => {
+  renderView()
+  expect(screen.getByText(/Mai cél/i)).toBeInTheDocument()
+  expect(screen.getByText(/Mozgás/i)).toBeInTheDocument()
+  // Assert a real plan.energy-derived value renders — not just the static labels. The base
+  // heat is date-stable: BMR 1720 (mock goal tdeeBootstrap) × NEAT_BASELINE 1.2 = 2064.
+  expect(screen.getByText(/Alaphő 2064/)).toBeInTheDocument()
 })
 test('opens the FuelSettingsSheet from the szerkeszt chip', async () => {
   renderView()
@@ -104,11 +113,13 @@ test('Replan button opens the replan sheet', async () => {
 })
 test('opens the LogMealSheet from the ＋ Log entry', async () => {
   renderView()
-  fireEvent.click(screen.getByRole('button', { name: /log/i }))
+  // Exact name — the partial mock day (mezo-1oy5) now renders open-slot "X logolása" buttons too,
+  // so /log/i is ambiguous; the page-level entry's accessible name is exactly "Logolás".
+  fireEvent.click(screen.getByRole('button', { name: 'Logolás' }))
   expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
 })
 test('clicking a slot AI chip opens the AI log sheet on that slot (mezo-53su)', async () => {
-  hoisted.injectOpenSlot = true // give the fully-logged mock day one open meal/snack slot
+  hoisted.injectOpenSlot = true // inject a KNOWN open meal/snack slot (deterministic across weekdays)
   renderView()
   // An open meal/snack slot with a slotKey carries a per-slot "AI" chip beside Logolás.
   const aiChips = screen.getAllByRole('button', { name: /AI-logolása/ })

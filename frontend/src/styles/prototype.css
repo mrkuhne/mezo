@@ -1485,6 +1485,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .slot { display: flex; gap: 12px; background: var(--surface); border-radius: 20px; padding: 13px 15px; box-shadow: var(--np-shadow-row); margin-bottom: 9px; align-items: center; }
 .slot.next { box-shadow: 0 0 0 2px var(--sage), 0 10px 24px color-mix(in srgb, var(--sage) 20%, transparent); }
 .slot.done { opacity: .78; }
+.slot.missed { opacity: .72; }
+.slot.missed .fav { filter: grayscale(1); opacity: .6; }
+.misstag { font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-quaternary); border: 1px solid var(--line); padding: 2px 6px; border-radius: 999px; margin-left: 6px; }
 .slot .fav { width: 42px; height: 42px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
 .slot .tx { flex: 1; min-width: 0; }
 .slot .t1 { font-size: 14px; font-weight: 800; color: var(--ink); }
