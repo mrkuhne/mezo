@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
+import io.mrkuhne.mezo.feature.intention.entity.DailyIntentionEntity;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -11,6 +13,7 @@ import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
@@ -68,6 +71,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private QuestPopulator questPopulator;
     @Autowired private IntentionPopulator intentionPopulator;
     @Autowired private RitualPopulator ritualPopulator;
+    @Autowired private HabitPopulator habitPopulator;
 
     @Test
     void testRender_shouldRenderAllBlocksWithNincsAdat_whenUserHasNoData() {
@@ -304,15 +308,31 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
         intentionPopulator.creed(owner, "Kitartás mindenben.");
         intentionPopulator.focus(owner, today, "Reggeli edzés végigcsinálása");
+        intentionPopulator.reflection(owner, today, DailyIntentionEntity.REFLECTION_PARTIAL);
         questPopulator.quest(owner, today, DailyQuestEntity.SLOT_BODY, "test_quest", "max_strength",
             "ATHLETIC", "sets", new BigDecimal("1"), 30, DailyQuestEntity.STATUS_OFFERED);
         ritualPopulator.closedDay(owner, today);
+        // all 9 MORNING keys done on one past day -> one perfect morning; no EVENING day is perfect
+        LocalDate perfectMorningDay = today.minusDays(1);
+        habitPopulator.row(owner, perfectMorningDay, "wake_on_time", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, perfectMorningDay, "morning_sunlight", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, perfectMorningDay, "morning_pushups", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, perfectMorningDay, "morning_video", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, perfectMorningDay, "morning_weigh_in", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, perfectMorningDay, "morning_coffee", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, perfectMorningDay, "morning_workout", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, perfectMorningDay, "protein_breakfast", HabitDayEntity.STATUS_DONE);
+        habitPopulator.row(owner, perfectMorningDay, "daily_intention", HabitDayEntity.STATUS_DONE);
 
         String snapshot = assembler.render(owner, today);
 
         assertThat(snapshot).contains("[Napi gyakorlat] küldetés: 0/1");
+        assertThat(snapshot).contains("szokás-lánc: reggeli 1, esti 0 tökéletes nap (30 nap)");
         assertThat(snapshot).contains("hitvallás: Kitartás mindenben.");
         assertThat(snapshot).contains("mai fókusz: Reggeli edzés végigcsinálása");
+        // HU-mapped reflection, never the raw English enum value ("partial") leaking into the block
+        assertThat(snapshot).contains("esti reflexió: részben");
+        assertThat(snapshot).doesNotContain("esti reflexió: partial");
         assertThat(snapshot).contains("napzárás: zárva");
     }
 

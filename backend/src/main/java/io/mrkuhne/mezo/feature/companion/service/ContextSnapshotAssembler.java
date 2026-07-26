@@ -108,13 +108,13 @@ public class ContextSnapshotAssembler {
     private final SleepLogRepository sleepLogRepository;
     private final CheckInRepository checkInRepository;
     private final SleepAnchorPort sleepAnchorPort;
-    private final GamificationService gamificationService;
+    private final ObjectProvider<GamificationService> gamificationService;
     private final ProgressionService progressionService;
     private final GrowthWeekService growthWeekService;
     private final ObjectProvider<TodayQuestSource> todayQuestSource;
-    private final HabitService habitService;
-    private final IntentionService intentionService;
-    private final RitualService ritualService;
+    private final ObjectProvider<HabitService> habitService;
+    private final ObjectProvider<IntentionService> intentionService;
+    private final ObjectProvider<RitualService> ritualService;
     private final CompanionProperties properties;
 
     public String render(UUID userId, LocalDate today) {
@@ -341,19 +341,27 @@ public class ContextSnapshotAssembler {
 
     /**
      * [Növekedés]: account level + coins + streak (Gamification — a fresh account's level 1 /
-     * 0 coins is a real ghost, not fabricated), the highest-earned skills (Progression — the
-     * taxonomy's level-1/0-XP ghost rows are filtered out; an untouched skill would otherwise
-     * read as a fabricated fact), and this week's XP/quest rollup (GrowthWeek — honest zeros,
-     * a real computed window, the goalBlock/fuelBlock precedent).
+     * 0 coins is a real ghost, not fabricated; GAMIFICATION_SWITCH-gated, so the bean can be
+     * absent while COMPANION_SWITCH stays on — read defensively via {@link ObjectProvider}),
+     * the highest-earned skills (Progression — the taxonomy's level-1/0-XP ghost rows are
+     * filtered out; an untouched skill would otherwise read as a fabricated fact), and this
+     * week's XP/quest rollup (GrowthWeek — honest zeros, a real computed window, the
+     * goalBlock/fuelBlock precedent).
      */
     private String growthBlock(UUID userId, LocalDate today) {
-        GamificationProfileResponse gami = gamificationService.getProfile(userId);
+        GamificationService gamification = gamificationService.getIfAvailable();
+        GamificationProfileResponse gami = gamification == null ? null : gamification.getProfile(userId);
         ProgressionProfileResponse prog = progressionService.getProfile(userId);
         GrowthWeekResponse week = growthWeekService.growthWeek(userId, today);
-        StringBuilder b = new StringBuilder("[Növekedés] szint ").append(gami.getLevel())
-                .append(" (").append(gami.getTotalXp()).append(" XP), ")
-                .append(gami.getCoins()).append(" érme, ")
-                .append(gami.getStreakDays()).append(" napos sorozat");
+        StringBuilder b = new StringBuilder("[Növekedés] szint ");
+        if (gami == null) {
+            b.append(NO_DATA);
+        } else {
+            b.append(gami.getLevel())
+                    .append(" (").append(gami.getTotalXp()).append(" XP), ")
+                    .append(gami.getCoins()).append(" érme, ")
+                    .append(gami.getStreakDays()).append(" napos sorozat");
+        }
         List<SkillLevel> top = topSkills(prog);
         b.append("; top skill: ").append(top.isEmpty() ? NO_DATA : top.stream()
                 .map(s -> s.getSkillKey() + " L" + s.getLevel())
@@ -389,7 +397,11 @@ public class ContextSnapshotAssembler {
      * equally: a read that fires writes on every chat turn would violate this assembler's
      * read-only contract) — plus habit-chain strength ({@link HabitService#summary}, already
      * read-only), the standing creed / today's foci / evening reflection (Intention), and whether
-     * today's napzárás is closed (Ritual). Honest absence per part, never fabricated.
+     * today's napzárás is closed (Ritual). {@code HabitService}/{@code IntentionService}/
+     * {@code RitualService} each carry their own feature switch (HABIT_SWITCH/INTENTION_SWITCH/
+     * RITUAL_SWITCH) independent of COMPANION_SWITCH, so each is read defensively via
+     * {@link ObjectProvider} — the {@link #todayQuestSource} precedent. Honest absence per part,
+     * never fabricated.
      */
     private String practiceBlock(UUID userId, LocalDate today) {
         TodayQuestSource questSource = todayQuestSource.getIfAvailable();
@@ -401,23 +413,42 @@ public class ContextSnapshotAssembler {
             b.append(quest.completed()).append('/').append(quest.total());
         }
 
-        HabitSummaryResponse habits = habitService.summary(userId);
-        b.append("; szokás-lánc: reggeli ").append(habits.getPerfectMorningDays30())
-                .append(", esti ").append(habits.getPerfectEveningDays30())
-                .append(" tökéletes nap (30 nap)");
-
-        IntentionDayResponse intention = intentionService.getDay(userId, today);
-        b.append("; hitvallás: ").append(intention.getCreed() == null ? NO_DATA : intention.getCreed());
-        b.append(", mai fókusz: ").append(intention.getFoci().isEmpty() ? NO_DATA
-                : intention.getFoci().stream().map(IntentionFocusResponse::getText)
-                        .collect(Collectors.joining(", ")));
-        if (intention.getReflection() != null) {
-            b.append(", esti reflexió: ").append(intention.getReflection().getValue());
+        HabitService habitSvc = habitService.getIfAvailable();
+        HabitSummaryResponse habits = habitSvc == null ? null : habitSvc.summary(userId);
+        b.append("; szokás-lánc: ");
+        if (habits == null) {
+            b.append(NO_DATA);
+        } else {
+            b.append("reggeli ").append(habits.getPerfectMorningDays30())
+                    .append(", esti ").append(habits.getPerfectEveningDays30())
+                    .append(" tökéletes nap (30 nap)");
         }
 
-        RitualDayResponse ritual = ritualService.getDay(userId, today);
-        b.append("; napzárás: ").append(Boolean.TRUE.equals(ritual.getClosed()) ? "zárva" : "nyitva");
+        IntentionService intentionSvc = intentionService.getIfAvailable();
+        IntentionDayResponse intention = intentionSvc == null ? null : intentionSvc.getDay(userId, today);
+        b.append("; hitvallás: ").append(intention == null || intention.getCreed() == null
+                ? NO_DATA : intention.getCreed());
+        b.append(", mai fókusz: ").append(intention == null || intention.getFoci().isEmpty() ? NO_DATA
+                : intention.getFoci().stream().map(IntentionFocusResponse::getText)
+                        .collect(Collectors.joining(", ")));
+        if (intention != null && intention.getReflection() != null) {
+            b.append(", esti reflexió: ").append(huReflection(intention.getReflection()));
+        }
+
+        RitualService ritualSvc = ritualService.getIfAvailable();
+        RitualDayResponse ritual = ritualSvc == null ? null : ritualSvc.getDay(userId, today);
+        b.append("; napzárás: ").append(ritual == null ? NO_DATA
+                : (Boolean.TRUE.equals(ritual.getClosed()) ? "zárva" : "nyitva"));
         return b.toString();
+    }
+
+    /** Raw enum value ("yes"/"partial"/"no") would leak English into an otherwise-Hungarian block. */
+    private static String huReflection(IntentionDayResponse.ReflectionEnum reflection) {
+        return switch (reflection) {
+            case YES -> "igen";
+            case PARTIAL -> "részben";
+            case NO -> "nem";
+        };
     }
 
     private String fuelBlock(UUID userId, LocalDate today) {

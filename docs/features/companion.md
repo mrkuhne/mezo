@@ -443,8 +443,13 @@ TodayQuestAdapter`, kept one-directional because `quest` already depends on `com
 `QuestService.getDay`, which is write-transactional (lazy-generates + awards XP) and would violate
 the assembler's read-only contract on every chat turn; `HabitService.summary`'s perfect-chain-day
 counts; `IntentionService
-.getDay`'s creed/today's foci/evening reflection, each `nincs adat` on absence; and whether
-today's napzárás is closed via `RitualService.getDay`), `[Mai üzemanyag]`
+.getDay`'s creed/today's foci/evening reflection (the reflection value HU-mapped —
+`yes/partial/no` → `igen/részben/nem` — never the raw English enum leaking into the prompt), each
+`nincs adat` on absence; and whether today's napzárás is closed via `RitualService.getDay`).
+`GamificationService`/`HabitService`/`IntentionService`/`RitualService` each carry their OWN
+feature switch independent of `COMPANION_SWITCH`, so the assembler reaches all four through
+`ObjectProvider<T>.getIfAvailable()` (the `TodayQuestSource` precedent) — switch off ⇒ that
+block's affected part renders `nincs adat` instead of failing Spring context startup. `[Mai üzemanyag]`
 (`FuelDayService.getDay` consumed/targets incl. water +
 active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` retaDay +
 phase; an active med with no dose renders `nincs rögzített dózis` — honest zero), and
@@ -844,7 +849,12 @@ for `QuestFlavor`'s AI rewriting, so companion importing `feature.quest` directl
 2-slice cycle; `QuestService.getDay` is write-transactional either way), `habit`
 (`HabitService.summary`), `intention` (`IntentionService.getDay`), `ritual` (`RitualService.getDay`),
 `meal` (`FuelDayService`), `fuel` (`ProtocolService`, `IntakeService`) and `medication`
-(`MedicationRepository`, `MedicationCycleService`). **Contract crossing the seam:**
+(`MedicationRepository`, `MedicationCycleService`). `GamificationService`, `HabitService`,
+`IntentionService` and `RitualService` are each `@ConditionalOnProperty`-gated by their OWN switch
+(`GAMIFICATION_SWITCH`/`HABIT_SWITCH`/`INTENTION_SWITCH`/`RITUAL_SWITCH`), so the assembler holds
+them as `ObjectProvider<T>` and resolves via `getIfAvailable()` — any one of those switches off
+while `COMPANION_SWITCH` stays on degrades only that block's affected part to `nincs adat` rather
+than failing Spring context startup with a missing-bean error. **Contract crossing the seam:**
 `render(UUID userId, LocalDate today) → String` — the callee services' read methods with explicit
 `userId` scoping; feature-slice dependencies stay cycle-free (`feature_slices_are_cycle_free`,
 `ArchitectureTest`) — ports like `TodayQuestSource`/`QuestLedgerSource` are how a two-way data need
