@@ -56,13 +56,11 @@ mezo:
   goal:
     # G5 goal-engine tunables (grounded research). Binds onto GoalEngineProperties; the engine
     # services (Tasks 5–8) read these so no magic numbers / @Value live downstream.
-    # PAL multipliers (BMR -> TDEE); moderate is the engine default when activity level is unknown.
-    pal:
-      sedentary: 1.2
-      light: 1.375
-      moderate: 1.55
-      very: 1.725
-      extra: 1.9
+    # NEAT lifestyle multipliers (BMR -> TDEE baseline); mixed is the engine default when the band is unknown.
+    neat:                          # NEAT lifestyle multipliers (non-exercise); training added via mezo.train.met
+      desk: 1.20
+      mixed: 1.35                  # DEFAULT
+      physical: 1.50
     kcal-per-kg: 7700               # band 6000–7700
     protein:
       g-per-kg-bw-default: 2.0
@@ -83,11 +81,6 @@ mezo:
       e1rm-breach-pct: -5.0
     ewma:
       half-life-days: 10           # band 10–14
-    met:                           # per-session kcal deltas, 84 kg basis
-      hypertrophy-kcal: 325
-      interval-run-kcal: 500
-      volleyball-rec-kcal: 500
-      volleyball-comp-kcal: 1150
     thermogenesis-haircut-kcal-per-day: 0   # default off; optional band 100–200
     bootstrap-uncertainty-kcal: 300
   nutrition:
@@ -636,6 +629,14 @@ mezo:
     step: 2                 # sets added per productive week
     deload-fraction: 0.5    # deload target = round(prevSets * this)
     grind-rir-gap: 2        # RIR-below-target gap that counts as a grind
+  train:
+    gym-default-minutes: 60        # gym schedule slots carry no duration
+    run-default-minutes: 45        # interval runs have no single continuous duration
+    met:                           # MET by kind — MIRROR of FE fuelConfig.MET_BY_KIND (drift-guard test)
+      gym: 6.0
+      sport: 4.5
+      run: 9.5
+      default-kind: 5.0
   # Fix zárás — closing exercises ensured on every gym day of the active meso; slug references
   # master exercise-catalog rows (content/exercise-catalog.json). Dead-hang reps are SECONDS
   # (plyo type -> weightless, reps-only logging on the FE).

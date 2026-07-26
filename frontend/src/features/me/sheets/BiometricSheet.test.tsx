@@ -28,24 +28,24 @@ test('prefills the sheet from the current profile', () => {
   expect(screen.getByLabelText('Magasság')).toHaveValue(180)
   expect(screen.getByLabelText('Születési dátum')).toHaveValue('1991-03-01')
   expect(screen.getByLabelText('Testzsír')).toHaveValue(15)
-  // Nem segmented: Férfi pressed; activity: Mérsékelten aktív pressed.
+  // Nem segmented: Férfi pressed; activity: Vegyes (MIXED) pressed.
   expect(screen.getByRole('button', { name: 'Férfi' })).toHaveAttribute('aria-pressed', 'true')
-  expect(screen.getByRole('button', { name: /Mérsékelten aktív/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.getByRole('button', { name: /Vegyes/ })).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('edits then Mentés calls biometricProfileApi.upsert with the right body + closes', async () => {
   const upsertSpy = vi
     .spyOn(biometricProfileApi, 'upsert')
-    .mockResolvedValue({ sex: 'F', heightCm: 170, birthDate: '1991-03-01', activityLevel: 'VERY', bodyFatPct: 15, tdeeBootstrap: null })
+    .mockResolvedValue({ sex: 'F', heightCm: 170, birthDate: '1991-03-01', activityLevel: 'PHYSICAL', bodyFatPct: 15, tdeeBootstrap: null })
   const onClose = vi.fn()
   renderSheet(mockProfile, onClose)
 
-  // Switch sex to Nő, change height, bump activity to Nagyon aktív.
+  // Switch sex to Nő, change height, bump activity to Fizikai (PHYSICAL).
   await userEvent.click(screen.getByRole('button', { name: 'Nő' }))
   const height = screen.getByLabelText('Magasság')
   await userEvent.clear(height)
   await userEvent.type(height, '170')
-  await userEvent.click(screen.getByRole('button', { name: /Nagyon aktív/ }))
+  await userEvent.click(screen.getByRole('button', { name: /Fizikai/ }))
 
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
 
@@ -54,7 +54,7 @@ test('edits then Mentés calls biometricProfileApi.upsert with the right body + 
     sex: 'F',
     heightCm: 170,
     birthDate: '1991-03-01',
-    activityLevel: 'VERY',
+    activityLevel: 'PHYSICAL',
     bodyFatPct: 15,
   })
   await waitFor(() => expect(onClose).toHaveBeenCalled())
@@ -63,7 +63,7 @@ test('edits then Mentés calls biometricProfileApi.upsert with the right body + 
 test('omits bodyFatPct from the body when testzsír is cleared', async () => {
   const upsertSpy = vi
     .spyOn(biometricProfileApi, 'upsert')
-    .mockResolvedValue({ sex: 'M', heightCm: 180, birthDate: '1991-03-01', activityLevel: 'MODERATE', tdeeBootstrap: null })
+    .mockResolvedValue({ sex: 'M', heightCm: 180, birthDate: '1991-03-01', activityLevel: 'MIXED', tdeeBootstrap: null })
   renderSheet()
   await userEvent.clear(screen.getByLabelText('Testzsír'))
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))

@@ -2915,14 +2915,18 @@ export interface components {
             tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
             prescription?: components["schemas"]["GoalPrescription"] | null;
         };
-        /** @description Formula-TDEE bootstrap snapshot computed at first evaluation. */
+        /** @description Formula-TDEE bootstrap snapshot computed at first evaluation. tdee = neatBaselineKcal + weeklyEatKcalPerDay. */
         TdeeBootstrap: {
             /** @description Basal metabolic rate (kcal/day) */
             bmr: number;
-            /** @description Total daily energy expenditure (kcal/day) */
+            /** @description Non-exercise activity multiplier (lifestyle band DESK/MIXED/PHYSICAL) */
+            neat: number;
+            /** @description bmr × neat — the non-exercise lifestyle maintenance (kcal/day) */
+            neatBaselineKcal: number;
+            /** @description Scheduled training energy (gym+sport+run), weekly total ÷ 7 (kcal/day) */
+            weeklyEatKcalPerDay: number;
+            /** @description Total maintenance = neatBaselineKcal + weeklyEatKcalPerDay (kcal/day) */
             tdee: number;
-            /** @description Physical-activity-level multiplier */
-            pal: number;
             /**
              * @description MSJ = Mifflin-St Jeor, KATCH = Katch-McArdle
              * @enum {string}
@@ -2950,6 +2954,8 @@ export interface components {
             sleepTargetH: number;
             restDays: number[];
             projectedRateKgPerWk: number;
+            /** @description Goal deficit(−)/surplus(+) per day (kcal); sign×rate%/100×kg×kcalPerKg÷7 */
+            dailyEnergyBalanceKcal: number;
             rationale: string;
         };
         GoalGuardStatus: {
@@ -3063,7 +3069,7 @@ export interface components {
             birthDate: string;
             bodyFatPct?: number | null;
             /** @enum {string|null} */
-            activityLevel?: "SEDENTARY" | "LIGHT" | "MODERATE" | "VERY" | "EXTRA" | null;
+            activityLevel?: "DESK" | "MIXED" | "PHYSICAL" | null;
             tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
         };
         BiometricProfileUpsertRequest: {
@@ -3073,7 +3079,7 @@ export interface components {
             birthDate: string;
             bodyFatPct?: number | null;
             /** @enum {string|null} */
-            activityLevel?: "SEDENTARY" | "LIGHT" | "MODERATE" | "VERY" | "EXTRA" | null;
+            activityLevel?: "DESK" | "MIXED" | "PHYSICAL" | null;
         };
         PantryResponse: {
             ingredients: components["schemas"]["IngredientResponse"][];

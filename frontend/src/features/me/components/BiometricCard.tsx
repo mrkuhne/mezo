@@ -1,14 +1,14 @@
 import { Icon } from '@/shared/ui/Icon'
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
-import { ACTIVITY_LEVELS, ACTIVITY_SHORT, ageFromBirthDate, palLabel, type ActivityLevel } from '@/features/me/logic/biometricFields'
+import { ACTIVITY_LEVELS, ACTIVITY_SHORT, ageFromBirthDate, neatLabel, type ActivityLevel } from '@/features/me/logic/biometricFields'
 
-const PAL_BY_ID = Object.fromEntries(ACTIVITY_LEVELS.map(a => [a.id, a.pal])) as Record<ActivityLevel, number>
+const NEAT_BY_ID = Object.fromEntries(ACTIVITY_LEVELS.map(a => [a.id, a.neat])) as Record<ActivityLevel, number>
 
-// Resolve the activityLevel enum to its compact card label + PAL multiplier.
-// Falls back to MODERATE when null/absent (the engine's default).
-function resolveActivity(level: ActivityLevel | null | undefined): { label: string; pal: number } {
-  const lvl = (level ?? 'MODERATE') as ActivityLevel
-  return { label: ACTIVITY_SHORT[lvl], pal: PAL_BY_ID[lvl] }
+// Resolve the activityLevel enum to its compact card label + NEAT multiplier.
+// Falls back to MIXED when null/absent (the engine's default).
+function resolveActivity(level: ActivityLevel | null | undefined): { label: string; neat: number } {
+  const lvl = (level ?? 'MIXED') as ActivityLevel
+  return { label: ACTIVITY_SHORT[lvl], neat: NEAT_BY_ID[lvl] }
 }
 
 // Biometria card on the Profile (G6, mezo-06n). Re-skinned to the Napiv .biocard
@@ -98,16 +98,24 @@ export function BiometricCard({
           )}
         </Stat>
         <Stat k="Aktivitás" style={{ gridColumn: '1/3' }}>
-          {activity.label} <small>{palLabel(activity.pal)}</small>
+          {activity.label} <small>{neatLabel(activity.neat)}</small>
         </Stat>
       </div>
 
       {tdee && (
-        <div className="tdee">
-          <span className="k">
-            Alap-TDEE · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'}
-          </span>
-          <span className="v">≈{Math.round(tdee.tdee)} kcal/nap</span>
+        <div className="tdee tdee-split">
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <span className="k">Alaphő · NEAT</span>
+            <span className="v">{Math.round(tdee.neatBaselineKcal)}</span>
+          </div>
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <span className="k">Betábl. mozgás</span>
+            <span className="v">+{Math.round(tdee.weeklyEatKcalPerDay)}</span>
+          </div>
+          <div className="row tdee-total" style={{ justifyContent: 'space-between' }}>
+            <span className="k">Fenntartó · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'}</span>
+            <span className="v">≈{Math.round(tdee.tdee)} kcal/nap</span>
+          </div>
         </div>
       )}
     </div>

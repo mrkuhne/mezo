@@ -123,7 +123,7 @@ class BiometricsContractIT extends ApiIntegrationTest {
         putForBody("/api/biometrics/profile",
             io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest.builder()
                 .sex("M").heightCm(new BigDecimal("180.0")).birthDate(LocalDate.of(1991, 3, 1))
-                .activityLevel(io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest.ActivityLevelEnum.MODERATE)
+                .activityLevel(io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest.ActivityLevelEnum.MIXED)
                 .build(),
             headers, HttpStatus.OK, io.mrkuhne.mezo.api.dto.BiometricProfileResponse.class);
 
@@ -131,7 +131,7 @@ class BiometricsContractIT extends ApiIntegrationTest {
             getForBody("/api/biometrics/profile", headers, HttpStatus.OK,
                 io.mrkuhne.mezo.api.dto.BiometricProfileResponse.class);
         assertThat(got.getActivityLevel())
-            .isEqualTo(io.mrkuhne.mezo.api.dto.BiometricProfileResponse.ActivityLevelEnum.MODERATE);
+            .isEqualTo(io.mrkuhne.mezo.api.dto.BiometricProfileResponse.ActivityLevelEnum.MIXED);
     }
 
     @Test

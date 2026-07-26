@@ -23,15 +23,16 @@ import org.springframework.stereotype.Service;
  *       {@code LBM = weight·(1 − bodyFatPct/100)}, {@code BMR = 370 + 21.6·LBM}; {@code formula="KATCH"}.</li>
  *   <li><b>BMR — Mifflin-St Jeor</b> otherwise: men {@code 10·kg + 6.25·cm − 5·age + 5},
  *       women {@code … − 161} (sex M/F); {@code formula="MSJ"}.</li>
- *   <li><b>PAL</b> from {@code profile.activityLevel} via {@link GoalEngineProperties.Pal#forLevel}
- *       (default MODERATE 1.55 when null/unknown). <b>TDEE = BMR × PAL.</b></li>
+ *   <li><b>NEAT</b> lifestyle band from {@code profile.activityLevel} via
+ *       {@link GoalEngineProperties.Neat#forLevel} (default MIXED 1.35 when null/unknown).
+ *       {@code neatBaselineKcal = BMR × NEAT}, and <b>TDEE = neatBaselineKcal + weeklyEatKcalPerDay.</b></li>
  * </ul>
  *
- * <p><b>Anti-double-count (spec §6.3):</b> the PAL multiplier already bakes in the athlete's
- * average activity energy — per-session MET deltas are <em>not</em> added here. Those are the
- * projection's block-boundary concern (Task 6).
+ * <p><b>Anti-double-count (spec §6.3):</b> the NEAT multiplier covers only non-exercise daily-life
+ * energy — training energy is added explicitly via {@code weeklyEatKcalPerDay} (scheduled EAT),
+ * never baked into the multiplier. The caller supplies that weekly scheduled training energy.
  *
- * <p>Stateless, pure-deterministic, config-driven (PAL bands from {@link GoalEngineProperties});
+ * <p>Stateless, pure-deterministic, config-driven (NEAT bands from {@link GoalEngineProperties});
  * no hardcoded multiplier. Caller supplies the current weight (latest weigh-in), so the service
  * has no repository dependency and is trivially unit-/integration-testable.
  */
@@ -55,7 +56,7 @@ public class TdeeBootstrapService {
 
     private static final BigDecimal ONE_HUNDRED = new BigDecimal("100");
 
-    /** Output precision: BMR/TDEE/PAL to 2 dp (kcal/day; the contract types are numbers). */
+    /** Output precision: BMR/TDEE/NEAT-baseline to 2 dp (kcal/day; the contract types are numbers). */
     private static final int SCALE = 2;
 
     private final GoalEngineProperties props;
@@ -65,10 +66,13 @@ public class TdeeBootstrapService {
      * and age is derived from {@code profile.birthDate} relative to {@code LocalDate.now()} (the
      * codebase convention; no {@code Clock} bean exists).
      *
-     * @param profile         the biometric profile (sex, heightCm, birthDate, bodyFatPct, activityLevel)
-     * @param currentWeightKg the latest weigh-in (kg) — the BMR basis
+     * @param profile             the biometric profile (sex, heightCm, birthDate, bodyFatPct, activityLevel)
+     * @param currentWeightKg     the latest weigh-in (kg) — the BMR basis
+     * @param weeklyEatKcalPerDay weekly scheduled training energy averaged per day (scheduled EAT);
+     *                            {@code null} is treated as zero (baseline-only TDEE)
      */
-    public TdeeBootstrapJson compute(BiometricProfileEntity profile, BigDecimal currentWeightKg) {
+    public TdeeBootstrapJson compute(
+        BiometricProfileEntity profile, BigDecimal currentWeightKg, BigDecimal weeklyEatKcalPerDay) {
         BigDecimal bmr;
         String formula;
         if (profile.getBodyFatPct() != null) {
@@ -80,12 +84,14 @@ public class TdeeBootstrapService {
             formula = FORMULA_MSJ;
         }
 
-        BigDecimal pal = BigDecimal.valueOf(props.pal().forLevel(profile.getActivityLevel()));
-        BigDecimal tdee = bmr.multiply(pal);
+        BigDecimal neat = BigDecimal.valueOf(props.neat().forLevel(profile.getActivityLevel()));
+        BigDecimal neatBaseline = bmr.multiply(neat);
+        BigDecimal weeklyEat = weeklyEatKcalPerDay == null ? BigDecimal.ZERO : weeklyEatKcalPerDay;
+        BigDecimal tdee = neatBaseline.add(weeklyEat);
 
-        // pal stays unrounded — it is a multiplier (e.g. 1.725), not a kcal value; only the
-        // kcal outputs (bmr, tdee) are rounded to whole-ish kcal precision.
-        return new TdeeBootstrapJson(scaled(bmr), scaled(tdee), pal, formula, OffsetDateTime.now());
+        // neat stays unrounded (a multiplier); the kcal outputs are rounded to whole-ish kcal precision.
+        return new TdeeBootstrapJson(
+            scaled(bmr), neat, scaled(neatBaseline), scaled(weeklyEat), scaled(tdee), formula, OffsetDateTime.now());
     }
 
     /** Katch-McArdle: LBM = weight·(1 − bodyFatPct/100); BMR = 370 + 21.6·LBM. */

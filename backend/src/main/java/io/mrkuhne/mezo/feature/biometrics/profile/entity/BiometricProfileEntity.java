@@ -51,7 +51,7 @@ public class BiometricProfileEntity extends OwnedEntity {
     @Column(name = "body_fat_pct", precision = 4, scale = 2)
     private BigDecimal bodyFatPct;
 
-    // PAL activity-level — a TDEE-bootstrap input. SEDENTARY|LIGHT|MODERATE|VERY|EXTRA
+    // NEAT lifestyle band — a TDEE-bootstrap input. DESK|MIXED|PHYSICAL
     // (DB CHECK ck_biometric_profile_activity_level). Nullable until captured.
     @Column(name = "activity_level")
     private String activityLevel;

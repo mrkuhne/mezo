@@ -52,7 +52,7 @@ class BiometricProfileContractIT extends ApiIntegrationTest {
             .heightCm(new BigDecimal("180.0"))
             .birthDate(LocalDate.of(1991, 3, 1))
             .bodyFatPct(new BigDecimal("15.0"))
-            .activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MODERATE)
+            .activityLevel(BiometricProfileUpsertRequest.ActivityLevelEnum.MIXED)
             .build();
         putForBody("/api/biometrics/profile", profile, auth, HttpStatus.OK, BiometricProfileResponse.class);
         postForBody("/api/biometrics/weight",

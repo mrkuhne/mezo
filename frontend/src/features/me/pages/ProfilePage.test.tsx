@@ -21,7 +21,8 @@ test('renders the Biometria card with the derived base-TDEE line', async () => {
   renderProfile()
   // Card resolves from useBiometricProfile (mock static / MSW default profile).
   await waitFor(() => expect(screen.getByText('Biometria')).toBeInTheDocument())
-  expect(screen.getByText(/≈2960/)).toBeInTheDocument()
+  // Split card's Fenntartó total row (mock static / MSW default profile: tdee 3000).
+  expect(screen.getByText(/≈3000/)).toBeInTheDocument()
 })
 
 test('renders the goal mini-track first, before the Biometria card (spec §4.6 order)', async () => {

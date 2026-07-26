@@ -157,8 +157,8 @@ export const handlers = [
       heightCm: 180,
       birthDate: '1991-03-01',
       bodyFatPct: 15,
-      activityLevel: 'MODERATE',
-      tdeeBootstrap: { bmr: 1910, tdee: 2960, pal: 1.55, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
+      activityLevel: 'MIXED',
+      tdeeBootstrap: { bmr: 1910, neat: 1.35, neatBaselineKcal: 2579, weeklyEatKcalPerDay: 421, tdee: 3000, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
     }),
   ),
   // Progression profile (P6). Tests can override to ghost with a 404 (switch off).

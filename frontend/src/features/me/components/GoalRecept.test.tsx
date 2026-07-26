@@ -18,6 +18,7 @@ const prescription: Prescription = {
       sleepTargetH: 7.5,
       restDays: [3, 7],
       projectedRateKgPerWk: -0.55,
+      dailyEnergyBalanceKcal: -516,
       rationale: 'Agresszívabb deficit a gym blokk alatt.',
     },
     {
@@ -29,6 +30,7 @@ const prescription: Prescription = {
       sleepTargetH: 8,
       restDays: [4, 7],
       projectedRateKgPerWk: -0.35,
+      dailyEnergyBalanceKcal: -286,
       rationale: 'Lassítunk a célsúly közelében.',
     },
   ],

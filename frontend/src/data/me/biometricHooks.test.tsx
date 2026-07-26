@@ -23,8 +23,8 @@ test('useBiometricProfile (real mode) returns the profile + isComplete', async (
         heightCm: 182,
         birthDate: '1990-01-01',
         bodyFatPct: 14,
-        activityLevel: 'VERY',
-        tdeeBootstrap: { bmr: 1800, tdee: 3105, pal: 1.725, formula: 'KATCH', computedAt: '2026-05-01T06:00:00Z' },
+        activityLevel: 'PHYSICAL',
+        tdeeBootstrap: { bmr: 1800, neat: 1.5, neatBaselineKcal: 2700, weeklyEatKcalPerDay: 405, tdee: 3105, formula: 'KATCH', computedAt: '2026-05-01T06:00:00Z' },
       }),
     ),
   )
@@ -58,9 +58,9 @@ test('useBiometricActions (real mode) upsert PUTs the body + invalidates biometr
   const wrapper = makeHookWrapper()
   const { result } = renderHook(() => useBiometricActions(), { wrapper })
   await act(async () => {
-    await result.current.upsert({ sex: 'F', heightCm: 168, birthDate: '1992-05-05', activityLevel: 'MODERATE', bodyFatPct: 22 })
+    await result.current.upsert({ sex: 'F', heightCm: 168, birthDate: '1992-05-05', activityLevel: 'MIXED', bodyFatPct: 22 })
   })
-  expect(putBody).toEqual({ sex: 'F', heightCm: 168, birthDate: '1992-05-05', activityLevel: 'MODERATE', bodyFatPct: 22 })
+  expect(putBody).toEqual({ sex: 'F', heightCm: 168, birthDate: '1992-05-05', activityLevel: 'MIXED', bodyFatPct: 22 })
 })
 
 test('useBiometricActions (real mode) invalidates biometricProfile + goals on success', async () => {
@@ -85,7 +85,7 @@ test('useBiometricActions (real mode) invalidates biometricProfile + goals on su
     { wrapper },
   )
   await act(async () => {
-    await result.current.upsert({ sex: 'M', heightCm: 180, birthDate: '1991-03-01', activityLevel: 'MODERATE' })
+    await result.current.upsert({ sex: 'M', heightCm: 180, birthDate: '1991-03-01', activityLevel: 'MIXED' })
   })
   expect(invalidated).toContainEqual(['biometricProfile'])
   expect(invalidated).toContainEqual(['goals'])
@@ -106,7 +106,7 @@ test('useBiometricActions (mock mode) upsert is a no-op that resolves without hi
   // No MSW handler is needed in mock mode; resolving cleanly proves it short-circuits.
   const { result } = renderHook(() => useBiometricActions(), { wrapper: makeHookWrapper() })
   await act(async () => {
-    await result.current.upsert({ sex: 'M', heightCm: 180, birthDate: '1991-03-01', activityLevel: 'MODERATE' })
+    await result.current.upsert({ sex: 'M', heightCm: 180, birthDate: '1991-03-01', activityLevel: 'MIXED' })
   })
   expect(result.current.pending).toBe(false)
 })

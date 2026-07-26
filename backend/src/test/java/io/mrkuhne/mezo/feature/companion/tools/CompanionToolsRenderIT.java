@@ -198,7 +198,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
                 List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", 2100, 160,
-                        new BigDecimal("7.5"), List.of(5, 6), null, null)),
+                        new BigDecimal("7.5"), List.of(5, 6), null, null, null)),
                 null, null);
         // started 2 weeks + 1 day ago → day 15 → week 3
         goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(2).minusDays(1),

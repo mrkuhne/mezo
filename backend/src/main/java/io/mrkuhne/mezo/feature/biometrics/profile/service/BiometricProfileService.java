@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.mapper.GoalMapper;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
@@ -54,6 +55,7 @@ public class BiometricProfileService {
     private final GoalMapper goalMapper;
     private final GoalRepository goalRepository;
     private final GoalEngineService goalEngineService;
+    private final WeeklyScheduledActivityService weeklyActivity;
 
     public BiometricProfileResponse getProfile(UUID userId) {
         BiometricProfileEntity entity = repository.findByCreatedByAndDeletedFalse(userId)
@@ -96,7 +98,8 @@ public class BiometricProfileService {
         if (latestWeightKg == null) {
             return null;
         }
-        TdeeBootstrapJson bootstrap = tdeeBootstrapService.compute(profile, latestWeightKg);
+        BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, latestWeightKg);
+        TdeeBootstrapJson bootstrap = tdeeBootstrapService.compute(profile, latestWeightKg, weeklyEat);
         return goalMapper.toTdeeBootstrap(bootstrap);
     }
 

@@ -102,6 +102,7 @@ public class GoalEvaluationService {
                 DEFAULT_SLEEP_TARGET_H,
                 List.of(), // rest-day placement is a future Train bridge (no deload weeks derivable here).
                 seg.projectedRateKgPerWk(),
+                seg.dailyEnergyBalanceKcal(),
                 seg.rationale()));
         }
 
