@@ -40,7 +40,12 @@ public class GoalReevaluateRunner implements CommandLineRunner {
     private final GoalRepository goalRepository;
     private final GoalEngineService goalEngineService;
 
-    /** CommandLineRunner entry point (startup). */
+    /**
+     * CommandLineRunner entry point (startup). Self-invokes {@link #run()} directly, so Spring's
+     * transactional proxy is bypassed — the {@code @Transactional} on {@code run()} does NOT open a
+     * transaction here; no outer tx wraps the loop. Harmless: each {@link GoalEngineService#evaluate}
+     * call is itself {@code @Transactional}.
+     */
     @Override
     public void run(String... args) {
         run();

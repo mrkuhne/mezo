@@ -14,9 +14,8 @@ export const SLOT_WEIGHT = { main: 2, snack: 1, postWorkoutMain: 2.5 } as const
 export const RECIPE_FIT_TOLERANCE = 0.2
 export const FAT_KCAL_SHARE = 0.275
 
-// Dynamic energy model (mezo-1oy5). Daily target = BMR×NEAT_BASELINE + Σ MET-based activity + goal balance.
-// NEAT_BASELINE replaces the static PAL in the per-day budget (activity is added explicitly → no double-count).
-export const NEAT_BASELINE = 1.2
+// Dynamic energy model (mezo-1oy5). Daily target = BMR×NEAT + Σ MET-based activity + goal balance,
+// where NEAT is read off `tdeeBootstrap.neat` from the wire (deriveDailyBudget) — not a static const here.
 // MET by training-block kind — kcal = MET × weightKg × hours. Conservative (indoor volleyball has lots of standing).
 export const MET_BY_KIND: Record<'gym' | 'sport' | 'run' | 'default', number> = { gym: 6.0, sport: 4.5, run: 9.5, default: 5.0 }
 // Null-duration blocks (interval runs) use this for the burn estimate.
