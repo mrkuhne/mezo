@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -30,7 +31,25 @@ public class WeeklyScheduledActivityService {
 
     private final GymScheduleSlotRepository gymRepo;
     private final SportScheduleSlotRepository sportRepo;
+    private final RunningBlockRepository runningBlockRepository;
     private final TrainProperties props;
+
+    /** Total current scheduled EAT (kcal/day): gym+sport + the owner's currently-active running block. The bootstrap snapshot. */
+    @Transactional(readOnly = true)
+    public BigDecimal totalWeeklyEatKcalPerDay(UUID userId, BigDecimal weightKg) {
+        return scheduledWeeklyEatKcalPerDay(userId, weightKg)
+            .add(runWeeklyEatKcalPerDay(currentActiveRunningSessions(userId), weightKg));
+    }
+
+    /** Sessions/week of the owner's currently active running block (0 when none / no structure). */
+    private int currentActiveRunningSessions(UUID userId) {
+        return runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream()
+            .findFirst()
+            .map(b -> b.getStructure() == null || b.getStructure().weeks() == null || b.getStructure().weeks().isEmpty()
+                ? 0
+                : (b.getStructure().weeks().get(0).sessions() == null ? 0 : b.getStructure().weeks().get(0).sessions().size()))
+            .orElse(0);
+    }
 
     /** Gym + sport recurring weekly schedule energy ÷ 7 (kcal/day). Segment-independent. */
     @Transactional(readOnly = true)

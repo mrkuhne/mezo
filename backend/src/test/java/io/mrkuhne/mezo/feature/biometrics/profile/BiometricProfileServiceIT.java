@@ -102,12 +102,14 @@ class BiometricProfileServiceIT extends AbstractIntegrationTest {
         BiometricProfileResponse response = service.getProfile(user);
 
         // Same source of truth: assert the response matches TdeeBootstrapService.compute on the same inputs.
+        // No gym/sport/running schedule seeded → weeklyEat is zero; both sides use the same baseline-only TDEE.
         BiometricProfileEntity profile = repository.findByCreatedByAndDeletedFalse(user).orElseThrow();
-        TdeeBootstrapJson expected = tdeeBootstrapService.compute(profile, new BigDecimal("84.00"));
+        TdeeBootstrapJson expected =
+            tdeeBootstrapService.compute(profile, new BigDecimal("84.00"), BigDecimal.ZERO);
         assertThat(response.getTdeeBootstrap()).isNotNull();
         assertThat(response.getTdeeBootstrap().getBmr()).isEqualByComparingTo(expected.bmr());
         assertThat(response.getTdeeBootstrap().getTdee()).isEqualByComparingTo(expected.tdee());
-        assertThat(response.getTdeeBootstrap().getPal()).isEqualByComparingTo(expected.pal());
+        assertThat(response.getTdeeBootstrap().getNeat()).isEqualByComparingTo(expected.neat());
     }
 
     @Test
