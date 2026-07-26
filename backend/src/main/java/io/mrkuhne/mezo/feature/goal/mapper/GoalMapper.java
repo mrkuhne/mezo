@@ -53,8 +53,10 @@ public interface GoalMapper {
         }
         return TdeeBootstrap.builder()
             .bmr(j.bmr())
+            .neat(j.neat())
+            .neatBaselineKcal(j.neatBaselineKcal())
+            .weeklyEatKcalPerDay(j.weeklyEatKcalPerDay())
             .tdee(j.tdee())
-            .pal(j.pal())
             .formula(j.formula() == null ? null : TdeeBootstrap.FormulaEnum.fromValue(j.formula()))
             .computedAt(j.computedAt())
             .build();
@@ -86,6 +88,7 @@ public interface GoalMapper {
             .sleepTargetH(s.sleepTargetH())
             .restDays(s.restDays() == null ? List.of() : s.restDays())
             .projectedRateKgPerWk(s.projectedRateKgPerWk())
+            .dailyEnergyBalanceKcal(s.dailyEnergyBalanceKcal())
             .rationale(s.rationale())
             .build()).toList();
     }

@@ -146,6 +146,12 @@ class GoalContractIT extends ApiIntegrationTest {
         assertThat(evaluated.getPrescription().getSegments()).isNotEmpty();
         assertThat(evaluated.getTdeeBootstrap()).isNotNull();
 
+        // The NEAT/EAT split + per-segment energy balance map through to the contract DTOs (mezo-eujg).
+        assertThat(evaluated.getTdeeBootstrap().getNeat()).isNotNull();
+        assertThat(evaluated.getTdeeBootstrap().getNeatBaselineKcal()).isNotNull();
+        assertThat(evaluated.getTdeeBootstrap().getWeeklyEatKcalPerDay()).isNotNull();
+        assertThat(evaluated.getPrescription().getSegments().get(0).getDailyEnergyBalanceKcal()).isNotNull();
+
         // The prescription was persisted on the goal: a follow-up GET returns it.
         GoalResponse refetched = getForBody("/api/goals/" + goal.getId(), auth, HttpStatus.OK, GoalResponse.class);
         assertThat(refetched.getPrescription()).isNotNull();
