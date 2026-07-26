@@ -18,6 +18,8 @@ import {
   MET_BY_KIND,
   MIN_SLOT_GAP_MIN,
   NEAT_BASELINE,
+  PERI_SNACK_MIN_DURATION,
+  PERI_SNACK_MIN_KCAL,
   POST_WORKOUT_SNAP_MIN,
   PRE_WORKOUT_SNAP_MIN,
   RECIPE_FIT_TOLERANCE,
@@ -49,6 +51,8 @@ export interface DayPlanInput {
   bed: string
   mealsPerDay: number
   blocks: PlannerBlock[]
+  /** Bodyweight (kg) — only feeds the peri-snack kcal threshold; 0 → duration rule only (Task 5 plumbing). */
+  weightKg?: number
   budget: DayBudget
   meals: FuelMeal[]
   recipes: Recipe[]
@@ -154,6 +158,7 @@ export function placeWindows(
   bed: string,
   mealsPerDay: number,
   blocks: PlannerBlock[],
+  weightKg = 0,
 ): PlannedWindow[] {
   const eatingStart = toMin(wake) + EATING_START_OFFSET_MIN
   const kitchenClose = toMin(bed) - KITCHEN_CLOSE_OFFSET_MIN
@@ -171,6 +176,17 @@ export function placeWindows(
   if (meals >= 4) windows.push(snack((ebed.time + vacsora.time) / 2, 'Uzsonna')) // after Ebéd
   if (meals >= 5) windows.push(snack((reggeli.time + ebed.time) / 2, 'Tízórai')) // between Reggeli–Ebéd
   if (meals >= 6) windows.push(snack(vacsora.time - MIN_SLOT_GAP_MIN, 'Esti snack')) // evening: Vacsora−90
+
+  // Peri-workout snack (mezo-1oy5): each significant block earns a light pre-session fuel window
+  // (the post side is covered by the post-workout main snap). Deduped against existing windows by min-gap.
+  for (const b of blocks) {
+    const dur = b.durationMin ?? DEFAULT_BLOCK_MIN
+    const significant = dur >= PERI_SNACK_MIN_DURATION || blockKcal(b.kind, b.durationMin, weightKg) >= PERI_SNACK_MIN_KCAL
+    if (!significant) continue
+    const t = clamp(toMin(b.time) - 60)
+    if (windows.some(w => Math.abs(w.time - t) < MIN_SLOT_GAP_MIN)) continue
+    windows.push(snack(t, 'Pre-workout snack'))
+  }
 
   // Training snaps — a SINGLE snap around the whole training envelope (mezo-1oy5). Two concurrent
   // blocks (e.g. gym + volleyball both at 18:00) must not each drag their own nearest main and
@@ -280,7 +296,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
   const intakeRefs = new Set(intakes.map(i => i.pantryItemId))
 
   // 1. Windows + per-slot budgets.
-  const windows = placeWindows(wake, bed, mealsPerDay, blocks)
+  const windows = placeWindows(wake, bed, mealsPerDay, blocks, input.weightKg ?? 0)
   const budgets = splitBudget(budget, windows)
 
   // 2. Logged meals grouped by slotKey, each group sorted by loggedAt (multi-snack fills in time order).

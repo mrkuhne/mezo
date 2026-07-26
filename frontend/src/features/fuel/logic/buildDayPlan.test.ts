@@ -14,7 +14,7 @@ import {
   type PlannedWindow,
   type PlannerBlock,
 } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, ProtocolSlotData, Recipe } from '@/data/types'
+import type { FuelMeal, FuelPlanToday, ProtocolSlotData, Recipe } from '@/data/types'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 
 // ── fixture factories ────────────────────────────────────────────────────────
@@ -425,6 +425,29 @@ test('no two meal slots share the same minute (collision-free) even with two blo
 test('plan carries the energy breakdown from the budget', () => {
   const plan = buildDayPlan(baseInput({ nowHHmm: '13:00', meals: [] }))
   expect(plan.energy).toEqual(expect.objectContaining({ base: expect.any(Number), activity: expect.any(Number), balance: expect.any(Number), target: expect.any(Number) }))
+})
+
+// ── peri-workout snack windows (mezo-1oy5) ───────────────────────────────────
+const snacks = (p: FuelPlanToday) => p.slots.filter(s => s.kind === 'snack').length
+test('a significant block (≥90min or ≥300kcal) adds a peri-workout snack window', () => {
+  // A 3-meal day carries no baseline snack near the pre-workout hour, so the peri-snack is
+  // unambiguously additive (the 4-meal day's 17:49 Uzsonna would otherwise dedupe it — asserted below).
+  const noBlock = buildDayPlan(baseInput({ mealsPerDay: 3, nowHHmm: '05:00', meals: [], blocks: [] }))
+  const bigBlock = buildDayPlan(baseInput({
+    mealsPerDay: 3, nowHHmm: '05:00', meals: [],
+    blocks: [{ kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' }],
+  }))
+  expect(snacks(bigBlock)).toBeGreaterThan(snacks(noBlock)) // one extra peri-snack around the session
+})
+test('the peri-snack is deduped when a meal/snack window already covers the pre-workout min-gap', () => {
+  // On a 4-meal day the Uzsonna (≈17:49) already sits within MIN_SLOT_GAP_MIN of the 17:00 peri
+  // window, so no redundant second snack is added — the snack count matches the no-block day.
+  const noBlock = buildDayPlan(baseInput({ mealsPerDay: 4, nowHHmm: '05:00', meals: [], blocks: [] }))
+  const bigBlock = buildDayPlan(baseInput({
+    mealsPerDay: 4, nowHHmm: '05:00', meals: [],
+    blocks: [{ kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' }],
+  }))
+  expect(snacks(bigBlock)).toBe(snacks(noBlock)) // deduped: the existing snack already covers pre-workout
 })
 
 // ── MET-based activity energy (mezo-1oy5) ────────────────────────────────────
