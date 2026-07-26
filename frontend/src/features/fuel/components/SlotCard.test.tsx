@@ -114,6 +114,19 @@ test('a missed meal slot renders faded with a Pótlás (retro-log) action', () =
   expect(onLogMeal).toHaveBeenCalledWith(slot)
 })
 
+test('a missed slot that still carries suggestedRecipeId renders ONLY Pótlás, never a 2nd Logolás', () => {
+  // buildDayPlan's state pass can reclassify a pending recipe-suggestion window to `missed` WITHOUT
+  // clearing suggestedRecipeId; `missed` must win so the card shows one CTA (Pótlás), not two.
+  const slot = {
+    time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
+    mealName: 'Túrós tészta', suggestedRecipeId: 'r1', kcal: 610, p: 46, c: 55, f: 20,
+  } as FuelSlot
+  render(<SlotCard slot={slot} meta={KIND_META.meal} scoredMeal={null} onLogMeal={vi.fn()} onOpenScore={noop} />)
+  expect(screen.getByRole('button', { name: /pótlás/i })).toBeInTheDocument()
+  // The suggestion "Logolás" CTA is gated off — exactly one log button, no second /logolás/i.
+  expect(screen.queryByRole('button', { name: /logolás/i })).not.toBeInTheDocument()
+})
+
 // ── Workout / sport duration guard ─────────────────────────────────────────────
 test('a workout slot without a duration renders no "· perc" suffix', () => {
   renderCard({ time: '17:00', kind: 'workout', label: 'Push A', state: 'pending' })

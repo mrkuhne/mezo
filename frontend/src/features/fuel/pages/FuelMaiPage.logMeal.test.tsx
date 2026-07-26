@@ -17,7 +17,9 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   return {
     ...actual,
     useFuelTimeline: () =>
-      hoisted.plan ? { plan: hoisted.plan, getScoredMeal: () => null } : actual.useFuelTimeline(),
+      hoisted.plan
+        ? { plan: hoisted.plan, budget: { kcal: 2400, p: 180, c: 240, f: 73, energy: hoisted.plan.energy }, getScoredMeal: () => null }
+        : actual.useFuelTimeline(),
   }
 })
 

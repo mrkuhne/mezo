@@ -51,7 +51,7 @@ export interface DayPlanInput {
   bed: string
   mealsPerDay: number
   blocks: PlannerBlock[]
-  /** Bodyweight (kg) — only feeds the peri-snack kcal threshold; 0 → duration rule only (Task 5 plumbing). */
+  /** Bodyweight (kg) — only feeds the peri-snack kcal threshold; 0 → duration rule only. */
   weightKg?: number
   budget: DayBudget
   meals: FuelMeal[]

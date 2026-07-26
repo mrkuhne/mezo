@@ -460,6 +460,7 @@ test('activityKcal sums every scheduled block (gym + sport + run all count)', ()
   const blocks = [
     { kind: 'gym' as const, time: '18:00', durationMin: 60, label: 'Plyo Leg' },
     { kind: 'sport' as const, time: '18:00', durationMin: 240, label: 'Volleyball' },
+    { kind: 'run' as const, time: '07:00', durationMin: 40, label: 'Futás · 6km' },
   ]
-  expect(activityKcal(blocks, 78.6)).toBeCloseTo(6.0 * 78.6 + 4.5 * 78.6 * 4, 0) // ≈1887
+  expect(activityKcal(blocks, 78.6)).toBeCloseTo(6.0 * 78.6 + 4.5 * 78.6 * 4 + blockKcal('run', 40, 78.6), 0) // ≈2384
 })

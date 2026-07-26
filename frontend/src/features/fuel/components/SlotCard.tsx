@@ -49,7 +49,10 @@ export function SlotCard({
   const isNow = slot.state === 'now'
   const isMissed = slot.state === 'missed'
   // Planner (P5) pending shapes — additive; absent on logged/mock slots so their render is unchanged.
-  const isSuggestion = !isDone && !!slot.suggestedRecipeId
+  // `missed` wins over a lingering recipe suggestion: buildDayPlan's state pass can reclassify a
+  // pending recipe-suggestion window to `missed` without clearing suggestedRecipeId, so gate the
+  // suggestion CTA off `missed` — a missed slot renders ONLY the Pótlás retro-log, never a 2nd log.
+  const isSuggestion = !isDone && !isMissed && !!slot.suggestedRecipeId
   const isBudgetSlot = !slot.mealName && (slot.kind === 'meal' || slot.kind === 'snack') && !isDone && !!slot.kcal
   const isWorkoutKind = slot.kind === 'workout' || slot.kind === 'sport'
   const hasItems = (slot.items ?? []).length > 0

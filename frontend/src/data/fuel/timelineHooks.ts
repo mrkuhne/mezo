@@ -135,5 +135,5 @@ export function useFuelTimeline(date: string = localDateString()) {
     meals: fuel.meals, recipes, protocolSlots, intakes,
     caffeineCutoff: settings.caffeineCutoff, nowHHmm,
   })
-  return { plan, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
+  return { plan, budget, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
 }
