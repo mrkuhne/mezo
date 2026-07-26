@@ -47,6 +47,7 @@ export function SlotCard({
 }) {
   const isDone = slot.state === 'done'
   const isNow = slot.state === 'now'
+  const isMissed = slot.state === 'missed'
   // Planner (P5) pending shapes — additive; absent on logged/mock slots so their render is unchanged.
   const isSuggestion = !isDone && !!slot.suggestedRecipeId
   const isBudgetSlot = !slot.mealName && (slot.kind === 'meal' || slot.kind === 'snack') && !isDone && !!slot.kcal
@@ -59,7 +60,7 @@ export function SlotCard({
   const durationSuffix = isWorkoutKind && slot.duration ? ` · ${slot.duration} perc` : ''
 
   return (
-    <div className={`slot${isDone ? ' done' : ''}${isNow ? ' next' : ''}`}>
+    <div className={`slot${isDone ? ' done' : ''}${isNow ? ' next' : ''}${isMissed ? ' missed' : ''}`}>
       <span className="fav" role="img" aria-label={meta.label} style={{ background: FAV_WASH[slot.kind] ?? FAV_WASH.meal }}>
         {FAV_EMOJI[slot.kind] ?? FAV_EMOJI.meal}
       </span>
@@ -68,6 +69,7 @@ export function SlotCard({
         <div className="t1">
           {title}
           {durationSuffix}
+          {isMissed && <span className="misstag"> kihagyott</span>}
         </div>
 
         <div className="mrow">
@@ -139,20 +141,24 @@ export function SlotCard({
             Logolás
           </button>
         )}
-        {isBudgetSlot && (
+        {(isBudgetSlot || isMissed) && (
           <button
             type="button"
-            aria-label={`${slot.label} logolása`}
+            aria-label={`${slot.label} ${isMissed ? 'pótlása' : 'logolása'}`}
             onClick={() => onLogMeal?.(slot)}
             className="chx"
-            style={{ marginTop: 6, background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+            style={{
+              marginTop: 6,
+              background: isMissed ? 'var(--warm)' : 'var(--wash-sage)',
+              color: isMissed ? 'var(--coral-deep)' : 'var(--sage-deep)',
+            }}
           >
-            Logolás
+            {isMissed ? 'Pótlás' : 'Logolás'}
           </button>
         )}
         {/* Slot-level AI logging (mezo-53su) — a second chip beside Logolás on open meal/snack
             slots; launches AiLogSheet locked to this slot's slotKey. */}
-        {(isSuggestion || isBudgetSlot) && slot.slotKey && onAiLog && (
+        {(isSuggestion || isBudgetSlot || isMissed) && slot.slotKey && onAiLog && (
           <button
             type="button"
             aria-label={`${slot.label} AI-logolása`}
