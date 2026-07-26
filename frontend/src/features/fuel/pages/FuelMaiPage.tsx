@@ -66,7 +66,7 @@ export function FuelMaiPage() {
       {/* Header */}
       <div className="pghead-np sage">
         <div>
-          <div className="over">Fuel · Reta D{retaDay} · kcal floor 2500</div>
+          <div className="over">Fuel · Reta D{retaDay}</div>
           <h1>Mai pacing</h1>
         </div>
         <div className="row gap-xs" style={{ flexShrink: 0 }}>
@@ -93,6 +93,27 @@ export function FuelMaiPage() {
 
       {/* Reta phase context */}
       <RetaPhaseBar day={retaDay} />
+
+      {/* Transparent dynamic target — base heat + activity burn + goal balance (mezo-1oy5) */}
+      <div style={{ padding: '8px 24px 0' }}>
+        <div className="card" style={{ padding: 16 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span className="eyebrow" style={{ color: 'var(--sage-deep)' }}>Mai cél</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 800, fontSize: 22 }}>{plan.energy.target} kcal</span>
+          </div>
+          <div className="row gap-xs" style={{ flexWrap: 'wrap', marginTop: 8 }}>
+            <span className="chx" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)', cursor: 'default' }}>Alaphő {plan.energy.base}</span>
+            <span className="chx" style={{ background: 'var(--wash-amber)', color: 'var(--amber-deep)', cursor: 'default' }}>Mozgás +{plan.energy.activity}</span>
+            <span className="chx" style={{ background: 'var(--warm)', color: 'var(--coral-deep)', cursor: 'default' }}>
+              {plan.energy.balance < 0
+                ? `Deficit ${Math.abs(plan.energy.balance)}`
+                : plan.energy.balance > 0
+                  ? `Felesleg +${plan.energy.balance}`
+                  : 'Egyensúly'}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Gauge card — kcal gauge + coffee/kitchen chips + macro soft bars */}
       <div style={{ padding: '16px 24px 12px' }}>

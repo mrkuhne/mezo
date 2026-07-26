@@ -59,6 +59,14 @@ test('renders header, gauge, fuelchips, macro bars, timeline and micronutrients'
   expect(screen.getByText('Zsír')).toBeInTheDocument()
   expect(screen.getByText('Mikrotápanyagok · heti')).toBeInTheDocument()
 })
+test('renders the dynamic target breakdown (base + activity + balance)', () => {
+  renderView()
+  expect(screen.getByText(/Mai cél/i)).toBeInTheDocument()
+  expect(screen.getByText(/Mozgás/i)).toBeInTheDocument()
+  // Assert a real plan.energy-derived value renders — not just the static labels. The base
+  // heat is date-stable: BMR 1720 (mock goal tdeeBootstrap) × NEAT_BASELINE 1.2 = 2064.
+  expect(screen.getByText(/Alaphő 2064/)).toBeInTheDocument()
+})
 test('opens the FuelSettingsSheet from the szerkeszt chip', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Fuel beállítások' }))
