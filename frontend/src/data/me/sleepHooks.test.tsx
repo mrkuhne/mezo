@@ -1,5 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
+import { QueryClient } from '@tanstack/react-query'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { useSleep } from '@/data/hooks'
 import { server } from '@/test/msw/server'
@@ -11,6 +12,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   vi.unstubAllEnvs()
+  vi.restoreAllMocks()
 })
 
 test('useSleep (real mode) loads the sleep log from the API and exposes lastNight', async () => {
@@ -64,4 +66,34 @@ test('useSleep.logSleep POSTs (mapping durationH) and the new entry appears afte
   await waitFor(() => expect(posted).toBe(true))
   await waitFor(() => expect(result.current.sleepLog.length).toBe(2))
   expect(result.current.lastNight).toMatchObject({ date: '2026-06-02', duration: 8.0, quality: 9 })
+})
+
+test('useSleep.logSleep invalidates ["habitDay"] and the day quest read (derived habit + quest re-derive)', async () => {
+  // The wake_on_time habit + sleep_target quest are re-derived server-side on the next
+  // habitDay / dailyQuests read — a sleep log must nudge both, or the ✓ never appears.
+  const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+  server.use(
+    http.post(`${API_BASE}/api/biometrics/sleep`, async ({ request }) => {
+      const body = (await request.json()) as { date: string; bedtime: string; wakeup: string; durationH: number; quality: number; awakenings: number }
+      return HttpResponse.json(
+        { id: 's2', date: body.date, bedtime: body.bedtime, wakeup: body.wakeup, duration: body.durationH, quality: body.quality, awakenings: body.awakenings, mealToSleep: 0, notes: null },
+        { status: 201 },
+      )
+    }),
+    http.get(`${API_BASE}/api/biometrics/sleep`, () =>
+      HttpResponse.json([{ id: 's1', date: '2026-06-01', bedtime: '23:10', wakeup: '06:40', duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 0, notes: null }])),
+  )
+
+  const { result } = renderHook(() => useSleep(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.sleepLog.length).toBe(1))
+
+  act(() => {
+    result.current.logSleep({ date: '2026-06-02', bedtime: '22:30', wakeup: '06:30', durationH: 8.0, quality: 9, awakenings: 0 })
+  })
+
+  await waitFor(() => {
+    const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
+    expect(keys).toContain(JSON.stringify(['habitDay']))
+    expect(keys).toContain(JSON.stringify(['dailyQuests', '2026-06-02']))
+  })
 })

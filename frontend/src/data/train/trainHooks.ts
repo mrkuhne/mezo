@@ -365,6 +365,15 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   const invalidateProgression = () => {
     if (!mock) qc.invalidateQueries({ queryKey: ['progressionProfile'] })
   }
+  // Finishing a gym session satisfies the training_done_today habit + gym_session_done quest,
+  // both DERIVED server-side and re-evaluated only on the next read — nudge both so the ✓
+  // appears on the routine / quest surfaces without a remount.
+  const invalidateHabitAndQuests = () => {
+    if (!mock) {
+      qc.invalidateQueries({ queryKey: ['habitDay'] })
+      qc.invalidateQueries({ queryKey: ['dailyQuests', localDateString()] })
+    }
+  }
   const startMutation = useMutation<WorkoutInstanceResponse | undefined, Error, string>({
     mutationFn: mock ? async () => undefined : (templateSessionId) => trainApi.startWorkout(templateSessionId),
     onSuccess: invalidateToday,
@@ -404,7 +413,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
           return { levelUp: gymLevelUpMock } as WorkoutInstanceResponse
         }
       : (id: string) => trainApi.finishWorkout(id),
-    onSuccess: () => { invalidateToday(); invalidateProgression() },
+    onSuccess: () => { invalidateToday(); invalidateProgression(); invalidateHabitAndQuests() },
   })
 
   // T3 sport mutations: real persists then refetches the affected query. Mock

@@ -64,6 +64,11 @@ export function useMealActions(date: string = localDateString()) {
     qc.invalidateQueries({ queryKey: [FUELDAY_KEY] })
     qc.invalidateQueries({ queryKey: RECIPES_KEY })
     qc.invalidateQueries({ queryKey: PANTRY_KEY })
+    // protein_breakfast / kitchen_close / caffeine habits + protein_target / own_recipe_meal
+    // quests are DERIVED server-side and re-evaluated only on the next read — nudge both so the
+    // ✓ appears without a remount (the water path already nudges the quest read).
+    qc.invalidateQueries({ queryKey: ['habitDay'] })
+    qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
   }
 
   const logM = useMutation({
