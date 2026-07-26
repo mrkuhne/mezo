@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.ProtocolResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
@@ -25,19 +26,27 @@ import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
+import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -67,9 +76,12 @@ public class ContextSnapshotAssembler {
     private final MesocycleRepository mesocycleRepository;
     private final GymScheduleService gymScheduleService;
     private final SportService sportService;
+    private final WorkoutService workoutService;
     private final WorkoutSessionRepository workoutSessionRepository;
+    private final ExerciseRepository exerciseRepository;
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
+    private final RunningBlockRepository runningBlockRepository;
     private final FuelDayService fuelDayService;
     private final ProtocolService protocolService;
     private final IntakeService intakeService;
@@ -177,11 +189,16 @@ public class ContextSnapshotAssembler {
                 b.append(" (").append(meso.getSplit()).append(')');
             }
         }
+        // Dated resolution (mezo-xixu, the flagship fix): what's ACTUALLY on today/tomorrow,
+        // not just the recurring weekly pattern below — the chat's #1 hallucination source.
+        List<SportScheduleSlotResponse> sport = sportService.getSchedule(userId);
+        b.append("; Ma: ").append(todayLine(userId));
+        b.append("; Holnap: ").append(tomorrowLine(userId, today, sport));
+        // Recurring weekly pattern + backward digest — kept as TRAILING background context.
         List<GymScheduleSlotResponse> gym = gymScheduleService.getSchedule(userId);
         b.append("; gym-rend: ").append(gym.isEmpty() ? NO_DATA : gym.stream()
                 .map(s -> huDay(s.getDayOfWeek()) + " " + s.getTime())
                 .collect(Collectors.joining(", ")));
-        List<SportScheduleSlotResponse> sport = sportService.getSchedule(userId);
         b.append("; sport-rend: ").append(sport.isEmpty() ? NO_DATA : sport.stream()
                 .map(s -> huDay(s.getDayOfWeek()) + " " + s.getTime()
                         + (s.getKind() != null ? " " + s.getKind().getValue() : "")
@@ -202,6 +219,77 @@ public class ContextSnapshotAssembler {
         }
         b.append(", ").append(sportCount).append(" sportalkalom, ").append(runCount).append(" futás");
         return b.toString();
+    }
+
+    /** Ma: today's resolved gym day (open instance > weekday template), day-label + exercises. */
+    private String todayLine(UUID userId) {
+        WorkoutTodayResponse todayWorkout = workoutService.getToday(userId, null);
+        if (todayWorkout.getExercises() == null || todayWorkout.getExercises().isEmpty()) {
+            return "pihenőnap";
+        }
+        String label = todayWorkout.getDayLabel() != null ? todayWorkout.getDayLabel() : "gym";
+        return label + ": " + todayWorkout.getExercises().stream()
+                .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                .collect(Collectors.joining(", "));
+    }
+
+    /**
+     * Holnap: tomorrow's DATED resolution — the active meso's template day for tomorrow's HU
+     * weekday (present ⇒ GYM, absent ⇒ REST; meso-template-based, no gym_schedule_slot needed),
+     * any recurring sport-schedule slot on that weekday, and the active running block's
+     * prescribed session for that weekday (best-effort — absent block/week renders nothing, never
+     * fabricated).
+     */
+    private String tomorrowLine(UUID userId, LocalDate today, List<SportScheduleSlotResponse> sport) {
+        LocalDate tomorrow = today.plusDays(1);
+        int tomorrowDow = tomorrow.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
+        List<String> parts = new ArrayList<>();
+        Optional<WorkoutSessionEntity> tomorrowTemplate = workoutService.findPlannedTemplateForDate(userId, tomorrow);
+        if (tomorrowTemplate.isPresent()) {
+            WorkoutSessionEntity t = tomorrowTemplate.get();
+            List<ExerciseEntity> exercises = exerciseRepository
+                    .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId()));
+            String gymPart = "gym (" + t.getDayLabel() + ")";
+            if (!exercises.isEmpty()) {
+                gymPart += ": " + exercises.stream()
+                        .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                        .collect(Collectors.joining(", "));
+            }
+            parts.add(gymPart);
+        } else {
+            parts.add("pihenőnap (gym)");
+        }
+        sport.stream()
+                .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == tomorrowDow)
+                .forEach(s -> parts.add("sport: " + s.getSport() + " " + s.getTime()
+                        + (s.getKind() != null ? " " + s.getKind().getValue() : "")
+                        + (s.getDurationMin() != null ? " (" + s.getDurationMin() + " perc)" : "")));
+        runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst()
+                .flatMap(block -> tomorrowRunPart(block, today, tomorrowDow))
+                .ifPresent(parts::add);
+        return String.join(", ", parts);
+    }
+
+    /** The active running block's prescribed session for tomorrow's weekday, if the plan has one. */
+    private Optional<String> tomorrowRunPart(RunningBlockEntity block, LocalDate today, int tomorrowDow) {
+        if (block.getStructure() == null || block.getWeeks() == null || block.getWeeks() <= 0
+                || block.getStartDate() == null) {
+            return Optional.empty();
+        }
+        // week derived from startDate (TrainService.clampWeek idiom), mirrors the meso week above.
+        long week = Math.clamp(ChronoUnit.DAYS.between(block.getStartDate(), today) / 7 + 1, 1, block.getWeeks());
+        return block.getStructure().weeks().stream()
+                .filter(w -> w.weekNumber() != null && w.weekNumber() == week)
+                .findFirst()
+                .flatMap(w -> w.sessions().stream()
+                        .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == tomorrowDow)
+                        .findFirst())
+                .map(s -> "futás: " + s.label());
+    }
+
+    /** "{name} {workingSets}×{repMin}-{repMax}" — the compact exercise descriptor for Ma:/Holnap:. */
+    private static String exerciseLine(String name, Integer workingSets, Integer repMin, Integer repMax) {
+        return name + " " + workingSets + "×" + repMin + "-" + repMax;
     }
 
     private String fuelBlock(UUID userId, LocalDate today) {

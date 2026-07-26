@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -187,6 +188,41 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(snapshot).contains("sport-rend: K 19:00");
         assertThat(snapshot).contains("1 gym-edzés (" + today.minusDays(2) + ")");
         assertThat(snapshot).contains("1 sportalkalom").contains("1 futás");
+    }
+
+    @Test
+    void testTrainBlock_shouldResolveTomorrowGymAndSport_whenScheduledForTomorrowWeekday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LocalDate tomorrow = today.plusDays(1);
+        int tomorrowDow = tomorrow.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
+        String tomorrowLabel = WorkoutService.HU_DAY_LABELS.get(tomorrowDow);
+
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), tomorrowLabel, "upper", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        trainPopulator.createScheduleSlot(owner, tomorrowDow, "19:00", 90, "training");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("[Edzés]").contains("Holnap:");
+        String tail = snapshot.substring(snapshot.indexOf("Holnap:"));
+        assertThat(tail).contains(tomorrowLabel).contains("Fekvenyomás").contains("volleyball");
+    }
+
+    @Test
+    void testTrainBlock_shouldResolveTomorrowRunSession_whenActiveRunningBlockHasSessionForTomorrowWeekday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        // sessionsPerWeek=7 covers every weekday, so tomorrow's weekday always has a prescribed
+        // session regardless of the real calendar date — the derived week always clamps into
+        // [1, weeks] and every week in this structure covers all 7 weekdays.
+        runningPopulator.createBlockWithSessions(owner, "Sprint blokk", "active", 4, 7);
+
+        String snapshot = assembler.render(owner, today);
+
+        String tail = snapshot.substring(snapshot.indexOf("Holnap:"));
+        assertThat(tail).contains("futás: Sprint-intervallum");
     }
 
     @Test
