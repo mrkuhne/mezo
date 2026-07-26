@@ -132,10 +132,11 @@ class GoalServiceIT extends AbstractIntegrationTest {
         UUID user = databasePopulator.populateUser("goal-engine@test.local");
         GoalEntity g = goalPopulator.createGoal(user, "cut", "active");
 
-        // bmr × neat = neatBaseline = tdee (weeklyEat 0): 1820.0 × 1.55 = 2821.0 → physically consistent.
+        // bmr × neat = neatBaseline = tdee (weeklyEat 0): 1820.0 × 1.35 = 2457.0 → physically consistent.
+        // 1.35 is the MIXED NEAT band (DESK=1.20 | MIXED=1.35 | PHYSICAL=1.50) — a value the engine can produce.
         TdeeBootstrapJson tdee = new TdeeBootstrapJson(
-            new BigDecimal("1820.0"), new BigDecimal("1.55"), new BigDecimal("2821.0"),
-            BigDecimal.ZERO, new BigDecimal("2821.0"),
+            new BigDecimal("1820.0"), new BigDecimal("1.35"), new BigDecimal("2457.0"),
+            BigDecimal.ZERO, new BigDecimal("2457.0"),
             "MSJ", OffsetDateTime.of(2026, 6, 19, 10, 0, 0, 0, ZoneOffset.UTC));
 
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(
