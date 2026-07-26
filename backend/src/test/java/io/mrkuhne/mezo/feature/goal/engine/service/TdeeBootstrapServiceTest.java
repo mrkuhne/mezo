@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
  * research {@code docs/research/queries/2026-06-18-goal-engine-numbers.md}).
  *
  * <p>Pure logic: no Spring context (model: {@code ProgressionCurveTest}). The service is
- * stateless and reads only {@code props.pal()}, so the properties record is built by hand with
+ * stateless and reads only {@code props.neat()}, so the properties record is built by hand with
  * the application.yml defaults — the yml→record binding itself is covered by
  * {@code GoalEnginePropertiesIT}. Builds {@link BiometricProfileEntity} in-memory (the service
  * is pure, no DB read). Birth dates are derived from {@code LocalDate.now()} so the age-based
@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
  */
 class TdeeBootstrapServiceTest {
 
-    /** kcal tolerance — covers double↔BigDecimal rounding across the BMR×PAL chain. */
+    /** kcal tolerance — covers double↔BigDecimal rounding across the BMR×NEAT chain. */
     private static final BigDecimal TOL = new BigDecimal("0.6");
 
-    // Only pal() is read by the service; the other components are required by the record but
+    // Only neat() is read by the service; the other components are required by the record but
     // irrelevant here — they mirror the application.yml defaults for completeness.
     private final TdeeBootstrapService service = new TdeeBootstrapService(
         new GoalEngineProperties(
@@ -60,38 +60,50 @@ class TdeeBootstrapServiceTest {
 
     @Test
     void testCompute_shouldUseMifflinStJeor_whenBodyFatAbsent() {
-        // 84 kg, 180 cm, 35 yr, MALE, no bodyfat, MODERATE (1.55).
-        // MSJ BMR = 10·84 + 6.25·180 − 5·35 + 5 = 840 + 1125 − 175 + 5 = 1795; TDEE = 1795·1.55.
+        // 84 kg, 180 cm, 35 yr, MALE, no bodyfat, MIXED (1.35), no scheduled training.
+        // MSJ BMR = 10·84 + 6.25·180 − 5·35 + 5 = 840 + 1125 − 175 + 5 = 1795.
+        // neatBaseline = 1795·1.35; weeklyEat 0 → tdee == baseline.
         TdeeBootstrapJson r =
-            service.compute(profile("M", "180.0", 35, null, "MODERATE"), new BigDecimal("84"));
+            service.compute(profile("M", "180.0", 35, null, "MIXED"), new BigDecimal("84"), BigDecimal.ZERO);
 
         assertThat(r.formula()).isEqualTo("MSJ");
-        assertThat(r.bmr().doubleValue()).isCloseTo(1795.0, within(0.6));
-        assertThat(r.tdee().doubleValue()).isCloseTo(2782.25, within(0.6));
-        assertThat(r.pal().doubleValue()).isEqualTo(1.55);
+        assertThat(r.bmr().doubleValue()).isCloseTo(1795, within(1.0));
+        assertThat(r.neat().doubleValue()).isEqualTo(1.35);
+        assertThat(r.neatBaselineKcal().doubleValue()).isCloseTo(1795 * 1.35, within(1.0));
+        assertThat(r.weeklyEatKcalPerDay().doubleValue()).isZero();
+        assertThat(r.tdee().doubleValue()).isCloseTo(1795 * 1.35, within(1.0)); // weeklyEat 0 → tdee == baseline
         assertThat(r.computedAt()).isNotNull();
     }
 
     @Test
-    void testCompute_shouldUseKatchMcArdle_whenBodyFatPresent() {
-        // Same athlete + 15% bodyfat → LBM = 84·0.85 = 71.4; BMR = 370 + 21.6·71.4 = 1912.24;
-        // TDEE = 1912.24·1.55 ≈ 2963.97.
+    void testCompute_shouldAddWeeklyEatToTdee_whenScheduled() {
+        // Scheduled training energy (weeklyEatKcalPerDay = 500) is added on top of the NEAT baseline.
         TdeeBootstrapJson r =
-            service.compute(profile("M", "180.0", 35, "15.0", "MODERATE"), new BigDecimal("84"));
+            service.compute(profile("M", "180.0", 35, null, "MIXED"), new BigDecimal("84"), new BigDecimal("500"));
+
+        assertThat(r.tdee().doubleValue()).isCloseTo(r.neatBaselineKcal().doubleValue() + 500, within(0.5));
+    }
+
+    @Test
+    void testCompute_shouldUseKatchMcArdle_whenBodyFatPresent() {
+        // Same athlete + 15% bodyfat → LBM = 84·0.85 = 71.4; BMR = 370 + 21.6·71.4 = 1912.24.
+        // MIXED NEAT 1.35 → tdee = 1912.24·1.35 ≈ 2581.52 (weeklyEat 0).
+        TdeeBootstrapJson r =
+            service.compute(profile("M", "180.0", 35, "15.0", "MIXED"), new BigDecimal("84"), BigDecimal.ZERO);
 
         assertThat(r.formula()).isEqualTo("KATCH");
         assertThat(r.bmr().doubleValue()).isCloseTo(1912.24, within(0.6));
-        assertThat(r.tdee().doubleValue()).isCloseTo(2963.97, within(0.6));
-        assertThat(r.pal().doubleValue()).isEqualTo(1.55);
+        assertThat(r.neat().doubleValue()).isEqualTo(1.35);
+        assertThat(r.tdee().doubleValue()).isCloseTo(2581.52, within(0.6));
     }
 
     @Test
     void testCompute_shouldSubtract161Constant_whenFemaleMsj() {
         // Female MSJ uses −161 vs male +5 → BMR is exactly 166 kcal lower for identical inputs.
         TdeeBootstrapJson male =
-            service.compute(profile("M", "180.0", 35, null, "MODERATE"), new BigDecimal("84"));
+            service.compute(profile("M", "180.0", 35, null, "MIXED"), new BigDecimal("84"), BigDecimal.ZERO);
         TdeeBootstrapJson female =
-            service.compute(profile("F", "180.0", 35, null, "MODERATE"), new BigDecimal("84"));
+            service.compute(profile("F", "180.0", 35, null, "MIXED"), new BigDecimal("84"), BigDecimal.ZERO);
 
         assertThat(female.formula()).isEqualTo("MSJ");
         // Female BMR = 1795 − 5 − 161 = 1629.
@@ -100,23 +112,20 @@ class TdeeBootstrapServiceTest {
     }
 
     @Test
-    void testCompute_shouldDefaultToModeratePal_whenActivityLevelNull() {
-        TdeeBootstrapJson nullLevel =
-            service.compute(profile("M", "180.0", 35, null, null), new BigDecimal("84"));
-        TdeeBootstrapJson moderate =
-            service.compute(profile("M", "180.0", 35, null, "MODERATE"), new BigDecimal("84"));
+    void testCompute_shouldUseDeskBand_whenActivityLevelDesk() {
+        // DESK lifestyle band → NEAT 1.20.
+        TdeeBootstrapJson r =
+            service.compute(profile("M", "180.0", 35, null, "DESK"), new BigDecimal("84"), BigDecimal.ZERO);
 
-        assertThat(nullLevel.pal().doubleValue()).isEqualTo(1.55);
-        assertThat(nullLevel.tdee().doubleValue()).isCloseTo(moderate.tdee().doubleValue(), within(0.01));
+        assertThat(r.neat().doubleValue()).isEqualTo(1.20);
     }
 
     @Test
-    void testCompute_shouldScaleTdeeWithPal_whenActivityLevelVery() {
-        // VERY → PAL 1.725. TDEE = 1795·1.725 = 3096.375.
+    void testCompute_shouldDefaultToMixed_whenActivityLevelNull() {
+        // Null activity level → MIXED default NEAT 1.35.
         TdeeBootstrapJson r =
-            service.compute(profile("M", "180.0", 35, null, "VERY"), new BigDecimal("84"));
+            service.compute(profile("M", "180.0", 35, null, null), new BigDecimal("84"), BigDecimal.ZERO);
 
-        assertThat(r.pal().doubleValue()).isEqualTo(1.725);
-        assertThat(r.tdee().doubleValue()).isCloseTo(3096.375, within(0.6));
+        assertThat(r.neat().doubleValue()).isEqualTo(1.35);
     }
 }
