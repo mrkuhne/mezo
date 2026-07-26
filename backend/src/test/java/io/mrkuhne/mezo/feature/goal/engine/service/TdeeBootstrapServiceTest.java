@@ -30,14 +30,13 @@ class TdeeBootstrapServiceTest {
     // irrelevant here — they mirror the application.yml defaults for completeness.
     private final TdeeBootstrapService service = new TdeeBootstrapService(
         new GoalEngineProperties(
-            new GoalEngineProperties.Pal(1.2, 1.375, 1.55, 1.725, 1.9),
+            new GoalEngineProperties.Neat(1.20, 1.35, 1.50),
             7700,
             new GoalEngineProperties.Protein(2.0, 1.6, 2.2, 2.3, 3.1, 2.6),
             new GoalEngineProperties.Rate(0.7, 1.0, 0.5, 1.0),
             new GoalEngineProperties.Volume(8, 6),
             new GoalEngineProperties.Strength(-5.0),
             new GoalEngineProperties.Ewma(10),
-            new GoalEngineProperties.Met(325, 500, 500, 1150),
             0,
             300));
 
