@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-07-23
+updated: 2026-07-26
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -52,9 +52,11 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - **`ContextSnapshotAssembler`** (`service/ContextSnapshotAssembler.java`) — a read-only,
   deterministic composition of the OTHER features' reads (profile + weight trend, active goal +
   prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
-  FuelDay rollup + protocol + intakes, retaDay/phase, last sleep + latest check-in), rendered as
-  six Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT (pillanatkép — {dátum}):` and inserted
-  into the `ChatService` system prompt **between the static voice and the history transcript**.
+  account level/coins/streak + top skills + weekly XP rollup, today's quest count + habit chains +
+  creed/foci/reflection + napzárás state, FuelDay rollup + protocol + intakes, retaDay/phase, last
+  sleep + latest check-in), rendered as eight Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT
+  (pillanatkép — {dátum}):` and inserted into the `ChatService` system prompt **between the static
+  voice and the history transcript**.
   Missing data renders as explicit `nincs adat`, never invented; no LLM anywhere in the path.
 
 **V0.4 (`mezo-fnnq.4`) shipped streaming + the real FE:**
@@ -421,8 +423,8 @@ construction. Window args are model-optional (`@ToolParam(required = false)`) wi
 defaults (7 days / 4 weeks).
 
 **The context snapshot (V0.3).** `ContextSnapshotAssembler.render(userId, today)`
-(`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with six lines in
-spec §4 order — `[Profil]` (biometric profile + `WeightTrendService` trend; an empty weigh-in
+(`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with eight lines in
+render() order — `[Profil]` (biometric profile + `WeightTrendService` trend; an empty weigh-in
 series renders `nincs adat`, and rates are omitted while `dataSufficiency = NONE` — a zero trend
 would be a fabricated number), `[Cél]` (active goal, derived current week
 `DAYS(startDate→today)/7+1`, the prescription segment whose `fromWeek..toWeek` contains it, the
@@ -431,7 +433,19 @@ from the sleep goal — never the retired goal wake/bed columns; the resolver al
 anchor, so both lines always render, falling back to the config ghost when no sleep goal exists),
 `[Edzés]` (active meso with the week
 DERIVED from `startDate` — the stored `currentWeek` can lag; gym/sport weekly rhythm; last-N-days
-gym/sport/run digest), `[Mai üzemanyag]` (`FuelDayService.getDay` consumed/targets incl. water +
+gym/sport/run digest), `[Növekedés]` (`GamificationService.getProfile` account level/XP/coins/
+streak, `ProgressionService.getProfile`'s top-3 skills by level with real XP — 0-XP taxonomy
+ghosts filtered out, else `nincs adat` — and `GrowthWeekService.growthWeek`'s weekly LIFE-XP +
+quest-closed rollup, an honest zero), `[Napi gyakorlat]` (today's quest completion count via the
+`TodayQuestSource` port — a companion-owned interface implemented by `quest/service/
+TodayQuestAdapter`, kept one-directional because `quest` already depends on `companion`
+(`QuestFlavor`'s `CompanionLlm` use) so a direct import would cycle; deliberately bypasses
+`QuestService.getDay`, which is write-transactional (lazy-generates + awards XP) and would violate
+the assembler's read-only contract on every chat turn; `HabitService.summary`'s perfect-chain-day
+counts; `IntentionService
+.getDay`'s creed/today's foci/evening reflection, each `nincs adat` on absence; and whether
+today's napzárás is closed via `RitualService.getDay`), `[Mai üzemanyag]`
+(`FuelDayService.getDay` consumed/targets incl. water +
 active protocol + today's intake count), `[Gyógyszer]` (`MedicationCycleService.derive` retaDay +
 phase; an active med with no dose renders `nincs rögzített dózis` — honest zero), and
 `[Regeneráció]` (latest sleep + latest check-in, note truncated to
@@ -818,15 +832,23 @@ Companion is now a backed feature on the contract-first pipeline
 compile error.
 
 ### 5.5 Companion ← other features (✅ V0.3 wired — read-only)
-**`ContextSnapshotAssembler` is live**: companion now injects reads from **six** other features —
-`biometrics` (`BiometricProfileRepository`, `WeightTrendService`, `SleepLogRepository`,
+**`ContextSnapshotAssembler` is live**: companion now injects reads from **twelve** other
+features — `biometrics` (`BiometricProfileRepository`, `WeightTrendService`, `SleepLogRepository`,
 `CheckInRepository`), `goal` (`GoalRepository` + the prescription jsonb), `train`
 (`MesocycleRepository`, `GymScheduleService`, `SportService`, `WorkoutSessionRepository.findDoneInstanceDates`,
-`SportSessionRepository`/`RunSessionLogRepository` since-date finders), `meal` (`FuelDayService`),
-`fuel` (`ProtocolService`, `IntakeService`) and `medication` (`MedicationRepository`,
-`MedicationCycleService`). **Contract crossing the seam:** `render(UUID userId, LocalDate today) →
-String` — the callee services' read methods with explicit `userId` scoping; strictly one-way
-(no feature may import companion; the frozen ArchUnit cycle rule fails the build otherwise).
+`SportSessionRepository`/`RunSessionLogRepository` since-date finders), `gamification`
+(`GamificationService.getProfile`), `progression` (`ProgressionService.getProfile`,
+`GrowthWeekService.growthWeek`), `quest` (via the `TodayQuestSource` port, NOT a direct
+`DailyQuestRepository`/`QuestService.getDay` dependency — `quest` already depends on `companion`
+for `QuestFlavor`'s AI rewriting, so companion importing `feature.quest` directly would form a
+2-slice cycle; `QuestService.getDay` is write-transactional either way), `habit`
+(`HabitService.summary`), `intention` (`IntentionService.getDay`), `ritual` (`RitualService.getDay`),
+`meal` (`FuelDayService`), `fuel` (`ProtocolService`, `IntakeService`) and `medication`
+(`MedicationRepository`, `MedicationCycleService`). **Contract crossing the seam:**
+`render(UUID userId, LocalDate today) → String` — the callee services' read methods with explicit
+`userId` scoping; feature-slice dependencies stay cycle-free (`feature_slices_are_cycle_free`,
+`ArchitectureTest`) — ports like `TodayQuestSource`/`QuestLedgerSource` are how a two-way data need
+between two features is kept one-directional at the package level.
 V0.3 also added four derived finders to those features' repos (sleep/check-in latest, sport/run
 since-date) — plain finders, no companion dependency.
 
@@ -991,13 +1013,14 @@ companion voice (`"Te vagy a mezo"`, `"retatrutid"`), the windowed history block
 (`"Daniel: …"`/`"Mezo: …"`), and that the current message rides as the `user=[…]` param, not the
 history.
 
-**`ContextSnapshotAssemblerIT` (V0.3, 12 tests)** — the snapshot is fully assertable without any
-LLM: empty-user render (all six blocks in order, every absence an explicit `nincs adat`, config
+**`ContextSnapshotAssemblerIT` (V0.3, 17 tests)** — the snapshot is fully assertable without any
+LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
 targets still render), profile+trend, current-week segment + planner selection, train digest +
-schedules, digest-window exclusion, FuelDay/protocol/intakes, retaDay+phase (`4. nap (Stabil)`),
-sleep+check-in, note truncation at 200 chars, the `[Cél]` day anchor sourced from the sleep goal
-(derived `06:45`/`23:15`) vs. the config ghost (`06:00`/`22:00`) when no sleep goal exists, and
-determinism (two renders are `equals`).
+schedules, digest-window exclusion, account level + top skill (`[Növekedés]`), quest count +
+creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, retaDay+phase
+(`4. nap (Stabil)`), sleep+check-in, note truncation at 200 chars, the `[Cél]` day anchor sourced
+from the sleep goal (derived `06:45`/`23:15`) vs. the config ghost (`06:00`/`22:00`) when no sleep
+goal exists, and determinism (two renders are `equals`).
 `ChatServiceIT` gained `testSendMessage_shouldInjectContextSnapshotBetweenVoiceAndHistory…` —
 the fake's echo proves voice → `AKTUÁLIS ÁLLAPOT` → history ordering in the real prompt.
 
@@ -1366,7 +1389,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — list/create/listMessages/`getOwned` (404).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `SYSTEM_PROMPT` + snapshot + windowed prompt assembly + sync turn + the V0.4 `prepareTurn`/`completeTurn` halves.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatStreamService.java` — the V0.4 streamed turn (`delta`/`done`/`error` Flux over the port).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (6 HU blocks, `nincs adat` absences).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ContextSnapshotAssembler.java` — the V0.3 cross-feature "today" block (8 HU blocks, `nincs adat` absences).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/TodayQuestSource.java` — the companion-owned port for `[Napi gyakorlat]`'s quest count, implemented by `feature/quest/service/TodayQuestAdapter.java` (keeps the quest↔companion dependency one-directional; the `progression.QuestLedgerSource` precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/KnowledgeFactService.java` — V1.1 fact CRUD + `renderPromptBlock` (top-N injection, `FACTS_HEADER`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/FactExtractionService.java` — V1.2 post-turn extraction (`EXTRACTION_MARKER`, parse/dedupe/cap).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/{ChatTurnCompleted,FactExtractionListener}.java` — the V1.2 AFTER_COMMIT async trigger.

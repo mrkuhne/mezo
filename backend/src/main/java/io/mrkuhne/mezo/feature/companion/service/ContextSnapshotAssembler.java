@@ -1,9 +1,17 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.GamificationProfileResponse;
+import io.mrkuhne.mezo.api.dto.GrowthWeekResponse;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
+import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
+import io.mrkuhne.mezo.api.dto.IntentionDayResponse;
+import io.mrkuhne.mezo.api.dto.IntentionFocusResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
+import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
 import io.mrkuhne.mezo.api.dto.ProtocolResponse;
+import io.mrkuhne.mezo.api.dto.RitualDayResponse;
+import io.mrkuhne.mezo.api.dto.SkillLevel;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
@@ -14,17 +22,24 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
+import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
+import io.mrkuhne.mezo.feature.gamification.service.GamificationService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.habit.service.HabitService;
+import io.mrkuhne.mezo.feature.intention.service.IntentionService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
+import io.mrkuhne.mezo.feature.progression.service.GrowthWeekService;
+import io.mrkuhne.mezo.feature.progression.service.ProgressionService;
+import io.mrkuhne.mezo.feature.ritual.service.RitualService;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
@@ -44,11 +59,13 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -68,6 +85,8 @@ public class ContextSnapshotAssembler {
     /** dayOfWeek 0=Hétfő..6=Vasárnap (GymScheduleSlotEntity convention). */
     private static final List<String> HU_DAYS = List.of("H", "K", "Sze", "Cs", "P", "Szo", "V");
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
+    /** [Növekedés]'s skill highlight cap — terse, not a full profile dump. */
+    private static final int TOP_SKILLS_LIMIT = 3;
 
     private final BiometricProfileRepository biometricProfileRepository;
     private final WeightTrendService weightTrendService;
@@ -89,6 +108,13 @@ public class ContextSnapshotAssembler {
     private final SleepLogRepository sleepLogRepository;
     private final CheckInRepository checkInRepository;
     private final SleepAnchorPort sleepAnchorPort;
+    private final GamificationService gamificationService;
+    private final ProgressionService progressionService;
+    private final GrowthWeekService growthWeekService;
+    private final ObjectProvider<TodayQuestSource> todayQuestSource;
+    private final HabitService habitService;
+    private final IntentionService intentionService;
+    private final RitualService ritualService;
     private final CompanionProperties properties;
 
     public String render(UUID userId, LocalDate today) {
@@ -96,6 +122,8 @@ public class ContextSnapshotAssembler {
                 + profileBlock(userId, today) + '\n'
                 + goalBlock(userId, today) + '\n'
                 + trainBlock(userId, today) + '\n'
+                + growthBlock(userId, today) + '\n'
+                + practiceBlock(userId, today) + '\n'
                 + fuelBlock(userId, today) + '\n'
                 + medicationBlock(userId, today) + '\n'
                 + recoveryBlock(userId);
@@ -308,6 +336,87 @@ public class ContextSnapshotAssembler {
         if (repMin != null && repMax != null) {
             b.append('×').append(repMin).append('-').append(repMax);
         }
+        return b.toString();
+    }
+
+    /**
+     * [Növekedés]: account level + coins + streak (Gamification — a fresh account's level 1 /
+     * 0 coins is a real ghost, not fabricated), the highest-earned skills (Progression — the
+     * taxonomy's level-1/0-XP ghost rows are filtered out; an untouched skill would otherwise
+     * read as a fabricated fact), and this week's XP/quest rollup (GrowthWeek — honest zeros,
+     * a real computed window, the goalBlock/fuelBlock precedent).
+     */
+    private String growthBlock(UUID userId, LocalDate today) {
+        GamificationProfileResponse gami = gamificationService.getProfile(userId);
+        ProgressionProfileResponse prog = progressionService.getProfile(userId);
+        GrowthWeekResponse week = growthWeekService.growthWeek(userId, today);
+        StringBuilder b = new StringBuilder("[Növekedés] szint ").append(gami.getLevel())
+                .append(" (").append(gami.getTotalXp()).append(" XP), ")
+                .append(gami.getCoins()).append(" érme, ")
+                .append(gami.getStreakDays()).append(" napos sorozat");
+        List<SkillLevel> top = topSkills(prog);
+        b.append("; top skill: ").append(top.isEmpty() ? NO_DATA : top.stream()
+                .map(s -> s.getSkillKey() + " L" + s.getLevel())
+                .collect(Collectors.joining(", ")));
+        b.append("; e heti XP: ").append(week.getLifeXp())
+                .append(" (küldetés ").append(week.getQuestCompleted()).append('/')
+                .append(week.getQuestClosed()).append(" zárva)");
+        return b.toString();
+    }
+
+    /** Highest-level skills with real XP (0-XP taxonomy ghosts excluded), across all 3 kinds. */
+    private static List<SkillLevel> topSkills(ProgressionProfileResponse prog) {
+        List<SkillLevel> all = new ArrayList<>();
+        all.addAll(prog.getAthletic());
+        all.addAll(prog.getMuscle());
+        all.addAll(prog.getLife());
+        return all.stream()
+                .filter(s -> s.getCumulativeXp() != null && s.getCumulativeXp() > 0)
+                .sorted(Comparator.comparingInt(SkillLevel::getLevel).reversed()
+                        .thenComparing(Comparator.comparingLong(SkillLevel::getCumulativeXp).reversed()))
+                .limit(TOP_SKILLS_LIMIT)
+                .toList();
+    }
+
+    /**
+     * [Napi gyakorlat]: today's quest completion count via {@link TodayQuestSource} — a port
+     * companion owns so the read stays quest → companion (never back: quest already depends on
+     * companion for {@code QuestFlavor}'s AI rewriting, so a direct import here would form a
+     * 2-slice cycle; {@code progression.QuestLedgerSource} is the precedent) and deliberately
+     * bypasses {@link io.mrkuhne.mezo.feature.quest.service.QuestService#getDay}, which lazily
+     * generates today's rows and awards XP on derived-quest evaluation ({@code @Transactional},
+     * not read-only; the {@link #todayLine} / {@link #tomorrowLine} precedent above applies
+     * equally: a read that fires writes on every chat turn would violate this assembler's
+     * read-only contract) — plus habit-chain strength ({@link HabitService#summary}, already
+     * read-only), the standing creed / today's foci / evening reflection (Intention), and whether
+     * today's napzárás is closed (Ritual). Honest absence per part, never fabricated.
+     */
+    private String practiceBlock(UUID userId, LocalDate today) {
+        TodayQuestSource questSource = todayQuestSource.getIfAvailable();
+        TodayQuestSource.Stats quest = questSource == null ? null : questSource.todayStats(userId, today);
+        StringBuilder b = new StringBuilder("[Napi gyakorlat] küldetés: ");
+        if (quest == null || quest.total() == 0) {
+            b.append(NO_DATA);
+        } else {
+            b.append(quest.completed()).append('/').append(quest.total());
+        }
+
+        HabitSummaryResponse habits = habitService.summary(userId);
+        b.append("; szokás-lánc: reggeli ").append(habits.getPerfectMorningDays30())
+                .append(", esti ").append(habits.getPerfectEveningDays30())
+                .append(" tökéletes nap (30 nap)");
+
+        IntentionDayResponse intention = intentionService.getDay(userId, today);
+        b.append("; hitvallás: ").append(intention.getCreed() == null ? NO_DATA : intention.getCreed());
+        b.append(", mai fókusz: ").append(intention.getFoci().isEmpty() ? NO_DATA
+                : intention.getFoci().stream().map(IntentionFocusResponse::getText)
+                        .collect(Collectors.joining(", ")));
+        if (intention.getReflection() != null) {
+            b.append(", esti reflexió: ").append(intention.getReflection().getValue());
+        }
+
+        RitualDayResponse ritual = ritualService.getDay(userId, today);
+        b.append("; napzárás: ").append(Boolean.TRUE.equals(ritual.getClosed()) ? "zárva" : "nyitva");
         return b.toString();
     }
 

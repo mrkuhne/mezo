@@ -4,17 +4,23 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
+import io.mrkuhne.mezo.support.populator.QuestPopulator;
+import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
+import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
@@ -57,6 +63,11 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private GamificationPopulator gamificationPopulator;
+    @Autowired private SkillProgressPopulator skillProgressPopulator;
+    @Autowired private QuestPopulator questPopulator;
+    @Autowired private IntentionPopulator intentionPopulator;
+    @Autowired private RitualPopulator ritualPopulator;
 
     @Test
     void testRender_shouldRenderAllBlocksWithNincsAdat_whenUserHasNoData() {
@@ -66,17 +77,21 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String block = assembler.render(owner, today);
 
         assertThat(block).startsWith("\n\nAKTUÁLIS ÁLLAPOT (pillanatkép — " + today + "):");
-        // all six blocks present, in spec §4 order
+        // all eight blocks present, in render() order
         int profil = block.indexOf("[Profil]");
         int cel = block.indexOf("[Cél]");
         int edzes = block.indexOf("[Edzés]");
+        int novekedes = block.indexOf("[Növekedés]");
+        int gyakorlat = block.indexOf("[Napi gyakorlat]");
         int fuel = block.indexOf("[Mai üzemanyag]");
         int med = block.indexOf("[Gyógyszer]");
         int rege = block.indexOf("[Regeneráció]");
         assertThat(profil).isPositive();
         assertThat(cel).isGreaterThan(profil);
         assertThat(edzes).isGreaterThan(cel);
-        assertThat(fuel).isGreaterThan(edzes);
+        assertThat(novekedes).isGreaterThan(edzes);
+        assertThat(gyakorlat).isGreaterThan(novekedes);
+        assertThat(fuel).isGreaterThan(gyakorlat);
         assertThat(med).isGreaterThan(fuel);
         assertThat(rege).isGreaterThan(med);
         // absences are explicit, never invented (spec §4) — a zero weight-trend would be a fabricated number
@@ -88,6 +103,11 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
             .contains("gym-rend: nincs adat")
             .contains("sport-rend: nincs adat")
             .contains("0 gym-edzés, 0 sportalkalom, 0 futás")
+            .contains("top skill: nincs adat")
+            .contains("[Napi gyakorlat] küldetés: nincs adat")
+            .contains("hitvallás: nincs adat")
+            .contains("mai fókusz: nincs adat")
+            .contains("napzárás: nyitva")
             .contains("protokoll: nincs adat, mai bevitel: 0")
             .contains("[Gyógyszer] nincs adat")
             .contains("alvás: nincs adat")
@@ -259,6 +279,41 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String snapshot = assembler.render(owner, today);
 
         assertThat(snapshot).contains("1 sportalkalom");
+    }
+
+    @Test
+    void testRender_shouldRenderAccountLevelAndTopSkill_whenGamificationAndSkillProfileSeeded() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        gamificationPopulator.profile(owner, 40, 5, 1, today);
+        // 500 cumulative XP -> account level 4 on the AccountLevelCurve (80/120/160/200 thresholds)
+        skillProgressPopulator.createSkill(owner, "sprint_speed", "ATHLETIC", 500, 4);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains(
+            "[Növekedés] szint 4 (500 XP), 40 érme, 5 napos sorozat");
+        assertThat(snapshot).contains("top skill: sprint_speed L4");
+        // no quest/level-up activity this week -> honest zero, not fabricated
+        assertThat(snapshot).contains("e heti XP: 0 (küldetés 0/0 zárva)");
+    }
+
+    @Test
+    void testRender_shouldRenderQuestCountCreedFocusAndRitual_whenSeeded() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        intentionPopulator.creed(owner, "Kitartás mindenben.");
+        intentionPopulator.focus(owner, today, "Reggeli edzés végigcsinálása");
+        questPopulator.quest(owner, today, DailyQuestEntity.SLOT_BODY, "test_quest", "max_strength",
+            "ATHLETIC", "sets", new BigDecimal("1"), 30, DailyQuestEntity.STATUS_OFFERED);
+        ritualPopulator.closedDay(owner, today);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("[Napi gyakorlat] küldetés: 0/1");
+        assertThat(snapshot).contains("hitvallás: Kitartás mindenben.");
+        assertThat(snapshot).contains("mai fókusz: Reggeli edzés végigcsinálása");
+        assertThat(snapshot).contains("napzárás: zárva");
     }
 
     @Test
