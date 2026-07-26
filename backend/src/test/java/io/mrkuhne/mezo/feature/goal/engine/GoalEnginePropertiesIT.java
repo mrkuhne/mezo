@@ -27,11 +27,9 @@ class GoalEnginePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.bootstrapUncertaintyKcal()).isEqualTo(300);
         assertThat(props.thermogenesisHaircutKcalPerDay()).isEqualTo(0);
 
-        assertThat(props.pal().sedentary()).isEqualTo(1.2);
-        assertThat(props.pal().light()).isEqualTo(1.375);
-        assertThat(props.pal().moderate()).isEqualTo(1.55);
-        assertThat(props.pal().very()).isEqualTo(1.725);
-        assertThat(props.pal().extra()).isEqualTo(1.9);
+        assertThat(props.neat().desk()).isEqualTo(1.20);
+        assertThat(props.neat().mixed()).isEqualTo(1.35);
+        assertThat(props.neat().physical()).isEqualTo(1.50);
 
         assertThat(props.protein().gPerKgBwDefault()).isEqualTo(2.0);
         assertThat(props.protein().gPerKgBwFloor()).isEqualTo(1.6);
@@ -51,10 +49,5 @@ class GoalEnginePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.strength().e1rmBreachPct()).isEqualTo(-5.0);
 
         assertThat(props.ewma().halfLifeDays()).isEqualTo(10);
-
-        assertThat(props.met().hypertrophyKcal()).isEqualTo(325);
-        assertThat(props.met().intervalRunKcal()).isEqualTo(500);
-        assertThat(props.met().volleyballRecKcal()).isEqualTo(500);
-        assertThat(props.met().volleyballCompKcal()).isEqualTo(1150);
     }
 }

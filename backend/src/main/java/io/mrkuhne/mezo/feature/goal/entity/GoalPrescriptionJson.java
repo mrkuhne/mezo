@@ -32,6 +32,7 @@ public record GoalPrescriptionJson(
         BigDecimal sleepTargetH,
         List<Integer> restDays,
         BigDecimal projectedRateKgPerWk,
+        Integer dailyEnergyBalanceKcal,
         String rationale
     ) {
     }
