@@ -26,7 +26,7 @@ import {
   toHHmm,
   toMin,
 } from '@/data/fuel/fuelConfig'
-import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
+import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import type { Intake } from '@/data/fuel/fuelApi'
 import type {
   FuelKind,
@@ -80,11 +80,6 @@ export interface PlannedWindow {
 }
 
 const MACRO_KEYS: (keyof Macro4)[] = ['kcal', 'p', 'c', 'f']
-
-/** Display name for a logged meal: its title, else derived from its item names, else undefined
- *  (so the slot falls back to its label). (mezo-u68c) */
-const displayName = (m: FuelMeal): string | undefined =>
-  m.title || deriveMealName(m.mealItems.map(l => l.name)) || undefined
 
 // ── mealSlotKey ──────────────────────────────────────────────────────────────
 // Real mode: `FuelMeal.slot` is the enum ('breakfast'|'lunch'|'dinner'|'snack').
@@ -327,7 +322,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         slotKey: w.slotKey,
         state: 'done',
         mealId: logged.id,
-        mealName: displayName(logged),
+        mealName: mealDisplayName(logged),
         kcal: logged.kcal,
         p: logged.p,
         c: logged.c,
@@ -367,11 +362,11 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
       extraSlots.push({
         time: hhmmFromLoggedAt(m.loggedAt, nowHHmm),
         kind: k === 'snack' ? 'snack' : 'meal',
-        label: labelByKey[k] ?? displayName(m) ?? m.title,
+        label: labelByKey[k] ?? mealDisplayName(m) ?? m.title,
         slotKey: k,
         state: 'done',
         mealId: m.id,
-        mealName: displayName(m),
+        mealName: mealDisplayName(m),
         kcal: m.kcal,
         p: m.p,
         c: m.c,

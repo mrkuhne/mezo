@@ -11,6 +11,7 @@ import { Display } from '@/shared/ui/Display'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { ScoreHero } from '@/features/fuel/components/ScoreHero'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
+import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 
 export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () => void }) {
   const b = meal.breakdown
@@ -26,7 +27,9 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
             <div className="col" style={{ flex: 1, minWidth: 0 }}>
               <Eyebrow brand>AI score · részletek</Eyebrow>
               <div id="meal-score-title" style={{ marginTop: 4 }}>
-                <Display size="md">{meal.title}</Display>
+                {/* De-blank the header for title-less-but-scored pre-fix meals (mezo-u68c):
+                    title → derived name → 'Étkezés'. Never blank. */}
+                <Display size="md">{mealDisplayName(meal) ?? 'Étkezés'}</Display>
               </div>
               <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 4 }}>
                 {meal.slot}
