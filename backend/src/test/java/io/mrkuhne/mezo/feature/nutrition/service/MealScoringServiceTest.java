@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.WorkoutWindow;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
@@ -333,6 +334,54 @@ class MealScoringServiceTest {
                 null, null, null, null, false, null, null)));
 
         assertThat(fit).isNull(); // honest: nothing to score → pending, never a fabricated number
+    }
+
+    @Test
+    void testClassifyRole_shouldBePreWorkout_whenInsideLeadWindow() {
+        var gym = new WorkoutWindow(LocalTime.of(14, 30), LocalTime.of(15, 30), false);
+        // 13:20 is 70 min before start, inside the 120-min pre-lead
+        MealRole role = MealScoringService.classifyRole(LocalTime.of(13, 20), List.of(gym), 120, 90);
+        assertThat(role).isEqualTo(MealRole.PRE_WORKOUT);
+    }
+
+    @Test
+    void testClassifyRole_shouldBeStandard_whenBeforeLeadWindow() {
+        var gym = new WorkoutWindow(LocalTime.of(14, 30), LocalTime.of(15, 30), false);
+        // 12:00 is 150 min before start, OUTSIDE the 120-min pre-lead
+        assertThat(MealScoringService.classifyRole(LocalTime.of(12, 0), List.of(gym), 120, 90))
+            .isEqualTo(MealRole.STANDARD);
+    }
+
+    @Test
+    void testClassifyRole_shouldBePostWorkout_whenInsideTrailAndDone() {
+        var gym = new WorkoutWindow(LocalTime.of(9, 0), LocalTime.of(10, 0), true);
+        // 10:45 is 45 min after end, inside the 90-min trail, workout DONE
+        assertThat(MealScoringService.classifyRole(LocalTime.of(10, 45), List.of(gym), 120, 90))
+            .isEqualTo(MealRole.POST_WORKOUT);
+    }
+
+    @Test
+    void testClassifyRole_shouldBeStandard_whenInTrailButNotDone() {
+        var gym = new WorkoutWindow(LocalTime.of(9, 0), LocalTime.of(10, 0), false);
+        // in the post window but the workout was NOT done → no recovery bonus
+        assertThat(MealScoringService.classifyRole(LocalTime.of(10, 45), List.of(gym), 120, 90))
+            .isEqualTo(MealRole.STANDARD);
+    }
+
+    @Test
+    void testClassifyRole_shouldBeStandard_whenNoWorkouts() {
+        assertThat(MealScoringService.classifyRole(LocalTime.of(13, 0), List.of(), 120, 90))
+            .isEqualTo(MealRole.STANDARD);
+    }
+
+    @Test
+    void testClassifyRole_shouldPreferPostDone_whenBetweenDonePriorAndUpcomingWorkout() {
+        var morningDone = new WorkoutWindow(LocalTime.of(9, 0), LocalTime.of(10, 0), true);
+        var eveningPlanned = new WorkoutWindow(LocalTime.of(11, 30), LocalTime.of(12, 30), false);
+        // 10:45: post-window of the DONE morning workout AND pre-window of the planned one → post wins
+        assertThat(MealScoringService.classifyRole(
+                LocalTime.of(10, 45), List.of(morningDone, eveningPlanned), 120, 90))
+            .isEqualTo(MealRole.POST_WORKOUT);
     }
 
     // --- line builders (mirror the file's ScoredLine constructor style) --------------------------

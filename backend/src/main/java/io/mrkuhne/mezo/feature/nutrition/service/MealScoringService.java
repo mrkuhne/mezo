@@ -63,6 +63,15 @@ public class MealScoringService {
     }
 
     /**
+     * A workout on the meal's date, reduced to what role-classification needs (mezo-ta8p):
+     * the schedule-slot start, the derived end, and whether it was actually done that day
+     * (gates the POST_WORKOUT recovery bonus). Owned by the scorer like {@link ScoredLine} so the
+     * nutrition slice never depends on the train slice — {@code MealService} maps train windows in.
+     */
+    public record WorkoutWindow(java.time.LocalTime start, java.time.LocalTime end, boolean done) {
+    }
+
+    /**
      * Scores a logged meal; {@code localTime} is the request's offset-local wall-clock time.
      * Confidence is now weight-RENORMALIZED over the live dimensions (÷ the live weight sum,
      * consistent with {@code value}) — a degraded dimension carries weight 0 and drops out of
@@ -141,6 +150,38 @@ public class MealScoringService {
         tools.add(new ToolRow("compute", "templateFit(weights_renormalized)"));
 
         return new MealBreakdownJson(round2(value), round2(confidence), null, dims, List.of(), tools);
+    }
+
+    /**
+     * Classifies a logged meal's training role (mezo-ta8p). PRE_WORKOUT when the meal falls in
+     * {@code [start - preLeadMin, start)} of any workout (plan-based; looks forward). POST_WORKOUT
+     * when it falls in {@code [end, end + postTrailMin]} of a workout that was actually DONE.
+     * Multiple qualifying workouts: the nearest by time; a done-post and an upcoming-pre tie
+     * resolves to POST_WORKOUT (recovery is the more time-critical need). Otherwise STANDARD.
+     */
+    public static MealRole classifyRole(LocalTime t, List<WorkoutWindow> workouts,
+                                        int preLeadMin, int postTrailMin) {
+        MealRole best = MealRole.STANDARD;
+        double bestDistance = Double.MAX_VALUE;
+        int tMin = t.getHour() * 60 + t.getMinute();
+        for (WorkoutWindow w : workouts) {
+            int start = w.start().getHour() * 60 + w.start().getMinute();
+            int end = w.end().getHour() * 60 + w.end().getMinute();
+            if (w.done() && tMin >= end && tMin <= end + postTrailMin) {
+                double d = tMin - end;
+                if (best != MealRole.POST_WORKOUT || d < bestDistance) { // post always beats a pre tie
+                    best = MealRole.POST_WORKOUT;
+                    bestDistance = d;
+                }
+            } else if (tMin >= start - preLeadMin && tMin < start) {
+                double d = start - tMin;
+                if (best == MealRole.STANDARD && d < bestDistance) { // never override a POST_WORKOUT
+                    best = MealRole.PRE_WORKOUT;
+                    bestDistance = d;
+                }
+            }
+        }
+        return best;
     }
 
     // --- Macro (.30): kcal-share fit vs the mezo.nutrition targets -----------------------------
