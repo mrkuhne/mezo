@@ -31,6 +31,7 @@ export const fuelDay: FuelDay = {
       tags: ['pre-volleyball', 'kifli.hu'],
       breakdown: {
         confidence: 0.86,
+        tagline: null,
         summary:
           'Reggeli-as-engineering. Zab + túró slow-release glikémia délig, áfonya antocianin a Pull Day előtti gyulladás-modulációra. Csak a Mg jött ki rövidre — fél evőkanál tökmag megoldaná.',
         dimensions: [
@@ -179,6 +180,7 @@ export const fuelDay: FuelDay = {
       tags: ['pre-workout'],
       breakdown: {
         confidence: 0.81,
+        tagline: null,
         summary:
           'Whole-foods ebéd, T-3.5h-val a Pull Day előtt. A makró-arány protein-felé húz — Reta D3-on védő, mert biztosítjuk a 220g/nap protein-target tartását, ha a PM étvágy leesik.',
         dimensions: [

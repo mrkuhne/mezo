@@ -226,7 +226,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         // from the fresh template run (8), which the matches() size guard cannot reconcile.
         var entity = recipeRepository.findById(recipe).orElseThrow();
         entity.setBreakdown(new MealBreakdownJson(new BigDecimal("0.50"), new BigDecimal("0.50"),
-            "Régi 4-dimenziós olvasat.",
+            "Régi 4-dimenziós olvasat.", null,
             List.of(staleDim("macro"), staleDim("micro"), staleDim("nova"), staleDim("context")),
             List.of(), List.of()));
         entity.setFitsFor(List.of("régi"));

@@ -17,7 +17,7 @@ function seedScoredMeal() {
 }
 function renderSheet(onClose = () => {}) {
   const meal = seedScoredMeal()
-  render(<MealScoreSheet meal={meal} onClose={onClose} />)
+  render(<MealScoreSheet meal={meal} onClose={onClose} />, { wrapper: QueryWrapper })
   return meal
 }
 test('renders the score hero, summary and 8 dimension cards', () => {
@@ -31,7 +31,7 @@ test('renders the derived name (not a blank header) for a scored meal with an em
   const titleless = { ...seed, title: '' } // pre-fix meal: null title coerced to '' (mealApi.ts)
   const derived = seed.mealItems.map(l => l.name).filter(n => n.trim().length > 0).join(', ')
   expect(derived.length).toBeGreaterThan(0)
-  render(<MealScoreSheet meal={titleless} onClose={() => {}} />)
+  render(<MealScoreSheet meal={titleless} onClose={() => {}} />, { wrapper: QueryWrapper })
   expect(screen.getByText(derived)).toBeInTheDocument()
 })
 test('summary section renders (SafeMarkdown, no innerHTML)', () => {

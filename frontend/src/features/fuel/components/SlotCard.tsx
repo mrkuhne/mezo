@@ -37,6 +37,7 @@ export function SlotCard({
   onOpenScore,
   onLogMeal,
   onAiLog,
+  tagline,
 }: {
   slot: FuelSlot
   meta: KindMeta
@@ -44,6 +45,8 @@ export function SlotCard({
   onOpenScore: (m: FuelMeal) => void
   onLogMeal?: (slot: FuelSlot) => void
   onAiLog?: (slot: FuelSlot) => void
+  /** The coach's card-sized verdict (mezo-mr4n); null while absent — renders no row at all. */
+  tagline?: string | null
 }) {
   const isDone = slot.state === 'done'
   const isNow = slot.state === 'now'
@@ -74,6 +77,16 @@ export function SlotCard({
           {durationSuffix}
           {isMissed && <span className="misstag"> kihagyott</span>}
         </div>
+
+        {/* Coach verdict cut (mezo-mr4n) — absent verdict renders nothing, so no layout shift. */}
+        {tagline && (
+          <div
+            data-testid="coach-tagline"
+            style={{ fontSize: 11.5, lineHeight: 1.35, color: 'var(--text-tertiary)', marginTop: 2 }}
+          >
+            {tagline}
+          </div>
+        )}
 
         <div className="mrow">
           <span>{slot.time}</span>

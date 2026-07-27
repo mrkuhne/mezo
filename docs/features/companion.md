@@ -770,6 +770,16 @@ the only cross-feature dependency runs companion → pantry, so the ArchUnit fea
 stays closed: [ADR 0012](../decisions/0012-consumer-owned-llm-ports.md); the consumer side is in
 [`fuel.md`](fuel.md) §4–§5.
 
+**Meal-coach consumer (✅ wired, ADR 0012, mezo-mr4n).** The qualitative verdict over a logged
+meal's deterministic score is a fourth consumer of the cheap tier, same shape again: **meal owns
+the port** (`feature/meal/service/MealCoachLlm.java`, one `complete(system, user)`) and companion
+owns `MealCoachLlmAdapter` (`llm/MealCoachLlmAdapter.java`, `@ConditionalOnProperty(COMPANION_SWITCH)`).
+Companion off ⇒ no adapter bean ⇒ `MealCoachService` produces no verdicts and the deterministic
+envelope is served un-enriched — a **silent** degrade like the recipe prose layer, not the
+scrape/ai-draft 503, because the meal score is deterministic and already served. Scripted in ITs by
+the `[fake-meal-coach:{json}]` sentinel (GREEDY — the payload nests a `meals[]` array) planted in a
+MEAL TITLE, which reaches the prompt through the meal's name. Consumer side: [`fuel.md`](fuel.md) §5/§9.
+
 **AI meal-log consumer (✅ wired, ADR 0012).** The AI meal logging (free text / photo → editable
 draft, mezo-78rn) needs the same cheap tier PLUS the vision overload — same shape as the scrape
 consumer: **meal owns the port** it needs (`feature/meal/service/MealDraftLlm.java` — a text-only

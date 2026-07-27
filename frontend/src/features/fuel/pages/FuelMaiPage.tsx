@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
-import { useFuelDay, useFuelTimeline, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
+import { useFuelDay, useFuelTimeline, useMealCoach, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Icon } from '@/shared/ui/Icon'
 import { RetaPhaseBar } from '@/shared/ui/RetaPhaseBar'
@@ -27,6 +27,13 @@ import { localDateString } from '@/shared/lib/dates'
 export function FuelMaiPage() {
   const { fuel } = useFuelDay()
   const { plan, budget, energyBreakdown, getScoredMeal } = useFuelTimeline()
+  // Coach verdicts ride a SEPARATE request so the deterministic timeline never waits on
+  // an LLM roundtrip; the card lines simply appear once they land (mezo-mr4n).
+  const { verdicts } = useMealCoach(localDateString())
+  const getTagline = (slot: Parameters<typeof getScoredMeal>[0]) => {
+    const meal = getScoredMeal(slot)
+    return meal ? (verdicts[meal.id]?.tagline ?? null) : null
+  }
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
   const { logWater } = useWaterActions()
@@ -202,7 +209,7 @@ export function FuelMaiPage() {
             )}
           </div>
         )}
-        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} onAiLog={handleAiLog} />
+        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} getTagline={getTagline} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} onAiLog={handleAiLog} />
       </div>
 
       {/* Water — NEW dedicated slot (replaces MacroHero's water row) */}
