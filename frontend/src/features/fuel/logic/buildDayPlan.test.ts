@@ -14,7 +14,7 @@ import {
   type PlannedWindow,
   type PlannerBlock,
 } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, FuelPlanToday, ProtocolSlotData, Recipe } from '@/data/types'
+import type { FuelMeal, FuelPlanToday, MealItemLine, ProtocolSlotData, Recipe } from '@/data/types'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 
 // ── fixture factories ────────────────────────────────────────────────────────
@@ -273,6 +273,30 @@ test('an offset-less (mock) loggedAt still renders its local wall-clock unchange
   const plan = buildDayPlan(baseInput({ meals: [logged], nowHHmm: '05:00' }))
   const done = plan.slots.find(s => s.state === 'done' && s.kind === 'meal')!
   expect(done.time).toBe('08:40')
+})
+
+// ── logged-meal display name: item-derived fallback when the title is blank (mezo-u68c) ───────────
+const line = (name: string): MealItemLine => ({
+  source: 'pantry', refId: `p-${name}`, amount: 1, unit: 'adag', name, contribution: { kcal: 0, p: 0, c: 0, f: 0 },
+})
+test('derives a slot name from meal items when the logged meal has no title', () => {
+  const logged = meal({ id: 'm1', slot: 'breakfast', title: '', loggedAt: '2026-07-02T08:40:00', mealItems: [line('Zabpehely')] })
+  const plan = buildDayPlan(baseInput({ meals: [logged] }))
+  const breakfast = plan.slots.find(s => s.mealId === 'm1')!
+  expect(breakfast.mealName).toBe('Zabpehely')
+})
+test('keeps the explicit title when the logged meal has one', () => {
+  const logged = meal({ id: 'm1', slot: 'breakfast', title: 'Reggelim', loggedAt: '2026-07-02T08:40:00', mealItems: [line('Zabpehely')] })
+  const plan = buildDayPlan(baseInput({ meals: [logged] }))
+  const breakfast = plan.slots.find(s => s.mealId === 'm1')!
+  expect(breakfast.mealName).toBe('Reggelim')
+})
+test('a title-less SURPLUS logged snack (no window) also derives its name from item names', () => {
+  // A snack on a 3-meal day has no window → it lands via the surplus-slot path (mealName: displayName(m)).
+  const s = meal({ id: 's1', slot: 'snack', title: '', loggedAt: '2026-07-02T15:00:00', mealItems: [line('Alma'), line('Mandula')] })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 3, meals: [s] }))
+  const snack = plan.slots.find(sl => sl.mealId === 's1')!
+  expect(snack.mealName).toBe('Alma, Mandula')
 })
 
 // ── nothing logged is ever dropped (surplus logged meals become extra done slots) ────────────────

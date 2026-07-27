@@ -59,7 +59,7 @@ export function SlotCard({
   const hasKcal = slot.kcal != null
   const hasFullMacros = slot.p != null && slot.c != null && slot.f != null
 
-  const title = slot.mealName ?? slot.label
+  const title = slot.mealName || slot.label
   const durationSuffix = isWorkoutKind && slot.duration ? ` · ${slot.duration} perc` : ''
 
   return (

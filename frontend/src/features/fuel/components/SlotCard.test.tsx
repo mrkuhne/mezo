@@ -127,6 +127,16 @@ test('a missed slot that still carries suggestedRecipeId renders ONLY Pótlás, 
   expect(screen.queryByRole('button', { name: /logolás/i })).not.toBeInTheDocument()
 })
 
+// ── Empty mealName falls back to the slot label (mezo-u68c) ────────────────────
+test('falls back to the slot label when mealName is empty', () => {
+  const slot: FuelSlot = {
+    time: '08:40', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done',
+    mealName: '', kcal: 500, p: 30, c: 55, f: 12,
+  }
+  renderCard(slot)
+  expect(screen.getByText('Reggeli')).toBeInTheDocument()
+})
+
 // ── Workout / sport duration guard ─────────────────────────────────────────────
 test('a workout slot without a duration renders no "· perc" suffix', () => {
   renderCard({ time: '17:00', kind: 'workout', label: 'Push A', state: 'pending' })
