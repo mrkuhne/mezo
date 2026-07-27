@@ -53,18 +53,22 @@ const RECIPE_BREAKDOWN_KEY = (id: string) => ['recipeBreakdown', id] as const
 /** Template breakdown for the detail page (mezo-bw3y). Mock = the seed's templateBreakdown +
  *  mezoFit.fitsFor, synchronous via initialData; real = the lazily materializing
  *  GET /api/recipe/{id}/breakdown (the FIRST call may take LLM seconds — `pending` drives the
- *  detail page's „Mezo értékeli…" card; no mock fallback in real mode). */
+ *  detail page's „Mezo értékeli…" card; no mock fallback in real mode).
+ *  `refreshing` is the SECOND-and-later generate (mezo-uavr): a write invalidated the query,
+ *  so `data` is still the pre-edit envelope while the new one materializes — the page renders
+ *  „Mezo újraértékeli…" instead of passing a stale reading off as current. */
 export function useRecipeBreakdown(recipeId: string): {
   breakdown: RecipeBreakdownData['breakdown']
   fitsFor: string[]
   pending: boolean
+  refreshing: boolean
 } {
   const mock = isMockMode()
   const seed = (): RecipeBreakdownData => {
     const r = mockRecipes.find(x => x.id === recipeId)
     return { breakdown: r?.templateBreakdown ?? null, fitsFor: r?.mezoFit.fitsFor ?? [] }
   }
-  const { data, isPending } = useQuery({
+  const { data, isPending, isFetching } = useQuery({
     queryKey: RECIPE_BREAKDOWN_KEY(recipeId),
     queryFn: mock ? async () => seed() : () => recipeApi.getBreakdown(recipeId),
     initialData: mock ? seed() : undefined,
@@ -77,6 +81,9 @@ export function useRecipeBreakdown(recipeId: string): {
     breakdown: data?.breakdown ?? null,
     fitsFor: data?.fitsFor ?? [],
     pending: !mock && isPending,
+    // A background regeneration (edit / role change / pantry macro drift invalidated the query):
+    // data is still the PRE-edit envelope, so the page must not render it as current (mezo-uavr).
+    refreshing: !mock && isFetching && !isPending,
   }
 }
 

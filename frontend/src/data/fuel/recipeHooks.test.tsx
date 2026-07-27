@@ -197,6 +197,13 @@ describe('useRecipeBreakdown (mock mode)', () => {
     expect(result.current.breakdown!.dimensions.length).toBeGreaterThan(0)
     expect(result.current.fitsFor.length).toBeGreaterThan(0)
   })
+
+  it('never reports refreshing in mock mode (mezo-uavr)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useRecipeBreakdown('rec-1'), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.breakdown).toBeTruthy())
+    expect(result.current.refreshing).toBe(false)
+  })
 })
 
 describe('useRecipeBreakdown (real mode)', () => {
@@ -218,5 +225,12 @@ describe('useRecipeBreakdown (real mode)', () => {
     expect(portion.weight).toBe(0.12)
     expect(b.improve).toHaveLength(1)
     expect(result.current.fitsFor).toEqual(['Post-workout · este'])
+  })
+
+  it('settles refreshing to false once the breakdown resolves (mezo-uavr)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useRecipeBreakdown('r1'), { wrapper: Wrapper })
+    await waitFor(() => expect(result.current.pending).toBe(false))
+    expect(result.current.refreshing).toBe(false)
   })
 })

@@ -1,12 +1,19 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
+import { http } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { RecipeDetailPage, recipeToInput } from '@/features/fuel/pages/RecipeDetailPage'
 import { useRecipes } from '@/data/hooks'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 import type { Recipe } from '@/data/types'
+
+// The id of the single recipe the MSW GET /api/recipe fixture returns — the real-mode
+// tests deep-link to it so the page resolves a recipe instead of the not-found fallback.
+const REAL_RECIPE_ID = 'rc1f3a0e2-0000-4000-8000-000000000001'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -265,4 +272,38 @@ test('renders the sablon-olvasat card with fitsFor chips when the seed carries a
   for (const t of rec.mezoFit.fitsFor) {
     expect(screen.getByText(`● ${t}`)).toBeInTheDocument()
   }
+})
+
+// Background re-evaluation (mezo-uavr) — real mode only: an edit / role change / pantry macro
+// drift nulls the server-side prose and invalidates ['recipeBreakdown'], so the cached envelope
+// on screen is a PRE-edit reading. The page must say so instead of rendering it as current.
+describe('RecipeDetailPage (real mode) — background re-evaluation', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('renders the re-evaluating copy instead of stale prose while refetching (mezo-uavr)', async () => {
+    const qc = newQc()
+    renderDetail(REAL_RECIPE_ID, qc)
+    // first load resolves the MSW breakdown envelope: prose + score section on screen
+    expect(await screen.findByText('MSW sablon-olvasat.')).toBeInTheDocument()
+    expect(screen.getByText('PONTSZÁM')).toBeInTheDocument()
+
+    // the regeneration the write path triggers is slow (LLM seconds) — never resolves here
+    server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
+    act(() => { void qc.invalidateQueries({ queryKey: ['recipeBreakdown'] }) })
+
+    expect(await screen.findByText('Mezo újraértékeli a receptet…')).toBeInTheDocument()
+    // the whole stale block is gone — prose, the PONTSZÁM header AND the rubric note
+    expect(screen.queryByText('MSW sablon-olvasat.')).toBeNull()
+    expect(screen.queryByText('PONTSZÁM')).toBeNull()
+    expect(screen.queryByText(/mérce szerint/)).toBeNull()
+    // and it does NOT claim a first evaluation
+    expect(screen.queryByText('Mezo értékeli a receptet…')).toBeNull()
+  })
+
+  it('says „értékeli" (not „újraértékeli") on a cold first load (mezo-uavr)', async () => {
+    server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
+    renderDetail(REAL_RECIPE_ID, newQc())
+    expect(await screen.findByText('Mezo értékeli a receptet…')).toBeInTheDocument()
+    expect(screen.queryByText('Mezo újraértékeli a receptet…')).toBeNull()
+  })
 })

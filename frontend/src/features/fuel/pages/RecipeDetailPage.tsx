@@ -104,7 +104,10 @@ export function RecipeDetailPage() {
   // `id ?? ''` alongside the other top-level hooks — BEFORE the not-found early return — so hook
   // order stays stable on a cold/not-found render.
   const { logs } = useRecipeLogs(id ?? '')
-  const { breakdown, fitsFor, pending: breakdownPending } = useRecipeBreakdown(id ?? '')
+  const { breakdown, fitsFor, pending: breakdownPending, refreshing: breakdownRefreshing } = useRecipeBreakdown(id ?? '')
+  // One gate for both: a first generate and a background regeneration must both hide the
+  // (stale-or-absent) prose rather than render a pre-edit reading as current (mezo-uavr).
+  const breakdownBusy = breakdownPending || breakdownRefreshing
 
   const recipe = recipes.find(r => r.id === id)
 
@@ -198,16 +201,20 @@ export function RecipeDetailPage() {
         <>
           {/* Mezo · sablon-olvasat + Pontszám (mezo-bw3y) — deterministic numbers + lazy AI prose.
               Real mode: the FIRST open runs the LLM (seconds) → twinkle card; later opens serve the
-              jsonb cache. Prose-less envelope (flag/companion off, LLM error) renders cards only. */}
-          {breakdownPending && (
+              jsonb cache. Prose-less envelope (flag/companion off, LLM error) renders cards only.
+              A REgenerate (edit / role change / pantry macro drift, mezo-uavr) keeps the pre-edit
+              envelope in cache — the twinkle card takes over and names it as a re-evaluation. */}
+          {breakdownBusy && (
             <div className="card" style={{ margin: '0 0 16px', padding: 16, textAlign: 'center' }}>
               <div className="np-twinkle" style={{ color: 'var(--coral)', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>
                 <Icon name="sparkle" size={20} />
               </div>
-              <span className="text-tertiary" style={{ fontSize: 11.5 }}>Mezo értékeli a receptet…</span>
+              <span className="text-tertiary" style={{ fontSize: 11.5 }}>
+                {breakdownRefreshing ? 'Mezo újraértékeli a receptet…' : 'Mezo értékeli a receptet…'}
+              </span>
             </div>
           )}
-          {!breakdownPending && breakdown?.summary && (
+          {!breakdownBusy && breakdown?.summary && (
             <div className="card" style={{ margin: '0 0 16px', padding: 12, background: 'color-mix(in srgb, var(--sage) 6%, transparent)' }}>
               <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
                 <Icon name="sparkle" size={12} color="var(--coral)" />
@@ -227,7 +234,7 @@ export function RecipeDetailPage() {
               </div>
             </div>
           )}
-          {!breakdownPending && breakdown && (
+          {!breakdownBusy && breakdown && (
             <>
               {/* Header block: the label row, plus — for a non-standard role — the rubric the
                   score was measured against (mezo-uavr). The role RETARGETS the yardstick, it is
@@ -252,7 +259,7 @@ export function RecipeDetailPage() {
               </div>
             </>
           )}
-          {!breakdownPending && !breakdown && (
+          {!breakdownBusy && !breakdown && (
             <div className="card" style={{ margin: '0 0 16px', padding: 16, textAlign: 'center' }}>
               <span className="text-tertiary" style={{ fontSize: 11.5 }}>
                 Sablon-pontszámhoz még nincs elég adat (kcal nélküli hozzávalók).
