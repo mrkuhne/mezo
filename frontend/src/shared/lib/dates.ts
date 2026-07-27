@@ -26,7 +26,7 @@ export function nowOffsetIso(d: Date = new Date()): string {
   return offsetIso(localDateString(d), time)
 }
 
-/** Local-date arithmetic: `addDays('2026-07-20', -1)` -> '2026-06-30'. DST-safe (local Date + local slice). */
+/** Local-date arithmetic: `addDays('2026-07-20', -1)` -> '2026-07-19'. DST-safe (local Date + local slice). */
 export function addDays(iso: string, n: number): string {
   const [y, m, d] = iso.split('-').map(Number)
   return localDateString(new Date(y, m - 1, d + n))
