@@ -2742,6 +2742,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/meal/coach:
+    get:
+      tags:
+        - Meal
+      operationId: getMealCoachForDay
+      summary: >-
+        Day-batch coach verdicts; generates only for today, older days return
+        what is cached (mezo-mr4n)
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: >-
+            Verdicts for that day's meals (empty when the coach is
+            off/unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealCoachResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/meal/{id}/coach':
+    get:
+      tags:
+        - Meal
+      operationId: getMealCoach
+      summary: >-
+        Coach verdict for one logged meal — generates on demand for any date
+        (mezo-mr4n)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 0..1 verdicts (empty when the coach is off/unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealCoachResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/water-log:
     post:
       tags:
@@ -8462,6 +8526,12 @@ components:
         summary:
           type: string
           nullable: true
+        tagline:
+          type: string
+          nullable: true
+          description: >-
+            Card-sized LLM cut (max 60 chars) — null until the coach ran
+            (mezo-mr4n)
         dimensions:
           type: array
           items:
@@ -8630,6 +8700,40 @@ components:
           type: string
         value:
           type: string
+    MealCoachResponse:
+      type: object
+      description: >-
+        Coach verdicts (mezo-mr4n). An empty list means nothing generated/cached
+        — never an error.
+      required:
+        - verdicts
+      properties:
+        verdicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealCoachVerdict'
+    MealCoachVerdict:
+      type: object
+      description: >-
+        One meal's qualitative verdict. Numbers are never LLM-authored — this
+        carries prose only.
+      required:
+        - mealId
+        - improve
+      properties:
+        mealId:
+          type: string
+          format: uuid
+        tagline:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        improve:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealImproveRow'
     MealImproveRow:
       type: object
       required:

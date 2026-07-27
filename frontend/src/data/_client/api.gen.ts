@@ -993,6 +993,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/meal/coach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Day-batch coach verdicts; generates only for today, older days return what is cached (mezo-mr4n) */
+        get: operations["getMealCoachForDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal/{id}/coach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Coach verdict for one logged meal — generates on demand for any date (mezo-mr4n) */
+        get: operations["getMealCoach"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/water-log": {
         parameters: {
             query?: never;
@@ -3389,6 +3423,8 @@ export interface components {
             /** @description Coverage-weighted numeric confidence 0..1 */
             confidence: number;
             summary?: string | null;
+            /** @description Card-sized LLM cut (max 60 chars) — null until the coach ran (mezo-mr4n) */
+            tagline?: string | null;
             dimensions: components["schemas"]["MealScoreDimension"][];
             improve: components["schemas"]["MealImproveRow"][];
             tools: components["schemas"]["MealToolRow"][];
@@ -3449,6 +3485,18 @@ export interface components {
         MealContextRow: {
             label: string;
             value: string;
+        };
+        /** @description Coach verdicts (mezo-mr4n). An empty list means nothing generated/cached — never an error. */
+        MealCoachResponse: {
+            verdicts: components["schemas"]["MealCoachVerdict"][];
+        };
+        /** @description One meal's qualitative verdict. Numbers are never LLM-authored — this carries prose only. */
+        MealCoachVerdict: {
+            /** Format: uuid */
+            mealId: string;
+            tagline?: string | null;
+            summary?: string | null;
+            improve: components["schemas"]["MealImproveRow"][];
         };
         MealImproveRow: {
             text: string;
@@ -7799,6 +7847,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecipeLogListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMealCoachForDay: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Verdicts for that day's meals (empty when the coach is off/unavailable) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealCoachResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMealCoach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 0..1 verdicts (empty when the coach is off/unavailable) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealCoachResponse"];
                 };
             };
             /** @description Missing/invalid token */

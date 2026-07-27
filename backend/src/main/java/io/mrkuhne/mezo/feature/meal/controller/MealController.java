@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.meal.controller;
 import io.mrkuhne.mezo.api.controller.MealApi;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
+import io.mrkuhne.mezo.api.dto.MealCoachResponse;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.RecipeLogListResponse;
@@ -13,6 +14,7 @@ import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.meal.service.WaterLogService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +36,21 @@ public class MealController implements MealApi {
     @Override
     public FuelDayResponse getFuelDay(LocalDate date) {
         return fuelDayService.getDay(currentUserId.get(), date);
+    }
+
+    /**
+     * Coach verdicts for a day (mezo-mr4n). Until {@code MealCoachService} is wired in, this is the
+     * coach-unavailable answer the contract already allows: 200 with an empty list, never an error.
+     */
+    @Override
+    public MealCoachResponse getMealCoachForDay(LocalDate date) {
+        return MealCoachResponse.builder().verdicts(List.of()).build();
+    }
+
+    /** Coach verdict for one meal (mezo-mr4n) — same coach-unavailable answer as the day batch. */
+    @Override
+    public MealCoachResponse getMealCoach(UUID id) {
+        return MealCoachResponse.builder().verdicts(List.of()).build();
     }
 
     @Override
