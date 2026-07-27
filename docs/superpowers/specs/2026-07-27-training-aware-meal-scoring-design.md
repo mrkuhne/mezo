@@ -55,6 +55,11 @@ A **workout window** is `{ start: LocalTime, end: LocalTime, kind }`.
 - `post_workout` **requires the workout to have actually happened that day** — combine the schedule slot with the dated completed-instance signal (`WorkoutSessionRepository.findDoneInstanceDates`, sport/run session-by-date). No recovery bonus for a workout you skipped.
 - All time sources are **nullable / optional**. No workout that day, or unresolvable time → **`standard`** (never fabricate a role).
 
+> **Implementation note (mezo-tm76, 2026-07-27)** — how the `done` signal is pinned to a *particular* window, settled during the follow-up hardening:
+> - **Gym:** a completed instance carries a date but no clock time, so on a multi-slot day it cannot be attributed to one slot. `done` is therefore **coverage-based**: true for every slot only when the day's completed instances **cover all** of that weekday's slots; a partial day leaves them **all** not-done. Deliberately conservative — a missed recovery bonus beats one fabricated on the slot that did not happen.
+> - **Sport:** `SportSessionEntity` *does* carry a time, so a logged session **is** the window (its own time + duration, `done = true`) and **consumes the recurring slot nearest to it in time**; slots left unmatched still emit their planned window with `done = false`. A session with neither its own time nor a matchable slot yields **no window** (unresolvable time → `standard`).
+> - **Run:** windows stay **pre-only** (`done = false`); the block week is re-derived from `startDate` for the *queried date* (`MesoWeeks.weekOf`), never read off the lagging `running_block.current_week`.
+
 ### 3.3 Classification (pure, given windows + logged local time)
 For a meal at local time `t` against the day's windows:
 - **`pre_workout`** if `t ∈ [start − preLeadMin, start)` for any window.
