@@ -243,8 +243,9 @@ test('the PONTSZÁM header names the rubric a non-standard role retargets to (me
   const r = pickRecipe(qc, x => x.role === 'pre_workout' && !!x.templateBreakdown)
   renderDetail(r.id, qc)
   expect(await screen.findByText('PONTSZÁM')).toBeInTheDocument()
-  // reads as "which yardstick was used", not as praise
-  expect(screen.getByText('edzés előtt mérce szerint')).toBeInTheDocument()
+  // reads as "which yardstick was used", not as praise — and the role ATTRIBUTES the
+  // mérce, so it takes the adjectival form („edzés előtti"), not the control label
+  expect(screen.getByText('edzés előtti mérce szerint')).toBeInTheDocument()
 })
 
 test('the PONTSZÁM header stays rubric-free for a standard recipe (mezo-uavr)', async () => {

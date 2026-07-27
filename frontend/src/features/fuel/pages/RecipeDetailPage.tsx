@@ -25,7 +25,7 @@ import { RecipeLogsList } from '@/features/fuel/components/RecipeLogsList'
 import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
-import { roleLabel } from '@/features/fuel/logic/recipeRole'
+import { roleLabel, roleRubricLabel } from '@/features/fuel/logic/recipeRole'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 
 const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--warning)', 4: 'var(--error)' }
@@ -242,8 +242,8 @@ export function RecipeDetailPage() {
                   </span>
                 </div>
                 {recipe.role !== 'standard' && (
-                  <div className="text-tertiary" style={{ fontSize: 10, marginTop: 4, textAlign: 'right' }}>
-                    {roleLabel(recipe.role).toLowerCase()} mérce szerint
+                  <div className="label-mono" style={{ fontSize: 9, marginTop: 4, textAlign: 'right', color: 'var(--text-tertiary)' }}>
+                    {roleRubricLabel(recipe.role)} mérce szerint
                   </div>
                 )}
               </div>
