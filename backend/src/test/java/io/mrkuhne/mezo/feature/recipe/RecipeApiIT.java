@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 class RecipeApiIT extends ApiIntegrationTest {
 
@@ -269,15 +270,18 @@ class RecipeApiIT extends ApiIntegrationTest {
     @Test
     void testCreateRecipe_shouldDefaultToStandard_whenRoleOmitted() {
         HttpHeaders auth = ownerAuthHeaders();
+        auth.setContentType(MediaType.APPLICATION_JSON); // for the raw-JSON body below
         UUID food = createFood(auth, "Zab2", "370", "13", "60", "7");
-        RecipeRequest req = new RecipeRequest();
-        req.setName("Sima recept");
-        req.setCategory("lunch");
-        req.setServings(1);
-        req.setIngredients(List.of(line(food, "100")));
+        // Raw JSON on purpose: the generated RecipeRequest carries `role = "standard"` as a FIELD
+        // default, so a DTO-built body always puts "role" on the wire and can never exercise the
+        // genuinely-absent-field path. This body omits the key entirely. (ASCII only — the raw
+        // String converter does not negotiate a charset for us.)
+        String body = """
+            {"name":"Sima recept","category":"lunch","servings":1,\
+            "ingredients":[{"pantryItemId":"%s","amount":100,"unit":"g"}]}""".formatted(food);
 
         RecipeResponse created =
-            postForBody("/api/recipe", req, auth, HttpStatus.CREATED, RecipeResponse.class);
+            postForBody("/api/recipe", body, auth, HttpStatus.CREATED, RecipeResponse.class);
 
         assertThat(created.getRole()).isEqualTo("standard");
     }

@@ -118,6 +118,7 @@ class RecipeMapperTest {
     @Test
     void testApplyScalars_shouldDefaultRoleToStandard_whenRequestRoleIsNull() {
         RecipeEntity e = new RecipeEntity();
+        e.setRole(MealRole.POST_WORKOUT); // seed a DIFFERENT role: the assertion must prove the mapper WROTE standard
         RecipeRequest r = baseRequest();
         r.setRole(null);
 

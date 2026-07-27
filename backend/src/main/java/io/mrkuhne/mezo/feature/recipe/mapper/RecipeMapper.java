@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
@@ -40,7 +41,7 @@ public interface RecipeMapper {
     default MealRole fromWireRole(String wire) {
         return wire == null || wire.isBlank()
             ? MealRole.STANDARD
-            : MealRole.valueOf(wire.trim().toUpperCase());
+            : MealRole.valueOf(wire.trim().toUpperCase(Locale.ROOT));
     }
 
     default RecipeResponse toResponse(RecipeEntity e) {
@@ -56,7 +57,7 @@ public interface RecipeMapper {
             .cookMins(e.getCookMins())
             .tags(e.getTags() == null ? List.of() : e.getTags())
             .starred(e.isStarred())
-            .role(e.getRole() == null ? "standard" : e.getRole().name().toLowerCase())
+            .role(e.getRole() == null ? "standard" : e.getRole().name().toLowerCase(Locale.ROOT))
             .createdDate(e.getCreatedAt() == null ? "" : e.getCreatedAt().toString())
             .novaDominant(e.getNovaDominant() == null ? null : e.getNovaDominant().intValue()) // integer since mezo-2dy
             .macros(rollup(lines))
