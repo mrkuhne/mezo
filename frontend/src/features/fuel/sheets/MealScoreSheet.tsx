@@ -12,11 +12,17 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { ScoreHero } from '@/features/fuel/components/ScoreHero'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
+import { useMealCoachFor } from '@/data/hooks'
 
 export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () => void }) {
+  // The coach verdict materializes on demand (mezo-mr4n): the deterministic body below renders
+  // immediately from the already-loaded envelope, this only fills the prose card.
+  const { verdict, isPending: coachPending } = useMealCoachFor(meal.id)
   const b = meal.breakdown
   if (!b) return null
   const scorePct = (meal.score ?? 0) * 100
+  const summary = verdict?.summary ?? b.summary
+  const breakdown = verdict?.improve?.length ? { ...b, improve: verdict.improve } : b
 
   return (
     <Sheet onClose={onClose} labelledBy="meal-score-title">
@@ -43,8 +49,17 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
           {/* Score hero */}
           <ScoreHero meal={meal} scorePct={scorePct} confidence={b.confidence} />
 
-          {/* Mezo summary — deterministic v0 ships summary:null (P8 prose), the card hides honestly */}
-          {b.summary && (
+          {/* Mezo summary — the coach's verdict (mezo-mr4n); a skeleton while it is being
+              generated, and nothing at all when the coach is off/unavailable. */}
+          {!summary && coachPending && (
+            <div className="card" style={{ padding: 12, marginTop: 14 }} data-testid="coach-skeleton">
+              <div className="row gap-sm" style={{ alignItems: 'center' }}>
+                <Icon name="sparkle" size={12} color="var(--coral)" />
+                <Eyebrow className="text-tertiary">Mezo olvasata készül…</Eyebrow>
+              </div>
+            </div>
+          )}
+          {summary && (
             <div className="card" style={{
               padding: 12, marginTop: 14,
               background: 'color-mix(in srgb, var(--coral) 5%, transparent)',
@@ -55,7 +70,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                 <div className="col flex-1">
                   <Eyebrow brand>Mezo · olvasat</Eyebrow>
                   <p style={{ fontSize: 12.5, lineHeight: 1.5, marginTop: 6, color: 'var(--text-primary)' }}>
-                    <SafeMarkdown text={b.summary} />
+                    <SafeMarkdown text={summary} />
                   </p>
                 </div>
               </div>
@@ -69,7 +84,7 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
           </div>
 
           {/* Dimension cards + improve + tools — shared with the recipe Pontszám (mezo-bw3y) */}
-          <ScoreBreakdownBody breakdown={b} />
+          <ScoreBreakdownBody breakdown={breakdown} />
 
           <div style={{ height: 12 }} />
         </>

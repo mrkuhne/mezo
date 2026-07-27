@@ -183,3 +183,25 @@ test('the now slot renders .slot.next with "következő" inside its .mrow', () =
   expect(container.querySelector('.slot.next')).toBeInTheDocument()
   expect(container.querySelector('.mrow')).toHaveTextContent('következő')
 })
+
+// ── Coach tagline (mezo-mr4n) ──────────────────────────────────────────────────
+const loggedSlot: FuelSlot = {
+  time: '06:15', kind: 'meal', label: 'Reggeli', state: 'done',
+  mealName: 'Zabkása', kcal: 520, p: 24, c: 70, f: 12,
+}
+
+it('renders the coach tagline under the title when a verdict exists', () => {
+  render(
+    <SlotCard slot={loggedSlot} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop}
+      tagline="Remek pre-workout üzemanyag" />,
+  )
+  expect(screen.getByTestId('coach-tagline')).toHaveTextContent('Remek pre-workout üzemanyag')
+})
+
+it('renders no tagline row without a verdict — an absent coach line costs no layout', () => {
+  render(
+    <SlotCard slot={loggedSlot} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop}
+      tagline={null} />,
+  )
+  expect(screen.queryByTestId('coach-tagline')).toBeNull()
+})
