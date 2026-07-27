@@ -306,4 +306,25 @@ describe('RecipeDetailPage (real mode) — background re-evaluation', () => {
     expect(await screen.findByText('Mezo értékeli a receptet…')).toBeInTheDocument()
     expect(screen.queryByText('Mezo újraértékeli a receptet…')).toBeNull()
   })
+
+  // A plain revalidation (staleTime expiry on remount, window refocus) is NOT a regeneration:
+  // it returns the SAME cached envelope, so claiming „újraértékeli" would be a false statement
+  // and a pointless layout jump. Only a write-driven INVALIDATION counts (mezo-uavr).
+  it('a background revalidation that is NOT an invalidation keeps the score section (mezo-uavr)', async () => {
+    const qc = newQc()
+    renderDetail(REAL_RECIPE_ID, qc)
+    expect(await screen.findByText('MSW sablon-olvasat.')).toBeInTheDocument()
+
+    // refetchQueries = exactly what a focus/stale revalidation does: refetch WITHOUT invalidating
+    server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
+    act(() => { void qc.refetchQueries({ queryKey: ['recipeBreakdown'] }) })
+    // the refetch is genuinely in flight — otherwise the assertions below would be vacuous
+    await waitFor(() => expect(qc.isFetching({ queryKey: ['recipeBreakdown'] })).toBe(1))
+
+    expect(screen.queryByText('Mezo újraértékeli a receptet…')).toBeNull()
+    expect(screen.queryByText('Mezo értékeli a receptet…')).toBeNull()
+    // the cached reading stays on screen — no blanked score section
+    expect(screen.getByText('MSW sablon-olvasat.')).toBeInTheDocument()
+    expect(screen.getByText('PONTSZÁM')).toBeInTheDocument()
+  })
 })

@@ -54,9 +54,11 @@ const RECIPE_BREAKDOWN_KEY = (id: string) => ['recipeBreakdown', id] as const
  *  mezoFit.fitsFor, synchronous via initialData; real = the lazily materializing
  *  GET /api/recipe/{id}/breakdown (the FIRST call may take LLM seconds — `pending` drives the
  *  detail page's „Mezo értékeli…" card; no mock fallback in real mode).
- *  `refreshing` is the SECOND-and-later generate (mezo-uavr): a write invalidated the query,
- *  so `data` is still the pre-edit envelope while the new one materializes — the page renders
- *  „Mezo újraértékeli…" instead of passing a stale reading off as current. */
+ *  `refreshing` is the SECOND-and-later generate (mezo-uavr): a WRITE invalidated the query
+ *  (recipe edit / role change / pantry macro drift — the three regeneration paths), so `data` is
+ *  still the pre-edit envelope while the new one materializes and the page renders
+ *  „Mezo újraértékeli…" instead of passing a stale reading off as current. It is deliberately
+ *  NOT every background fetch: a plain revalidation returns the SAME envelope. */
 export function useRecipeBreakdown(recipeId: string): {
   breakdown: RecipeBreakdownData['breakdown']
   fitsFor: string[]
@@ -64,6 +66,7 @@ export function useRecipeBreakdown(recipeId: string): {
   refreshing: boolean
 } {
   const mock = isMockMode()
+  const qc = useQueryClient()
   const seed = (): RecipeBreakdownData => {
     const r = mockRecipes.find(x => x.id === recipeId)
     return { breakdown: r?.templateBreakdown ?? null, fitsFor: r?.mezoFit.fitsFor ?? [] }
@@ -75,15 +78,26 @@ export function useRecipeBreakdown(recipeId: string): {
     // real: the backend caches the enriched envelope; a session-long staleTime avoids re-firing
     // the (potentially LLM-priced) GET on every remount, the write-path invalidation covers edits
     staleTime: mock ? Infinity : 5 * 60_000,
+    // …and for the same reason a mere window refocus must not re-fire it either: nothing changed,
+    // the server would hand back the same jsonb. Writes invalidate (and an invalidated query still
+    // refetches on the next mount), so no regeneration can be missed by turning this off.
+    refetchOnWindowFocus: false,
     enabled: recipeId !== '',
   })
+  // Only a WRITE-driven regeneration may claim „újraértékeli": the recipe edit / role change /
+  // pantry macro drift paths all arrive here as an INVALIDATION of this key. A plain revalidation
+  // (staleTime expiry on remount) refetches the SAME envelope — announcing a re-evaluation there
+  // would be a false claim plus a layout jump, the very dishonesty this flag exists to remove.
+  // `isInvalidated` is set by invalidateQueries and stays true for the whole ensuing refetch;
+  // the success dispatch clears it exactly when the fresh envelope lands (mezo-uavr).
+  const invalidated = qc.getQueryState(RECIPE_BREAKDOWN_KEY(recipeId))?.isInvalidated === true
   return {
     breakdown: data?.breakdown ?? null,
     fitsFor: data?.fitsFor ?? [],
     pending: !mock && isPending,
-    // A background regeneration (edit / role change / pantry macro drift invalidated the query):
-    // data is still the PRE-edit envelope, so the page must not render it as current (mezo-uavr).
-    refreshing: !mock && isFetching && !isPending,
+    // A background regeneration: data is still the PRE-edit envelope, so the page must not
+    // render it as current (mezo-uavr).
+    refreshing: !mock && isFetching && !isPending && invalidated,
   }
 }
 
