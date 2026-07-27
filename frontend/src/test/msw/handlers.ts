@@ -17,6 +17,8 @@ const recipeFixture = {
   id: 'rc1f3a0e2-0000-4000-8000-000000000001',
   name: 'Túrós zabkása · áfonyával', slot: 'Reggeli', category: 'breakfast',
   servings: 1, prepMins: 5, cookMins: 3, tags: ['high-protein', 'pre-workout'], starred: true,
+  // Same template as the mock seed's rec-1 → same role (mezo-uavr), so both modes agree.
+  role: 'pre_workout',
   createdDate: 'Máj 14', novaDominant: 3, macros: { kcal: 580, p: 42, c: 78, f: 12 },
   mezoFit: { score: null, fitsFor: ['Reggel · Reta D3'] },
   timesLogged: 0, avgScore: 0, lastLogged: '—',

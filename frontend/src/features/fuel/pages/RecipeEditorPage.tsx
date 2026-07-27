@@ -174,6 +174,9 @@ export function RecipeEditorPage() {
       cookMins: 0,
       tags,
       starred,
+      // Preserved from the edited template until the editor grows its own role control;
+      // a fresh recipe defaults to `standard` (mezo-uavr).
+      role: editing?.role ?? 'standard',
       ingredients: lines.map(l => ({ pantryItemId: l.refId, amount: l.amount, unit: l.unit, note: l.note ?? null })),
     }
     if (isEditMode && editing) {

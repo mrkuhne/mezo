@@ -24,18 +24,21 @@ describe('Recipe type extensions (per-line name + contribution, RecipeInput)', (
       novaDominant: 1,
       mezoFit: { score: null, fitsFor: [] },
       starred: false,
+      role: 'standard',
     }
     expect(recipe.ingredients[0].name).toBe('Zab')
     expect(recipe.mezoFit.score).toBeNull()
+    expect(recipe.role).toBe('standard')
   })
 
   it('a RecipeInput is the editor save payload (pantryItemId lines)', () => {
     const input: RecipeInput = {
       name: 'Új recept', slot: null, category: 'lunch', servings: 2,
-      prepMins: 10, cookMins: 20, tags: [], starred: false,
+      prepMins: 10, cookMins: 20, tags: [], starred: false, role: 'post_workout',
       ingredients: [{ pantryItemId: 'p1', amount: 200, unit: 'g', note: null }],
     }
     expect(input.ingredients[0].pantryItemId).toBe('p1')
     expect(input.category).toBe('lunch')
+    expect(input.role).toBe('post_workout')
   })
 })

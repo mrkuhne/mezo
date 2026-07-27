@@ -254,6 +254,8 @@ export interface RecipeIngredientLine {
   name?: string // server-computed snapshot name (present on persisted/loaded recipes)
   contribution?: { kcal: number; p: number; c: number; f: number } // this line's macro share
 }
+/** Template meal role (mezo-uavr) — selects the scoring rubric overlay on the recipe surface. */
+export type RecipeRole = 'standard' | 'pre_workout' | 'post_workout'
 export interface Recipe {
   id: string; name: string; slot: string; category: RecipeCategory
   createdDate: string; timesLogged: number; avgScore: number; lastLogged: string
@@ -263,6 +265,7 @@ export interface Recipe {
   novaDominant: NovaGroup
   mezoFit: { score: number | null; fitsFor: string[] }
   starred: boolean
+  role: RecipeRole
   recentLogs?: RecipeLog[]
   templateBreakdown?: MealBreakdown
 }
@@ -276,6 +279,7 @@ export interface RecipeInput {
   cookMins?: number | null
   tags: string[]
   starred: boolean
+  role: RecipeRole
   ingredients: { pantryItemId: string; amount: number; unit: string; note?: string | null }[]
 }
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }

@@ -225,6 +225,9 @@ const recipesBase: Recipe[] = [
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: ['Pre Pull Day · T-10h', 'Reggel · Reta D3'] },
     starred: true,
+    // The one non-standard seed (mezo-uavr): carb-dominant breakfast, so mock mode exercises
+    // the pre-workout rubric overlay and its chip.
+    role: 'pre_workout',
   },
   {
     id: 'rec-2', name: 'Csirke + édesburgonya + spenót',
@@ -243,6 +246,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: ['Pre-workout · T-3.5h', 'Magas mikro-density'] },
     starred: true,
+    role: 'standard',
   },
   {
     id: 'rec-3', name: 'Lazac + barna rizs + brokkoli',
@@ -261,6 +265,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: ['Post-workout · este', 'Omega-3 hét'] },
     starred: true,
+    role: 'standard',
   },
   {
     id: 'rec-4', name: 'Whey + banán + mandulavaj',
@@ -278,6 +283,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 4,
     mezoFit: { score: null, fitsFor: ['Pre-workout · T-1h', 'Reta-aware snack'] },
     starred: false,
+    role: 'standard',
   },
   {
     id: 'rec-5', name: 'Tojásrántotta · spenóttal',
@@ -295,6 +301,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: ['Alacsony-C reggel', 'Rest day'] },
     starred: false,
+    role: 'standard',
   },
   {
     id: 'rec-6', name: 'Túró · áfonya · méz quick',
@@ -312,6 +319,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 3,
     mezoFit: { score: null, fitsFor: ['Casein · esti', 'Magas protein density'] },
     starred: false,
+    role: 'standard',
   },
 ]
 

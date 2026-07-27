@@ -18,7 +18,7 @@ function sharedWrapper() {
 
 const newRecipe: RecipeInput = {
   name: 'Új recept', slot: 'Snack', category: 'snack', servings: 1,
-  prepMins: 2, cookMins: 0, tags: [], starred: false,
+  prepMins: 2, cookMins: 0, tags: [], starred: false, role: 'standard',
   ingredients: [{ pantryItemId: 'ing-zab', amount: 70, unit: 'g', note: null }],
 }
 
@@ -84,6 +84,19 @@ describe('useRecipes (mock mode)', () => {
     const added = result.current.read.recipes.find(r => r.name === 'Supplement recept')!
     expect(added.ingredients[0].refId).toBe('magnez')
     expect(added.ingredients[0].name).toBe('Magnézium-glicinát')
+  })
+
+  it('create carries the picked role onto the built recipe (mezo-uavr)', async () => {
+    const preWorkout: RecipeInput = { ...newRecipe, name: 'Pre-workout recept', role: 'pre_workout' }
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ read: useRecipes(), actions: useRecipeActions() }),
+      { wrapper: Wrapper },
+    )
+    const before = result.current.read.recipes.length
+    act(() => result.current.actions.create(preWorkout))
+    await waitFor(() => expect(result.current.read.recipes.length).toBe(before + 1))
+    expect(result.current.read.recipes.find(r => r.name === 'Pre-workout recept')!.role).toBe('pre_workout')
   })
 
   it('remove deletes a recipe from the shared cache', async () => {

@@ -45,6 +45,7 @@ export function recipeToInput(r: Recipe): RecipeInput {
     cookMins: r.cookMins,
     tags: r.tags,
     starred: r.starred,
+    role: r.role,
     ingredients: r.ingredients.map(i => ({ pantryItemId: i.refId, amount: i.amount, unit: i.unit, note: i.note ?? null })),
   }
 }

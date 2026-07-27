@@ -145,6 +145,7 @@ function buildRecipe(id: string, input: RecipeInput, base?: Recipe): Recipe {
     novaDominant: deriveNovaDominant(lines, mockPantryPool),
     mezoFit: base?.mezoFit ?? { score: null, fitsFor: [] },
     starred: input.starred,
+    role: input.role,
     recentLogs: base?.recentLogs ?? [],
     templateBreakdown: base?.templateBreakdown,
   }
