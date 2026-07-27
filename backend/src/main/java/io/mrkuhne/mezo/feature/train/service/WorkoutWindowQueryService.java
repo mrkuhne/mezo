@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
@@ -37,10 +38,16 @@ public class WorkoutWindowQueryService {
     private final RunningBlockRepository runningBlockRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final SportSessionRepository sportSessionRepository;
+    private final WorkoutService workoutService;
     private final TrainProperties props;
 
-    /** One workout on a date: schedule start, derived end, kind, and whether it was actually done. */
-    public record Window(LocalTime start, LocalTime end, String kind, boolean done) {
+    /**
+     * One workout on a date: schedule start, derived end, kind, whether it was actually done, and
+     * a human {@code label} naming it for prose consumers (mezo-mr4n) — the planned meso day's type
+     * ("Pull") for gym, the sport for sport, the prescribed session's label for run. Null whenever
+     * nothing names it; never invented.
+     */
+    public record Window(LocalTime start, LocalTime end, String kind, boolean done, String label) {
     }
 
     @Transactional(readOnly = true)
@@ -58,10 +65,15 @@ public class WorkoutWindowQueryService {
             .toList();
         boolean gymDone = !gymSlots.isEmpty() && workoutSessionRepository
             .findDoneInstancesBetween(userId, date, date).size() >= gymSlots.size();
+        // The day's planned meso template names the session ("Pull") — the same resolution the
+        // Mai view and quest generation use; absent (no active meso / rest day) leaves it unnamed.
+        String gymLabel = workoutService.findPlannedTemplateForDate(userId, date)
+            .map(WorkoutSessionEntity::getType)
+            .orElse(null);
         gymSlots.forEach(s -> {
             LocalTime start = LocalTime.parse(s.getTime());
             windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
-                "gym", gymDone));
+                "gym", gymDone, gymLabel));
         });
 
         addSportWindows(userId, date, dow, windows);
@@ -98,12 +110,13 @@ public class WorkoutWindowQueryService {
             }
             LocalTime start = LocalTime.parse(time);
             windows.add(new Window(start, start.plusMinutes(durationOf(session, slot)),
-                "sport", true));
+                "sport", true, session.getSport()));
         }
 
         unmatched.forEach(s -> {
             LocalTime start = LocalTime.parse(s.getTime());
-            windows.add(new Window(start, start.plusMinutes(s.getDurationMin()), "sport", false));
+            windows.add(new Window(start, start.plusMinutes(s.getDurationMin()), "sport", false,
+                s.getSport()));
         });
     }
 
@@ -154,7 +167,7 @@ public class WorkoutWindowQueryService {
             .forEach(s -> {
                 LocalTime start = LocalTime.parse(s.timeOfDay());
                 windows.add(new Window(start, start.plusMinutes(props.runDefaultMinutes()),
-                    "run", false));
+                    "run", false, s.label()));
             });
     }
 }

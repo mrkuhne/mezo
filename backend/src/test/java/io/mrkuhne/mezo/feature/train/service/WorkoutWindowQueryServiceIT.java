@@ -52,6 +52,57 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testWindowsFor_shouldLabelTheGymWindow_withThePlannedTemplateDaysType() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);          // Wednesday → HU day label "Sze"
+        train.createGymSlot(owner, 2, "18:00");
+        var meso = train.createActiveMeso(owner);
+        train.createWorkoutSession(owner, meso.getId(), "Sze", "Pull", 0, "active");
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().label()).isEqualTo("Pull");
+    }
+
+    @Test
+    void testWindowsFor_shouldLeaveTheGymLabelNull_whenNoTemplateDayIsPlanned() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createGymSlot(owner, 2, "18:00");             // slot without an active meso day
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().label()).isNull();    // nothing names it — never invented
+    }
+
+    @Test
+    void testWindowsFor_shouldLabelTheSportWindow_withTheSportName() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createSportSession(owner, wed);               // sport defaults to "volleyball"
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().label()).isEqualTo("volleyball");
+    }
+
+    @Test
+    void testWindowsFor_shouldLabelTheRunWindow_withThePrescribedSessionLabel() {
+        UUID owner = owner();
+        LocalDate start = LocalDate.of(2026, 6, 16);
+        LocalDate wedOfWeek2 = LocalDate.of(2026, 6, 24);
+        running.createBlockAnchored(owner, start, 8, 3, 2, 2, "18:00");
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wedOfWeek2);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().label()).isEqualTo("Sprint-intervallum");
+    }
+
+    @Test
     void testWindowsFor_shouldMarkNoGymSlotDone_whenOneOfTwoSlotsWasCompleted() {
         UUID owner = owner();
         LocalDate wed = LocalDate.of(2026, 6, 24);
