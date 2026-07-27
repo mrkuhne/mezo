@@ -94,6 +94,14 @@ class MealScoringServiceTest {
     }
 
     @Test
+    void testScoreMeal_shouldLeaveTaglineNull_whenNoCoachRan() {
+        MealBreakdownJson b = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
+
+        // the coach's card-sized socket (mezo-mr4n) — the scorer never fabricates prose
+        assertThat(b.tagline()).isNull();
+    }
+
+    @Test
     void testScoreMeal_shouldScoreMacroNearPerfect_whenSharesMatchTargets() {
         MealBreakdownJson b = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
 

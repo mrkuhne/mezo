@@ -10,9 +10,11 @@ import java.util.List;
  * Mapped via {@code @JdbcTypeCode(SqlTypes.JSON)} (the Train {@code ProvenanceEnvelope} pattern).
  *
  * <p>{@code value} duplicates the denormalized {@code meal.score} column by design (ADR 0006 §4);
- * {@code MealScoringService} writes both atomically. {@code summary} and {@code improve} are
- * Phase-3 (P8) prose — {@code null}/empty in v0, never fabricated. {@code tools} lists the honest
- * deterministic provenance (what the scorer actually read/computed).
+ * {@code MealScoringService} writes both atomically. {@code summary}, {@code tagline} and
+ * {@code improve} are the prose sockets — the deterministic scorer always writes them
+ * {@code null}/empty and never fabricates prose; the meal-coach layer (mezo-mr4n) fills them
+ * lazily, {@code tagline} being the card-sized cut. {@code tools} lists the honest deterministic
+ * provenance (what the scorer actually read/computed).
  *
  * <p>The envelope is also the MICRO SNAPSHOT: the nutrition-quality rows are computed from the
  * live pantry/recipe sources at write time and frozen here — a later source edit never rewrites
@@ -22,6 +24,7 @@ public record MealBreakdownJson(
     BigDecimal value,
     BigDecimal confidence,
     String summary,
+    String tagline,
     List<Dimension> dimensions,
     List<ImproveRow> improve,
     List<ToolRow> tools

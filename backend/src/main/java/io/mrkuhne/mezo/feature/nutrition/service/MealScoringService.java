@@ -118,7 +118,7 @@ public class MealScoringService {
         double confidence = weightSum == 0 ? 0
             : dims.stream().mapToDouble(d -> d.effectiveWeight * d.coverage).sum() / weightSum;
 
-        return new MealBreakdownJson(round2(value), round2(confidence), null,
+        return new MealBreakdownJson(round2(value), round2(confidence), null, null,
             dims.stream().map(Dim::toJson).toList(), List.of(),
             tools(slot, lines, dims, localTime));
     }
@@ -175,7 +175,8 @@ public class MealScoringService {
         tools.add(new ToolRow("compute", "guidelineFit(who, fat_quality)"));
         tools.add(new ToolRow("compute", "templateFit(weights_renormalized)"));
 
-        return new MealBreakdownJson(round2(value), round2(confidence), null, dims, List.of(), tools);
+        return new MealBreakdownJson(round2(value), round2(confidence), null, null, dims, List.of(),
+            tools);
     }
 
     /**
