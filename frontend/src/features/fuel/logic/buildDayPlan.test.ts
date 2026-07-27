@@ -51,6 +51,7 @@ function recipe(over: Partial<Recipe> & { id: string; category: Recipe['category
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: [] },
     starred: false,
+    role: 'standard',
     ...over,
   }
 }

@@ -71,6 +71,26 @@ public class MealScoringService {
     public record WorkoutWindow(LocalTime start, LocalTime end, boolean done) {
     }
 
+    /** The role-sensitive tunables a rubric overlay swaps (mezo-ta8p/mezo-uavr). */
+    private record Rubric(int p, int c, int f, MealScoringProperties.WhoRefs who,
+                          MealScoringProperties.NovaGroupScores nova) {
+    }
+
+    /**
+     * The rubric a role scores under. STANDARD = the base targets/who/nova (identity overlay);
+     * PRE/POST_WORKOUT take their fully-specified bundle from {@code mezo.fuel.scoring.roles}.
+     * ONE helper for both the logged-meal and the recipe-template surface, so the two can never
+     * drift apart (mezo-uavr).
+     */
+    private Rubric rubricFor(MealRole role) {
+        if (role == MealRole.PRE_WORKOUT || role == MealRole.POST_WORKOUT) {
+            MealScoringProperties.RoleRubric r =
+                role == MealRole.PRE_WORKOUT ? props.roles().pre() : props.roles().post();
+            return new Rubric(r.p(), r.c(), r.f(), r.who(), r.nova());
+        }
+        return new Rubric(targets.p(), targets.c(), targets.f(), props.who(), props.nova());
+    }
+
     /** Backward-compatible entry: scores with no training context (STANDARD rubric). */
     public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime) {
         return scoreMeal(slot, lines, localTime, MealRole.STANDARD);
@@ -92,20 +112,12 @@ public class MealScoringService {
                                        MealRole role) {
         double kcal = sum(lines, ScoredLine::kcal);
 
-        int tp = targets.p();
-        int tc = targets.c();
-        int tf = targets.f();
-        MealScoringProperties.WhoRefs who = props.who();
-        MealScoringProperties.NovaGroupScores nova = props.nova();
-        if (role == MealRole.PRE_WORKOUT || role == MealRole.POST_WORKOUT) {
-            MealScoringProperties.RoleRubric r =
-                role == MealRole.PRE_WORKOUT ? props.roles().pre() : props.roles().post();
-            tp = r.p();
-            tc = r.c();
-            tf = r.f();
-            who = r.who();
-            nova = r.nova();
-        }
+        Rubric rubric = rubricFor(role);
+        int tp = rubric.p();
+        int tc = rubric.c();
+        int tf = rubric.f();
+        MealScoringProperties.WhoRefs who = rubric.who();
+        MealScoringProperties.NovaGroupScores nova = rubric.nova();
 
         List<Dim> dims = List.of(
             macroDim(lines, kcal, tp, tc, tf), microDim(lines, kcal), whoDim(lines, kcal, who),
@@ -133,7 +145,17 @@ public class MealScoringService {
      * portion dimension; a slot-less recipe falls back to the configured default share.
      */
     public BigDecimal recipeFit(String slot, List<ScoredLine> perServingLines) {
-        MealBreakdownJson breakdown = recipeTemplateBreakdown(slot, perServingLines);
+        return recipeFit(slot, perServingLines, MealRole.STANDARD);
+    }
+
+    /**
+     * The template fit under an explicit {@link MealRole} (mezo-uavr) — the recipe's OWN declared
+     * role, not a logged-meal classification. A thin delegate of
+     * {@link #recipeTemplateBreakdown(String, List, MealRole)}, so the badge and the envelope can
+     * never disagree.
+     */
+    public BigDecimal recipeFit(String slot, List<ScoredLine> perServingLines, MealRole role) {
+        MealBreakdownJson breakdown = recipeTemplateBreakdown(slot, perServingLines, role);
         return breakdown == null ? null : breakdown.value();
     }
 
@@ -147,15 +169,30 @@ public class MealScoringService {
      * Null exactly when the profile carries no kcal / no scorable dimension.
      */
     public MealBreakdownJson recipeTemplateBreakdown(String slot, List<ScoredLine> perServingLines) {
+        return recipeTemplateBreakdown(slot, perServingLines, MealRole.STANDARD);
+    }
+
+    /**
+     * The template envelope under an explicit {@link MealRole} (mezo-uavr): the role selects the
+     * SAME rubric overlay {@link #scoreMeal} uses ({@link #rubricFor}) — macro targets, WHO sugar
+     * limit, NOVA class scores — so a pre/post-workout recipe is judged as fuel, not penalized for
+     * being fast carbs. STANDARD is the identity overlay: byte-for-byte the pre-role score.
+     *
+     * <p>{@code portionDim(slot, kcal)} stays role-INDEPENDENT (spec §4): the per-serving kcal vs
+     * the slot budget is a property of the portion, not of the training context.
+     */
+    public MealBreakdownJson recipeTemplateBreakdown(String slot, List<ScoredLine> perServingLines,
+                                                    MealRole role) {
         double kcal = sum(perServingLines, ScoredLine::kcal);
         if (kcal <= 0) {
             return null;
         }
+        Rubric rubric = rubricFor(role);
         List<Dim> live = List.of(
-            macroDim(perServingLines, kcal, targets.p(), targets.c(), targets.f()),
-            microDim(perServingLines, kcal), whoDim(perServingLines, kcal, props.who()),
+            macroDim(perServingLines, kcal, rubric.p(), rubric.c(), rubric.f()),
+            microDim(perServingLines, kcal), whoDim(perServingLines, kcal, rubric.who()),
             fatQualityDim(perServingLines, kcal),
-            novaDim(perServingLines, kcal, props.nova()), plantDiversityDim(perServingLines, kcal),
+            novaDim(perServingLines, kcal, rubric.nova()), plantDiversityDim(perServingLines, kcal),
             energyDensityDim(perServingLines, kcal), portionDim(slot, kcal));
         double weightSum = live.stream().mapToDouble(d -> d.effectiveWeight).sum();
         if (weightSum == 0) {

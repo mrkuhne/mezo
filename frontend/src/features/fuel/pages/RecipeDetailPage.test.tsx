@@ -1,11 +1,19 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, renderHook, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, test, vi } from 'vitest'
+import { http } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
+import { RecipeDetailPage, recipeToInput } from '@/features/fuel/pages/RecipeDetailPage'
 import { useRecipes } from '@/data/hooks'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import type { Recipe } from '@/data/types'
+
+// The id of the single recipe the MSW GET /api/recipe fixture returns — the real-mode
+// tests deep-link to it so the page resolves a recipe instead of the not-found fallback.
+const REAL_RECIPE_ID = 'rc1f3a0e2-0000-4000-8000-000000000001'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -30,12 +38,23 @@ function renderDetail(id: string, qc: QueryClient) {
   )
 }
 
-function firstId(qc: QueryClient) {
+function recipesOf(qc: QueryClient) {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   )
   const { result } = renderHook(() => useRecipes(), { wrapper })
-  return result.current.recipes[0]
+  return result.current.recipes
+}
+
+function firstId(qc: QueryClient) {
+  return recipesOf(qc)[0]
+}
+
+/** Pick a seed recipe by predicate — throws instead of silently testing nothing. */
+function pickRecipe(qc: QueryClient, match: (r: Recipe) => boolean) {
+  const found = recipesOf(qc).find(match)
+  if (!found) throw new Error('no seed recipe matches the predicate')
+  return found
 }
 
 test('default tab is Részletek: hero, macro hero and breakdown visible, ingredients hidden (mezo-n3xa)', async () => {
@@ -194,6 +213,56 @@ test('renders the PONTSZÁM section + dimension cards from the seed templateBrea
   expect(screen.getByText('Kcal & makró arány')).toBeInTheDocument()
 })
 
+// recipeToInput round-trips the whole recipe (the star toggle writes it straight back),
+// so a dropped role would silently reset a pre-workout template to Általános (mezo-uavr).
+test('preserves the role through recipeToInput', () => {
+  const r = firstId(newQc())
+  expect(recipeToInput({ ...r, role: 'pre_workout' }).role).toBe('pre_workout')
+  // reads the recipe's own role, not a constant
+  expect(recipeToInput({ ...r, role: 'post_workout' }).role).toBe('post_workout')
+})
+
+// The role RETARGETS the rubric (mezo-uavr) — the read surfaces must NAME the yardstick,
+// otherwise a pre-workout template reads as a mediocre "general" meal. „Általános" is the
+// implicit default, so it is never rendered: only a non-standard role earns a chip.
+test('the hero meta line carries the role chip for a non-standard recipe (mezo-uavr)', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.role === 'pre_workout')
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  expect(screen.getByText('Edzés előtt')).toBeInTheDocument()
+  // it sits in the hero meta line, alongside NOVA / létrehozva
+  expect(screen.getByText(/létrehozva/).textContent).toContain('Edzés előtt')
+})
+
+test('a standard recipe gets no role chip (mezo-uavr)', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.role === 'standard')
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  expect(screen.queryByText('Edzés előtt')).toBeNull()
+  expect(screen.queryByText('Általános')).toBeNull()
+  expect(screen.getByText(/létrehozva/).textContent).not.toContain('Általános')
+})
+
+test('the PONTSZÁM header names the rubric a non-standard role retargets to (mezo-uavr)', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.role === 'pre_workout' && !!x.templateBreakdown)
+  renderDetail(r.id, qc)
+  expect(await screen.findByText('PONTSZÁM')).toBeInTheDocument()
+  // reads as "which yardstick was used", not as praise — and the role ATTRIBUTES the
+  // mérce, so it takes the adjectival form („edzés előtti"), not the control label
+  expect(screen.getByText('edzés előtti mérce szerint')).toBeInTheDocument()
+})
+
+test('the PONTSZÁM header stays rubric-free for a standard recipe (mezo-uavr)', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.role === 'standard' && !!x.templateBreakdown)
+  renderDetail(r.id, qc)
+  expect(await screen.findByText('PONTSZÁM')).toBeInTheDocument()
+  expect(screen.queryByText(/mérce szerint/)).toBeNull()
+})
+
 test('renders the sablon-olvasat card with fitsFor chips when the seed carries a summary', async () => {
   const qc = newQc()
   const rec = firstId(qc)
@@ -203,4 +272,61 @@ test('renders the sablon-olvasat card with fitsFor chips when the seed carries a
   for (const t of rec.mezoFit.fitsFor) {
     expect(screen.getByText(`● ${t}`)).toBeInTheDocument()
   }
+})
+
+// Background re-evaluation (mezo-uavr) — real mode only: an edit / role change nulls the
+// server-side prose and invalidates THIS recipe's ['recipeBreakdown', id], so the cached envelope
+// on screen is a PRE-edit reading. The page must say so instead of rendering it as current.
+// (Cross-recipe granularity — an edit of X must not light the banner on Y — is pinned at the hook
+// level in data/fuel/recipeHooks.test.tsx.)
+describe('RecipeDetailPage (real mode) — background re-evaluation', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('renders the re-evaluating copy instead of stale prose while refetching (mezo-uavr)', async () => {
+    const qc = newQc()
+    renderDetail(REAL_RECIPE_ID, qc)
+    // first load resolves the MSW breakdown envelope: prose + score section on screen
+    expect(await screen.findByText('MSW sablon-olvasat.')).toBeInTheDocument()
+    expect(screen.getByText('PONTSZÁM')).toBeInTheDocument()
+
+    // the regeneration the write path triggers is slow (LLM seconds) — never resolves here
+    server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
+    act(() => { void qc.invalidateQueries({ queryKey: ['recipeBreakdown', REAL_RECIPE_ID] }) })
+
+    expect(await screen.findByText('Mezo újraértékeli a receptet…')).toBeInTheDocument()
+    // the whole stale block is gone — prose, the PONTSZÁM header AND the rubric note
+    expect(screen.queryByText('MSW sablon-olvasat.')).toBeNull()
+    expect(screen.queryByText('PONTSZÁM')).toBeNull()
+    expect(screen.queryByText(/mérce szerint/)).toBeNull()
+    // and it does NOT claim a first evaluation
+    expect(screen.queryByText('Mezo értékeli a receptet…')).toBeNull()
+  })
+
+  it('says „értékeli" (not „újraértékeli") on a cold first load (mezo-uavr)', async () => {
+    server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
+    renderDetail(REAL_RECIPE_ID, newQc())
+    expect(await screen.findByText('Mezo értékeli a receptet…')).toBeInTheDocument()
+    expect(screen.queryByText('Mezo újraértékeli a receptet…')).toBeNull()
+  })
+
+  // A plain revalidation (staleTime expiry on remount, window refocus) is NOT a regeneration:
+  // it returns the SAME cached envelope, so claiming „újraértékeli" would be a false statement
+  // and a pointless layout jump. Only a write-driven INVALIDATION counts (mezo-uavr).
+  it('a background revalidation that is NOT an invalidation keeps the score section (mezo-uavr)', async () => {
+    const qc = newQc()
+    renderDetail(REAL_RECIPE_ID, qc)
+    expect(await screen.findByText('MSW sablon-olvasat.')).toBeInTheDocument()
+
+    // refetchQueries = exactly what a focus/stale revalidation does: refetch WITHOUT invalidating
+    server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
+    act(() => { void qc.refetchQueries({ queryKey: ['recipeBreakdown'] }) })
+    // the refetch is genuinely in flight — otherwise the assertions below would be vacuous
+    await waitFor(() => expect(qc.isFetching({ queryKey: ['recipeBreakdown'] })).toBe(1))
+
+    expect(screen.queryByText('Mezo újraértékeli a receptet…')).toBeNull()
+    expect(screen.queryByText('Mezo értékeli a receptet…')).toBeNull()
+    // the cached reading stays on screen — no blanked score section
+    expect(screen.getByText('MSW sablon-olvasat.')).toBeInTheDocument()
+    expect(screen.getByText('PONTSZÁM')).toBeInTheDocument()
+  })
 })

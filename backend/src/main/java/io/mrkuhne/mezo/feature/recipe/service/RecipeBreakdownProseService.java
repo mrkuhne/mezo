@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.Dimension;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.ImproveRow;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.ToolRow;
+import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
@@ -56,6 +57,10 @@ public class RecipeBreakdownProseService {
         - fitsFor: 1-3 rövid címke, mikor/mire illik a recept (pl. "Post-workout · este").
         - improve: 0-3 konkrét javaslat; impact = rövid kvalitatív tag (pl. "+rost", "-NOVA4").
         - Az időzítés sablon szinten nem értékelhető — arról ne írj javaslatot.
+        - A SZEREP sor megmondja, milyen rubrikával pontozott a motor. Ha edzés előtti/utáni
+          szerep van megadva, a gyors szénhidrát és a magasabb cukor SZÁNDÉKOS — sose írd hibának.
+          A szerep ÁTHANGOLJA a rubrikát, nem jutalom: a szerephez rosszul illő recept így
+          ALACSONYABB pontot kap — ilyenkor a számokat kövesd, ne a szerepet dicsérd.
         """;
 
     /** LLM answer contract — permissive shapes; a malformed answer degrades, never errors. */
@@ -105,11 +110,28 @@ public class RecipeBreakdownProseService {
             .filter(s -> s != null && !s.isBlank()).limit(3).toList();
     }
 
-    private String userMessage(RecipeEntity recipe, MealBreakdownJson det) {
+    /** package-private for the prompt-assembly unit test */
+    String userMessage(RecipeEntity recipe, MealBreakdownJson det) {
         StringBuilder sb = new StringBuilder();
         sb.append("RECEPT: ").append(recipe.getName())
           .append(" | slot: ").append(recipe.getSlot() == null ? "-" : recipe.getSlot())
           .append(" | adag: ").append(recipe.getServings()).append('\n');
+        // The numbers below were already scored under this role (mezo-uavr): the role RETARGETS the
+        // rubric, it does not add a bonus — the copy must stop the prose from calling deliberate
+        // fuel a mistake WITHOUT implying that a training role by itself makes the recipe good.
+        sb.append(switch (recipe.getRole() == null ? MealRole.STANDARD : recipe.getRole()) {
+            case PRE_WORKOUT -> "SZEREP: edzés előtti üzemanyag. A gyors szénhidrát és a cukor "
+                + "itt CÉL, nem hiba — a pontozás már ezzel a szénhidrát-dús rubrikával számolt. "
+                + "Ne ródd fel a cukrot vagy a feldolgozottságot; azt magyarázd, mennyire jó "
+                + "üzemanyag ehhez a szerephez (a fehérje/zsír-dominancia itt gyengébb "
+                + "illeszkedés).\n";
+            case POST_WORKOUT -> "SZEREP: edzés utáni regeneráció. A fehérje + gyors szénhidrát "
+                + "itt CÉL (glikogén-pótlás) — a pontozás már ezzel a rubrikával számolt. A "
+                + "magasabb cukrot ne ródd fel hibaként; azt magyarázd, mennyire szolgálja a "
+                + "regenerációt.\n";
+            case STANDARD -> "SZEREP: általános étkezés — a standard (WHO-igazodó) rubrika szerint "
+                + "pontozva.\n";
+        });
         sb.append("HOZZÁVALÓK (1 adagra vetítve pontozva):\n");
         recipe.getLines().forEach(l -> sb.append("- ").append(l.getSnapshotName())
             .append(' ').append(l.getAmount().stripTrailingZeros().toPlainString())

@@ -78,7 +78,10 @@ public class RecipeService {
                                    Map<UUID, PantryItemEntity> pantryById) {
         // Portion budget is keyed on the canonical breakfast|lunch|dinner|snack `category` (non-null,
         // contract-validated) — NOT the free-form nullable `slot` display label (mezo-7797).
-        resp.getMezoFit().setScore(scoringService.recipeFit(e.getCategory(), fitLines(e, pantryById)));
+        // The recipe's OWN stored role selects the rubric overlay (mezo-uavr): a pre/post-workout
+        // template is judged as fuel, not penalized for being fast carbs.
+        resp.getMezoFit().setScore(
+            scoringService.recipeFit(e.getCategory(), fitLines(e, pantryById), e.getRole()));
         return resp;
     }
 

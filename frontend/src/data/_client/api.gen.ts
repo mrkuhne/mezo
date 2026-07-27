@@ -3373,6 +3373,11 @@ export interface components {
             tags: string[];
             /** @default false */
             starred: boolean;
+            /**
+             * @description Template meal role — selects the scoring rubric overlay (mezo-uavr). Absent ⇒ standard.
+             * @default standard
+             */
+            role: string;
             ingredients: components["schemas"]["RecipeIngredientRequest"][];
         };
         RecipeResponse: {
@@ -3386,6 +3391,8 @@ export interface components {
             cookMins?: number | null;
             tags: string[];
             starred: boolean;
+            /** @description Template meal role: standard|pre_workout|post_workout (mezo-uavr) */
+            role: string;
             createdDate: string;
             /** @description NOVA class 1..4 (converged with meal_item.nova — mezo-2dy) */
             novaDominant: number;

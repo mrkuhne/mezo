@@ -53,61 +53,100 @@ const RECIPE_BREAKDOWN_KEY = (id: string) => ['recipeBreakdown', id] as const
 /** Template breakdown for the detail page (mezo-bw3y). Mock = the seed's templateBreakdown +
  *  mezoFit.fitsFor, synchronous via initialData; real = the lazily materializing
  *  GET /api/recipe/{id}/breakdown (the FIRST call may take LLM seconds — `pending` drives the
- *  detail page's „Mezo értékeli…" card; no mock fallback in real mode). */
+ *  detail page's „Mezo értékeli…" card; no mock fallback in real mode).
+ *  `refreshing` is the SECOND-and-later generate (mezo-uavr): a RECIPE WRITE invalidated THIS
+ *  recipe's key (`useRecipeActions` — a recipe edit and a role change are both such an edit), so
+ *  `data` is still the pre-edit envelope while the new one materializes and the page renders
+ *  „Mezo újraértékeli…" instead of passing a stale reading off as current. It is deliberately
+ *  NOT every background fetch: a plain revalidation returns the SAME envelope — nor a write to a
+ *  DIFFERENT recipe, which never touches this key. Note the third server-side regeneration cause —
+ *  pantry macro drift moving the deterministic numbers past `RecipeBreakdownService.matches` — is
+ *  NOT an invalidation here (`usePantryActions` only invalidates ['pantry']): it is picked up on
+ *  the next refetch of this key, silently, with no banner. Wiring pantry writes to the
+ *  recipe-derived caches is filed as mezo-b9gv. */
 export function useRecipeBreakdown(recipeId: string): {
   breakdown: RecipeBreakdownData['breakdown']
   fitsFor: string[]
   pending: boolean
+  refreshing: boolean
 } {
   const mock = isMockMode()
+  const qc = useQueryClient()
   const seed = (): RecipeBreakdownData => {
     const r = mockRecipes.find(x => x.id === recipeId)
     return { breakdown: r?.templateBreakdown ?? null, fitsFor: r?.mezoFit.fitsFor ?? [] }
   }
-  const { data, isPending } = useQuery({
+  const { data, isPending, isFetching } = useQuery({
     queryKey: RECIPE_BREAKDOWN_KEY(recipeId),
     queryFn: mock ? async () => seed() : () => recipeApi.getBreakdown(recipeId),
     initialData: mock ? seed() : undefined,
     // real: the backend caches the enriched envelope; a session-long staleTime avoids re-firing
     // the (potentially LLM-priced) GET on every remount, the write-path invalidation covers edits
     staleTime: mock ? Infinity : 5 * 60_000,
+    // …and for the same reason a mere window refocus must not re-fire it either: nothing changed,
+    // the server would hand back the same jsonb. Writes invalidate (and an invalidated query still
+    // refetches on the next mount), so no regeneration can be missed by turning this off.
+    refetchOnWindowFocus: false,
     enabled: recipeId !== '',
   })
+  // Only a WRITE-driven regeneration may claim „újraértékeli": a recipe edit and a role change
+  // both arrive here as an INVALIDATION of this key (`useRecipeActions`). A plain revalidation
+  // (staleTime expiry on remount) refetches the SAME envelope — announcing a re-evaluation there
+  // would be a false claim plus a layout jump, the very dishonesty this flag exists to remove.
+  // `isInvalidated` is set by invalidateQueries and stays true for the whole ensuing refetch;
+  // the success dispatch clears it exactly when the fresh envelope lands (mezo-uavr).
+  const invalidated = qc.getQueryState(RECIPE_BREAKDOWN_KEY(recipeId))?.isInvalidated === true
   return {
     breakdown: data?.breakdown ?? null,
     fitsFor: data?.fitsFor ?? [],
     pending: !mock && isPending,
+    // A background regeneration: data is still the PRE-edit envelope, so the page must not
+    // render it as current (mezo-uavr).
+    refreshing: !mock && isFetching && !isPending && invalidated,
   }
 }
 
-/** Create/update/delete on the ['recipes'] cache. Real writes invalidate ['recipes'] AND ['pantry']. */
+/** Create/update/delete on the ['recipes'] cache. Real writes invalidate ['recipes'] AND ['pantry'];
+ *  the breakdown cache is touched PER RECIPE ONLY (see below). */
 export function useRecipeActions() {
   const qc = useQueryClient()
   const mock = isMockMode()
 
-  const invalidate = () => {
+  const invalidateLists = () => {
     qc.invalidateQueries({ queryKey: RECIPES_KEY })
     qc.invalidateQueries({ queryKey: PANTRY_KEY }) // recipe writes shift pantry usedInRecipes
-    qc.invalidateQueries({ queryKey: ['recipeBreakdown'] }) // edit nulls the server cache (mezo-bw3y)
   }
 
   const createM = useMutation({
     mutationFn: mock
       ? async (input: RecipeInput) => mockCreate(qc, input)
       : (input: RecipeInput) => recipeApi.create(input),
-    onSuccess: mock ? undefined : invalidate,
+    // no breakdown key to touch: a server-generated id has no cached envelope yet, and its first
+    // detail visit is a cold fetch („Mezo értékeli…"), not a re-evaluation.
+    onSuccess: mock ? undefined : invalidateLists,
   })
   const updateM = useMutation({
     mutationFn: mock
       ? async (v: { id: string; input: RecipeInput }) => mockUpdate(qc, v.id, v.input)
       : (v: { id: string; input: RecipeInput }) => recipeApi.update(v.id, v.input),
-    onSuccess: mock ? undefined : invalidate,
+    // Only THIS recipe's envelope was nulled server-side (mezo-bw3y), so only THIS key may be
+    // invalidated: the whole-prefix invalidation used to make every other cached recipe render
+    // „Mezo újraértékeli…" over a reading that was never re-evaluated (mezo-uavr).
+    onSuccess: mock ? undefined : (_res: void, v: { id: string; input: RecipeInput }) => {
+      invalidateLists()
+      qc.invalidateQueries({ queryKey: RECIPE_BREAKDOWN_KEY(v.id) })
+    },
   })
   const removeM = useMutation({
     mutationFn: mock
       ? async (id: string) => mockRemove(qc, id)
       : (id: string) => recipeApi.remove(id),
-    onSuccess: mock ? undefined : invalidate,
+    // Deleted, not re-evaluated: DROP the entry rather than invalidate it — an invalidation would
+    // refetch a resource that is gone (404) and leave a stale envelope in the cache meanwhile.
+    onSuccess: mock ? undefined : (_res: void, id: string) => {
+      invalidateLists()
+      qc.removeQueries({ queryKey: RECIPE_BREAKDOWN_KEY(id) })
+    },
   })
 
   const create = useCallback((input: RecipeInput) => createM.mutate(input), [createM])
@@ -145,6 +184,7 @@ function buildRecipe(id: string, input: RecipeInput, base?: Recipe): Recipe {
     novaDominant: deriveNovaDominant(lines, mockPantryPool),
     mezoFit: base?.mezoFit ?? { score: null, fitsFor: [] },
     starred: input.starred,
+    role: input.role,
     recentLogs: base?.recentLogs ?? [],
     templateBreakdown: base?.templateBreakdown,
   }

@@ -46,8 +46,16 @@ public class RecipeBreakdownService {
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
 
         // Portion budget keyed on the canonical `category`, not the free-form `slot` label (mezo-7797).
+        // Scored under the recipe's own stored role (mezo-uavr) — the same rubric overlay the fit
+        // badge uses, so hero ≡ envelope holds for pre/post-workout templates too. Because `fresh` is
+        // role-aware, a role edit typically also moves these numbers, so the staleness compare below
+        // tends to reject the cached envelope on its own — but it is NOT the guarantee: the macro
+        // score is clamped at 0, so a far-enough-off profile can score identically under both rubrics,
+        // and matches() compares only value/id/score/weight, never the prose. The blanket cache null
+        // in RecipeService.update is what actually guarantees a role edit is re-evaluated.
         MealBreakdownJson fresh = scoringService.recipeTemplateBreakdown(recipe.getCategory(),
-            recipeService.fitLines(recipe, recipeService.pantryByIdFor(List.of(recipe))));
+            recipeService.fitLines(recipe, recipeService.pantryByIdFor(List.of(recipe))),
+            recipe.getRole());
         if (fresh == null) { // no kcal — pending-sparkle territory, nothing to explain
             return response(null, List.of());
         }

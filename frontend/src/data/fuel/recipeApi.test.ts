@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { http, HttpResponse } from 'msw'
-import { recipeApi, toRequest } from '@/data/fuel/recipeApi'
+import { fromResponse, recipeApi, toRequest } from '@/data/fuel/recipeApi'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import type { RecipeInput } from '@/data/types'
 
 const input: RecipeInput = {
   name: 'Túrós zabkása', slot: 'Reggeli', category: 'breakfast', servings: 1,
-  prepMins: 5, cookMins: 3, tags: ['high-protein'], starred: true,
+  prepMins: 5, cookMins: 3, tags: ['high-protein'], starred: true, role: 'pre_workout',
   ingredients: [
     { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null },
     { pantryItemId: 'p-turo', amount: 200, unit: 'g', note: 'félzsíros' },
@@ -16,7 +16,7 @@ const input: RecipeInput = {
 
 const apiRecipe = {
   id: 'r1', name: 'Túrós zabkása', slot: 'Reggeli', category: 'breakfast',
-  servings: 1, prepMins: 5, cookMins: 3, tags: ['high-protein'], starred: true,
+  servings: 1, prepMins: 5, cookMins: 3, tags: ['high-protein'], starred: true, role: 'pre_workout',
   createdDate: 'Ma', novaDominant: 3, macros: { kcal: 580, p: 42, c: 78, f: 12 },
   mezoFit: { score: null, fitsFor: [] }, timesLogged: 0, avgScore: 0, lastLogged: '—',
   ingredients: [
@@ -36,6 +36,21 @@ describe('toRequest', () => {
       { pantryItemId: 'p-zab', amount: 70, unit: 'g', note: null },
       { pantryItemId: 'p-turo', amount: 200, unit: 'g', note: 'félzsíros' },
     ])
+  })
+})
+
+describe('role mapping', () => {
+  it('carries the role into the request', () => {
+    expect(toRequest({ ...input, role: 'pre_workout' }).role).toBe('pre_workout')
+  })
+
+  it('reads the role off the response', () => {
+    expect(fromResponse({ ...apiRecipe, role: 'post_workout' } as never).role).toBe('post_workout')
+  })
+
+  it('falls back to standard when the response omits the role', () => {
+    const { role: _role, ...withoutRole } = apiRecipe as Record<string, unknown>
+    expect(fromResponse(withoutRole as never).role).toBe('standard')
   })
 })
 

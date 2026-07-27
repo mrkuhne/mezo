@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 class RecipeApiIT extends ApiIntegrationTest {
 
@@ -247,5 +248,81 @@ class RecipeApiIT extends ApiIntegrationTest {
         assertThat(log.getSlot()).isEqualTo("breakfast");
         // per-serving of the recipe x factor 1 -> kcal 110
         assertThat(log.getKcal()).isEqualByComparingTo("110");
+    }
+
+    @Test
+    void testCreateRecipe_shouldRoundTripRole_whenPreWorkoutRequested() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createFood(auth, "Zab", "370", "13", "60", "7");
+        RecipeRequest req = new RecipeRequest();
+        req.setName("Pre toast");
+        req.setCategory("breakfast");
+        req.setServings(1);
+        req.setIngredients(List.of(line(food, "100")));
+        req.setRole("pre_workout");
+
+        RecipeResponse created =
+            postForBody("/api/recipe", req, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        assertThat(created.getRole()).isEqualTo("pre_workout");
+    }
+
+    @Test
+    void testCreateRecipe_shouldDefaultToStandard_whenRoleOmitted() {
+        HttpHeaders auth = ownerAuthHeaders();
+        auth.setContentType(MediaType.APPLICATION_JSON); // for the raw-JSON body below
+        UUID food = createFood(auth, "Zab2", "370", "13", "60", "7");
+        // Raw JSON on purpose: the generated RecipeRequest carries `role = "standard"` as a FIELD
+        // default, so a DTO-built body always puts "role" on the wire and can never exercise the
+        // genuinely-absent-field path. This body omits the key entirely. (ASCII only — the raw
+        // String converter does not negotiate a charset for us.)
+        String body = """
+            {"name":"Sima recept","category":"lunch","servings":1,\
+            "ingredients":[{"pantryItemId":"%s","amount":100,"unit":"g"}]}""".formatted(food);
+
+        RecipeResponse created =
+            postForBody("/api/recipe", body, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        assertThat(created.getRole()).isEqualTo("standard");
+    }
+
+    @Test
+    void testListRecipes_shouldScorePreWorkoutHigher_whenSameFoodStoredWithDifferentRoles() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // Pure fast carbs: the base rubric punishes the carb-only macro split (macro score clamps to
+        // 0), the pre-workout overlay reads the very same profile as FUEL. Identical food + amount in
+        // both recipes, so ONLY the stored role can move the badge.
+        UUID honey = createFood(auth, "Méz", "300", "0", "80", "0");
+
+        RecipeRequest std = new RecipeRequest();
+        std.setName("Mézes standard");
+        std.setCategory("breakfast");
+        std.setServings(1);
+        std.setIngredients(List.of(line(honey, "60")));
+        RecipeResponse standard =
+            postForBody("/api/recipe", std, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        RecipeRequest pre = new RecipeRequest();
+        pre.setName("Mézes pre");
+        pre.setCategory("breakfast");
+        pre.setServings(1);
+        pre.setIngredients(List.of(line(honey, "60")));
+        pre.setRole("pre_workout");
+        RecipeResponse preWorkout =
+            postForBody("/api/recipe", pre, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        RecipeListResponse list =
+            getForBody("/api/recipe", auth, HttpStatus.OK, RecipeListResponse.class);
+        BigDecimal stdScore = fitOf(list, standard.getId());
+        BigDecimal preScore = fitOf(list, preWorkout.getId());
+
+        assertThat(preScore).isGreaterThan(stdScore);
+    }
+
+    private static BigDecimal fitOf(RecipeListResponse list, UUID id) {
+        return list.getRecipes().stream()
+            .filter(r -> r.getId().equals(id))
+            .findFirst().orElseThrow()
+            .getMezoFit().getScore();
     }
 }
