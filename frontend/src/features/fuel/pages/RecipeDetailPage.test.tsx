@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { RecipeDetailPage, recipeToInput } from '@/features/fuel/pages/RecipeDetailPage'
 import { useRecipes } from '@/data/hooks'
+import type { Recipe } from '@/data/types'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -30,12 +31,23 @@ function renderDetail(id: string, qc: QueryClient) {
   )
 }
 
-function firstId(qc: QueryClient) {
+function recipesOf(qc: QueryClient) {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={qc}>{children}</QueryClientProvider>
   )
   const { result } = renderHook(() => useRecipes(), { wrapper })
-  return result.current.recipes[0]
+  return result.current.recipes
+}
+
+function firstId(qc: QueryClient) {
+  return recipesOf(qc)[0]
+}
+
+/** Pick a seed recipe by predicate — throws instead of silently testing nothing. */
+function pickRecipe(qc: QueryClient, match: (r: Recipe) => boolean) {
+  const found = recipesOf(qc).find(match)
+  if (!found) throw new Error('no seed recipe matches the predicate')
+  return found
 }
 
 test('default tab is Részletek: hero, macro hero and breakdown visible, ingredients hidden (mezo-n3xa)', async () => {
@@ -201,6 +213,46 @@ test('preserves the role through recipeToInput', () => {
   expect(recipeToInput({ ...r, role: 'pre_workout' }).role).toBe('pre_workout')
   // reads the recipe's own role, not a constant
   expect(recipeToInput({ ...r, role: 'post_workout' }).role).toBe('post_workout')
+})
+
+// The role RETARGETS the rubric (mezo-uavr) — the read surfaces must NAME the yardstick,
+// otherwise a pre-workout template reads as a mediocre "general" meal. „Általános" is the
+// implicit default, so it is never rendered: only a non-standard role earns a chip.
+test('the hero meta line carries the role chip for a non-standard recipe (mezo-uavr)', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.role === 'pre_workout')
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  expect(screen.getByText('Edzés előtt')).toBeInTheDocument()
+  // it sits in the hero meta line, alongside NOVA / létrehozva
+  expect(screen.getByText(/létrehozva/).textContent).toContain('Edzés előtt')
+})
+
+test('a standard recipe gets no role chip (mezo-uavr)', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.role === 'standard')
+  renderDetail(r.id, qc)
+  await screen.findByText(r.name)
+  expect(screen.queryByText('Edzés előtt')).toBeNull()
+  expect(screen.queryByText('Általános')).toBeNull()
+  expect(screen.getByText(/létrehozva/).textContent).not.toContain('Általános')
+})
+
+test('the PONTSZÁM header names the rubric a non-standard role retargets to (mezo-uavr)', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.role === 'pre_workout' && !!x.templateBreakdown)
+  renderDetail(r.id, qc)
+  expect(await screen.findByText('PONTSZÁM')).toBeInTheDocument()
+  // reads as "which yardstick was used", not as praise
+  expect(screen.getByText('edzés előtt mérce szerint')).toBeInTheDocument()
+})
+
+test('the PONTSZÁM header stays rubric-free for a standard recipe (mezo-uavr)', async () => {
+  const qc = newQc()
+  const r = pickRecipe(qc, x => x.role === 'standard' && !!x.templateBreakdown)
+  renderDetail(r.id, qc)
+  expect(await screen.findByText('PONTSZÁM')).toBeInTheDocument()
+  expect(screen.queryByText(/mérce szerint/)).toBeNull()
 })
 
 test('renders the sablon-olvasat card with fitsFor chips when the seed carries a summary', async () => {

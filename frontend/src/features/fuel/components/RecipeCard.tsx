@@ -11,6 +11,7 @@ import type { Recipe } from '@/data/types'
 import { Icon } from '@/shared/ui/Icon'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
+import { roleLabel } from '@/features/fuel/logic/recipeRole'
 
 const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--warning)', 4: 'var(--error)' }
 
@@ -26,11 +27,19 @@ export function RecipeCard({ recipe, onOpen }: { recipe: Recipe; onOpen: (r: Rec
       {/* Image band */}
       <div style={{ position: 'relative', height: 118, background: 'linear-gradient(135deg,#16323a,#0f2027)' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(125deg,rgba(255,255,255,0.025) 0 14px,rgba(255,255,255,0) 14px 28px)' }} />
-        {/* top-left: slot tag + star */}
+        {/* top-left: slot tag + role tag + star. The role tag (mezo-uavr) names the rubric the
+            template is scored under; „Általános" is the implicit default and stays untagged. It
+            borrows the slot tag's typography but the plain `.chip` surface, so the two read as
+            different facets rather than a repeated brand chip. */}
         <div className="row gap-xs" style={{ position: 'absolute', top: 10, left: 11, zIndex: 3, alignItems: 'center' }}>
           {recipe.slot && (
             <span className="chip brand" style={{ fontSize: 8, padding: '3px 7px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
               {recipe.slot}
+            </span>
+          )}
+          {recipe.role !== 'standard' && (
+            <span className="chip" style={{ fontSize: 8, padding: '3px 7px', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--coral-deep)' }}>
+              {roleLabel(recipe.role)}
             </span>
           )}
           {recipe.starred && <Icon name="bookmark" size={12} color="var(--warning)" />}

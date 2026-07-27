@@ -25,6 +25,7 @@ import { RecipeLogsList } from '@/features/fuel/components/RecipeLogsList'
 import { RecipeFitBadge } from '@/features/fuel/components/RecipeFitBadge'
 import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
+import { roleLabel } from '@/features/fuel/logic/recipeRole'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 
 const NOVA_COLOR: Record<number, string> = { 1: 'var(--success)', 2: 'var(--warning)', 3: 'var(--warning)', 4: 'var(--error)' }
@@ -168,7 +169,10 @@ export function RecipeDetailPage() {
             {recipe.name}
           </div>
           <div style={{ marginTop: 6, fontVariantNumeric: 'tabular-nums', fontSize: 9, letterSpacing: '0.06em', color: 'var(--faint)' }}>
-            {recipe.servings} adag · {totalMins} perc · <span style={{ color: NOVA_COLOR[recipe.novaDominant], fontWeight: 600 }}>NOVA {recipe.novaDominant}</span> · létrehozva {recipe.createdDate}
+            {recipe.servings} adag · {totalMins} perc · <span style={{ color: NOVA_COLOR[recipe.novaDominant], fontWeight: 600 }}>NOVA {recipe.novaDominant}</span>
+            {recipe.role !== 'standard' && (
+              <> · <span style={{ color: 'var(--coral-deep)', fontWeight: 600 }}>{roleLabel(recipe.role)}</span></>
+            )} · létrehozva {recipe.createdDate}
           </div>
         </div>
       </div>
@@ -225,12 +229,23 @@ export function RecipeDetailPage() {
           )}
           {!breakdownPending && breakdown && (
             <>
-              <div className="row" style={{ alignItems: 'center', gap: 9, margin: '0 2px 10px' }}>
-                <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>PONTSZÁM</span>
-                <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-                  {breakdown.dimensions.length} szempont · megbízh. {Math.round(breakdown.confidence * 100)}%
-                </span>
+              {/* Header block: the label row, plus — for a non-standard role — the rubric the
+                  score was measured against (mezo-uavr). The role RETARGETS the yardstick, it is
+                  not a bonus, so the note names the mérce instead of praising the recipe. It gets
+                  its own line: the label row is already full at phone width. */}
+              <div style={{ margin: '0 2px 10px' }}>
+                <div className="row" style={{ alignItems: 'center', gap: 9 }}>
+                  <span className="label-mono" style={{ fontSize: 10, letterSpacing: '0.2em', color: 'var(--text-tertiary)' }}>PONTSZÁM</span>
+                  <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg,var(--border-subtle),transparent)' }} />
+                  <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
+                    {breakdown.dimensions.length} szempont · megbízh. {Math.round(breakdown.confidence * 100)}%
+                  </span>
+                </div>
+                {recipe.role !== 'standard' && (
+                  <div className="text-tertiary" style={{ fontSize: 10, marginTop: 4, textAlign: 'right' }}>
+                    {roleLabel(recipe.role).toLowerCase()} mérce szerint
+                  </div>
+                )}
               </div>
               <div style={{ marginBottom: 16 }}>
                 <ScoreBreakdownBody breakdown={breakdown} />

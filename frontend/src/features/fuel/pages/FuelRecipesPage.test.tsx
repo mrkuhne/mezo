@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { render, renderHook, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http } from 'msw'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { FuelRecipesPage } from '@/features/fuel/pages/FuelRecipesPage'
+import { useRecipes } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -73,6 +74,22 @@ test('tapping a card navigates to the detail route', async () => {
   await userEvent.click(cards[0])
   expect(screen.getByTestId('location').textContent).toMatch(/^\/fuel\/recipes\/.+/)
   void firstName
+})
+
+// Role tag (mezo-uavr) — the card names a non-standard rubric; „Általános" is the
+// implicit default and never earns a tag.
+test('the library card tags a non-standard role, and only that card (mezo-uavr)', () => {
+  renderView()
+  const cards = screen.getAllByRole('button').filter(b => b.className.includes('rad-24'))
+  const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
+  const nonStandard = result.current.recipes.filter(r => r.role !== 'standard')
+  // the seed must actually mix roles, otherwise this asserts nothing
+  expect(nonStandard.length).toBeGreaterThan(0)
+  expect(cards.length).toBeGreaterThan(nonStandard.length)
+  expect(screen.getAllByText('Edzés előtt')).toHaveLength(
+    result.current.recipes.filter(r => r.role === 'pre_workout').length,
+  )
+  expect(screen.queryByText('Általános')).toBeNull()
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the RecipesSkeleton (role="status")
