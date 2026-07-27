@@ -150,6 +150,8 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         assertThat(windows).hasSize(1);
         assertThat(windows.getFirst().kind()).isEqualTo("run");
         assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(windows.getFirst().end()).isEqualTo(LocalTime.of(18, 45));  // runDefaultMinutes
+        assertThat(windows.getFirst().done()).isFalse();                       // run windows are pre-only in v1
     }
 
     @Test
