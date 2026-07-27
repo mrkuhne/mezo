@@ -166,6 +166,11 @@ mezo:
     # serves the deterministic envelope, only summary/detail-prose/improve/fitsFor stay empty.
     recipe-ai-score:
       enabled: true
+    # Meal coach verdicts (mezo-mr4n) — LLM prose (tagline/summary/improve) over the deterministic
+    # meal score; needs the companion switch too (the MealCoachLlm adapter bean). Off: the coach
+    # endpoints answer 200 with an empty verdict list, the score itself is unaffected.
+    meal-coach:
+      enabled: true
     # Phase-3 companion (LLM chat + AI memory, ADR 0008). Gates every CompanionLlm bean;
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
     companion:
