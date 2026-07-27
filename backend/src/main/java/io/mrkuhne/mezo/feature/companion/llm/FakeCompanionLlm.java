@@ -79,6 +79,12 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern RECIPE_FIT_SENTINEL =
             Pattern.compile("\\[fake-recipe-fit:(\\{.*})]", Pattern.DOTALL);
 
+    /** Scripted meal-coach verdicts (mezo-mr4n): {@code [fake-meal-coach:{json}]} planted in a MEAL
+     *  TITLE (it reaches the prompt through the meal's name). GREEDY — the payload nests a
+     *  {@code meals[]} array of objects, so the match must run to the LAST brace. */
+    public static final Pattern MEAL_COACH_SENTINEL =
+            Pattern.compile("\\[fake-meal-coach:(\\{.*})]", Pattern.DOTALL);
+
     /** Scripted narrative (V2.2): {@code [fake-summary:…]} payload becomes the summary answer. */
     public static final Pattern SUMMARY_SENTINEL =
             Pattern.compile("\\[fake-summary:([^\\]]*)]", Pattern.DOTALL);
@@ -269,6 +275,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         Matcher recipeFit = RECIPE_FIT_SENTINEL.matcher(userMessage);
         if (recipeFit.find()) {
             return recipeFit.group(1);
+        }
+        // Meal coach verdicts (mezo-mr4n): sentinel planted in a meal TITLE (the prompt carries the
+        // name); no sentinel -> prompt echo -> unparseable -> silent degrade, which the ITs assert.
+        Matcher mealCoach = MEAL_COACH_SENTINEL.matcher(userMessage);
+        if (mealCoach.find()) {
+            return mealCoach.group(1);
         }
         return PREFIX + " system=[" + systemPrompt + "] user=[" + userMessage + "]"
                 + String.join("", toolEchoes(userMessage, tools, toolContext));

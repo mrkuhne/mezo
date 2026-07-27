@@ -3,12 +3,14 @@ package io.mrkuhne.mezo.support.populator;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
+import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
@@ -73,6 +75,26 @@ public class MealPopulator {
         Instant loggedAt) {
         MealEntity meal = createPantryMeal(owner, pantryItem, mealDate);
         meal.setLoggedAt(loggedAt);
+        return repository.saveAndFlush(meal);
+    }
+
+    /**
+     * Pantry-backed meal that ALREADY carries a deterministic score envelope — the meal-coach
+     * fixture (mezo-mr4n). The coach only narrates already-scored meals, and its prose sockets
+     * (summary/tagline/improve) start empty exactly as the scorer leaves them. {@code title} is
+     * also where an IT plants the {@code [fake-meal-coach:…]} sentinel, since the name reaches
+     * the prompt.
+     */
+    public MealEntity createScoredMeal(UUID owner, PantryItemEntity pantryItem, LocalDate mealDate,
+        String title, Instant loggedAt) {
+        MealEntity meal = createPantryMeal(owner, pantryItem, mealDate, loggedAt);
+        meal.setTitle(title);
+        meal.setScore(new BigDecimal("0.62"));
+        meal.setBreakdown(new MealBreakdownJson(new BigDecimal("0.62"), new BigDecimal("0.80"),
+            null, null,
+            List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
+                new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null)),
+            List.of(), List.of(new MealBreakdownJson.ToolRow("compute", "score(deterministic)"))));
         return repository.saveAndFlush(meal);
     }
 
