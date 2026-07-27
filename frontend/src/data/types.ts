@@ -58,7 +58,8 @@ export interface RowsDimension extends MealDimensionBase { id: 'who' | 'fat_qual
 export type MealDimension = MacroDimension | MicroDimension | NovaDimension | ContextDimension | RowsDimension
 export interface MealBreakdown {
   confidence: number
-  summary: string | null // deterministic v0 ships null — the prose is P8 (mezo-yta)
+  summary: string | null // deterministic v0 ships null — filled by the coach (mezo-mr4n)
+  tagline: string | null // card-sized cut, same prose layer; null until the coach ran
   dimensions: MealDimension[]
   improve: { text: string; impact: string }[]
   tools: { type: ToolType; name: string }[]

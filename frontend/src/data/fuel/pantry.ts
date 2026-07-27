@@ -381,6 +381,7 @@ export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
 const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
   'rec-3': {
     confidence: 0.86,
+    tagline: null,
     summary:
       'Esti omega-3 sztori. Lazac D3 + EPA/DHA, barna rizs slow-release, brokkoli sulforaphane — három szövet-szintű hatás egy tálban. Heti 2× kötelező a post-workout vacsorához.',
     dimensions: [
@@ -439,6 +440,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
   },
   'rec-5': {
     confidence: 0.82,
+    tagline: null,
     summary:
       'Egyszerű, fehérje-súlyos, alacsony-carb reggeli. Rest-day vagy alacsony-volumen napra ideális — alacsony-C reggel + spenót K1 + tojás kolin együtt jó cognitive-load napra.',
     dimensions: [
@@ -496,6 +498,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
   },
   'rec-6': {
     confidence: 0.88,
+    tagline: null,
     summary:
       'Esti casein-bomba. 37g protein, slow-digest, alacsony-fat — pont az amit a 21:00 esti étkezésre vársz Reta-cycle alatt. Áfonya antocianin + méz minimális glikémia-bump.',
     dimensions: [
