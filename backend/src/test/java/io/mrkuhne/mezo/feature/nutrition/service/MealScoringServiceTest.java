@@ -61,6 +61,16 @@ class MealScoringServiceTest {
                 null, null, null, null, false, null, null));
     }
 
+    // A carb-heavy, high-sugar, NOVA-4 line — the "PB Banana Toast" shape.
+    private List<ScoredLine> fuelLines() {
+        return List.of(new ScoredLine(
+            "PB Banana Toast", "1 adag",
+            new BigDecimal("237"), new BigDecimal("10"), new BigDecimal("42"), new BigDecimal("3"),
+            (short) 4,
+            new BigDecimal("8"), new BigDecimal("20"), new BigDecimal("1.0"), new BigDecimal("0.5"),
+            true, null, null));
+    }
+
     @Test
     void testScoreMeal_shouldEmitEightWeightedDimensions_whenLinesScored() {
         MealBreakdownJson b = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
@@ -382,6 +392,49 @@ class MealScoringServiceTest {
         assertThat(MealScoringService.classifyRole(
                 LocalTime.of(10, 45), List.of(morningDone, eveningPlanned), 120, 90))
             .isEqualTo(MealRole.POST_WORKOUT);
+    }
+
+    @Test
+    void testScoreMeal_shouldEqualStandardOverload_whenRoleStandard() {
+        var lines = fuelLines();
+        MealBreakdownJson viaOverload = service.scoreMeal("breakfast", lines, LocalTime.of(6, 13));
+        MealBreakdownJson viaRole =
+            service.scoreMeal("breakfast", lines, LocalTime.of(6, 13), MealRole.STANDARD);
+        assertThat(viaRole.value()).isEqualByComparingTo(viaOverload.value());
+    }
+
+    @Test
+    void testScoreMeal_shouldNotPenalizeFuel_whenPreWorkout() {
+        var lines = fuelLines();
+        MealBreakdownJson standard =
+            service.scoreMeal("breakfast", lines, LocalTime.of(6, 13), MealRole.STANDARD);
+        MealBreakdownJson pre =
+            service.scoreMeal("breakfast", lines, LocalTime.of(6, 13), MealRole.PRE_WORKOUT);
+
+        // whole score lifts, and the three role-sensitive dims each lift (or hold) vs standard
+        assertThat(pre.value().doubleValue()).isGreaterThan(standard.value().doubleValue());
+        assertThat(dimension(pre, "who").score().doubleValue())
+            .isGreaterThan(dimension(standard, "who").score().doubleValue());
+        assertThat(dimension(pre, "nova").score().doubleValue())
+            .isGreaterThan(dimension(standard, "nova").score().doubleValue());
+        assertThat(dimension(pre, "macro").score().doubleValue())
+            .isGreaterThanOrEqualTo(dimension(standard, "macro").score().doubleValue());
+    }
+
+    @Test
+    void testScoreMeal_shouldTagRole_whenNonStandard() {
+        MealBreakdownJson pre =
+            service.scoreMeal("breakfast", fuelLines(), LocalTime.of(6, 13), MealRole.PRE_WORKOUT);
+        assertThat(dimension(pre, "context").context())
+            .anySatisfy(row -> assertThat(row.label()).isEqualTo("Szerep"));
+    }
+
+    @Test
+    void testScoreMeal_shouldNotTagRole_whenStandard() {
+        MealBreakdownJson std =
+            service.scoreMeal("breakfast", fuelLines(), LocalTime.of(6, 13), MealRole.STANDARD);
+        assertThat(dimension(std, "context").context())
+            .noneSatisfy(row -> assertThat(row.label()).isEqualTo("Szerep"));
     }
 
     // --- line builders (mirror the file's ScoredLine constructor style) --------------------------
