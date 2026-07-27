@@ -21,12 +21,15 @@ import { useRecipes } from '@/data/fuel/recipeHooks'
 import { useProtocol, useStack, useIntakes } from '@/data/fuel/stackHooks'
 import { useFuelSettings } from '@/data/fuel/fuelSettingsHooks'
 import { useGoal } from '@/data/me/goalHooks'
+import { useBiometricProfile } from '@/data/me/biometricHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { buildDayPlan, deriveDailyBudget, type PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
+import { buildEnergyBreakdown } from '@/features/fuel/logic/buildEnergyBreakdown'
 import { buildProtocol, type ProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
+import { ACTIVITY_SHORT, type ActivityLevel } from '@/features/me/logic/biometricFields'
 import type { GoalResponse } from '@/data/me/goalApi'
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
 import type { RunningBlockResponse } from '@/data/train/runningApi'
@@ -91,6 +94,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { gymSchedule, sport } = useTrain()
   const { activeRunningBlock } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
+  const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
 
   // ── Composition (both modes) ─────────────────────────────────────────────────
   // The wake/bed day-anchor is owned by the sleep goal (mezo-dbsr, spec D3) — always set
@@ -107,7 +111,8 @@ export function useFuelTimeline(date: string = localDateString()) {
   // dailyEnergyBalanceKcal is the goal deficit/surplus — both straight from the wire. When the
   // biometric profile hasn't resolved (no BMR/neat), deriveDailyBudget falls back to the static path.
   const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
-  const budget = deriveDailyBudget(currentSegment(goalResponse, timeline), fuel.targets, {
+  const segment = currentSegment(goalResponse, timeline)
+  const budget = deriveDailyBudget(segment, fuel.targets, {
     bmr: goalResponse?.tdeeBootstrap?.bmr ?? null,
     neat: goalResponse?.tdeeBootstrap?.neat ?? null,
     weightKg,
@@ -136,5 +141,19 @@ export function useFuelTimeline(date: string = localDateString()) {
     meals: fuel.meals, recipes, protocolSlots, intakes,
     caffeineCutoff: settings.caffeineCutoff, nowHHmm,
   })
-  return { plan, budget, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
+
+  // Dynamic-energy explanation (mezo-hobb): the shared EnergyBreakdownSheet's prop, built from the
+  // day's plan.energy + today's blocks + the current segment + the NEAT band. Null on the static path.
+  const tb = goalResponse?.tdeeBootstrap
+  const energyBreakdown = buildEnergyBreakdown({
+    energy: plan.energy,
+    blocks,
+    weightKg,
+    tdeeBootstrap: tb ? { bmr: tb.bmr, neat: tb.neat, formula: tb.formula } : null,
+    segment,
+    activityLabel: profile?.activityLevel ? ACTIVITY_SHORT[profile.activityLevel as ActivityLevel] : '',
+    goalLabel: goal?.title ?? 'Cél',
+  })
+
+  return { plan, budget, blocks, weightKg, energyBreakdown, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
 }

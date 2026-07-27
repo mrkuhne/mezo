@@ -2177,3 +2177,69 @@ a.hab-link:hover { opacity: 0.85; }
 .mtr-cta { background: var(--sage-deep); color: var(--text-inverse); font: 700 12px/1 var(--ff-body);
            padding: 10px 16px; border-radius: 999px; }
 .mtr-quiet { font: 600 11.5px/1 var(--ff-body); color: var(--faint); padding: 10px 8px; }
+
+/* ── Energy-breakdown sheet (mezo-hobb) ────────────────────────────────── */
+.eqbar { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 16px; padding: 12px 14px; margin: 12px 0 14px; }
+.eqbar .t { text-align: center; }
+.eqbar .t .k { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--faint); }
+.eqbar .t .v { font-family: var(--ff-display); font-weight: 800; font-size: 16px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.eqbar .t.base .v { color: var(--sage-deep); }
+.eqbar .t.move .v { color: var(--amber-deep); }
+.eqbar .t.def .v { color: var(--coral-deep); }
+.eqbar .t.res .v { color: var(--text-primary); font-size: 19px; }
+.eqbar .op { font-family: var(--ff-display); color: var(--faint); font-weight: 700; }
+
+.seg { background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 16px; margin-bottom: 10px; padding: 13px 15px; }
+.seg.hl { box-shadow: 0 0 0 2px var(--sage); }
+.seg .sh { display: flex; align-items: center; gap: 9px; }
+.seg .sdot { width: 10px; height: 10px; border-radius: 3px; }
+.seg .stit { font-weight: 800; font-size: 13.5px; }
+.seg .samt { margin-left: auto; font-family: var(--ff-display); font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
+.seg .why { font-size: 12.5px; color: var(--text-primary); line-height: 1.5; margin: 10px 0 0; }
+.dot-sage { background: var(--sage); }
+.dot-amber { background: var(--amber); }
+.dot-coral { background: var(--coral); }
+.txt-sage { color: var(--sage-deep); }
+.txt-amber { color: var(--amber-deep); }
+.txt-coral { color: var(--coral-deep); }
+
+.btiles { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 11px 0 4px; }
+.btile { flex: 1 1 96px; min-width: 96px; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; background: var(--warm); }
+.btile.sage { background: var(--wash-sage); }
+.btile.amber { background: var(--wash-amber); }
+.btile.coral { background: var(--warm); }
+.btile .thd { display: flex; align-items: center; gap: 6px; }
+.btile .emo { font-size: 14px; line-height: 1; }
+.btile .nm { font-size: 11px; font-weight: 800; }
+.btile.sage .nm { color: var(--sage-deep); }
+.btile.amber .nm { color: var(--amber-deep); }
+.btile.coral .nm { color: var(--coral-deep); }
+.btile .sub { font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--faint); }
+.btile .val { font-family: var(--ff-display); font-weight: 800; font-size: 19px; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.btile.sage .val { color: var(--sage-deep); }
+.btile.amber .val { color: var(--amber-deep); }
+.btile.coral .val { color: var(--coral-deep); }
+.btile .val .u { font-size: 10px; font-weight: 700; color: var(--sub); margin-left: 3px; }
+.btile.result { background: transparent; border: 1.5px dashed var(--line); justify-content: center; }
+.btile.result .val { color: var(--text-primary); font-size: 21px; }
+.btiles .op { align-self: center; font-family: var(--ff-display); font-size: 17px; font-weight: 700; color: var(--faint); }
+
+/* Alap-TDEE breakdown — Variant B stacked list + emphasized total (mezo-hobb).
+   Overrides the horizontal .tdee flex when both classes are present (kept for the .tdee test hook). */
+.tdee-split { display: block; width: 100%; text-align: left; cursor: pointer; background: none; }
+.tdee-split .row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+.tdee-split .lab { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--sub); }
+.tdee-split .dot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+.tdee-split .amt { font-family: var(--ff-display); font-size: 16px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tdee-split .total { border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 10px; }
+.tdee-split .total .lab { color: var(--sage-deep); font-weight: 800; }
+.tdee-split .total .amt { font-size: 22px; color: var(--sage-deep); }
+.tdee-split .total .amt small { font-size: 12px; color: var(--sub); font-weight: 700; }
+.tdee-split .infochev { color: var(--lav-deep); font-size: 12px; font-weight: 800; }
+
+/* Tappable Fuel "Mai cél" chips — small ⓘ affordance (mezo-hobb) */
+.chip-tap { position: relative; padding-right: 24px; cursor: pointer; }
+.chip-tap::after { content: "i"; position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; border-radius: 50%; font-size: 9px; font-weight: 800; font-style: italic;
+  display: flex; align-items: center; justify-content: center; background: var(--surface-glass); }

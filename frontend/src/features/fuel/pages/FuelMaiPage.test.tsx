@@ -194,3 +194,11 @@ test('real mode: the timeline workout block reads the schedule-derived type, not
     vi.useRealTimers()
   }
 })
+
+test('opens the energy-breakdown sheet from the Mozgás chip, focused on movement (mezo-hobb)', async () => {
+  const user = userEvent.setup()
+  renderView()
+  await user.click(await screen.findByRole('button', { name: /Mozgás/ }))
+  expect(screen.getByText(/Honnan jön/)).toBeInTheDocument()
+  expect(document.body.querySelector('.seg.hl')?.textContent).toMatch(/mozgás/i)
+})
