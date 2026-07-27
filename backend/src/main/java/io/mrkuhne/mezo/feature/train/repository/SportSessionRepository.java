@@ -23,4 +23,8 @@ public interface SportSessionRepository extends JpaRepository<SportSessionEntity
     /** Sessions on/after {@code from} — the companion snapshot's last-N-days digest. */
     List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
         UUID createdBy, LocalDate from);
+
+    /** That day's logged sport sessions, earliest first — the meal scorer's sport windows. */
+    List<SportSessionEntity> findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(
+        UUID createdBy, LocalDate date);
 }

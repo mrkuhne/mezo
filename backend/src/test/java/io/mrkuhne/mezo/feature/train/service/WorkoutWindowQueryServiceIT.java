@@ -88,6 +88,57 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testWindowsFor_shouldReturnSportWindowFromSession_whenNoRecurringSlotThatWeekday() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createSportSession(owner, wed);       // 18:15, 90 min — logged, no schedule slot
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().kind()).isEqualTo("sport");
+        assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(18, 15));
+        assertThat(windows.getFirst().end()).isEqualTo(LocalTime.of(19, 45));
+        assertThat(windows.getFirst().done()).isTrue();
+    }
+
+    @Test
+    void testWindowsFor_shouldPreferTheSessionTime_whenTheDayAlsoHasARecurringSlot() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createScheduleSlot(owner, 2, "17:00", 60, "training");
+        train.createSportSession(owner, wed);       // actually played 18:15 for 90 min
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(1);             // the session IS that slot, played later
+        assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(18, 15));
+        assertThat(windows.getFirst().end()).isEqualTo(LocalTime.of(19, 45));
+        assertThat(windows.getFirst().done()).isTrue();
+    }
+
+    @Test
+    void testWindowsFor_shouldMatchTheSessionToTheNearestSlot_whenTheDayHasTwoSportSlots() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createScheduleSlot(owner, 2, "09:00", 60, "training");
+        train.createScheduleSlot(owner, 2, "18:00", 90, "match");
+        train.createSportSession(owner, wed);       // played 18:15 → that is the evening slot
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(2);
+        assertThat(windows).anySatisfy(w -> {
+            assertThat(w.start()).isEqualTo(LocalTime.of(9, 0));    // morning: planned, not played
+            assertThat(w.done()).isFalse();
+        });
+        assertThat(windows).anySatisfy(w -> {
+            assertThat(w.start()).isEqualTo(LocalTime.of(18, 15));  // evening: the played session
+            assertThat(w.done()).isTrue();
+        });
+    }
+
+    @Test
     void testWindowsFor_shouldReturnRunWindow_whenStoredCurrentWeekIsStale() {
         UUID owner = owner();
         LocalDate start = LocalDate.of(2026, 6, 16);        // Tue — week 1 = 06-16..06-22

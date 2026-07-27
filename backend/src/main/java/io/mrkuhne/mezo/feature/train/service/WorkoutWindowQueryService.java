@@ -4,14 +4,18 @@ import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
+import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -60,22 +64,73 @@ public class WorkoutWindowQueryService {
                 "gym", gymDone));
         });
 
-        boolean sportDone = sportSessionRepository
-            .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)
-            .stream().anyMatch(ss -> date.equals(ss.getDate()));
-        sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .filter(s -> s.getDayOfWeek() == dow)
-            .forEach(s -> {
-                LocalTime start = LocalTime.parse(s.getTime());
-                windows.add(new Window(start, start.plusMinutes(s.getDurationMin()),
-                    "sport", sportDone));
-            });
+        addSportWindows(userId, date, dow, windows);
 
         runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream()
             .findFirst()
             .ifPresent(block -> addRunWindows(block, date, windows));
 
         return windows;
+    }
+
+    /**
+     * The date's sport windows. A LOGGED session is the primary source (spec §3.1): it carries the
+     * clock time the sport was actually played plus its duration, and its existence IS the done
+     * signal. Each session consumes the recurring slot nearest to it in time, so on a multi-slot day
+     * only the slot that was actually played reads done; the slots left over still yield windows
+     * (pre-workout fuel looks forward at a plan) but not-done. A session with no time and no
+     * matchable slot has no resolvable clock time → no window at all, never a fabricated one.
+     */
+    private void addSportWindows(UUID userId, LocalDate date, int dow, List<Window> windows) {
+        List<SportScheduleSlotEntity> unmatched = new ArrayList<>(
+            sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
+                .filter(s -> s.getDayOfWeek() == dow)
+                .toList());
+
+        for (SportSessionEntity session : sportSessionRepository
+            .findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, date)) {
+            SportScheduleSlotEntity slot = nearestSlot(unmatched, session.getTime());
+            unmatched.remove(slot);
+            String time = session.getTime() != null ? session.getTime()
+                : (slot == null ? null : slot.getTime());
+            if (time == null) {
+                continue;
+            }
+            LocalTime start = LocalTime.parse(time);
+            windows.add(new Window(start, start.plusMinutes(durationOf(session, slot)),
+                "sport", true));
+        }
+
+        unmatched.forEach(s -> {
+            LocalTime start = LocalTime.parse(s.getTime());
+            windows.add(new Window(start, start.plusMinutes(s.getDurationMin()), "sport", false));
+        });
+    }
+
+    /** The slot closest in time to {@code time} (the first one when the session carries no time). */
+    private static SportScheduleSlotEntity nearestSlot(List<SportScheduleSlotEntity> slots, String time) {
+        if (slots.isEmpty()) {
+            return null;
+        }
+        if (time == null) {
+            return slots.getFirst();
+        }
+        LocalTime at = LocalTime.parse(time);
+        return slots.stream()
+            .min(Comparator.comparingLong(
+                s -> Math.abs(Duration.between(at, LocalTime.parse(s.getTime())).toMinutes())))
+            .orElseThrow();
+    }
+
+    /** Played duration, falling back to the slot's planned one, then the configured default. */
+    private int durationOf(SportSessionEntity session, SportScheduleSlotEntity slot) {
+        if (session.getDurationMin() != null) {
+            return session.getDurationMin();
+        }
+        if (slot != null && slot.getDurationMin() != null) {
+            return slot.getDurationMin();
+        }
+        return props.gymDefaultMinutes();
     }
 
     /**
