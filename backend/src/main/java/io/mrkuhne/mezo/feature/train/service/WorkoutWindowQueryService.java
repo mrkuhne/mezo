@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.feature.train.config.TrainProperties;
+import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
@@ -43,15 +44,21 @@ public class WorkoutWindowQueryService {
         int dow = date.getDayOfWeek().getValue() - 1;   // slot tables use 0=Mon..6=Sun
         List<Window> windows = new ArrayList<>();
 
-        boolean gymDone = workoutSessionRepository
-            .findDoneInstanceDates(userId, date, date).contains(date);
-        gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
+        // A gym instance carries a date but no clock time, so a done signal cannot be pinned to a
+        // particular slot on a multi-slot day. Only claim done when the completed instances COVER
+        // every slot; a partial day leaves them all not-done — a missed recovery bonus beats a
+        // fabricated one on the slot that did not actually happen (spec §3.2, mezo-tm76).
+        List<GymScheduleSlotEntity> gymSlots = gymRepo
+            .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
             .filter(s -> s.getDayOfWeek() == dow)
-            .forEach(s -> {
-                LocalTime start = LocalTime.parse(s.getTime());
-                windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
-                    "gym", gymDone));
-            });
+            .toList();
+        boolean gymDone = !gymSlots.isEmpty() && workoutSessionRepository
+            .findDoneInstancesBetween(userId, date, date).size() >= gymSlots.size();
+        gymSlots.forEach(s -> {
+            LocalTime start = LocalTime.parse(s.getTime());
+            windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
+                "gym", gymDone));
+        });
 
         boolean sportDone = sportSessionRepository
             .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, date)

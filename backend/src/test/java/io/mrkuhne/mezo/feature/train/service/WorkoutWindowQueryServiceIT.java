@@ -52,6 +52,42 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testWindowsFor_shouldMarkNoGymSlotDone_whenOneOfTwoSlotsWasCompleted() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createGymSlot(owner, 2, "09:00");
+        train.createGymSlot(owner, 2, "18:00");
+        var meso = train.createActiveMeso(owner);
+        train.createWorkoutInstance(owner,
+            train.createTemplateDay(owner, meso.getId(), "Sze reggel"), wed, "completed");
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        // A gym instance carries no clock time, so a single done cannot be pinned to either slot —
+        // neither gets the recovery bonus rather than one of them getting it wrongly.
+        assertThat(windows).hasSize(2);
+        assertThat(windows).noneMatch(WorkoutWindowQueryService.Window::done);
+    }
+
+    @Test
+    void testWindowsFor_shouldMarkEveryGymSlotDone_whenDoneInstancesCoverAllSlots() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createGymSlot(owner, 2, "09:00");
+        train.createGymSlot(owner, 2, "18:00");
+        var meso = train.createActiveMeso(owner);
+        train.createWorkoutInstance(owner,
+            train.createTemplateDay(owner, meso.getId(), "Sze reggel"), wed, "completed");
+        train.createWorkoutInstance(owner,
+            train.createTemplateDay(owner, meso.getId(), "Sze este"), wed, "completed");
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(2);
+        assertThat(windows).allMatch(WorkoutWindowQueryService.Window::done);
+    }
+
+    @Test
     void testWindowsFor_shouldReturnRunWindow_whenStoredCurrentWeekIsStale() {
         UUID owner = owner();
         LocalDate start = LocalDate.of(2026, 6, 16);        // Tue — week 1 = 06-16..06-22
