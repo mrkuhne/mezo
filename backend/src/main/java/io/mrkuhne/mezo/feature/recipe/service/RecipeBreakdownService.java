@@ -47,8 +47,9 @@ public class RecipeBreakdownService {
 
         // Portion budget keyed on the canonical `category`, not the free-form `slot` label (mezo-7797).
         // Scored under the recipe's own stored role (mezo-uavr) — the same rubric overlay the fit
-        // badge uses, so hero ≡ envelope holds for pre/post-workout templates too. A role edit nulls
-        // the cached prose in RecipeService.update, so the envelope is regenerated under the new role.
+        // badge uses, so hero ≡ envelope holds for pre/post-workout templates too. Because `fresh` is
+        // role-aware, a role edit also moves these numbers, so the staleness compare below rejects the
+        // cached envelope on its own (independently of the blanket cache null in RecipeService.update).
         MealBreakdownJson fresh = scoringService.recipeTemplateBreakdown(recipe.getCategory(),
             recipeService.fitLines(recipe, recipeService.pantryByIdFor(List.of(recipe))),
             recipe.getRole());

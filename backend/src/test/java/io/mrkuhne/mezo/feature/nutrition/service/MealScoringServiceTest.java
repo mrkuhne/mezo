@@ -484,6 +484,26 @@ class MealScoringServiceTest {
     }
 
     @Test
+    void testRecipeTemplateBreakdown_shouldLowerTheValue_whenRolePreWorkoutAndProfileIsProteinFatDominant() {
+        MealBreakdownJson std =
+            service.recipeTemplateBreakdown("breakfast", proteinFatLines(), MealRole.STANDARD);
+        MealBreakdownJson pre =
+            service.recipeTemplateBreakdown("breakfast", proteinFatLines(), MealRole.PRE_WORKOUT);
+
+        // The overlay is a RETARGET, not a bonus: pre-workout wants carbs (c 550 vs 380), so a
+        // protein/fat-dominant template deviates FURTHER from the pre target than from the base one.
+        assertThat(dimension(pre, "macro").score()).isLessThan(dimension(std, "macro").score());
+        // macro is the sole driver here — everything else is degraded or role-independent, so the
+        // whole envelope follows it down (no role-sensitive dimension is live to offset it).
+        for (String id : List.of("micro", "who", "fat_quality", "nova", "plant_diversity")) {
+            assertThat(dimension(pre, id).weight())
+                .as("dimension %s must be degraded for this fixture", id)
+                .isEqualByComparingTo(BigDecimal.ZERO);
+        }
+        assertThat(pre.value()).isLessThan(std.value());
+    }
+
+    @Test
     void testRecipeFit_shouldMatchTemplateValue_whenRoleGiven() {
         assertThat(service.recipeFit("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT))
             .isEqualByComparingTo(
@@ -506,6 +526,19 @@ class MealScoringServiceTest {
                 bd(3), bd(14), bd(0), bd(0), true, "fruits", bd(120)));
     }
 
+
+    /**
+     * Protein/fat-dominant per-serving profile, mirroring the fixture {@code RecipeBreakdownApiIT}
+     * builds end-to-end: a per-100g food of 300 kcal / p 13 / c 4 / f 4.5, 250 g over 2 servings.
+     * Facts-less, NOVA-less and category-less ON PURPOSE (the API fixture carries none either), so
+     * every role-sensitive dimension except macro degrades to weight 0 and the macro retarget is the
+     * only thing moving the envelope value.
+     */
+    private List<ScoredLine> proteinFatLines() {
+        return List.of(new ScoredLine("Túró", "250g",
+            bd(375), bd(16.25), bd(5), bd(5.625), null,
+            null, null, null, null, false, null, bd(125)));
+    }
 
     /** Fully-covered line: nutrition facts + a plant-neutral category + a gram amount (who/fat/micro). */
     private ScoredLine line(String name, double kcal, double p, double c, double f, int nova,

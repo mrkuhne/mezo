@@ -295,9 +295,11 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         RecipeBreakdownResponse first = getBreakdown(auth, created.getId());
         assertThat(recipeRepository.findById(created.getId()).orElseThrow().getBreakdown()).isNotNull();
 
-        // ONLY the role changes — every macro/fact input stays byte-identical, so the numeric
-        // staleness compare alone could never see this edit; the cache null in RecipeService.update is
-        // what forces the re-read under the new rubric (mezo-uavr).
+        // ONLY the role changes — every macro/fact input stays byte-identical. Two independent
+        // mechanisms would each regenerate here: the blanket cache null in RecipeService.update, and
+        // (since mezo-uavr) the staleness compare itself, because `fresh` is now scored under the new
+        // role and no longer matches the stored numbers. What this test pins is the OBSERVABLE
+        // outcome — a role edit must not keep serving the old-rubric envelope.
         req.setRole("pre_workout");
         putForBody("/api/recipe/" + created.getId(), req, auth, HttpStatus.NO_CONTENT, Void.class);
 
