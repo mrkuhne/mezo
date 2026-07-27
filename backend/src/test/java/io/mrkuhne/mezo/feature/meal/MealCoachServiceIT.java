@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.MealCoachService;
+import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -117,6 +118,28 @@ class MealCoachServiceIT extends AbstractIntegrationTest {
         assertThat(verdicts).hasSize(1);
         assertThat(mealRepository.findById(meal.getId()).orElseThrow()
             .getBreakdown().tagline()).isEqualTo("Remek pre-workout üzemanyag");
+    }
+
+    @Test
+    void testGenerateForDay_shouldDropTheProse_whenTheMealIsEdited() {
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        MealEntity meal = scriptedMeal(owner, today, "Zabkása");
+        service.generateForDay(owner, today, true);
+        assertThat(mealRepository.findById(meal.getId()).orElseThrow()
+            .getBreakdown().tagline()).isNotNull();
+
+        // Editing re-runs MealService.applyScore, which rewrites the envelope with null prose —
+        // the verdict cannot outlive the numbers it explained (spec §7: invalidation is free).
+        MealEntity edited = mealRepository.findById(meal.getId()).orElseThrow();
+        MealBreakdownJson det = edited.getBreakdown();
+        edited.setBreakdown(new MealBreakdownJson(det.value(), det.confidence(), null, null,
+            det.dimensions(), List.of(), det.tools()));
+        mealRepository.saveAndFlush(edited);
+
+        assertThat(mealRepository.findById(meal.getId()).orElseThrow()
+            .getBreakdown().summary()).isNull();
+        assertThat(service.generateForDay(owner, today, false)).isEmpty();   // looks verdictless again
     }
 
     @Test
