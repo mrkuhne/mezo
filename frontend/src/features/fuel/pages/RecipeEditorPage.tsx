@@ -18,9 +18,10 @@
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { Ingredient, Recipe, RecipeCategory, RecipeInput } from '@/data/types'
+import type { Ingredient, Recipe, RecipeCategory, RecipeInput, RecipeRole } from '@/data/types'
 import { useRecipes, useRecipeActions } from '@/data/hooks'
 import { Icon } from '@/shared/ui/Icon'
+import { ROLE_OPTIONS } from '@/features/fuel/logic/recipeRole'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { ServingToggle, type ServingBasis } from '@/features/fuel/components/ServingToggle'
 import { IngredientPickerSheet } from '@/features/fuel/sheets/IngredientPickerSheet'
@@ -109,6 +110,7 @@ export function RecipeEditorPage() {
   const [name, setName] = useState(() => editing?.name ?? '')
   const [slot, setSlot] = useState<RecipeCategory>(() => editing?.category ?? 'breakfast')
   const [starred, setStarred] = useState(() => editing?.starred ?? false)
+  const [role, setRole] = useState<RecipeRole>(() => editing?.role ?? 'standard')
   const [servings, setServings] = useState(() => editing?.servings ?? 1)
   const [mins, setMins] = useState(() => (editing ? editing.prepMins + editing.cookMins : 0))
   const [tags, setTags] = useState<string[]>(() => editing?.tags ?? [])
@@ -174,9 +176,7 @@ export function RecipeEditorPage() {
       cookMins: 0,
       tags,
       starred,
-      // Preserved from the edited template until the editor grows its own role control;
-      // a fresh recipe defaults to `standard` (mezo-uavr).
-      role: editing?.role ?? 'standard',
+      role,
       ingredients: lines.map(l => ({ pantryItemId: l.refId, amount: l.amount, unit: l.unit, note: l.note ?? null })),
     }
     if (isEditMode && editing) {
@@ -236,6 +236,21 @@ export function RecipeEditorPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Szerep — the scoring rubric the template is judged under (mezo-uavr) */}
+        <div className="card" style={{ padding: '10px 12px', marginBottom: 9 }}>
+          <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>SZEREP</span>
+          <div className="row gap-xs flex-wrap" style={{ marginTop: 8 }}>
+            {ROLE_OPTIONS.map(o => (
+              <button key={o.id} onClick={() => setRole(o.id)} className={'chip' + (role === o.id ? ' brand' : '')} style={{ fontSize: 9, padding: '6px 10px' }}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-tertiary" style={{ fontSize: 10, marginTop: 7, lineHeight: 1.4 }}>
+            A szerep dönti el, milyen mérce szerint pontozzuk: edzés körül a gyors szénhidrát üzemanyag, nem hiba.
+          </p>
         </div>
 
         {/* Adag & idő */}

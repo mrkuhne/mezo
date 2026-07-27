@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
+import { RecipeDetailPage, recipeToInput } from '@/features/fuel/pages/RecipeDetailPage'
 import { useRecipes } from '@/data/hooks'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -192,6 +192,15 @@ test('renders the PONTSZÁM section + dimension cards from the seed templateBrea
   // the seed breakdown's dimension cards render via the shared ScoreBreakdownBody
   expect(screen.getByText(/szempont · megbízh\./)).toBeInTheDocument()
   expect(screen.getByText('Kcal & makró arány')).toBeInTheDocument()
+})
+
+// recipeToInput round-trips the whole recipe (the star toggle writes it straight back),
+// so a dropped role would silently reset a pre-workout template to Általános (mezo-uavr).
+test('preserves the role through recipeToInput', () => {
+  const r = firstId(newQc())
+  expect(recipeToInput({ ...r, role: 'pre_workout' }).role).toBe('pre_workout')
+  // reads the recipe's own role, not a constant
+  expect(recipeToInput({ ...r, role: 'post_workout' }).role).toBe('post_workout')
 })
 
 test('renders the sablon-olvasat card with fitsFor chips when the seed carries a summary', async () => {
