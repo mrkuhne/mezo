@@ -57,6 +57,24 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         return postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class).getId();
     }
 
+    /**
+     * A per-100g PURE-CARB food (honey-like). The default {@link #createFood} profile is
+     * protein+fat-leaning, which the pre-workout rubric scores LOWER than the base one — only a
+     * carb-only profile makes the overlay's "fast carbs are fuel" reading visible as a higher value.
+     */
+    private UUID createCarbFood(HttpHeaders auth, String name, String kcal) {
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.FOOD);
+        r.setName(name);
+        r.setPer(new BigDecimal("100"));
+        r.setUnit("g");
+        r.setKcal(new BigDecimal(kcal));
+        r.setProteinG(BigDecimal.ZERO);
+        r.setCarbsG(new BigDecimal("80"));
+        r.setFatG(BigDecimal.ZERO);
+        return postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class).getId();
+    }
+
     private RecipeRequest recipeReq(String name, UUID pantryItemId) {
         RecipeIngredientRequest l = new RecipeIngredientRequest();
         l.setPantryItemId(pantryItemId);
@@ -264,6 +282,30 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
         var entity = recipeRepository.findById(recipe).orElseThrow();
         assertThat(entity.getBreakdown()).isNull();
         assertThat(entity.getFitsFor()).isNull();
+    }
+
+    @Test
+    void testGetBreakdown_shouldRegenerateEnvelope_whenOnlyTheRoleChanged() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID food = createCarbFood(auth, "Méz", "300");
+        RecipeRequest req = recipeReq(SENTINEL_NAME, food);
+        RecipeResponse created =
+            postForBody("/api/recipe", req, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        RecipeBreakdownResponse first = getBreakdown(auth, created.getId());
+        assertThat(recipeRepository.findById(created.getId()).orElseThrow().getBreakdown()).isNotNull();
+
+        // ONLY the role changes — every macro/fact input stays byte-identical, so the numeric
+        // staleness compare alone could never see this edit; the cache null in RecipeService.update is
+        // what forces the re-read under the new rubric (mezo-uavr).
+        req.setRole("pre_workout");
+        putForBody("/api/recipe/" + created.getId(), req, auth, HttpStatus.NO_CONTENT, Void.class);
+
+        assertThat(recipeRepository.findById(created.getId()).orElseThrow().getBreakdown()).isNull();
+
+        RecipeBreakdownResponse second = getBreakdown(auth, created.getId());
+        assertThat(second.getBreakdown().getValue())
+            .isGreaterThan(first.getBreakdown().getValue());
     }
 
     @Test

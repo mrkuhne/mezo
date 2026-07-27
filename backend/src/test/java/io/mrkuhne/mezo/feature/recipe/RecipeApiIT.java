@@ -285,4 +285,44 @@ class RecipeApiIT extends ApiIntegrationTest {
 
         assertThat(created.getRole()).isEqualTo("standard");
     }
+
+    @Test
+    void testListRecipes_shouldScorePreWorkoutHigher_whenSameFoodStoredWithDifferentRoles() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // Pure fast carbs: the base rubric punishes the carb-only macro split (macro score clamps to
+        // 0), the pre-workout overlay reads the very same profile as FUEL. Identical food + amount in
+        // both recipes, so ONLY the stored role can move the badge.
+        UUID honey = createFood(auth, "Méz", "300", "0", "80", "0");
+
+        RecipeRequest std = new RecipeRequest();
+        std.setName("Mézes standard");
+        std.setCategory("breakfast");
+        std.setServings(1);
+        std.setIngredients(List.of(line(honey, "60")));
+        RecipeResponse standard =
+            postForBody("/api/recipe", std, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        RecipeRequest pre = new RecipeRequest();
+        pre.setName("Mézes pre");
+        pre.setCategory("breakfast");
+        pre.setServings(1);
+        pre.setIngredients(List.of(line(honey, "60")));
+        pre.setRole("pre_workout");
+        RecipeResponse preWorkout =
+            postForBody("/api/recipe", pre, auth, HttpStatus.CREATED, RecipeResponse.class);
+
+        RecipeListResponse list =
+            getForBody("/api/recipe", auth, HttpStatus.OK, RecipeListResponse.class);
+        BigDecimal stdScore = fitOf(list, standard.getId());
+        BigDecimal preScore = fitOf(list, preWorkout.getId());
+
+        assertThat(preScore).isGreaterThan(stdScore);
+    }
+
+    private static BigDecimal fitOf(RecipeListResponse list, UUID id) {
+        return list.getRecipes().stream()
+            .filter(r -> r.getId().equals(id))
+            .findFirst().orElseThrow()
+            .getMezoFit().getScore();
+    }
 }
