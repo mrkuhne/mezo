@@ -528,8 +528,10 @@ class MealScoringServiceTest {
 
 
     /**
-     * Protein/fat-dominant per-serving profile, mirroring the fixture {@code RecipeBreakdownApiIT}
-     * builds end-to-end: a per-100g food of 300 kcal / p 13 / c 4 / f 4.5, 250 g over 2 servings.
+     * Protein/fat-dominant PER-SERVING profile: one 125 g line of 375 kcal / p 16.25 / c 5 / f 5.625.
+     * The macro grams are the {@code RecipeBreakdownApiIT} food's per-100g p 13 / c 4 / f 4.5 scaled
+     * to a serving the way {@code RecipeService.fitLines} does (250 g over 2 servings ⇒ ×1.25, the
+     * label keeping the recipe-level amount); the energy is this fixture's own, higher than the IT's.
      * Facts-less, NOVA-less and category-less ON PURPOSE (the API fixture carries none either), so
      * every role-sensitive dimension except macro degrades to weight 0 and the macro retarget is the
      * only thing moving the envelope value.
