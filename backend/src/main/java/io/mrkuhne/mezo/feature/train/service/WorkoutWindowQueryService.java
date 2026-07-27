@@ -66,19 +66,27 @@ public class WorkoutWindowQueryService {
 
         runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream()
             .findFirst()
-            .ifPresent(block -> addRunWindows(block, dow, windows));
+            .ifPresent(block -> addRunWindows(block, date, windows));
 
         return windows;
     }
 
-    /** Today's prescribed run(s) in the block's current week (run windows are pre-only in v1). */
-    private void addRunWindows(RunningBlockEntity block, int dow, List<Window> windows) {
+    /**
+     * The date's prescribed run(s) in the block week CONTAINING that date (run windows are pre-only
+     * in v1). The week is re-derived from {@code startDate} ({@link MesoWeeks#weekOf}) rather than
+     * read off the denormalized {@code currentWeek} column, which lags (default 0 vs the 1-based
+     * {@code weekNumber}) and is keyed on today, not on the queried date — the
+     * {@code RunningService}/{@code GoalProjectionService} idiom (mezo-tm76).
+     */
+    private void addRunWindows(RunningBlockEntity block, LocalDate date, List<Window> windows) {
         RunningBlockStructure structure = block.getStructure();
         if (structure == null || structure.weeks() == null) {
             return;
         }
+        int dow = date.getDayOfWeek().getValue() - 1;
+        int week = MesoWeeks.weekOf(block.getStartDate(), date, block.getWeeks());
         structure.weeks().stream()
-            .filter(w -> w.weekNumber() != null && w.weekNumber().equals(block.getCurrentWeek()))
+            .filter(w -> w.weekNumber() != null && w.weekNumber() == week)
             .flatMap(w -> w.sessions().stream())
             .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == dow && s.timeOfDay() != null)
             .forEach(s -> {

@@ -112,6 +112,31 @@ public class RunningPopulator {
         return blockRepository.saveAndFlush(b);
     }
 
+    /**
+     * Active block anchored on {@code startDate} whose structure holds exactly one prescribed
+     * session, in 1-based {@code weekNumber} on {@code dayOfWeek} at {@code timeOfDay}.
+     * {@code currentWeek} is seeded verbatim so a test can plant a STALE value — the column is a
+     * denormalized cache that readers re-derive from the dates (mezo-tm76).
+     */
+    public RunningBlockEntity createBlockAnchored(UUID createdBy, LocalDate startDate, int weeks,
+        int currentWeek, int weekNumber, int dayOfWeek, String timeOfDay) {
+        RunningBlockEntity e = new RunningBlockEntity();
+        e.setCreatedBy(createdBy);
+        e.setTitle("Anchored blokk");
+        e.setKind("interval");
+        e.setStatus("active");
+        e.setStartDate(startDate);
+        e.setEndDate(startDate.plusWeeks(weeks).minusDays(1));
+        e.setWeeks(weeks);
+        e.setCurrentWeek(currentWeek);
+        e.setStructure(new RunningBlockStructure(List.of(
+            new RunWeek(weekNumber, "Alapozás", List.of(
+                new RunPrescribedSession("w" + weekNumber + "-sprint", dayOfWeek, timeOfDay,
+                    "Sprint-intervallum", "sprint", new RpeTarget(9, 10), 6,
+                    List.of(new RunSegment("work", 30, "Sprint"))))))));
+        return blockRepository.saveAndFlush(e);
+    }
+
     public RunSessionLogEntity createRunLog(UUID createdBy, UUID blockId, int weekNumber,
         String sessionKey, LocalDate date, Integer completedRounds, Integer rpeActual,
         Integer hrRecoverySec, String sprintLandmark, Integer durationMin) {

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -19,6 +20,7 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
 
     @Autowired private WorkoutWindowQueryService service;
     @Autowired private TrainPopulator train;
+    @Autowired private RunningPopulator running;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -46,6 +48,20 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         train.createGymSlot(owner, 2, "14:30");                 // Wednesday slot
         LocalDate thu = LocalDate.of(2026, 6, 25);              // Thursday → index 3
         assertThat(service.windowsFor(owner, thu)).isEmpty();
+    }
+
+    @Test
+    void testWindowsFor_shouldReturnRunWindow_whenStoredCurrentWeekIsStale() {
+        UUID owner = owner();
+        LocalDate start = LocalDate.of(2026, 6, 16);        // Tue — week 1 = 06-16..06-22
+        LocalDate wedOfWeek2 = LocalDate.of(2026, 6, 24);   // Wed of week 2 → dayOfWeek index 2
+        running.createBlockAnchored(owner, start, 8, 3, 2, 2, "18:00");  // stale currentWeek = 3
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wedOfWeek2);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().kind()).isEqualTo("run");
+        assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(18, 0));
     }
 
     @Test
