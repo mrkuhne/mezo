@@ -68,7 +68,7 @@ public class MealScoringService {
      * (gates the POST_WORKOUT recovery bonus). Owned by the scorer like {@link ScoredLine} so the
      * nutrition slice never depends on the train slice — {@code MealService} maps train windows in.
      */
-    public record WorkoutWindow(java.time.LocalTime start, java.time.LocalTime end, boolean done) {
+    public record WorkoutWindow(LocalTime start, LocalTime end, boolean done) {
     }
 
     /** Backward-compatible entry: scores with no training context (STANDARD rubric). */
@@ -81,6 +81,12 @@ public class MealScoringService {
      * rubric (byte-for-byte the v0 score); PRE/POST_WORKOUT swap in the role's macro targets, WHO
      * sugar limit, and NOVA class scores for the three role-sensitive dimensions — fast carbs are
      * fuel, not a penalty. {@code localTime} is the request's offset-local wall-clock time.
+     *
+     * <p>Confidence is weight-RENORMALIZED over the live dimensions (÷ the live weight sum,
+     * consistent with {@code value}) — a degraded dimension carries weight 0 and drops out of
+     * both. This differs from the old un-normalized {@code Σ(configWeight·coverage)}: it
+     * INTENTIONALLY reads higher for a degraded meal (the reading is "confidence across the
+     * dimensions we could actually score", not "of the full weight budget").
      */
     public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
                                        MealRole role) {
