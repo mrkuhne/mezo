@@ -44,3 +44,10 @@ test('renders the Napiv .biocard grid + tdee row', () => {
   expect(container.querySelector('.biogrid')).toBeInTheDocument()
   expect(container.querySelector('.tdee')).toBeInTheDocument()
 })
+
+test('opens the energy-breakdown sheet when the Alap-TDEE block is tapped', async () => {
+  const user = userEvent.setup()
+  render(<BiometricCard profile={mockProfile} onEdit={() => {}} />)
+  await user.click(screen.getByLabelText('Energia-bontás magyarázata'))
+  expect(screen.getByText(/Honnan jön/)).toBeInTheDocument()
+})

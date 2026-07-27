@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
 import { ACTIVITY_LEVELS, ACTIVITY_SHORT, ageFromBirthDate, neatLabel, type ActivityLevel } from '@/features/me/logic/biometricFields'
+import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
+import { buildTdeeBreakdown } from '@/features/me/logic/buildTdeeBreakdown'
 
 const NEAT_BY_ID = Object.fromEntries(ACTIVITY_LEVELS.map(a => [a.id, a.neat])) as Record<ActivityLevel, number>
 
@@ -70,8 +73,11 @@ export function BiometricCard({
   const sexLabel = profile.sex === 'M' ? 'Férfi' : 'Nő'
   const activity = resolveActivity(profile.activityLevel)
   const tdee = profile.tdeeBootstrap
+  const [breakdownOpen, setBreakdownOpen] = useState(false)
+  const breakdown = buildTdeeBreakdown(profile)
 
   return (
+    <>
     <div className="card biocard" style={{ padding: '14px 15px 13px' }}>
       <div className="bhd">
         <h3>Biometria</h3>
@@ -102,22 +108,31 @@ export function BiometricCard({
         </Stat>
       </div>
 
-      {tdee && (
-        <div className="tdee tdee-split">
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="k">Alaphő · NEAT</span>
-            <span className="v">{Math.round(tdee.neatBaselineKcal)}</span>
+      {tdee && breakdown && (
+        <button
+          type="button"
+          className="tdee tdee-split"
+          onClick={() => setBreakdownOpen(true)}
+          aria-label="Energia-bontás magyarázata"
+        >
+          <div className="row">
+            <span className="lab"><span className="dot dot-sage" />Alaphő · NEAT</span>
+            <span className="amt">{Math.round(tdee.neatBaselineKcal)}</span>
           </div>
-          <div className="row" style={{ justifyContent: 'space-between' }}>
-            <span className="k">Betábl. mozgás</span>
-            <span className="v">+{Math.round(tdee.weeklyEatKcalPerDay)}</span>
+          <div className="row">
+            <span className="lab"><span className="dot dot-amber" />Betábl. mozgás</span>
+            <span className="amt">+{Math.round(tdee.weeklyEatKcalPerDay)}</span>
           </div>
-          <div className="row tdee-total" style={{ justifyContent: 'space-between' }}>
-            <span className="k">Fenntartó · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'}</span>
-            <span className="v">≈{Math.round(tdee.tdee)} kcal/nap</span>
+          <div className="row total">
+            <span className="lab">Fenntartó · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'} <span className="infochev">ⓘ</span></span>
+            <span className="amt">≈{Math.round(tdee.tdee)} <small>kcal/nap</small></span>
           </div>
-        </div>
+        </button>
       )}
     </div>
+    {breakdownOpen && breakdown && (
+      <EnergyBreakdownSheet breakdown={breakdown} initial="base" onClose={() => setBreakdownOpen(false)} />
+    )}
+    </>
   )
 }
