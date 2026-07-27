@@ -445,7 +445,67 @@ class MealScoringServiceTest {
             .noneSatisfy(row -> assertThat(row.label()).isEqualTo("Szerep"));
     }
 
+    @Test
+    void testRecipeTemplateBreakdown_shouldEqualLegacyOutput_whenRoleIsStandard() {
+        MealBreakdownJson legacy = service.recipeTemplateBreakdown("breakfast", preWorkoutLines());
+        MealBreakdownJson explicit =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.STANDARD);
+
+        assertThat(explicit.value()).isEqualByComparingTo(legacy.value());
+        assertThat(explicit.confidence()).isEqualByComparingTo(legacy.confidence());
+        assertThat(explicit.dimensions()).usingRecursiveComparison().isEqualTo(legacy.dimensions());
+    }
+
+    @Test
+    void testRecipeTemplateBreakdown_shouldLiftRoleSensitiveDimensions_whenRolePreWorkout() {
+        MealBreakdownJson std =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.STANDARD);
+        MealBreakdownJson pre =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT);
+
+        assertThat(dimension(pre, "who").score()).isGreaterThan(dimension(std, "who").score());
+        assertThat(dimension(pre, "nova").score()).isGreaterThan(dimension(std, "nova").score());
+        assertThat(dimension(pre, "macro").score()).isGreaterThan(dimension(std, "macro").score());
+        assertThat(pre.value()).isGreaterThan(std.value());
+    }
+
+    @Test
+    void testRecipeTemplateBreakdown_shouldKeepRoleIndependentDimensions_whenRolePreWorkout() {
+        MealBreakdownJson std =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.STANDARD);
+        MealBreakdownJson pre =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT);
+
+        for (String id : List.of("micro", "fat_quality", "plant_diversity", "energy_density", "portion")) {
+            assertThat(dimension(pre, id).score())
+                .as("dimension %s must be role-independent", id)
+                .isEqualByComparingTo(dimension(std, id).score());
+        }
+    }
+
+    @Test
+    void testRecipeFit_shouldMatchTemplateValue_whenRoleGiven() {
+        assertThat(service.recipeFit("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT))
+            .isEqualByComparingTo(
+                service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT).value());
+    }
+
     // --- line builders (mirror the file's ScoredLine constructor style) --------------------------
+
+    /** Carb/sugar-heavy pre-workout profile: white toast + honey + banana, one serving. */
+    private List<ScoredLine> preWorkoutLines() {
+        return List.of(
+            new ScoredLine("Fehér toast", "80g",
+                bd(210), bd(7), bd(40), bd(2), (short) 4,
+                bd(2), bd(4), bd(1), bd(0.5), true, "grains", bd(80)),
+            new ScoredLine("Méz", "30g",
+                bd(90), bd(0), bd(24), bd(0), (short) 3,
+                bd(0), bd(23), bd(0), bd(0), true, null, bd(30)),
+            new ScoredLine("Banán", "120g",
+                bd(107), bd(1), bd(27), bd(0), (short) 1,
+                bd(3), bd(14), bd(0), bd(0), true, "fruits", bd(120)));
+    }
+
 
     /** Fully-covered line: nutrition facts + a plant-neutral category + a gram amount (who/fat/micro). */
     private ScoredLine line(String name, double kcal, double p, double c, double f, int nova,
