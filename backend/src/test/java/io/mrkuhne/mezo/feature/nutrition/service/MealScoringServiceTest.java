@@ -36,7 +36,16 @@ class MealScoringServiceTest {
         new MealScoringProperties.PortionRefs(0.30),
         new MealScoringProperties.SlotShares(0.25, 0.35, 0.30, 0.10),
         new MealScoringProperties.SlotWindows(5, 10, 11, 15, 17, 22),
-        0.4);
+        0.4,
+        120,   // preLeadMin
+        90,    // postTrailMin
+        new MealScoringProperties.Roles(
+            new MealScoringProperties.RoleRubric(150, 550, 60,
+                new MealScoringProperties.WhoRefs(0.30, 5),
+                new MealScoringProperties.NovaGroupScores(1.0, 0.9, 0.8, 0.6)),
+            new MealScoringProperties.RoleRubric(300, 480, 70,
+                new MealScoringProperties.WhoRefs(0.20, 5),
+                new MealScoringProperties.NovaGroupScores(1.0, 0.88, 0.7, 0.45))));
 
     private final MealScoringService service = new MealScoringService(props, targets);
 
@@ -110,7 +119,8 @@ class MealScoringServiceTest {
         MealScoringProperties symmetric = new MealScoringProperties(
             props.weights(), props.nova(), props.macroDeviationSlope(), 1.0, props.micro(),
             props.who(), props.fatQuality(), props.plantDiversity(), props.energyDensity(),
-            props.portion(), props.slotShares(), props.slotWindows(), props.slotShareTolerance());
+            props.portion(), props.slotShares(), props.slotWindows(), props.slotShareTolerance(),
+            props.preLeadMin(), props.postTrailMin(), props.roles());
         MealScoringService symmetricService = new MealScoringService(symmetric, targets);
 
         var lines = List.of(line("Csirkés tál", 620, 60, 40, 10, 1, 5.0, 8.0, 0.5, 3.0));

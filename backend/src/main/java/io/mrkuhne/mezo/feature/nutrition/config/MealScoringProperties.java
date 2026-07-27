@@ -35,7 +35,12 @@ public record MealScoringProperties(
     @NotNull @Valid SlotShares slotShares,
     @NotNull @Valid SlotWindows slotWindows,
     /** Relative tolerance around the slot kcal-share within which the fit is perfect (0..1). */
-    @DecimalMin("0.0") @DecimalMax("1.0") double slotShareTolerance
+    @DecimalMin("0.0") @DecimalMax("1.0") double slotShareTolerance,
+    /** Minutes BEFORE a workout start within which a meal is pre-workout fuel. */
+    @Min(0) @Max(360) int preLeadMin,
+    /** Minutes AFTER a workout end within which a meal is post-workout recovery. */
+    @Min(0) @Max(360) int postTrailMin,
+    @NotNull @Valid Roles roles
 ) {
 
     /** Dimension weights. Meal surface = all except portion; template = all except context; BOTH must sum to 1.0. */
@@ -144,6 +149,27 @@ public record MealScoringProperties(
         @Min(0) @Max(23) int breakfastFrom, @Min(0) @Max(23) int breakfastTo,
         @Min(0) @Max(23) int lunchFrom, @Min(0) @Max(23) int lunchTo,
         @Min(0) @Max(23) int dinnerFrom, @Min(0) @Max(23) int dinnerTo
+    ) {
+    }
+
+    /**
+     * A meal-role rubric overlay (mezo-ta8p): the role-sensitive tunables that differ from the
+     * standard rubric. Each role is FULLY specified (no partial merge) — the scorer picks these
+     * verbatim for pre/post-workout meals; STANDARD uses the base targets/who/nova.
+     */
+    public record RoleRubric(
+        @Min(0) int p,          // role macro target — protein grams/day (feeds macro kcal-shares)
+        @Min(0) int c,          // role macro target — carbs grams/day
+        @Min(0) int f,          // role macro target — fat grams/day
+        @NotNull @Valid WhoRefs who,          // role WHO limits (relaxed sugar for fueling)
+        @NotNull @Valid NovaGroupScores nova  // role NOVA class scores (softened processing penalty)
+    ) {
+    }
+
+    /** Per-role rubric overlays; STANDARD needs none (uses the base rubric). */
+    public record Roles(
+        @NotNull @Valid RoleRubric pre,
+        @NotNull @Valid RoleRubric post
     ) {
     }
 }
