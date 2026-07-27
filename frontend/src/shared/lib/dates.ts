@@ -26,6 +26,12 @@ export function nowOffsetIso(d: Date = new Date()): string {
   return offsetIso(localDateString(d), time)
 }
 
+/** Local-date arithmetic: `addDays('2026-07-20', -1)` -> '2026-06-30'. DST-safe (local Date + local slice). */
+export function addDays(iso: string, n: number): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return localDateString(new Date(y, m - 1, d + n))
+}
+
 // Hungarian month abbreviations + day-of-week labels, matching the Phase-1
 // mock display strings. Used to format backend ISO dates (`2026-05-01`) into
 // the HU display labels the UI expects (`Máj 1`, `Máj 20 · Sze`).
