@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.train.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
@@ -62,6 +63,16 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         assertThat(windows).hasSize(1);
         assertThat(windows.getFirst().kind()).isEqualTo("run");
         assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(18, 0));
+    }
+
+    @Test
+    void testWindowsFor_shouldReturnEmpty_whenPrescribedWeekHasNullSessions() {
+        UUID owner = owner();
+        LocalDate start = LocalDate.of(2026, 6, 16);     // week 1 contains the start date itself
+        running.createBlockWithStructure(owner, start, 8, new RunningBlockStructure(
+            List.of(new RunningBlockStructure.RunWeek(1, "Alapozás", null))));
+
+        assertThat(service.windowsFor(owner, start)).isEmpty();
     }
 
     @Test

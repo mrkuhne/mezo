@@ -86,7 +86,7 @@ public class WorkoutWindowQueryService {
         int dow = date.getDayOfWeek().getValue() - 1;
         int week = MesoWeeks.weekOf(block.getStartDate(), date, block.getWeeks());
         structure.weeks().stream()
-            .filter(w -> w.weekNumber() != null && w.weekNumber() == week)
+            .filter(w -> w.weekNumber() != null && w.weekNumber() == week && w.sessions() != null)
             .flatMap(w -> w.sessions().stream())
             .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == dow && s.timeOfDay() != null)
             .forEach(s -> {

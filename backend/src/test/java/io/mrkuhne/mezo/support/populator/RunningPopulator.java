@@ -137,6 +137,25 @@ public class RunningPopulator {
         return blockRepository.saveAndFlush(e);
     }
 
+    /**
+     * Active block anchored on {@code startDate} carrying a caller-built structure — for the
+     * malformed-jsonb shapes a hand-authored/legacy block can hold (e.g. a week with null sessions).
+     */
+    public RunningBlockEntity createBlockWithStructure(UUID createdBy, LocalDate startDate,
+        int weeks, RunningBlockStructure structure) {
+        RunningBlockEntity e = new RunningBlockEntity();
+        e.setCreatedBy(createdBy);
+        e.setTitle("Struktúra blokk");
+        e.setKind("interval");
+        e.setStatus("active");
+        e.setStartDate(startDate);
+        e.setEndDate(startDate.plusWeeks(weeks).minusDays(1));
+        e.setWeeks(weeks);
+        e.setCurrentWeek(1);
+        e.setStructure(structure);
+        return blockRepository.saveAndFlush(e);
+    }
+
     public RunSessionLogEntity createRunLog(UUID createdBy, UUID blockId, int weekNumber,
         String sessionKey, LocalDate date, Integer completedRounds, Integer rpeActual,
         Integer hrRecoverySec, String sprintLandmark, Integer durationMin) {
