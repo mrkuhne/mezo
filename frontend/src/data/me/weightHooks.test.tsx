@@ -1,5 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
+import { QueryClient } from '@tanstack/react-query'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { useWeight } from '@/data/me/weightHooks'
 import { server } from '@/test/msw/server'
@@ -11,6 +12,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   vi.unstubAllEnvs()
+  vi.restoreAllMocks()
 })
 
 test('useWeight (real mode) loads the weight log from the API', async () => {
@@ -81,4 +83,31 @@ test('useWeight.logWeight POSTs and the new entry appears after invalidation', a
   await waitFor(() => expect(posted).toBe(true))
   await waitFor(() => expect(result.current.weightLog.length).toBe(2))
   expect(result.current.weightLog[1]).toMatchObject({ date: '2026-06-02', value: 81.9 })
+})
+
+test('useWeight.logWeight invalidates ["habitDay"] and the day quest read (derived habit + quest re-derive)', async () => {
+  // The morning_weigh_in habit + weight_logged quest are re-derived server-side on the
+  // next habitDay / dailyQuests read — so a weigh-in must nudge both, or the ✓ never appears.
+  const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+  server.use(
+    http.post(`${API_BASE}/api/biometrics/weight`, async ({ request }) => {
+      const body = (await request.json()) as { date: string; weightKg: number }
+      return HttpResponse.json({ id: 'w2', date: body.date, value: body.weightKg, note: null }, { status: 201 })
+    }),
+    http.get(`${API_BASE}/api/biometrics/weight`, () =>
+      HttpResponse.json([{ id: 'w1', date: '2026-06-01', value: 82.5, note: null }])),
+  )
+
+  const { result } = renderHook(() => useWeight(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.weightLog.length).toBe(1))
+
+  act(() => {
+    result.current.logWeight({ date: '2026-06-02', weightKg: 81.9 })
+  })
+
+  await waitFor(() => {
+    const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
+    expect(keys).toContain(JSON.stringify(['habitDay']))
+    expect(keys).toContain(JSON.stringify(['dailyQuests', '2026-06-02']))
+  })
 })

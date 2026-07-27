@@ -36,7 +36,13 @@ export function useSleep() {
       if (mock) {
         qc.setQueryData<SleepEntry[]>(['sleepLog'], prev => [...(prev ?? []), entry])
         awardGamificationEvent(qc, { type: 'SLEEP' })
-      } else qc.invalidateQueries({ queryKey: ['sleepLog'] })
+      } else {
+        qc.invalidateQueries({ queryKey: ['sleepLog'] })
+        // The wake_on_time habit + sleep_target quest are DERIVED server-side and re-evaluated
+        // only on the next read — nudge both so the ✓ appears without a remount.
+        qc.invalidateQueries({ queryKey: ['habitDay'] })
+        qc.invalidateQueries({ queryKey: ['dailyQuests', entry.date] })
+      }
     },
   })
   const logSleep = useCallback((input: SleepLogInput) => mutation.mutate(input), [mutation])

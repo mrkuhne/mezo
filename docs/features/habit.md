@@ -2,7 +2,7 @@
 title: Habit — Morning & Evening Routine Engine
 type: feature-domain
 status: done
-updated: 2026-07-25
+updated: 2026-07-26
 tags: [today, me, growth, fuel, train, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
@@ -64,7 +64,7 @@ RoutineCard / RoutinesTab
 - **`closePast`** (called by both the today-read and the cron) flips every stale `pending` row: END_OF_DAY/intraday metrics get one last honest evaluation, E4 gets the deadline logic, unknown/stale catalog keys close quietly `missed`.
 - **Completion** (`complete`) stamps `done_at`/`xp_awarded`/`source`, saves, then — when the `ProgressionGate` is available (`ObjectProvider`) — calls `ProgressionService.applyHabit` (idempotent per `habit_day.id`), passing the row's own `habit_date` as the award's business date (`HabitSignal.occurredOn`, `mezo-huzd` — the same row-borne-date convention QUEST/ACTIVITY signals use for the `level_up_event.occurred_on` column). Since checks are today-only (`requireManualToday`, below) this coincides with the grant instant in v1 — no observable behavior change, just plumbing consistency for whenever a source gains backdating. Award amounts are the catalog XP (deterministic, ADR 0010).
 - **Manual path:** `check` flips a MANUAL `pending → done` (today only) and awards; `uncheck` (same-day, MANUAL, `done`) reverts via `revertHabit` — it **soft-deletes** the `level_up_event` and **directly decrements** the skill row (the `moveActivityXp` precedent, no new event), so a re-check can cleanly re-award.
-- **Read-triggered heartbeat:** the FE day read runs `staleTime: 0` in real mode (`useHabitDay`) so the server re-evaluates derived completion on every mount/focus — the READ *is* the evaluation trigger, mirroring `useDailyQuests`.
+- **Read-triggered heartbeat:** the FE day read runs `staleTime: 0` in real mode (`useHabitDay`) so the server re-evaluates derived completion on every mount/focus — the READ *is* the evaluation trigger, mirroring `useDailyQuests`. Because the READ is the *only* trigger, **every write that can satisfy a DERIVED metric must invalidate `['habitDay']`** so the row re-derives without waiting for a remount. The weight/sleep/meal/gym/run log mutations do this (`mezo-pquo` — they previously did not, so a fresh log left the `✓` stale until the surface remounted), alongside the intention/ritual/sleep-goal/fuel-settings paths that already did; the same log mutations also nudge `['dailyQuests', date]` for the twin quest metrics (`weight_logged`, `sleep_target`, `protein_target`/`own_recipe_meal`, `gym_session_done`).
 
 ## 4. Data model & API
 
