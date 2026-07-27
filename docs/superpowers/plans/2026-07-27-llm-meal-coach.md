@@ -530,7 +530,58 @@ Rules the implementation must honour (spec §4–§8):
 Run: `cd backend && ./mvnw test -Dtest=MealCoachServiceIT -DargLine=-Xmx3g`
 Expected: all three PASS.
 
-- [ ] **Step 6: Add the prompt-content test**
+- [ ] **Step 6: Extract the prompt builder and unit-test it**
+
+The prompt content deserves a test, but capturing it through the fake LLM would mean adding test-only mutable state to `FakeCompanionLlm` — which lives in `src/main`. Instead, assembly is a **pure** unit: `MealCoachPrompt` (`feature/meal/service`, package-private, static methods only), taking already-loaded values and returning the user message. `MealCoachService` then just loads data, calls it, and ships the string.
+
+```java
+/** Pure prompt assembly for {@link MealCoachService} — no Spring, no DB, so the prompt's content
+ *  is unit-testable (mezo-mr4n). Each meal block carries ONLY the day state up to that meal. */
+final class MealCoachPrompt {
+
+    record MealBlock(UUID mealId, String name, String slot, LocalTime loggedAt, int indexInDay,
+                     MealBreakdownJson breakdown, MealRole role,
+                     BigDecimal kcalBefore, BigDecimal pBefore, BigDecimal cBefore, BigDecimal fBefore) {}
+
+    static String userMessage(LocalDate date, NutritionTargetsProperties targets,
+                              List<WorkoutWindowQueryService.Window> workouts, List<MealBlock> meals) { … }
+}
+```
+
+Write `MealCoachPromptTest` FIRST (pure unit — no `@SpringBootTest`, so it runs in milliseconds):
+
+```java
+    @Test
+    void testUserMessage_shouldNameTheWorkout_whenTheDayHasAGymWindow() {
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS,
+            List.of(new WorkoutWindowQueryService.Window(
+                LocalTime.of(18, 0), LocalTime.of(19, 0), "gym", false, "Pull nap")),
+            List.of(block("Zabkása", 1, BigDecimal.ZERO)));
+
+        assertThat(msg).contains("Pull nap").contains("18:00");
+    }
+
+    @Test
+    void testUserMessage_shouldCarryTheUpToThatPointDayState_perMeal() {
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Reggeli", 1, BigDecimal.ZERO),
+                    block("Ebéd", 2, new BigDecimal("700"))));
+
+        assertThat(msg).contains("Reggeli").contains("Ebéd").contains("700");
+    }
+
+    @Test
+    void testUserMessage_shouldCarryEveryMealId_soEveryMealCanBeAnswered() {
+        UUID id = UUID.randomUUID();
+        String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(), List.of(block(id, "Zabkása")));
+
+        assertThat(msg).contains(id.toString());
+    }
+```
+
+Run: `cd backend && ./mvnw test -Dtest=MealCoachPromptTest -DargLine=-Xmx3g` — RED (class missing) → implement → GREEN.
+
+<details><summary>Superseded approach (do not use)</summary>
 
 The fake echoes the prompt when no sentinel is present, so the assembled prompt is assertable. Add:
 
@@ -551,7 +602,9 @@ The fake echoes the prompt when no sentinel is present, so the assembled prompt 
         assertThat(FakeCompanionLlm.lastUserMessage()).contains("Pull nap").contains("Ebéd");
     }
 ```
-If `FakeCompanionLlm` has no last-message accessor, add a static `volatile String lastUserMessage` set in `complete` and a getter — test-support state in a test-profile bean is fine; do NOT add it to a production class.
+If `FakeCompanionLlm` has no last-message accessor, add a static `volatile String lastUserMessage` set in `complete` and a getter.
+
+</details>
 
 - [ ] **Step 7: Run and commit**
 
