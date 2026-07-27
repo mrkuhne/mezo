@@ -233,4 +233,44 @@ describe('useRecipeBreakdown (real mode)', () => {
     await waitFor(() => expect(result.current.pending).toBe(false))
     expect(result.current.refreshing).toBe(false)
   })
+
+  // The „újraértékeli" claim is PER RECIPE: editing X regenerates X's envelope server-side and
+  // nothing else, so a blanket ['recipeBreakdown'] invalidation would make an untouched recipe Y
+  // announce a re-evaluation that never happened — the same dishonesty this flag exists to remove,
+  // one level up (mezo-uavr).
+  it('an edit of one recipe leaves ANOTHER recipe out of the re-evaluating state (mezo-uavr)', async () => {
+    const { qc, Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ x: useRecipeBreakdown('r1'), y: useRecipeBreakdown('r2'), actions: useRecipeActions() }),
+      { wrapper: Wrapper },
+    )
+    // both details have resolved their envelope (so the assertions below are not vacuous)
+    await waitFor(() => expect(result.current.x.breakdown).not.toBeNull())
+    await waitFor(() => expect(result.current.y.breakdown).not.toBeNull())
+
+    // the regeneration a write triggers is slow (LLM seconds) — never resolves here, so the
+    // refreshing window stays open for the assertions
+    server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
+    act(() => result.current.actions.update('r1', newRecipe))
+
+    // the EDITED recipe does say so…
+    await waitFor(() => expect(result.current.x.refreshing).toBe(true))
+    // …the untouched one neither claims it nor loses its (still valid) reading
+    expect(result.current.y.refreshing).toBe(false)
+    expect(result.current.y.breakdown).not.toBeNull()
+    expect(qc.isFetching({ queryKey: ['recipeBreakdown', 'r2'] })).toBe(0)
+  })
+
+  it('a delete drops the removed recipe breakdown from the cache instead of refetching it (mezo-uavr)', async () => {
+    const { qc, Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useRecipeActions(), { wrapper: Wrapper })
+    // a detail page visited earlier left a cached envelope behind
+    qc.setQueryData(['recipeBreakdown', 'r1'], { breakdown: null, fitsFor: [] })
+
+    act(() => result.current.remove('r1'))
+
+    // no stale entry for a recipe that no longer exists — and no refetch of a deleted resource
+    await waitFor(() => expect(qc.getQueryData(['recipeBreakdown', 'r1'])).toBeUndefined())
+    expect(qc.isFetching({ queryKey: ['recipeBreakdown', 'r1'] })).toBe(0)
+  })
 })

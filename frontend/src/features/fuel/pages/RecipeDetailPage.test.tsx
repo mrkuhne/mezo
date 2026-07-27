@@ -274,9 +274,11 @@ test('renders the sablon-olvasat card with fitsFor chips when the seed carries a
   }
 })
 
-// Background re-evaluation (mezo-uavr) — real mode only: an edit / role change / pantry macro
-// drift nulls the server-side prose and invalidates ['recipeBreakdown'], so the cached envelope
+// Background re-evaluation (mezo-uavr) — real mode only: an edit / role change nulls the
+// server-side prose and invalidates THIS recipe's ['recipeBreakdown', id], so the cached envelope
 // on screen is a PRE-edit reading. The page must say so instead of rendering it as current.
+// (Cross-recipe granularity — an edit of X must not light the banner on Y — is pinned at the hook
+// level in data/fuel/recipeHooks.test.tsx.)
 describe('RecipeDetailPage (real mode) — background re-evaluation', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
@@ -289,7 +291,7 @@ describe('RecipeDetailPage (real mode) — background re-evaluation', () => {
 
     // the regeneration the write path triggers is slow (LLM seconds) — never resolves here
     server.use(http.get(`${API_BASE}/api/recipe/:id/breakdown`, () => new Promise(() => {})))
-    act(() => { void qc.invalidateQueries({ queryKey: ['recipeBreakdown'] }) })
+    act(() => { void qc.invalidateQueries({ queryKey: ['recipeBreakdown', REAL_RECIPE_ID] }) })
 
     expect(await screen.findByText('Mezo újraértékeli a receptet…')).toBeInTheDocument()
     // the whole stale block is gone — prose, the PONTSZÁM header AND the rubric note
