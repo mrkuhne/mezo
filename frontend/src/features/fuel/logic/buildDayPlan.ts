@@ -26,6 +26,7 @@ import {
   toHHmm,
   toMin,
 } from '@/data/fuel/fuelConfig'
+import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import type { Intake } from '@/data/fuel/fuelApi'
 import type {
   FuelKind,
@@ -321,7 +322,7 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
         slotKey: w.slotKey,
         state: 'done',
         mealId: logged.id,
-        mealName: logged.title,
+        mealName: mealDisplayName(logged),
         kcal: logged.kcal,
         p: logged.p,
         c: logged.c,
@@ -361,11 +362,11 @@ export function buildDayPlan(input: DayPlanInput): FuelPlanToday {
       extraSlots.push({
         time: hhmmFromLoggedAt(m.loggedAt, nowHHmm),
         kind: k === 'snack' ? 'snack' : 'meal',
-        label: labelByKey[k] ?? m.title,
+        label: labelByKey[k] ?? mealDisplayName(m) ?? m.title,
         slotKey: k,
         state: 'done',
         mealId: m.id,
-        mealName: m.title,
+        mealName: mealDisplayName(m),
         kcal: m.kcal,
         p: m.p,
         c: m.c,

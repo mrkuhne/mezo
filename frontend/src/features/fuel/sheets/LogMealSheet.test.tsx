@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, renderHook, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { useFuelDay, useRecipes, usePantry } from '@/data/hooks'
@@ -97,5 +98,54 @@ describe('LogMealSheet', () => {
       </QueryClientProvider>,
     )
     expect(screen.getByRole('button', { name: /logolás a mai naphoz/i })).toBeDisabled()
+  })
+
+  // Editable meal name — smart default derived from the lines, sent as MealInput.title (mezo-u68c).
+  // The file has no `useMealActions` mock; instead we assert through the real mock-mode data layer,
+  // where buildMeal persists `title: input.title ?? …`, so the appended meal's title proves what the
+  // sheet sent (the old hard `title: null` would have surfaced the recipe name, never a typed override).
+  it('defaults the name from the prefilled lines and sends it as the meal title', async () => {
+    const { qc, wrapper } = setup()
+    const recipes = renderHook(() => useRecipes(), { wrapper })
+    const recipe = recipes.result.current.recipes[0]
+    const day = renderHook(() => useFuelDay(), { wrapper })
+    const before = day.result.current.fuel.meals.length
+
+    render(
+      <QueryClientProvider client={qc}>
+        <LogMealSheet prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
+      </QueryClientProvider>,
+    )
+
+    const input = screen.getByLabelText('Étkezés neve') as HTMLInputElement
+    expect(input.value.length).toBeGreaterThan(0)
+    const shown = input.value
+
+    await userEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+
+    await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
+    expect(day.result.current.fuel.meals.at(-1)?.title).toBe(shown)
+  })
+
+  it('lets the user override the name, and sends the override as the title', async () => {
+    const { qc, wrapper } = setup()
+    const recipes = renderHook(() => useRecipes(), { wrapper })
+    const recipe = recipes.result.current.recipes[0]
+    const day = renderHook(() => useFuelDay(), { wrapper })
+    const before = day.result.current.fuel.meals.length
+
+    render(
+      <QueryClientProvider client={qc}>
+        <LogMealSheet prefill={{ source: 'recipe', recipeId: recipe.id }} onClose={vi.fn()} />
+      </QueryClientProvider>,
+    )
+
+    const input = screen.getByLabelText('Étkezés neve')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Edzés előtti reggeli')
+    await userEvent.click(screen.getByRole('button', { name: /logolás a mai naphoz/i }))
+
+    await waitFor(() => expect(day.result.current.fuel.meals.length).toBe(before + 1))
+    expect(day.result.current.fuel.meals.at(-1)?.title).toBe('Edzés előtti reggeli')
   })
 })
