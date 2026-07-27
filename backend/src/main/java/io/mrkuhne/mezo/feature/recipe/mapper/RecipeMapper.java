@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.RecipeMacros;
 import io.mrkuhne.mezo.api.dto.RecipeMezoFit;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
 import java.math.BigDecimal;
@@ -31,6 +32,15 @@ public interface RecipeMapper {
         e.setCookMins(r.getCookMins());
         e.setTags(r.getTags() == null ? List.of() : r.getTags());
         e.setStarred(Boolean.TRUE.equals(r.getStarred()));
+        e.setRole(fromWireRole(r.getRole()));
+    }
+
+    /** Wire (snake_case) -> MealRole. Null/blank means the client omitted it: STANDARD.
+     *  The contract pattern rejects anything else before it reaches here. */
+    default MealRole fromWireRole(String wire) {
+        return wire == null || wire.isBlank()
+            ? MealRole.STANDARD
+            : MealRole.valueOf(wire.trim().toUpperCase());
     }
 
     default RecipeResponse toResponse(RecipeEntity e) {
@@ -46,6 +56,7 @@ public interface RecipeMapper {
             .cookMins(e.getCookMins())
             .tags(e.getTags() == null ? List.of() : e.getTags())
             .starred(e.isStarred())
+            .role(e.getRole() == null ? "standard" : e.getRole().name().toLowerCase())
             .createdDate(e.getCreatedAt() == null ? "" : e.getCreatedAt().toString())
             .novaDominant(e.getNovaDominant() == null ? null : e.getNovaDominant().intValue()) // integer since mezo-2dy
             .macros(rollup(lines))
