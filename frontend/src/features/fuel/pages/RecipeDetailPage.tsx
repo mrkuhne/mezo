@@ -202,8 +202,10 @@ export function RecipeDetailPage() {
           {/* Mezo · sablon-olvasat + Pontszám (mezo-bw3y) — deterministic numbers + lazy AI prose.
               Real mode: the FIRST open runs the LLM (seconds) → twinkle card; later opens serve the
               jsonb cache. Prose-less envelope (flag/companion off, LLM error) renders cards only.
-              A REgenerate (edit / role change / pantry macro drift, mezo-uavr) keeps the pre-edit
-              envelope in cache — the twinkle card takes over and names it as a re-evaluation. */}
+              A write-driven REgenerate (a recipe edit — a role change is one, mezo-uavr) keeps the
+              pre-edit envelope in cache — the twinkle card takes over and names it as a
+              re-evaluation. A server-side regenerate caused purely by pantry macro drift is NOT
+              invalidated here, so it lands silently on the next refetch (see `useRecipeBreakdown`). */}
           {breakdownBusy && (
             <div className="card" style={{ margin: '0 0 16px', padding: 16, textAlign: 'center' }}>
               <div className="np-twinkle" style={{ color: 'var(--coral)', display: 'flex', justifyContent: 'center', marginBottom: 8 }}>

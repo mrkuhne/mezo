@@ -54,11 +54,15 @@ const RECIPE_BREAKDOWN_KEY = (id: string) => ['recipeBreakdown', id] as const
  *  mezoFit.fitsFor, synchronous via initialData; real = the lazily materializing
  *  GET /api/recipe/{id}/breakdown (the FIRST call may take LLM seconds — `pending` drives the
  *  detail page's „Mezo értékeli…" card; no mock fallback in real mode).
- *  `refreshing` is the SECOND-and-later generate (mezo-uavr): a WRITE invalidated the query
- *  (recipe edit / role change / pantry macro drift — the three regeneration paths), so `data` is
+ *  `refreshing` is the SECOND-and-later generate (mezo-uavr): a RECIPE WRITE invalidated this key
+ *  (`useRecipeActions` — a recipe edit and a role change are both such an edit), so `data` is
  *  still the pre-edit envelope while the new one materializes and the page renders
  *  „Mezo újraértékeli…" instead of passing a stale reading off as current. It is deliberately
- *  NOT every background fetch: a plain revalidation returns the SAME envelope. */
+ *  NOT every background fetch: a plain revalidation returns the SAME envelope. Note the third
+ *  server-side regeneration cause — pantry macro drift moving the deterministic numbers past
+ *  `RecipeBreakdownService.matches` — is NOT an invalidation here (`usePantryActions` only
+ *  invalidates ['pantry']): it is picked up on the next refetch of this key, silently, with no
+ *  banner. Wiring pantry writes to the recipe-derived caches is a filed follow-up. */
 export function useRecipeBreakdown(recipeId: string): {
   breakdown: RecipeBreakdownData['breakdown']
   fitsFor: string[]
@@ -84,8 +88,8 @@ export function useRecipeBreakdown(recipeId: string): {
     refetchOnWindowFocus: false,
     enabled: recipeId !== '',
   })
-  // Only a WRITE-driven regeneration may claim „újraértékeli": the recipe edit / role change /
-  // pantry macro drift paths all arrive here as an INVALIDATION of this key. A plain revalidation
+  // Only a WRITE-driven regeneration may claim „újraértékeli": a recipe edit and a role change
+  // both arrive here as an INVALIDATION of this key (`useRecipeActions`). A plain revalidation
   // (staleTime expiry on remount) refetches the SAME envelope — announcing a re-evaluation there
   // would be a false claim plus a layout jump, the very dishonesty this flag exists to remove.
   // `isInvalidated` is set by invalidateQueries and stays true for the whole ensuing refetch;
