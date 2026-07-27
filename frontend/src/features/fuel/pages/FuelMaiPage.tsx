@@ -14,6 +14,7 @@ import { ReplanSheet } from '@/features/fuel/sheets/ReplanSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
 import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
+import { EnergyBreakdownSheet, type EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { localDateString } from '@/shared/lib/dates'
 
 // Napiv Mai recomposition (spec §4.4, mezo-8141): pghead-np sage header → RetaPhaseBar →
@@ -25,7 +26,7 @@ import { localDateString } from '@/shared/lib/dates'
 // once this page (its last consumer) dropped it.
 export function FuelMaiPage() {
   const { fuel } = useFuelDay()
-  const { plan, budget, getScoredMeal } = useFuelTimeline()
+  const { plan, budget, energyBreakdown, getScoredMeal } = useFuelTimeline()
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
   const { logWater } = useWaterActions()
@@ -38,6 +39,7 @@ export function FuelMaiPage() {
   const [aiOpen, setAiOpen] = useState(false)
   const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
 
@@ -107,15 +109,15 @@ export function FuelMaiPage() {
           </div>
           {!staticEnergy && (
             <div className="row gap-xs" style={{ flexWrap: 'wrap', marginTop: 8 }}>
-              <span className="chx" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)', cursor: 'default' }}>Alaphő {plan.energy.base}</span>
-              <span className="chx" style={{ background: 'var(--wash-amber)', color: 'var(--amber-deep)', cursor: 'default' }}>Mozgás +{plan.energy.activity}</span>
-              <span className="chx" style={{ background: 'var(--warm)', color: 'var(--coral-deep)', cursor: 'default' }}>
+              <button type="button" className="chx chip-tap" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('base')}>Alaphő {plan.energy.base}</button>
+              <button type="button" className="chx chip-tap" style={{ background: 'var(--wash-amber)', color: 'var(--amber-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('movement')}>Mozgás +{plan.energy.activity}</button>
+              <button type="button" className="chx chip-tap" style={{ background: 'var(--warm)', color: 'var(--coral-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('deficit')}>
                 {plan.energy.balance < 0
                   ? `Deficit ${Math.abs(plan.energy.balance)}`
                   : plan.energy.balance > 0
                     ? `Felesleg +${plan.energy.balance}`
                     : 'Egyensúly'}
-              </span>
+              </button>
             </div>
           )}
         </div>
@@ -255,6 +257,9 @@ export function FuelMaiPage() {
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
       {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
+      {energyOpen && energyBreakdown && (
+        <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
+      )}
       {aiOpen && (
         <AiLogSheet
           date={localDateString()}
