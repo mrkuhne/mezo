@@ -254,15 +254,14 @@ Record + javadoc:
     }
 ```
 
-Gym: resolve the day's planned template once, before the slot loop, and pass its label:
+Gym: resolve the day's planned template once, before the slot loop, and pass its label. The query already exists as `WorkoutService.findPlannedTemplateForDate(UUID createdBy, LocalDate date) → Optional<WorkoutSessionEntity>` (`WorkoutService.java:257` — active meso + HU day-label match; `QuestSelector:53` already reuses it as a day-type seam). Inject `WorkoutService` into `WorkoutWindowQueryService` — same slice, and `WorkoutService` does not reference `WorkoutWindowQueryService`, so no bean cycle:
 
 ```java
-        String gymLabel = workoutSessionRepository
-            .findPlannedTemplateForDate(userId, date)          // existing companion-snapshot idiom
+        String gymLabel = workoutService
+            .findPlannedTemplateForDate(userId, date)
             .map(WorkoutSessionEntity::getDayLabel)
             .orElse(null);
 ```
-If the repository method's name/signature differs, grep `ContextSnapshotAssembler` for how it resolves "today's planned training" and reuse that exact call — do not invent a new query.
 
 Sport: inside `addSportWindows`, the session branch labels with `session.getSport()`, the unmatched-slot branch with `slot.getSport()`. Run: label with `s.label()` from the `RunPrescribedSession`.
 
