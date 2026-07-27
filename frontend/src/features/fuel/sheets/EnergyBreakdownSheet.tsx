@@ -19,7 +19,6 @@ export interface EnergyBreakdown {
   target: number
 }
 
-const KG_KCAL = 7700 // kcal per kg body fat — the deficit/rate relationship
 const BLOCK_EMOJI: Record<EnergyBlock['kind'], string> = { gym: '🏋️', sport: '🏐', run: '🏃' }
 const FORMULA_LABEL = { KATCH: 'Katch-McArdle', MSJ: 'Mifflin-St Jeor' } as const
 
@@ -145,7 +144,9 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
             </p>
           </div>
 
-          {/* DEFICIT */}
+          {/* DEFICIT — a derivation (goal rate → prescribed daily gap), NOT an exact equation:
+              the engine's projected rate tracks the real weight trend, so rate×kcalPerKg need not
+              reconcile with the daily balance. Hence "→", and 7700 stays a rough guide in the prose. */}
           {deficit && (
             <div className={`seg${hl('deficit')}`}>
               <div className="sh">
@@ -155,9 +156,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
               </div>
               <div className="btiles">
                 <Tile tone="coral" emoji="🎯" name="Cél ütem" sub={deficit.goalLabel} value={dec(Math.abs(deficit.rateKgPerWk))} unit="kg/hét" />
-                <div className="op">×</div>
-                <Tile tone="coral" emoji="🔥" name="Zsír energia" sub="1 kg ≈" value={nf(KG_KCAL)} unit="kcal" />
-                <div className="op">÷7</div>
+                <div className="op">→</div>
                 <Tile result sub="Napi deficit" value={signed(deficit.kcal)} unit="kcal" />
               </div>
               <p className="why">
@@ -165,7 +164,7 @@ export function EnergyBreakdownSheet({ breakdown, initial, onClose }: {
                   ? deficit.rationale
                   : (
                     <>
-                      A célod (<b>{deficit.goalLabel}</b>) heti üteméből: <b>{dec(Math.abs(deficit.rateKgPerWk))} kg/hét</b> változáshoz napi ~{nf(Math.abs(deficit.kcal))} kcal eltérés kell (7700 kcal ≈ 1 kg zsír).
+                      A <b>{deficit.goalLabel}</b> célod ~<b>{dec(Math.abs(deficit.rateKgPerWk))} kg/hét</b> üteméhez a motor napi ~{nf(Math.abs(deficit.kcal))} kcal deficitet szab (≈7700 kcal / 1 kg zsír, a valós súlytrendedhez igazítva). Ennyivel eszel a fenntartó alatt.
                     </>
                   )}
               </p>
