@@ -12,7 +12,8 @@ public interface SleepLogRepository extends OwnedRepository<SleepLogEntity> {
     /** Latest sleep row ("last night") for the companion context snapshot. */
     Optional<SleepLogEntity> findFirstByCreatedByAndDeletedFalseOrderByDateDesc(UUID createdBy);
 
-    /** Last-N-days window for the companion get_sleep tool (V0.5) — plain finder, no companion dependency. */
+    /** Last-N-days window for the companion get_recovery(scope=sleep) tool (V0.5, mezo-xixu) — plain
+     *  finder, no companion dependency. */
     List<SleepLogEntity> findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
             UUID createdBy, LocalDate from);
 

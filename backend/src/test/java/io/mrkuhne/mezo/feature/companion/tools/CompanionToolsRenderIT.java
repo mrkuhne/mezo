@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
@@ -20,6 +21,7 @@ import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
@@ -58,6 +60,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
+    @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
@@ -97,11 +101,11 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetSleep_shouldListWindowedRowsNewestFirst_andClampDays() {
+    void testGetRecovery_shouldListWindowedRowsNewestFirst_andClampDays_whenScopeSleep() {
         UUID owner = userPopulator.createUser().getId();
         sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(1), new BigDecimal("7.5"), 4);
         sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(40), new BigDecimal("6.0"), 2);
-        String out = biometricsTools.getSleep(90, ctx(owner)); // clamps to max-window-days=30
+        String out = biometricsTools.getRecovery("sleep", 90, ctx(owner)); // clamps to max-window-days=30
         assertThat(out).startsWith("Alvás (utolsó 30 nap):")
                 .contains(LocalDate.now().minusDays(1) + ": 7.5 h, minőség 4/5")
                 .doesNotContain(LocalDate.now().minusDays(40).toString());
@@ -109,9 +113,46 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetSleep_shouldRenderNincsAdat_whenEmpty() {
-        String out = biometricsTools.getSleep(null, ctx(userPopulator.createUser().getId()));
+    void testGetRecovery_shouldRenderNincsAdat_whenScopeAndDaysNullAndNoSleepLogs() {
+        // null scope defaults to "sleep", null days defaults to 7 — both defaults exercised at once.
+        String out = biometricsTools.getRecovery(null, null, ctx(userPopulator.createUser().getId()));
         assertThat(out).isEqualTo("Alvás (utolsó 7 nap): nincs adat");
+    }
+
+    @Test
+    void testGetRecovery_shouldRenderTargetAnchorAndRegularityBand_whenScopeSleepGoal() {
+        UUID owner = userPopulator.createUser().getId();
+        // 450 min (7h30m) target, WAKE-anchored at 06:45 -> derived bed 23:15, ±15 min regularity band.
+        sleepGoalPopulator.goal(owner);
+
+        String out = biometricsTools.getRecovery("sleep-goal", null, ctx(owner));
+
+        assertThat(out).isEqualTo(
+                "Alvási cél: 7ó 30p alvás, ébredés 06:45, lefekvés 23:15; szabályosság ±15 perc");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("SleepGoal", "06:45"));
+    }
+
+    @Test
+    void testGetRecovery_shouldRenderWellbeingReadingsAcrossWindow_whenScopeCheckins() {
+        UUID owner = userPopulator.createUser().getId();
+        // CheckInPopulator#createCheckIn hardcodes body=3, mental=3.
+        checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(1), "08:00", 7, 3, null);
+        checkInPopulator.createCheckIn(owner, LocalDate.now().minusDays(40), "08:00", 9, 1, null);
+
+        String out = biometricsTools.getRecovery("checkins", null, ctx(owner)); // default window: 7 days
+
+        assertThat(out).startsWith("Bejelentkezések (utolsó 7 nap):")
+                .contains(LocalDate.now().minusDays(1) + " 08:00: energia 7/10, stressz 3/10, testi 3/10, mentális 3/10")
+                .doesNotContain(LocalDate.now().minusDays(40).toString());
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("CheckIn", LocalDate.now().minusDays(1).toString()));
+    }
+
+    @Test
+    void testGetRecovery_shouldRenderNincsAdat_whenScopeCheckinsAndEmpty() {
+        assertThat(biometricsTools.getRecovery("checkins", null, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Bejelentkezések (utolsó 7 nap): nincs adat");
     }
 
     @Test

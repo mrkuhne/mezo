@@ -77,7 +77,9 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - **8 read-only tools** in `feature/companion/tools/` (spec §5 first batch), grouped by source
   domain: `TrainTools` (`get_recent_workouts`, `get_sport_sessions` — sport + run logs; the two
   merged into one scoped `get_training_log(scope, days)` since mezo-xixu, see the catalog below),
-  `BiometricsTools` (`get_weight_trend`, `get_sleep`), `FuelTools` (`get_recent_meals` day
+  `BiometricsTools` (`get_weight_trend`, `get_sleep` — expanded into one scoped
+  `get_recovery(scope, days)` (adds sleep-goal + check-ins) since mezo-xixu, see the catalog below),
+  `FuelTools` (`get_recent_meals` day
   rollups — merged into one scoped `get_fuel_log(range, date, days)` day/week + water since
   mezo-xixu, see the catalog below; `get_protocol_adherence` — merged into one scoped
   `get_protocol(scope, days)` adherence/intake/supplements since mezo-xixu, see the catalog below),
@@ -671,11 +673,12 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 V0.5** on tool-using turns; a tool-less turn's null envelope still maps to `[]`,
 `CompanionMapper.toTools/toRefs`; `degraded` required boolean since V1.3 — always false on user
 rows), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
-carries the args baked in — `get_sleep(days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
+carries the args baked in — `get_recovery(scope=sleep, days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
 `Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`, since
 V2.3 `Memory` — a recalled day's date, and since mezo-xixu `TrainingPlan` — the resolved date, or
 the mesocycle title for `scope=meso`, `ExerciseRecord` — the exercise name, `Recipe` — the
-matched recipe's name, and `Pantry` — the pantry item's name),
+matched recipe's name, `Pantry` — the pantry item's name, `SleepGoal` — the resolved wake time
+(`get_recovery(scope=sleep-goal)`), and `CheckIn` — a check-in's date (`get_recovery(scope=checkins)`)),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
@@ -689,7 +692,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_training_plan(scope, date)` (mezo-xixu) | FORWARD plan: `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (gym day, read-only — never `getToday`) + `RunningService.listBlocks`/`RunningBlockStructure` (prescribed run) + `TrainService.listMesocycles` (`scope=meso` full cycle) | `TrainingPlan`/date or meso title |
 | `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
 | `get_fuel_log(range, date, days)` (mezo-xixu, merged from `get_recent_meals`) | range=day: `FuelDayService.getDay` looped per day (from `date`, default today) → kcal/F vs targets, meal count + titles (≤3), plus `WaterLogService.sumForDay` for the anchor day's water vs target; range=week: `FuelDayService.getWeek` (Monday-anchored ISO week containing `date`) → per-day kcal/F/water vs targets | `FuelDay`/date (≤5) |
-| `get_sleep(days)` | `SleepLogRepository` since-date finder (new) → duration, quality, awakenings | `Sleep`/date (≤5) |
+| `get_recovery(scope, days)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins) | scope=sleep: `SleepLogRepository` since-date finder → duration, quality, awakenings; scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's `selectedPantryItemIds` → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal_progress()` | active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept | `Goal`/title |
 | `get_reta_cycle()` | `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due | `Medication`/name |
