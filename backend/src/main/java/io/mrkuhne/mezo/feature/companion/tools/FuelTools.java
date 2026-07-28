@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelDayRollup;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.IngredientResponse;
+import io.mrkuhne.mezo.api.dto.IntakeResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
@@ -14,6 +15,7 @@ import io.mrkuhne.mezo.api.dto.SupplementStashResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.fuel.entity.SupplementIntakeEntity;
 import io.mrkuhne.mezo.feature.fuel.repository.SupplementIntakeRepository;
+import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.WaterLogService;
@@ -39,8 +41,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/** V0.5 read tools over the fuel/meal features (day/week rollups + supplement-protocol adherence),
- *  plus {@code get_recipes} and {@code get_pantry} (mezo-xixu) over the sibling recipe/pantry features. */
+/** V0.5 read tools over the fuel/meal features (day/week rollups + the scoped {@code get_protocol}:
+ *  adherence/intake/supplements, mezo-xixu), plus {@code get_recipes} and {@code get_pantry}
+ *  (mezo-xixu) over the sibling recipe/pantry features. */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
@@ -54,10 +57,14 @@ public class FuelTools {
     /** get_fuel_log's supported range values; anything else (incl. null) falls back to "day". */
     private static final List<String> FUEL_LOG_RANGES = List.of("day", "week");
 
+    /** get_protocol's supported scope values; anything else (incl. null) falls back to "adherence". */
+    private static final List<String> PROTOCOL_SCOPES = List.of("adherence", "intake", "supplements");
+
     private final FuelDayService fuelDayService;
     private final WaterLogService waterLogService;
     private final ProtocolService protocolService;
     private final SupplementIntakeRepository supplementIntakeRepository;
+    private final IntakeService intakeService;
     private final RecipeService recipeService;
     private final PantryService pantryService;
     private final CompanionProperties properties;
@@ -172,12 +179,42 @@ public class FuelTools {
         return b.toString();
     }
 
-    @Tool(name = "get_protocol_adherence", description = "Étrendkiegészítő-protokoll követése az elmúlt "
-            + "napokra: naponta hány elem lett bevéve az aktív protokollból. Kérdés kiegészítőkről, protokollról.")
-    public String getProtocolAdherence(
-            @ToolParam(required = false, description = "Hány napra visszamenőleg (alapértelmezés 7).") Integer days,
+    @Tool(name = "get_protocol", description = "Az étrendkiegészítő-protokoll nézetei. scope=adherence — "
+            + "napi bontású követés az elmúlt N napra: naponta hány elem lett bevéve az aktív protokollból, "
+            + "plusz az ablak összesítése (bevett/elvárt, %). scope=intake — a mai nap bevett kiegészítői "
+            + "(tétel neve, ismert dózissal); nincs protokollhoz kötve. scope=supplements — az aktív "
+            + "protokoll tételeinek listája (nevek). Használd, amikor a user az étrendkiegészítő-"
+            + "protokolljáról, bevételéről vagy a supplementjeiről kérdez. scope: adherence "
+            + "(alapértelmezés), intake, supplements.")
+    public String getProtocol(
+            @ToolParam(required = false, description = "adherence|intake|supplements (alapértelmezés: adherence).")
+            String scope,
+            @ToolParam(required = false, description = "scope=adherence esetén hány napra visszamenőleg "
+                    + "(alapértelmezés 7); más scope esetén nincs hatása.") Integer days,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
+        String s = normalizeProtocolScope(scope);
+        if ("intake".equals(s)) {
+            return renderProtocolIntake(userId, toolContext);
+        }
+        if ("supplements".equals(s)) {
+            return renderProtocolSupplements(userId, toolContext);
+        }
+        return renderProtocolAdherence(userId, days, toolContext);
+    }
+
+    private static String normalizeProtocolScope(String scope) {
+        if (scope == null) {
+            return "adherence";
+        }
+        String s = scope.trim().toLowerCase();
+        return PROTOCOL_SCOPES.contains(s) ? s : "adherence";
+    }
+
+    /** scope=adherence (default) — the original get_protocol_adherence body, unchanged: per-day
+     *  taken/expected coverage of the CURRENT active protocol across the window (v0.5 simplification —
+     *  protocol-version time-travel is v1+ material), plus the window total (%). */
+    private String renderProtocolAdherence(UUID userId, Integer days, ToolContext toolContext) {
         ProtocolResponse active = protocolService.getView(userId).getActive();
         if (active == null) {
             return "Protokoll-követés: nincs aktív protokoll";
@@ -186,7 +223,6 @@ public class FuelTools {
         LocalDate today = LocalDate.now();
         LocalDate from = today.minusDays(d - 1L);
         Set<UUID> protocolItems = new HashSet<>(active.getSelectedPantryItemIds());
-        // v0.5 simplification: adherence vs the CURRENT active protocol across the whole window
         Map<LocalDate, Set<UUID>> takenByDay = supplementIntakeRepository
                 .findByCreatedByAndDeletedFalseAndTakenDateGreaterThanEqualOrderByTakenDateAscTakenAtAsc(userId, from)
                 .stream()
@@ -208,6 +244,58 @@ public class FuelTools {
         }
         ToolContexts.audit(toolContext).addRef("Protocol", "v" + active.getVersion());
         return b.toString();
+    }
+
+    /** scope=intake (mezo-xixu) — today's raw supplement-intake ledger over {@link IntakeService#listForDay}:
+     *  independent of any active protocol (a taken item need not belong to it), so the {@code Protocol}
+     *  ref is only added when one happens to be active (kept as the tool's one ref kind — no new kind
+     *  introduced). Item names resolved via the pantry stash (intakes are never {@code kind=food} —
+     *  {@link IntakeService#logIntake} rejects that), capped at 5 lines like the sibling {@code get_pantry}. */
+    private String renderProtocolIntake(UUID userId, ToolContext toolContext) {
+        LocalDate today = LocalDate.now();
+        List<IntakeResponse> intakes = intakeService.listForDay(userId, today).getIntakes();
+        if (intakes.isEmpty()) {
+            return "Mai bevétel (" + today + "): " + ToolText.NO_DATA;
+        }
+        Map<UUID, String> names = pantryStashNames(userId);
+        StringBuilder b = new StringBuilder("Mai bevétel (").append(today).append("): ")
+                .append(intakes.size()).append(" tétel");
+        for (IntakeResponse intake : intakes.stream().limit(5).toList()) {
+            b.append('\n').append(names.getOrDefault(intake.getPantryItemId(), "ismeretlen tétel"));
+            if (intake.getDose() != null && !intake.getDose().isBlank()) {
+                b.append(": ").append(intake.getDose());
+            }
+        }
+        ProtocolResponse active = protocolService.getView(userId).getActive();
+        if (active != null) {
+            ToolContexts.audit(toolContext).addRef("Protocol", "v" + active.getVersion());
+        }
+        return b.toString();
+    }
+
+    /** scope=supplements (mezo-xixu) — the active protocol's item names (from {@code selectedPantryItemIds},
+     *  already itemOrder-sorted by {@link ProtocolService#getView}), capped at 5 like the other list tools. */
+    private String renderProtocolSupplements(UUID userId, ToolContext toolContext) {
+        ProtocolResponse active = protocolService.getView(userId).getActive();
+        if (active == null) {
+            return "Protokoll szupplementjei: nincs aktív protokoll";
+        }
+        List<UUID> ids = active.getSelectedPantryItemIds();
+        Map<UUID, String> names = pantryStashNames(userId);
+        StringBuilder b = new StringBuilder("Protokoll szupplementjei (v").append(active.getVersion())
+                .append("): ").append(ids.size()).append(" elem");
+        for (UUID id : ids.stream().limit(5).toList()) {
+            b.append('\n').append(names.getOrDefault(id, "ismeretlen tétel"));
+        }
+        ToolContexts.audit(toolContext).addRef("Protocol", "v" + active.getVersion());
+        return b.toString();
+    }
+
+    /** pantryItemId -> name over the owner's non-food stash (supplement/stim/med) — the shared lookup
+     *  for scope=intake/supplements, both of which only ever reference non-food items. */
+    private Map<UUID, String> pantryStashNames(UUID userId) {
+        return pantryService.getPantry(userId).getStash().stream()
+                .collect(Collectors.toMap(SupplementStashResponse::getId, SupplementStashResponse::getName));
     }
 
     @Tool(name = "get_recipes", description = "A user receptjei: név, makrók, illeszkedés-pontszám, "

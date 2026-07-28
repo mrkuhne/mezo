@@ -79,7 +79,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   merged into one scoped `get_training_log(scope, days)` since mezo-xixu, see the catalog below),
   `BiometricsTools` (`get_weight_trend`, `get_sleep`), `FuelTools` (`get_recent_meals` day
   rollups — merged into one scoped `get_fuel_log(range, date, days)` day/week + water since
-  mezo-xixu, see the catalog below; `get_protocol_adherence`),
+  mezo-xixu, see the catalog below; `get_protocol_adherence` — merged into one scoped
+  `get_protocol(scope, days)` adherence/intake/supplements since mezo-xixu, see the catalog below),
   `GoalTools` (`get_goal_progress`), `MedicationTools`
   (`get_reta_cycle`). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
   NEVER from model args), compact deterministic Hungarian text results, `nincs adat` absences.
@@ -689,7 +690,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
 | `get_fuel_log(range, date, days)` (mezo-xixu, merged from `get_recent_meals`) | range=day: `FuelDayService.getDay` looped per day (from `date`, default today) → kcal/F vs targets, meal count + titles (≤3), plus `WaterLogService.sumForDay` for the anchor day's water vs target; range=week: `FuelDayService.getWeek` (Monday-anchored ISO week containing `date`) → per-day kcal/F/water vs targets | `FuelDay`/date (≤5) |
 | `get_sleep(days)` | `SleepLogRepository` since-date finder (new) → duration, quality, awakenings | `Sleep`/date (≤5) |
-| `get_protocol_adherence(days)` | `ProtocolService.getView().getActive()` + intake since-date finder (new) → per-day taken/expected + total % | `Protocol`/`v{n}` |
+| `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's `selectedPantryItemIds` → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal_progress()` | active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept | `Goal`/title |
 | `get_reta_cycle()` | `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
@@ -1278,9 +1279,10 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     is always `read` in V0.5. No migration (columns existed since V0.2; null-when-empty preserved).
 19. **Tool results are snapshot-idiom text**, windows clamped by `mezo.companion.tools.*` — token
     budget by construction. `get_training_log` scopes gym/sport/run into one tool (mezo-xixu,
-    merged from `get_recent_workouts`+`get_sport_sessions`); `get_protocol_adherence`
+    merged from `get_recent_workouts`+`get_sport_sessions`); `get_protocol`'s `scope=adherence`
     measures against the CURRENT active protocol for the whole window (version time-travel is
-    v1+ material); `get_goal_progress` is a pure read composition (the engine's `evaluate` is a
+    v1+ material; mezo-xixu also merged in `scope=intake`/`supplements`, see the catalog);
+    `get_goal_progress` is a pure read composition (the engine's `evaluate` is a
     write and stays out of the registry).
 20. **The fake scripts tools via content sentinels** — `[fake-tool:name {json}]` executes the
     REAL wrapped callback (audit/budget/refs included), so the whole pipeline is IT-covered with

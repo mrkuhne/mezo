@@ -433,14 +433,14 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetProtocolAdherence_shouldRenderPerDayCoverage_whenProtocolActive() {
+    void testGetProtocol_shouldRenderPerDayCoverage_whenScopeAdherenceAndProtocolActive() {
         UUID owner = userPopulator.createUser().getId();
         PantryItemEntity a = pantryItemPopulator.createSupplement(owner, "Kreatin");
         PantryItemEntity b = pantryItemPopulator.createSupplement(owner, "D3-vitamin");
         protocolPopulator.createProtocol(owner, 3, "active", List.of(a.getId(), b.getId()));
         supplementIntakePopulator.createIntake(owner, a.getId(), Instant.now());
 
-        String out = fuelTools.getProtocolAdherence(1, ctx(owner));
+        String out = fuelTools.getProtocol("adherence", 1, ctx(owner));
 
         assertThat(out).startsWith("Protokoll-követés (utolsó 1 nap): aktív protokoll v3, 2 elem")
                 .contains(LocalDate.now() + ": 1/2")
@@ -450,9 +450,73 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetProtocolAdherence_shouldRenderNincsAktivProtokoll_whenNoneActive() {
-        assertThat(fuelTools.getProtocolAdherence(7, ctx(userPopulator.createUser().getId())))
+    void testGetProtocol_shouldDefaultScopeToAdherence_whenScopeNullOrUnrecognized() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity a = pantryItemPopulator.createSupplement(owner, "Kreatin");
+        protocolPopulator.createProtocol(owner, 1, "active", List.of(a.getId()));
+
+        assertThat(fuelTools.getProtocol(null, 1, ctx(owner)))
+                .startsWith("Protokoll-követés (utolsó 1 nap): aktív protokoll v1, 1 elem");
+        assertThat(fuelTools.getProtocol("bogus", 1, ctx(owner)))
+                .startsWith("Protokoll-követés (utolsó 1 nap): aktív protokoll v1, 1 elem");
+    }
+
+    @Test
+    void testGetProtocol_shouldRenderNincsAktivProtokoll_whenScopeAdherenceAndNoneActive() {
+        assertThat(fuelTools.getProtocol("adherence", 7, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Protokoll-követés: nincs aktív protokoll");
+    }
+
+    @Test
+    void testGetProtocol_shouldRenderTodaysIntakesByName_whenScopeIntake() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity a = pantryItemPopulator.createSupplement(owner, "Kreatin");
+        supplementIntakePopulator.createIntake(owner, a.getId(), Instant.now());
+
+        String out = fuelTools.getProtocol("intake", null, ctx(owner));
+
+        // SupplementIntakePopulator#createIntake sets no dose, so only the resolved item name renders.
+        assertThat(out).isEqualTo("Mai bevétel (" + LocalDate.now() + "): 1 tétel\nKreatin");
+        assertThat(audit.toRefsEnvelope()).isNull(); // no active protocol => no Protocol ref
+    }
+
+    @Test
+    void testGetProtocol_shouldAddProtocolRef_whenScopeIntakeAndActiveProtocolExists() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity a = pantryItemPopulator.createSupplement(owner, "Kreatin");
+        protocolPopulator.createProtocol(owner, 2, "active", List.of(a.getId()));
+        supplementIntakePopulator.createIntake(owner, a.getId(), Instant.now());
+
+        fuelTools.getProtocol("intake", null, ctx(owner));
+
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Protocol", "v2"));
+    }
+
+    @Test
+    void testGetProtocol_shouldRenderNincsAdat_whenScopeIntakeAndNoIntakesToday() {
+        assertThat(fuelTools.getProtocol("intake", null, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Mai bevétel (" + LocalDate.now() + "): nincs adat");
+    }
+
+    @Test
+    void testGetProtocol_shouldRenderActiveProtocolItemNames_whenScopeSupplements() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity a = pantryItemPopulator.createSupplement(owner, "Kreatin");
+        PantryItemEntity b = pantryItemPopulator.createSupplement(owner, "D3-vitamin");
+        protocolPopulator.createProtocol(owner, 4, "active", List.of(a.getId(), b.getId()));
+
+        String out = fuelTools.getProtocol("supplements", null, ctx(owner));
+
+        assertThat(out).isEqualTo("Protokoll szupplementjei (v4): 2 elem\nKreatin\nD3-vitamin");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Protocol", "v4"));
+    }
+
+    @Test
+    void testGetProtocol_shouldRenderNincsAktivProtokoll_whenScopeSupplementsAndNoneActive() {
+        assertThat(fuelTools.getProtocol("supplements", null, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Protokoll szupplementjei: nincs aktív protokoll");
     }
 
     @Test
