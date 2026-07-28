@@ -62,18 +62,18 @@ class ChatServiceIT extends AbstractIntegrationTest {
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
 
         MessageResponse resp = chatService.sendMessage(userId, conversation.getId(),
-                request("aludtam eleget? [fake-tool:get_sleep {\"days\":3}]"));
+                request("aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]"));
 
-        assertThat(resp.getTools()).extracting(MessageTool::getName).containsExactly("get_sleep(days=3)");
+        assertThat(resp.getTools()).extracting(MessageTool::getName).containsExactly("get_recovery(scope=sleep, days=3)");
         assertThat(resp.getTools()).extracting(MessageTool::getType).containsExactly("read");
         assertThat(resp.getRefs()).extracting(MessageRef::getKind).contains("Sleep");
         AiMessageEntity assistant = lastAssistantRow(conversation.getId(), userId);
         assertThat(assistant.getToolCalls().calls()).hasSize(1);
-        assertThat(assistant.getToolCalls().calls().getFirst().name()).isEqualTo("get_sleep");
-        assertThat(assistant.getToolCalls().calls().getFirst().args()).isEqualTo("days=3");
+        assertThat(assistant.getToolCalls().calls().getFirst().name()).isEqualTo("get_recovery");
+        assertThat(assistant.getToolCalls().calls().getFirst().args()).isEqualTo("scope=sleep, days=3");
         assertThat(assistant.getRefs().refs()).isNotEmpty();
         // the fake echoes the tool result — Spring AI's result converter JSON-encodes the String
-        assertThat(resp.getContent()).contains("tool:get_sleep=[\"Alvás");
+        assertThat(resp.getContent()).contains("tool:get_recovery=[\"Alvás");
     }
 
     @Test
@@ -90,11 +90,11 @@ class ChatServiceIT extends AbstractIntegrationTest {
     void testSendMessage_shouldStopRecordingAtCap_whenMoreSentinelsThanBudget() {
         UUID userId = databasePopulator.populateUser("chat-tool-cap@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
-        String sevenCalls = "[fake-tool:get_goal]".repeat(7);
+        String overCapCalls = "[fake-tool:get_goal]".repeat(16);
 
-        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request(sevenCalls));
+        MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request(overCapCalls));
 
-        assertThat(resp.getTools()).hasSize(6); // mezo.companion.tools.max-calls-per-turn
+        assertThat(resp.getTools()).hasSize(15); // mezo.companion.tools.max-calls-per-turn (raised 6→15, mezo-xixu)
         assertThat(resp.getContent()).contains(RecordingToolCallback.BUDGET_EXHAUSTED);
     }
 

@@ -59,13 +59,13 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
 
         List<ServerSentEvent<Object>> events = chatStreamService
                 .streamMessage(userId, conversation.getId(),
-                        request("aludtam eleget? [fake-tool:get_sleep {\"days\":3}]"))
+                        request("aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]"))
                 .collectList().block();
 
         ServerSentEvent<Object> done = events.getLast();
         assertThat(done.event()).isEqualTo("done");
         MessageResponse resp = (MessageResponse) done.data();
-        assertThat(resp.getTools()).extracting(MessageTool::getName).containsExactly("get_sleep(days=3)");
+        assertThat(resp.getTools()).extracting(MessageTool::getName).containsExactly("get_recovery(scope=sleep, days=3)");
         assertThat(resp.getRefs()).isNotEmpty();
 
         AiMessageEntity assistant = messageRepository
@@ -73,7 +73,7 @@ class ChatStreamServiceIT extends AbstractIntegrationTest {
                         conversation.getId(), userId)
                 .getLast();
         assertThat(assistant.getToolCalls().calls()).hasSize(1);
-        assertThat(assistant.getToolCalls().calls().getFirst().name()).isEqualTo("get_sleep");
+        assertThat(assistant.getToolCalls().calls().getFirst().name()).isEqualTo("get_recovery");
     }
 
     @Test
