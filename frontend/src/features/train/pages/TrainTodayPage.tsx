@@ -339,6 +339,7 @@ export function TrainTodayPage() {
           const vb = item.sport
           const k = sportOf(vb)
           const logged = loggedSportOn(shownIso, k)
+          const state = sessionState({ dayIso: shownIso, todayIso, timeOfDay: vb.time })
           return (
             <TodaySessionCard
               key={`hero-sport-${k}-${vb.time}-${i}`}
@@ -357,18 +358,20 @@ export function TrainTodayPage() {
                   : undefined
               }
               loggedDetail={logged?.time ? `${logged.time}-kor logolva` : null}
-              stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: shownIso, todayIso, timeOfDay: vb.time })]}
-              // Logging always writes "now" server-side (SportLogSheet has no date
-              // field) — read-only on any non-today day until Task 9 adds a `date`
-              // prop + a `Pótold` past-day CTA (mezo-9bbc review fix).
-              ctaLabel={isTodayShown ? 'Logold a session-t' : undefined}
-              onLog={isTodayShown ? () => setSportLogSport(k) : undefined}
+              stateLabel={SESSION_STATE_LABEL[state]}
+              // Three-way CTA (mezo-9bbc, Task 9): a future day (`planned`) stays
+              // read-only; a past unlogged day (`missed`) offers Pótold, writing the
+              // log against the shown day's date (SportLogSheet's `date` prop, wired
+              // below); today keeps its original copy.
+              ctaLabel={state === 'planned' ? undefined : state === 'missed' ? 'Pótold' : 'Logold a session-t'}
+              onLog={state === 'planned' ? undefined : () => setSportLogSport(k)}
             />
           )
         }
 
         const s = item.running
         const rl = runLoggedFor(s.key)
+        const runState = sessionState({ dayIso: shownIso, todayIso, timeOfDay: s.timeOfDay })
         const openRunLog = () => setRunLogCtx({
           blockId: activeRunningBlock!.id,
           weekNumber: activeRunningBlock!.currentWeek,
@@ -389,12 +392,11 @@ export function TrainTodayPage() {
             logged={Boolean(rl)}
             loggedSummary={rl ? `RPE ${rl.rpeActual ?? '–'}${rl.completedRounds != null ? ` · ${rl.completedRounds} kör` : ''}` : undefined}
             loggedDetail={null}
-            stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: shownIso, todayIso, timeOfDay: s.timeOfDay })]}
-            // Same read-only-on-non-today rule as sport (RunLogSheet also has no date
-            // field); `rl` itself is already day-scoped by session key, so `logged`
-            // needs no change — mezo-9bbc review fix.
-            ctaLabel={isTodayShown ? 'Naplózd a futást' : undefined}
-            onLog={isTodayShown ? openRunLog : undefined}
+            stateLabel={SESSION_STATE_LABEL[runState]}
+            // Same three-way CTA rule as sport (mezo-9bbc, Task 9) — `rl` itself is
+            // already day-scoped by session key, so `logged` needs no change.
+            ctaLabel={runState === 'planned' ? undefined : runState === 'missed' ? 'Pótold' : 'Naplózd a futást'}
+            onLog={runState === 'planned' ? undefined : openRunLog}
           />
         )
       })}
@@ -459,6 +461,9 @@ export function TrainTodayPage() {
       {sportLogSport && (
         <SportLogSheet
           initialSport={sportLogSport}
+          // Today logs with no date (server defaults to now); a past-day "Pótold"
+          // open passes the shown day's ISO date instead (mezo-9bbc, Task 9).
+          date={shownIso === todayIso ? undefined : shownIso}
           onClose={() => setSportLogSport(null)}
           onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />
@@ -466,6 +471,7 @@ export function TrainTodayPage() {
       {runLogCtx && (
         <RunLogSheet
           ctx={runLogCtx}
+          date={shownIso}
           onClose={() => setRunLogCtx(null)}
           onSave={(body, done) => logRunSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
         />

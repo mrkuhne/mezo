@@ -607,3 +607,119 @@ test('real mode: a TRX slot logged today shows the done hero (no váll segment) 
   fireEvent.click(screen.getByRole('button', { name: /logolt session megnyitása/ }))
   expect(screen.getByText('Sport log · TRX')).toBeInTheDocument()
 })
+
+// ---- Task 9 (mezo-9bbc): retroactive logging on past days ----
+// The clock is pinned to a Wednesday (2026-07-15) so "yesterday" (Tue) and
+// "tomorrow" (Thu) both land inside the SAME Mon–Sun agenda week regardless of
+// the real calendar date the suite happens to run on — a Monday/Sunday "today"
+// would otherwise wrap the computed past/future index into the adjacent week
+// and assert the wrong branch. ONLY `Date` is faked (`toFake: ['Date']`) so
+// MSW + RTL's findBy/waitFor polling keep running on real timers — the same
+// idiom as FuelMaiPage.test.tsx's schedule-pinning tests.
+test('a past unlogged sport slot offers Pótold and logs it on that day', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-15T12:00:00')) // Wednesday
+  try {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const posted: Array<Record<string, unknown>> = []
+    const todayIdx = (new Date().getDay() + 6) % 7 // 2 (Sze)
+    const pastIdx = (todayIdx + 6) % 7 // 1 (Kedd) — yesterday, still this week
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+      http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+        { id: 'e1f3a0e2-0000-4000-8000-0000000000aa', dayOfWeek: pastIdx, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      ])),
+      http.post(`${API_BASE}/api/train/sport-sessions`, async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>
+        posted.push(body)
+        return HttpResponse.json({ id: 'ss-new', sport: 'volleyball', ...body }, { status: 201 })
+      }),
+    )
+    render(<QueryWrapper><MemoryRouter initialEntries={[`/train?day=${pastIdx}`]}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
+    expect(await screen.findByText('ELMARADT')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Pótold/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
+    await waitFor(() => expect(posted).toHaveLength(1))
+    // the log carries the SELECTED day's date (Tue 2026-07-14), NOT today's (Wed 2026-07-15)
+    expect(posted[0].date).toBe('2026-07-14')
+    expect(posted[0].date).not.toBe(localDateString())
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('a future slot renders no log CTA', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-15T12:00:00')) // Wednesday
+  try {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const todayIdx = (new Date().getDay() + 6) % 7 // 2 (Sze)
+    const futureIdx = (todayIdx + 1) % 7 // 3 (Csü) — tomorrow, still this week
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+      http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+        { id: 'e1f3a0e2-0000-4000-8000-0000000000bb', dayOfWeek: futureIdx, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok', intensityLabel: 'közepes' },
+      ])),
+    )
+    render(<QueryWrapper><MemoryRouter initialEntries={[`/train?day=${futureIdx}`]}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
+    expect(await screen.findByText('TERVEZETT')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Logold|Pótold/ })).not.toBeInTheDocument()
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+// Symmetric coverage for the running card — the same three-way rule and the same
+// `date` threading, this time through RunLogSheet (RunSessionLogRequest.date is
+// REQUIRED by the contract, unlike sport's server-side default).
+test('a past unlogged run slot offers Pótold and logs it on that day', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-15T12:00:00')) // Wednesday
+  try {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const posted: Array<Record<string, unknown>> = []
+    const todayIdx = (new Date().getDay() + 6) % 7 // 2 (Sze)
+    const pastIdx = (todayIdx + 6) % 7 // 1 (Kedd) — yesterday, still this week
+    const runBlock = {
+      id: 'rb-1', title: 'Robbanékonyság', goal: 'sprint', kind: 'interval', status: 'active',
+      startDate: '2026-06-01', endDate: '2026-08-01', weeks: 4, currentWeek: 1, summary: null,
+      structure: {
+        weeks: [{
+          weekNumber: 1, phaseLabel: 'Alapozás',
+          sessions: [{
+            key: 'past-sprint', dayOfWeek: pastIdx, timeOfDay: '08:00', label: 'Reggeli sprint',
+            kind: 'sprint', rpeTarget: { min: 9, max: 10 }, rounds: 6, segments: [],
+          }],
+        }],
+      },
+    }
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+      http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+      http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/running-blocks`, () => HttpResponse.json([runBlock])),
+      http.get(`${API_BASE}/api/train/run-sessions`, () => HttpResponse.json([])),
+      http.post(`${API_BASE}/api/train/run-sessions`, async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>
+        posted.push(body)
+        return HttpResponse.json({ id: 'rl-new', ...body }, { status: 201 })
+      }),
+    )
+    render(<QueryWrapper><MemoryRouter initialEntries={[`/train?day=${pastIdx}`]}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
+    expect(await screen.findByText('ELMARADT')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /Pótold/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
+    await waitFor(() => expect(posted).toHaveLength(1))
+    // the log carries the SELECTED day's date (Tue 2026-07-14), NOT today's (Wed 2026-07-15)
+    expect(posted[0].date).toBe('2026-07-14')
+    expect(posted[0].date).not.toBe(localDateString())
+  } finally {
+    vi.useRealTimers()
+  }
+})

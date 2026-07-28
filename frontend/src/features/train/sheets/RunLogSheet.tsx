@@ -5,20 +5,27 @@ import { Display } from '@/shared/ui/Display'
 import { CtaPrimary, CtaGhost } from '@/shared/ui/Cta'
 import { NumberStep, ScaleRow } from '@/features/train/sheets/SportLogSheet'
 import type { RunSessionLogRequest } from '@/data/train/runningApi'
+import { localDateString } from '@/shared/lib/dates'
 
-export function RunLogSheet({ ctx, onClose, onSave }: {
+export function RunLogSheet({ ctx, onClose, onSave, date }: {
   ctx: { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
   onClose: () => void
   // `done` closes the sheet — the parent calls it from the log mutation's onSuccess
   // so the close is deferred until the save lands (and the level-up overlay can show).
   onSave?: (input: RunSessionLogRequest, done: () => void) => void
+  /** ISO date to log against — defaults to today (local, not UTC; mezo-9bbc). */
+  date?: string
 }) {
   const [rounds, setRounds] = useState(ctx.defaultRounds ?? 6)
   const [rpe, setRpe] = useState(9)
   const [hr, setHr] = useState(45)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
-  const isoToday = new Date().toISOString().slice(0, 10)
+  // `date` is required by the contract (no server-side default for running, unlike
+  // sport) — a retroactive ("Pótold") open passes the past day's ISO date; today
+  // uses `localDateString()`, NOT `toISOString().slice(0, 10)` (that shifts the
+  // date before ~02:00 local time in CET, mis-logging a late/early run — mezo-9bbc).
+  const logDate = date ?? localDateString()
 
   return (
     <Sheet onClose={onClose} labelledBy="run-log-title">
@@ -48,7 +55,7 @@ export function RunLogSheet({ ctx, onClose, onSave }: {
             <CtaGhost className="flex-1" onClick={close}>Mégse</CtaGhost>
             <CtaPrimary className="flex-1" disabled={saving} onClick={() => {
               const body: RunSessionLogRequest = {
-                blockId: ctx.blockId, weekNumber: ctx.weekNumber, sessionKey: ctx.sessionKey, date: isoToday,
+                blockId: ctx.blockId, weekNumber: ctx.weekNumber, sessionKey: ctx.sessionKey, date: logDate,
                 completedRounds: ctx.isSprint ? rounds : null, rpeActual: rpe, hrRecoverySec: hr,
                 sprintLandmark: null, durationMin: null, notes: notes || null,
               }
