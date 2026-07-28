@@ -23,7 +23,7 @@ Make Mai a **one-day page**: it answers "what am I doing today, and did I do it"
 - K3 card language for `TodaySessionCard` + the gym hero's done-state adopting the same `donebar`.
 - Two new modality token pairs (`cross`, `trx`) + a tone map in `logic/sportKinds.ts`.
 - New `DayStrip` component + `selectedDay` state on `TrainTodayPage` (+ `?day=` deep link).
-- New `/train/week` route + `WeeklyPage` + 7th sub-nav tab; the `WeeklyDayRow` list and `LoadTiles` move there.
+- New `/train/week` route + `TrainWeekPage` + 7th sub-nav tab; the `WeeklyDayRow` list and `LoadTiles` move there.
 - Retroactive logging for past days (sheets take a date), read-only rendering for future days.
 
 **Out of scope:**
@@ -110,15 +110,15 @@ Retroactive logging threads a `date` through the sheets: `SportLogSheet` and `Ru
 ## 6. `Heti` page — `/train/week`
 
 - `TRAIN_TABS` gains `{ id: 'week', to: '/train/week', label: 'Heti' }` **after** `Mai`; the route is registered as a child of `TrainSection` (so it keeps `AppHero` + the sub-nav dropdown).
-- `pages/WeeklyPage.tsx`: `.pghead-np` (`Edzés · W{n}` / „Heti terv”) → `LoadTiles` → the seven `WeeklyDayRow` cards (the `mezo-lruy` stacked form, unchanged) → dashed "+ Saját edzés" footer → the provenance note.
+- `pages/TrainWeekPage.tsx`: `.pghead-np` (`Edzés · W{n}` / „Heti terv”) → `LoadTiles` → the seven `WeeklyDayRow` cards (the `mezo-lruy` stacked form, unchanged) → dashed "+ Saját edzés" footer → the provenance note.
 - **Drill-in:** a `WeeklyDayRow` tap that isn't a gym-specific action navigates to `/train?day={dayKey}` (Mai, with that day selected). The existing gym-specific taps keep their current targets (review / direct-start), so muscle memory is preserved.
-- `WeeklyPage` needs the same agenda derivation as Mai. The `agenda` build in `TrainTodayPage` (gym schedule + sport slots + runs + custom-by-date, ~35 lines) is **extracted into `logic/weekAgenda.ts`** as a pure `buildWeekAgenda({ gymTimes, sportSlots, runningBlock, weekWorkouts })` so both pages derive it identically instead of duplicating it. This is the one refactor the change requires; it also shrinks `TrainTodayPage` (currently ~500 lines after `mezo-lruy`).
-- Loading: reuse `TrainTodaySkeleton`'s idiom with a `WeeklySkeleton` (page-head + tiles + 7 row placeholders).
+- `TrainWeekPage` needs the same agenda derivation as Mai. The `agenda` build in `TrainTodayPage` (gym schedule + sport slots + runs + custom-by-date, ~35 lines) is **extracted into `logic/weekAgenda.ts`** as a pure `buildWeekAgenda({ gymTimes, sportSlots, runningBlock, weekWorkouts })` so both pages derive it identically instead of duplicating it. This is the one refactor the change requires; it also shrinks `TrainTodayPage` (currently ~500 lines after `mezo-lruy`).
+- Loading: reuse `TrainTodaySkeleton`'s idiom with a `TrainWeekSkeleton` (page-head + tiles + 7 row placeholders).
 - Empty (no active meso): the same ghost as Mai's — "+ Tervezz mesociklust" + the dashed "+ Saját edzés" row.
 
 ## 7. Files
 
-**New:** `features/train/components/DayStrip.tsx` (+ test) · `features/train/components/DoneBar.tsx` (+ test) · `features/train/logic/weekAgenda.ts` (+ test) · `features/train/pages/WeeklyPage.tsx` (+ test) · `features/train/pages/WeeklySkeleton.tsx`
+**New:** `features/train/components/DayStrip.tsx` (+ test) · `features/train/components/DoneBar.tsx` (+ test) · `features/train/logic/weekAgenda.ts` (+ test) · `features/train/pages/TrainWeekPage.tsx` (+ test) · `features/train/pages/TrainWeekSkeleton.tsx`
 
 **Modified:** `TodaySessionCard.tsx` (K3 + tones + DoneBar) · `TrainTodayPage.tsx` (selected day, strip, removals, `?day=`) · `WeeklyDayRow.tsx` (tone map for cross/TRX, drill-in click) · `logic/sportKinds.ts` (`SPORT_TONE`) · `pages/tabs.ts` (7th tab) · `app/router.tsx` (`/train/week`) · `sheets/SportLogSheet.tsx` + `sheets/RunLogSheet.tsx` (optional `date` prop) · `styles/prototype.css` (cross/TRX tokens, `.daystrip`/`.daychip`, `.todaycard-icon`, `.donebar`; `.dayrow` untouched)
 
@@ -129,7 +129,7 @@ Retroactive logging threads a `date` through the sheets: `SportLogSheet` and `Ru
 - `TodaySessionCard.test.tsx` — five tones map to the right classes; logged state swaps icon/eyebrow/CTA→DoneBar; `TERVEZETT` renders no CTA.
 - `weekAgenda.test.ts` — pure derivation: gym+sport+run+custom merge, ISO dates per weekday, `isToday` flag.
 - `TrainTodayPage.test.tsx` — day switching renders the other day's sessions with no refetch; `?day=` initialises the selection; `← Ma` returns; morning nudge/resume card hidden on a non-today selection; past unlogged sport shows `＋ Pótold` and the sheet receives that date; future day renders no CTA.
-- `WeeklyPage.test.tsx` — seven rows + tiles render; a row tap navigates to `/train?day=…`; ghost state without a meso.
+- `TrainWeekPage.test.tsx` — seven rows + tiles render; a row tap navigates to `/train?day=…`; ghost state without a meso.
 - `train.nav.test.tsx` — the `Heti` tab exists and routes.
 - Visual: regenerate `train-light/dark` (both platforms) + add `train-heti-light/dark` to `SCREENS`.
 - Gate: `pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test` + `pnpm test:visual`, and the CI PR gate for the full suite.
