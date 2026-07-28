@@ -27,6 +27,7 @@ import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { buildDayPlan, deriveDailyBudget, type PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
+import { sportOf, SPORT_TITLES } from '@/features/train/logic/sportKinds'
 import { buildEnergyBreakdown } from '@/features/fuel/logic/buildEnergyBreakdown'
 import { buildProtocol, type ProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
 import { ACTIVITY_SHORT, type ActivityLevel } from '@/features/me/logic/biometricFields'
@@ -43,7 +44,7 @@ const PRE_WORKOUT_STACK_LEAD_MIN = 40
 
 /** Today's real training blocks (gym / sport / run), in derivation order. Each surface reuses the
  *  same today-derivation the Train views use so the planner and Train agree on "what's today". */
-function deriveBlocks(
+export function deriveBlocks(
   gymSchedule: GymSchedule | null,
   sport: { schedule: SportSchedule | null },
   activeRunningBlock: RunningBlockResponse | null,
@@ -52,9 +53,10 @@ function deriveBlocks(
   // Gym: the meso's today gym day joined with its standalone weekly slot (needs a time).
   const gym = gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)
   if (gym?.time) blocks.push({ kind: 'gym', time: gym.time, durationMin: gym.duration ?? null, label: gym.type ?? 'Gym' })
-  // Sport: today's volleyball session from the recurring weekly schedule.
+  // Sport: today's session from the recurring weekly schedule. The label carries the session's
+  // sport identity (volleyball|cross|trx) so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
   const vb = sport.schedule?.volleyball.sessions.find(s => s.today && s.time)
-  if (vb?.time) blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: 'Volleyball' })
+  if (vb?.time) blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] })
   // Run: today's prescribed session in the active block's current week (needs a plan time).
   // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping).
   const run = runSessionsForDay(activeRunningBlock, todayIdx())[0]
