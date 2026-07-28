@@ -1353,6 +1353,11 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .daychip.sel .dl { color: color-mix(in srgb, var(--surface) 70%, transparent); }
 .daychip.sel .dn { color: var(--surface); }
 .daychip.sel.today { box-shadow: 0 0 0 2px var(--coral); }
+/* On the ink-filled selected chip the marker's sage/faint colours drop below a
+   readable contrast, and a `rest` chip's dashed --ink border disappears into the
+   fill entirely — both need a surface-tinted override (mezo-9bbc final review). */
+.daychip.sel .ck, .daychip.sel.rest .ck { color: color-mix(in srgb, var(--surface) 82%, transparent); }
+.daychip.sel.rest { border-color: color-mix(in srgb, var(--surface) 45%, transparent); }
 
 /* ===== Napív weekly plan day cards (Mai, spec §4.3) =====
    Stacked layout (mezo-lruy): a day header row (label + MA marker + chevron)
@@ -1420,6 +1425,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .donebar-check { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--sage-deep); color: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
 .donebar-txt { font-size: 12px; font-weight: 800; color: var(--sage-deep); }
 .donebar-detail { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 700; color: var(--sub); letter-spacing: 0; text-transform: none; }
+/* The tappable variant is a <button> (the whole bar opens the review / re-opens the
+   log sheet) — the inherited cursor left it without a pointer (mezo-9bbc review). */
+button.donebar { cursor: pointer; }
 
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
