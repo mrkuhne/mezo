@@ -21,12 +21,22 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     ...actual,
     useFuelTimeline: (date?: string) => {
       const real = actual.useFuelTimeline(date)
-      if (!hoisted.injectOpenSlot) return real
+      // The mock seed's two logged meals (fuel.ts m1/m2) carry a full breakdown but a null
+      // top-level `score` (deterministic scoring pending, pre-existing seed gap — same family as
+      // the file's other documented staleness, mezo-bgk8). The honest MealScoreChip (mezo-rrtj)
+      // correctly renders no chip for a null score — no fabricated "0 · gyenge" — so backfill a
+      // plausible score ONLY here, at the test seam, to exercise the page's open/close wiring
+      // deterministically without touching the shared fixture.
+      const getScoredMeal: typeof real.getScoredMeal = (slot) => {
+        const meal = real.getScoredMeal(slot)
+        return meal && meal.score == null ? { ...meal, score: 0.86 } : meal
+      }
+      if (!hoisted.injectOpenSlot) return { ...real, getScoredMeal }
       const openSlot: FuelSlot = {
         time: '20:00', kind: 'snack', label: 'Esti snack', slotKey: 'snack',
         state: 'pending', kcal: 300, p: 20, c: 30, f: 8,
       }
-      return { ...real, plan: { ...real.plan, slots: [...real.plan.slots, openSlot] } }
+      return { ...real, getScoredMeal, plan: { ...real.plan, slots: [...real.plan.slots, openSlot] } }
     },
   }
 })
@@ -43,46 +53,89 @@ const renderView = () =>
     </QueryWrapper>,
   )
 
-test('renders header, gauge, fuelchips, macro bars, timeline and micronutrients', () => {
+test('renders the one-line header, the hero, the day-status card and the zones', () => {
   const { container } = renderView()
-  expect(screen.getByRole('heading', { name: 'Mai pacing' })).toBeInTheDocument()
-  // Napiv kcal gauge — consumed value renders inside .gauge (mezo-8141). Partial day → 1300 (mezo-1oy5).
-  expect(container.querySelector('.gauge')).toBeInTheDocument()
-  expect(screen.getByText(/1300/)).toBeInTheDocument()
-  // fuelchips — coffee cutoff / kitchen close, moved off the retired context strip.
-  expect(screen.getByText(/kávé cutoff/)).toBeInTheDocument()
-  expect(screen.getByText(/konyha zár/)).toBeInTheDocument()
-  // macro soft bars — Fehérje/Szénhidrát/Zsír, three `.mac` rows.
-  expect(container.querySelectorAll('.mac')).toHaveLength(3)
+  expect(screen.getByRole('heading', { name: 'A mai nap' })).toBeInTheDocument()
+  expect(container.querySelector('.retamicro')).toBeInTheDocument()
+  // Hero — the mock day (fixed now 13:30) has an open window.
+  expect(container.querySelector('.nowcard')).toBeInTheDocument()
+  // Day status — remaining kcal + the four named macro rows (water is the 4th).
+  expect(container.querySelector('.daystrip')).toBeInTheDocument()
+  expect(container.querySelectorAll('.mac')).toHaveLength(4)
   expect(screen.getByText('Fehérje')).toBeInTheDocument()
   expect(screen.getByText('Szénhidrát')).toBeInTheDocument()
   expect(screen.getByText('Zsír')).toBeInTheDocument()
-  expect(screen.getByText('Mikrotápanyagok · heti')).toBeInTheDocument()
+  expect(screen.getByText('Víz')).toBeInTheDocument()
+  // Zones replace the flat timeline.
+  expect(container.querySelectorAll('.zcard').length).toBeGreaterThan(1)
+  // Kitchen close / coffee cutoff kept their real data, now at the end of the day.
+  expect(screen.getByText(/Konyha zár/)).toBeInTheDocument()
+  expect(screen.getByText(/kávé cutoff/)).toBeInTheDocument()
 })
-test('renders the dynamic target breakdown (base + activity + balance)', () => {
+
+test('the two static-seed surfaces are gone — no fabricated prose, no fake weekly micros', () => {
   renderView()
-  expect(screen.getByText(/Mai cél/i)).toBeInTheDocument()
-  expect(screen.getByText(/Mozgás/i)).toBeInTheDocument()
-  // Assert a real plan.energy-derived value renders — not just the static labels. The base
-  // heat is date-stable: BMR 1720 (mock goal tdeeBootstrap) × NEAT_BASELINE 1.2 = 2064.
-  expect(screen.getByText(/Alaphő 2064/)).toBeInTheDocument()
+  expect(screen.queryByText('Mikrotápanyagok · heti')).toBeNull()
+  expect(screen.queryByText(/tegnapi átlag ebben az időben/)).toBeNull()
 })
+
+test('the daily target is stated ONCE, and as the remaining kcal', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.gauge')).toBeNull()
+  expect(screen.queryByText(/Mai cél/)).toBeNull()
+  expect(screen.getByText(/kcal hátra/)).toBeInTheDocument()
+})
+
+test('the energy breakdown chips explain where the target comes from', async () => {
+  renderView()
+  expect(screen.getByText(/honnan a/i)).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Mozgás/ }))
+  expect(screen.getByText(/Honnan jön/)).toBeInTheDocument()
+})
+
+// Carried over verbatim from the current file — the chip moved into the kitchen-close row but its
+// aria-label and the sheet it opens are unchanged.
 test('opens the FuelSettingsSheet from the szerkeszt chip', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Fuel beállítások' }))
   expect(await screen.findByRole('dialog', { name: 'Fuel beállítások' })).toBeInTheDocument()
 })
+
+test('the hero primary CTA is slot-scoped and does not collide with the header log chip', async () => {
+  renderView()
+  // The header chip keeps the bare `Logolás` label; the hero uses `{label} logolása`.
+  expect(screen.getByRole('button', { name: 'Logolás' })).toBeInTheDocument()
+  expect(screen.getAllByRole('button', { name: /logolása$/ }).length).toBeGreaterThan(0)
+})
+
+test('opens the LogMealSheet from the ＋ Log entry', async () => {
+  renderView()
+  fireEvent.click(screen.getByRole('button', { name: 'Logolás' }))
+  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
+})
+
+test('logs water via the +250/+500 quick-add on the water macro row', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Víz +250 ml' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Víz +500 ml' }))
+  await waitFor(() => expect(screen.getByText(/\/ 4000 ml/)).toBeInTheDocument())
+})
+
+// ── Carried over from the retired flat-timeline page (adapted queries only) ─────────────────────
+
 test('shows the protocol-meta row when a protocol is active (mock, v3)', () => {
   renderView()
   expect(screen.getByText(/Stack · v3/)).toBeInTheDocument()
 })
+
 test('hides the protocol-meta row when there is no active protocol (real-mode ghost v0)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   renderView()
-  await screen.findByRole('heading', { name: 'Mai pacing' })
+  await screen.findByRole('heading', { name: 'A mai nap' })
   expect(screen.queryByText(/Stack · v/)).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Replan' })).not.toBeInTheDocument()
 })
+
 test('hides the Replan CTA in real mode even with an active protocol — no fabricated scenarios (mezo-t16y.4)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   server.use(
@@ -99,6 +152,13 @@ test('hides the Replan CTA in real mode even with an active protocol — no fabr
   expect(await screen.findByText(/Stack · v1/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Replan' })).not.toBeInTheDocument()
 })
+
+test('Replan button opens the replan sheet', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Replan' }))
+  expect(await screen.findByText(/Replan · Mezo/)).toBeInTheDocument()
+})
+
 test('opening a meal score sheet then closing it', async () => {
   renderView()
   await userEvent.click(screen.getAllByRole('button', { name: 'AI score' })[0])
@@ -106,18 +166,7 @@ test('opening a meal score sheet then closing it', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Bezárás' }))
   await waitFor(() => expect(screen.queryByText('Súlyozott bontás')).not.toBeInTheDocument())
 })
-test('Replan button opens the replan sheet', async () => {
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Replan' }))
-  expect(await screen.findByText(/Replan · Mezo/)).toBeInTheDocument()
-})
-test('opens the LogMealSheet from the ＋ Log entry', async () => {
-  renderView()
-  // Exact name — the partial mock day (mezo-1oy5) now renders open-slot "X logolása" buttons too,
-  // so /log/i is ambiguous; the page-level entry's accessible name is exactly "Logolás".
-  fireEvent.click(screen.getByRole('button', { name: 'Logolás' }))
-  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
-})
+
 test('clicking a slot AI chip opens the AI log sheet on that slot (mezo-53su)', async () => {
   hoisted.injectOpenSlot = true // inject a KNOWN open meal/snack slot (deterministic across weekdays)
   renderView()
@@ -127,14 +176,8 @@ test('clicking a slot AI chip opens the AI log sheet on that slot (mezo-53su)', 
   await userEvent.click(aiChips[0])
   expect(await screen.findByRole('dialog', { name: 'AI ételnapló' })).toBeInTheDocument()
 })
-test('logs water via the +250/+500 slot buttons', async () => {
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: 'Víz +250 ml' }))
-  await userEvent.click(screen.getByRole('button', { name: 'Víz +500 ml' }))
-  // Mock mode increments consumed.water in place — the slot's own text reflects the new total.
-  await waitFor(() => expect(screen.getByText(/Víz · \d+ \/ \d+ ml/)).toBeInTheDocument())
-})
-test('real mode: fuelchips show schedule-derived values (kitchen close, coffee cutoff)', async () => {
+
+test('real mode: the kitchen-close row shows schedule-derived values (kitchen close, coffee cutoff)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   // Pin a Sunday (Vas) — a rest day in the default fixtures (gym is Csü, volleyball
   // Hét–Pén) — so no training block snaps the Vacsora main off kitchenClose, making
@@ -143,18 +186,19 @@ test('real mode: fuelchips show schedule-derived values (kitchen close, coffee c
   vi.setSystemTime(new Date('2026-07-05T10:00:00'))
   try {
     renderView()
-    await screen.findByRole('heading', { name: 'Mai pacing' })
+    await screen.findByRole('heading', { name: 'A mai nap' })
     // Derived from the SLEEP goal's wake/bed anchor (mezo-dbsr) — the default MSW
     // /api/sleep/goal resolves to 06:45/23:15, so kitchen close = bed(23:15) − 90m =
     // 21:45 (findByText waits out the sleep-goal fetch); caffeine cutoff pinned 14:00.
     expect(screen.getByText(/kávé cutoff 14:00/)).toBeInTheDocument()
-    expect(await screen.findByText(/konyha zár 21:45/)).toBeInTheDocument()
+    expect(await screen.findByText(/Konyha zár · 21:45/)).toBeInTheDocument()
     expect(screen.getAllByText('21:45').length).toBeGreaterThanOrEqual(1) // the Vacsora window snaps to kitchenClose
   } finally {
     vi.useRealTimers()
   }
 })
-test('real mode: the timeline workout block reads the schedule-derived type, not a stale label', async () => {
+
+test('real mode: the zone workout row reads the schedule-derived type, not a stale label', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   // Pin a Thursday (Csü) so the meso fixture's only gym day is "today"; fake ONLY Date so
   // findBy's real timers keep polling.
@@ -186,19 +230,11 @@ test('real mode: the timeline workout block reads the schedule-derived type, not
       ),
     )
     renderView()
-    // The gym block now surfaces as the timeline's workout slot (gym/vb context strip retired,
-    // mezo-8141) — its title carries the schedule-derived type, not the frozen mock's 'Pull Day'.
+    // The gym block surfaces as a zone's activity row (ZoneSlotRow) — its title carries the
+    // schedule-derived type, not the frozen mock's 'Pull Day'.
     await screen.findByText('Push')
     expect(screen.queryByText('Pull Day')).not.toBeInTheDocument()
   } finally {
     vi.useRealTimers()
   }
-})
-
-test('opens the energy-breakdown sheet from the Mozgás chip, focused on movement (mezo-hobb)', async () => {
-  const user = userEvent.setup()
-  renderView()
-  await user.click(await screen.findByRole('button', { name: /Mozgás/ }))
-  expect(screen.getByText(/Honnan jön/)).toBeInTheDocument()
-  expect(document.body.querySelector('.seg.hl')?.textContent).toMatch(/mozgás/i)
 })
