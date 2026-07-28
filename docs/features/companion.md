@@ -17,10 +17,12 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 
 > One-line: the Phase-3 AI companion — persisted conversations + a Hungarian chat over the
 > `CompanionLlm` port (Spring AI 2 / Gemini) with a deterministic cross-feature **context
-> snapshot** + the **top-N confirmed knowledge facts** in every system prompt, **8 read-only
-> tools** for history/aggregate + forward-plan questions (audited into the message envelopes, rendered as real
-> FE chips), answered **sync JSON or streamed SSE**, and consumed by the **real dual-mode
-> ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
+> snapshot** (now forward-resolving today+tomorrow's training, dated) + the **top-N confirmed
+> knowledge facts** in every system prompt, **15 read-only hub-tools** (scope-enumerated,
+> `mezo.companion.tools.max-calls-per-turn` = 15) for history/aggregate + forward-plan +
+> browse questions (audited into the message envelopes, rendered as real FE chips), a
+> system-prompt **`[Eszköz-útmutató]`** tool-routing hint, answered **sync JSON or streamed
+> SSE**, and consumed by the **real dual-mode ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
 > confirms on the **real KnowledgeListPage** (accept/refine/reject — L2). **Status: backend ✅
 > V2.1 (spine + snapshot + SSE + tools/audit + facts + extraction/decision + advisors +
 > pgvector/EmbeddingPort infra + narrative-memory pipeline + episodic recall tool); FE ✅ V1.3
@@ -105,7 +107,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   repRecords/recentTopSets. Bodyweight-only lifts (no weighted sets) render the honest "nincs
   súly-PR" line rather than a fabricated number.
 - **11th tool — `get_recipes` (recipes, mezo-xixu)**, on `FuelTools`: read-only over
-  `RecipeService.list`/`.get` (both `@Transactional(readOnly=true)`). No/blank `filter` → a
+  `RecipeService.list` (`@Transactional(readOnly=true)`) — a single strong `filter` match renders
+  full detail off the SAME `.list` response, no separate `.get` call. No/blank `filter` → a
   compact list (name, category, whole-recipe kcal/protein, mezo-fit score); with `filter` →
   case-insensitive substring match against slot/category/tag/starred/fitsFor (deliberately NOT
   the recipe name), and a single strong match renders the full detail (all 4 macros + fit score +
@@ -164,12 +167,29 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `nincs adat` that would misread as a real per-user absence). DONE_WITH_CONCERNS — resolving this
   cleanly needs a companion-owned read port (the `TodayQuestSource` pattern) plus a genuinely
   side-effect-free read on the proactive side; neither exists today.
+- **Tool-selection hardening (mezo-xixu, design spec §7).** With 15 active tools the bottleneck
+  is SELECTION, not implementation (2026 tool-calling research: accuracy degrades past ~15–20
+  active tools). Four cheap→heavy measures, all shipped except the last: (1) **description
+  discipline** — every `@Tool` description states a narrow responsibility + enumerated `scope`
+  values + an explicit "Használd, amikor…" trigger clause, codified in
+  [`companion_tool_conventions.md`](../references/companion_tool_conventions.md); (2) a
+  **`[Eszköz-útmutató]` tool-routing hint** block in `ChatService.SYSTEM_PROMPT` (question-type →
+  tool name, kept in sync with the `@Tool` descriptions); (3) the enriched **snapshot-first**
+  context (Component A above) removes most tool calls before they'd ever be needed; (4) a
+  **measurement phase** — `ToolSelectionEvalIT` (`feature/companion/eval/`, `@Tag("eval")`,
+  opt-in, real `GeminiCompanionLlm` over a 40-case representative Hungarian question set) reports
+  selection-accuracy from the `RecordingToolCallback` audit: baseline **37/40 = 92.5%**, printed
+  via `log.info`, not a CI pass/fail gate. (5) **Tool-RAG is a prepared-but-INACTIVE escape
+  hatch** on the existing pgvector `EmbeddingPort` — deliberately not built (YAGNI): its trigger
+  is selection-accuracy dropping below ~85% (this baseline is comfortably above) **or** the
+  toolset growing past ~20–25 (e.g. when write-tools land). Re-run the eval whenever tools are
+  added/renamed/reworded to keep the baseline current.
 - **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
   `RecordingToolCallback` (audit + per-turn budget, structurally unbypassable); the per-turn
   `ToolCallAudit` rides in the Spring AI `ToolContext`, collects `{type:'read', name, args}`
   calls + tool-contributed refs (deduped, capped), and persists into the V0.2 jsonb envelopes.
 - **Chips are real** — `CompanionMapper` puts `name(args)` on the wire
-  (`get_sleep(days=3)` — the mock-seed chip style); the FE `toChatMessage` already passed
+  (`get_recovery(scope=sleep, days=3)` — the mock-seed chip style); the FE `toChatMessage` already passed
   `tools[]`/`refs[]` through, so history AND the streamed `done` event now render real chips.
 - **IDENT-2 structurally** — new ArchUnit rule `companion_tools_are_internal_sphere_only`
   (no HTTP/mail client deps in the tools package, ever).
@@ -365,7 +385,7 @@ COMPLETE (all 14 slices):**
 | Context snapshot | ✅ V0.3 | `ContextSnapshotAssembler` in every chat turn's system prompt; LLM-free, `nincs adat` absences, `mezo.companion.snapshot.*` windows. |
 | LLM adapter | ✅ V0.1 (ADR 0008) | Real `GeminiCompanionLlm` (`gemini-2.5-flash`) / deterministic `FakeCompanionLlm` (`companion-fake` profile, + forced-failure sentinels since V0.4, + `[fake-tool:…]` scripted tool execution since V0.5, + `[fake-briefing:…]` scripted briefing dispatched on `BRIEFING_MARKER_MIRROR` — a literal mirror of `BriefingGenerator.BRIEFING_MARKER`, not an import, to avoid a companion→proactive package cycle — since proactive B1.1; + `[fake-weekly:…]` scripted weekly-suggestion prose dispatched on `WEEKLY_MARKER_MIRROR` (same literal-mirror rule) since proactive W1; + `[fake-memoir:{…}]` scripted memoir JSON dispatched on `MEMOIR_MARKER_MIRROR` (`"HETI-MEMOIR-FELADAT"`, same literal-mirror rule) since proactive W2; + `[fake-heartbeat:…]` scripted heartbeat prose dispatched on `HEARTBEAT_MARKER_MIRROR` (`"NAPKOZBENI-JEGYZET-FELADAT"`, same literal-mirror rule) since proactive H1; + `[fake-prediction:{…}]` scripted predictions JSON (GREEDY regex — the payload nests objects) dispatched on `PREDICTION_MARKER_MIRROR` (`"HETI-PREDIKCIO-FELADAT"`) since proactive P1; + `[fake-experiment:{…}]` scripted experiment-proposal JSON (GREEDY) dispatched on `EXPERIMENT_MARKER_MIRROR` (`"N1-KISERLET-FELADAT"`, same literal-mirror rule) since proactive P2; + `[fake-activity:{…}]` scripted activity-classification JSON (GREEDY) dispatched on `ACTIVITY_MARKER_MIRROR` (`"TEVEKENYSEG-BESOROLAS-FELADAT"`, same literal-mirror rule) since gamified growth E2 `mezo-jzca` — the cheap-tier `ActivityClassifier` is a new `CompanionLlm` consumer outside `feature/companion`, see [`growth.md`](growth.md); + `[fake-quest-flavor:[…]]` scripted quest title/why rewrite (GREEDY — a JSON array; default `[]` = no rewrite → catalog copy) dispatched on `QUEST_FLAVOR_MARKER_MIRROR` (`"KULDETES-IZESITES-FELADAT"`, same literal-mirror rule) since gamified growth E3 `mezo-6ng8` — the cheap-tier `QuestFlavor` is a second such outside-`feature/companion` consumer, see [`growth.md`](growth.md)). |
 | Streaming (SSE) | ✅ V0.4 | `POST .../message/stream` — `delta`/`done`/`error` events, two-transaction turn, hand-written controller (§9 Decision 11). |
-| Tool calling + audit | ✅ V0.5 | 8 read tools over existing services; `RecordingToolCallback` audit + per-turn cap; `tool_calls`/`refs` envelopes persisted; `mezo.companion.tools.*` tunables. |
+| Tool calling + audit | ✅ V0.5, expanded mezo-xixu | 8 read tools at V0.5, **15 read hub-tools now** (scope-consolidated) over existing services; `RecordingToolCallback` audit + per-turn cap (raised 6→15, mezo-xixu); `tool_calls`/`refs` envelopes persisted; `mezo.companion.tools.*` tunables. |
 | Frontend | ✅ V1.2 | ChatPage real since V0.4/V0.5; **KnowledgeListPage real since V1.2** (candidate inbox + persisting toggles + degraded state). **LIVE on k3s since 2026-07-04** — `GEMINI_API_KEY` rides the `mezo-app` SealedSecret, switch on; smoke-verified with a real context-aware Gemini answer. |
 | Knowledge facts (L3) | ✅ V1.1 | `knowledge_fact`/`learned_fact` tables + fact CRUD + top-N injection block in every system prompt (`mezo.companion.facts.top-n`). |
 | Fact extraction + confirm | ✅ V1.2 | Post-turn async extraction (`mezo.companion.extraction.*`) → `learned_fact` candidates → L2 decision endpoint → promotion (`source=chat`). |
@@ -399,6 +419,12 @@ COMPLETE (all 14 slices):**
 [`2026-07-03-companion-v13-advisors.md`](../superpowers/plans/2026-07-03-companion-v13-advisors.md);
 provider/port ADR
 [`0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md).
+**Tool & context expansion (`mezo-xixu`, post-epic) design of record:**
+[`docs/superpowers/specs/2026-07-26-companion-tool-context-expansion-design.md`](../superpowers/specs/2026-07-26-companion-tool-context-expansion-design.md)
+(§4 enriched snapshot, §5 the 15 hub-tools, §6 config/registry, §7 tool-selection hardening) —
+raised the tool count 8→15, the per-turn budget 6→15, forward-resolved `[Edzés]`, added
+`[Növekedés]`/`[Napi gyakorlat]`, and shipped the `[Eszköz-útmutató]` routing hint +
+[`companion_tool_conventions.md`](../references/companion_tool_conventions.md) house rule.
 
 ## 2. User-facing behavior
 
@@ -492,8 +518,11 @@ POST /api/companion/conversation/{id}/message   (sync JSON)
       (null envelope → []; envelope entry {type,name,args} → wire MessageTool{type, "name(args)"})
 ```
 
-**The tool pipeline (V0.5).** `CompanionToolRegistry` (`tools/CompanionToolRegistry.java`) is the
-ONLY assembly point: it builds the 8 callbacks from the 5 domain toolsets via `ToolCallbacks.from`
+**The tool pipeline (V0.5, expanded to 15 tools at mezo-xixu).** `CompanionToolRegistry`
+(`tools/CompanionToolRegistry.java`) is the ONLY assembly point: it builds the 15 callbacks from
+the 9 domain toolsets (`TrainTools`/`BiometricsTools`/`FuelTools`/`GoalTools`/`MedicationTools`/
+`MemoryTools` — the V0.5–V2.3 batch — plus the mezo-xixu trio `GrowthTools`/`PracticeTools`/
+`InsightsTools`) via `ToolCallbacks.from`
 and wraps each in `RecordingToolCallback` (`tools/RecordingToolCallback.java`) bound to the turn's
 `ToolCallAudit` (`tools/ToolCallAudit.java`). The decorator records `{type:'read', name, args}`
 BEFORE delegating (a tool cannot forget its audit), soft-fails past
@@ -516,8 +545,14 @@ goal's `mealsPerDay`, and the day's `ébredés`/`lefekvés` anchor resolved via 
 from the sleep goal — never the retired goal wake/bed columns; the resolver always returns an
 anchor, so both lines always render, falling back to the config ghost when no sleep goal exists),
 `[Edzés]` (active meso with the week
-DERIVED from `startDate` — the stored `currentWeek` can lag; gym/sport weekly rhythm; last-N-days
-gym/sport/run digest), `[Növekedés]` (`GamificationService.getProfile` account level/XP/coins/
+DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:` dated resolution
+(mezo-xixu, the flagship fix)** — today's gym day + exercises via
+`WorkoutService.findPlannedTemplateForDate` (deliberately never `WorkoutService.getToday`, which is
+write-transactional) or an honest `pihenőnap`, and tomorrow's gym day + exercises PLUS any
+recurring sport-schedule slot on that weekday PLUS the active running block's prescribed session
+for that weekday (best-effort — absent block/week renders nothing, never fabricated); the
+recurring `gym-rend`/`sport-rend` strings + last-N-days gym/sport/run digest stay as TRAILING
+background context, no longer the only forward signal), `[Növekedés]` (`GamificationService.getProfile` account level/XP/coins/
 streak, `ProgressionService.getProfile`'s top-3 skills by level with real XP — 0-XP taxonomy
 ghosts filtered out, else `nincs adat` — and `GrowthWeekService.growthWeek`'s weekly LIFE-XP +
 quest-closed rollup, an honest zero), `[Napi gyakorlat]` (today's quest completion count via the
@@ -756,7 +791,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
 | `get_medication(scope)` (mezo-xixu, merged from `get_reta_cycle`) | scope=reta (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no reta-specific naming) | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
-| `get_recipes(filter)` (mezo-xixu) | `RecipeService.list`/`.get` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: case-insensitive substring match on slot/category/tag/starred/fitsFor (not name) — a single match renders full macros + ingredient lines | `Recipe`/recipe name (≤5) |
+| `get_recipes(filter)` (mezo-xixu) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: case-insensitive substring match on slot/category/tag/starred/fitsFor (not name) — a single match renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
 | `get_growth(scope)` (mezo-xixu) | scope=skills (default): `ProgressionService.getProfile` (ungated) → account level/XP/streak from `GamificationService.getProfile` (`GAMIFICATION_SWITCH`-gated, `ObjectProvider`) + every skill with real progress (athletic/muscle/life); scope=week: `GrowthWeekService.growthWeek` (ungated) → closed quests, LIFE XP, activities, savings for the current ISO week; scope=achievements: `AchievementService.achievements` (ungated) → all 9 derive-on-read badges + persisted perk unlocks; scope=titles: `GamificationService.getProfile` → equipped + owned titles | `Growth`/`skills` or `week-{weekStart}` or `achievements` or `titles` |
 | `get_daily_practice(date)` (mezo-xixu) | `TodayQuestSource.todayStats` (port, read-only) → quest completed/total for the date; `HabitService.summary` (always "as of today", no `date` param) → perfect-chain-day counts + any habit with real 28-day signal; `IntentionService.getDay` → creed/foci/reflection for the date; `RitualService.getDay` → napzárás closed/open for the date; `TodayActivitySource.activitiesForDay` (2nd companion-owned port, impl `activity/service/DailyActivityAdapter`) → logged activities (text + XP), capped at 5. Active challenges NOT composed (`ProactiveChallengeService.getChallenges` write-transactional; a direct repository read would open a new companion→proactive cycle) | `Practice`/date |
@@ -773,7 +808,8 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
   snapshot's train digest (gym/sport/run counts) looks, including today (V0.3).
 - `mezo.companion.snapshot.checkin-note-max-chars` = **200** (`@Min(0) @Max(1000)`) — the latest
   check-in note is included verbatim, truncated to this many characters (V0.3).
-- `mezo.companion.tools.max-calls-per-turn` = **6** (`@Min(1) @Max(20)`) — recorded tool calls per
+- `mezo.companion.tools.max-calls-per-turn` = **15** (`@Min(1) @Max(20)`, raised from 6 at
+  mezo-xixu alongside the 8→15 tool expansion) — recorded tool calls per
   turn; past it every tool soft-fails with honest in-band text (V0.5).
 - `mezo.companion.tools.max-window-days` = **30** (`@Min(1) @Max(60)`) — upper clamp for the
   `days` tool args (V0.5).
@@ -855,7 +891,7 @@ transform). The hook layer is `data/insights/chatHooks.ts`: `useChat()` (a singl
 `useDualQuery` bootstrap — newest conversation + history; 404 → `degraded`; `mode: 'mock'|'live'`
 keeps `isMockMode()` out of the feature layer) + `useChatActions()` (send/stream state machine —
 optimistic `ChatTurn {userText, draft, thinking}` overlay, `done` appended into the query cache).
-**Since V0.5 the chips are real**: the wire `tools[]` (`{type:'read', name:'get_sleep(days=3)'}`)
+**Since V0.5 the chips are real**: the wire `tools[]` (`{type:'read', name:'get_recovery(scope=sleep, days=3)'}`)
 render as `ToolChip`s and `refs[]` as `RefTag`s on history AND streamed turns — the FE needed
 zero code changes (the pass-through was built at V0.4); chips appear when the terminal `done`
 lands (the in-flight draft bubble stays chip-less by design — chips describe the persisted truth).
@@ -963,8 +999,9 @@ between two features is kept one-directional at the package level.
 V0.3 also added four derived finders to those features' repos (sleep/check-in latest, sport/run
 since-date) — plain finders, no companion dependency.
 
-**V0.5 tools seam (✅ wired).** The 8 read tools in `feature/companion/tools/` compose the same
-one-way reads (see §4 catalog). V0.5 added **three plain finders** to the owning features' repos
+**V0.5 tools seam (✅ wired, now 15 tools since mezo-xixu).** The read tools in
+`feature/companion/tools/` compose the same one-way reads (see §4 catalog). V0.5 added **three
+plain finders** to the owning features' repos
 (the V0.3 precedent — no companion dependency): `SleepLogRepository` since-date,
 `WorkoutSessionRepository.findDoneInstancesBetween` (entities variant of `findDoneInstanceDates`,
 same ≥1-logged-set semantics), `SupplementIntakeRepository` since-date — plus the static
@@ -1047,7 +1084,7 @@ curl -sN -X POST $BASE/conversation/$CID/message/stream \
 ```
 
 Note: `tools`/`refs` fill up when the turn used tools (V0.5) — with the fake adapter you can
-force it deterministically: `{"content":"aludtam eleget? [fake-tool:get_sleep {\"days\":3}]"}`.
+force it deterministically: `{"content":"aludtam eleget? [fake-tool:get_recovery {\"scope\":\"sleep\",\"days\":3}]"}`.
 The first `message` sets the conversation `title` + `lastMessageAt`, and an empty `content`
 returns a 400 field error (`VALIDATION_INVALID_VALUE`).
 
@@ -1127,7 +1164,11 @@ history.
 **`ContextSnapshotAssemblerIT` (V0.3, 17 tests)** — the snapshot is fully assertable without any
 LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
 targets still render), profile+trend, current-week segment + planner selection, train digest +
-schedules, digest-window exclusion, account level + top skill (`[Növekedés]`), quest count +
+schedules, digest-window exclusion, **tomorrow's dated gym+sport+run resolution (mezo-xixu — the
+regression guard for the observed hallucination bug: tomorrow's meso-template gym day + exercises,
+the matching sport-schedule slot, the active running block's prescribed session for that weekday,
+and the honest rest-day fallback when no template matches today OR tomorrow's weekday)**, account
+level + top skill (`[Növekedés]`), quest count +
 creed + focus + napzárás (`[Napi gyakorlat]`), FuelDay/protocol/intakes, retaDay+phase
 (`4. nap (Stabil)`), sleep+check-in, note truncation at 200 chars, the `[Cél]` day anchor sourced
 from the sleep goal (derived `06:45`/`23:15`) vs. the config ghost (`06:00`/`22:00`) when no sleep
@@ -1170,20 +1211,21 @@ The 5 V0.2 IT classes (`backend/src/test/…/feature/companion/`):
   (`src/test/msw/handlers.ts`) mirror `initialChat` and reuse `cannedReply`, so both modes
   assert the same strings; the stream handler answers with a real `ReadableStream` SSE body.
 
-**V0.5 test additions:**
+**V0.5 test additions (grown to 15 tools' worth by mezo-xixu):**
 
-- **`CompanionToolsRenderIT`** (14 tests, `@Transactional` + fake profile) — every tool's rendered
+- **`CompanionToolsRenderIT`** (77 tests, `@Transactional` + fake profile) — every tool's rendered
   Hungarian text + contributed refs against populator-seeded data, LLM-free (tools called directly
   with a hand-built `ToolContext`): happy paths, `nincs adat`/`nincs aktív …` absences, window
-  clamping (`getSleep(90)` → 30), volume math, adherence counting, honest-zero reta.
-- **`CompanionToolRegistryIT`** — exactly the 8-tool batch registered, every callback wrapped in
+  clamping (`getRecovery("sleep", 90, …)` → 30), volume math, adherence counting, honest-zero reta.
+- **`CompanionToolRegistryIT`** — exactly the 15-tool batch registered, every callback wrapped in
   `RecordingToolCallback`; the tool-context carries `userId` + audit.
 - **`ToolCallAuditTest` + `RecordingToolCallbackTest`** (pure units) — null envelopes when empty,
   `read` typing, budget exhaustion (soft-fail, not recorded), ref dedupe/cap, error-to-honest-text,
   `compactArgs` flattening (`{"days":7}` → `days=7`).
 - **Extended ITs:** `ChatServiceIT` (scripted `[fake-tool:…]` turn → envelope persisted + wire
-  chips `get_sleep(days=3)`/`read` + refs; tool-less turn keeps null envelopes; 7 sentinels →
-  cap at 6 + budget text in the answer; the system prompt carries the tool-usage line),
+  chips `get_recovery(scope=sleep, days=3)`/`read` + refs; tool-less turn keeps null envelopes; 16
+  sentinels → cap at 15 (raised from 7-sentinels/cap-6 pre-mezo-xixu) + budget text in the answer;
+  the system prompt carries the tool-usage line + the `[Eszköz-útmutató]` routing hint),
   `ChatStreamServiceIT` (the `done` event carries chips + the row's envelope),
   `CompanionStreamApiIT` (raw SSE body contains the chip JSON), `CompanionLlmFakeIT` (sentinel
   execution, streamed tool chunk, UNKNOWN echo), `CompanionPropertiesIT` (`tools.*` bindings),
@@ -1459,7 +1501,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   API is `tools(Object...)` (accepts `ToolCallback`s and `@Tool` objects alike);
   `GeminiCompanionLlm.request` uses it.
 - **A chip appears even when the tool found no data** — the CALL is the audited fact
-  (`get_sleep(days=3)` with a `nincs adat` result is an honest chip); refs only exist when data
+  (`get_recovery(scope=sleep, days=3)` with a `nincs adat` result is an honest chip); refs only exist when data
   backed the answer.
 - **Streamed tool turns run the tool reads OUTSIDE a transaction** (between TX #1 and TX #2) —
   every tool read is a self-contained repo/service call (`FuelDayService.getDay` carries its own
@@ -1527,11 +1569,14 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SleepShotLlmAdapter.java` — companion-side adapter for the sleep-owned `SleepShotLlm` vision port (ADR 0012, mezo-66ab); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates to `CompanionLlm.complete` with one `InlineImage`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/CompanionHelloRunner.java` — `companion-smoke` real-API round-trip proof.
 
-**Backend — tools (V0.5)**
+**Backend — tools (V0.5, expanded to 15 tools at mezo-xixu)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{TrainTools,BiometricsTools,FuelTools,GoalTools,MedicationTools}.java` — the 8 `@Tool` reads.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{TrainTools,BiometricsTools,FuelTools,GoalTools,MedicationTools,MemoryTools}.java` — the 12 `@Tool` reads from the V0.5–V2.3 batch.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{GrowthTools,PracticeTools,InsightsTools}.java` — the mezo-xixu trio of new beans (`get_growth`/`get_daily_practice`/`get_insights`), bringing the total to 15 `@Tool` reads.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine.
 - New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, real `GeminiCompanionLlm`, 40-case Hungarian question set, baseline 37/40 = 92.5%).
+- `docs/references/companion_tool_conventions.md` — the mezo-xixu `@Tool` description house rule (the `[Eszköz-útmutató]` routing hint's model-facing mirror).
 
 **Backend — entities / repos / config**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{AiConversationEntity,AiMessageEntity,ToolCallsEnvelope,RefsEnvelope,KnowledgeFactEntity,LearnedFactEntity}.java`
@@ -1548,7 +1593,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — tests**
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5 tool batch.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ContextSnapshotAssemblerIT.java` (V0.3, 17 tests) — incl. the mezo-xixu tomorrow-resolution regression guard (§3 above).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5–mezo-xixu tool batch (77 render tests over 15 tools).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, 40-case set, baseline 37/40).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,TurnVerdictCheckIT}.java` — the V1.3 advisor batch.
@@ -1571,6 +1618,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Docs (link, don't duplicate)**
 - Design spec: [`docs/superpowers/specs/2026-07-03-phase3-companion-chat-design.md`](../superpowers/specs/2026-07-03-phase3-companion-chat-design.md)
+- Tool & context expansion design spec (`mezo-xixu`): [`docs/superpowers/specs/2026-07-26-companion-tool-context-expansion-design.md`](../superpowers/specs/2026-07-26-companion-tool-context-expansion-design.md)
 - Roadmap (14 slices): [`docs/superpowers/plans/2026-07-03-companion-roadmap.md`](../superpowers/plans/2026-07-03-companion-roadmap.md)
 - V1.2 plan: [`docs/superpowers/plans/2026-07-03-companion-v12-fact-extraction.md`](../superpowers/plans/2026-07-03-companion-v12-fact-extraction.md)
 - V1.3 plan: [`docs/superpowers/plans/2026-07-03-companion-v13-advisors.md`](../superpowers/plans/2026-07-03-companion-v13-advisors.md)
@@ -1579,5 +1627,5 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - V0.5 plan: [`docs/superpowers/plans/2026-07-03-companion-v05-tools.md`](../superpowers/plans/2026-07-03-companion-v05-tools.md)
 - ADR: [`docs/decisions/0008-companion-llm-spring-ai-2-gemini.md`](../decisions/0008-companion-llm-spring-ai-2-gemini.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
-- References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `java_package_structure`, `error_handling`)
+- References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `java_package_structure`, `error_handling`, `companion_tool_conventions` — mezo-xixu's `@Tool` description house rule)
 
