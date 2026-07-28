@@ -37,6 +37,7 @@ public class ProactiveChallengeService {
 
     private final ChallengeRepository challengeRepository;
     private final ChallengeGenerator generator;
+    private final OverloadChallengeGenerator overloadChallengeGenerator;
     private final ChallengeOutcomeEvaluator outcomeEvaluator;
     private final ProactiveMapper mapper;
     private final WorkoutSessionRepository workoutSessionRepository;
@@ -48,7 +49,12 @@ public class ProactiveChallengeService {
                         userId, templateSessionId, date);
         if (rows.isEmpty() && date.equals(LocalDate.now())
                 && !instanceCompleted(userId, templateSessionId, date)) {
-            rows = generator.generate(userId, templateSessionId, date);   // lazy first proposal
+            List<ChallengeEntity> generated = new java.util.ArrayList<>(
+                    generator.generate(userId, templateSessionId, date));            // LLM (capped)
+            if (isOwnedTemplate(userId, templateSessionId)) {
+                generated.addAll(overloadChallengeGenerator.generate(userId, templateSessionId, date)); // +1 deterministic
+            }
+            rows = generated;
         }
         LocalDate today = LocalDate.now();
         for (ChallengeEntity c : rows) {
@@ -77,6 +83,25 @@ public class ProactiveChallengeService {
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
         return mapper.toChallengeResponse(challengeRepository.saveAndFlush(c));
+    }
+
+    /**
+     * The deterministic overload generator delegates day-resolution to
+     * {@code WorkoutService#getToday}, which 404s for a {@code templateSessionId} that isn't an
+     * owned top-level template row (e.g. a bogus/foreign id with no history at all) — the LLM
+     * generator's grounding gate handles the same case silently ({@code []}, no throw). A caught
+     * exception can't rescue this: {@code overloadChallengeGenerator.generate} is itself
+     * {@code @Transactional} (REQUIRED) and joins this method's ambient transaction, so once its
+     * advice observes the exception it marks the shared transaction rollback-only — swallowing it
+     * here would still blow up on commit with {@code UnexpectedRollbackException}. Checking
+     * ownership BEFORE calling avoids ever throwing, keeping {@code getChallenges}'s documented
+     * contract (honest {@code []}, never 404) regardless of the deterministic generator's internal
+     * delegation.
+     */
+    private boolean isOwnedTemplate(UUID userId, UUID templateSessionId) {
+        return workoutSessionRepository.findById(templateSessionId)
+                .filter(s -> userId.equals(s.getCreatedBy()) && s.getTemplateSessionId() == null)
+                .isPresent();
     }
 
     /** A completed instance for the day means the workout is over — never propose new challenges. */
