@@ -284,3 +284,76 @@ describe('usePantry (real mode)', () => {
     expect(nullDraft).toBeNull()
   })
 })
+
+describe('usePantryActions recipe-cache invalidation (real mode, mezo-b9gv)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  const zab = {
+    id: 'p-zab', name: 'Zab', brand: '', source: 'lidl', category: 'grains',
+    per: 100, unit: 'g', macros: { kcal: 370, p: 13, c: 60, f: 7 },
+    fiberG: 10, sugarG: 1, saltG: 0.02, saturatedFatG: 1.2,
+    price: 0, priceUnit: '', pkg: '', micros: [], nova: 1, stock: null,
+    lastUsed: '—', usedInRecipes: 1,
+  }
+  const recipes = [
+    { id: 'r-uses', ingredients: [{ refId: 'p-zab', amount: 70, unit: 'g' }] },
+    { id: 'r-other', ingredients: [{ refId: 'p-turo', amount: 200, unit: 'g' }] },
+  ]
+
+  /** Seeds the caches a real session would hold, plus a breakdown entry per recipe. */
+  function seeded() {
+    const { qc, Wrapper } = sharedWrapper()
+    qc.setQueryData(['pantry'], { ingredients: [zab], stash: [], imports: [], suggestions: [] })
+    qc.setQueryData(['recipes'], recipes)
+    qc.setQueryData(['recipeBreakdown', 'r-uses'], { breakdown: null, fitsFor: [] })
+    qc.setQueryData(['recipeBreakdown', 'r-other'], { breakdown: null, fitsFor: [] })
+    server.use(http.put(`${API_BASE}/api/pantry/:id`, () => new HttpResponse(null, { status: 204 })))
+    server.use(http.delete(`${API_BASE}/api/pantry/:id`, () => new HttpResponse(null, { status: 204 })))
+    return { qc, Wrapper }
+  }
+
+  const invalidated = (qc: QueryClient, key: unknown[]) =>
+    qc.getQueryState(key)?.isInvalidated === true
+
+  it('invalidates ONLY the recipes that use the item when a live-read fact changed', async () => {
+    const { qc, Wrapper } = seeded()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    await act(async () => {
+      result.current.updateItem('p-zab', { kind: 'food', name: 'Zab', nova: 4 })
+    })
+
+    await waitFor(() => expect(invalidated(qc, ['recipeBreakdown', 'r-uses'])).toBe(true))
+    expect(invalidated(qc, ['recipes'])).toBe(true)
+    // the recipe that does not reference the item was never re-evaluated — it must not be
+    // told it is being re-evaluated (the mezo-uavr banner honesty invariant)
+    expect(invalidated(qc, ['recipeBreakdown', 'r-other'])).toBe(false)
+  })
+
+  it('leaves the recipe caches alone when only frozen/commerce fields changed', async () => {
+    const { qc, Wrapper } = seeded()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    // kcal/P/C/F are frozen in each recipe's line snapshots, price is not scored at all
+    await act(async () => {
+      result.current.updateItem('p-zab', { kind: 'food', name: 'Zab', kcal: 380, price: 990 })
+    })
+
+    await waitFor(() => expect(invalidated(qc, ['pantry'])).toBe(true))
+    expect(invalidated(qc, ['recipes'])).toBe(false)
+    expect(invalidated(qc, ['recipeBreakdown', 'r-uses'])).toBe(false)
+  })
+
+  it('invalidates the referencing recipes when the item is deleted', async () => {
+    const { qc, Wrapper } = seeded()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+
+    await act(async () => {
+      result.current.deleteItem('p-zab')
+    })
+
+    await waitFor(() => expect(invalidated(qc, ['recipeBreakdown', 'r-uses'])).toBe(true))
+    expect(invalidated(qc, ['recipes'])).toBe(true)
+    expect(invalidated(qc, ['recipeBreakdown', 'r-other'])).toBe(false)
+  })
+})

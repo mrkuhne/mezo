@@ -6,9 +6,10 @@ import { useDualQuery } from '@/data/useDualQuery'
 import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, pantryLookupFixture, MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
 import { pantrySources } from '@/data/pantrySources'
 import { supplementsStash } from '@/data/fuel/fuel'
-import type { Ingredient, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryLookupItem, PantryScrapeDraft } from '@/data/types'
+import { PANTRY_KEY, RECIPES_KEY, RECIPE_BREAKDOWN_KEY } from '@/data/fuel/queryKeys'
+import { movesRecipeScores, recipesUsingPantryItem, type ScoredPantryFacts } from '@/data/fuel/pantryImpact'
+import type { Ingredient, Recipe, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryLookupItem, PantryScrapeDraft } from '@/data/types'
 
-const PANTRY_KEY = ['pantry'] as const
 // P6 (mezo-bka): imports + suggestions ride the same PantryResponse — one query, no extra key.
 const mockData: PantryData = {
   ingredients: mockIngredients, stash: supplementsStash,
@@ -51,23 +52,62 @@ export function usePantryActions() {
 
   const invalidate = () => qc.invalidateQueries({ queryKey: PANTRY_KEY })
 
+  /** The item as the cache still holds it — the pre-write state the impact check compares against. */
+  const scoredFactsOf = (id: string): ScoredPantryFacts | undefined => {
+    const cached = qc.getQueryData<PantryData>(PANTRY_KEY)
+    return cached?.ingredients.find(i => i.id === id) ?? cached?.stash.find(s => s.id === id)
+  }
+
+  /**
+   * A pantry write also moves the recipes that USE the item (mezo-b9gv): the backend recomputes
+   * every recipe's fit on read and regenerates the prose once the numbers drift, so leaving the
+   * recipe caches alone served a pre-edit badge and swapped the new prose in silently.
+   * Scoped twice over, to keep the „Mezo újraértékeli…" banner honest (mezo-uavr): only the
+   * recipes that reference this item, and only when a fact the scorer reads LIVE actually
+   * changed — a recipe's macros are frozen in its line snapshots, so a price or even a kcal edit
+   * moves nothing.
+   */
+  const invalidateRecipeCaches = (pantryItemId: string) => {
+    const affected = recipesUsingPantryItem(qc.getQueryData<Recipe[]>(RECIPES_KEY) ?? [], pantryItemId)
+    if (affected.length === 0) {
+      return // nothing cached references this item — no fit and no envelope can have moved
+    }
+    qc.invalidateQueries({ queryKey: RECIPES_KEY }) // the fit badges are recomputed on that read
+    for (const recipeId of affected) {
+      qc.invalidateQueries({ queryKey: RECIPE_BREAKDOWN_KEY(recipeId) })
+    }
+  }
+
   const add = useMutation({
     mutationFn: mock
       ? async (input: PantryItemInput) => mockAdd(qc, input)
       : (input: PantryItemInput) => pantryApi.create(input),
+    // a brand-new item cannot be referenced by an existing recipe yet — pantry only
     onSuccess: mock ? undefined : invalidate,
   })
   const update = useMutation({
     mutationFn: mock
       ? async (v: { id: string; input: PantryItemInput }) => mockUpdate(qc, v.id, v.input)
       : (v: { id: string; input: PantryItemInput }) => pantryApi.update(v.id, v.input),
-    onSuccess: mock ? undefined : invalidate,
+    onSuccess: mock ? undefined : (_res: void, v: { id: string; input: PantryItemInput }) => {
+      // read the pre-write facts BEFORE invalidating, so the comparison can't race the refetch
+      const moved = movesRecipeScores(scoredFactsOf(v.id), v.input)
+      invalidate()
+      if (moved) {
+        invalidateRecipeCaches(v.id)
+      }
+    },
   })
   const remove = useMutation({
     mutationFn: mock
       ? async (id: string) => mockRemove(qc, id)
       : (id: string) => pantryApi.remove(id),
-    onSuccess: mock ? undefined : invalidate,
+    // a deleted source drops its NOVA + nutrition facts out of every line that referenced it
+    // (the backend degrades those dimensions honestly), so the referencing recipes always move
+    onSuccess: mock ? undefined : (_res: void, id: string) => {
+      invalidate()
+      invalidateRecipeCaches(id)
+    },
   })
 
   // P6 (mezo-bka): confirmed-draft import — mutateAsync so ImportItemSheet can await + close.

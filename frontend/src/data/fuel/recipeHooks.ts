@@ -9,6 +9,7 @@ import { pantrySources } from '@/data/pantrySources'
 import { buildPickables } from '@/data/fuel/pantryPickables'
 import { enrichLine, computeRecipeMacros } from '@/data/fuel/recipeMacros'
 import { deriveNovaDominant } from '@/data/nova'
+import { PANTRY_KEY, RECIPES_KEY, RECIPE_BREAKDOWN_KEY } from '@/data/fuel/queryKeys'
 import type { Recipe, RecipeInput, RecipeIngredientLine } from '@/data/types'
 
 // Recipe lines resolve against the SAME merged pantry the picker offers (foods +
@@ -16,8 +17,6 @@ import type { Recipe, RecipeInput, RecipeIngredientLine } from '@/data/types'
 // name + contribution, not fall back to the raw id. Static seeds → module-level.
 const mockPantryPool = buildPickables(ingredients, supplementsStash)
 
-const RECIPES_KEY = ['recipes'] as const
-const PANTRY_KEY = ['pantry'] as const
 // Real-mode unresolved fallback — empty, NEVER the 6 mock recipes (the "no static
 // fallback in real mode" invariant). Mock-cache mutators still seed from `mockRecipes`.
 const RECIPES_EMPTY: Recipe[] = []
@@ -48,7 +47,6 @@ export function useRecipes() {
   }
 }
 
-const RECIPE_BREAKDOWN_KEY = (id: string) => ['recipeBreakdown', id] as const
 
 /** Template breakdown for the detail page (mezo-bw3y). Mock = the seed's templateBreakdown +
  *  mezoFit.fitsFor, synchronous via initialData; real = the lazily materializing
@@ -59,11 +57,10 @@ const RECIPE_BREAKDOWN_KEY = (id: string) => ['recipeBreakdown', id] as const
  *  `data` is still the pre-edit envelope while the new one materializes and the page renders
  *  „Mezo újraértékeli…" instead of passing a stale reading off as current. It is deliberately
  *  NOT every background fetch: a plain revalidation returns the SAME envelope — nor a write to a
- *  DIFFERENT recipe, which never touches this key. Note the third server-side regeneration cause —
- *  pantry macro drift moving the deterministic numbers past `RecipeBreakdownService.matches` — is
- *  NOT an invalidation here (`usePantryActions` only invalidates ['pantry']): it is picked up on
- *  the next refetch of this key, silently, with no banner. Wiring pantry writes to the
- *  recipe-derived caches is filed as mezo-b9gv. */
+ *  DIFFERENT recipe, which never touches this key. The third server-side regeneration cause —
+ *  a pantry edit moving the deterministic numbers past `RecipeBreakdownService.matches` — reaches
+ *  this key too since mezo-b9gv, but only for the recipes that actually USE the edited item and
+ *  only when a fact the scorer reads live changed (`usePantryActions`, `pantryImpact`). */
 export function useRecipeBreakdown(recipeId: string): {
   breakdown: RecipeBreakdownData['breakdown']
   fitsFor: string[]
