@@ -62,12 +62,14 @@ public class FuelTools {
     private final PantryService pantryService;
     private final CompanionProperties properties;
 
-    @Tool(name = "get_fuel_log", description = "Napi vagy heti étkezés- és vízbevitel-összesítő: kcal és "
-            + "makrók (fehérje/szénhidrát/zsír) a célhoz képest, víz, étkezésszám és ételek. range=day — "
-            + "napi bontású összesítők visszamenőleg N napra (a megadott dátumig); range=week — a hét "
-            + "(hétfő–vasárnap, a megadott dátumot tartalmazó ISO-hét) napi bontásban. Használd, amikor a "
-            + "user a napi/heti kalória-, makró-, víz-bevitelről vagy étkezéseiről kérdez. range: day "
-            + "(alapértelmezés), week.")
+    @Tool(name = "get_fuel_log", description = "Napi vagy heti étkezés-összesítő: kcal és fehérje a célhoz "
+            + "képest. range=day — napi bontású összesítők visszamenőleg N napra (a megadott dátumig): "
+            + "soronként kcal/fehérje a célhoz képest, az adott nap étkezésszáma és (legfeljebb 3) "
+            + "étkezés-cím; víz a célhoz képest csak az utolsó (megadott) napra. range=week — a hét "
+            + "(hétfő–vasárnap, a megadott dátumot tartalmazó ISO-hét) napi bontásban: soronként "
+            + "kcal/fehérje/víz a célhoz képest, étkezésszám és cím nélkül. Szénhidrátot és zsírt nem "
+            + "tartalmaz. Használd, amikor a user a napi/heti kalória-, fehérje- vagy víz-bevitelről "
+            + "kérdez, vagy (range=day esetén) az étkezéseiről. range: day (alapértelmezés), week.")
     public String getFuelLog(
             @ToolParam(required = false, description = "day|week (alapértelmezés: day).") String range,
             @ToolParam(required = false, description = "ISO dátum (ÉÉÉÉ-HH-NN) — az irányadó nap "

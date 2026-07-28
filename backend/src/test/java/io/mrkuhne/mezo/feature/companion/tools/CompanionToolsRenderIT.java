@@ -380,6 +380,29 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetFuelLog_shouldAnchorDayWindowOnDateParam_whenDateGiven() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate anchor = LocalDate.now().minusDays(5); // the "date" param, NOT LocalDate.now()
+        LocalDate afterAnchor = anchor.plusDays(2); // still in the past, but past the anchored window's end
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Csirkemell", LocalDate.now().plusDays(30));
+        mealPopulator.createPantryMeal(owner, item, anchor);
+        mealPopulator.createPantryMeal(owner, item, afterAnchor);
+        waterLogPopulator.createWaterLog(owner, anchor, 1500);
+        waterLogPopulator.createWaterLog(owner, afterAnchor, 2500);
+
+        String out = fuelTools.getFuelLog("day", anchor.toString(), 3, ctx(owner));
+
+        // window is [anchor-2, anchor] (days=3) — anchor's meal/water are rendered, afterAnchor's
+        // are excluded entirely, proving `date` (not "today") anchors the window end.
+        assertThat(out).startsWith("Napi étkezés-összesítők (utolsó 3 nap):")
+                .contains(anchor + ": 165/3100 kcal, F 35/220 g; 1 étkezés (Reggeli)")
+                .contains("Víz (" + anchor + "): 1500/4000 ml")
+                .doesNotContain(afterAnchor.toString());
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("FuelDay", anchor.toString()));
+    }
+
+    @Test
     void testGetFuelLog_shouldDefaultRangeToDay_whenRangeUnrecognized() {
         UUID owner = userPopulator.createUser().getId();
         assertThat(fuelTools.getFuelLog("bogus", null, 1, ctx(owner)))
