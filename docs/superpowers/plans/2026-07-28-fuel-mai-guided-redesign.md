@@ -542,7 +542,7 @@ git commit -m "feat(fuel): hero-window selection for Mai — open/closed project
     onOpen: (meal: FuelMeal) => void
   }): JSX.Element | null
   ```
-  CSS class names later tasks must use verbatim: `.nowcard` (+ `.plain`/`.closed`), `.nowcard .lbl/.dot/.clock/.why/.budget/.bignum/.ctas/.primary/.alt/.foot`, `.missedstrip`, `.daystrip` (+ `.r1/.n/.of/.pc`), `.seg` (+ `i`, `.ghost`, `.mark`), `.brk` (+ `.cap2`, `.chips`), `.ebchip` (+ `.base/.move/.def`), `.mac.water`, `.zcard` (+ `.zh/.zn/.zk/.caps`), `.zrow` (+ `.zf/.zt/.zv/.act/.sport/.anchor/.bn/.bl`), `.aiscore` (+ `.s-hi/.s-md/.s-lo/.rg/.pop`), `.coachline` (+ `.sk`), `.retamicro`.
+  CSS class names later tasks must use verbatim: `.nowcard` (+ `.plain`/`.closed`), `.nowcard .lbl/.dot/.clock/.why/.budget/.bignum/.ctas/.primary/.alt/.foot`, `.missedstrip`, `.daystrip` (+ `.r1/.n/.of/.pc`), `.dayseg` (+ `i`, `.ghost`, `.mark`), `.brk` (+ `.cap2`, `.chips`), `.ebchip` (+ `.base/.move/.def`), `.mac.water`, `.zcard` (+ `.zh/.zn/.zk/.caps`), `.zrow` (+ `.zf/.zt/.zv/.act/.sport/.anchor/.bn/.bl`), `.aiscore` (+ `.s-hi/.s-md/.s-lo/.rg/.pop`), `.coachline` (+ `.sk`), `.retamicro`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -684,10 +684,10 @@ mockup-local tokens are already global here, `.nowcard`/`.daystrip`/`.zcard` kee
 .daystrip .r1 .pc { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--sage-deep);
   background: var(--wash-sage); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
 .daystrip .wins { font-size: 10.5px; font-weight: 700; color: var(--faint); margin-top: 7px; }
-.seg { position: relative; height: 12px; border-radius: 999px; background: var(--warm); margin-top: 9px; overflow: hidden; display: flex; gap: 2px; }
-.seg i { display: block; height: 100%; }
-.seg .ghost { flex: 1; background: repeating-linear-gradient(90deg, rgba(43,33,24,.05) 0 4px, transparent 4px 9px); }
-.seg .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--coral); border-radius: 2px; }
+.dayseg { position: relative; height: 12px; border-radius: 999px; background: var(--warm); margin-top: 9px; overflow: hidden; display: flex; gap: 2px; }
+.dayseg i { display: block; height: 100%; }
+.dayseg .ghost { flex: 1; background: repeating-linear-gradient(90deg, rgba(43,33,24,.05) 0 4px, transparent 4px 9px); }
+.dayseg .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--coral); border-radius: 2px; }
 .brk { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
 .brk .cap2 { display: flex; align-items: center; gap: 8px; font-size: 9px; font-weight: 800; letter-spacing: .12em;
   text-transform: uppercase; color: var(--faint); }
@@ -758,7 +758,7 @@ mockup-local tokens are already global here, `.nowcard`/`.daystrip`/`.zcard` kee
   .nowcard .lbl .dot { animation: np-hero-pulse 2.2s ease-out infinite; }
   .nowcard .primary { transition: transform .18s var(--np-ease-spring); }
   .nowcard .primary:active { transform: scale(.96); }
-  .seg i { animation: np-seg-grow 1.1s var(--np-ease-ios) both; }
+  .dayseg i { animation: np-seg-grow 1.1s var(--np-ease-ios) both; }
   .aiscore { animation: np-chip-pop .5s var(--np-ease-spring); }
   .coachline.sk { animation: np-sk-slide 1.4s linear infinite; }
 }
@@ -1151,7 +1151,7 @@ git commit -m "feat(fuel): Mai hero now-window card + missed-window strip (mezo-
 - Test: `frontend/src/features/fuel/components/DayBudgetCard.test.tsx`
 
 **Interfaces:**
-- Consumes: the `.daystrip`/`.seg`/`.brk`/`.ebchip`/`.mac` CSS from Task 3, `pct` (`shared/lib/pct.ts`), `EnergySection` (`features/fuel/sheets/EnergyBreakdownSheet.tsx`).
+- Consumes: the `.daystrip`/`.dayseg`/`.brk`/`.ebchip`/`.mac` CSS from Task 3, `pct` (`shared/lib/pct.ts`), `EnergySection` (`features/fuel/sheets/EnergyBreakdownSheet.tsx`).
 - Produces:
   ```ts
   export function DayBudgetCard(props: {
@@ -1216,14 +1216,14 @@ test('an overshot day clamps the remaining number at zero instead of going negat
 
 test('renders one segment per logged meal plus the ghost remainder', () => {
   const { container } = renderCard()
-  expect(container.querySelectorAll('.seg > i')).toHaveLength(2)
-  expect(container.querySelector('.seg .ghost')).toBeInTheDocument()
-  expect(container.querySelector('.seg .mark')).toBeInTheDocument()
+  expect(container.querySelectorAll('.dayseg > i')).toHaveLength(2)
+  expect(container.querySelector('.dayseg .ghost')).toBeInTheDocument()
+  expect(container.querySelector('.dayseg .mark')).toBeInTheDocument()
 })
 
 test('hides the now tick when there is no now window', () => {
   const { container } = renderCard({ nowFrac: null })
-  expect(container.querySelector('.seg .mark')).toBeNull()
+  expect(container.querySelector('.dayseg .mark')).toBeNull()
 })
 
 test('explains where the target comes from with three tappable chips', async () => {
@@ -1331,7 +1331,7 @@ export function DayBudgetCard({
         <span className="pc">{consumedPct}%</span>
       </div>
       <div className="wins">{doneCount}/{totalCount} ablak logolva</div>
-      <div className="seg">
+      <div className="dayseg">
         {loggedKcals.map((kcal, i) => (
           <i key={i} style={{ width: segWidth(kcal), background: i % 2 === 0 ? 'var(--sage)' : '#93B49C' }} />
         ))}
@@ -2386,7 +2386,7 @@ spec + mockup paths.
 - [ ] **Step 2: Register the CSS families in `_platform-design-system.md` §1a**
 
 Add the new families next to the existing Napív entries: `.nowcard`, `.missedstrip`, `.daystrip`
-(+`.seg`/`.brk`/`.ebchip`), `.zcard`/`.zrow`, `.aiscore`, `.coachline`, `.retamicro` — one line each,
+(+`.dayseg`/`.brk`/`.ebchip`), `.zcard`/`.zrow`, `.aiscore`, `.coachline`, `.retamicro` — one line each,
 naming the owning component and the page.
 
 - [ ] **Step 3: Run the doc lint**
