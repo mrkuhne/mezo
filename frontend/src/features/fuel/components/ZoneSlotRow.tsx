@@ -1,6 +1,5 @@
 import { slotRole } from '@/features/fuel/logic/dayZones'
 import { MealScoreChip } from '@/features/fuel/components/MealScoreChip'
-import { SupplementItemRow } from '@/features/fuel/components/SupplementItemRow'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import type { FuelKind, FuelMeal, FuelSlot } from '@/data/types'
 
@@ -49,7 +48,9 @@ export function ZoneSlotRow({
   // suggestion CTA off `missed` — a missed row renders ONLY the Pótlás retro-log, never a 2nd log.
   const isSuggestion = !isDone && !isMissed && !!slot.suggestedRecipeId
   const isBudgetSlot = !slot.mealName && role === 'meal' && !isDone && !!slot.kcal
-  const loggable = !anchored && (isSuggestion || isBudgetSlot || isMissed)
+  // No `!anchored` guard here: this value is only read by the final `return` below, which is
+  // never reached when `anchored` is true — the function already returned at the anchor branch.
+  const loggable = isSuggestion || isBudgetSlot || isMissed
   const isActivity = role === 'activity'
   const title = slot.mealName || slot.label
   const durationSuffix = isActivity && slot.duration ? ` · ${slot.duration} perc` : ''
@@ -135,13 +136,9 @@ export function ZoneSlotRow({
         {slot.mezoNote && (
           <div className="coachline"><SafeMarkdown text={slot.mezoNote} /></div>
         )}
-        {(slot.items?.length ?? 0) > 0 && (
-          <div className="col gap-sm mt-md">
-            {slot.items?.map((item, i) => <SupplementItemRow key={i} item={item} />)}
-          </div>
-        )}
       </div>
       <MealScoreChip meal={scoredMeal} coachPending={coachPending} onOpen={onOpenScore} />
+      {isDone && !scoredMeal && <span className="zv" aria-hidden="true">✓</span>}
       {loggable && (
         <div className="zacts">
           <button

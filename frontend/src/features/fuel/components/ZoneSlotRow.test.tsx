@@ -216,6 +216,19 @@ test('the score chip opens the score sheet for the scored meal', async () => {
   expect(onOpenScore).toHaveBeenCalledWith(scored)
 })
 
+// ── Done-row marker: the score chip is the done indicator ONLY when a score exists (fix round 1) ──
+test('a done row without a score renders a ✓ done marker', () => {
+  const { container } = render(<ZoneSlotRow slot={loggedSlot} {...defaults} scoredMeal={null} />)
+  expect(container.querySelector('.zv')).toHaveTextContent('✓')
+  expect(screen.queryByRole('button', { name: 'AI score' })).toBeNull()
+})
+
+test('a done row WITH a score renders the score chip and no ✓ marker', () => {
+  const { container } = render(<ZoneSlotRow slot={loggedSlot} {...defaults} scoredMeal={scored} />)
+  expect(screen.getByRole('button', { name: 'AI score' })).toBeInTheDocument()
+  expect(container.querySelector('.zv')).toBeNull()
+})
+
 // ── Anchored row: the hero owns this window's CTA (new) ───────────────────────
 test('an anchored now row points at the hero and renders NO duplicate CTA', () => {
   const now: FuelSlot = { ...budgetWithSlotKey, state: 'now' }

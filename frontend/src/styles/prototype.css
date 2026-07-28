@@ -2402,6 +2402,9 @@ a.hab-link:hover { opacity: 0.85; }
 .zrow.anchor { background: linear-gradient(110deg, #FFF3EC, transparent 70%); box-shadow: inset 2px 0 0 var(--coral); }
 :root[data-theme="dark"] .zrow.anchor { background: linear-gradient(110deg, rgba(255,107,74,.12), transparent 70%); }
 .zrow.anchor .zt .a { color: var(--coral-deep); }
+/* Macro dots inside a zone row — the retired .slot .mm rules were wrapper-scoped (mezo-rrtj). */
+.zrow .mm { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; color: var(--sub); }
+.zrow .mm i { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 
 /* AI score chip + coach line */
 .aiscore { display: inline-flex; align-items: center; gap: 5px; border: 0; cursor: pointer; font: inherit;
