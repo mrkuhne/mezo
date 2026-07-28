@@ -25,6 +25,26 @@ test('same-time tie-break is stable by insertion order: gym before running', () 
   expect(items.map((i) => i.kind)).toEqual(['gym', 'running'])
 })
 
+// A completed saját (custom) instance is a real session of the day — Mai renders it
+// as a card and the DayStrip counts its dot, so it has to reach both through the same
+// union the other modalities do (mezo-9bbc final review, I6).
+test('emits completed custom instances, untimed, after every scheduled session', () => {
+  const items = daySessions(day({
+    gym: { day: 'Kedd', active: true, time: '18:30', duration: null, type: 'Plyo Power' } as never,
+    sport: [{ day: 'Kedd', time: null, duration: 90 } as never], // untimed too
+    custom: [{ id: 'w9', title: 'Pihenőnapi felső' }],
+  }))
+  expect(items.map((i) => i.kind)).toEqual(['gym', 'sport', 'custom'])
+  const last = items[2]
+  expect(last.kind === 'custom' && last.custom).toEqual({ id: 'w9', title: 'Pihenőnapi felső' })
+  expect(last.timeOfDay).toBeNull()
+})
+
+test('a day with no custom instances emits none', () => {
+  expect(daySessions(day({ custom: [] }))).toHaveLength(0)
+  expect(daySessions(day({}))).toHaveLength(0)
+})
+
 test('a multi-sport day flattens every sport slot, ordered by time', () => {
   const items = daySessions(day({
     sport: [

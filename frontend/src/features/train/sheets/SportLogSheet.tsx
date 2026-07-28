@@ -132,13 +132,15 @@ export function ScaleRow({
 }
 
 // --- SportLogSheet ---
-export function SportLogSheet({ onClose, onSave, initialSport }: {
+export function SportLogSheet({ onClose, onSave, initialSport, date }: {
   onClose: () => void
   // `done` closes the sheet — the parent calls it from the log mutation's onSuccess
   // so the close is deferred until the save lands (and the level-up overlay can show).
   onSave?: (input: SportSessionCreateRequest, done: () => void) => void
   /** Pre-selects the kind (a schedule slot's log CTA passes its sport). */
   initialSport?: SportKind
+  /** ISO date to log against — omit for today (the server defaults to now, mezo-9bbc). */
+  date?: string
 }) {
   const [kind, setKind] = useState<SportKind>(initialSport ?? 'volleyball')
   const [duration, setDuration] = useState(90)
@@ -237,11 +239,14 @@ export function SportLogSheet({ onClose, onSave, initialSport }: {
               className="flex-1"
               disabled={saving}
               onClick={() => {
-                // date/time default to "now" server-side — the sheet captures effort only.
-                // Volleyball logs sets + shoulder strain; cross/TRX log rounds (per the contract).
+                // date/time default to "now" server-side when `date` is omitted — the
+                // sheet captures effort only. A retroactive ("Pótold") open passes the
+                // past day's ISO date (mezo-9bbc), which the server then logs against
+                // instead of today. Volleyball logs sets + shoulder strain; cross/TRX
+                // log rounds (per the contract).
                 const body: SportSessionCreateRequest = isVolleyball
-                  ? { sport: 'volleyball', duration, setsPlayed: sets, rpe, shoulderStrain: shoulder }
-                  : { sport: kind, duration, rpe, rounds }
+                  ? { sport: 'volleyball', duration, setsPlayed: sets, rpe, shoulderStrain: shoulder, ...(date ? { date } : {}) }
+                  : { sport: kind, duration, rpe, rounds, ...(date ? { date } : {}) }
                 // Defer close to the parent (runs after the log succeeds); close
                 // immediately when no handler is wired.
                 if (onSave) { setSaving(true); onSave(body, close) } else { close() }

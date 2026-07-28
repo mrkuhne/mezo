@@ -7,6 +7,7 @@ export interface TrainTab {
 
 export const TRAIN_TABS: TrainTab[] = [
   { id: 'mai', to: '/train', label: 'Mai', end: true },
+  { id: 'week', to: '/train/week', label: 'Heti' },
   { id: 'gym', to: '/train/gym', label: 'Gym' },
   { id: 'sport', to: '/train/sport', label: 'Sport' },
   { id: 'futas', to: '/train/futas', label: 'Futás' },

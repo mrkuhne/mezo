@@ -25,7 +25,7 @@ function renderApp(path: string) {
 test('Train opens on Mai and the sub-nav switches between sub-tabs', async () => {
   renderApp('/train')
   expect(screen.getByText('MA 07:30 · MAV')).toBeInTheDocument()
-  expect(screen.getByText('Heti terv')).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
 
   // Open dropdown and click Sport
   await userEvent.click(screen.getByRole('button', { name: 'Mai' }))

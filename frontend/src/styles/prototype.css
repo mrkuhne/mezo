@@ -1237,6 +1237,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .typetag-gym { background: var(--wash-gym); color: var(--tag-gym); }
 .typetag-sport { background: var(--wash-sport); color: var(--tag-sport); }
 .typetag-run { background: var(--wash-run); color: var(--tag-run); }
+.typetag-cross { background: var(--wash-cross); color: var(--tag-cross); }
+.typetag-trx { background: var(--wash-trx); color: var(--tag-trx); }
 .np-hero-meta { font-size: 13.5px; color: var(--sub); margin-top: 4px; }
 .np-hero-meta b { color: var(--ink); font-weight: 700; }
 .warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
@@ -1283,15 +1285,22 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --wash-gym: #FFEDE6;
   --wash-sport: #FBE9EC;
   --wash-run: #E7F0F8;
+  --wash-cross: #FBF0DD;          /* cross gets its own amber family (mezo-9bbc) */
+  --wash-trx: #F0EDF8;            /* TRX rides the lavender family (mezo-9bbc) */
   --tag-gym: #C4622F;
   --tag-sport: #B14B5E;
   --tag-run: #3E6E9E;
+  --tag-cross: #B07A2E;
+  --tag-trx: #7A6DA8;
 }
 :root[data-theme="dark"] {
   --wash-gym: rgba(255,107,74,.16);
   --wash-sport: rgba(226,122,139,.16);
   --wash-run: rgba(111,167,216,.16);
+  --wash-cross: rgba(224,164,88,.16);
+  --wash-trx: rgba(171,159,210,.16);
   --tag-gym: #F0966B; --tag-sport: #E9A3AE; --tag-run: #9CC0E4;
+  --tag-cross: #E0A458; --tag-trx: #B9ACD9;
 }
 
 /* ===== Napív page head (pgheadrow — Train sub-pages; Fuel/Me adopt later) ===== */
@@ -1305,6 +1314,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .stag-gym { background: var(--wash-gym); color: var(--tag-gym); }
 .stag-sport { background: var(--wash-sport); color: var(--tag-sport); }
 .stag-run { background: var(--wash-run); color: var(--tag-run); }
+.stag-cross { background: var(--wash-cross); color: var(--tag-cross); }
+.stag-trx { background: var(--wash-trx); color: var(--tag-trx); }
 
 /* ===== Napív weekly load tiles (Mai, spec §4.3) ===== */
 .loadrow { display: flex; gap: 9px; margin: 14px 24px 0; }
@@ -1319,6 +1330,34 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 /* ===== Napív meta pill — one fact of a session (time, duration, role, RPE…).
    Shared by the weekly day cards and Mai's today session cards (mezo-lruy). ===== */
 .metapill { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; color: var(--sub); background: var(--warm); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ===== Napív day strip — Mai's week navigator (mezo-9bbc) ===== */
+.daystrip { display: flex; gap: 9px; overflow-x: auto; scroll-snap-type: x proximity; padding: 2px 24px 6px; }
+.daystrip::-webkit-scrollbar { height: 0; }
+.daychip { flex: none; width: 62px; scroll-snap-align: center; border-radius: 20px; background: var(--surface); box-shadow: var(--np-shadow-row); padding: 9px 0 8px; text-align: center; border: 1.5px solid transparent; font-family: inherit; cursor: pointer; }
+.daychip .dl { display: block; font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+.daychip .dn { display: block; font-family: var(--ff-display); font-size: 17px; font-weight: 800; color: var(--ink); margin-top: 1px; }
+.daychip .dots { display: flex; gap: 3px; justify-content: center; margin-top: 6px; min-height: 6px; }
+.daychip .dot { width: 6px; height: 6px; border-radius: 50%; }
+.dot-gym { background: var(--tag-gym); }
+.dot-sport { background: var(--tag-sport); }
+.dot-cross { background: var(--tag-cross); }
+.dot-trx { background: var(--tag-trx); }
+.dot-run { background: var(--tag-run); }
+.daychip .ck { display: block; font-size: 9px; font-weight: 800; color: var(--sage-deep); margin-top: 5px; letter-spacing: .04em; }
+.daychip.rest { background: transparent; box-shadow: none; border-style: dashed; border-color: var(--line); }
+.daychip.rest .ck { color: var(--faint); }
+.daychip.today { border-color: var(--coral); }
+.daychip.today .dl { color: var(--coral-deep); }
+.daychip.sel { background: var(--ink); border-color: var(--ink); }
+.daychip.sel .dl { color: color-mix(in srgb, var(--surface) 70%, transparent); }
+.daychip.sel .dn { color: var(--surface); }
+.daychip.sel.today { box-shadow: 0 0 0 2px var(--coral); }
+/* On the ink-filled selected chip the marker's sage/faint colours drop below a
+   readable contrast, and a `rest` chip's dashed --ink border disappears into the
+   fill entirely — both need a surface-tinted override (mezo-9bbc final review). */
+.daychip.sel .ck, .daychip.sel.rest .ck { color: color-mix(in srgb, var(--surface) 82%, transparent); }
+.daychip.sel.rest { border-color: color-mix(in srgb, var(--surface) 45%, transparent); }
 
 /* ===== Napív weekly plan day cards (Mai, spec §4.3) =====
    Stacked layout (mezo-lruy): a day header row (label + MA marker + chevron)
@@ -1361,19 +1400,34 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 :root[data-theme="dark"] .trainhero .chip-np { background: rgba(255,255,255,.1); }
 .trainhero .np-ctarow { margin-top: 14px; }
 
-/* ===== Napív today session card (Mai — sport/run, mezo-lruy) =====
-   The gym hero's lighter sibling: same tag → title → pills → CTA rhythm on a
-   plain surface card, accent-tinted per session kind via --tc-accent/--tc-wash. */
-.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: var(--surface); border-radius: 24px; padding: 15px 16px 16px; margin: 0 24px 12px; box-shadow: var(--np-shadow-row); }
+/* ===== Napív today session card (Mai — sport/run, mezo-lruy; K3 language mezo-9bbc) =====
+   The gym hero's lighter sibling: icon shield + eyebrow → title → fact pills →
+   full-width CTA, tinted per modality via --tc-accent/--tc-wash. */
+.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: linear-gradient(150deg, var(--tc-wash), var(--surface) 78%); border-radius: 24px; padding: 15px 16px 16px; margin: 0 24px 12px; box-shadow: var(--np-shadow-row); }
+.todaycard-gym { --tc-accent: var(--tag-gym); --tc-wash: var(--wash-gym); }
+.todaycard-sport { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); }
+.todaycard-cross { --tc-accent: var(--tag-cross); --tc-wash: var(--wash-cross); }
+.todaycard-trx { --tc-accent: var(--tag-trx); --tc-wash: var(--wash-trx); }
 .todaycard-run { --tc-accent: var(--tag-run); --tc-wash: var(--wash-run); }
-.todaycard-top { display: flex; align-items: center; gap: 9px; }
-.todaycard-time { font-size: 12.5px; font-weight: 800; color: var(--tc-accent); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
-.todaycard-state { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--tc-wash); }
-.todaycard.logged .todaycard-state { color: var(--sage-deep); background: var(--wash-sage); }
-.todaycard-title { font-family: var(--ff-display); font-size: 21px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; color: var(--ink); margin-top: 11px; }
+.todaycard.logged { --tc-accent: var(--sage-deep); --tc-wash: var(--wash-sage); }
+.todaycard-top { display: flex; align-items: flex-start; gap: 11px; }
+.todaycard-icon { flex: none; width: 44px; height: 44px; border-radius: 15px; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
+.todaycard.logged .todaycard-icon { background: var(--sage-deep); color: var(--surface); }
+.todaycard-head { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.todaycard-time { font-size: 12.5px; font-weight: 800; color: var(--tc-accent); font-variant-numeric: tabular-nums; }
+.todaycard-title { flex-basis: 100%; font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; color: var(--ink); }
+.todaycard-state { flex: none; display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--surface); }
 .todaycard-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
-.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--tc-wash); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
-.todaycard.logged .todaycard-cta { color: var(--sage-deep); background: var(--wash-sage); border-color: color-mix(in srgb, var(--sage-deep) 26%, transparent); }
+.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 13px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--surface); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
+
+/* ===== Napív done bar — shared logged-state bar (mezo-9bbc) ===== */
+.donebar { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: 16px; background: var(--wash-sage); border: 0; font-family: inherit; text-align: left; cursor: inherit; }
+.donebar-check { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--sage-deep); color: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
+.donebar-txt { font-size: 12px; font-weight: 800; color: var(--sage-deep); }
+.donebar-detail { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 700; color: var(--sub); letter-spacing: 0; text-transform: none; }
+/* The tappable variant is a <button> (the whole bar opens the review / re-opens the
+   log sheet) — the inherited cursor left it without a pointer (mezo-9bbc review). */
+button.donebar { cursor: pointer; }
 
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
