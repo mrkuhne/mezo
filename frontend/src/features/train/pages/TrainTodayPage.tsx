@@ -31,12 +31,14 @@ import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
 import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
+import { DoneBar } from '@/features/train/components/DoneBar'
 import { daySessions } from '@/features/train/logic/agenda'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
 import { LoadTiles } from '@/features/train/components/LoadTiles'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
-import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
+import { SPORT_TONE, sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
+import { SESSION_STATE_LABEL, sessionState } from '@/features/train/logic/sessionState'
 
 type RunLogCtx = { blockId: string; weekNumber: number; sessionKey: string; label: string; isSprint: boolean; defaultRounds?: number }
 
@@ -174,7 +176,8 @@ export function TrainTodayPage() {
   // schedule↔log link, so we match the logged SportSession by today's date (the
   // mapped session carries the HU display date). Running carries the prescribed
   // tuple back, so we match on block + week + sessionKey.
-  const todayHu = huMonthDayDow(localDateString())
+  const todayIso = localDateString()
+  const todayHu = huMonthDayDow(todayIso)
   // A slot's done-state matches a logged session by DATE **and** SPORT — a mixed day
   // (TRX noon + volleyball evening) must flip each slot independently.
   const loggedSportToday = (k: SportKind) =>
@@ -270,22 +273,14 @@ export function TrainTodayPage() {
                 {gym.type && <span className="chip-np">{gym.type}</span>}
               </div>
               {completedTodayWorkout ? (
-                // Done-state: the workout is over (no restart until next week) — the CTA
-                // opens the read-only review of the completed instance.
-                <button
-                  type="button"
+                // Done-state: the workout is over (no restart until next week) — the shared
+                // DoneBar opens the read-only review of the completed instance (mezo-9bbc).
+                <DoneBar
+                  summary={`Kész · ${completedTodayWorkout.sets.filter((s) => !s.skipped).length} szett`}
+                  detail="Megnézem az összegzést"
                   onClick={() => navigate(`/train/review/${completedTodayWorkout.id}`)}
-                  className="row rad-12 mt-md"
-                  style={{
-                    width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
-                    background: 'rgba(52, 211, 153, 0.08)',
-                    border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
-                    color: 'var(--success)', fontSize: 11,
-                  }}
-                >
-                  <Icon name="check" size={12} />
-                  <span>Kész · {completedTodayWorkout.sets.filter((s) => !s.skipped).length} szett — Megnézem →</span>
-                </button>
+                  ariaLabel="Befejezett edzés áttekintése"
+                />
               ) : todaySession?.openWorkout ? (
                 // In-progress: an open instance exists — resume it (count the logged sets).
                 <div className="np-ctarow">
@@ -309,19 +304,22 @@ export function TrainTodayPage() {
           return (
             <TodaySessionCard
               key={`hero-sport-${k}-${vb.time}-${i}`}
-              tone="sport"
-              tag={<>{SPORT_EMOJI[k]} {SPORT_TAGS[k]}</>}
+              tone={SPORT_TONE[k]}
+              emoji={SPORT_EMOJI[k]}
+              tag={SPORT_TAGS[k]}
               time={vb.time}
               title={SPORT_TITLES[k]}
               facts={[`${vb.duration} perc`, vb.role, vb.court]}
               logged={Boolean(logged)}
-              loggedLabel={
+              loggedSummary={
                 logged
                   ? k === 'volleyball'
-                    ? `Logolva · RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
-                    : `Logolva · RPE ${logged.rpe} · ${logged.duration}p`
+                    ? `RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
+                    : `RPE ${logged.rpe} · ${logged.duration}p`
                   : undefined
               }
+              loggedDetail={logged?.time ? `${logged.time}-kor logolva` : null}
+              stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: todayIso, todayIso, timeOfDay: vb.time })]}
               ctaLabel="Logold a session-t"
               onLog={() => setSportLogSport(k)}
             />
@@ -342,16 +340,15 @@ export function TrainTodayPage() {
           <TodaySessionCard
             key={s.key}
             tone="run"
-            tag={<>🏃 FUTÁS</>}
+            emoji="🏃"
+            tag="FUTÁS"
             time={s.timeOfDay}
             title={s.label}
             facts={[`RPE ${s.rpeTarget.min}–${s.rpeTarget.max}`, s.rounds ? `${s.rounds} kör` : null]}
             logged={Boolean(rl)}
-            loggedLabel={
-              rl
-                ? `Logolva · RPE ${rl.rpeActual ?? '–'}${rl.completedRounds != null ? ` · ${rl.completedRounds} kör` : ''}`
-                : undefined
-            }
+            loggedSummary={rl ? `RPE ${rl.rpeActual ?? '–'}${rl.completedRounds != null ? ` · ${rl.completedRounds} kör` : ''}` : undefined}
+            loggedDetail={null}
+            stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: todayIso, todayIso, timeOfDay: s.timeOfDay })]}
             ctaLabel="Naplózd a futást"
             onLog={openRunLog}
           />

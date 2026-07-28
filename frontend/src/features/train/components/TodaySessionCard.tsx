@@ -1,61 +1,84 @@
 // ============================================================
-// Mezo · TodaySessionCard — one of TODAY's non-gym sessions on Mai
-// (recurring sport: röpi/cross/TRX · prescribed run). Napiv `.todaycard`:
-// type tag + MA/Kész state chip on top, a display title, the session's
-// facts as `.metapill`s, then a full-width log CTA. The lighter sibling
-// of the gym `.trainhero` — same eyebrow → title → pills → CTA rhythm,
-// so the three session kinds read as one family (mezo-lruy).
+// Mezo · TodaySessionCard — one scheduled session of the selected day on
+// Mai (sport: röpi/cross/TRX · prescribed run). Napiv `.todaycard` in the
+// K3 language (mezo-9bbc): modality-gradient surface + 44px icon shield,
+// eyebrow (tag · time), display title, `.metapill` facts, then a
+// full-width CTA — or, once logged, a `DoneBar` and a check-swapped
+// shield. Without `ctaLabel` the card is read-only (a future day).
 // ============================================================
-import type { ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { Icon } from '@/shared/ui/Icon'
+import { DoneBar } from '@/features/train/components/DoneBar'
+import type { SessionTone } from '@/features/train/logic/sportKinds'
 
 interface TodaySessionCardProps {
-  /** Accent family — picks the `--tag-*`/`--wash-*` pair used by tag, pills and CTA. */
-  tone: 'sport' | 'run'
-  /** Type-tag content — emoji + short label (e.g. `🏐 RÖPI`). */
-  tag: ReactNode
-  /** Time-of-day of the session — sits next to the tag (the gym hero's eyebrow slot); absent = untimed. */
+  /** Modality tone — drives `--tc-accent`/`--tc-wash` and the type-tag variant. */
+  tone: SessionTone
+  /** Icon-shield glyph (from `SPORT_EMOJI`, or 🏃/🏋️). */
+  emoji: string
+  /** Uppercase type word shown in the eyebrow tag (`FUTÁS`, `RÖPI`…). */
+  tag: string
+  /** Session time; omitted from the eyebrow when absent. */
   time?: string | null
   title: string
-  /** One pill per fact (time, duration, role, RPE…); falsy entries drop out. */
-  facts: (string | null | undefined | false)[]
-  /** A logged session exists for this slot ⇒ done styling + the summary CTA. */
+  /** One `.metapill` per fact; falsy entries drop out. */
+  facts: readonly (string | null | undefined | false)[]
   logged: boolean
-  /** Summary of the logged session, shown inside the done CTA (e.g. `Logolva · RPE 7 · 90p`). */
-  loggedLabel?: string
-  /** Not-yet-logged CTA copy (e.g. `Logold a session-t`). */
-  ctaLabel: string
-  /** Opens the log sheet — in both states (a logged session stays editable). */
-  onLog: () => void
+  /** `DoneBar` summary of the logged effort. */
+  loggedSummary?: string
+  /** `DoneBar` detail line (logged-at); omitted when unknown. */
+  loggedDetail?: string | null
+  /** `MOST`/`MA`/`ELMARADT`/`TERVEZETT`; suppressed while logged. */
+  stateLabel?: string | null
+  /** Not-yet-logged CTA copy. Absent ⇒ read-only card. */
+  ctaLabel?: string
+  /** Opens the log sheet (from the CTA, or from the DoneBar once logged). */
+  onLog?: () => void
 }
 
-export function TodaySessionCard({ tone, tag, time, title, facts, logged, loggedLabel, ctaLabel, onLog }: TodaySessionCardProps) {
+export function TodaySessionCard({
+  tone, emoji, tag, time, title, facts,
+  logged, loggedSummary, loggedDetail, stateLabel, ctaLabel, onLog,
+}: TodaySessionCardProps) {
   const pills = facts.filter(Boolean) as string[]
+  const interactive = Boolean(ctaLabel && onLog)
   return (
     <section className={cn('todaycard', `todaycard-${tone}`, logged && 'logged')}>
       <div className="todaycard-top">
-        <span className={`typetag typetag-${tone}`}>{tag}</span>
-        {time && <span className="todaycard-time">{time}</span>}
-        <span className="todaycard-state">
-          {logged ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
+        <span className="todaycard-icon" aria-hidden="true">
+          {logged ? <Icon name="check" size={20} /> : emoji}
         </span>
-      </div>
-      <h3 className="todaycard-title">{title}</h3>
-      {pills.length > 0 && (
-        <div className="todaycard-pills">
-          {pills.map((p) => (
-            <span key={p} className="metapill">{p}</span>
-          ))}
+        <div className="todaycard-head">
+          <span className={cn('typetag', `typetag-${tone}`)}>
+            {tag}{logged ? ' · MEGVAN' : null}
+          </span>
+          {!logged && time ? <span className="todaycard-time">{time}</span> : null}
+          <h3 className="todaycard-title">{title}</h3>
         </div>
+        {!logged && stateLabel ? <span className="todaycard-state">{stateLabel}</span> : null}
+      </div>
+
+      {logged ? (
+        <DoneBar
+          summary={loggedSummary ?? ''}
+          detail={loggedDetail}
+          onClick={interactive ? onLog : undefined}
+          ariaLabel={interactive ? `${title} — logolt session megnyitása` : undefined}
+        />
+      ) : (
+        <>
+          {pills.length > 0 && (
+            <div className="todaycard-pills">
+              {pills.map((p) => <span key={p} className="metapill">{p}</span>)}
+            </div>
+          )}
+          {interactive && (
+            <button type="button" className="todaycard-cta np-press" onClick={onLog}>
+              <Icon name="plus" size={12} /><span>{ctaLabel}</span>
+            </button>
+          )}
+        </>
       )}
-      <button type="button" className="todaycard-cta np-press" onClick={onLog}>
-        {logged ? (
-          <><Icon name="check" size={12} /><span>{loggedLabel}</span></>
-        ) : (
-          <><Icon name="plus" size={12} /><span>{ctaLabel}</span></>
-        )}
-      </button>
     </section>
   )
 }

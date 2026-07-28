@@ -224,8 +224,9 @@ test('real mode orders the morning run hero above the evening gym hero', async (
     ),
   )
   renderView()
-  // both heroes present
-  const runTag = await screen.findByText('🏃 FUTÁS')
+  // both heroes present (K3: emoji lives in the icon shield now, the eyebrow tag is text-only —
+  // scope to .typetag-run, since the weekly row's own .stag-run tag reads the same "FUTÁS").
+  const runTag = await screen.findByText('FUTÁS', { selector: '.typetag-run' })
   const startBtn = await screen.findByRole('button', { name: 'Indítsuk →' }) // gym hero CTA
   // run hero (08:00) must precede gym hero (18:30) in the DOM
   expect(runTag.compareDocumentPosition(startBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
@@ -261,9 +262,10 @@ test('real mode renders the run hero (no rest-day note) when only a run is presc
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  // the run hero IS rendered (typetag + log CTA are hero-unique;
+  // the run hero IS rendered (typetag + log CTA are hero-unique — scope to .typetag-run,
+  // since the weekly row's own .stag-run tag reads the same "FUTÁS";
   // "Reggeli sprint" itself also appears in the weekly row, hence not asserted alone) ...
-  expect(await screen.findByText('🏃 FUTÁS')).toBeInTheDocument()
+  expect(await screen.findByText('FUTÁS', { selector: '.typetag-run' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Naplózd a futást/ })).toBeInTheDocument()
   expect(screen.getAllByText('Reggeli sprint').length).toBeGreaterThan(0)
   // ... and the rest-day note is NOT (a prescribed run is not a rest day)
@@ -309,10 +311,12 @@ test('real mode: volleyball logged today ⇒ hero flips to the done summary, not
     ),
   )
   renderView()
-  expect(within(await findTodayCard('Volleyball')).getByText('18:15')).toBeInTheDocument()
-  // done state: muted summary present, the "log it" CTA gone, the chip reads "Kész"
-  expect(screen.getByText(/Logolva · RPE 7 · 90p/)).toBeInTheDocument()
-  expect(screen.getByText('Kész')).toBeInTheDocument()
+  // K3: once logged, the eyebrow time is gone — the time only survives inside the
+  // DoneBar's "18:15-kor logolva" detail line.
+  expect(within(await findTodayCard('Volleyball')).getByText(/18:15/)).toBeInTheDocument()
+  // done state: muted summary present, the "log it" CTA gone, the eyebrow reads "MEGVAN"
+  expect(screen.getByText(/RPE 7 · 90p/)).toBeInTheDocument()
+  expect(screen.getByText(/MEGVAN/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
@@ -344,7 +348,7 @@ test('real mode: saving the volleyball log flips the hero to done (the reported 
   // The sheet opens with sane defaults (90p / RPE 7); just save
   fireEvent.click(await screen.findByRole('button', { name: /Mentés/ }))
   // After save the hero flips to the done summary and the log CTA is gone
-  expect(await screen.findByText(/Logolva · RPE 7 · 90p/)).toBeInTheDocument()
+  expect(await screen.findByText(/RPE 7 · 90p/)).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
@@ -373,9 +377,11 @@ test('real mode: a completed today instance renders the Kész hero with Megnéze
     ),
   )
   renderView()
-  // done-state hero: the Kész + Megnézem review button (3 non-skipped sets), no start CTA
-  expect(await screen.findByRole('button', { name: /Megnézem/ })).toBeInTheDocument()
-  expect(screen.getByText(/Kész · 3 szett — Megnézem →/)).toBeInTheDocument()
+  // done-state hero: the shared DoneBar (3 non-skipped sets), no start CTA. The bar's
+  // accessible name is its explicit ariaLabel, not its visible summary/detail text (mezo-9bbc).
+  expect(await screen.findByRole('button', { name: 'Befejezett edzés áttekintése' })).toBeInTheDocument()
+  expect(screen.getByText('Kész · 3 szett')).toBeInTheDocument()
+  expect(screen.getByText('Megnézem az összegzést')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Indítsuk →' })).not.toBeInTheDocument()
 })
 
@@ -438,8 +444,10 @@ test('real mode: prescribed run logged today ⇒ run hero flips to the done summ
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  expect(await screen.findByText('🏃 FUTÁS')).toBeInTheDocument()
-  expect(screen.getByText(/Logolva · RPE 9/)).toBeInTheDocument()
+  expect(await screen.findByText('FUTÁS')).toBeInTheDocument()
+  // exact match: the weekly row's own fact pill also reads "RPE 9–10" (the prescribed
+  // range), so an unanchored "RPE 9" substring would be ambiguous.
+  expect(screen.getByText('RPE 9 · 6 kör')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
 })
 
@@ -513,9 +521,11 @@ test('real mode: a TRX slot renders its own hero, sport-matched done-state, and 
       HttpResponse.json({ templateSessionId: null, dayLabel: todayLabel(), title: '', durationEst: 0, exercises: [], openWorkout: null })),
   )
   renderView()
-  // TRX hero with its own tag + title, NOT done (the logged session is volleyball)
+  // TRX hero with its own tag + title, NOT done (the logged session is volleyball).
+  // K3: the emoji lives in the icon shield, so the tag itself is text-only — scope
+  // to .typetag-trx (title also reads "TRX", so an unscoped text match is ambiguous).
   expect(within(await findTodayCard('TRX')).getByText('12:00')).toBeInTheDocument()
-  expect(screen.getByText('🪢 TRX')).toBeInTheDocument()
+  expect(screen.getByText('TRX', { selector: '.typetag-trx' })).toBeInTheDocument()
   const cta = screen.getByRole('button', { name: /Logold a session-t/ })
   // The log sheet opens preselected to TRX
   fireEvent.click(cta)
@@ -539,12 +549,14 @@ test('real mode: a TRX slot logged today shows the done hero (no váll segment) 
       HttpResponse.json({ templateSessionId: null, dayLabel: todayLabel(), title: '', durationEst: 0, exercises: [], openWorkout: null })),
   )
   renderView()
-  // TRX hero, done state: "Kész" chip, summary with no "váll" segment (volleyball-only)
-  expect(within(await findTodayCard('TRX')).getByText('12:00')).toBeInTheDocument()
-  expect(screen.getByText('Kész')).toBeInTheDocument()
-  const summary = screen.getByText(/Logolva · RPE 7 · 60p$/)
+  // TRX hero, done state: "MEGVAN" eyebrow, summary with no "váll" segment (volleyball-only).
+  // K3: once logged the eyebrow time is gone — "12:00" only survives in the DoneBar detail.
+  expect(within(await findTodayCard('TRX')).getByText(/12:00/)).toBeInTheDocument()
+  expect(screen.getByText(/MEGVAN/)).toBeInTheDocument()
+  const summary = screen.getByText(/RPE 7 · 60p$/)
   expect(summary).toBeInTheDocument()
-  // Clicking the done summary re-opens the sheet, preselected to TRX
-  fireEvent.click(screen.getByRole('button', { name: /Logolva · RPE 7 · 60p/ }))
+  // Clicking the done summary re-opens the sheet, preselected to TRX. The DoneBar's
+  // accessible name is its explicit ariaLabel (title + "logolt session megnyitása").
+  fireEvent.click(screen.getByRole('button', { name: /logolt session megnyitása/ }))
   expect(screen.getByText('Sport log · TRX')).toBeInTheDocument()
 })

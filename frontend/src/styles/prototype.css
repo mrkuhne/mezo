@@ -1372,19 +1372,25 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 :root[data-theme="dark"] .trainhero .chip-np { background: rgba(255,255,255,.1); }
 .trainhero .np-ctarow { margin-top: 14px; }
 
-/* ===== Napív today session card (Mai — sport/run, mezo-lruy) =====
-   The gym hero's lighter sibling: same tag → title → pills → CTA rhythm on a
-   plain surface card, accent-tinted per session kind via --tc-accent/--tc-wash. */
-.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: var(--surface); border-radius: 24px; padding: 15px 16px 16px; margin: 0 24px 12px; box-shadow: var(--np-shadow-row); }
+/* ===== Napív today session card (Mai — sport/run, mezo-lruy; K3 language mezo-9bbc) =====
+   The gym hero's lighter sibling: icon shield + eyebrow → title → fact pills →
+   full-width CTA, tinted per modality via --tc-accent/--tc-wash. */
+.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: linear-gradient(150deg, var(--tc-wash), var(--surface) 78%); border-radius: 24px; padding: 15px 16px 16px; margin: 0 24px 12px; box-shadow: var(--np-shadow-row); }
+.todaycard-gym { --tc-accent: var(--tag-gym); --tc-wash: var(--wash-gym); }
+.todaycard-sport { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); }
+.todaycard-cross { --tc-accent: var(--tag-cross); --tc-wash: var(--wash-cross); }
+.todaycard-trx { --tc-accent: var(--tag-trx); --tc-wash: var(--wash-trx); }
 .todaycard-run { --tc-accent: var(--tag-run); --tc-wash: var(--wash-run); }
-.todaycard-top { display: flex; align-items: center; gap: 9px; }
-.todaycard-time { font-size: 12.5px; font-weight: 800; color: var(--tc-accent); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
-.todaycard-state { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--tc-wash); }
-.todaycard.logged .todaycard-state { color: var(--sage-deep); background: var(--wash-sage); }
-.todaycard-title { font-family: var(--ff-display); font-size: 21px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; color: var(--ink); margin-top: 11px; }
+.todaycard.logged { --tc-accent: var(--sage-deep); --tc-wash: var(--wash-sage); }
+.todaycard-top { display: flex; align-items: flex-start; gap: 11px; }
+.todaycard-icon { flex: none; width: 44px; height: 44px; border-radius: 15px; background: var(--surface); box-shadow: var(--np-shadow-row); display: inline-flex; align-items: center; justify-content: center; font-size: 21px; }
+.todaycard.logged .todaycard-icon { background: var(--sage-deep); color: var(--surface); }
+.todaycard-head { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; }
+.todaycard-time { font-size: 12.5px; font-weight: 800; color: var(--tc-accent); font-variant-numeric: tabular-nums; }
+.todaycard-title { flex-basis: 100%; font-family: var(--ff-display); font-size: 20px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; color: var(--ink); }
+.todaycard-state { flex: none; display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--surface); }
 .todaycard-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
-.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--tc-wash); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
-.todaycard.logged .todaycard-cta { color: var(--sage-deep); background: var(--wash-sage); border-color: color-mix(in srgb, var(--sage-deep) 26%, transparent); }
+.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 13px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--surface); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
 
 /* ===== Napív done bar — shared logged-state bar (mezo-9bbc) ===== */
 .donebar { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: 16px; background: var(--wash-sage); border: 0; font-family: inherit; text-align: left; cursor: inherit; }
