@@ -135,6 +135,15 @@ describe('useFuelTimeline / useFuelPreview (mock mode)', () => {
     expect(result.current.visible[0].state).toBe('now')
     expect(result.current).toHaveProperty('nextStack')
   })
+
+  it('returns the day anchor + injected now so view-side zone math needs no clock (mezo-rrtj)', () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
+    expect(result.current.wake).toMatch(/^\d{2}:\d{2}$/)
+    expect(result.current.bed).toMatch(/^\d{2}:\d{2}$/)
+    // Mock mode pins the demo clock (spec D6) — the page must never read Date.now().
+    expect(result.current.nowHHmm).toBe('13:30')
+  })
 })
 
 describe('useFuelTimeline (real mode)', () => {

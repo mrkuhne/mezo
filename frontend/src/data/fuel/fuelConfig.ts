@@ -37,3 +37,17 @@ export function toHHmm(min: number): string {
   const m = clamped % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
+
+// ── Time-of-day zones (mezo-rrtj) ────────────────────────────────────────────
+// The Mai page groups the day's slots into four napszak zones. Boundaries are FRACTIONS of the
+// user's wake→bed span (never wall-clock constants): wake/bed are owned by the sleep goal, so an
+// early riser and a night owl must both get sensible buckets. Tuned on the reference day
+// (06:45→23:00) so 13:00 lunch lands in `Dél`, a 17:00 gym in `Délután` and a 19:00 dinner in `Este`.
+export const ZONE_KEYS = ['morning', 'midday', 'afternoon', 'evening'] as const
+export type ZoneKeyName = (typeof ZONE_KEYS)[number]
+export const ZONE_FRACTIONS: Record<ZoneKeyName, number> = {
+  morning: 0, midday: 0.30, afternoon: 0.52, evening: 0.72,
+}
+export const ZONE_LABELS: Record<ZoneKeyName, string> = {
+  morning: 'Reggel', midday: 'Dél', afternoon: 'Délután', evening: 'Este',
+}
