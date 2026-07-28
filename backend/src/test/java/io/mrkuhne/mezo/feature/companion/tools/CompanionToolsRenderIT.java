@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.tools;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
@@ -29,6 +30,7 @@ import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
@@ -71,6 +73,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private MedicationTools medicationTools;
     @Autowired private GrowthTools growthTools;
     @Autowired private PracticeTools practiceTools;
+    @Autowired private InsightsTools insightsTools;
     @Autowired private QuestPopulator questPopulator;
     @Autowired private HabitPopulator habitPopulator;
     @Autowired private IntentionPopulator intentionPopulator;
@@ -96,6 +99,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private SkillProgressPopulator skillProgressPopulator;
     @Autowired private LevelUpEventPopulator levelUpEventPopulator;
     @Autowired private GamificationPopulator gamificationPopulator;
+    @Autowired private PatternPopulator patternPopulator;
 
     private ToolCallAudit audit;
 
@@ -1074,5 +1078,63 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         String out = practiceTools.getDailyPractice("nem-datum", ctx(owner));
 
         assertThat(out).startsWith("Napi gyakorlat (" + today + "):");
+    }
+
+    @Test
+    void testGetInsights_shouldRenderConfirmedPatternWithMechanismAndEvidence_whenScopePatterns() {
+        UUID owner = userPopulator.createUser().getId();
+        patternPopulator.statistical(owner, "sleep-quality~next-day-training-rpe", PatternEntity.STATUS_CONFIRMED);
+
+        String out = insightsTools.getInsights("patterns", ctx(owner));
+
+        // real rendered content: title (statement) + the deterministic mechanism prose (carries
+        // direction/strength) + the evidence chips (r/n) — not just a status/count placeholder.
+        assertThat(out).startsWith("Minták (megerősített):")
+                .contains("Alvásminőség ↔ másnapi edzés-RPE — Közepes erősségű negatív együttjárás")
+                .contains("(r=-0.55, n=12 nap)");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Insight", "Alvásminőség ↔ másnapi edzés-RPE"));
+    }
+
+    @Test
+    void testGetInsights_shouldExcludeProposedMonitoringAndRejectedPatterns_whenScopePatterns() {
+        UUID owner = userPopulator.createUser().getId();
+        patternPopulator.statistical(owner, "pair-proposed", PatternEntity.STATUS_PROPOSED);
+        patternPopulator.statistical(owner, "pair-monitoring", PatternEntity.STATUS_MONITORING);
+        patternPopulator.statistical(owner, "pair-rejected", PatternEntity.STATUS_REJECTED);
+
+        // only CONFIRMED rows are "Minták" — the inbox's proposed/monitoring/rejected states are a
+        // separate L2 decision surface, not this read tool's job.
+        assertThat(insightsTools.getInsights("patterns", ctx(owner)))
+                .isEqualTo("Minták: " + ToolText.NO_DATA);
+        assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    @Test
+    void testGetInsights_shouldRenderNincsAdat_whenScopePatternsAndNoConfirmedPatterns() {
+        assertThat(insightsTools.getInsights("patterns", ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Minták: nincs adat");
+        assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    @Test
+    void testGetInsights_shouldDefaultScopeToPatterns_whenScopeNull() {
+        assertThat(insightsTools.getInsights(null, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Minták: nincs adat");
+    }
+
+    @Test
+    void testGetInsights_shouldRenderHonestDeferral_whenScopePredictionsOrExperiments() {
+        UUID owner = userPopulator.createUser().getId();
+
+        // scope=predictions/experiments are deliberately DEFERRED (proactive's read paths lazily
+        // GENERATE on a miss — a write — and a direct import would close a new companion->proactive
+        // package cycle); an honest "még nem elérhető", never fabricated data or a "nincs adat"
+        // that would look like a real per-user absence.
+        assertThat(insightsTools.getInsights("predictions", ctx(owner)))
+                .isEqualTo("Előrejelzések: még nem elérhető");
+        assertThat(insightsTools.getInsights("experiments", ctx(owner)))
+                .isEqualTo("Kísérletek: még nem elérhető");
+        assertThat(audit.toRefsEnvelope()).isNull();
     }
 }

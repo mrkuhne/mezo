@@ -142,6 +142,23 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   already depends on `feature.companion` (`ActivityClassifier`'s `CompanionLlm` use, plus
   transitively via `feature.quest`), so a direct `ActivityService` import from `companion.tools`
   would have closed a NEW 2-/3-slice cycle (`ArchitectureTest#feature_slices_are_cycle_free` only
+  tolerates the two pre-existing frozen cycles).
+- **15th tool — `get_insights` ("Minták", mezo-xixu)**, new `InsightsTools` bean — the feature this
+  whole tool-expansion effort started from. Only `scope=patterns` is live: `PatternService.list`
+  (same `companion` slice, injected directly — no `ObjectProvider`, gated on the same
+  `COMPANION_SWITCH`) filtered down to `PatternEntity.STATUS_CONFIRMED` rows (the standing,
+  user-judged patterns — not the proposed/monitoring/rejected inbox), capped at 5, rendering title
+  + the deterministic mechanism prose (carries direction/strength) + evidence chips (r/n/p) when
+  present. `scope=predictions`/`scope=experiments` are DEFERRED, not composed: their backing reads
+  (`ProactivePredictionService#getPredictions`, `ProactiveExperimentService#getExperiments`, both
+  in `feature.proactive.service`) lazily GENERATE on a miss inside a `@Transactional` method — a
+  write on what would otherwise be a read tool, the same violation `PracticeTools` already
+  documents for `ProactiveChallengeService#getChallenges` — and `feature.proactive` already depends
+  on `feature.companion`, so a direct import would ALSO close a brand-new companion↔proactive
+  cycle. Both scopes render an honest "még nem elérhető" (never a fabricated result, never a
+  `nincs adat` that would misread as a real per-user absence). DONE_WITH_CONCERNS — resolving this
+  cleanly needs a companion-owned read port (the `TodayQuestSource` pattern) plus a genuinely
+  side-effect-free read on the proactive side; neither exists today.
   tolerates the two pre-existing frozen cycles) — the `TodayQuestSource` pattern, applied twice.
   Active challenges are deliberately NOT composed: `ProactiveChallengeService.getChallenges` is
   write-transactional (lazy-generates the first proposal + resolves accepted-challenge outcomes),
@@ -715,7 +732,9 @@ the mesocycle title for `scope=meso`, `ExerciseRecord` — the exercise name, `R
 matched recipe's name, `Pantry` — the pantry item's name, `SleepGoal` — the resolved wake time
 (`get_recovery(scope=sleep-goal)`), `CheckIn` — a check-in's date (`get_recovery(scope=checkins)`),
 and `Growth` — a stable scope label (`skills`/`week-{weekStart}`/`achievements`/`titles`,
-`get_growth(scope)`), and `Practice` — the resolved date (`get_daily_practice(date)`)),
+`get_growth(scope)`), `Practice` — the resolved date (`get_daily_practice(date)`), and since
+mezo-xixu `Insight` — a confirmed pattern's title (`get_insights(scope=patterns)`; no ref for the
+deferred `predictions`/`experiments` scopes)),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
@@ -738,6 +757,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
 | `get_growth(scope)` (mezo-xixu) | scope=skills (default): `ProgressionService.getProfile` (ungated) → account level/XP/streak from `GamificationService.getProfile` (`GAMIFICATION_SWITCH`-gated, `ObjectProvider`) + every skill with real progress (athletic/muscle/life); scope=week: `GrowthWeekService.growthWeek` (ungated) → closed quests, LIFE XP, activities, savings for the current ISO week; scope=achievements: `AchievementService.achievements` (ungated) → all 9 derive-on-read badges + persisted perk unlocks; scope=titles: `GamificationService.getProfile` → equipped + owned titles | `Growth`/`skills` or `week-{weekStart}` or `achievements` or `titles` |
 | `get_daily_practice(date)` (mezo-xixu) | `TodayQuestSource.todayStats` (port, read-only) → quest completed/total for the date; `HabitService.summary` (always "as of today", no `date` param) → perfect-chain-day counts + any habit with real 28-day signal; `IntentionService.getDay` → creed/foci/reflection for the date; `RitualService.getDay` → napzárás closed/open for the date; `TodayActivitySource.activitiesForDay` (2nd companion-owned port, impl `activity/service/DailyActivityAdapter`) → logged activities (text + XP), capped at 5. Active challenges NOT composed (`ProactiveChallengeService.getChallenges` write-transactional; a direct repository read would open a new companion→proactive cycle) | `Practice`/date |
+| `get_insights(scope)` (mezo-xixu) | scope=patterns (default, only live scope): `PatternService.list` (same `companion` slice, read-only) filtered to `PatternEntity.STATUS_CONFIRMED` → title + deterministic mechanism prose (direction/strength) + evidence chips (r/n/p), capped at 5. scope=predictions/experiments DEFERRED — `ProactivePredictionService.getPredictions`/`ProactiveExperimentService.getExperiments` (`feature.proactive.service`) lazily GENERATE on a miss (a write) and a direct import would open a new companion↔proactive cycle; both render "még nem elérhető" | `Insight`/pattern title (≤5); none for predictions/experiments |
 | `find_similar_past_days(description, k)` (V2.3) | `MemoryRecallService.recallSimilarDays` — query embed → ANN over daily-summary vectors → similarity × recency-decay re-rank | `Memory`/date (≤k) |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)
