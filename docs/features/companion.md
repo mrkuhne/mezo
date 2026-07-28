@@ -103,6 +103,11 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   case-insensitive substring match against slot/category/tag/starred/fitsFor (deliberately NOT
   the recipe name), and a single strong match renders the full detail (all 4 macros + fit score +
   ingredient lines) instead of the list. Capped at 5 rendered/audited recipes either way.
+- **12th tool — `get_pantry` (pantry, mezo-xixu)**, also on `FuelTools`: read-only over
+  `PantryService.getPantry` (splits into `ingredients`/food and `stash`/supplement+stim+med).
+  `kind ∈ {food, supplement, stim, med}` (default: all kinds) lists each item's name + stock
+  qty/unit, plus expiry for food (`IngredientResponse.stock.expires`; the stash projection carries
+  no expiry). Null-guarded per item (no stock tracked → name only); capped at 5 rendered/audited items.
 - **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
   `RecordingToolCallback` (audit + per-turn budget, structurally unbypassable); the per-turn
   `ToolCallAudit` rides in the Spring AI `ToolContext`, collects `{type:'read', name, args}`
@@ -666,8 +671,8 @@ rows), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
 carries the args baked in — `get_sleep(days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
 `Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`, since
 V2.3 `Memory` — a recalled day's date, and since mezo-xixu `TrainingPlan` — the resolved date, or
-the mesocycle title for `scope=meso`, `ExerciseRecord` — the exercise name, and `Recipe` — the
-matched recipe's name),
+the mesocycle title for `scope=meso`, `ExerciseRecord` — the exercise name, `Recipe` — the
+matched recipe's name, and `Pantry` — the pantry item's name),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
@@ -687,6 +692,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_reta_cycle()` | `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu) | `RecipeService.list`/`.get` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: case-insensitive substring match on slot/category/tag/starred/fitsFor (not name) — a single match renders full macros + ingredient lines | `Recipe`/recipe name (≤5) |
+| `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
 | `find_similar_past_days(description, k)` (V2.3) | `MemoryRecallService.recallSimilarDays` — query embed → ANN over daily-summary vectors → similarity × recency-decay re-rank | `Memory`/date (≤k) |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)

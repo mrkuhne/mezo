@@ -1,15 +1,20 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.IngredientResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.api.dto.PantryResponse;
+import io.mrkuhne.mezo.api.dto.PantryStock;
 import io.mrkuhne.mezo.api.dto.ProtocolResponse;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.api.dto.SupplementStashResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.fuel.entity.SupplementIntakeEntity;
 import io.mrkuhne.mezo.feature.fuel.repository.SupplementIntakeRepository;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
+import io.mrkuhne.mezo.feature.pantry.service.PantryService;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +26,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +35,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /** V0.5 read tools over the fuel/meal features (day rollups + supplement-protocol adherence),
- *  plus {@code get_recipes} (mezo-xixu) over the sibling recipe feature. */
+ *  plus {@code get_recipes} and {@code get_pantry} (mezo-xixu) over the sibling recipe/pantry features. */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
@@ -44,6 +50,7 @@ public class FuelTools {
     private final ProtocolService protocolService;
     private final SupplementIntakeRepository supplementIntakeRepository;
     private final RecipeService recipeService;
+    private final PantryService pantryService;
     private final CompanionProperties properties;
 
     @Tool(name = "get_recent_meals", description = "Napi étkezés-összesítők az elmúlt napokra: kcal és "
@@ -208,5 +215,76 @@ public class FuelTools {
 
     private static boolean containsIgnoreCase(String value, String needle) {
         return value != null && value.toLowerCase().contains(needle);
+    }
+
+    @Tool(name = "get_pantry", description = "A kamra készlete: mi van otthon, mennyi, meddig jó. Használd, "
+            + "amikor a user azt kérdezi mije van otthon, miből tud főzni, vagy mit kell pótolni. kind: food, "
+            + "supplement, stim, med (alapértelmezés: az összes).")
+    public String getPantry(
+            @ToolParam(required = false, description = "food|supplement|stim|med (alapértelmezés: az összes).")
+            String kind,
+            ToolContext toolContext) {
+        UUID userId = ToolContexts.userId(toolContext);
+        PantryResponse pantry = pantryService.getPantry(userId); // READ-ONLY (no writes in its body)
+        String k = kind == null || kind.isBlank() ? null : kind.trim().toLowerCase();
+        List<PantryLine> lines = new ArrayList<>();
+        if (k == null || "food".equals(k)) {
+            pantry.getIngredients().forEach(i -> lines.add(new PantryLine(i.getName(), renderIngredientStock(i))));
+        }
+        if (k == null || "supplement".equals(k) || "stim".equals(k) || "med".equals(k)) {
+            String wantedType = k == null ? null : stashTypeForKind(k);
+            pantry.getStash().stream()
+                    .filter(s -> wantedType == null || wantedType.equals(s.getType().getValue()))
+                    .forEach(s -> lines.add(new PantryLine(s.getName(), renderStashStock(s))));
+        }
+        if (lines.isEmpty()) {
+            return "Kamra: " + ToolText.NO_DATA;
+        }
+        StringBuilder b = new StringBuilder("Kamra:");
+        for (PantryLine line : lines.stream().limit(5).toList()) {
+            b.append('\n').append(line.text());
+            ToolContexts.audit(toolContext).addRef("Pantry", line.name());
+        }
+        return b.toString();
+    }
+
+    /** name + null-guarded qty/unit/expiry — {@code stock} is only present when {@code stockQty} is set
+     *  ({@link io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper#toStock}), and expiry is optional within it. */
+    private static String renderIngredientStock(IngredientResponse i) {
+        StringBuilder b = new StringBuilder(i.getName());
+        PantryStock stock = i.getStock();
+        if (stock != null) {
+            b.append(": ").append(ToolText.num(stock.getQty())).append(' ').append(stock.getUnit());
+            if (stock.getExpires() != null) {
+                b.append(", lejár ").append(stock.getExpires());
+            }
+        }
+        return b.toString();
+    }
+
+    /** name + null-guarded qty/unit — supplement/stim/med stash rows carry no expiry in the contract (mezo-xixu). */
+    private static String renderStashStock(SupplementStashResponse s) {
+        StringBuilder b = new StringBuilder(s.getName());
+        if (s.getStock() != null) {
+            b.append(": ").append(ToolText.num(s.getStock()));
+            if (s.getStockUnit() != null) {
+                b.append(' ').append(s.getStockUnit());
+            }
+        }
+        return b.toString();
+    }
+
+    /** {@code kind} (entity/tool vocabulary) -> {@code SupplementStashResponse.type} value (contract vocabulary),
+     *  mirroring {@code PantryMapper#typeFromKind}. */
+    private static String stashTypeForKind(String kind) {
+        return switch (kind) {
+            case "stim" -> "stimulant";
+            case "med" -> "medication";
+            default -> "supplement";
+        };
+    }
+
+    /** One rendered pantry row, paired with its ref id (item name) for the audit trail. */
+    private record PantryLine(String name, String text) {
     }
 }

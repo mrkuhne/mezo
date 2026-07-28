@@ -486,4 +486,41 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         assertThat(fuelTools.getRecipes(null, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Receptek: nincs adat");
     }
+
+    @Test
+    void testGetPantry_shouldListFoodItemWithStockAndExpiry_whenKindFood() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate expires = LocalDate.now().plusDays(5);
+        pantryItemPopulator.createFood(owner, "Csirkemell", expires);
+
+        String out = fuelTools.getPantry("food", ctx(owner));
+
+        // real stock content (PantryItemPopulator#createFood: stockQty=400, stockUnit=g), not just the name.
+        assertThat(out).isEqualTo("Kamra:\nCsirkemell: 400 g, lejár " + expires);
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Pantry", "Csirkemell"));
+    }
+
+    @Test
+    void testGetPantry_shouldListItemsAcrossKinds_whenNoKindGiven() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate expires = LocalDate.now().plusDays(5);
+        pantryItemPopulator.createFood(owner, "Csirkemell", expires);
+        pantryItemPopulator.createSupplement(owner, "Kreatin");
+
+        String out = fuelTools.getPantry(null, ctx(owner));
+
+        // PantryItemPopulator#createSupplement: stockQty=86, stockUnit=adag.
+        assertThat(out).startsWith("Kamra:")
+                .contains("Csirkemell: 400 g, lejár " + expires)
+                .contains("Kreatin: 86 adag");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Pantry", "Csirkemell"), new RefsEnvelope.Ref("Pantry", "Kreatin"));
+    }
+
+    @Test
+    void testGetPantry_shouldRenderNincsAdat_whenEmpty() {
+        assertThat(fuelTools.getPantry(null, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Kamra: nincs adat");
+    }
 }
