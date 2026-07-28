@@ -1,0 +1,185 @@
+[
+  {
+    "id": "pr-1",
+    "question": "Van esélyem megdönteni a fekvenyomás PR-omat legközelebb?",
+    "expectedTools": ["get_exercise_records"]
+  },
+  {
+    "id": "pr-2",
+    "question": "Mennyi az egyéni csúcsom guggolásban, és mennyi a becsült 1RM-em?",
+    "expectedTools": ["get_exercise_records"]
+  },
+  {
+    "id": "plan-1",
+    "question": "Mi a mai edzésem, milyen gyakorlatokkal?",
+    "expectedTools": ["get_training_plan"]
+  },
+  {
+    "id": "plan-2",
+    "question": "Milyen edzés van betervezve holnapra?",
+    "expectedTools": ["get_training_plan"]
+  },
+  {
+    "id": "plan-3",
+    "question": "Mutasd meg a jelenlegi mezociklusom teljes felépítését.",
+    "expectedTools": ["get_training_plan"]
+  },
+  {
+    "id": "log-1",
+    "question": "Milyen edzéseim voltak az elmúlt héten a teremben?",
+    "expectedTools": ["get_training_log"]
+  },
+  {
+    "id": "log-2",
+    "question": "Mikor futottam utoljára, és mennyi ideig tartott?",
+    "expectedTools": ["get_training_log"]
+  },
+  {
+    "id": "log-3",
+    "question": "Milyen sporteseményeim voltak a héten a súlyzós edzésen kívül?",
+    "expectedTools": ["get_training_log"]
+  },
+  {
+    "id": "weight-1",
+    "question": "Hogy áll a súlytrendem az utóbbi néhány hétben?",
+    "expectedTools": ["get_weight_trend"]
+  },
+  {
+    "id": "weight-2",
+    "question": "Milyen ütemben fogyok mostanában heti szinten?",
+    "expectedTools": ["get_weight_trend"]
+  },
+  {
+    "id": "recovery-1",
+    "question": "Mennyit aludtam az elmúlt napokban átlagosan?",
+    "expectedTools": ["get_recovery"]
+  },
+  {
+    "id": "recovery-2",
+    "question": "Mi az alvási célom, és mennyire vagyok szabályos vele?",
+    "expectedTools": ["get_recovery"]
+  },
+  {
+    "id": "recovery-3",
+    "question": "Milyen volt a közérzetem energia és stressz szempontjából a héten?",
+    "expectedTools": ["get_recovery"]
+  },
+  {
+    "id": "medication-1",
+    "question": "Hányadik napon vagyok most a retatrutid ciklusomban?",
+    "expectedTools": ["get_medication"]
+  },
+  {
+    "id": "medication-2",
+    "question": "Mikor volt az utolsó gyógyszeradagom, és mikor jön a következő?",
+    "expectedTools": ["get_medication"]
+  },
+  {
+    "id": "recipes-1",
+    "question": "Adj egy receptötletet, ami beleillik a mai kalóriakeretembe.",
+    "expectedTools": ["get_recipes"]
+  },
+  {
+    "id": "recipes-2",
+    "question": "Milyen gyors, magas fehérjetartalmú receptjeim vannak?",
+    "expectedTools": ["get_recipes"]
+  },
+  {
+    "id": "pantry-1",
+    "question": "Mi van most a kamrámban?",
+    "expectedTools": ["get_pantry"]
+  },
+  {
+    "id": "pantry-2",
+    "question": "Van otthon elég csirkemell, amiből tudnék főzni valamit?",
+    "expectedTools": ["get_pantry"]
+  },
+  {
+    "id": "fuel-1",
+    "question": "Mennyit ettem és ittam ma a célomhoz képest?",
+    "expectedTools": ["get_fuel_log"]
+  },
+  {
+    "id": "fuel-2",
+    "question": "Hogy állok a heti kalória- és fehérjebevitelemmel?",
+    "expectedTools": ["get_fuel_log"]
+  },
+  {
+    "id": "protocol-1",
+    "question": "Mennyire tartom be a szupplement-protokollomat az elmúlt napokban?",
+    "expectedTools": ["get_protocol"]
+  },
+  {
+    "id": "protocol-2",
+    "question": "Milyen kiegészítőket vettem be ma?",
+    "expectedTools": ["get_protocol"]
+  },
+  {
+    "id": "goal-1",
+    "question": "Hogy állok most a célom teljesítésével, a trendsúlyt nézve?",
+    "expectedTools": ["get_goal"]
+  },
+  {
+    "id": "goal-2",
+    "question": "Mi a cél szerinti heti kalória- és fehérjereceptem?",
+    "expectedTools": ["get_goal"]
+  },
+  {
+    "id": "growth-1",
+    "question": "Mennyi XP-m van összesen, és milyen szinten állok?",
+    "expectedTools": ["get_growth"]
+  },
+  {
+    "id": "growth-2",
+    "question": "Milyen streak-em van most, és milyen eredményeket szereztem?",
+    "expectedTools": ["get_growth"]
+  },
+  {
+    "id": "practice-1",
+    "question": "Milyen küldetéseim és szokásaim vannak ma?",
+    "expectedTools": ["get_daily_practice"]
+  },
+  {
+    "id": "practice-2",
+    "question": "Mi a mai szándékom fókuszai, és lezártam-e már a napot?",
+    "expectedTools": ["get_daily_practice"]
+  },
+  {
+    "id": "insights-1",
+    "question": "Mit vettél észre rólam az utóbbi időben, milyen mintákat találtál?",
+    "expectedTools": ["get_insights"]
+  },
+  {
+    "id": "insights-2",
+    "question": "Milyen összefüggéseket figyeltél meg az adataimban?",
+    "expectedTools": ["get_insights"]
+  },
+  {
+    "id": "similar-1",
+    "question": "Volt már olyan napom, mint a mai, amikor nagyon kimerült voltam edzés után?",
+    "expectedTools": ["find_similar_past_days"]
+  },
+  {
+    "id": "similar-2",
+    "question": "Keress egy korábbi napot, amikor sok stresszem volt, hasonlót a mostanihoz.",
+    "expectedTools": ["find_similar_past_days"]
+  },
+  {
+    "id": "ambiguous-recipe-pantry",
+    "question": "Mit tudnék főzni, ami illik a receptjeimhez és ahhoz, amim van otthon?",
+    "expectedTools": ["get_recipes", "get_pantry"],
+    "note": "legitimately maps to either/both — recipe-fit and pantry-stock are two valid angles on the same question"
+  },
+  {
+    "id": "ambiguous-goal-fuel",
+    "question": "Mennyi kalóriát ehetek még ma a célom szerint, és eddig mennyit ettem?",
+    "expectedTools": ["get_goal", "get_fuel_log"],
+    "note": "the remaining budget needs the goal's target AND today's consumed total — either tool alone is a reasonable single-call answer"
+  },
+  {
+    "id": "ambiguous-plan-pr",
+    "question": "Milyen edzésem van holnap, és van esélyem PR-t dönteni rajta?",
+    "expectedTools": ["get_training_plan", "get_exercise_records"],
+    "note": "the hero-chain question (spec §9) minus the food leg — tomorrow's plan is snapshot-covered, so a call here is properly the PR check, but a plan lookup is also acceptable"
+  }
+]
