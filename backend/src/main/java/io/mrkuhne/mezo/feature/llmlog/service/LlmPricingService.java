@@ -33,7 +33,13 @@ public class LlmPricingService {
             p.embedPerMillionChars(), on);
     }
 
-    /** Per-category token cost sum (prompt + candidates + thoughts + cached); null when unpriced. */
+    /**
+     * Per-category token cost sum (prompt + candidates + thoughts + cached); null when unpriced.
+     *
+     * <p>{@code prompt} MUST already EXCLUDE {@code cached} (callers pass
+     * {@code promptTokenCount - cachedContentTokenCount}); Gemini reports cached as a subset of
+     * prompt, so charging prompt-full + cached-rate would 5x-overcharge the cached slice.
+     */
     public BigDecimal computeGenerationCost(PricingSnapshot s, Integer prompt, Integer candidates,
                                             Integer thoughts, Integer cached) {
         if (s == null) {

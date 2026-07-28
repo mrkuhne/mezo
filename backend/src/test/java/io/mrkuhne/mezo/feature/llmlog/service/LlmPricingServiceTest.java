@@ -46,6 +46,15 @@ class LlmPricingServiceTest {
     }
 
     @Test
+    void testCostMethods_shouldReturnNull_whenSnapshotOrCharCountMissing() {
+        // an unpriced call stays honestly unpriced — never a misleading 0
+        assertThat(service().computeGenerationCost(null, 1, 1, 1, 1)).isNull();
+        assertThat(service().computeEmbeddingCost(
+            service().snapshot("gemini-2.5-flash", LocalDate.of(2026, 7, 28)), null)).isNull();
+        assertThat(service().snapshot(null, LocalDate.of(2026, 7, 28))).isNull();
+    }
+
+    @Test
     void testComputeEmbeddingCost_shouldPricePerChar_whenBillableCharsGiven() {
         PricingSnapshot snap = service().snapshot("gemini-embedding-001", LocalDate.of(2026, 7, 28));
         BigDecimal cost = service().computeEmbeddingCost(snap, 2_000_000); // 2M chars @0.15/M = 0.30
