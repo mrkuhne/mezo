@@ -444,7 +444,10 @@ test('real mode: prescribed run logged today ⇒ run hero flips to the done summ
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
   )
   renderView()
-  expect(await screen.findByText('FUTÁS')).toBeInTheDocument()
+  // Scope to .typetag-run (the weekly row's own .stag-run chip reads the same plain
+  // "FUTÁS"), and assert the logged eyebrow itself reads "FUTÁS · MEGVAN" — the same
+  // guarantee the volleyball/TRX logged tests check via /MEGVAN/.
+  expect(await screen.findByText(/MEGVAN/, { selector: '.typetag-run' })).toBeInTheDocument()
   // exact match: the weekly row's own fact pill also reads "RPE 9–10" (the prescribed
   // range), so an unanchored "RPE 9" substring would be ambiguous.
   expect(screen.getByText('RPE 9 · 6 kör')).toBeInTheDocument()
