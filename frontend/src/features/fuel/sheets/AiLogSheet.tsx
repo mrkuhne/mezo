@@ -22,6 +22,7 @@ import { Chip } from '@/shared/ui/Chip'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { GhostState } from '@/shared/ui/GhostState'
 import { resizeImage } from '@/shared/lib/resizeImage'
+import { nowOffsetIso } from '@/shared/lib/dates'
 
 type Phase = 'input' | 'drafting' | 'review'
 
@@ -114,7 +115,9 @@ export function AiLogSheet({ date, initialSlot, onClose, onManualFallback }: AiL
     )
     logMeal({
       slot,
-      loggedAt: new Date().toISOString(),
+      // OFFSET-BEARING local now (not UTC `Z`) — the backend reads loggedAt.toLocalTime() for the
+      // training-role window + timing fit; a UTC wall-clock mis-classifies a pre-workout meal (mezo-g8qm).
+      loggedAt: nowOffsetIso(),
       title: title.trim() || null,
       items,
       provenance: {

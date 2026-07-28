@@ -266,3 +266,23 @@ test('no initialSlot: the AI-proposed slot wins in review (mezo-53su)', async ()
   // MOCK_AI_MEAL_DRAFT.slot === 'lunch' → Ebéd is pressed, the 'snack' default did not stick.
   expect(screen.getByRole('button', { name: 'Ebéd' })).toHaveAttribute('aria-pressed', 'true')
 })
+
+test('logs an OFFSET-BEARING loggedAt so the backend reads the local wall-clock (mezo-g8qm)', async () => {
+  // A UTC `Z` timestamp made the backend classify the meal's training role + timing against
+  // UTC wall-clock, 1-2h off local — a pre-workout breakfast fell out of its pre-window and
+  // scored under the standard rubric. The local offset must ride along.
+  vi.useFakeTimers()
+  const logSpy = vi.fn()
+  hoisted.logMeal = logSpy as (input: MealInput) => void
+  renderSheet()
+
+  fireEvent.change(screen.getByLabelText('Mit ettél?'), { target: { value: 'csirkés wrap' } })
+  fireEvent.click(screen.getByRole('button', { name: /AI naplózás/ }))
+  await act(async () => { vi.advanceTimersByTime(700) })
+  vi.useRealTimers()
+  fireEvent.click(screen.getByRole('button', { name: 'Naplózás' }))
+
+  const payload = logSpy.mock.calls[0][0] as MealInput
+  expect(payload.loggedAt).toMatch(/T\d\d:\d\d:\d\d[+-]\d\d:\d\d$/)
+  expect(payload.loggedAt).not.toMatch(/Z$/)
+})
