@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Train · Mai nap — layout irányok (mezo brainstorm)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Tokens — verbatim from frontend/src/styles/prototype.css
+     (Napiv light, 2026-07-13 redesign + S8 Pulse accents)
+     ============================================================ */
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+  button { font:inherit; color:inherit; background:none; border:none; cursor:pointer; }
+  :root {
+    --canvas:#FBF6EF; --surface:#FFFFFF; --warm:#F4EBDF; --line:#EFE5D8;
+    --ink:#2B2118; --sub:#8A7A6A; --faint:#A5978A;
+    --coral:#FF6B4A; --coral-deep:#C4622F; --amber:#FFB347;
+    --sage:#7FA48A; --sage-deep:#5F7A52; --lav:#9B8FC4; --lav-deep:#7A6DA8;
+    --rose:#E27A8B; --sky:#6FA7D8;
+    --cta-g1:#FF7A55; --cta-g2:#FF5B36;
+    --wash-gym:#FFEDE6; --wash-sport:#FBE9EC; --wash-run:#E7F0F8; --wash-sage:#EAF0E3;
+    --tag-gym:#C4622F; --tag-sport:#B14B5E; --tag-run:#3E6E9E;
+    --np-shadow-card:0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
+    --np-shadow-row:0 8px 20px rgba(43,33,24,.05);
+    --ff-display:"Bricolage Grotesque",sans-serif;
+    --ff-body:"Plus Jakarta Sans",-apple-system,system-ui,sans-serif;
+  }
+  html,body { background:#EDE4D8; color:var(--ink); font-family:var(--ff-body); line-height:1.5; }
+  body { padding:40px 28px 120px; }
+
+  /* ====== page chrome ====== */
+  .pagehead { max-width:1180px; margin:0 auto 34px; }
+  .pagehead .eyebrow { font-size:11px; font-weight:800; letter-spacing:.18em; text-transform:uppercase; color:var(--coral-deep); margin-bottom:10px; }
+  .pagehead h1 { font-family:var(--ff-display); font-size:38px; font-weight:800; letter-spacing:-.5px; line-height:1.05; margin-bottom:12px; }
+  .pagehead p { font-size:14px; color:var(--sub); max-width:760px; }
+  .pagehead p + p { margin-top:8px; }
+  .pagehead b { color:var(--ink); }
+
+  .sect { max-width:1400px; margin:0 auto 56px; }
+  .secthead { display:flex; align-items:baseline; gap:14px; margin-bottom:6px; padding-bottom:10px; border-bottom:1.5px solid rgba(43,33,24,.12); }
+  .secthead h2 { font-family:var(--ff-display); font-size:25px; font-weight:800; letter-spacing:-.3px; }
+  .secthead .q { font-size:13px; color:var(--sub); font-weight:600; }
+  .sectnote { font-size:13px; color:var(--sub); margin:12px 0 24px; max-width:900px; }
+  .sectnote b { color:var(--ink); }
+
+  .stage { display:flex; gap:34px; justify-content:flex-start; align-items:flex-start; flex-wrap:wrap; }
+
+  /* ====== variant column ====== */
+  .col { flex:none; width:440px; }
+  .colhead { margin-bottom:14px; }
+  .colhead .k { display:inline-block; font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#fff; background:var(--ink); border-radius:6px; padding:3px 8px; margin-bottom:8px; }
+  .colhead h3 { font-family:var(--ff-display); font-size:20px; font-weight:800; letter-spacing:-.2px; }
+  .colhead p { font-size:12.5px; color:var(--sub); margin-top:5px; }
+  .metric { display:inline-flex; align-items:center; gap:6px; margin-top:9px; font-size:11px; font-weight:800; color:var(--sage-deep); background:var(--wash-sage); border-radius:999px; padding:4px 10px; }
+  .metric.bad { color:var(--tag-sport); background:var(--wash-sport); }
+  .pc { display:flex; gap:12px; margin-top:14px; font-size:11.5px; line-height:1.5; }
+  .pc ul { list-style:none; }
+  .pc li { padding-left:14px; position:relative; margin-bottom:3px; color:var(--sub); }
+  .pc li::before { position:absolute; left:0; font-weight:800; }
+  .pc .p li::before { content:'+'; color:var(--sage-deep); }
+  .pc .c li::before { content:'−'; color:var(--tag-sport); }
+  .pc h4 { font-size:9.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); margin-bottom:5px; }
+  .pc > div { flex:1; }
+
+  /* ====== iPhone frame ====== */
+  .iphone { width:440px; height:820px; border-radius:56px; background:linear-gradient(180deg,#241F1B 0%,#14110F 100%); padding:11px; position:relative; box-shadow:0 30px 70px rgba(43,33,24,.28); }
+  .screen { width:100%; height:100%; border-radius:46px; background:var(--canvas); overflow:hidden; position:relative; display:flex; flex-direction:column; }
+  .scroll { flex:1; overflow-y:auto; padding-bottom:96px; }
+  .scroll::-webkit-scrollbar { width:0; }
+  .cut { position:absolute; left:0; right:0; bottom:0; height:74px; background:linear-gradient(to top, var(--canvas) 55%, transparent); pointer-events:none; }
+
+  /* app chrome (simplified AppHero + tab bar) */
+  .apphero { display:flex; align-items:center; gap:10px; padding:14px 18px 10px; }
+  .avatar { width:36px; height:36px; border-radius:50%; background:var(--wash-sage); display:grid; place-items:center; font-weight:800; color:var(--sage-deep); font-size:14px; }
+  .who { flex:1; }
+  .who b { display:block; font-size:14px; }
+  .who span { font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--coral-deep); }
+  .counters { display:flex; gap:9px; font-size:11.5px; font-weight:800; color:var(--sub); }
+  .navchip { border:1px solid var(--line); border-radius:999px; padding:5px 11px; font-size:11.5px; font-weight:800; background:var(--surface); }
+  .tabbar { position:absolute; left:16px; right:16px; bottom:12px; height:62px; border-radius:31px; background:rgba(255,255,255,.86); backdrop-filter:blur(14px); box-shadow:var(--np-shadow-card); display:flex; align-items:center; justify-content:space-around; font-size:9px; font-weight:800; letter-spacing:.1em; color:var(--faint); }
+  .tabbar .on { color:var(--coral-deep); }
+  .fab { position:absolute; left:50%; transform:translateX(-50%); bottom:38px; width:56px; height:56px; border-radius:50%; background:linear-gradient(135deg,var(--cta-g1),var(--cta-g2)); box-shadow:0 10px 26px rgba(255,107,74,.45); color:#fff; display:grid; place-items:center; font-size:26px; font-weight:300; }
+
+  .pghead { padding:6px 22px 0; margin-bottom:12px; }
+  .pghead .over { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--coral-deep); }
+  .pghead h1 { font-family:var(--ff-display); font-size:26px; font-weight:800; letter-spacing:-.4px; }
+
+  .mesoentry { margin:0 22px 12px; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:11px 13px; display:flex; justify-content:space-between; align-items:center; font-size:12.5px; }
+  .mesoentry span:last-child { color:var(--faint); }
+
+  .secthead-np { display:flex; justify-content:space-between; align-items:baseline; margin:16px 26px 9px; }
+  .secthead-np h3 { font-size:14px; font-weight:800; }
+  .secthead-np span { font-size:11.5px; color:var(--faint); font-weight:700; }
+
+  /* ============================================================
+     SESSION CARD LANGUAGE — modality tint + logged state
+     ============================================================ */
+  .sc { --a:var(--tag-gym); --w:var(--wash-gym);
+        position:relative; margin:0 22px 11px; background:var(--surface); border-radius:22px; padding:14px 15px 15px;
+        box-shadow:var(--np-shadow-row); overflow:hidden; }
+  .sc.sport { --a:var(--tag-sport); --w:var(--wash-sport); }
+  .sc.run   { --a:var(--tag-run);   --w:var(--wash-run); }
+  .sc.cross { --a:#B07A2E;          --w:#FBF0DD; }
+  .sc.trx   { --a:var(--lav-deep);  --w:#F0EDF8; }
+
+  /* tint treatments (the three card looks) */
+  .sc.t-edge::before { content:''; position:absolute; left:0; top:0; bottom:0; width:5px; background:var(--a); }
+  .sc.t-edge { padding-left:19px; background:linear-gradient(100deg, var(--w) 0%, var(--surface) 62%); }
+  .sc.t-band { padding:0; }
+  .sc.t-band .band { background:var(--a); color:#fff; padding:8px 15px; display:flex; align-items:center; justify-content:space-between; }
+  .sc.t-band .band .tag { background:rgba(255,255,255,.22); color:#fff; }
+  .sc.t-band .body { padding:13px 15px 15px; }
+  .sc.t-wash { background:linear-gradient(150deg, var(--w), var(--surface) 78%); }
+  .sc.t-wash .icon { width:44px; height:44px; border-radius:15px; background:var(--surface); display:grid; place-items:center; font-size:21px; box-shadow:var(--np-shadow-row); }
+
+  .sc-top { display:flex; align-items:center; gap:9px; }
+  .tag { display:inline-flex; align-items:center; gap:5px; background:var(--w); color:var(--a); border-radius:999px; padding:4px 10px; font-size:9.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+  .time { font-size:13px; font-weight:800; color:var(--a); }
+  .state { margin-left:auto; display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:4px 10px; font-size:9.5px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--a); background:var(--w); }
+  .sc-title { font-family:var(--ff-display); font-size:21px; font-weight:800; letter-spacing:-.3px; line-height:1.15; margin-top:10px; }
+  .pills { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+  .pill { border-radius:999px; padding:5px 10px; font-size:11.5px; font-weight:700; color:var(--sub); background:var(--warm); white-space:nowrap; }
+  .cta { width:100%; display:flex; align-items:center; justify-content:center; gap:7px; margin-top:13px; padding:13px; border-radius:16px; font-size:12.5px; font-weight:800; color:var(--a); background:var(--w); border:1px solid color-mix(in srgb, var(--a) 24%, transparent); }
+  .cta.solid { background:linear-gradient(135deg,var(--cta-g1),var(--cta-g2)); color:#fff; border:0; border-radius:999px; padding:15px; font-size:15px; box-shadow:0 10px 24px rgba(255,91,54,.32); }
+
+  /* logged states */
+  .sc.done { background:linear-gradient(150deg,var(--wash-sage), var(--surface) 78%); }
+  .sc.done .state { color:var(--sage-deep); background:#DDE8D2; }
+  .sc.done .cta { color:var(--sage-deep); background:var(--wash-sage); border-color:rgba(95,122,82,.26); }
+  .stamp { position:absolute; right:13px; top:13px; width:38px; height:38px; border-radius:50%; background:var(--sage-deep); color:#fff; display:grid; place-items:center; font-size:19px; box-shadow:0 6px 14px rgba(95,122,82,.35); }
+  .donebar { display:flex; align-items:center; gap:9px; margin-top:12px; padding:11px 13px; border-radius:16px; background:var(--wash-sage); }
+  .donebar .big { width:30px; height:30px; border-radius:50%; background:var(--sage-deep); color:#fff; display:grid; place-items:center; font-size:15px; flex:none; }
+  .donebar .txt { font-size:12px; font-weight:800; color:var(--sage-deep); }
+  .donebar .txt small { display:block; font-weight:700; font-size:10.5px; color:var(--sub); letter-spacing:0; text-transform:none; margin-top:1px; }
+
+  /* ============================================================
+     DAY NAVIGATION — the three directions
+     ============================================================ */
+  /* A · side-scroll day strip */
+  .daystrip { display:flex; gap:9px; overflow-x:auto; padding:2px 22px 4px; margin-bottom:14px; }
+  .daystrip::-webkit-scrollbar { height:0; }
+  .daychip { flex:none; width:62px; border-radius:20px; background:var(--surface); box-shadow:var(--np-shadow-row); padding:9px 0 8px; text-align:center; border:1.5px solid transparent; }
+  .daychip .dl { font-size:10px; font-weight:800; letter-spacing:.1em; color:var(--faint); text-transform:uppercase; }
+  .daychip .dn { font-family:var(--ff-display); font-size:17px; font-weight:800; margin-top:1px; }
+  .daychip .dots { display:flex; gap:3px; justify-content:center; margin-top:6px; }
+  .daychip .dot { width:6px; height:6px; border-radius:50%; }
+  .dot.g { background:var(--tag-gym); } .dot.s { background:var(--tag-sport); } .dot.r { background:var(--tag-run); } .dot.c { background:#B07A2E; }
+  .daychip .ck { display:block; font-size:9px; font-weight:800; color:var(--sage-deep); margin-top:5px; }
+  .daychip.today { border-color:var(--coral); box-shadow:0 0 0 1.5px var(--coral), 0 10px 22px rgba(255,107,74,.18); }
+  .daychip.today .dl { color:var(--coral-deep); }
+  .daychip.sel { background:var(--ink); }
+  .daychip.sel .dl { color:rgba(255,255,255,.6); } .daychip.sel .dn { color:#fff; }
+  .daychip.rest { background:transparent; box-shadow:none; border:1.5px dashed var(--line); }
+
+  /* B · segmented day tabs */
+  .daytabs { display:flex; margin:0 22px 14px; background:var(--warm); border-radius:16px; padding:4px; gap:2px; }
+  .daytab { flex:1; text-align:center; border-radius:12px; padding:7px 0 6px; font-size:10.5px; font-weight:800; letter-spacing:.04em; color:var(--sub); position:relative; }
+  .daytab.on { background:var(--surface); color:var(--ink); box-shadow:var(--np-shadow-row); }
+  .daytab .mk { display:block; height:4px; margin:4px auto 0; width:16px; border-radius:2px; background:transparent; }
+  .daytab .mk.has { background:var(--coral); }
+  .daytab .mk.ok { background:var(--sage); }
+
+  /* C · today-only + weekly entry card */
+  .weekentry { margin:14px 22px 0; background:var(--surface); border-radius:22px; padding:14px 15px; box-shadow:var(--np-shadow-row); }
+  .weekentry .wtop { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:11px; }
+  .weekentry .wtop b { font-size:14px; font-weight:800; }
+  .weekentry .wtop span { font-size:11.5px; color:var(--faint); font-weight:700; }
+  .heat { display:flex; gap:6px; }
+  .hday { flex:1; border-radius:13px; background:var(--warm); padding:7px 0 6px; text-align:center; }
+  .hday .hl { font-size:9px; font-weight:800; color:var(--faint); letter-spacing:.06em; }
+  .hday .hb { display:flex; gap:2px; justify-content:center; margin-top:5px; height:16px; align-items:flex-end; }
+  .hday .hbar { width:5px; border-radius:2px; }
+  .hday.done { background:var(--wash-sage); }
+  .hday.today { background:var(--surface); box-shadow:0 0 0 1.5px var(--coral); }
+  .hday.today .hl { color:var(--coral-deep); }
+
+  /* compact weekly list (variant C detail page teaser) */
+  .wrow { display:flex; align-items:center; gap:10px; margin:0 22px 7px; background:var(--surface); border-radius:16px; padding:9px 12px; box-shadow:var(--np-shadow-row); }
+  .wrow .wd { width:34px; font-size:10.5px; font-weight:800; color:var(--faint); text-transform:uppercase; }
+  .wrow .wt { flex:1; display:flex; gap:5px; flex-wrap:wrap; }
+  .wchip { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:3px 8px; font-size:10.5px; font-weight:800; }
+  .wchip.g { background:var(--wash-gym); color:var(--tag-gym); }
+  .wchip.s { background:var(--wash-sport); color:var(--tag-sport); }
+  .wchip.r { background:var(--wash-run); color:var(--tag-run); }
+  .wchip.c { background:#FBF0DD; color:#B07A2E; }
+  .wrow .wk { font-size:12px; color:var(--sage-deep); font-weight:800; }
+  .wrow.rest { background:transparent; box-shadow:none; border:1.5px dashed var(--line); }
+
+  /* palette swatches */
+  .palette { display:flex; gap:12px; flex-wrap:wrap; margin-top:6px; }
+  .sw { width:150px; border-radius:18px; padding:12px; background:var(--surface); box-shadow:var(--np-shadow-row); }
+  .sw .chipline { display:flex; align-items:center; gap:8px; }
+  .sw .bar { height:8px; border-radius:4px; margin-top:10px; }
+  .sw .nm { font-size:10.5px; color:var(--sub); margin-top:8px; font-weight:700; }
+  .footnote { max-width:1180px; margin:0 auto; font-size:12.5px; color:var(--sub); border-top:1.5px solid rgba(43,33,24,.12); padding-top:16px; }
+  .footnote b { color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <div class="eyebrow">mezo · brainstorm · mezo-lruy follow-up</div>
+  <h1>Train → „Mai nap” — kevesebb scroll, beszédesebb kártyák</h1>
+  <p>A mostani oldal <b>2,51 képernyő</b> magas (440×956), ebből a heti terv hét kifejtett napkártyája <b>1260 px</b> — a scroll ~52%-a. A mai nap maga elférne egy képernyőn.</p>
+  <p>Két kérdés van a lapon: <b>(1)</b> milyen legyen egy session-kártya (szín + „megvan” jelzés), <b>(2)</b> hogyan navigálunk a napok között. A kártyanyelvet mindhárom navigációs irány örökli, ezért külön döntjük el őket.</p>
+</div>
+
+<!-- ============================================================
+     SECTION 1 — card language
+     ============================================================ -->
+<div class="sect">
+  <div class="secthead">
+    <h2>1 · Kártyanyelv</h2>
+    <span class="q">Melyik tükrözi legjobban a mozgás típusát — és melyik „megvan” jelzés a legbeszédesebb?</span>
+  </div>
+  <p class="sectnote">Mindhárom kártya ugyanazt az adatot mutatja (ma 12:00 · sprint-intervallum · RPE 9–10 · 5 kör). A különbség a <b>tintálás mértéke</b>. Alattuk ugyanaz a kártya <b>logolt</b> állapotban, három erősségű visszajelzéssel.</p>
+
+  <div class="stage">
+    <!-- K1 edge -->
+    <div class="col" style="width:400px">
+      <div class="colhead">
+        <span class="k">K1</span>
+        <h3>Színes bal él + halvány dőlt wash</h3>
+        <p>A mostani kártya + 5px színes él és egy oldalirányú tint. Legkisebb ugrás a mai kódhoz.</p>
+      </div>
+      <div class="sc run t-edge" style="margin:0 0 18px">
+        <div class="sc-top">
+          <span class="tag">🏃 futás</span><span class="time">12:00</span>
+          <span class="state">ma</span>
+        </div>
+        <div class="sc-title">Sprint-intervallum</div>
+        <div class="pills"><span class="pill">RPE 9–10</span><span class="pill">5 kör</span><span class="pill">~35 perc</span></div>
+        <button class="cta">＋ Naplózd a futást</button>
+      </div>
+      <div class="sc run t-edge done" style="margin:0">
+        <span class="stamp">✓</span>
+        <div class="sc-top">
+          <span class="tag">🏃 futás</span><span class="time">12:00</span>
+        </div>
+        <div class="sc-title">Sprint-intervallum</div>
+        <div class="donebar">
+          <span class="big">✓</span>
+          <span class="txt">Megvan · RPE 9<small>5/5 kör · 12:04-kor logolva</small></span>
+        </div>
+      </div>
+      <div class="pc">
+        <div class="p"><h4>mellette</h4><ul><li>1 CSS-blokk, nulla szerkezeti változás</li><li>a pillek maradnak olvashatók</li></ul></div>
+        <div class="c"><h4>ellene</h4><ul><li>listában sok kártya → az él vékony jel</li></ul></div>
+      </div>
+    </div>
+
+    <!-- K2 band -->
+    <div class="col" style="width:400px">
+      <div class="colhead">
+        <span class="k">K2</span>
+        <h3>Telt színes fejlécsáv</h3>
+        <p>A típus a kártya tetején telt színben ül, a törzs semleges — a lista végigpörgetve „csíkos”, típus szerint azonnal olvasható.</p>
+      </div>
+      <div class="sc run t-band" style="margin:0 0 18px">
+        <div class="band">
+          <span class="tag">🏃 futás</span>
+          <span style="font-size:12.5px;font-weight:800">12:00 · MA</span>
+        </div>
+        <div class="body">
+          <div class="sc-title" style="margin-top:0">Sprint-intervallum</div>
+          <div class="pills"><span class="pill">RPE 9–10</span><span class="pill">5 kör</span><span class="pill">~35 perc</span></div>
+          <button class="cta">＋ Naplózd a futást</button>
+        </div>
+      </div>
+      <div class="sc run t-band done" style="margin:0">
+        <div class="band" style="background:var(--sage-deep)">
+          <span class="tag">🏃 futás</span>
+          <span style="font-size:12.5px;font-weight:800">✓ MEGVAN</span>
+        </div>
+        <div class="body">
+          <div class="sc-title" style="margin-top:0">Sprint-intervallum</div>
+          <div class="donebar" style="margin-top:11px">
+            <span class="big">✓</span>
+            <span class="txt">RPE 9 · 5/5 kör<small>12:04-kor logolva — nyisd meg a szerkesztéshez</small></span>
+          </div>
+        </div>
+      </div>
+      <div class="pc">
+        <div class="p"><h4>mellette</h4><ul><li>legerősebb típus-jelzés végigpörgetve</li><li>a done-állapot egész sávot vált → messziről látszik</li></ul></div>
+        <div class="c"><h4>ellene</h4><ul><li>3 sáv egy napon sok színt visz be</li><li>új komponens-szerkezet (band + body)</li></ul></div>
+      </div>
+    </div>
+
+    <!-- K3 wash + icon -->
+    <div class="col" style="width:400px">
+      <div class="colhead">
+        <span class="k">K3</span>
+        <h3>Teljes wash + ikonpajzs</h3>
+        <p>A kártya háttere a modalitás gradiense, az ikon 44px pajzson ül. A gym-hero nyelve kiterjesztve mindenre.</p>
+      </div>
+      <div class="sc run t-wash" style="margin:0 0 18px">
+        <div class="sc-top">
+          <span class="icon">🏃</span>
+          <div style="flex:1">
+            <div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--a)">futás · 12:00</div>
+            <div class="sc-title" style="font-size:19px;margin-top:2px">Sprint-intervallum</div>
+          </div>
+          <span class="state">ma</span>
+        </div>
+        <div class="pills"><span class="pill">RPE 9–10</span><span class="pill">5 kör</span><span class="pill">~35 perc</span></div>
+        <button class="cta">＋ Naplózd a futást</button>
+      </div>
+      <div class="sc run t-wash done" style="margin:0">
+        <div class="sc-top">
+          <span class="icon" style="background:var(--sage-deep);color:#fff">✓</span>
+          <div style="flex:1">
+            <div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sage-deep)">futás · megvan</div>
+            <div class="sc-title" style="font-size:19px;margin-top:2px">Sprint-intervallum</div>
+          </div>
+        </div>
+        <div class="donebar">
+          <span class="big">✓</span>
+          <span class="txt">RPE 9 · 5/5 kör<small>12:04-kor logolva</small></span>
+        </div>
+      </div>
+      <div class="pc">
+        <div class="p"><h4>mellette</h4><ul><li>egy nyelv a gym-heróval</li><li>az ikon a leggyorsabban olvasható jel</li><li>a done-kártya ikonja pipára vált</li></ul></div>
+        <div class="c"><h4>ellene</h4><ul><li>emoji-ikonok platformonként máshogy néznek ki</li><li>a cím kisebb, mert az ikon elveszi a helyet</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="secthead" style="margin-top:44px">
+    <h2>1b · Paletta</h2>
+    <span class="q">A sport-család most egy szín (rose). Kapjon a cross és a TRX sajátot?</span>
+  </div>
+  <p class="sectnote">Ma: gym = korall, <b>röpi + cross + TRX = ugyanaz a rose</b>, futás = ég. Egy vegyes napon (cross 07:00 + röpi 18:00) a két kártya azonos színű. Bal oldalt a mai, jobbra a bővített paletta.</p>
+  <div class="palette">
+    <div class="sw"><div class="chipline"><span class="tag" style="--a:var(--tag-gym);--w:var(--wash-gym)">🏋️ gym</span></div><div class="bar" style="background:var(--tag-gym)"></div><div class="nm">--tag-gym · marad</div></div>
+    <div class="sw"><div class="chipline"><span class="tag" style="--a:var(--tag-sport);--w:var(--wash-sport)">🏐 röpi</span></div><div class="bar" style="background:var(--tag-sport)"></div><div class="nm">--tag-sport · marad</div></div>
+    <div class="sw"><div class="chipline"><span class="tag" style="--a:var(--tag-run);--w:var(--wash-run)">🏃 futás</span></div><div class="bar" style="background:var(--tag-run)"></div><div class="nm">--tag-run · marad</div></div>
+    <div class="sw" style="outline:2px dashed var(--amber);outline-offset:3px"><div class="chipline"><span class="tag" style="--a:#B07A2E;--w:#FBF0DD">🤸 cross</span></div><div class="bar" style="background:#B07A2E"></div><div class="nm">új: --tag-cross (amber-deep)</div></div>
+    <div class="sw" style="outline:2px dashed var(--lav);outline-offset:3px"><div class="chipline"><span class="tag" style="--a:var(--lav-deep);--w:#F0EDF8">🪢 trx</span></div><div class="bar" style="background:var(--lav-deep)"></div><div class="nm">új: --tag-trx (lav-deep)</div></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SECTION 2 — day navigation
+     ============================================================ -->
+<div class="sect">
+  <div class="secthead">
+    <h2>2 · Napnavigáció</h2>
+    <span class="q">Melyik szünteti meg a scrollt anélkül, hogy a heti áttekintés + „más napra ugrás” elveszne?</span>
+  </div>
+  <p class="sectnote">Mindhárom telefon <b>keddet</b> mutatja (a legsűrűbb nap: cross 07:00 kész · sprint 12:00 · röpi 18:00), K3 kártyanyelvvel és az új palettával. A becsült magasság a képernyő aljára írva.</p>
+
+  <div class="stage">
+
+    <!-- ================= A · day strip ================= -->
+    <div class="col">
+      <div class="colhead">
+        <span class="k">A</span>
+        <h3>Nap-csík (oldalra húzható)</h3>
+        <p>A fejléc alatt 7 nap-chip vízszintesen. Egy chip = a nap modalitás-pontjai + kész-jel. Tapra a lap alatta arra a napra vált — az oldal nem navigál el.</p>
+        <span class="metric">≈ 1,15 képernyő</span>
+      </div>
+      <div class="iphone"><div class="screen">
+        <div class="scroll">
+          <div class="apphero">
+            <span class="avatar">D</span>
+            <span class="who"><b>Daniel</b><span>a fegyelmezett</span></span>
+            <span class="counters">🔥 6 · ⚡ 1/3</span>
+            <span class="navchip">Mai ⌄</span>
+          </div>
+          <div class="pghead"><div class="over">Edzés · Kedd · W3</div><h1>Mai nap</h1></div>
+
+          <div class="daystrip">
+            <div class="daychip"><div class="dl">hét</div><div class="dn">18</div><div class="dots"><span class="dot g"></span><span class="dot s"></span></div><span class="ck">✓ ✓</span></div>
+            <div class="daychip today"><div class="dl">ma</div><div class="dn">19</div><div class="dots"><span class="dot c"></span><span class="dot r"></span><span class="dot s"></span></div><span class="ck">✓ · ·</span></div>
+            <div class="daychip"><div class="dl">sze</div><div class="dn">20</div><div class="dots"><span class="dot g"></span><span class="dot s"></span></div><span class="ck" style="color:var(--faint)">—</span></div>
+            <div class="daychip"><div class="dl">csü</div><div class="dn">21</div><div class="dots"><span class="dot c"></span><span class="dot r"></span></div><span class="ck" style="color:var(--faint)">—</span></div>
+            <div class="daychip"><div class="dl">pén</div><div class="dn">22</div><div class="dots"><span class="dot g"></span><span class="dot s"></span></div><span class="ck" style="color:var(--faint)">—</span></div>
+            <div class="daychip"><div class="dl">szo</div><div class="dn">23</div><div class="dots"><span class="dot s"></span><span class="dot g"></span></div><span class="ck" style="color:var(--faint)">—</span></div>
+            <div class="daychip rest"><div class="dl">vas</div><div class="dn">24</div><div class="dots"><span class="dot" style="background:var(--line)"></span></div><span class="ck" style="color:var(--faint)">pihenő</span></div>
+          </div>
+
+          <div class="sc cross t-wash done">
+            <div class="sc-top">
+              <span class="icon" style="background:var(--sage-deep);color:#fff">✓</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sage-deep)">cross · megvan</div><div class="sc-title" style="font-size:19px;margin-top:2px">Cross</div></div>
+            </div>
+            <div class="donebar"><span class="big">✓</span><span class="txt">RPE 8 · 60 perc<small>07:12-kor logolva</small></span></div>
+          </div>
+
+          <div class="sc run t-wash">
+            <div class="sc-top">
+              <span class="icon">🏃</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--a)">futás · 12:00</div><div class="sc-title" style="font-size:19px;margin-top:2px">Sprint-intervallum</div></div>
+              <span class="state">most</span>
+            </div>
+            <div class="pills"><span class="pill">RPE 9–10</span><span class="pill">5 kör</span></div>
+            <button class="cta">＋ Naplózd a futást</button>
+          </div>
+
+          <div class="sc sport t-wash">
+            <div class="sc-top">
+              <span class="icon">🏐</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--a)">röpi · 18:00</div><div class="sc-title" style="font-size:19px;margin-top:2px">Volleyball</div></div>
+              <span class="state">este</span>
+            </div>
+            <div class="pills"><span class="pill">120 perc</span><span class="pill">edzés</span><span class="pill">Szamos utca</span></div>
+            <button class="cta">＋ Logold a session-t</button>
+          </div>
+
+          <div class="secthead-np"><h3>Heti terhelés</h3><span>7 session</span></div>
+          <div style="display:flex;gap:9px;margin:0 22px 8px">
+            <div class="hday" style="flex:1"><div class="hl">GYM</div><div class="hb"><span class="hbar" style="height:14px;background:var(--tag-gym)"></span></div><div style="font-size:11px;font-weight:800;margin-top:4px">3× · 73p</div></div>
+            <div class="hday" style="flex:1"><div class="hl">SPORT</div><div class="hb"><span class="hbar" style="height:16px;background:var(--tag-sport)"></span></div><div style="font-size:11px;font-weight:800;margin-top:4px">5× · 8h</div></div>
+            <div class="hday" style="flex:1"><div class="hl">FUTÁS</div><div class="hb"><span class="hbar" style="height:10px;background:var(--tag-run)"></span></div><div style="font-size:11px;font-weight:800;margin-top:4px">2× · sprint</div></div>
+          </div>
+        </div>
+        <div class="cut"></div>
+        <div class="tabbar"><span>MA</span><span class="on">EDZÉS</span><span style="width:56px"></span><span>FUEL</span><span>ÉN</span></div>
+        <div class="fab">＋</div>
+      </div></div>
+      <div class="pc">
+        <div class="p"><h4>mellette</h4><ul><li>7 nap ~90px-ben — a heti lista 1260px-e eltűnik</li><li>a chip pontjai megadják a heti ritmust (áttekintés)</li><li>más napra ugrás = 1 tap, ugyanazon a lapon (navigáció)</li></ul></div>
+        <div class="c"><h4>ellene</h4><ul><li>a hét vége lelóg → húzni kell (rejtett tartalom)</li><li>a részletek csak a kiválasztott napra láthatók</li></ul></div>
+      </div>
+    </div>
+
+    <!-- ================= B · segmented tabs ================= -->
+    <div class="col">
+      <div class="colhead">
+        <span class="k">B</span>
+        <h3>Nap-tabok (fix szegmensek)</h3>
+        <p>Mind a 7 nap egyszerre látszik egy szegmentált váltóban, húzás nélkül. Alatta ugyanaz a naptartalom; a jelölősáv mutatja, van-e edzés / megvan-e.</p>
+        <span class="metric">≈ 1,1 képernyő</span>
+      </div>
+      <div class="iphone"><div class="screen">
+        <div class="scroll">
+          <div class="apphero">
+            <span class="avatar">D</span>
+            <span class="who"><b>Daniel</b><span>a fegyelmezett</span></span>
+            <span class="counters">🔥 6 · ⚡ 1/3</span>
+            <span class="navchip">Mai ⌄</span>
+          </div>
+          <div class="pghead"><div class="over">Edzés · Kedd · W3</div><h1>Mai nap</h1></div>
+
+          <div class="daytabs">
+            <div class="daytab">H<span class="mk ok"></span></div>
+            <div class="daytab on">K<span class="mk has"></span></div>
+            <div class="daytab">Sze<span class="mk has"></span></div>
+            <div class="daytab">Cs<span class="mk has"></span></div>
+            <div class="daytab">P<span class="mk has"></span></div>
+            <div class="daytab">Szo<span class="mk has"></span></div>
+            <div class="daytab">V<span class="mk"></span></div>
+          </div>
+
+          <div class="sc cross t-wash done">
+            <div class="sc-top">
+              <span class="icon" style="background:var(--sage-deep);color:#fff">✓</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sage-deep)">cross · megvan</div><div class="sc-title" style="font-size:19px;margin-top:2px">Cross</div></div>
+            </div>
+            <div class="donebar"><span class="big">✓</span><span class="txt">RPE 8 · 60 perc<small>07:12-kor logolva</small></span></div>
+          </div>
+
+          <div class="sc run t-wash">
+            <div class="sc-top">
+              <span class="icon">🏃</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--a)">futás · 12:00</div><div class="sc-title" style="font-size:19px;margin-top:2px">Sprint-intervallum</div></div>
+              <span class="state">most</span>
+            </div>
+            <div class="pills"><span class="pill">RPE 9–10</span><span class="pill">5 kör</span></div>
+            <button class="cta">＋ Naplózd a futást</button>
+          </div>
+
+          <div class="sc sport t-wash">
+            <div class="sc-top">
+              <span class="icon">🏐</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--a)">röpi · 18:00</div><div class="sc-title" style="font-size:19px;margin-top:2px">Volleyball</div></div>
+              <span class="state">este</span>
+            </div>
+            <div class="pills"><span class="pill">120 perc</span><span class="pill">edzés</span><span class="pill">Szamos utca</span></div>
+            <button class="cta">＋ Logold a session-t</button>
+          </div>
+
+          <div class="mesoentry" style="margin-top:14px">
+            <span>🗓 Hypertrophy 04 · MAV · W3/6</span><span>→</span>
+          </div>
+        </div>
+        <div class="cut"></div>
+        <div class="tabbar"><span>MA</span><span class="on">EDZÉS</span><span style="width:56px"></span><span>FUEL</span><span>ÉN</span></div>
+        <div class="fab">＋</div>
+      </div></div>
+      <div class="pc">
+        <div class="p"><h4>mellette</h4><ul><li>a teljes hét egy pillantással, húzás nélkül</li><li>a legalacsonyabb lap — ~1,1 képernyő</li></ul></div>
+        <div class="c"><h4>ellene</h4><ul><li>7 szegmens 440px-en szűk: 1 betű + jelölősáv, dátum nem fér ki</li><li>kevesebb infó napról, mint a chipeken (nincs modalitás-szín)</li><li>kis tap-target (~52px)</li></ul></div>
+      </div>
+    </div>
+
+    <!-- ================= C · today only + weekly entry ================= -->
+    <div class="col">
+      <div class="colhead">
+        <span class="k">C</span>
+        <h3>Csak ma + „Heti terv” belépő</h3>
+        <p>A Mai lap csak a mai napot mutatja, nagy kártyákkal. A hét egy mini heatmap-kártyában ül; tapra a részletes heti lista külön lapon nyílik (sub-nav: <b>Heti</b>).</p>
+        <span class="metric">≈ 1,2 képernyő</span>
+      </div>
+      <div class="iphone"><div class="screen">
+        <div class="scroll">
+          <div class="apphero">
+            <span class="avatar">D</span>
+            <span class="who"><b>Daniel</b><span>a fegyelmezett</span></span>
+            <span class="counters">🔥 6 · ⚡ 1/3</span>
+            <span class="navchip">Mai ⌄</span>
+          </div>
+          <div class="pghead"><div class="over">Edzés · Kedd · W3</div><h1>Mai nap</h1></div>
+
+          <div class="sc cross t-wash done">
+            <div class="sc-top">
+              <span class="icon" style="background:var(--sage-deep);color:#fff">✓</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sage-deep)">cross · megvan</div><div class="sc-title" style="font-size:19px;margin-top:2px">Cross</div></div>
+            </div>
+            <div class="donebar"><span class="big">✓</span><span class="txt">RPE 8 · 60 perc<small>07:12-kor logolva</small></span></div>
+          </div>
+
+          <div class="sc run t-wash">
+            <div class="sc-top">
+              <span class="icon">🏃</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--a)">futás · 12:00</div><div class="sc-title" style="font-size:19px;margin-top:2px">Sprint-intervallum</div></div>
+              <span class="state">most</span>
+            </div>
+            <div class="pills"><span class="pill">RPE 9–10</span><span class="pill">5 kör</span><span class="pill">~35 perc</span></div>
+            <button class="cta">＋ Naplózd a futást</button>
+          </div>
+
+          <div class="sc sport t-wash">
+            <div class="sc-top">
+              <span class="icon">🏐</span>
+              <div style="flex:1"><div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--a)">röpi · 18:00</div><div class="sc-title" style="font-size:19px;margin-top:2px">Volleyball</div></div>
+              <span class="state">este</span>
+            </div>
+            <div class="pills"><span class="pill">120 perc</span><span class="pill">edzés</span><span class="pill">Szamos utca</span></div>
+            <button class="cta">＋ Logold a session-t</button>
+          </div>
+
+          <div class="weekentry">
+            <div class="wtop"><b>A hetem</b><span>7 session · 3 kész →</span></div>
+            <div class="heat">
+              <div class="hday done"><div class="hl">H</div><div class="hb"><span class="hbar" style="height:11px;background:var(--tag-gym)"></span><span class="hbar" style="height:15px;background:var(--tag-sport)"></span></div></div>
+              <div class="hday today"><div class="hl">K</div><div class="hb"><span class="hbar" style="height:8px;background:#B07A2E"></span><span class="hbar" style="height:6px;background:var(--tag-run)"></span><span class="hbar" style="height:15px;background:var(--tag-sport)"></span></div></div>
+              <div class="hday"><div class="hl">Sze</div><div class="hb"><span class="hbar" style="height:11px;background:var(--tag-gym)"></span><span class="hbar" style="height:15px;background:var(--tag-sport)"></span></div></div>
+              <div class="hday"><div class="hl">Cs</div><div class="hb"><span class="hbar" style="height:8px;background:#B07A2E"></span><span class="hbar" style="height:6px;background:var(--tag-run)"></span></div></div>
+              <div class="hday"><div class="hl">P</div><div class="hb"><span class="hbar" style="height:11px;background:var(--tag-gym)"></span><span class="hbar" style="height:15px;background:var(--tag-sport)"></span></div></div>
+              <div class="hday"><div class="hl">Szo</div><div class="hb"><span class="hbar" style="height:16px;background:var(--tag-sport)"></span><span class="hbar" style="height:11px;background:var(--tag-gym)"></span></div></div>
+              <div class="hday"><div class="hl">V</div><div class="hb"><span class="hbar" style="height:3px;background:var(--line)"></span></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="cut"></div>
+        <div class="tabbar"><span>MA</span><span class="on">EDZÉS</span><span style="width:56px"></span><span>FUEL</span><span>ÉN</span></div>
+        <div class="fab">＋</div>
+      </div></div>
+      <div class="pc">
+        <div class="p"><h4>mellette</h4><ul><li>a Mai lap egy célra fókuszál: a ma</li><li>a heatmap ránézésre megadja a hét ritmusát + a kész-arányt</li><li>a heti lap végre lehet részletes (nem kell tömöríteni)</li></ul></div>
+        <div class="c"><h4>ellene</h4><ul><li>más napra ugrás 2 tap (belépő → nap)</li><li>új route + sub-nav tab (7. tab a Train alatt)</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="secthead" style="margin-top:44px">
+    <h2>2b · A heti lap (C-hez)</h2>
+    <span class="q">Ha külön lapra kerül, ott sűrű chip-sorok is elférnek</span>
+  </div>
+  <p class="sectnote">Ez már nem választás, csak illusztráció: a külön lapon a nap egy sor (chipek típus szerint), így mind a 7 nap ~330px-ben elfér — a részletek a napra tapelve nyílnak.</p>
+  <div style="max-width:440px">
+    <div class="wrow"><span class="wd">hét</span><span class="wt"><span class="wchip g">🏋️ Upper body</span><span class="wchip s">🏐 18:00</span></span><span class="wk">✓✓</span></div>
+    <div class="wrow" style="box-shadow:0 0 0 1.5px var(--coral), var(--np-shadow-row)"><span class="wd" style="color:var(--coral-deep)">ma</span><span class="wt"><span class="wchip c">🤸 07:00</span><span class="wchip r">🏃 12:00</span><span class="wchip s">🏐 18:00</span></span><span class="wk">✓··</span></div>
+    <div class="wrow"><span class="wd">sze</span><span class="wt"><span class="wchip g">🏋️ Quad Day</span><span class="wchip s">🏐 18:00</span></span><span class="wk" style="color:var(--faint)">—</span></div>
+    <div class="wrow"><span class="wd">csü</span><span class="wt"><span class="wchip c">🤸 07:00</span><span class="wchip r">🏃 Piramis</span></span><span class="wk" style="color:var(--faint)">—</span></div>
+    <div class="wrow"><span class="wd">pén</span><span class="wt"><span class="wchip g">🏋️ Push Day</span><span class="wchip s">🏐 18:00</span></span><span class="wk" style="color:var(--faint)">—</span></div>
+    <div class="wrow"><span class="wd">szo</span><span class="wt"><span class="wchip s">🏐 meccs 08:00</span><span class="wchip g">🏋️ Pull Day</span></span><span class="wk" style="color:var(--faint)">—</span></div>
+    <div class="wrow rest"><span class="wd">vas</span><span class="wt" style="font-size:11.5px;color:var(--faint);font-weight:700">Pihenőnap</span></div>
+  </div>
+</div>
+
+<div class="footnote">
+  <p><b>Amit kérdezek:</b> (1) kártyanyelv — K1 / K2 / K3, (2) paletta — kapjon-e a cross és a TRX saját színt, (3) navigáció — A / B / C. A három döntés független; keverhető is (pl. K3 kártya + A nap-csík).</p>
+  <p style="margin-top:8px">Mérési alap: a mostani lap 2,51 képernyő (heti lista 1260 px). A becsült magasságok a fenti telefonok tartalmából jönnek, mock heti adattal (Kedd = 3 session, a legsűrűbb nap).</p>
+</div>
+
+</body>
+</html>
