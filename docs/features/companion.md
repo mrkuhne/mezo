@@ -114,6 +114,18 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `kind ∈ {food, supplement, stim, med}` (default: all kinds) lists each item's name + stock
   qty/unit, plus expiry for food (`IngredientResponse.stock.expires`; the stash projection carries
   no expiry). Null-guarded per item (no stock tracked → name only); capped at 5 rendered/audited items.
+- **13th tool — `get_growth` (gamified growth, mezo-xixu)**, new `GrowthTools` bean: reads across
+  `ProgressionService.getProfile` (skill levels/XP, ungated), `GamificationService.getProfile`
+  (account level/XP/streak/titles, `GAMIFICATION_SWITCH`-gated, read via `ObjectProvider` — the
+  `BiometricsTools#sleepGoalService` precedent), `GrowthWeekService.growthWeek` (weekly rollup,
+  ungated) and `AchievementService.achievements` (badges/perks, ungated). `scope ∈ {skills, week,
+  achievements, titles}` (default `skills`): scope=skills renders account level/XP/live-streak
+  plus every skill with real progress (athletic/muscle/life, filtering out the fixed-taxonomy
+  ghost defaults); scope=week/achievements render honest zeros per each backing service's own
+  doc (never `nincs adat`); scope=titles renders the equipped + owned titles (never `nincs adat`
+  unless gamification itself is off). `nincs adat` only for scope=skills, gated on
+  `ProgressionProfileResponse.athleteLevel == null` (the service's own "no skill_progress rows
+  yet" ghost signal).
 - **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
   `RecordingToolCallback` (audit + per-turn budget, structurally unbypassable); the per-turn
   `ToolCallAudit` rides in the Spring AI `ToolContext`, collects `{type:'read', name, args}`
@@ -679,7 +691,9 @@ carries the args baked in — `get_recovery(scope=sleep, days=3)`), `MessageRef 
 V2.3 `Memory` — a recalled day's date, and since mezo-xixu `TrainingPlan` — the resolved date, or
 the mesocycle title for `scope=meso`, `ExerciseRecord` — the exercise name, `Recipe` — the
 matched recipe's name, `Pantry` — the pantry item's name, `SleepGoal` — the resolved wake time
-(`get_recovery(scope=sleep-goal)`), and `CheckIn` — a check-in's date (`get_recovery(scope=checkins)`)),
+(`get_recovery(scope=sleep-goal)`), `CheckIn` — a check-in's date (`get_recovery(scope=checkins)`),
+and `Growth` — a stable scope label (`skills`/`week-{weekStart}`/`achievements`/`titles`,
+`get_growth(scope)`)),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
@@ -700,6 +714,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu) | `RecipeService.list`/`.get` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: case-insensitive substring match on slot/category/tag/starred/fitsFor (not name) — a single match renders full macros + ingredient lines | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
+| `get_growth(scope)` (mezo-xixu) | scope=skills (default): `ProgressionService.getProfile` (ungated) → account level/XP/streak from `GamificationService.getProfile` (`GAMIFICATION_SWITCH`-gated, `ObjectProvider`) + every skill with real progress (athletic/muscle/life); scope=week: `GrowthWeekService.growthWeek` (ungated) → closed quests, LIFE XP, activities, savings for the current ISO week; scope=achievements: `AchievementService.achievements` (ungated) → all 9 derive-on-read badges + persisted perk unlocks; scope=titles: `GamificationService.getProfile` → equipped + owned titles | `Growth`/`skills` or `week-{weekStart}` or `achievements` or `titles` |
 | `find_similar_past_days(description, k)` (V2.3) | `MemoryRecallService.recallSimilarDays` — query embed → ANN over daily-summary vectors → similarity × recency-decay re-rank | `Memory`/date (≤k) |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)
