@@ -54,9 +54,12 @@ public class GoalTools {
             + "minimum szett/izomcsoport és elmaradó izomcsoportok. scope=feasibility — a cél "
             + "reálisságának verdiktje és megjegyzései. scope=timeline — a célhoz rendelt tervek "
             + "(mezociklus/futásblokk) hetekre bontva, plusz a lefedetlen hetek. A recept/guards/"
-            + "feasibility/timeline scope csak kiértékelt (aktivált) célra ad adatot. Használd, amikor "
-            + "a user a céljáról, a receptjéről/kalóriacéljáról, a korlátairól vagy a cél reálisságáról "
-            + "kérdez. scope: progress (alapértelmezés), recept, timeline, guards, feasibility.")
+            + "feasibility scope csak kiértékelt (aktivált) célra ad adatot; a timeline scope ettől "
+            + "függetlenül a célhoz rendelt tervektől (plan linkek) függ, nem a kiértékeléstől. "
+            + "Használd, amikor a user a céljáról, a receptjéről/kalóriacéljáról, a korlátairól, a cél "
+            + "reálisságáról, vagy a célhoz rendelt tervekről/lefedettségéről (pl. milyen tervek fedik "
+            + "le a célt, mely hetek nincsenek lefedve) kérdez. scope: progress (alapértelmezés), "
+            + "recept, timeline, guards, feasibility.")
     public String getGoal(
             @ToolParam(required = false, description = "progress|recept|timeline|guards|feasibility "
                     + "(alapértelmezés: progress).") String scope,
@@ -135,8 +138,10 @@ public class GoalTools {
             b.append(" (").append(p.basis()).append(')');
         }
         for (GoalPrescriptionJson.Segment seg : p.segments().stream().limit(3).toList()) {
-            b.append('\n').append(seg.fromWeek()).append('-').append(seg.toWeek()).append(". hét: ")
-                    .append(seg.kcal()).append(" kcal, ").append(seg.proteinG()).append(" g fehérje");
+            b.append('\n').append(seg.fromWeek() != null ? seg.fromWeek() : "?")
+                    .append('-').append(seg.toWeek() != null ? seg.toWeek() : "?").append(". hét: ")
+                    .append(seg.kcal() != null ? seg.kcal() : "?").append(" kcal, ")
+                    .append(seg.proteinG() != null ? seg.proteinG() : "?").append(" g fehérje");
             if (seg.sleepTargetH() != null) {
                 b.append(", alvás ").append(ToolText.num(seg.sleepTargetH())).append(" h");
             }
@@ -176,7 +181,9 @@ public class GoalTools {
         }
         if (m != null && Boolean.TRUE.equals(m.active())) {
             any = true;
-            b.append("\nIzom: heti minimum ").append(m.minWeeklySetsPerMuscle()).append(" szett/izomcsoport");
+            b.append("\nIzom: heti minimum ")
+                    .append(m.minWeeklySetsPerMuscle() != null ? m.minWeeklySetsPerMuscle() : "?")
+                    .append(" szett/izomcsoport");
             if (m.belowMaintenanceMuscles() != null && !m.belowMaintenanceMuscles().isEmpty()) {
                 b.append(", elmaradó: ").append(String.join(", ", m.belowMaintenanceMuscles()));
             }

@@ -1287,8 +1287,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     measures against the CURRENT active protocol for the whole window (version time-travel is
     v1+ material; mezo-xixu also merged in `scope=intake`/`supplements`, see the catalog);
     `get_goal_progress` is a pure read composition — merged into `get_goal(scope)` (mezo-xixu:
-    progress/recept/timeline/guards/feasibility, all reading the same `prescription` jsonb; the
-    engine's `evaluate` is a write and stays out of the registry).
+    progress/recept/guards/feasibility read the same `prescription` jsonb (engine's `evaluate` is a
+    write and stays out of the registry); scope=timeline instead reads plan links via
+    `GoalTimelineService`/`GoalPlanLinkService` — independent of evaluation).
 20. **The fake scripts tools via content sentinels** — `[fake-tool:name {json}]` executes the
     REAL wrapped callback (audit/budget/refs included), so the whole pipeline is IT-covered with
     zero LLM. Spring AI's result converter JSON-encodes a tool's String return — the fake's echo

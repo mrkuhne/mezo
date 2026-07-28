@@ -631,6 +631,26 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetGoal_shouldSkipBasisLine_whenScopeReceptAndBasisNull() {
+        UUID owner = userPopulator.createUser().getId();
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, null,
+                List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", 2100, 160,
+                        new BigDecimal("7.5"), List.of(5, 6), null, null)),
+                null, null);
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
+                prescription, null, null, null);
+
+        String out = goalTools.getGoal("recept", ctx(owner));
+
+        // basis()==null -> no "(...)" after the title; the segment line still renders in full.
+        assertThat(out).isEqualTo(
+                "Cél receptje: Nyári cut\n1-6. hét: 2100 kcal, 160 g fehérje, alvás 7.5 h, pihenőnapok: 5, 6")
+                .doesNotContain("(");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
+    }
+
+    @Test
     void testGetGoal_shouldRenderStrengthAndMuscleGuardStatus_whenScopeGuardsAndActive() {
         UUID owner = userPopulator.createUser().getId();
         GoalPrescriptionJson.GuardStatus guardStatus = new GoalPrescriptionJson.GuardStatus(
@@ -659,6 +679,24 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         assertThat(goalTools.getGoal("guards", ctx(owner)))
                 .isEqualTo("Cél korlátai: Nyári cut: még nincs kiértékelve");
+    }
+
+    @Test
+    void testGetGoal_shouldRenderNincsAktivKorlat_whenScopeGuardsAndNeitherGuardActive() {
+        UUID owner = userPopulator.createUser().getId();
+        GoalPrescriptionJson.GuardStatus guardStatus = new GoalPrescriptionJson.GuardStatus(
+                new GoalPrescriptionJson.GuardStatus.Strength(false, null, null, null),
+                new GoalPrescriptionJson.GuardStatus.Muscle(false, null, null, null, null, null));
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula", List.of(), guardStatus, null);
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
+                prescription, null, null, null);
+
+        // non-null GuardStatus but both strength.active and muscle.active are false -> the "any"
+        // branch never flips true, so neither guard line renders — just the honest fallback.
+        assertThat(goalTools.getGoal("guards", ctx(owner)))
+                .isEqualTo("Cél korlátai: Nyári cut: nincs aktív korlát");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
     }
 
     @Test
