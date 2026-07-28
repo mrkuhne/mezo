@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
+import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
@@ -62,6 +63,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private MealPopulator mealPopulator;
     @Autowired private ProtocolPopulator protocolPopulator;
     @Autowired private SupplementIntakePopulator supplementIntakePopulator;
+    @Autowired private RecipePopulator recipePopulator;
 
     private ToolCallAudit audit;
 
@@ -445,5 +447,43 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         medicationPopulator.createReta(owner);
         assertThat(medicationTools.getRetaCycle(ctx(owner)))
                 .isEqualTo("Retatrutid ciklus: Retatrutide — nincs rögzített dózis");
+    }
+
+    @Test
+    void testGetRecipes_shouldListNameMacrosAndFitScore_whenNoFilter() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Túró alap", LocalDate.now().plusDays(30));
+        recipePopulator.createRecipe(owner, item.getId());
+
+        String out = fuelTools.getRecipes(null, ctx(owner));
+
+        // "Túrós tál" (breakfast, 2 lines: Méz 20g + Túró 250g @ snapshot kcal110/p13/c4/f4.5 per 100g)
+        // rolls up to a PINNED whole-recipe macro total (297 kcal, 36 g protein) — real computed
+        // content, not just the recipe-name substring.
+        assertThat(out).startsWith("Receptek:")
+                .contains("Túrós tál (breakfast): 297 kcal, 36 g fehérje")
+                .contains("illeszkedés");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Recipe", "Túrós tál"));
+    }
+
+    @Test
+    void testGetRecipes_shouldRenderDetailWithIngredients_whenFilterMatchesSingleRecipeByTag() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Túró alap", LocalDate.now().plusDays(30));
+        recipePopulator.createRecipe(owner, item.getId()); // tags: [magas-fehérje, gyors]
+
+        String out = fuelTools.getRecipes("gyors", ctx(owner)); // tag substring, case-insensitive
+
+        assertThat(out).startsWith("Túrós tál (breakfast): 297 kcal, 36 g fehérje, 11 g szénhidrát, 12 g zsír")
+                .contains("Összetevők: ").contains("Túró 250g").contains("Méz 20g");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Recipe", "Túrós tál"));
+    }
+
+    @Test
+    void testGetRecipes_shouldRenderNincsAdat_whenNoRecipes() {
+        assertThat(fuelTools.getRecipes(null, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Receptek: nincs adat");
     }
 }
