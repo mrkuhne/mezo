@@ -519,6 +519,23 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetPantry_shouldFilterStashByNonFoodKind_whenKindStim() {
+        UUID owner = userPopulator.createUser().getId();
+        pantryItemPopulator.createSupplement(owner, "Kreatin");
+        pantryItemPopulator.createStim(owner, "Koffein");
+
+        String out = fuelTools.getPantry("stim", ctx(owner));
+
+        // stashTypeForKind("stim") -> "stimulant": only the stim row passes the shared-stash type
+        // filter — the supplement row (same pantry.getStash() list) must be excluded, not just
+        // "some item is present" but the REAL matching row's rendered stock, with the other type's
+        // name absent.
+        assertThat(out).isEqualTo("Kamra:\nKoffein: 86 adag").doesNotContain("Kreatin");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Pantry", "Koffein"));
+    }
+
+    @Test
     void testGetPantry_shouldRenderNincsAdat_whenEmpty() {
         assertThat(fuelTools.getPantry(null, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Kamra: nincs adat");

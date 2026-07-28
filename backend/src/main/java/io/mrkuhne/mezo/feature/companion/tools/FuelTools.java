@@ -254,7 +254,10 @@ public class FuelTools {
         StringBuilder b = new StringBuilder(i.getName());
         PantryStock stock = i.getStock();
         if (stock != null) {
-            b.append(": ").append(ToolText.num(stock.getQty())).append(' ').append(stock.getUnit());
+            b.append(": ").append(ToolText.num(stock.getQty()));
+            if (stock.getUnit() != null && !stock.getUnit().isBlank()) {
+                b.append(' ').append(stock.getUnit());
+            }
             if (stock.getExpires() != null) {
                 b.append(", lejár ").append(stock.getExpires());
             }
