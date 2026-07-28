@@ -1,15 +1,21 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
+import io.mrkuhne.mezo.api.dto.MedicationCycleResponse;
+import io.mrkuhne.mezo.api.dto.MedicationDayResponse;
+import io.mrkuhne.mezo.api.dto.MedicationDoseResponse;
+import io.mrkuhne.mezo.api.dto.MedicationResponse;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationDoseEntity;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationDoseRepository;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
+import io.mrkuhne.mezo.feature.medication.service.MedicationService;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -18,20 +24,47 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/** V0.5 read tool over the medication feature (Reta cycle + dose ledger). NEVER advises dosing (spec §6). */
+/** V0.5 read tool over the medication feature (Reta cycle + general dose ledger). NEVER advises dosing (spec §6). */
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class MedicationTools {
 
+    /** get_medication's supported scope values; anything else (incl. null) falls back to "reta". */
+    private static final List<String> MEDICATION_SCOPES = List.of("reta", "all");
+
     private final MedicationRepository medicationRepository;
     private final MedicationDoseRepository medicationDoseRepository;
     private final MedicationCycleService medicationCycleService;
+    /** Pure read (its {@code @Transactional}/save/delete are on OTHER methods; {@link
+     *  MedicationService#getDay} only) — ungated (no {@code @ConditionalOnProperty} on the class),
+     *  so injected directly (the {@code ProgressionService}/{@code GrowthWeekService} precedent). */
+    private final MedicationService medicationService;
 
-    @Tool(name = "get_reta_cycle", description = "Az aktív gyógyszer (retatrutid) ciklusállása: hányadik "
-            + "nap, fázis, utolsó dózis, következő esedékes nap, utolsó dózisok. Kérdés a Reta-ciklusról.")
-    public String getRetaCycle(ToolContext toolContext) {
+    @Tool(name = "get_medication", description = "Gyógyszer: retatrutid-ciklus vagy általános "
+            + "gyógyszer-áttekintés. scope=reta (alapértelmezés) — az aktív gyógyszer retatrutid-ciklusállása: "
+            + "hányadik nap, fázis, utolsó dózis, következő esedékes nap, utolsó dózisok. scope=all — az "
+            + "aktív gyógyszer általános adatai: név, hatóanyag, adagolási rend, alapdózis, ciklusállás "
+            + "(ha van már rögzített dózis), utolsó dózisok. Használd, amikor a user a gyógyszeréről / a "
+            + "retatrutid-ciklusáról kérdez. scope: reta (alapértelmezés), all.")
+    public String getMedication(
+            @ToolParam(required = false, description = "reta|all (alapértelmezés: reta).") String scope,
+            ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
+        String s = normalizeScope(scope);
+        return "all".equals(s) ? renderAll(userId, toolContext) : renderReta(userId, toolContext);
+    }
+
+    private static String normalizeScope(String scope) {
+        if (scope == null) {
+            return "reta";
+        }
+        String s = scope.trim().toLowerCase();
+        return MEDICATION_SCOPES.contains(s) ? s : "reta";
+    }
+
+    /** scope=reta (default) — the original get_reta_cycle body, unchanged. */
+    private String renderReta(UUID userId, ToolContext toolContext) {
         MedicationEntity med =
                 medicationRepository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).orElse(null);
         if (med == null) {
@@ -60,6 +93,42 @@ public class MedicationTools {
                     .collect(Collectors.joining("; ")));
         }
         ToolContexts.audit(toolContext).addRef("Medication", med.getName());
+        return b.toString();
+    }
+
+    /**
+     * scope=all — the general medications view over {@link MedicationService#getDay}: name, active
+     * ingredient, dosing regimen (cadence + default dose), and — once at least one dose is on record
+     * — the cycle position and recent doses. No reta-specific naming: renders whichever medication
+     * the owner has active, generically. "nincs adat" only when the owner has no active medication
+     * at all (checked via {@link #medicationRepository} first, mirroring {@link #renderReta}'s own
+     * null-med check, so {@code getDay}'s 404 is never hit); the "no dose yet" case (cycle day 0) is
+     * an honest partial render — name/regimen without a cycle line — never an absence.
+     */
+    private String renderAll(UUID userId, ToolContext toolContext) {
+        MedicationEntity med =
+                medicationRepository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).orElse(null);
+        if (med == null) {
+            return "Gyógyszer: " + ToolText.NO_DATA;
+        }
+        MedicationDayResponse day = medicationService.getDay(userId);
+        MedicationResponse m = day.getMedication();
+        MedicationCycleResponse cycle = day.getCycle();
+        StringBuilder b = new StringBuilder("Gyógyszer: ").append(m.getName())
+                .append(" (").append(m.getActiveIngredient()).append(") — ").append(m.getCadence())
+                .append(", ").append(ToolText.num(m.getDefaultDose())).append(' ').append(m.getDoseUnit());
+        if (cycle != null && cycle.getRetaDay() != null && cycle.getRetaDay() > 0) {
+            b.append("; ciklus: ").append(cycle.getRetaDay()).append(". nap (").append(cycle.getPhaseLabel())
+                    .append(')');
+        }
+        List<MedicationDoseResponse> doses = day.getRecentDoses();
+        if (doses != null && !doses.isEmpty()) {
+            b.append("\nUtolsó dózisok: ").append(doses.stream().limit(5)
+                    .map(d -> d.getAdministeredAt().toLocalDate() + ": " + ToolText.num(d.getDose())
+                            + " " + m.getDoseUnit())
+                    .collect(Collectors.joining("; ")));
+        }
+        ToolContexts.audit(toolContext).addRef("Medication", m.getName());
         return b.toString();
     }
 }

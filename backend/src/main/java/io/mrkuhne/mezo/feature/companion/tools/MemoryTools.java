@@ -28,9 +28,9 @@ public class MemoryTools {
     private final CompanionProperties properties;
 
     @Tool(name = "find_similar_past_days", description = "Tematikusan hasonló KORÁBBI napok"
-            + " felidézése a napi összefoglalók emlék-tárából (pl. 'volt már ilyen napod?','mikor"
-            + " aludtál ilyen rosszul edzés után?'). A description a keresett élmény/állapot"
-            + " szöveges leírása; k = hány napot idézzen fel.")
+            + " felidézése a napi összefoglalók emlék-tárából. A description a keresett élmény/állapot"
+            + " szöveges leírása; k = hány napot idézzen fel. Használd, amikor a user arra kíváncsi,"
+            + " volt-e már hasonló napja/élménye, vagy egy korábbi hasonló helyzetre kérdez rá.")
     public String findSimilarPastDays(
             @ToolParam(description = "A keresett élmény/téma/állapot leírása") String description,
             @ToolParam(required = false, description = "Hány hasonló napot idézzen fel (alapértelmezés 3)") Integer k,

@@ -43,6 +43,17 @@
 			the client auto-negotiate on newer daemons).
 		-->
 		<docker.api.version>1.43</docker.api.version>
+		<!--
+			The "eval" JUnit5 tag is a MEASUREMENT harness (tool-selection accuracy, mezo-xixu), not
+			a pass/fail gate — it makes real Gemini calls and must never run on the `./mvnw test`
+			critical path (no key in CI). Excluded by default; clear it to opt in:
+			./mvnw test -Dtest=ToolSelectionEvalIT -Dmezo.excludedTestGroups=
+			(a literal <excludedGroups>eval</excludedGroups> in the surefire config below would NOT
+			be CLI-overridable — POM-configured plugin values win over same-named -D system
+			properties unless the POM itself references an expression, which is exactly what this
+			property indirection is for.)
+		-->
+		<mezo.excludedTestGroups>eval</mezo.excludedTestGroups>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -293,6 +304,12 @@
 						<include>**/*Tests.java</include>
 						<include>**/*IT.java</include>
 					</includes>
+					<!--
+						mezo.excludedTestGroups (see <properties>) — the "eval" tag (tool-selection
+						measurement harness, mezo-xixu) is excluded by default; clear the property
+						at the CLI to opt in for that one explicit run.
+					-->
+					<excludedGroups>${mezo.excludedTestGroups}</excludedGroups>
 					<systemPropertyVariables>
 						<api.version>${docker.api.version}</api.version>
 					</systemPropertyVariables>

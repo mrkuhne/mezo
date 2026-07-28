@@ -37,7 +37,9 @@ public class ChatService {
     /**
      * Static Hungarian companion voice — IDENT-1 (companion, not coach), the clinical guard and
      * grounding-lite from the design spec §6. V0.3 appends the context snapshot below; V1.1 adds
-     * the knowledge facts.
+     * the knowledge facts. Ends with the {@code [Eszköz-útmutató]} question-type→tool routing hint
+     * (mezo-xixu) — keep it in sync with the {@code @Tool} descriptions per
+     * {@code docs/references/companion_tool_conventions.md}.
      */
     static final String SYSTEM_PROMPT = """
             Te vagy a mezo, Daniel személyes egészség- és teljesítmény-társa.
@@ -48,7 +50,21 @@ public class ChatService {
             Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az orvosi döntés.
             Múltbeli vagy összesítő kérdéshez (edzések, étkezés, súly, alvás, protokoll, gyógyszerciklus) \
             használd a kapott tool-okat — a pillanatkép csak a mai napot mutatja; tool nélkül ne találgass.
-            Válaszolj magyarul, tömören.""";
+            Válaszolj magyarul, tömören.
+
+            [Eszköz-útmutató] — kérdéstípus → tool (ne találgass, hívd meg a megfelelőt):
+            - PR / rekord / „megdöntöm?" → get_exercise_records
+            - mai/holnapi/heti edzésterv, mezociklus → get_training_plan
+            - múltbeli edzés/sport/futás → get_training_log | súlytrend, fogyás ütem → get_weight_trend
+            - alvás, alvási cél, közérzet (energia/stressz) → get_recovery
+            - gyógyszer, reta-ciklus → get_medication
+            - recept, mit főzzek → get_recipes | mi van a kamrában → get_pantry
+            - napi/heti étkezés, makró, víz → get_fuel_log
+            - supplement, protokoll → get_protocol
+            - cél, kalóriacél, heti ütem → get_goal
+            - XP, szint, skill, streak → get_growth | napi rutin, küldetés, szokás → get_daily_practice
+            - minták, „mit vettél észre rólam" → get_insights (csak megerősített minták; predikció/kísérlet még nem elérhető)
+            - hasonló korábbi nap → find_similar_past_days""";
 
     static final String HISTORY_HEADER = "\n\nEddigi beszélgetés (legrégebbitől a legújabbig):\n";
 
