@@ -15,22 +15,20 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { LoadTiles } from '@/features/train/components/LoadTiles'
 import { WeeklyDayRow } from '@/features/train/components/WeeklyDayRow'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
-import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { buildWeekAgenda } from '@/features/train/logic/weekAgenda'
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { sportOf, type SportKind } from '@/features/train/logic/sportKinds'
-import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import TrainWeekSkeleton from '@/features/train/pages/TrainWeekSkeleton'
 
+// Heti never logs a session itself: every sport/run tap drills into Mai (`toMai`),
+// which owns the log sheets and the retroactive `date` threading (mezo-9bbc).
 export function TrainWeekPage() {
-  const { gymSchedule, sport, activeMeso, logSportSession, gymDoneDates, workoutPending, todaySession } = useTrain()
+  const { gymSchedule, sport, activeMeso, gymDoneDates, workoutPending, todaySession } = useTrain()
   const { activeRunningBlock, runSessions, runningPending } = useRunning()
   const { workouts: weekWorkouts } = useWeekWorkouts()
   const navigate = useNavigate()
-  const { showLevelUp } = useLevelUp()
   const [customOpen, setCustomOpen] = useState(false)
-  const [sportLogSport, setSportLogSport] = useState<SportKind | null>(null)
 
   if (workoutPending || runningPending) return <TrainWeekSkeleton />
 
@@ -122,13 +120,6 @@ export function TrainWeekPage() {
       </div>
 
       {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
-      {sportLogSport && (
-        <SportLogSheet
-          initialSport={sportLogSport}
-          onClose={() => setSportLogSport(null)}
-          onSave={(body, done) => logSportSession(body, { onSuccess: (r) => showLevelUp(r?.levelUp), onSettled: done })}
-        />
-      )}
     </>
   )
 }
