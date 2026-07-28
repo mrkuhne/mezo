@@ -1,8 +1,10 @@
 // ============================================================
 // Mezo · TrainTodayPage (Mai) — a one-day view (mezo-9bbc).
 // A DayStrip navigator over the Mon–Sun agenda picks which day's sessions
-// render below it (default: today; `?day={0..6}` — the Heti drill-in —
-// overrides once). The weekly list + load tiles + provenance note now
+// render below it (default: today; `?day={0..6}` — the Heti drill-in — names
+// another day). The URL is the single source of truth for that selection, so
+// a reload, a back/forward step and the `Mai` sub-nav entry all agree with what
+// the page renders. The weekly list + load tiles + provenance note now
 // live on TrainWeekPage (/train/week, "Heti").
 // Thin TrainSection shell ⇒ this view owns its own .page-header.
 // ============================================================
@@ -72,8 +74,11 @@ export function TrainTodayPage() {
     snooze(mtrHash)
     setMtrSnoozed(true)
   }
-  const [params] = useSearchParams()
-  // Mai always opens on today; `?day={0..6}` (the Heti drill-in) overrides it once.
+  const [params, setSearchParams] = useSearchParams()
+  // Mai always opens on today; `?day={0..6}` (the Heti drill-in, or a chip tap) names
+  // another day. The selection is DERIVED from the URL — never mirrored into state —
+  // so a reload, a back step and the `Mai` sub-nav entry (which drops the param
+  // without remounting this element) can never disagree with what renders.
   // `params.get('day')` is `null` when absent — NOT coerced through `Number()` first
   // (`Number(null) === 0`, which would silently pin every plain `/train` visit to
   // Monday instead of today).
@@ -81,8 +86,19 @@ export function TrainTodayPage() {
   // empty (e.g. a stray `?day=`), so both absence and blankness must skip `Number()`.
   const rawDay = params.get('day')
   const dayIdx = rawDay === null || rawDay === '' ? NaN : Number(rawDay)
-  const paramDay = Number.isInteger(dayIdx) && dayIdx >= 0 && dayIdx <= 6 ? DAY_ORDER[dayIdx] : null
-  const [selectedDay, setSelectedDay] = useState<string | null>(paramDay)
+  const selectedDay = Number.isInteger(dayIdx) && dayIdx >= 0 && dayIdx <= 6 ? DAY_ORDER[dayIdx] : null
+  // Both writers replace the history entry: day-hopping inside Mai is a view switch,
+  // not a navigation step the back button should have to unwind chip by chip.
+  const writeDay = (index: number | null) => {
+    const next = new URLSearchParams(params)
+    if (index === null) next.delete('day')
+    else next.set('day', String(index))
+    setSearchParams(next, { replace: true })
+  }
+  const selectDay = (day: string) => {
+    const index = DAY_ORDER.indexOf(day as (typeof DAY_ORDER)[number])
+    writeDay(index >= 0 ? index : null)
+  }
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
   // the running block query are unresolved, render the layout-matched skeleton
@@ -109,12 +125,8 @@ export function TrainTodayPage() {
             onCta={() => navigate('/train/mesocycles/new')}
           />
         </div>
-        <div style={{ padding: '0 24px 16px' }}>
-          <div className="secthead-np">
-            <h3>Heti terv</h3>
-          </div>
-          <GhostState lines={2} message="A heti rended itt jelenik majd meg." />
-        </div>
+        {/* No „Heti terv” ghost here — that whole list lives on the Heti tab now
+            (mezo-9bbc); promising a section Mai no longer owns was a leftover. */}
         <div style={{ padding: '0 24px 16px' }}>
           <button type="button" onClick={() => setCustomOpen(true)} className="card" style={{
             padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
@@ -140,19 +152,31 @@ export function TrainTodayPage() {
   })
 
   // The agenda's `isToday` is flag-based (gym/volleyball only); running blocks
-  // are mesocycle-independent, so a day may have ONLY a prescribed run today.
-  const todayRow = agenda.find((a) => a.isToday)
+  // are mesocycle-independent, so a day may have ONLY a prescribed run today —
+  // and a genuine rest day flags no row at all. The flag still WINS (mock mode
+  // pins "today" to a fixture day, see `todayIso` below), but when nothing carries
+  // it we fall back to the row whose calendar date is actually today, so today's
+  // own row (its custom instances, its rest copy) is never simply missing.
+  const clockIso = localDateString()
+  const todayRow = agenda.find((a) => a.isToday) ?? agenda.find((a) => a.date === clockIso)
+  // "Today" for ALL date math on this page is the flagged agenda row's own date,
+  // falling back to the wall clock when no row carries the flag (real mode's rest
+  // days, and every real-mode day where flag and clock agree anyway). Mock mode's
+  // "today" is a fixture flag on Csü while the clock is whatever day it really is;
+  // reading the clock here made every card on the flagged row compute against the
+  // WRONG calendar day — a mock run card rendered as TERVEZETT/ELMARADT and lost
+  // its log CTA on any real weekday but Thursday (mezo-9bbc final review, C2).
+  const todayIso = todayRow?.date ?? clockIso
   // The DayStrip's selection (`selectedDay === null` ⇒ today); falls back to
   // today if a stale/invalid selection no longer matches an agenda day.
   const shownDay = selectedDay ? (agenda.find((a) => a.day === selectedDay) ?? todayRow) : todayRow
-  // `selectedDay === null` always means "today" by definition (the default view),
-  // regardless of whether any agenda row happens to carry the flag-based `isToday`
-  // (real mode only sets it on a day that has a gym/sport slot — a true rest day
-  // flags NO row `isToday` at all, so `todayRow`/`shownDay` can be legitimately
-  // undefined here; falling through to `shownDay?.isToday` would then wrongly
-  // read as false). An explicit selection still checks the flag (so re-tapping
-  // today's own chip reads as today too).
-  const isTodayShown = selectedDay === null || Boolean(shownDay?.isToday)
+  // Date-based, not flag-based: the flag is only ever set on a day carrying a
+  // gym/sport slot, so a flag test read "not today" on today's own rest day or
+  // run-only day — which silently dropped the `+ Saját edzés` CTA, the in-progress
+  // resume card and the „Mai nap” heading (mezo-9bbc final review, I2). An absent
+  // `shownDay` means today by definition (nothing selected, or a stale selection
+  // that fell back to an undefined `todayRow` on a rest day).
+  const isTodayShown = selectedDay === null || (shownDay?.date ?? todayIso) === todayIso
 
   // Pull today's runs separately (date-based) and merge them with the flag-based
   // today row into a synthetic day, so a run-only-today still shows its hero — but
@@ -161,11 +185,15 @@ export function TrainTodayPage() {
   const todayRuns = runSessionsForDay(activeRunningBlock, todayIdx())
   // The shown day's hero cards, rendered in time-of-day order (a morning run hero
   // above an evening gym hero); same ordering as Heti's weekly rows via daySessions.
+  // `custom` carries this day's COMPLETED saját instances — without it a day whose
+  // only session was a custom workout read as a rest day on Mai while Heti showed
+  // the finished row (mezo-9bbc final review, I6).
   const orderedToday = daySessions({
     day: shownDay?.day ?? '',
     gym: shownDay?.gym ?? null,
     sport: shownDay?.sport ?? [],
     running: isTodayShown ? todayRuns : (shownDay?.running ?? []),
+    custom: shownDay?.custom ?? [],
     isToday: isTodayShown,
   })
 
@@ -178,7 +206,7 @@ export function TrainTodayPage() {
   // session carries the HU display date). Running carries the prescribed tuple
   // back, so we match on block + week + sessionKey (already day-scoped by
   // construction — a prescribed session's key is unique to its own weekday).
-  const todayIso = localDateString()
+  // (`todayIso` is derived above, next to `todayRow`.)
   // The shown day's ISO date — sport done-state and state-labels must match THIS
   // day, not always today, now that these cards render for any selected day
   // (mezo-9bbc review fix). Falls back to todayIso when the shown day carries no
@@ -207,7 +235,7 @@ export function TrainTodayPage() {
           <h1>{isTodayShown ? 'Mai nap' : (DAY_LABELS[shownDay?.day ?? ''] ?? 'Mai nap')}</h1>
         </div>
         {!isTodayShown && (
-          <button type="button" className="pgact-np" onClick={() => setSelectedDay(null)}>
+          <button type="button" className="pgact-np" onClick={() => writeDay(null)}>
             <Icon name="chevron-left" size={12} /> Ma
           </button>
         )}
@@ -219,14 +247,17 @@ export function TrainTodayPage() {
         items={dayStripItems(agenda, (d, item) => {
           if (item.kind === 'gym') return Boolean(d.date) && gymDoneDates.includes(d.date!)
           if (item.kind === 'sport') return sportDoneOn(d.date, sportOf(item.sport))
+          // A `custom` item only ever exists for a COMPLETED saját instance.
+          if (item.kind === 'custom') return true
           return Boolean(runLoggedFor(item.running.key))
         })}
         // A real-mode rest day (no gym/sport slot matches today at all) leaves
         // `shownDay` undefined even while today is shown (§ isTodayShown above) —
         // fall back to the real weekday label so the strip still highlights a chip
-        // instead of selecting none (review fix, mezo-9bbc).
-        selected={shownDay?.day ?? (isTodayShown ? DAY_ORDER[todayIdx()] : '')}
-        onSelect={(day) => setSelectedDay(day)}
+        // instead of selecting none (review fix, mezo-9bbc). `shownDay` is only ever
+        // undefined when today is what's shown, so no non-today special case is needed.
+        selected={shownDay?.day ?? DAY_ORDER[todayIdx()]}
+        onSelect={selectDay}
       />
 
       {/* Mezociklus overview entry card (active meso only) */}
@@ -365,6 +396,29 @@ export function TrainTodayPage() {
               // below); today keeps its original copy.
               ctaLabel={state === 'planned' ? undefined : state === 'missed' ? 'Pótold' : 'Logold a session-t'}
               onLog={state === 'planned' ? undefined : () => setSportLogSport(k)}
+            />
+          )
+        }
+
+        if (item.kind === 'custom') {
+          // A completed saját (custom) workout of the shown day. It has no schedule
+          // slot and no state chip — it is done by construction — so it renders as a
+          // permanently-logged gym-tone card whose DoneBar opens its review, exactly
+          // like Heti's SAJÁT/kész row (mezo-9bbc final review, I6).
+          const c = item.custom
+          return (
+            <TodaySessionCard
+              key={`hero-custom-${c.id}`}
+              tone="gym"
+              emoji="🏋️"
+              tag="SAJÁT"
+              title={c.title}
+              facts={[]}
+              logged
+              loggedSummary="Kész"
+              loggedDetail="Megnézem az összegzést"
+              ctaLabel="Megnézem"
+              onLog={() => navigate(`/train/review/${c.id}`)}
             />
           )
         }

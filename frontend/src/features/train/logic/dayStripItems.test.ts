@@ -23,6 +23,16 @@ test('doneCount counts the sessions the predicate marks done', () => {
   expect(items[0].sessionCount).toBe(2)
 })
 
+// A day whose only session was a completed saját workout must not read as a rest
+// chip — it carries a gym-tone dot and counts as done (mezo-9bbc final review, I6).
+test('a completed custom instance adds a gym-tone dot and counts as done', () => {
+  const items = dayStripItems(
+    [day({ custom: [{ id: 'w9', title: 'Pihenőnapi felső' }] })],
+    (_d, item) => item.kind === 'custom',
+  )
+  expect(items[0]).toMatchObject({ dots: ['gym'], sessionCount: 1, doneCount: 1 })
+})
+
 test('an empty day yields no dots and keeps its day number', () => {
   const items = dayStripItems([day({ day: 'Vas', date: '2026-05-24' })], () => false)
   expect(items[0]).toMatchObject({ day: 'Vas', dayNumber: 24, dots: [], sessionCount: 0 })

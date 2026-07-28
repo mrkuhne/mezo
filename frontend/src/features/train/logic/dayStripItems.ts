@@ -19,8 +19,14 @@ export interface DayStripItem {
   sessionCount: number
 }
 
+// A completed saját (custom) workout is gym load, so it wears the gym tone —
+// same as the card Mai renders for it (mezo-9bbc).
 const toneOf = (item: AgendaItem): SessionTone =>
-  item.kind === 'gym' ? 'gym' : item.kind === 'running' ? 'run' : SPORT_TONE[sportOf(item.sport)]
+  item.kind === 'gym' || item.kind === 'custom'
+    ? 'gym'
+    : item.kind === 'running'
+      ? 'run'
+      : SPORT_TONE[sportOf(item.sport)]
 
 export function dayStripItems(
   agenda: WeeklyAgendaDay[],

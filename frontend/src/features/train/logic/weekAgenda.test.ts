@@ -35,3 +35,27 @@ test('attaches completed custom instances by ISO date and flags today from the s
   expect(agenda.find((a) => a.day === 'Csü')!.isToday).toBe(true)
   expect(agenda.filter((a) => a.isToday)).toHaveLength(1)
 })
+
+// The `custom` population itself was never covered — the case the name above promises
+// (mezo-9bbc final review, I6). Clock pinned so the week is Mon 2026-07-13 … Sun 07-19.
+test('populates `custom` only from COMPLETED custom instances, on their own date', () => {
+  const today = new Date(2026, 6, 15) // Wednesday 2026-07-15
+  const agenda = buildWeekAgenda({
+    gymTimes: [], sportSlots: [], runningBlock: null, today,
+    weekWorkouts: [
+      { id: 'w1', date: '2026-07-18', origin: 'custom', status: 'completed', title: 'Pihenőnapi felső' },
+      { id: 'w2', date: '2026-07-18', origin: 'custom', status: 'completed', title: 'Esti core' },
+      { id: 'w3', date: '2026-07-17', origin: 'custom', status: 'active', title: 'Félbehagyott' },
+      { id: 'w4', date: '2026-07-16', origin: 'meso', status: 'completed', title: 'Pull Day' },
+    ],
+  })
+  // both Saturday instances attach, in list order, carrying only id + title
+  expect(agenda.find((a) => a.day === 'Szo')!.custom).toEqual([
+    { id: 'w1', title: 'Pihenőnapi felső' },
+    { id: 'w2', title: 'Esti core' },
+  ])
+  // an unfinished custom instance and a completed MESO instance are not custom rows
+  expect(agenda.find((a) => a.day === 'Pén')!.custom).toEqual([])
+  expect(agenda.find((a) => a.day === 'Csü')!.custom).toEqual([])
+  expect(agenda.filter((a) => a.custom!.length > 0)).toHaveLength(1)
+})
