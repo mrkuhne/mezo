@@ -24,6 +24,7 @@ import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -61,6 +62,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealPopulator mealPopulator;
+    @Autowired private WaterLogPopulator waterLogPopulator;
     @Autowired private ProtocolPopulator protocolPopulator;
     @Autowired private SupplementIntakePopulator supplementIntakePopulator;
     @Autowired private RecipePopulator recipePopulator;
@@ -360,19 +362,51 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetRecentMeals_shouldRenderDayRollupsWithTitles_whenMealLogged() {
+    void testGetFuelLog_shouldRenderDayRollupsWithTitlesAndWater_whenRangeDay() {
         UUID owner = userPopulator.createUser().getId();
         PantryItemEntity item = pantryItemPopulator.createFood(owner, "Csirkemell", LocalDate.now().plusDays(5));
         mealPopulator.createPantryMeal(owner, item, LocalDate.now().minusDays(1));
+        waterLogPopulator.createWaterLog(owner, LocalDate.now(), 1800);
 
-        String out = fuelTools.getRecentMeals(3, ctx(owner));
+        String out = fuelTools.getFuelLog(null, null, 3, ctx(owner));
 
         assertThat(out).startsWith("Napi étkezés-összesítők (utolsó 3 nap):")
                 .contains(LocalDate.now().minusDays(1) + ": ")
                 .contains("kcal").contains("1 étkezés (Reggeli)")
-                .contains(LocalDate.now() + ": ").contains("0 étkezés");
+                .contains(LocalDate.now() + ": ").contains("0 étkezés")
+                .contains("Víz (" + LocalDate.now() + "): 1800/4000 ml");
         assertThat(audit.toRefsEnvelope().refs()).containsExactly(
                 new RefsEnvelope.Ref("FuelDay", LocalDate.now().minusDays(1).toString()));
+    }
+
+    @Test
+    void testGetFuelLog_shouldDefaultRangeToDay_whenRangeUnrecognized() {
+        UUID owner = userPopulator.createUser().getId();
+        assertThat(fuelTools.getFuelLog("bogus", null, 1, ctx(owner)))
+                .startsWith("Napi étkezés-összesítők (utolsó 1 nap):");
+    }
+
+    @Test
+    void testGetFuelLog_shouldRenderWeekRollupsWithWater_whenRangeWeek() {
+        UUID owner = userPopulator.createUser().getId();
+        PantryItemEntity item = pantryItemPopulator.createFood(owner, "Zabkása", LocalDate.now().plusDays(10));
+        LocalDate wednesday = LocalDate.of(2026, 7, 8); // Monday-anchored week: 2026-07-06 .. 2026-07-12
+        mealPopulator.createPantryMeal(owner, item, wednesday);
+        waterLogPopulator.createWaterLog(owner, wednesday, 2200);
+
+        String out = fuelTools.getFuelLog("week", wednesday.toString(), null, ctx(owner));
+
+        // 150g logged / 100g snapshot basis => 1.5x the pantry item's per-100g macros (110 kcal / 23 g protein).
+        assertThat(out).startsWith("Heti étkezés-összesítő (2026-07-06 – 2026-07-12):")
+                .contains("2026-07-08: 165/3100 kcal, F 35/220 g, víz 2200/4000 ml")
+                .contains("2026-07-06: 0/3100 kcal, F 0/220 g, víz 0/4000 ml")
+                .contains("2026-07-12: 0/3100 kcal, F 0/220 g, víz 0/4000 ml");
+        assertThat(audit.toRefsEnvelope().refs()).containsExactly(
+                new RefsEnvelope.Ref("FuelDay", "2026-07-06"),
+                new RefsEnvelope.Ref("FuelDay", "2026-07-07"),
+                new RefsEnvelope.Ref("FuelDay", "2026-07-08"),
+                new RefsEnvelope.Ref("FuelDay", "2026-07-09"),
+                new RefsEnvelope.Ref("FuelDay", "2026-07-10"));
     }
 
     @Test

@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
+import io.mrkuhne.mezo.api.dto.FuelDayRollup;
+import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.IngredientResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
@@ -14,6 +16,7 @@ import io.mrkuhne.mezo.feature.fuel.entity.SupplementIntakeEntity;
 import io.mrkuhne.mezo.feature.fuel.repository.SupplementIntakeRepository;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
+import io.mrkuhne.mezo.feature.meal.service.WaterLogService;
 import io.mrkuhne.mezo.feature.pantry.service.PantryService;
 import io.mrkuhne.mezo.feature.recipe.service.RecipeService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -25,7 +28,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -34,7 +39,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/** V0.5 read tools over the fuel/meal features (day rollups + supplement-protocol adherence),
+/** V0.5 read tools over the fuel/meal features (day/week rollups + supplement-protocol adherence),
  *  plus {@code get_recipes} and {@code get_pantry} (mezo-xixu) over the sibling recipe/pantry features. */
 @Component
 @RequiredArgsConstructor
@@ -46,28 +51,75 @@ public class FuelTools {
      *  matched bidirectionally against the (partial) user filter. */
     private static final List<String> STARRED_KEYWORDS = List.of("csillagos", "csillagozott", "kedvenc", "starred");
 
+    /** get_fuel_log's supported range values; anything else (incl. null) falls back to "day". */
+    private static final List<String> FUEL_LOG_RANGES = List.of("day", "week");
+
     private final FuelDayService fuelDayService;
+    private final WaterLogService waterLogService;
     private final ProtocolService protocolService;
     private final SupplementIntakeRepository supplementIntakeRepository;
     private final RecipeService recipeService;
     private final PantryService pantryService;
     private final CompanionProperties properties;
 
-    @Tool(name = "get_recent_meals", description = "Napi étkezés-összesítők az elmúlt napokra: kcal és "
-            + "fehérje a célhoz képest, étkezésszám, ételek. Kérdés étkezésről, kalóriáról, fehérjebevitelről.")
-    public String getRecentMeals(
-            @ToolParam(required = false, description = "Hány napra visszamenőleg (alapértelmezés 7).") Integer days,
+    @Tool(name = "get_fuel_log", description = "Napi vagy heti étkezés- és vízbevitel-összesítő: kcal és "
+            + "makrók (fehérje/szénhidrát/zsír) a célhoz képest, víz, étkezésszám és ételek. range=day — "
+            + "napi bontású összesítők visszamenőleg N napra (a megadott dátumig); range=week — a hét "
+            + "(hétfő–vasárnap, a megadott dátumot tartalmazó ISO-hét) napi bontásban. Használd, amikor a "
+            + "user a napi/heti kalória-, makró-, víz-bevitelről vagy étkezéseiről kérdez. range: day "
+            + "(alapértelmezés), week.")
+    public String getFuelLog(
+            @ToolParam(required = false, description = "day|week (alapértelmezés: day).") String range,
+            @ToolParam(required = false, description = "ISO dátum (ÉÉÉÉ-HH-NN) — az irányadó nap "
+                    + "(range=day: az ablak utolsó napja) vagy az irányadó hét egy napja (range=week); "
+                    + "alapértelmezés a mai nap.") String date,
+            @ToolParam(required = false, description = "range=day esetén hány napra visszamenőleg "
+                    + "(alapértelmezés 7).") Integer days,
             ToolContext toolContext) {
         UUID userId = ToolContexts.userId(toolContext);
+        LocalDate anchor = parseDate(date, LocalDate.now());
+        if ("week".equals(normalizeRange(range))) {
+            return renderFuelWeek(userId, anchor, toolContext);
+        }
+        return renderFuelDay(userId, anchor, days, toolContext);
+    }
+
+    private static String normalizeRange(String range) {
+        if (range == null) {
+            return "day";
+        }
+        String r = range.trim().toLowerCase();
+        return FUEL_LOG_RANGES.contains(r) ? r : "day";
+    }
+
+    /** An unparsable/missing date param falls back to the given default rather than failing the whole call
+     *  (the {@code TrainTools.getTrainingPlan} precedent). */
+    private static LocalDate parseDate(String date, LocalDate fallback) {
+        if (date == null || date.isBlank()) {
+            return fallback;
+        }
+        try {
+            return LocalDate.parse(date.trim());
+        } catch (DateTimeParseException e) {
+            return fallback;
+        }
+    }
+
+    /** range=day (default): the old {@code get_recent_meals} N-day rollup, ending at {@code anchor} —
+     *  per-day kcal/protein vs targets + meal count/titles (≤3), plus a water line for {@code anchor}
+     *  itself via {@link WaterLogService#sumForDay} (targets reused from the loop's last iteration —
+     *  same config-driven values for every day, no extra {@code FuelDayService} call needed). */
+    private String renderFuelDay(UUID userId, LocalDate anchor, Integer days, ToolContext toolContext) {
         int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
-        LocalDate today = LocalDate.now();
         StringBuilder b = new StringBuilder("Napi étkezés-összesítők (utolsó ").append(d).append(" nap):");
         int daysWithMeals = 0;
+        MacroSet lastTargets = null;
         for (int i = d - 1; i >= 0; i--) {
-            LocalDate date = today.minusDays(i);
+            LocalDate date = anchor.minusDays(i);
             FuelDayResponse day = fuelDayService.getDay(userId, date);
             MacroSet c = day.getConsumed();
             MacroSet t = day.getTargets();
+            lastTargets = t;
             b.append('\n').append(date).append(": ")
                     .append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal()))
                     .append(" kcal, F ").append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP()))
@@ -83,6 +135,36 @@ public class FuelTools {
                 if (daysWithMeals <= 5) {
                     ToolContexts.audit(toolContext).addRef("FuelDay", date.toString());
                 }
+            }
+        }
+        int water = waterLogService.sumForDay(userId, anchor);
+        b.append("\nVíz (").append(anchor).append("): ").append(water).append('/')
+                .append(ToolText.num(lastTargets.getWater())).append(" ml");
+        return b.toString();
+    }
+
+    /** range=week: the ISO week (Monday-start, same anchoring as the FE's {@code mondayIso}) containing
+     *  {@code anchor}, over {@link FuelDayService#getWeek} — per-day kcal/protein/water vs targets; each
+     *  {@link FuelDayRollup} already carries water in its {@code consumed}/{@code targets} MacroSet (Σ the
+     *  day's water log via {@code FuelDayService}'s own {@code WaterLogService} collaborator), so no extra
+     *  water call is needed here. */
+    private String renderFuelWeek(UUID userId, LocalDate anchor, ToolContext toolContext) {
+        LocalDate weekStart = anchor.with(DayOfWeek.MONDAY);
+        FuelWeekResponse week = fuelDayService.getWeek(userId, weekStart);
+        StringBuilder b = new StringBuilder("Heti étkezés-összesítő (")
+                .append(weekStart).append(" – ").append(weekStart.plusDays(6)).append("):");
+        int refCount = 0;
+        for (FuelDayRollup day : week.getDays()) {
+            MacroSet c = day.getConsumed();
+            MacroSet t = day.getTargets();
+            b.append('\n').append(day.getDate()).append(": ")
+                    .append(ToolText.num(c.getKcal())).append('/').append(ToolText.num(t.getKcal()))
+                    .append(" kcal, F ").append(ToolText.num(c.getP())).append('/').append(ToolText.num(t.getP()))
+                    .append(" g, víz ").append(ToolText.num(c.getWater())).append('/')
+                    .append(ToolText.num(t.getWater())).append(" ml");
+            if (refCount < 5) {
+                ToolContexts.audit(toolContext).addRef("FuelDay", day.getDate().toString());
+                refCount++;
             }
         }
         return b.toString();
