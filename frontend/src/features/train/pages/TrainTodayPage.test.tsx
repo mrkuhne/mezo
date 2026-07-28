@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -30,6 +30,12 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllEnvs())
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
+
+// Today's sport/run card (`TodaySessionCard`) by its display title — the session
+// time lives in the card's tag row, not in the title, so scope time asserts to
+// the returned card (the weekly rows repeat both title and time) — mezo-lruy.
+const findTodayCard = async (title: string) =>
+  (await screen.findByText(title, { selector: '.todaycard-title' })).closest('.todaycard') as HTMLElement
 
 test('today gym block + weekly timeline render', () => {
   const { container } = renderView()
@@ -278,7 +284,7 @@ test('real mode shows the volleyball today-card when a slot falls on today', asy
     ),
   )
   renderView()
-  expect(await screen.findByText(/Volleyball · 18:15/)).toBeInTheDocument()
+  expect(within(await findTodayCard('Volleyball')).getByText('18:15')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Logold a session-t/ })).toBeInTheDocument()
   // gym rest day + vb today -> no rest-day card
   expect(screen.queryByText(/Ma pihenőnap/)).not.toBeInTheDocument()
@@ -303,7 +309,7 @@ test('real mode: volleyball logged today ⇒ hero flips to the done summary, not
     ),
   )
   renderView()
-  expect(await screen.findByText(/Volleyball · 18:15/)).toBeInTheDocument()
+  expect(within(await findTodayCard('Volleyball')).getByText('18:15')).toBeInTheDocument()
   // done state: muted summary present, the "log it" CTA gone, the chip reads "Kész"
   expect(screen.getByText(/Logolva · RPE 7 · 90p/)).toBeInTheDocument()
   expect(screen.getByText('Kész')).toBeInTheDocument()
@@ -508,7 +514,7 @@ test('real mode: a TRX slot renders its own hero, sport-matched done-state, and 
   )
   renderView()
   // TRX hero with its own tag + title, NOT done (the logged session is volleyball)
-  expect(await screen.findByText('TRX · 12:00')).toBeInTheDocument()
+  expect(within(await findTodayCard('TRX')).getByText('12:00')).toBeInTheDocument()
   expect(screen.getByText('🪢 TRX')).toBeInTheDocument()
   const cta = screen.getByRole('button', { name: /Logold a session-t/ })
   // The log sheet opens preselected to TRX
@@ -534,7 +540,7 @@ test('real mode: a TRX slot logged today shows the done hero (no váll segment) 
   )
   renderView()
   // TRX hero, done state: "Kész" chip, summary with no "váll" segment (volleyball-only)
-  expect(await screen.findByText('TRX · 12:00')).toBeInTheDocument()
+  expect(within(await findTodayCard('TRX')).getByText('12:00')).toBeInTheDocument()
   expect(screen.getByText('Kész')).toBeInTheDocument()
   const summary = screen.getByText(/Logolva · RPE 7 · 60p$/)
   expect(summary).toBeInTheDocument()

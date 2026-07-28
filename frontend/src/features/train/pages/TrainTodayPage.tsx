@@ -23,7 +23,6 @@ import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
-import { Display } from '@/shared/ui/Display'
 import { Icon } from '@/shared/ui/Icon'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -31,6 +30,7 @@ import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
+import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
 import { daySessions } from '@/features/train/logic/agenda'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
@@ -307,128 +307,54 @@ export function TrainTodayPage() {
           const k = sportOf(vb)
           const logged = loggedSportToday(k)
           return (
-            <div key={`hero-sport-${k}-${vb.time}-${i}`} style={{ padding: '0 24px 12px' }}>
-              <div className="np-eventrow">
-                <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div className="col">
-                    <div className="np-eventrow-head">
-                      <span className="typetag typetag-sport">{SPORT_EMOJI[k]} {SPORT_TAGS[k]}</span>
-                      <Display size="sm">{SPORT_TITLES[k]} · {vb.time}</Display>
-                    </div>
-                    <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
-                      {[vb.court, `${vb.duration}p`, vb.role].filter(Boolean).join(' · ')}
-                    </span>
-                  </div>
-                  <span
-                    className="chip"
-                    style={{
-                      fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
-                      color: logged ? 'var(--success)' : 'var(--tag-sport)',
-                      borderColor: `color-mix(in srgb, ${logged ? 'var(--success)' : 'var(--tag-sport)'} 40%, transparent)`,
-                    }}
-                  >
-                    {logged ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
-                  </span>
-                </div>
-                {logged ? (
-                  <button
-                    type="button"
-                    onClick={() => setSportLogSport(k)}
-                    className="row rad-12 mt-md"
-                    style={{
-                      width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
-                      background: 'rgba(52, 211, 153, 0.08)',
-                      border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
-                      color: 'var(--success)', fontSize: 11,
-                    }}
-                  >
-                    <Icon name="check" size={12} />
-                    <span>
-                      {k === 'volleyball'
-                        ? `Logolva · RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
-                        : `Logolva · RPE ${logged.rpe} · ${logged.duration}p`}
-                    </span>
-                  </button>
-                ) : (
-                  <CtaGhost
-                    className="rad-12 mt-md"
-                    onClick={() => setSportLogSport(k)}
-                    style={{ borderColor: 'color-mix(in srgb, var(--tag-sport) 40%, transparent)', color: 'var(--tag-sport)' }}
-                  >
-                    <Icon name="plus" size={12} /> Logold a session-t
-                  </CtaGhost>
-                )}
-              </div>
-            </div>
+            <TodaySessionCard
+              key={`hero-sport-${k}-${vb.time}-${i}`}
+              tone="sport"
+              tag={<>{SPORT_EMOJI[k]} {SPORT_TAGS[k]}</>}
+              time={vb.time}
+              title={SPORT_TITLES[k]}
+              facts={[`${vb.duration} perc`, vb.role, vb.court]}
+              logged={Boolean(logged)}
+              loggedLabel={
+                logged
+                  ? k === 'volleyball'
+                    ? `Logolva · RPE ${logged.rpe} · ${logged.duration}p · váll ${logged.shoulderStrain ?? '–'}`
+                    : `Logolva · RPE ${logged.rpe} · ${logged.duration}p`
+                  : undefined
+              }
+              ctaLabel="Logold a session-t"
+              onLog={() => setSportLogSport(k)}
+            />
           )
         }
 
         const s = item.running
         const rl = runLoggedFor(s.key)
+        const openRunLog = () => setRunLogCtx({
+          blockId: activeRunningBlock!.id,
+          weekNumber: activeRunningBlock!.currentWeek,
+          sessionKey: s.key,
+          label: s.label,
+          isSprint: s.kind === 'sprint',
+          defaultRounds: s.rounds ?? undefined,
+        })
         return (
-          <div key={s.key} style={{ padding: '0 24px 12px' }}>
-            <div className="np-eventrow">
-              <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div className="col">
-                  <div className="np-eventrow-head">
-                    <span className="typetag typetag-run">🏃 FUTÁS</span>
-                    <Display size="sm">{s.label}</Display>
-                  </div>
-                  <span className="label-mono text-tertiary mt-sm" style={{ fontSize: 10 }}>
-                    {`RPE ${s.rpeTarget.min}–${s.rpeTarget.max}${s.rounds ? ` · ${s.rounds} kör` : ''}`}
-                  </span>
-                </div>
-                <span
-                  className="chip"
-                  style={{
-                    fontSize: 9, display: 'inline-flex', alignItems: 'center', gap: 4,
-                    color: rl ? 'var(--success)' : 'var(--tag-run)',
-                    borderColor: `color-mix(in srgb, ${rl ? 'var(--success)' : 'var(--tag-run)'} 40%, transparent)`,
-                  }}
-                >
-                  {rl ? <><Icon name="check" size={10} /> Kész</> : 'MA'}
-                </span>
-              </div>
-              {rl ? (
-                <button
-                  type="button"
-                  onClick={() => setRunLogCtx({
-                    blockId: activeRunningBlock!.id,
-                    weekNumber: activeRunningBlock!.currentWeek,
-                    sessionKey: s.key,
-                    label: s.label,
-                    isSprint: s.kind === 'sprint',
-                    defaultRounds: s.rounds ?? undefined,
-                  })}
-                  className="row rad-12 mt-md"
-                  style={{
-                    width: '100%', justifyContent: 'center', gap: 6, padding: '10px 12px',
-                    background: 'rgba(52, 211, 153, 0.08)',
-                    border: '1px solid color-mix(in srgb, var(--success) 35%, transparent)',
-                    color: 'var(--success)', fontSize: 11,
-                  }}
-                >
-                  <Icon name="check" size={12} />
-                  <span>Logolva · RPE {rl.rpeActual ?? '–'}{rl.completedRounds != null ? ` · ${rl.completedRounds} kör` : ''}</span>
-                </button>
-              ) : (
-                <CtaGhost
-                  className="rad-12 mt-md"
-                  onClick={() => setRunLogCtx({
-                    blockId: activeRunningBlock!.id,
-                    weekNumber: activeRunningBlock!.currentWeek,
-                    sessionKey: s.key,
-                    label: s.label,
-                    isSprint: s.kind === 'sprint',
-                    defaultRounds: s.rounds ?? undefined,
-                  })}
-                  style={{ borderColor: 'color-mix(in srgb, var(--tag-run) 40%, transparent)', color: 'var(--tag-run)' }}
-                >
-                  <Icon name="plus" size={12} /> Naplózd a futást
-                </CtaGhost>
-              )}
-            </div>
-          </div>
+          <TodaySessionCard
+            key={s.key}
+            tone="run"
+            tag={<>🏃 FUTÁS</>}
+            time={s.timeOfDay}
+            title={s.label}
+            facts={[`RPE ${s.rpeTarget.min}–${s.rpeTarget.max}`, s.rounds ? `${s.rounds} kör` : null]}
+            logged={Boolean(rl)}
+            loggedLabel={
+              rl
+                ? `Logolva · RPE ${rl.rpeActual ?? '–'}${rl.completedRounds != null ? ` · ${rl.completedRounds} kör` : ''}`
+                : undefined
+            }
+            ctaLabel="Naplózd a futást"
+            onLog={openRunLog}
+          />
         )
       })}
 
