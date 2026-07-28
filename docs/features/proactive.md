@@ -2,7 +2,7 @@
 title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-07-24
+updated: 2026-07-28
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -13,6 +13,8 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072000_mezo-h4wp.8_create_experiment.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
+  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/OverloadChallengeGenerator.java
+  - backend/src/main/resources/db/changelog/1.0.0/script/202607280641_mezo-gj42_challenge_overload_type.sql
 related: [companion, today, insights, train, _platform-api-backend]
 ---
 
@@ -339,7 +341,9 @@ evaluator**. Design of record:
 [`docs/superpowers/specs/2026-07-07-workout-challenges-design.md`](../superpowers/specs/2026-07-07-workout-challenges-design.md).
 
 - **A seventh owned table** — `challenge` (UUID PK, `created_by`, soft-delete; `template_session_id`
-  + `workout_date` + `exercise_id` = the target, `type` = `PR`/`Depth`/`Volume` (CHECK), `status` =
+  + `workout_date` + `exercise_id` = the target, `type` = `PR`/`Depth`/`Volume`/**`overload`** (CHECK,
+  extended by `202607280641_mezo-gj42` below — the released `202607072100` changeset itself stays
+  untouched), `status` =
   `proposed`/`accepted`/`dismissed`/`hit`/`miss`/`inconclusive` (CHECK), structured targets
   `target_weight_kg?`/`target_reps?`/`target_sets?`/`target_rir?`, **`confidence numeric(4,3)`
   NULLABLE** = „tanulom", typed-jsonb `refs`, `outcome text` + **`outcome_good boolean` NULLABLE**
@@ -385,6 +389,36 @@ evaluator**. Design of record:
   `useChallengeActions()` (`data/train/challengeHooks.ts`); the prep carousel renders the live list,
   „⚔️ Elfogadom" (pre-bxpg: „Vállaljuk") is a real L2 decision, confidence-null reads „tanulom", the `tools` chips are hidden in
   live, and resolved challenges show the outcome chip (✓/◯/◌). Details: [train.md §Active workout](train.md).
+- **Progressive Overload Plan 3 (`mezo-gj42`) — a deterministic fourth type, `overload`, no LLM.**
+  `OverloadChallengeGenerator` (`feature/proactive/service/OverloadChallengeGenerator.java`, same
+  COMPANION+PROACTIVE gate) reads the day's already-computed per-exercise `ProgressionSignal` off
+  `WorkoutService.getToday` (no duplicated deload/intensity logic) and picks the **biggest recommended
+  jump** — the largest `+kg` (weight lever), else the largest meaningful `+rep` (rep lever, ≥1);
+  deload/no-jump/not-today/non-owned-template all resolve to none (honest `[]`). Idempotent per (user,
+  template day, date); persists ONE `type='overload'` row (title `"⚡ Túlterhelés · {exercise}"`, `why`
+  = the engine's HU rationale, `confidence` always null — deterministic, not learned). **Served as a
+  guaranteed +1** — `ProactiveChallengeService.getChallenges` calls it via a SEPARATE
+  `overloadChallengeGenerator.generate(...)`, appended to the LLM `ChallengeGenerator`'s output and
+  INDEPENDENT of `max-per-workout`, so it's never crowded out. **Gotcha — the `isOwnedTemplate`
+  guard:** the generator delegates day-resolution to `getToday`, which **404s** on a non-owned/foreign
+  `templateSessionId` (the LLM generator's grounding gate returns `[]` silently for the same case); a
+  caught exception can't rescue this because `generate` is itself `@Transactional` and joins the
+  ambient tx, so the 404 marks it rollback-only (`UnexpectedRollbackException` on commit).
+  `ProactiveChallengeService.isOwnedTemplate` (a faithful mirror of `WorkoutService.
+  ownedTemplateOrThrow`) checks ownership BEFORE calling, preserving the documented "honest `[]`, never
+  404" contract. **Outcome = a PR mirror** — its own `ChallengeOutcomeEvaluator` case, null-weight
+  tolerant: hit ⇔ a logged set with `reps ≥ targetReps AND (targetWeightKg == null OR weight ≥
+  targetWeightKg)` (the rep-lever case has no weight target); no logged sets ⇒ inconclusive; flows
+  through the SAME accepted-only + completion-gated + `ChallengeJob` backstop path, unchanged.
+  **Display:** `ChallengeDisplay.typeLabel(overload) = "⚡ Túlterhelés"`, target `"{kg} kg × {reps}"`
+  or, weightless, `"{reps} ismétlés"` — renders through the UNCHANGED `ChallengesCarousel`/
+  `ChallengeCard` (FE only added `'overload'` to the `ChallengeType` union + a mock fixture,
+  `ch-overload`). `confidence=null` reuses the existing „tanulom" chip (a known minor copy nuance —
+  deterministic isn't really "still learning" — deliberately not fixed, keeping `ChallengeCard`
+  type-agnostic). **DB:** `ck_challenge_type` extended to `('PR','Depth','Volume','overload')` via
+  `202607280641_mezo-gj42_challenge_overload_type.sql` (drop+recreate). **Type catalog is now PR /
+  Depth / Volume / overload — `Tempo` still deferred** (no logged tempo to honestly evaluate against).
+  Details: [train.md §2](train.md).
 
 **Status per layer:**
 
@@ -894,7 +928,8 @@ Migrations `202607061100_mezo-h4wp.1_create_briefing.sql` + `202607070900_mezo-h
   session), `workout_date date not null` (scopes a re-used weekly template to one day), `exercise_id
   uuid not null fk→exercise(id)` (the **TEMPLATE** exercise the challenge targets — logged sets FK
   straight back to it, no instance mapping), `exercise_name varchar(120)` (denormalized at generation),
-  `type varchar(10) not null` (CHECK `PR|Depth|Volume`), `status varchar(12) not null default
+  `type varchar(10) not null` (CHECK `PR|Depth|Volume|overload` — extended by the
+  `202607280641_mezo-gj42` migration), `status varchar(12) not null default
   'proposed'` (CHECK `proposed|accepted|dismissed|hit|miss|inconclusive`), `risk varchar(4) default
   'low'` (CHECK `low|mid`, qualitative — not a fabricated number), `title`/`why`/`glory`, the
   **structured targets** `target_weight_kg numeric(6,2)?` / `target_reps int?` / `target_sets int?` /
@@ -1641,7 +1676,9 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
   (`target`, `typeLabel`) is DERIVED in code (`ChallengeDisplay`). A proposal missing its type's
   required fields (PR: weight+reps · Depth: `targetRir` · Volume: `targetSets`) is **dropped** as
   unevaluatable (the P1 "drop unvalidatable rows" precedent). Type catalog **v1 = PR/Depth/Volume;
-  Tempo deferred** (no tempo is logged, so it can't be honestly evaluated).
+  Tempo deferred** (no tempo is logged, so it can't be honestly evaluated) — extended in Plan 3
+  (`mezo-gj42`) to add `overload` (deterministic, always emits complete weight/rep targets, so no
+  validation-drop needed).
 - **(ff) A NEW set-level `ChallengeOutcomeEvaluator` — NOT the shared `MetricWindowEvaluator`.** A
   challenge is judged from `exercise_set` rows (weight/reps/rir/count), not a daily metric window, so
   the P1/P2 evaluator does not apply. Only `accepted` challenges are ever evaluated; **no logged sets
@@ -1694,7 +1731,7 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ExperimentOutcomeService.java` — **P2** deterministic outcome eval (active window-closed → completed via `MetricWindowEvaluator`; null = inconclusive).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ProactiveChallengeService.java` — **HBWI** the challenge read + WRITE path (`getChallenges` = list · lazy generate (`date==today`) · lazy resolve accepted; `decide` with the 404/409 guards; dismissed excluded).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeGenerator.java` — **HBWI** lazy-on-prep smart-tier generator: pure-code `gather` (template exercises + per-exercise history, grounding-gate drop) + one `CompanionLlm.completeSmart` + strict-JSON parse + type-required-target validation + pattern-copied/null confidence + model-selected refs + `max-per-workout` cap; `CHALLENGE_MARKER = "EDZES-KIHIVAS-FELADAT"` + `PROMPT`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeOutcomeEvaluator.java` — **HBWI** NEW set-level LLM-free evaluator (`evaluate` one accepted challenge / `evaluateDue` all accepted whose day passed): reads `exercise_set` rows FK'd to the template exercise → PR/Depth/Volume hit/miss; no logged sets ⇒ inconclusive (`outcome_good null`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeOutcomeEvaluator.java` — **HBWI** NEW set-level LLM-free evaluator (`evaluate` one accepted challenge / `evaluateDue` all accepted whose day passed): reads `exercise_set` rows FK'd to the template exercise → PR/Depth/Volume/overload hit/miss (`overload` = the null-weight-tolerant PR mirror); no logged sets ⇒ inconclusive (`outcome_good null`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/ChallengeJob.java` — **HBWI** single `@Scheduled` outcome-backstop cron (daily 06:25 `runOutcome` → `evaluateDue`, per-user isolation, three-switch-gated `CHALLENGE_JOB_SWITCH`); NO propose cron.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/BriefingGenerator.java` — the spine: pure-code `gather` + one `CompanionLlm.complete` + strict-JSON parse + ref resolution; `BRIEFING_MARKER` + `PROMPT` + `SNAPSHOT_CANDIDATES`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklySuggestionGenerator.java` — **W1** pure-code `gather` (snapshot + facts + prior-week summaries + patterns) + one `CompanionLlm.completeSmart` + plain-prose output; `WEEKLY_SUGGESTION_MARKER` + `PROMPT`.

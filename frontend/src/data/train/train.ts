@@ -446,6 +446,21 @@ export const workout: WorkoutPlan = {
       glory: 'Új csúcs · 8 hét óta első PR',
     },
     {
+      id: 'ch-overload',
+      type: 'overload',
+      typeLabel: '⚡ Túlterhelés',
+      exerciseId: 'ex1',
+      exercise: 'Chest Supported Row',
+      target: '107.5 kg × 8',
+      confidence: null, // deterministic — renders "tanulom" (DC8)
+      risk: 'low',
+      why: 'A mai ajánlott terhelés: +2.5 kg a múlt heti 105-höz képest (RIR 2 stabil).',
+      refs: [],
+      glory: 'Teljesítsd a mai ajánlott terhelést.',
+      targetWeightKg: 107.5,
+      targetReps: 8,
+    },
+    {
       id: 'ch2',
       type: 'Depth',
       typeLabel: 'Mélység',

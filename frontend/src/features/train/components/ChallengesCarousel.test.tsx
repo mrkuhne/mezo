@@ -50,4 +50,18 @@ describe('ChallengesCarousel', () => {
     expect(screen.queryByText('Ma nincs kihívás')).not.toBeInTheDocument()
     expect(screen.queryByText('Kihívások generálása…')).not.toBeInTheDocument()
   })
+
+  // Deterministic overload challenge (Progressive Overload P3) — the card/carousel are
+  // type-agnostic, so this mostly guards the `ChallengeType` union + mock parity.
+  test('renders an overload challenge with its ⚡ Túlterhelés label and target', () => {
+    render(
+      <ChallengesCarousel
+        challenges={[challenge({ type: 'overload', typeLabel: '⚡ Túlterhelés', target: '107.5 kg × 8' })]}
+        accepted={{}}
+        onToggle={vi.fn()}
+      />
+    )
+    expect(screen.getByText(/⚡ Túlterhelés/)).toBeInTheDocument()
+    expect(screen.getByText('107.5 kg × 8')).toBeInTheDocument()
+  })
 })

@@ -4182,7 +4182,7 @@ export interface components {
             exerciseId: string;
             /** @description The target exercise's name */
             exercise: string;
-            /** @description PR | Depth | Volume */
+            /** @description PR | Depth | Volume | overload */
             type: string;
             /** @description HU display label derived from type */
             typeLabel: string;

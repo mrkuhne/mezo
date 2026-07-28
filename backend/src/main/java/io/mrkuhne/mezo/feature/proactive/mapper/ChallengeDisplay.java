@@ -18,6 +18,7 @@ final class ChallengeDisplay {
             case ChallengeEntity.TYPE_PR -> "PR-attempt";
             case ChallengeEntity.TYPE_DEPTH -> "Mélység";
             case ChallengeEntity.TYPE_VOLUME -> "Volumen";
+            case ChallengeEntity.TYPE_OVERLOAD -> "⚡ Túlterhelés";
             default -> type;
         };
     }
@@ -26,6 +27,9 @@ final class ChallengeDisplay {
         return switch (e.getType()) {
             case ChallengeEntity.TYPE_PR ->
                     e.getTargetWeightKg().stripTrailingZeros().toPlainString() + " kg × " + e.getTargetReps();
+            case ChallengeEntity.TYPE_OVERLOAD -> e.getTargetWeightKg() != null
+                    ? e.getTargetWeightKg().stripTrailingZeros().toPlainString() + " kg × " + e.getTargetReps()
+                    : e.getTargetReps() + " ismétlés";
             case ChallengeEntity.TYPE_DEPTH -> "Utolsó szet RIR " + e.getTargetRir() + "-ig";
             case ChallengeEntity.TYPE_VOLUME -> e.getTargetSets() + " szett";
             default -> "";

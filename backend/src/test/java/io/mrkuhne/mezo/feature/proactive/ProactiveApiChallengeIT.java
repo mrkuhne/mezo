@@ -102,6 +102,38 @@ class ProactiveApiChallengeIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testGetChallenges_shouldServeOverloadAlongsideLlm_whenTemplateHasProgressionHistory() {
+        UUID owner = ownerId();
+        // T2's seed idiom (OverloadChallengeGeneratorIT): an active meso + template day + a
+        // completed PRIOR instance with a logged working set → a WEIGHT-lever ProgressionSignal
+        // (drives the overload generator). The same logged set also carries reps (not null), which
+        // satisfies the LLM ChallengeGenerator's grounding gate — ONE seed drives BOTH generators.
+        MesocycleEntity meso = trainPopulator.createActiveMeso(owner);
+        WorkoutSessionEntity day = trainPopulator.createTemplateDay(owner, meso.getId(), "Pull");
+        ExerciseEntity ex = trainPopulator.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        WorkoutSessionEntity priorInstance =
+                trainPopulator.createWorkoutInstance(owner, day, LocalDate.now().minusDays(7), "completed");
+        trainPopulator.createLoggedSet(owner, ex.getId(), priorInstance.getId(), 0, "60", 8, 0);
+
+        List<ChallengeResponse> out = getForList(
+                challengeUri(day.getId(), LocalDate.now()), ownerAuthHeaders(), HttpStatus.OK, ChallengeResponse.class);
+
+        // exactly one deterministic overload challenge, present ALONGSIDE the LLM one(s):
+        assertThat(out).anyMatch(c -> "⚡ Túlterhelés".equals(c.getTypeLabel()));
+        assertThat(out.stream().filter(c -> ChallengeEntity.TYPE_OVERLOAD.equals(c.getType())).count()).isEqualTo(1);
+        assertThat(out).anyMatch(c -> !ChallengeEntity.TYPE_OVERLOAD.equals(c.getType()));  // the LLM PR one still there
+        long overloadCount = out.stream().filter(c -> ChallengeEntity.TYPE_OVERLOAD.equals(c.getType())).count();
+        long llmCount = out.size() - overloadCount;
+        assertThat(llmCount).isGreaterThanOrEqualTo(1);   // overload is +1 ON TOP of the LLM challenges
+
+        // idempotent: a second GET returns the same set, no duplicate overload
+        List<ChallengeResponse> again = getForList(
+                challengeUri(day.getId(), LocalDate.now()), ownerAuthHeaders(), HttpStatus.OK, ChallengeResponse.class);
+        assertThat(again).hasSameSizeAs(out);
+        assertThat(again.stream().filter(c -> ChallengeEntity.TYPE_OVERLOAD.equals(c.getType())).count()).isEqualTo(1);
+    }
+
+    @Test
     void testDecide_shouldAcceptThenReject409_whenAcceptedThenReDecided() {
         Plan plan = plantTemplate(ownerId());
         ChallengeEntity proposed = challengePopulator.challengePr(ownerId(), plan.session().getId(), LocalDate.now(),

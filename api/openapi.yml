@@ -10380,7 +10380,7 @@ components:
           description: The target exercise's name
         type:
           type: string
-          description: PR | Depth | Volume
+          description: PR | Depth | Volume | overload
         typeLabel:
           type: string
           description: HU display label derived from type

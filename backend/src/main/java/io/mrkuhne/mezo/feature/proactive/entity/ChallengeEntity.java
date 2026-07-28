@@ -38,6 +38,7 @@ public class ChallengeEntity extends OwnedEntity {
     public static final String TYPE_PR = "PR";
     public static final String TYPE_DEPTH = "Depth";
     public static final String TYPE_VOLUME = "Volume";
+    public static final String TYPE_OVERLOAD = "overload";
     public static final String STATUS_PROPOSED = "proposed";
     public static final String STATUS_ACCEPTED = "accepted";
     public static final String STATUS_DISMISSED = "dismissed";
