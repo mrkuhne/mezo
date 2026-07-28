@@ -937,8 +937,23 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = growthTools.getGrowth("titles", ctx(owner));
 
-        assertThat(out).isEqualTo("Címek: felszerelt — ujonc; birtokolt: lendulet");
+        // display names resolved from the TitleCatalog (content/gamification-titles.json), not the
+        // raw catalog keys ("ujonc"/"lendulet") — the account is born equipped with the default
+        // title (TitleCatalog.DEFAULT_TITLE_KEY="ujonc" -> "Az Újonc"); "lendulet" -> "A Lendület".
+        assertThat(out).isEqualTo("Címek: felszerelt — Az Újonc; birtokolt: A Lendület");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Growth", "titles"));
+    }
+
+    @Test
+    void testGetGrowth_shouldFallBackToRawKey_whenScopeTitlesAndOwnedKeyMissingFromCatalog() {
+        UUID owner = userPopulator.createUser().getId();
+        gamificationPopulator.ownedTitle(owner, "nem-letezo-cim");
+
+        String out = growthTools.getGrowth("titles", ctx(owner));
+
+        // honest degrade: an owned key absent from the static TitleCatalog content renders as the
+        // raw key rather than crashing or silently dropping the entry.
+        assertThat(out).isEqualTo("Címek: felszerelt — Az Újonc; birtokolt: nem-letezo-cim");
     }
 }

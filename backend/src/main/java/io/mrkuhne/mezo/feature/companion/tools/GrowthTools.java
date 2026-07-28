@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.GrowthWeekResponse;
 import io.mrkuhne.mezo.api.dto.PerkUnlockResponse;
 import io.mrkuhne.mezo.api.dto.ProgressionProfileResponse;
 import io.mrkuhne.mezo.api.dto.SkillLevel;
+import io.mrkuhne.mezo.feature.gamification.TitleCatalog;
 import io.mrkuhne.mezo.feature.gamification.service.GamificationService;
 import io.mrkuhne.mezo.feature.progression.service.AchievementService;
 import io.mrkuhne.mezo.feature.progression.service.GrowthWeekService;
@@ -45,6 +46,10 @@ public class GrowthTools {
     private final GrowthWeekService growthWeekService;
     /** Pure read (ungated) — the 9 derive-on-read badges + persisted perk unlocks. */
     private final AchievementService achievementService;
+    /** Pure read (ungated) — static title catalog (key -> Hungarian display name), the
+     *  {@link io.mrkuhne.mezo.feature.progression.PerkCatalog} loading idiom, used to resolve
+     *  scope=titles' raw title keys to their user-facing names. */
+    private final TitleCatalog titleCatalog;
     /** GAMIFICATION_SWITCH-gated independent of COMPANION_SWITCH: read defensively via ObjectProvider
      *  (the BiometricsTools#sleepGoalService precedent) so a disabled gamification feature degrades
      *  scope=skills' account level/XP/streak line to silence, and scope=titles entirely to "nincs
@@ -166,7 +171,9 @@ public class GrowthTools {
      * scope=titles: the equipped title + owned titles, from the GAMIFICATION_SWITCH-gated
      * {@link GamificationService}. "nincs adat" only when the gamification feature itself is off
      * (no bean) — otherwise never, since every profile is born equipped with the default title
-     * ({@code TitleCatalog.DEFAULT_TITLE_KEY}).
+     * ({@code TitleCatalog.DEFAULT_TITLE_KEY}). Keys are resolved to their Hungarian display names
+     * via {@link TitleCatalog} — mirrors {@link #renderAchievements} resolving badge/perk names,
+     * never the raw catalog key.
      */
     private String renderTitles(UUID userId, ToolContext toolContext) {
         GamificationService gamification = gamificationService.getIfAvailable();
@@ -174,11 +181,18 @@ public class GrowthTools {
             return "Címek: " + ToolText.NO_DATA;
         }
         GamificationProfileResponse acc = gamification.getProfile(userId);
-        StringBuilder b = new StringBuilder("Címek: felszerelt — ").append(acc.getEquippedTitleKey());
+        StringBuilder b = new StringBuilder("Címek: felszerelt — ").append(titleName(acc.getEquippedTitleKey()));
         if (!acc.getOwnedTitleKeys().isEmpty()) {
-            b.append("; birtokolt: ").append(String.join(", ", acc.getOwnedTitleKeys()));
+            b.append("; birtokolt: ").append(acc.getOwnedTitleKeys().stream()
+                    .map(this::titleName).collect(Collectors.joining(", ")));
         }
         ToolContexts.audit(toolContext).addRef("Growth", "titles");
         return b.toString();
+    }
+
+    /** Resolves a title key to its catalog display name, falling back to the raw key only if the
+     *  key is missing from the catalog — honest degrade, never crash/null. */
+    private String titleName(String key) {
+        return titleCatalog.find(key).map(TitleCatalog.TitleDef::name).orElse(key);
     }
 }

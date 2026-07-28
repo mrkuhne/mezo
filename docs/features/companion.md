@@ -122,8 +122,10 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   achievements, titles}` (default `skills`): scope=skills renders account level/XP/live-streak
   plus every skill with real progress (athletic/muscle/life, filtering out the fixed-taxonomy
   ghost defaults); scope=week/achievements render honest zeros per each backing service's own
-  doc (never `nincs adat`); scope=titles renders the equipped + owned titles (never `nincs adat`
-  unless gamification itself is off). `nincs adat` only for scope=skills, gated on
+  doc (never `nincs adat`); scope=titles renders the equipped + owned titles resolved to their
+  Hungarian display names via `TitleCatalog` (ungated, direct-injected field — not
+  `ObjectProvider`), falling back to the raw key only if it's missing from the catalog (never
+  `nincs adat` unless gamification itself is off). `nincs adat` only for scope=skills, gated on
   `ProgressionProfileResponse.athleteLevel == null` (the service's own "no skill_progress rows
   yet" ghost signal).
 - **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
