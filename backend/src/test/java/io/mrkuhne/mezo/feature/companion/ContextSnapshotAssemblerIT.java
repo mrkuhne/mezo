@@ -378,7 +378,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         assertThat(snapshot).contains("alvás (" + today.minusDays(1) + "): 7.2 h, minőség 4/5");
         assertThat(snapshot).contains(
-            "check-in (" + today + " 08:00): energia 4/5, stressz 2/5, megjegyzés: \"fáradtan ébredtem\"");
+            "check-in (" + today + " 08:00): energia 4/10, stressz 2/10, megjegyzés: \"fáradtan ébredtem\"");
     }
 
     @Test

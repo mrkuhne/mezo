@@ -489,8 +489,8 @@ public class ContextSnapshotAssembler {
             b.append(": ").append(NO_DATA);
         } else {
             b.append(" (").append(checkIn.getDate()).append(' ').append(checkIn.getSlotTime()).append("): ")
-                    .append("energia ").append(checkIn.getEnergy()).append("/5, stressz ")
-                    .append(checkIn.getStress()).append("/5");
+                    .append("energia ").append(checkIn.getEnergy()).append("/10, stressz ")
+                    .append(checkIn.getStress()).append("/10");
             if (checkIn.getNote() != null && !checkIn.getNote().isBlank()) {
                 int max = properties.snapshot().checkinNoteMaxChars();
                 String note = checkIn.getNote();
