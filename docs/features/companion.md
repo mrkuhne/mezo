@@ -142,7 +142,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   already depends on `feature.companion` (`ActivityClassifier`'s `CompanionLlm` use, plus
   transitively via `feature.quest`), so a direct `ActivityService` import from `companion.tools`
   would have closed a NEW 2-/3-slice cycle (`ArchitectureTest#feature_slices_are_cycle_free` only
-  tolerates the two pre-existing frozen cycles).
+  tolerates the two pre-existing frozen cycles) — the `TodayQuestSource` pattern, applied twice.
+  Active challenges are deliberately NOT composed: `ProactiveChallengeService.getChallenges` is
+  write-transactional (lazy-generates the first proposal + resolves accepted-challenge outcomes),
+  and a direct `ChallengeRepository` read would open the same kind of NEW companion→proactive
+  cycle (proactive's generators already call `CompanionLlm`) — fixing that cleanly needs a THIRD
+  port, out of scope here.
 - **15th tool — `get_insights` ("Minták", mezo-xixu)**, new `InsightsTools` bean — the feature this
   whole tool-expansion effort started from. Only `scope=patterns` is live: `PatternService.list`
   (same `companion` slice, injected directly — no `ObjectProvider`, gated on the same
@@ -159,12 +164,6 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `nincs adat` that would misread as a real per-user absence). DONE_WITH_CONCERNS — resolving this
   cleanly needs a companion-owned read port (the `TodayQuestSource` pattern) plus a genuinely
   side-effect-free read on the proactive side; neither exists today.
-  tolerates the two pre-existing frozen cycles) — the `TodayQuestSource` pattern, applied twice.
-  Active challenges are deliberately NOT composed: `ProactiveChallengeService.getChallenges` is
-  write-transactional (lazy-generates the first proposal + resolves accepted-challenge outcomes),
-  and a direct `ChallengeRepository` read would open the same kind of NEW companion→proactive
-  cycle (proactive's generators already call `CompanionLlm`) — fixing that cleanly needs a THIRD
-  port, out of scope here.
 - **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
   `RecordingToolCallback` (audit + per-turn budget, structurally unbypassable); the per-turn
   `ToolCallAudit` rides in the Spring AI `ToolContext`, collects `{type:'read', name, args}`
