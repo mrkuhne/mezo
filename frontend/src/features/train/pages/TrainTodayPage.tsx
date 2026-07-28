@@ -20,7 +20,7 @@ import {
   snoozeHash,
 } from '@/features/train/logic/morningWindow'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
+import { DAY_LABELS } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
@@ -29,10 +29,11 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
-import { WeeklyDayRow, type WeeklyAgendaDay } from '@/features/train/components/WeeklyDayRow'
+import { WeeklyDayRow } from '@/features/train/components/WeeklyDayRow'
 import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
 import { DoneBar } from '@/features/train/components/DoneBar'
 import { daySessions } from '@/features/train/logic/agenda'
+import { buildWeekAgenda } from '@/features/train/logic/weekAgenda'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
 import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
 import { LoadTiles } from '@/features/train/components/LoadTiles'
@@ -120,35 +121,11 @@ export function TrainTodayPage() {
 
   // Combine gym schedule + volleyball sessions into a unified weekly map. Each row carries
   // its calendar ISO date (this week's Monday + index) so done-state can be matched per day.
-  const gymTimes = gymSchedule?.weeklyTimes ?? []
-  const vbSessions = sport.schedule?.volleyball.sessions ?? []
-  const weekDateIso = (i: number) => {
-    const base = new Date()
-    return localDateString(new Date(base.getFullYear(), base.getMonth(), base.getDate() - todayIdx() + i))
-  }
-  // Completed custom (saját) instances of this week, grouped by ISO date — extra
-  // weekly rows on the date they were actually trained (mezo-ws2x).
-  const customByDate = new Map<string, { id: string; title: string }[]>()
-  for (const w of weekWorkouts) {
-    if (w.origin === 'custom' && w.status === 'completed') {
-      const list = customByDate.get(w.date) ?? []
-      list.push({ id: w.id, title: w.title })
-      customByDate.set(w.date, list)
-    }
-  }
-
-  const agenda: WeeklyAgendaDay[] = DAY_ORDER.map((d, i) => {
-    const g = gymTimes.find((x) => x.day === d)
-    const v = vbSessions.filter((x) => x.day === d)
-    return {
-      day: d,
-      date: weekDateIso(i),
-      gym: g && g.active ? g : null,
-      sport: v,
-      running: runSessionsForDay(activeRunningBlock, DAY_ORDER.indexOf(d)),
-      isToday: Boolean(g?.today || v.some((x) => x.today)),
-      custom: customByDate.get(weekDateIso(i)) ?? [],
-    }
+  const agenda = buildWeekAgenda({
+    gymTimes: gymSchedule?.weeklyTimes ?? [],
+    sportSlots: sport.schedule?.volleyball.sessions ?? [],
+    runningBlock: activeRunningBlock,
+    weekWorkouts,
   })
 
   // The agenda's `isToday` is flag-based (gym/volleyball only); running blocks
