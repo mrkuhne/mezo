@@ -24,6 +24,7 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.feature.fuel.service.IntakeService;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.gamification.service.GamificationService;
@@ -268,7 +269,7 @@ public class ContextSnapshotAssembler {
         }
         String label = t.getDayLabel() != null ? t.getDayLabel() : "gym";
         return label + ": " + exercises.stream()
-                .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
                 .collect(Collectors.joining(", "));
     }
 
@@ -291,7 +292,7 @@ public class ContextSnapshotAssembler {
             String gymPart = "gym (" + t.getDayLabel() + ")";
             if (!exercises.isEmpty()) {
                 gymPart += ": " + exercises.stream()
-                        .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                        .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
                         .collect(Collectors.joining(", "));
             }
             parts.add(gymPart);
@@ -324,19 +325,6 @@ public class ContextSnapshotAssembler {
                         .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == tomorrowDow)
                         .findFirst())
                 .map(s -> "futás: " + s.label());
-    }
-
-    /**
-     * "{name} {workingSets}×{repMin}-{repMax}" — the compact exercise descriptor for Ma:/Holnap:.
-     * Null-guarded: a missing rep range (or set count) must never render the literal "null" into
-     * the LLM prompt, so each piece is rendered only when present.
-     */
-    private static String exerciseLine(String name, Integer workingSets, Integer repMin, Integer repMax) {
-        StringBuilder b = new StringBuilder(name).append(' ').append(workingSets != null ? workingSets : "?");
-        if (repMin != null && repMax != null) {
-            b.append('×').append(repMin).append('-').append(repMax);
-        }
-        return b.toString();
     }
 
     /**

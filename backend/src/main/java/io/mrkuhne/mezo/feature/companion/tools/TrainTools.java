@@ -249,7 +249,7 @@ public class TrainTools {
             WorkoutSessionEntity t = template.get();
             line.append(t.getDayLabel() != null ? t.getDayLabel() : "gym").append(": ")
                     .append(exercises.stream()
-                            .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                            .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
                             .collect(Collectors.joining(", ")));
         }
         activeBlocks.stream().findFirst()
@@ -279,7 +279,7 @@ public class TrainTools {
             b.append('\n').append(day.getDay()).append(": ").append(day.getType());
             if (!day.getExercises().isEmpty()) {
                 b.append(" — ").append(day.getExercises().stream()
-                        .map(e -> exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                        .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
                         .collect(Collectors.joining(", ")));
             }
         }
@@ -326,18 +326,5 @@ public class TrainTools {
                         .filter(sess -> sess.getDayOfWeek() != null && sess.getDayOfWeek() == dow)
                         .findFirst())
                 .map(RunPrescribedSession::getLabel);
-    }
-
-    /**
-     * "{name} {workingSets}×{repMin}-{repMax}" — the compact exercise descriptor (the
-     * ContextSnapshotAssembler idiom). Null-guarded: a missing rep range (or set count) must never
-     * render the literal "null" into the LLM prompt.
-     */
-    private static String exerciseLine(String name, Integer workingSets, Integer repMin, Integer repMax) {
-        StringBuilder b = new StringBuilder(name).append(' ').append(workingSets != null ? workingSets : "?");
-        if (repMin != null && repMax != null) {
-            b.append('×').append(repMin).append('-').append(repMax);
-        }
-        return b.toString();
     }
 }

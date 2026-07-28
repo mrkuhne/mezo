@@ -166,8 +166,11 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = trainTools.getTrainingPlan("today", null, ctx(owner));
 
+        // exact rendered exercise descriptor (name + working-sets × rep-range), not just a name
+        // substring — pins ToolText.exerciseLine's null-guarded formatting (TrainPopulator default
+        // exercise: workingSets=3, repMin=6, repMax=8).
         assertThat(out).startsWith("Edzésterv (ma, " + LocalDate.now() + "):")
-                .contains(todayLabel).contains("Húzódzkodás");
+                .contains(todayLabel).contains("Húzódzkodás 3×6-8");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("TrainingPlan", LocalDate.now().toString()));
     }
@@ -182,8 +185,9 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         String out = trainTools.getTrainingPlan("meso", null, ctx(owner));
 
+        // same exact-descriptor pin as scope=today (TrainPopulator default: workingSets=3, repMin=6, repMax=8).
         assertThat(out).startsWith("Mezociklus terv: Blokk").contains("3/6. hét")
-                .contains("Hét").contains("Pull A").contains("Húzódzkodás");
+                .contains("Hét").contains("Pull A").contains("Húzódzkodás 3×6-8");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("TrainingPlan", "Blokk"));
     }
@@ -193,6 +197,80 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         assertThat(trainTools.getTrainingPlan(null, null, ctx(owner)))
                 .isEqualTo("Edzésterv (ma, " + LocalDate.now() + "): nincs adat");
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldRenderWeekWithPlannedDayAndRestDays_whenScopeWeek() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "Pull A", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Húzódzkodás", 0);
+
+        String out = trainTools.getTrainingPlan("week", null, ctx(owner));
+
+        // the window (today..+6) covers all 7 HU weekdays exactly once: today's line resolves the
+        // planned gym day, the other 6 have no matching template — genuine rest days ("pihenőnap").
+        assertThat(out).startsWith("Edzésterv (" + today + " – " + today.plusDays(6) + "):")
+                .contains(today + ": gym: " + todayLabel + ": Húzódzkodás 3×6-8")
+                .contains("pihenőnap");
+        assertThat(audit.toRefsEnvelope().refs())
+                .contains(new RefsEnvelope.Ref("TrainingPlan", today + ".." + today.plusDays(6)));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldResolveTomorrowGymDay_whenScopeTomorrow() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String tomorrowLabel = WorkoutService.HU_DAY_LABELS.get(tomorrow.getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), tomorrowLabel, "Push A", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+
+        String out = trainTools.getTrainingPlan("tomorrow", null, ctx(owner));
+
+        assertThat(out).startsWith("Edzésterv (holnap, " + tomorrow + "):")
+                .contains(tomorrowLabel).contains("Fekvenyomás 3×6-8");
+        assertThat(audit.toRefsEnvelope().refs())
+                .contains(new RefsEnvelope.Ref("TrainingPlan", tomorrow.toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldResolveExplicitDateParam_whenScopeDate() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate future = LocalDate.now().plusDays(10);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String futureLabel = WorkoutService.HU_DAY_LABELS.get(future.getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), futureLabel, "Leg A", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Guggolás", 0);
+
+        String out = trainTools.getTrainingPlan("date", future.toString(), ctx(owner));
+
+        assertThat(out).startsWith("Edzésterv (" + future + "):")
+                .contains(futureLabel).contains("Guggolás 3×6-8");
+        assertThat(audit.toRefsEnvelope().refs())
+                .contains(new RefsEnvelope.Ref("TrainingPlan", future.toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldAppendRunningTail_whenActiveRunningBlockHasSessionForResolvedDay() {
+        UUID owner = userPopulator.createUser().getId();
+        // sessionsPerWeek=7 covers every weekday, so today's weekday always has a prescribed
+        // session regardless of the real calendar date — the ContextSnapshotAssemblerIT idiom
+        // (testTrainBlock_shouldResolveTomorrowRunSession_whenActiveRunningBlockHasSessionForTomorrowWeekday).
+        runningPopulator.createBlockWithSessions(owner, "Sprint blokk", "active", 4, 7);
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        // no active meso → "gym: pihenőnap", but the active running block's prescribed session
+        // for today's weekday still appends the "; futás: …" tail.
+        assertThat(out).contains("gym: pihenőnap; futás: Sprint-intervallum");
+        assertThat(audit.toRefsEnvelope().refs())
+                .contains(new RefsEnvelope.Ref("TrainingPlan", LocalDate.now().toString()));
     }
 
     @Test
