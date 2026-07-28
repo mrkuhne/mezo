@@ -3,12 +3,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useFuelTimeline } from '@/data/fuel/timelineHooks'
+import { useFuelTimeline, deriveBlocks } from '@/data/fuel/timelineHooks'
 import { useFuelPreview } from '@/data/today/todayHooks'
 import { deriveDailyBudget } from '@/features/fuel/logic/buildDayPlan'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import type { FuelSlot } from '@/data/types'
+import type { FuelSlot, SportSchedule, VolleyballSession } from '@/data/types'
 
 /** A wrapper bound to ONE QueryClient — so the co-composed hooks share a cache. */
 function sharedWrapper() {
@@ -50,6 +50,32 @@ const stashFixture = [
 ]
 
 afterEach(() => vi.unstubAllEnvs())
+
+// deriveBlocks must carry the session's sport identity into the planner block label so the
+// Fuel "Mai" timeline (and the energy-breakdown sheet) name a cross/TRX session correctly
+// instead of the old hardcoded 'Volleyball' (mezo-rhe5).
+describe('deriveBlocks — sport block label reflects the session sport (mezo-rhe5)', () => {
+  const scheduleWithSport = (sport: VolleyballSession['sport']): SportSchedule => ({
+    volleyball: {
+      team: 'BVSC', season: 'Tavasz', weeklyHours: 5,
+      sessions: [{ day: 'Hét', time: '18:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés', sport, today: true }],
+    },
+  })
+  const sportLabel = (sport: VolleyballSession['sport']) =>
+    deriveBlocks(null, { schedule: scheduleWithSport(sport) }, null).find(b => b.kind === 'sport')?.label
+
+  it('labels a cross-training session Cross, not Volleyball', () => {
+    expect(sportLabel('cross')).toBe('Cross')
+  })
+
+  it('labels a TRX session TRX', () => {
+    expect(sportLabel('trx')).toBe('TRX')
+  })
+
+  it('defaults an unmarked session to Volleyball (Phase-1 mock default)', () => {
+    expect(sportLabel(undefined)).toBe('Volleyball')
+  })
+})
 
 describe('useFuelTimeline / useFuelPreview (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))

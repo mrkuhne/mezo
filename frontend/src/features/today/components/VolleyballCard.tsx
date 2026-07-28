@@ -1,5 +1,6 @@
 import { Icon } from '@/shared/ui/Icon'
 import type { VolleyballSession } from '@/data/types'
+import { sportOf, SPORT_TAGS, SPORT_TITLES } from '@/features/train/logic/sportKinds'
 
 export function VolleyballCard({
   session,
@@ -10,6 +11,11 @@ export function VolleyballCard({
   note?: string | null
 }) {
   if (!session) return null
+  // The card names the session by its sport identity (volleyball|cross|trx) so cross/TRX don't
+  // render as 'Röplabda' (mezo-rhe5). sportOf defaults an unmarked session to volleyball; the
+  // volleyball title stays the Hungarian 'Röplabda' this card has always shown.
+  const kind = sportOf(session)
+  const title = kind === 'volleyball' ? 'Röplabda' : SPORT_TITLES[kind]
   return (
     <div style={{ padding: '8px 24px 16px' }}>
       <div className="col gap-sm">
@@ -21,8 +27,8 @@ export function VolleyballCard({
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
             <div className="col">
               <div className="np-eventrow-head">
-                <span className="typetag typetag-sport">RÖPI</span>
-                <div className="h-display size-sm" style={{ lineHeight: 1.15 }}>Röplabda</div>
+                <span className="typetag typetag-sport">{SPORT_TAGS[kind]}</span>
+                <div className="h-display size-sm" style={{ lineHeight: 1.15 }}>{title}</div>
               </div>
               <span className="text-tertiary" style={{ fontSize: 11, marginTop: 4 }}>{session.court} · {session.role}</span>
             </div>
