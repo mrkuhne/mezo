@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.tools;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
+import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
@@ -13,6 +14,7 @@ import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
@@ -55,6 +57,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private GoalTools goalTools;
     @Autowired private MedicationTools medicationTools;
     @Autowired private GoalPopulator goalPopulator;
+    @Autowired private GoalPlanLinkPopulator goalPlanLinkPopulator;
     @Autowired private MedicationPopulator medicationPopulator;
     @Autowired private MedicationDosePopulator medicationDosePopulator;
     @Autowired private UserPopulator userPopulator;
@@ -561,7 +564,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetGoalProgress_shouldComposeGoalTrendAndSegment_whenActiveGoalExists() {
+    void testGetGoal_shouldComposeGoalTrendAndSegment_whenScopeProgressAndActiveGoalExists() {
         UUID owner = userPopulator.createUser().getId();
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
                 List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", 2100, 160,
@@ -573,7 +576,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(8), new BigDecimal("87.1"));
         weightLogPopulator.createWeightLog(owner, LocalDate.now().minusDays(1), new BigDecimal("86.4"));
 
-        String out = goalTools.getGoalProgress(ctx(owner));
+        String out = goalTools.getGoal("progress", ctx(owner));
 
         assertThat(out).startsWith("Cél: Nyári cut (cut), 3. hét; 84.2 → 80 kg")
                 .contains("trendsúly most ").contains("eddig ")
@@ -583,9 +586,122 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetGoalProgress_shouldRenderNincsAktivCel_whenNone() {
-        assertThat(goalTools.getGoalProgress(ctx(userPopulator.createUser().getId())))
+    void testGetGoal_shouldDefaultScopeToProgress_whenScopeNullAndNoActiveGoal() {
+        assertThat(goalTools.getGoal(null, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Cél: nincs aktív cél");
+    }
+
+    @Test
+    void testGetGoal_shouldRenderNincsAktivCel_whenNoneAndScopeProgress() {
+        assertThat(goalTools.getGoal("progress", ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Cél: nincs aktív cél");
+    }
+
+    @Test
+    void testGetGoal_shouldRenderSegmentedRecept_whenScopeReceptAndPrescriptionExists() {
+        UUID owner = userPopulator.createUser().getId();
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
+                List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", 2100, 160,
+                        new BigDecimal("7.5"), List.of(5, 6), new BigDecimal("-0.5"),
+                        "kalóriahiány a cut elején")),
+                null, null);
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
+                prescription, 4, "06:30", "22:30");
+
+        String out = goalTools.getGoal("recept", ctx(owner));
+
+        assertThat(out).startsWith("Cél receptje: Nyári cut (formula)")
+                .contains("1-6. hét: 2100 kcal, 160 g fehérje")
+                .contains("alvás 7.5 h").contains("pihenőnapok: 5, 6")
+                .contains("ütem -0.5 kg/hét").contains("kalóriahiány a cut elején");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
+    }
+
+    @Test
+    void testGetGoal_shouldRenderMegNincsKiertekelve_whenScopeReceptAndPrescriptionNull() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
+                null, null, null, null);
+
+        assertThat(goalTools.getGoal("recept", ctx(owner)))
+                .isEqualTo("Cél receptje: Nyári cut: még nincs kiértékelve");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
+    }
+
+    @Test
+    void testGetGoal_shouldRenderStrengthAndMuscleGuardStatus_whenScopeGuardsAndActive() {
+        UUID owner = userPopulator.createUser().getId();
+        GoalPrescriptionJson.GuardStatus guardStatus = new GoalPrescriptionJson.GuardStatus(
+                new GoalPrescriptionJson.GuardStatus.Strength(true, new BigDecimal("-3.2"), true,
+                        List.of("e1RM esik 2 hete")),
+                new GoalPrescriptionJson.GuardStatus.Muscle(true, 10, List.of("láb"), true, true,
+                        List.of("fehérje rendben")));
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula", List.of(), guardStatus, null);
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
+                prescription, null, null, null);
+
+        String out = goalTools.getGoal("guards", ctx(owner));
+
+        assertThat(out).startsWith("Cél korlátai: Nyári cut")
+                .contains("Erő: e1RM trend -3.2%, megsértve: igen").contains("e1RM esik 2 hete")
+                .contains("Izom: heti minimum 10 szett/izomcsoport, elmaradó: láb").contains("fehérje rendben");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
+    }
+
+    @Test
+    void testGetGoal_shouldRenderMegNincsKiertekelve_whenScopeGuardsAndPrescriptionNull() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
+                null, null, null, null);
+
+        assertThat(goalTools.getGoal("guards", ctx(owner)))
+                .isEqualTo("Cél korlátai: Nyári cut: még nincs kiértékelve");
+    }
+
+    @Test
+    void testGetGoal_shouldRenderFeasibilityVerdictAndNotes_whenScopeFeasibility() {
+        UUID owner = userPopulator.createUser().getId();
+        GoalPrescriptionJson.Feasibility feasibility = new GoalPrescriptionJson.Feasibility(
+                "feasible-with-warnings", List.of("az ütem a felső határon van"));
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula", List.of(), null, feasibility);
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
+                prescription, null, null, null);
+
+        String out = goalTools.getGoal("feasibility", ctx(owner));
+
+        assertThat(out).isEqualTo(
+                "Cél reálissága: Nyári cut: feasible-with-warnings\naz ütem a felső határon van");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
+    }
+
+    @Test
+    void testGetGoal_shouldRenderMegNincsKiertekelve_whenScopeFeasibilityAndPrescriptionNull() {
+        UUID owner = userPopulator.createUser().getId();
+        goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
+                null, null, null, null);
+
+        assertThat(goalTools.getGoal("feasibility", ctx(owner)))
+                .isEqualTo("Cél reálissága: Nyári cut: még nincs kiértékelve");
+    }
+
+    @Test
+    void testGetGoal_shouldRenderLinksAndTailGap_whenScopeTimeline() {
+        UUID owner = userPopulator.createUser().getId();
+        GoalEntity goal = goalPopulator.createGoal(owner, "cut", "active"); // 8-week window
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        goalPlanLinkPopulator.createLink(owner, goal.getId(), "mesocycle", meso.getId(), 1, 6);
+
+        String out = goalTools.getGoal("timeline", ctx(owner));
+
+        assertThat(out).startsWith("Cél idővonala: Nyári cut (8 hét)")
+                .contains("1-6. hét: mesocycle — Blokk")
+                .contains("Lefedetlen hetek: 7-8. hét");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Goal", "Nyári cut"));
     }
 
     @Test

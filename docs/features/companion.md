@@ -83,8 +83,9 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   rollups — merged into one scoped `get_fuel_log(range, date, days)` day/week + water since
   mezo-xixu, see the catalog below; `get_protocol_adherence` — merged into one scoped
   `get_protocol(scope, days)` adherence/intake/supplements since mezo-xixu, see the catalog below),
-  `GoalTools` (`get_goal_progress`), `MedicationTools`
-  (`get_reta_cycle`). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
+  `GoalTools` (`get_goal_progress` — merged into one scoped `get_goal(scope)`
+  progress/recept/timeline/guards/feasibility since mezo-xixu, see the catalog below),
+  `MedicationTools` (`get_reta_cycle`). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
   NEVER from model args), compact deterministic Hungarian text results, `nincs adat` absences.
 - **9th tool — `get_training_plan` (forward plan, mezo-xixu)**, added onto `TrainTools`: the
   companion's first FORWARD-looking read (the other 8 are backward/aggregate). `scope ∈
@@ -694,7 +695,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_fuel_log(range, date, days)` (mezo-xixu, merged from `get_recent_meals`) | range=day: `FuelDayService.getDay` looped per day (from `date`, default today) → kcal/F vs targets, meal count + titles (≤3), plus `WaterLogService.sumForDay` for the anchor day's water vs target; range=week: `FuelDayService.getWeek` (Monday-anchored ISO week containing `date`) → per-day kcal/F/water vs targets | `FuelDay`/date (≤5) |
 | `get_recovery(scope, days)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins) | scope=sleep: `SleepLogRepository` since-date finder → duration, quality, awakenings; scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's `selectedPantryItemIds` → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
-| `get_goal_progress()` | active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept | `Goal`/title |
+| `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
 | `get_reta_cycle()` | `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu) | `RecipeService.list`/`.get` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: case-insensitive substring match on slot/category/tag/starred/fitsFor (not name) — a single match renders full macros + ingredient lines | `Recipe`/recipe name (≤5) |
@@ -1285,8 +1286,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     merged from `get_recent_workouts`+`get_sport_sessions`); `get_protocol`'s `scope=adherence`
     measures against the CURRENT active protocol for the whole window (version time-travel is
     v1+ material; mezo-xixu also merged in `scope=intake`/`supplements`, see the catalog);
-    `get_goal_progress` is a pure read composition (the engine's `evaluate` is a
-    write and stays out of the registry).
+    `get_goal_progress` is a pure read composition — merged into `get_goal(scope)` (mezo-xixu:
+    progress/recept/timeline/guards/feasibility, all reading the same `prescription` jsonb; the
+    engine's `evaluate` is a write and stays out of the registry).
 20. **The fake scripts tools via content sentinels** — `[fake-tool:name {json}]` executes the
     REAL wrapped callback (audit/budget/refs included), so the whole pipeline is IT-covered with
     zero LLM. Spring AI's result converter JSON-encodes a tool's String return — the fake's echo

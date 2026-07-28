@@ -90,7 +90,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
     void testSendMessage_shouldStopRecordingAtCap_whenMoreSentinelsThanBudget() {
         UUID userId = databasePopulator.populateUser("chat-tool-cap@test.local");
         AiConversationEntity conversation = conversationPopulator.conversation(userId);
-        String sevenCalls = "[fake-tool:get_goal_progress]".repeat(7);
+        String sevenCalls = "[fake-tool:get_goal]".repeat(7);
 
         MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request(sevenCalls));
 
