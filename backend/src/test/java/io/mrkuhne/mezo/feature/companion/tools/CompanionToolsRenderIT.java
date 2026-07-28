@@ -2,29 +2,37 @@ package io.mrkuhne.mezo.feature.companion.tools;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.activity.entity.ActivityLogEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
+import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
+import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.ActivityPopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.HabitPopulator;
+import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.LevelUpEventPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
+import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
+import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
@@ -62,6 +70,12 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private GoalTools goalTools;
     @Autowired private MedicationTools medicationTools;
     @Autowired private GrowthTools growthTools;
+    @Autowired private PracticeTools practiceTools;
+    @Autowired private QuestPopulator questPopulator;
+    @Autowired private HabitPopulator habitPopulator;
+    @Autowired private IntentionPopulator intentionPopulator;
+    @Autowired private RitualPopulator ritualPopulator;
+    @Autowired private ActivityPopulator activityPopulator;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private GoalPlanLinkPopulator goalPlanLinkPopulator;
     @Autowired private MedicationPopulator medicationPopulator;
@@ -955,5 +969,70 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         // honest degrade: an owned key absent from the static TitleCatalog content renders as the
         // raw key rather than crashing or silently dropping the entry.
         assertThat(out).isEqualTo("Címek: felszerelt — Az Újonc; birtokolt: nem-letezo-cim");
+    }
+
+    @Test
+    void testGetDailyPractice_shouldComposeQuestHabitIntentionRitualAndActivity_whenAllSeeded() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        intentionPopulator.creed(owner, "Mindig tartsd a szavad.");
+        intentionPopulator.focus(owner, today, "Reggeli edzés befejezése");
+        questPopulator.quest(owner, today, DailyQuestEntity.SLOT_BODY, "test_quest",
+                "recovery", "LIFE", "manual", null, 20, DailyQuestEntity.STATUS_COMPLETED);
+        habitPopulator.row(owner, today, "morning_pushups", HabitDayEntity.STATUS_DONE);
+        ritualPopulator.closedDay(owner, today);
+        activityPopulator.activity(owner, today, "Olvastam 20 percet", "learning", 15, ActivityLogEntity.BY_AI);
+
+        String out = practiceTools.getDailyPractice(null, ctx(owner));
+
+        assertThat(out).startsWith("Napi gyakorlat (" + today + "):")
+                .contains("Küldetések: 1/1 lezárva")
+                .contains("Szokások: reggeli 0, esti 0 tökéletes nap (30 nap); morning_pushups: 1/28")
+                .contains("Szándék: hitvallás — Mindig tartsd a szavad.; mai fókusz: Reggeli edzés befejezése")
+                .contains("Napzárás: zárva")
+                .contains("Tevékenységek: Olvastam 20 percet (15 XP)");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Practice", today.toString()));
+    }
+
+    @Test
+    void testGetDailyPractice_shouldRenderNincsAdatAndHonestZeros_whenNothingSeeded() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+
+        String out = practiceTools.getDailyPractice(null, ctx(owner));
+
+        assertThat(out).isEqualTo("Napi gyakorlat (" + today + "):"
+                + "\nKüldetések: nincs adat"
+                + "\nSzokások: reggeli 0, esti 0 tökéletes nap (30 nap)"
+                + "\nSzándék: hitvallás — nincs adat; mai fókusz: nincs adat"
+                + "\nNapzárás: nyitva"
+                + "\nTevékenységek: nincs adat");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Practice", today.toString()));
+    }
+
+    @Test
+    void testGetDailyPractice_shouldResolveExplicitDateParam_whenDateGiven() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate past = LocalDate.now().minusDays(3);
+        ritualPopulator.closedDay(owner, past);
+
+        String out = practiceTools.getDailyPractice(past.toString(), ctx(owner));
+
+        assertThat(out).startsWith("Napi gyakorlat (" + past + "):")
+                .contains("Napzárás: zárva");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Practice", past.toString()));
+    }
+
+    @Test
+    void testGetDailyPractice_shouldFallBackToToday_whenDateUnparsable() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+
+        String out = practiceTools.getDailyPractice("nem-datum", ctx(owner));
+
+        assertThat(out).startsWith("Napi gyakorlat (" + today + "):");
     }
 }

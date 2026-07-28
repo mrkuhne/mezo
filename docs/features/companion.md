@@ -128,6 +128,25 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `nincs adat` unless gamification itself is off). `nincs adat` only for scope=skills, gated on
   `ProgressionProfileResponse.athleteLevel == null` (the service's own "no skill_progress rows
   yet" ghost signal).
+- **14th tool — `get_daily_practice` (daily discipline, mezo-xixu)**, new `PracticeTools` bean: a
+  date-parameterized sibling of `ContextSnapshotAssembler#practiceBlock` (which is hardwired to
+  "today") — composes today's-or-a-given-date's quest count (`TodayQuestSource.todayStats`, the
+  same read-only port), habit chain-strength (`HabitService.summary` — note: has no `date` param,
+  so this line is always "as of today" regardless of the requested date), the daily intention
+  (`IntentionService.getDay`: creed/foci/reflection), napzárás close state (`RitualService.getDay`),
+  and logged activities. Every collaborator is `ObjectProvider`-gated (HABIT/INTENTION/RITUAL/
+  ACTIVITY_SWITCH + the quest port's QUEST_SWITCH). Activities are read through a SECOND
+  companion-owned port, `TodayActivitySource` (impl `activity/service/DailyActivityAdapter`, a
+  plain `ActivityLogRepository` read) rather than `ActivityService` directly: `feature.activity`
+  already depends on `feature.companion` (`ActivityClassifier`'s `CompanionLlm` use, plus
+  transitively via `feature.quest`), so a direct `ActivityService` import from `companion.tools`
+  would have closed a NEW 2-/3-slice cycle (`ArchitectureTest#feature_slices_are_cycle_free` only
+  tolerates the two pre-existing frozen cycles) — the `TodayQuestSource` pattern, applied twice.
+  Active challenges are deliberately NOT composed: `ProactiveChallengeService.getChallenges` is
+  write-transactional (lazy-generates the first proposal + resolves accepted-challenge outcomes),
+  and a direct `ChallengeRepository` read would open the same kind of NEW companion→proactive
+  cycle (proactive's generators already call `CompanionLlm`) — fixing that cleanly needs a THIRD
+  port, out of scope here.
 - **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
   `RecordingToolCallback` (audit + per-turn budget, structurally unbypassable); the per-turn
   `ToolCallAudit` rides in the Spring AI `ToolContext`, collects `{type:'read', name, args}`
@@ -695,7 +714,7 @@ the mesocycle title for `scope=meso`, `ExerciseRecord` — the exercise name, `R
 matched recipe's name, `Pantry` — the pantry item's name, `SleepGoal` — the resolved wake time
 (`get_recovery(scope=sleep-goal)`), `CheckIn` — a check-in's date (`get_recovery(scope=checkins)`),
 and `Growth` — a stable scope label (`skills`/`week-{weekStart}`/`achievements`/`titles`,
-`get_growth(scope)`)),
+`get_growth(scope)`), and `Practice` — the resolved date (`get_daily_practice(date)`)),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
@@ -717,6 +736,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_recipes(filter)` (mezo-xixu) | `RecipeService.list`/`.get` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: case-insensitive substring match on slot/category/tag/starred/fitsFor (not name) — a single match renders full macros + ingredient lines | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
 | `get_growth(scope)` (mezo-xixu) | scope=skills (default): `ProgressionService.getProfile` (ungated) → account level/XP/streak from `GamificationService.getProfile` (`GAMIFICATION_SWITCH`-gated, `ObjectProvider`) + every skill with real progress (athletic/muscle/life); scope=week: `GrowthWeekService.growthWeek` (ungated) → closed quests, LIFE XP, activities, savings for the current ISO week; scope=achievements: `AchievementService.achievements` (ungated) → all 9 derive-on-read badges + persisted perk unlocks; scope=titles: `GamificationService.getProfile` → equipped + owned titles | `Growth`/`skills` or `week-{weekStart}` or `achievements` or `titles` |
+| `get_daily_practice(date)` (mezo-xixu) | `TodayQuestSource.todayStats` (port, read-only) → quest completed/total for the date; `HabitService.summary` (always "as of today", no `date` param) → perfect-chain-day counts + any habit with real 28-day signal; `IntentionService.getDay` → creed/foci/reflection for the date; `RitualService.getDay` → napzárás closed/open for the date; `TodayActivitySource.activitiesForDay` (2nd companion-owned port, impl `activity/service/DailyActivityAdapter`) → logged activities (text + XP), capped at 5. Active challenges NOT composed (`ProactiveChallengeService.getChallenges` write-transactional; a direct repository read would open a new companion→proactive cycle) | `Practice`/date |
 | `find_similar_past_days(description, k)` (V2.3) | `MemoryRecallService.recallSimilarDays` — query embed → ANN over daily-summary vectors → similarity × recency-decay re-rank | `Memory`/date (≤k) |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)
