@@ -54,7 +54,8 @@ public class BiometricsTools {
     private final CompanionProperties properties;
 
     @Tool(name = "get_weight_trend", description = "Súlytrend az elmúlt hetekre: EWMA trendsúly, "
-            + "heti ütem (kg és %), 4 hetes ütem, heti trendpontok. Kérdés súlyváltozásról, fogyásról, ütemről.")
+            + "heti ütem (kg és %), 4 hetes ütem, heti trendpontok. Használd, amikor a user a súlyáról, "
+            + "súlyváltozásáról, fogyásról vagy annak üteméről kérdez.")
     public String getWeightTrend(
             @ToolParam(required = false, description = "Hány hétre visszamenőleg (alapértelmezés 4).") Integer weeks,
             ToolContext toolContext) {
