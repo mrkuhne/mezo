@@ -16,7 +16,7 @@ export function DayZoneCard({
   const stateCls = zone.state === 'done' ? ' donez' : zone.state === 'open' ? ' openz' : ''
   const kcalSuffix = zone.state === 'done' ? ' ✓' : zone.state === 'open' ? ' nyitva' : ''
   return (
-    <div className={`zcard${stateCls}`} style={{ '--i': index } as CSSProperties}>
+    <div className={`zcard np-anim${stateCls}`} style={{ '--i': index } as CSSProperties}>
       <div className="zh">
         <span className="zn">{zone.label}</span>
         {zone.stackPips.length > 0 && (

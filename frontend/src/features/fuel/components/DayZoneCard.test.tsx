@@ -35,6 +35,13 @@ test('the burn is appended only when the zone actually earned some', () => {
   expect(screen.getByText(/\+510/)).toBeInTheDocument()
 })
 
+test('a pure-activity zone with no eating window prints only the burn, no kcal text or stray separator', () => {
+  render(<DayZoneCard zone={zone({ hasMeals: false, kcal: 0, burnKcal: 510 })} index={0}><div /></DayZoneCard>)
+  expect(screen.getByText('+510')).toBeInTheDocument()
+  expect(screen.queryByText(/kcal/)).toBeNull()
+  expect(screen.getByText('+510').parentElement?.textContent).toBe('+510')
+})
+
 test('stack pips render one dot per supplement item, filled when taken', () => {
   const { container } = render(
     <DayZoneCard zone={zone({ stackPips: [true, false, false] })} index={0}><div /></DayZoneCard>,
@@ -43,7 +50,7 @@ test('stack pips render one dot per supplement item, filled when taken', () => {
   expect(container.querySelectorAll('.caps i.on')).toHaveLength(1)
 })
 
-test('the stagger index rides on a CSS custom property', () => {
+test('the stagger index rides on a CSS custom property, carried by the shared np-anim class', () => {
   const { container } = render(<DayZoneCard zone={zone()} index={3}><div /></DayZoneCard>)
   const card = container.querySelector('.zcard') as HTMLElement
   expect(card).not.toBeNull()
@@ -51,6 +58,10 @@ test('the stagger index rides on a CSS custom property', () => {
   // not an asymmetric-matcher slot, and React's inline-style serialisation of custom properties
   // varies. Read the property directly instead — this still proves the index reaches the DOM.
   expect(card.style.getPropertyValue('--i')).toBe('3')
+  // Review finding: `--i` is inert without `.np-anim` (prototype.css:1194), which is the class that
+  // actually reads it (`animation-delay: calc(var(--i, 0) * 70ms)`) and is reduced-motion-guarded
+  // (prototype.css:1198-1199). Assert both classes so a future refactor can't silently drop either.
+  expect(card.classList.contains('np-anim')).toBe(true)
 })
 
 test('renders the composed rows', () => {
