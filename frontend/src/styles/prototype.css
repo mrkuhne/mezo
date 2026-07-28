@@ -1386,6 +1386,12 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--tc-wash); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
 .todaycard.logged .todaycard-cta { color: var(--sage-deep); background: var(--wash-sage); border-color: color-mix(in srgb, var(--sage-deep) 26%, transparent); }
 
+/* ===== Napív done bar — shared logged-state bar (mezo-9bbc) ===== */
+.donebar { display: flex; align-items: center; gap: 9px; width: 100%; margin-top: 12px; padding: 11px 13px; border-radius: 16px; background: var(--wash-sage); border: 0; font-family: inherit; text-align: left; cursor: inherit; }
+.donebar-check { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--sage-deep); color: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
+.donebar-txt { font-size: 12px; font-weight: 800; color: var(--sage-deep); }
+.donebar-detail { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 700; color: var(--sub); letter-spacing: 0; text-transform: none; }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
