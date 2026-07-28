@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.llmlog.service;
 
 import io.mrkuhne.mezo.feature.llmlog.config.LlmPricingProperties;
 import io.mrkuhne.mezo.feature.llmlog.config.ModelPrice;
+import io.mrkuhne.mezo.feature.llmlog.entity.PricingSnapshot;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
