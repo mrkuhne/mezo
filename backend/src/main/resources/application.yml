@@ -261,6 +261,26 @@ mezo:
       # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
       habit-job:
         enabled: true
+  # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
+  llm-log:
+    # Prompt/response payloads are truncated to this many characters before persisting
+    max-payload-chars: 64000
+    # The async audit writer's pool — deliberately small; logging must never starve the request path
+    executor:
+      core-size: 1
+      max-size: 2
+      queue-capacity: 500
+    # Unit prices keyed by SERVED model id: USD per 1M tokens (generation) / per 1M chars (embedding).
+    # Rates drift — verify the current Gemini rates when touching this block. Changing them does NOT
+    # rewrite history: every logged call freezes its own pricing snapshot at write time.
+    pricing:
+      currency: USD
+      # Keys are bracket-quoted: a model id contains dots, and an unbracketed map key would be
+      # split into separate property elements by the binder (the entry silently disappears).
+      models:
+        "[gemini-2.5-flash]":     { input-per-million: 0.30, output-per-million: 2.50, thinking-per-million: 2.50, cached-per-million: 0.075 }
+        "[gemini-2.5-pro]":       { input-per-million: 1.25, output-per-million: 10.0, thinking-per-million: 10.0, cached-per-million: 0.31 }
+        "[gemini-embedding-001]": { embed-per-million-chars: 0.15 }
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
