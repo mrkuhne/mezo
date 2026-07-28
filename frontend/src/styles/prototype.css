@@ -1316,17 +1316,35 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .loadtile .lk { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .3px; text-transform: uppercase; }
 .loadtile .lva { font-size: 13.5px; font-weight: 800; font-family: var(--ff-display); margin-top: 1px; color: var(--ink); white-space: nowrap; }
 
-/* ===== Napív weekly plan day cards (Mai, spec §4.3) ===== */
-.dayrow { display: flex; align-items: center; background: var(--surface); border-radius: 20px; padding: 12px 15px; box-shadow: var(--np-shadow-row); margin-bottom: 9px; }
-.dayrow .d { width: 48px; font-size: 11px; font-weight: 800; color: var(--faint); flex-shrink: 0; text-transform: uppercase; }
-.dayrow .d small { display: block; font-size: 9px; color: var(--coral-deep); }
-.dayrow .sess { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.dayrow .sess .s { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink); background: none; border: 0; padding: 0; text-align: left; font-family: inherit; width: 100%; cursor: inherit; }
+/* ===== Napív meta pill — one fact of a session (time, duration, role, RPE…).
+   Shared by the weekly day cards and Mai's today session cards (mezo-lruy). ===== */
+.metapill { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; color: var(--sub); background: var(--warm); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ===== Napív weekly plan day cards (Mai, spec §4.3) =====
+   Stacked layout (mezo-lruy): a day header row (label + MA marker + chevron)
+   over one padded block per session — type tag + title + state chip on the top
+   line, the session's facts as meta pills below. The pre-mezo-lruy single-line
+   variant (tag · title · joined meta · chip) collided on long titles. */
+.dayrow { background: var(--surface); border-radius: 22px; padding: 12px 14px 13px; box-shadow: var(--np-shadow-row); margin-bottom: 10px; }
+.dayrow-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.dayrow .d { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 800; color: var(--sub); text-transform: uppercase; letter-spacing: .08em; }
+.dayrow .d small { border-radius: 999px; padding: 2px 7px; font-size: 9px; font-weight: 800; color: var(--coral-deep); background: var(--wash-gym); letter-spacing: .1em; }
+.dayrow .sess { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dayrow .sess .s { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 10px 11px; border-radius: 16px; background: var(--warm); border: 0; text-align: left; font-family: inherit; cursor: inherit; }
+.dayrow .sess .s-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dayrow .sess .s-title { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.3; min-width: 0; }
+.dayrow .sess .s-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+/* On the wash-tinted session block the pills invert to the card surface. */
+.dayrow .sess .s .metapill { background: var(--surface); color: var(--sub); font-size: 11px; padding: 4px 9px; }
 .dayrow .sess .s .meta { color: var(--faint); font-weight: 600; font-size: 11.5px; }
-.dayrow .chev { color: var(--faint); }
+.dayrow .chev { color: var(--faint); font-size: 17px; line-height: 1; }
 .dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); cursor: pointer; }
 .dayrow.today .chev { color: var(--coral-deep); }
-.dayrow.rest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
+/* Rest day: nothing to lay out — the dashed card stays a single compact line. */
+.dayrow.rest { display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
+.dayrow.rest .dayrow-head { margin-bottom: 0; }
+.dayrow.rest .sess { flex: 1; }
+.dayrow.rest .sess .s { padding: 0; background: transparent; }
 .dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
 .dayrow .log-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
 
@@ -1342,6 +1360,20 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .trainhero .chip-np { background: rgba(255,255,255,.9); border-radius: 999px; padding: 7px 13px; font-size: 11.5px; font-weight: 800; color: var(--coral-deep); }
 :root[data-theme="dark"] .trainhero .chip-np { background: rgba(255,255,255,.1); }
 .trainhero .np-ctarow { margin-top: 14px; }
+
+/* ===== Napív today session card (Mai — sport/run, mezo-lruy) =====
+   The gym hero's lighter sibling: same tag → title → pills → CTA rhythm on a
+   plain surface card, accent-tinted per session kind via --tc-accent/--tc-wash. */
+.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: var(--surface); border-radius: 24px; padding: 15px 16px 16px; margin: 0 24px 12px; box-shadow: var(--np-shadow-row); }
+.todaycard-run { --tc-accent: var(--tag-run); --tc-wash: var(--wash-run); }
+.todaycard-top { display: flex; align-items: center; gap: 9px; }
+.todaycard-time { font-size: 12.5px; font-weight: 800; color: var(--tc-accent); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.todaycard-state { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--tc-wash); }
+.todaycard.logged .todaycard-state { color: var(--sage-deep); background: var(--wash-sage); }
+.todaycard-title { font-family: var(--ff-display); font-size: 21px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; color: var(--ink); margin-top: 11px; }
+.todaycard-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--tc-wash); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
+.todaycard.logged .todaycard-cta { color: var(--sage-deep); background: var(--wash-sage); border-color: color-mix(in srgb, var(--sage-deep) 26%, transparent); }
 
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
