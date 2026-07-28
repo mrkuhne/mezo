@@ -1,12 +1,13 @@
 // ============================================================
-// Mezo · TrainTodayPage (Mai)
-// Today's gym block + today's volleyball block (conditional) +
-// combined weekly gym/sport timeline + provenance note.
+// Mezo · TrainTodayPage (Mai) — a one-day view (mezo-9bbc).
+// A DayStrip navigator over the Mon–Sun agenda picks which day's sessions
+// render below it (default: today; `?day={0..6}` — the Heti drill-in —
+// overrides once). The weekly list + load tiles + provenance note now
+// live on TrainWeekPage (/train/week, "Heti").
 // Thin TrainSection shell ⇒ this view owns its own .page-header.
-// Ported from prototype train-views.jsx (TrainTodayPage + buildWeeklyAgenda).
 // ============================================================
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTrain, useRunning, useWeekWorkouts, useSleepGoal } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
@@ -20,7 +21,7 @@ import {
   snoozeHash,
 } from '@/features/train/logic/morningWindow'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import { DAY_LABELS } from '@/data/train/train'
+import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
@@ -29,14 +30,13 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { SportLogSheet } from '@/features/train/sheets/SportLogSheet'
 import { RunLogSheet } from '@/features/train/sheets/RunLogSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
-import { WeeklyDayRow } from '@/features/train/components/WeeklyDayRow'
+import { DayStrip } from '@/features/train/components/DayStrip'
 import { TodaySessionCard } from '@/features/train/components/TodaySessionCard'
 import { DoneBar } from '@/features/train/components/DoneBar'
 import { daySessions } from '@/features/train/logic/agenda'
+import { dayStripItems } from '@/features/train/logic/dayStripItems'
 import { buildWeekAgenda } from '@/features/train/logic/weekAgenda'
 import { gymDayTarget } from '@/features/train/logic/gymDayTarget'
-import { weeklyLoad } from '@/features/train/logic/weeklyLoad'
-import { LoadTiles } from '@/features/train/components/LoadTiles'
 import TrainTodaySkeleton from '@/features/train/pages/TrainTodaySkeleton'
 import { SPORT_TONE, sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, type SportKind } from '@/features/train/logic/sportKinds'
 import { SESSION_STATE_LABEL, sessionState } from '@/features/train/logic/sessionState'
@@ -72,6 +72,15 @@ export function TrainTodayPage() {
     snooze(mtrHash)
     setMtrSnoozed(true)
   }
+  const [params] = useSearchParams()
+  // Mai always opens on today; `?day={0..6}` (the Heti drill-in) overrides it once.
+  // `params.get('day')` is `null` when absent — NOT coerced through `Number()` first
+  // (`Number(null) === 0`, which would silently pin every plain `/train` visit to
+  // Monday instead of today).
+  const rawDay = params.get('day')
+  const dayIdx = rawDay === null ? NaN : Number(rawDay)
+  const paramDay = Number.isInteger(dayIdx) && dayIdx >= 0 && dayIdx <= 6 ? DAY_ORDER[dayIdx] : null
+  const [selectedDay, setSelectedDay] = useState<string | null>(paramDay)
 
   // Loading skeleton (real mode): while the meso/today queries (workoutPending) or
   // the running block query are unresolved, render the layout-matched skeleton
@@ -130,20 +139,33 @@ export function TrainTodayPage() {
 
   // The agenda's `isToday` is flag-based (gym/volleyball only); running blocks
   // are mesocycle-independent, so a day may have ONLY a prescribed run today.
+  const todayRow = agenda.find((a) => a.isToday)
+  // The DayStrip's selection (`selectedDay === null` ⇒ today); falls back to
+  // today if a stale/invalid selection no longer matches an agenda day.
+  const shownDay = selectedDay ? (agenda.find((a) => a.day === selectedDay) ?? todayRow) : todayRow
+  // `selectedDay === null` always means "today" by definition (the default view),
+  // regardless of whether any agenda row happens to carry the flag-based `isToday`
+  // (real mode only sets it on a day that has a gym/sport slot — a true rest day
+  // flags NO row `isToday` at all, so `todayRow`/`shownDay` can be legitimately
+  // undefined here; falling through to `shownDay?.isToday` would then wrongly
+  // read as false). An explicit selection still checks the flag (so re-tapping
+  // today's own chip reads as today too).
+  const isTodayShown = selectedDay === null || Boolean(shownDay?.isToday)
+
   // Pull today's runs separately (date-based) and merge them with the flag-based
-  // today row into a synthetic day, so a run-only-today still shows its hero.
-  const today = agenda.find((a) => a.isToday)
+  // today row into a synthetic day, so a run-only-today still shows its hero — but
+  // only while today itself is shown; a non-today selection uses the agenda's own
+  // (day-of-week-matched) running list instead.
   const todayRuns = runSessionsForDay(activeRunningBlock, todayIdx())
-  // Today's hero cards rendered in time-of-day order (a morning run hero above
-  // an evening gym hero); same ordering as the weekly rows via daySessions.
+  // The shown day's hero cards, rendered in time-of-day order (a morning run hero
+  // above an evening gym hero); same ordering as Heti's weekly rows via daySessions.
   const orderedToday = daySessions({
-    day: today?.day ?? '',
-    gym: today?.gym ?? null,
-    sport: today?.sport ?? [],
-    running: todayRuns,
-    isToday: true,
+    day: shownDay?.day ?? '',
+    gym: shownDay?.gym ?? null,
+    sport: shownDay?.sport ?? [],
+    running: isTodayShown ? todayRuns : (shownDay?.running ?? []),
+    isToday: isTodayShown,
   })
-  const sessionCount = agenda.filter((a) => a.gym || a.sport.length || a.running.length).length
 
   // Active meso phase for the current week (Week 3 ⇒ MAV).
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
@@ -161,36 +183,40 @@ export function TrainTodayPage() {
     sport.sessions.find((s) => s.sport === k && s.date === todayHu) ?? null
   const sportDoneOn = (iso: string | undefined, k: SportKind) =>
     Boolean(iso) && sport.sessions.some((s) => s.sport === k && s.date === huMonthDayDow(iso!))
-  // Weekly-row review taps: a completed MESO instance per day → its id, so a kész
-  // planned gym row opens /train/review/{id} (real mode; mock has no persisted
-  // instances). origin === 'meso' keeps this deterministic on a same-date meso +
-  // custom double-completion — custom rows have their own onReviewCustom path
-  // (final-review fix, mezo-ws2x — Finding 3).
-  const workoutIdByDate = Object.fromEntries(
-    weekWorkouts.filter((w) => w.status === 'completed' && w.origin === 'meso').map((w) => [w.date, w.id]),
-  )
   const runLoggedFor = (key: string) =>
     runSessions.find(
       (r) => r.blockId === activeRunningBlock?.id && r.weekNumber === activeRunningBlock?.currentWeek && r.sessionKey === key,
     ) ?? null
 
-  // Napiv page-head over-line: `Edzés · {day} · W{n}`; without a today row
-  // (agenda has no isToday flag set — a run-only day still has `today` undefined
-  // via the flag-based find above), drop the day segment instead of interpolating
-  // an empty string (avoids a dangling " · " artifact).
-  const overLine = today
-    ? `Edzés · ${DAY_LABELS[today.day]} · W${activeMeso.currentWeek}`
-    : `Edzés · W${activeMeso.currentWeek}`
-
   return (
     <>
-      {/* Header */}
+      {/* Header — selection-aware: the over-line + h1 read the shown day, and a
+          non-today selection gets a "← Ma" way back to today. */}
       <div className="pghead-np">
         <div>
-          <div className="over">{overLine}</div>
-          <h1>Mai nap</h1>
+          <div className="over">
+            {shownDay ? `Edzés · ${DAY_LABELS[shownDay.day] ?? shownDay.day} · W${activeMeso.currentWeek}` : `Edzés · W${activeMeso.currentWeek}`}
+          </div>
+          <h1>{isTodayShown ? 'Mai nap' : (DAY_LABELS[shownDay?.day ?? ''] ?? 'Mai nap')}</h1>
         </div>
+        {!isTodayShown && (
+          <button type="button" className="pgact-np" onClick={() => setSelectedDay(null)}>
+            <Icon name="chevron-left" size={12} /> Ma
+          </button>
+        )}
       </div>
+
+      {/* DayStrip — the Mon–Sun navigator; tapping a chip swaps the shown day below
+          without any refetch (the agenda is already fully loaded). */}
+      <DayStrip
+        items={dayStripItems(agenda, (d, item) => {
+          if (item.kind === 'gym') return Boolean(d.date) && gymDoneDates.includes(d.date!)
+          if (item.kind === 'sport') return sportDoneOn(d.date, sportOf(item.sport))
+          return Boolean(runLoggedFor(item.running.key))
+        })}
+        selected={shownDay?.day ?? ''}
+        onSelect={(day) => setSelectedDay(day)}
+      />
 
       {/* Mezociklus overview entry card (active meso only) */}
       <div style={{ padding: '0 24px 12px' }}>
@@ -210,67 +236,91 @@ export function TrainTodayPage() {
         </button>
       </div>
 
-      {/* Today's hero cards, ordered by time-of-day (gym / volleyball / running).
+      {/* The shown day's hero cards, ordered by time-of-day (gym / volleyball / running).
           A morning run hero appears above an evening gym hero. Each hero keeps
-          its bespoke markup; the gym hero additionally requires the /today workout. */}
+          its bespoke markup; the today gym hero additionally requires the /today workout. */}
       {orderedToday.map((item, i) => {
         if (item.kind === 'gym') {
           const gym = item.gym
-          if (!workout) return null
-          const gymEyebrow = `MA ${gym.time ?? ''} · ${currentPhase}`
-          // Three-state gating (spec 2026-07-15): a completed instance wins (Kész ·
-          // Megnézem review), else an open instance (● Folyamatban · Folytassuk),
-          // else the fresh start CTA. `completedTodayWorkout`/`todaySession` are real-
-          // mode only (both null in mock → Indítsuk, byte-identical to Phase 1).
-          const gymInProgress = Boolean(todaySession?.openWorkout && !completedTodayWorkout)
-          return (
-            <section key="hero-gym" className="trainhero np-anim">
-              <div className="trainhero-over">
-                {gymEyebrow}
-                {gymInProgress && (
-                  <span
-                    className="chip"
-                    style={{
-                      marginLeft: 8, fontSize: 9, color: 'var(--warning)',
-                      borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)',
-                    }}
-                  >
-                    ● Folyamatban
-                  </span>
+          if (isTodayShown) {
+            if (!workout) return null
+            const gymEyebrow = `MA ${gym.time ?? ''} · ${currentPhase}`
+            // Three-state gating (spec 2026-07-15): a completed instance wins (Kész ·
+            // Megnézem review), else an open instance (● Folyamatban · Folytassuk),
+            // else the fresh start CTA. `completedTodayWorkout`/`todaySession` are real-
+            // mode only (both null in mock → Indítsuk, byte-identical to Phase 1).
+            const gymInProgress = Boolean(todaySession?.openWorkout && !completedTodayWorkout)
+            return (
+              <section key="hero-gym" className="trainhero np-anim">
+                <div className="trainhero-over">
+                  {gymEyebrow}
+                  {gymInProgress && (
+                    <span
+                      className="chip"
+                      style={{
+                        marginLeft: 8, fontSize: 9, color: 'var(--warning)',
+                        borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)',
+                      }}
+                    >
+                      ● Folyamatban
+                    </span>
+                  )}
+                </div>
+                <div className="h2row">
+                  <h2>{workout.title}</h2>
+                  <span className="typetag typetag-gym">🏋️ GYM</span>
+                </div>
+                <div className="chips">
+                  <span className="chip-np">{workout.exercises.length} gyakorlat</span>
+                  <span className="chip-np">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>
+                  {workout.durationEst > 0 && <span className="chip-np">~{workout.durationEst} perc</span>}
+                  {gym.type && <span className="chip-np">{gym.type}</span>}
+                </div>
+                {completedTodayWorkout ? (
+                  // Done-state: the workout is over (no restart until next week) — the shared
+                  // DoneBar opens the read-only review of the completed instance (mezo-9bbc).
+                  <DoneBar
+                    summary={`Kész · ${completedTodayWorkout.sets.filter((s) => !s.skipped).length} szett`}
+                    detail="Megnézem az összegzést"
+                    onClick={() => navigate(`/train/review/${completedTodayWorkout.id}`)}
+                    ariaLabel="Befejezett edzés áttekintése"
+                  />
+                ) : todaySession?.openWorkout ? (
+                  // In-progress: an open instance exists — resume it (count the logged sets).
+                  <div className="np-ctarow">
+                    <button type="button" className="np-cta np-press" onClick={openSession}>
+                      Folytassuk → · {todaySession.openWorkout.sets.filter((s) => !s.skipped).length} szett kész
+                    </button>
+                  </div>
+                ) : (
+                  <div className="np-ctarow">
+                    <button type="button" className="np-cta np-press" onClick={openSession}>Indítsuk →</button>
+                  </div>
                 )}
-              </div>
-              <div className="h2row">
-                <h2>{workout.title}</h2>
-                <span className="typetag typetag-gym">🏋️ GYM</span>
-              </div>
-              <div className="chips">
-                <span className="chip-np">{workout.exercises.length} gyakorlat</span>
-                <span className="chip-np">{workout.exercises.reduce((acc, e) => acc + e.sets, 0)} szett</span>
-                {workout.durationEst > 0 && <span className="chip-np">~{workout.durationEst} perc</span>}
-                {gym.type && <span className="chip-np">{gym.type}</span>}
-              </div>
-              {completedTodayWorkout ? (
-                // Done-state: the workout is over (no restart until next week) — the shared
-                // DoneBar opens the read-only review of the completed instance (mezo-9bbc).
-                <DoneBar
-                  summary={`Kész · ${completedTodayWorkout.sets.filter((s) => !s.skipped).length} szett`}
-                  detail="Megnézem az összegzést"
-                  onClick={() => navigate(`/train/review/${completedTodayWorkout.id}`)}
-                  ariaLabel="Befejezett edzés áttekintése"
-                />
-              ) : todaySession?.openWorkout ? (
-                // In-progress: an open instance exists — resume it (count the logged sets).
-                <div className="np-ctarow">
-                  <button type="button" className="np-cta np-press" onClick={openSession}>
-                    Folytassuk → · {todaySession.openWorkout.sets.filter((s) => !s.skipped).length} szett kész
-                  </button>
-                </div>
-              ) : (
-                <div className="np-ctarow">
-                  <button type="button" className="np-cta np-press" onClick={openSession}>Indítsuk →</button>
-                </div>
-              )}
-            </section>
+              </section>
+            )
+          }
+
+          // Non-today gym day: the /today endpoint only describes today, so title +
+          // exercise count come from the meso template (mezo-9bbc).
+          const md = activeMeso.days?.find((d) => d.day === shownDay!.day)
+          const target = md ? gymDayTarget(md, weekWorkouts) : null
+          const done = Boolean(shownDay?.date && gymDoneDates.includes(shownDay.date))
+          return (
+            <TodaySessionCard
+              key="hero-gym"
+              tone="gym"
+              emoji="🏋️"
+              tag="GYM"
+              time={gym.time}
+              title={gym.type ?? md?.type ?? 'Gym'}
+              facts={[md ? `${md.exerciseCount} gyakorlat` : null, gym.duration ? `${gym.duration} perc` : null]}
+              logged={done}
+              loggedSummary={done ? 'Kész' : undefined}
+              stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: shownDay!.date!, todayIso, timeOfDay: gym.time })]}
+              ctaLabel={target ? 'Kezdjük el' : undefined}
+              onLog={target ? () => navigate(target) : undefined}
+            />
           )
         }
 
@@ -332,12 +382,13 @@ export function TrainTodayPage() {
         )
       })}
 
-      {/* Open custom (saját) instance on a rest day (real mode): the gym hero above only
-          renders when today has a gym schedule slot, so an open instance started on a
-          non-gym day (e.g. a meso-less custom workout) otherwise has no resume affordance
-          anywhere on Mai (final-review fix, mezo-ws2x — Finding 4). getToday's open-wins
-          day resolution means `workout` already IS the open instance's day plan here. */}
-      {!today?.gym && todaySession?.openWorkout && workout && (
+      {/* Open custom (saját) instance on a rest day (real mode, today only): the gym hero
+          above only renders when today has a gym schedule slot, so an open instance
+          started on a non-gym day (e.g. a meso-less custom workout) otherwise has no
+          resume affordance anywhere on Mai (final-review fix, mezo-ws2x — Finding 4).
+          getToday's open-wins day resolution means `workout` already IS the open
+          instance's day plan here. */}
+      {isTodayShown && !shownDay?.gym && todaySession?.openWorkout && workout && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card" style={{ padding: 18 }}>
             <span className="eyebrow" style={{ color: 'var(--warning)' }}>● Folyamatban</span>
@@ -351,31 +402,33 @@ export function TrainTodayPage() {
         </div>
       )}
 
-      {/* Rest day (real mode): nothing today — no gym slot, no volleyball, no run.
-          Gated off an open instance above — an in-progress resume card and the rest-day
-          card must never render together (mezo-ws2x — Finding 4). */}
-      {!today?.gym && !today?.sport.length && todayRuns.length === 0 && !todaySession?.openWorkout && (
+      {/* Rest day: nothing scheduled on the shown day. Today's copy offers a Saját edzés
+          CTA (the heti rended pointer moved to Heti); a non-today rest day is read-only.
+          Gated off a today open instance above — an in-progress resume card and the
+          rest-day card must never render together (mezo-ws2x — Finding 4). */}
+      {!shownDay?.gym && !shownDay?.sport.length && orderedToday.length === 0 && !(isTodayShown && todaySession?.openWorkout) && (
         <div style={{ padding: '0 24px 12px' }}>
           <div className="card" style={{ padding: 18 }}>
-            <span className="eyebrow">Ma pihenőnap</span>
+            <span className="eyebrow">{isTodayShown ? 'Ma pihenőnap' : 'Nincs tervezett edzés'}</span>
             <p style={{ fontSize: 13, marginTop: 8, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-              Nincs tervezett edzés mára — a heti rended lent találod.
+              {isTodayShown
+                ? 'Nincs tervezett edzés mára — a heti rended a Heti fülön találod.'
+                : 'Ezen a napon nincs tervezett edzés.'}
             </p>
-            <CtaGhost
-              className="rad-12 mt-md"
-              onClick={() => setCustomOpen(true)}
-              style={{ borderColor: 'color-mix(in srgb, var(--tag-gym) 40%, transparent)', color: 'var(--tag-gym)' }}
-            >
-              <Icon name="plus" size={12} /> Saját edzés
-            </CtaGhost>
+            {isTodayShown && (
+              <CtaGhost
+                className="rad-12 mt-md"
+                onClick={() => setCustomOpen(true)}
+                style={{ borderColor: 'color-mix(in srgb, var(--tag-gym) 40%, transparent)', color: 'var(--tag-gym)' }}
+              >
+                <Icon name="plus" size={12} /> Saját edzés
+              </CtaGhost>
+            )}
           </div>
         </div>
       )}
 
-      {/* Weekly load summary tiles (renders null on an empty week) */}
-      <LoadTiles tiles={weeklyLoad(agenda)} />
-
-      {showMtr && (
+      {isTodayShown && showMtr && (
         <MorningTrainingCard
           offending={mtrOffending}
           windowStart={mtrWindow.start}
@@ -384,78 +437,6 @@ export function TrainTodayPage() {
           onSnooze={snoozeMtr}
         />
       )}
-
-      {/* Weekly combined timeline */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="secthead-np">
-          <h3>Heti terv</h3>
-          <span>{sessionCount} session</span>
-        </div>
-        <div className="col gap-sm">
-          {agenda.map((a) => (
-            <WeeklyDayRow
-              key={a.day}
-              agenda={a}
-              gymLogged={Boolean(a.date) && gymDoneDates.includes(a.date!)}
-              gymInProgress={Boolean(a.isToday && todaySession?.openWorkout)}
-              isSportLogged={(s) => sportDoneOn(a.date, sportOf(s))}
-              isRunLogged={(key) => Boolean(runLoggedFor(key))}
-              onStartGym={openSession}
-              onReviewGym={workoutIdByDate[a.date!] ? () => navigate(`/train/review/${workoutIdByDate[a.date!]}`) : undefined}
-              onOpenGymDay={(() => {
-                // Direct-start flow (spec D6, mezo-bxpg): routes via the shared
-                // gymDayTarget — a template day completed THIS week routes to its
-                // review even when pulled forward to another date (this row is only
-                // date-done, not template-done, so without this a completed-elsewhere
-                // day would dead-end into a 409 on "Kezdjük el" — Finding 1); otherwise
-                // a non-today, not-yet-done gym day starts straight into the session,
-                // pinning the template via ?day= in real mode (mock MesoDay fixtures
-                // carry no `id`, so mock always resolves plain).
-                const md = activeMeso.days?.find((d) => d.day === a.day && d.exerciseCount > 0)
-                if (!md) return undefined
-                const target = gymDayTarget(md, weekWorkouts)
-                return target ? () => navigate(target) : undefined
-              })()}
-              onLogSport={(s) => setSportLogSport(sportOf(s))}
-              onReviewCustom={(wid) => navigate(`/train/review/${wid}`)}
-              onLogRun={(s) => setRunLogCtx({
-                blockId: activeRunningBlock!.id,
-                weekNumber: activeRunningBlock!.currentWeek,
-                sessionKey: s.key,
-                label: s.label,
-                isSprint: s.kind === 'sprint',
-                defaultRounds: s.rounds ?? undefined,
-              })}
-            />
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => setCustomOpen(true)}
-          className="card mt-md"
-          style={{
-            padding: 12, width: '100%', background: 'transparent', borderStyle: 'dashed',
-            borderColor: 'var(--line)', color: 'var(--tag-gym)', fontSize: 10,
-            letterSpacing: '0.14em', textTransform: 'uppercase',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-          }}
-        >
-          <Icon name="plus" size={12} /> Saját edzés
-        </button>
-      </div>
-
-      {/* Note */}
-      <div style={{ padding: '0 24px 32px' }}>
-        <div className="card" style={{ padding: 12, background: 'color-mix(in srgb, var(--coral) 3%, transparent)' }}>
-          <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-            <Icon name="sparkle" size={12} color="var(--coral)" />
-            <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)', flex: 1 }}>
-              A gym a mesociklus szerint, a sport (röpi/cross/TRX) recurring · független. A két ütemterv együtt-mozgatja a
-              pacing-et, alvás-onsetet és a vacsora-időt.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
       {sportLogSport && (

@@ -37,18 +37,57 @@ const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><Tr
 const findTodayCard = async (title: string) =>
   (await screen.findByText(title, { selector: '.todaycard-title' })).closest('.todaycard') as HTMLElement
 
-test('today gym block + weekly timeline render', () => {
+test('today gym hero renders (the weekly list + load tiles + note now live on Heti)', () => {
   const { container } = renderView()
-  // "Pull Day" appears in both the gym hero (h2) and the weekly rows
-  // (Sze + Csü schedule entries); the hero itself is unique via .trainhero.
+  // "Pull Day" is the gym hero's title (h2); the hero itself is unique via .trainhero.
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
   expect(container.querySelector('.trainhero')).not.toBeNull()
   expect(screen.getByRole('button', { name: 'Indítsuk →' })).toBeInTheDocument()
-  expect(screen.getByText('Heti terv')).toBeInTheDocument()
-  // mock week: 5 gym days + 5 volleyball days + 2 running sessions ⇒ 3 load tiles
-  expect(container.querySelectorAll('.loadtile')).toHaveLength(3)
-  // weekly note (verbatim, substring)
-  expect(screen.getByText(/A gym a mesociklus szerint/)).toBeInTheDocument()
+})
+
+test('day strip: selecting another day swaps the rendered sessions, no refetch', async () => {
+  renderView()
+  // mock week: today is Csü (gym Pull Day). Kedd carries volleyball 17:00.
+  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('tab', { name: /Kedd/ }))
+  expect(screen.getByRole('heading', { name: 'Kedd' })).toBeInTheDocument()
+  expect(await screen.findByText('Volleyball', { selector: '.todaycard-title' })).toBeInTheDocument()
+  // back to today
+  fireEvent.click(screen.getByRole('button', { name: /Ma$/ }))
+  expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
+})
+
+test('a non-today gym day renders a read-only-capable card with a direct-start CTA', async () => {
+  renderView()
+  // Sze (Wed) carries a not-yet-done gym slot in the mock week.
+  fireEvent.click(screen.getByRole('tab', { name: /Szerda|Sze/ }))
+  expect(await screen.findByText('Pull Day', { selector: '.todaycard-title' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /Kezdjük el/ }))
+  // Mock MesoDay fixtures carry no `id`, so gymDayTarget resolves the plain route.
+  expect(mockNavigate).toHaveBeenCalledWith('/train/session')
+})
+
+test('the weekly list and load tiles moved to Heti — Mai renders neither', () => {
+  const { container } = renderView()
+  expect(container.querySelectorAll('.dayrow')).toHaveLength(0)
+  expect(container.querySelectorAll('.loadtile')).toHaveLength(0)
+  expect(screen.queryByText('Heti terv')).not.toBeInTheDocument()
+  // the strip replaces them
+  expect(container.querySelectorAll('.daychip')).toHaveLength(7)
+})
+
+test('?day= initialises the selection (drill-in from Heti)', () => {
+  render(
+    <QueryWrapper><MemoryRouter initialEntries={['/train?day=1']}><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>,
+  )
+  expect(screen.getByRole('heading', { name: 'Kedd' })).toBeInTheDocument()
+})
+
+test('today-only blocks hide on a non-today selection', () => {
+  renderView()
+  fireEvent.click(screen.getByRole('tab', { name: /Szombat|Szo/ }))
+  // the morning-training nudge is a today-only nudge
+  expect(screen.queryByText(/Reggeli edzés/i)).not.toBeInTheDocument()
 })
 
 test('own page-header: Mai nap h1 + Napiv over-line', () => {
@@ -56,11 +95,6 @@ test('own page-header: Mai nap h1 + Napiv over-line', () => {
   expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
   // today is Csü ⇒ "Edzés · Csütörtök · W3"
   expect(screen.getByText('Edzés · Csütörtök · W3')).toBeInTheDocument()
-})
-
-test('weekly timeline renders a Pihenőnap rest row for the empty Vasárnap slot', () => {
-  renderView()
-  expect(screen.getByText('Pihenőnap')).toBeInTheDocument()
 })
 
 test('no volleyball session today (Csü) ⇒ today-volleyball block is absent', () => {
@@ -73,22 +107,6 @@ test('the Mezociklus card navigates to the overview (mezo-hi9m)', () => {
   renderView()
   fireEvent.click(screen.getByRole('button', { name: /Mezociklus áttekintő/ }))
   expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/meso-hyp-04/overview')
-})
-
-test('a non-today weekly gym row navigates straight to the session (mezo-j3x0 / mezo-bxpg)', () => {
-  renderView()
-  // Mock today = Csü (fixture flag); the Hét row shows the Push Day slot → non-today gym row.
-  fireEvent.click(screen.getByRole('button', { name: /Push Day/ }))
-  // Mock MesoDay fixtures carry no `id` (real mode only), so the `!day.id` branch wins
-  // regardless of the non-today `?day=` rule — plain /train/session, not /train/session?day=.
-  expect(mockNavigate).toHaveBeenCalledWith('/train/session')
-})
-
-test('the weekly-plan footer opens the Saját edzés sheet (mezo-ws2x)', () => {
-  renderView()
-  fireEvent.click(screen.getAllByRole('button', { name: /Saját edzés/ })[0])
-  expect(screen.getByText('Mit nyomunk ma?')).toBeInTheDocument()
-  expect(screen.getByText('Pihenőnapi felső')).toBeInTheDocument()
 })
 
 test('morning-training card lists the late gym slots and one-tap reschedules them', async () => {
@@ -145,7 +163,6 @@ test('real mode renders the today card and agenda from the active meso + /today'
   renderView()
   expect(await screen.findByRole('button', { name: /Indítsuk/ })).toBeInTheDocument()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  expect(screen.getByText(/1 session/)).toBeInTheDocument() // 1 gym day, no volleyball yet (T3)
 })
 
 test('real mode shows the rest-day note when /today is empty but a meso is active', async () => {
@@ -452,34 +469,6 @@ test('real mode: prescribed run logged today ⇒ run hero flips to the done summ
   // range), so an unanchored "RPE 9" substring would be ambiguous.
   expect(screen.getByText('RPE 9 · 6 kör')).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Naplózd a futást/ })).not.toBeInTheDocument()
-})
-
-// A template day completed THIS week but pulled forward to another date (not its own
-// weekday's date) must still route the weekly-row tap to its review, not restart it
-// into a fresh session (409 TRAIN_DAY_DONE_THIS_WEEK) — the date-only workoutIdByDate
-// match misses it, so the row falls back to onOpenGymDay, which must resolve via
-// gymDayTarget's templateSessionId check (final-review fix, mezo-bxpg — Finding 1).
-test('real mode: a weekly gym row completed this week on ANOTHER date routes to its review, not a restart', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  const otherDayLabel = DAY_ORDER[(DAY_ORDER.indexOf(todayLabel()) + 1) % 7]
-  server.use(
-    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso(otherDayLabel)])),
-    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
-    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
-    http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
-    // today itself is empty — unrelated to this row's own weekday
-    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
-    // completed this week, same template (d-1), but on TODAY's date — not the row's
-    // own weekday date — so the date-keyed workoutIdByDate lookup can't match it.
-    http.get(`${API_BASE}/api/train/workouts`, () =>
-      HttpResponse.json([
-        { id: 'w-pulled', templateSessionId: 'd-1', date: localDateString(), status: 'completed', origin: 'meso' },
-      ]),
-    ),
-  )
-  renderView()
-  fireEvent.click(await screen.findByRole('button', { name: /Pull Day/ }))
-  expect(mockNavigate).toHaveBeenCalledWith('/train/review/w-pulled')
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the TrainTodaySkeleton (role="status")

@@ -17,6 +17,7 @@ export type IconName =
   | 'check'
   | 'x'
   | 'chevron-right'
+  | 'chevron-left'
   | 'chevron-down'
   | 'chevron-up'
   | 'send'
@@ -160,6 +161,12 @@ export function Icon({
       return (
         <svg {...props}>
           <polyline points="9,4 17,12 9,20" />
+        </svg>
+      )
+    case 'chevron-left':
+      return (
+        <svg {...props}>
+          <polyline points="15,4 7,12 15,20" />
         </svg>
       )
     case 'chevron-down':
