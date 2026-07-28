@@ -27,3 +27,8 @@ test('an empty day yields no dots and keeps its day number', () => {
   const items = dayStripItems([day({ day: 'Vas', date: '2026-05-24' })], () => false)
   expect(items[0]).toMatchObject({ day: 'Vas', dayNumber: 24, dots: [], sessionCount: 0 })
 })
+
+test('a day with no date falls back to dayNumber 0', () => {
+  const items = dayStripItems([day({ date: undefined })], () => false)
+  expect(items[0].dayNumber).toBe(0)
+})
