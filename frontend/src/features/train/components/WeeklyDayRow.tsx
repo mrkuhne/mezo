@@ -110,7 +110,7 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             const k = sportOf(s)
             const logged = Boolean(isSportLogged?.(s))
             return (
-              <button key={`sport-${k}-${s.time}-${i}`} type="button" className="s" onClick={isToday ? () => onLogSport?.(s) : undefined}>
+              <button key={`sport-${k}-${s.time}-${i}`} type="button" className="s" onClick={onLogSport ? () => onLogSport(s) : undefined}>
                 <span className="s-top">
                   <span className="stag stag-sport">{SPORT_TAGS[k]}</span>
                   <span className="s-title">{SPORT_TITLES[k]}</span>
@@ -128,7 +128,7 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
           const run = item.running
           const runDone = Boolean(isRunLogged?.(run.key))
           return (
-            <button key={run.key} type="button" className="s" onClick={isToday ? () => onLogRun?.(run) : undefined}>
+            <button key={run.key} type="button" className="s" onClick={onLogRun ? () => onLogRun(run) : undefined}>
               <span className="s-top">
                 <span className="stag stag-run">FUTÁS</span>
                 <span className="s-title">{run.label}</span>

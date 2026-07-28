@@ -171,3 +171,36 @@ it('renders a completed custom (saját) workout row and opens its review (mezo-w
   fireEvent.click(screen.getByRole('button'))
   expect(onReviewCustom).toHaveBeenCalledWith('w9')
 })
+
+// The row reports the tap; the parent decides what it means (mezo-9bbc — Heti's
+// drill-in). A non-today sport/run block used to be structurally inert
+// (`onClick={isToday ? handler : undefined}`); it now fires whenever the parent
+// supplies a handler, regardless of day, so Heti (any day → Mai) and Mai (today
+// only, by how it wires its own handler) both work off the same component.
+it('a non-today sport row is tappable and calls onLogSport (mezo-9bbc)', () => {
+  const onLogSport = vi.fn()
+  const session = { day: 'Kedd', time: '17:00', duration: 90, court: 'BVSC csarnok', intensity: 'közepes', role: 'edzés' }
+  render(
+    <WeeklyDayRow
+      agenda={{ day: 'Kedd', isToday: false, gym: null, sport: [session] as never, running: [] }}
+      onStartGym={() => {}}
+      onLogSport={onLogSport}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button'))
+  expect(onLogSport).toHaveBeenCalledWith(session)
+})
+
+it('a non-today run row is tappable and calls onLogRun (mezo-9bbc)', () => {
+  const onLogRun = vi.fn()
+  const run = { key: 'tue-sprint', timeOfDay: '18:00', label: 'Sprint-intervallum', kind: 'sprint', rpeTarget: { min: 9, max: 10 } }
+  render(
+    <WeeklyDayRow
+      agenda={{ day: 'Kedd', isToday: false, gym: null, sport: [], running: [run] as never }}
+      onStartGym={() => {}}
+      onLogRun={onLogRun}
+    />,
+  )
+  fireEvent.click(screen.getByRole('button'))
+  expect(onLogRun).toHaveBeenCalledWith(run)
+})
