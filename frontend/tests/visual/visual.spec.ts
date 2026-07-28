@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Self-baselined visual goldens: 16 goto screens + the /ritual Harvest click-through
- * = 17 screens × 2 themes = 34 snapshots per platform (mezo-mzbz added the two /ritual
- * shots: Arrival act 1 via the SCREENS list + the Harvest act 4 via the click-through test).
+ * Self-baselined visual goldens: 17 goto screens + the /ritual Harvest click-through
+ * = 18 screens × 2 themes = 36 snapshots per platform (mezo-mzbz added the two /ritual
+ * shots: Arrival act 1 via the SCREENS list + the Harvest act 4 via the click-through test;
+ * mezo-9bbc added train-heti for the new /train/week page).
  *
  * Determinism levers (all must hold or the shots flake):
  *  - clock frozen to 2026-05-21T13:42 (délután) BEFORE goto → the daypart-derived
@@ -24,6 +25,7 @@ import { test, expect } from '@playwright/test'
 const SCREENS: Array<[string, string]> = [
   ['today', '/today'],
   ['train', '/train'],
+  ['train-heti', '/train/week'],
   ['train-gym', '/train/gym'],
   ['train-session', '/train/session'],
   ['fuel', '/fuel'],
