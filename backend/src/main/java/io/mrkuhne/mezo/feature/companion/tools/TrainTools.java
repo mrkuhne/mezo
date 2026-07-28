@@ -44,6 +44,9 @@ public class TrainTools {
     /** get_training_plan's supported scope values; anything else (incl. null) falls back to "today". */
     private static final List<String> PLAN_SCOPES = List.of("today", "tomorrow", "week", "meso", "date");
 
+    /** get_training_log's supported scope values; anything else (incl. null) falls back to "gym". */
+    private static final List<String> LOG_SCOPES = List.of("gym", "sport", "run");
+
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseSetRepository exerciseSetRepository;
     private final SportSessionRepository sportSessionRepository;
@@ -58,11 +61,33 @@ public class TrainTools {
     private final TrainService trainService;
     private final RunningService runningService;
 
-    @Tool(name = "get_recent_workouts", description = "Gym-edzések az elmúlt napokra: dátum, edzésnap "
-            + "(pl. Pull A), sorozatszám, összvolumen kg-ban. Kérdés edzésekről, edzésmennyiségről, volumenről.")
-    public String getRecentWorkouts(
+    @Tool(name = "get_training_log", description = "Múltbeli edzésnapló megadott ablakra scope szerint: "
+            + "scope=gym — gym-edzések (dátum, edzésnap, sorozatszám, összvolumen kg-ban); scope=sport — "
+            + "sportalkalmak (röplabda/cross/TRX: időtartam, intenzitás, RPE, szettek); scope=run — futások "
+            + "(hét, session, kör, RPE, időtartam). Használd, amikor a user MÚLTBELI edzésekről/sportról/"
+            + "futásról kérdez. scope: gym (alapértelmezés), sport, run.")
+    public String getTrainingLog(
+            @ToolParam(required = false, description = "gym|sport|run (alapértelmezés: gym).") String scope,
             @ToolParam(required = false, description = "Hány napra visszamenőleg (alapértelmezés 7).") Integer days,
             ToolContext toolContext) {
+        String s = normalizeLogScope(scope);
+        return switch (s) {
+            case "sport" -> renderSportLog(toolContext, days);
+            case "run" -> renderRunLog(toolContext, days);
+            default -> renderGymLog(toolContext, days);
+        };
+    }
+
+    private static String normalizeLogScope(String scope) {
+        if (scope == null) {
+            return "gym";
+        }
+        String s = scope.trim().toLowerCase();
+        return LOG_SCOPES.contains(s) ? s : "gym";
+    }
+
+    /** scope=gym: done gym instances in the window, with per-instance set count + volume. */
+    private String renderGymLog(ToolContext toolContext, Integer days) {
         UUID userId = ToolContexts.userId(toolContext);
         int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
         LocalDate today = LocalDate.now();
@@ -93,26 +118,18 @@ public class TrainTools {
         return b.toString();
     }
 
-    @Tool(name = "get_sport_sessions", description = "Sportalkalmak (röplabda/cross/TRX) és futások az "
-            + "elmúlt napokra: dátum, időtartam, intenzitás, RPE, körök. Kérdés sportról, futásról, terhelésről.")
-    public String getSportSessions(
-            @ToolParam(required = false, description = "Hány napra visszamenőleg (alapértelmezés 7).") Integer days,
-            ToolContext toolContext) {
+    /** scope=sport: sport sessions (röplabda/cross/TRX) in the window. */
+    private String renderSportLog(ToolContext toolContext, Integer days) {
         UUID userId = ToolContexts.userId(toolContext);
         int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
         LocalDate from = LocalDate.now().minusDays(d - 1L);
         List<SportSessionEntity> sport = sportSessionRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from);
-        List<RunSessionLogEntity> runs = runSessionLogRepository
-                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from);
         String header = "Sportalkalmak (utolsó " + d + " nap):";
-        if (sport.isEmpty() && runs.isEmpty()) {
+        if (sport.isEmpty()) {
             return header + " " + ToolText.NO_DATA;
         }
         StringBuilder b = new StringBuilder(header);
-        if (sport.isEmpty()) {
-            b.append(' ').append(ToolText.NO_DATA);
-        }
         for (SportSessionEntity s : sport) {
             b.append('\n').append(s.getDate()).append(": ").append(s.getSport());
             if (s.getDurationMin() != null) {
@@ -128,24 +145,36 @@ public class TrainTools {
                 b.append(", ").append(s.getSetsPlayed()).append(" szett");
             }
         }
-        if (!runs.isEmpty()) {
-            b.append("\nFutások:");
-            for (RunSessionLogEntity r : runs) {
-                b.append('\n').append(r.getDate()).append(": ").append(r.getWeekNumber()).append(". hét ")
-                        .append(r.getSessionKey());
-                if (r.getCompletedRounds() != null) {
-                    b.append(" — ").append(r.getCompletedRounds()).append(" kör");
-                }
-                if (r.getRpeActual() != null) {
-                    b.append(", RPE ").append(r.getRpeActual());
-                }
-                if (r.getDurationMin() != null) {
-                    b.append(", ").append(r.getDurationMin()).append(" perc");
-                }
-            }
-        }
         sport.stream().limit(3).forEach(s ->
                 ToolContexts.audit(toolContext).addRef("Sport", s.getDate().toString()));
+        return b.toString();
+    }
+
+    /** scope=run: run-plan log rows in the window. */
+    private String renderRunLog(ToolContext toolContext, Integer days) {
+        UUID userId = ToolContexts.userId(toolContext);
+        int d = ToolText.clamp(days, 1, properties.tools().maxWindowDays(), 7);
+        LocalDate from = LocalDate.now().minusDays(d - 1L);
+        List<RunSessionLogEntity> runs = runSessionLogRepository
+                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from);
+        String header = "Futások (utolsó " + d + " nap):";
+        if (runs.isEmpty()) {
+            return header + " " + ToolText.NO_DATA;
+        }
+        StringBuilder b = new StringBuilder(header);
+        for (RunSessionLogEntity r : runs) {
+            b.append('\n').append(r.getDate()).append(": ").append(r.getWeekNumber()).append(". hét ")
+                    .append(r.getSessionKey());
+            if (r.getCompletedRounds() != null) {
+                b.append(" — ").append(r.getCompletedRounds()).append(" kör");
+            }
+            if (r.getRpeActual() != null) {
+                b.append(", RPE ").append(r.getRpeActual());
+            }
+            if (r.getDurationMin() != null) {
+                b.append(", ").append(r.getDurationMin()).append(" perc");
+            }
+        }
         runs.stream().limit(3).forEach(r ->
                 ToolContexts.audit(toolContext).addRef("Run", r.getDate().toString()));
         return b.toString();

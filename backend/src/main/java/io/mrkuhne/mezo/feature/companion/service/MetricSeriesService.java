@@ -136,7 +136,7 @@ public class MetricSeriesService {
         return series;
     }
 
-    /** Σ weight×reps over the day's non-skipped logged sets (the get_recent_workouts math). */
+    /** Σ weight×reps over the day's non-skipped logged sets (the get_training_log scope=gym math). */
     private Map<LocalDate, Double> gymVolume(UUID userId, LocalDate from, LocalDate to) {
         Map<LocalDate, Double> series = new HashMap<>();
         for (WorkoutSessionEntity session : workoutSessionRepository.findDoneInstancesBetween(userId, from, to)) {

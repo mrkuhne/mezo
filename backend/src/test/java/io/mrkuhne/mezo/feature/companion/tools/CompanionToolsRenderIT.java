@@ -111,7 +111,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetRecentWorkouts_shouldRenderInstanceLinesWithVolume_whenLoggedSetsExist() {
+    void testGetTrainingLog_shouldRenderInstanceLinesWithVolume_whenScopeGym() {
         UUID owner = userPopulator.createUser().getId();
         MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
         WorkoutSessionEntity template =
@@ -122,7 +122,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         trainPopulator.createLoggedSet(owner, ex.getId(), instance.getId(), 0, "80", 8, 2, Instant.now());
         trainPopulator.createLoggedSet(owner, ex.getId(), instance.getId(), 1, "80", 6, 1, Instant.now());
 
-        String out = trainTools.getRecentWorkouts(7, ctx(owner));
+        String out = trainTools.getTrainingLog("gym", 7, ctx(owner));
 
         assertThat(out).startsWith("Gym-edzések (utolsó 7 nap):")
                 .contains(LocalDate.now().minusDays(2) + ": Pull A (pull) — 2 sorozat, volumen 1120 kg");
@@ -131,28 +131,49 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetRecentWorkouts_shouldRenderNincsAdat_whenWindowEmpty() {
-        assertThat(trainTools.getRecentWorkouts(null, ctx(userPopulator.createUser().getId())))
+    void testGetTrainingLog_shouldRenderNincsAdat_whenScopeGymAndWindowEmpty() {
+        assertThat(trainTools.getTrainingLog(null, null, ctx(userPopulator.createUser().getId())))
                 .isEqualTo("Gym-edzések (utolsó 7 nap): nincs adat");
     }
 
     @Test
-    void testGetSportSessions_shouldRenderSportAndRunLines_whenBothExist() {
+    void testGetTrainingLog_shouldRenderSportLines_whenScopeSport() {
         UUID owner = userPopulator.createUser().getId();
         trainPopulator.createSportSession(owner, LocalDate.now().minusDays(1), "volleyball", 5, null, "6.5");
+
+        String out = trainTools.getTrainingLog("sport", 7, ctx(owner));
+
+        assertThat(out).startsWith("Sportalkalmak (utolsó 7 nap):")
+                .contains(LocalDate.now().minusDays(1) + ": volleyball 60 perc, RPE 6.5, 5 szett");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Sport", LocalDate.now().minusDays(1).toString()));
+    }
+
+    @Test
+    void testGetTrainingLog_shouldRenderNincsAdat_whenScopeSportAndWindowEmpty() {
+        assertThat(trainTools.getTrainingLog("sport", 7, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Sportalkalmak (utolsó 7 nap): nincs adat");
+    }
+
+    @Test
+    void testGetTrainingLog_shouldRenderRunLines_whenScopeRun() {
+        UUID owner = userPopulator.createUser().getId();
         RunningBlockEntity block = runningPopulator.createBlock(owner, "Futás blokk", "active");
         runningPopulator.createRunLog(owner, block.getId(), 2, "int1",
                 LocalDate.now().minusDays(3), 6, 7, null, null, 35);
 
-        String out = trainTools.getSportSessions(7, ctx(owner));
+        String out = trainTools.getTrainingLog("run", 7, ctx(owner));
 
-        assertThat(out).startsWith("Sportalkalmak (utolsó 7 nap):")
-                .contains(LocalDate.now().minusDays(1) + ": volleyball 60 perc, RPE 6.5, 5 szett")
-                .contains("Futások:")
+        assertThat(out).startsWith("Futások (utolsó 7 nap):")
                 .contains(LocalDate.now().minusDays(3) + ": 2. hét int1 — 6 kör, RPE 7, 35 perc");
-        assertThat(audit.toRefsEnvelope().refs()).contains(
-                new RefsEnvelope.Ref("Sport", LocalDate.now().minusDays(1).toString()),
-                new RefsEnvelope.Ref("Run", LocalDate.now().minusDays(3).toString()));
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Run", LocalDate.now().minusDays(3).toString()));
+    }
+
+    @Test
+    void testGetTrainingLog_shouldRenderNincsAdat_whenScopeRunAndWindowEmpty() {
+        assertThat(trainTools.getTrainingLog("run", 7, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Futások (utolsó 7 nap): nincs adat");
     }
 
     @Test

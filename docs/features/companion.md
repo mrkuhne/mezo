@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-07-26
+updated: 2026-07-28
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -17,7 +17,7 @@ related: [insights, _platform-api-backend, _platform-auth-security]
 
 > One-line: the Phase-3 AI companion — persisted conversations + a Hungarian chat over the
 > `CompanionLlm` port (Spring AI 2 / Gemini) with a deterministic cross-feature **context
-> snapshot** + the **top-N confirmed knowledge facts** in every system prompt, **9 read-only
+> snapshot** + the **top-N confirmed knowledge facts** in every system prompt, **8 read-only
 > tools** for history/aggregate + forward-plan questions (audited into the message envelopes, rendered as real
 > FE chips), answered **sync JSON or streamed SSE**, and consumed by the **real dual-mode
 > ChatPage**. After every turn an **async extraction** proposes fact candidates that Daniel
@@ -75,7 +75,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 **V0.5 (`mezo-fnnq.5`) shipped tool calling + real tool-chips — v0 „lát engem" is complete:**
 
 - **8 read-only tools** in `feature/companion/tools/` (spec §5 first batch), grouped by source
-  domain: `TrainTools` (`get_recent_workouts`, `get_sport_sessions` — sport + run logs),
+  domain: `TrainTools` (`get_recent_workouts`, `get_sport_sessions` — sport + run logs; the two
+  merged into one scoped `get_training_log(scope, days)` since mezo-xixu, see the catalog below),
   `BiometricsTools` (`get_weight_trend`, `get_sleep`), `FuelTools` (`get_recent_meals` day
   rollups, `get_protocol_adherence`), `GoalTools` (`get_goal_progress`), `MedicationTools`
   (`get_reta_cycle`). All ownership-scoped via `ToolContext` (`userId` from the JWT principal,
@@ -663,8 +664,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 
 | Tool (args) | Source (existing reads) | Ref |
 |---|---|---|
-| `get_recent_workouts(days)` | `WorkoutSessionRepository.findDoneInstancesBetween` (new finder) + per-instance sets → date, dayLabel, set count, Σ volume kg | `Workout`/date (≤5) |
-| `get_sport_sessions(days)` | sport + run since-date finders (existed) → sport/duration/intensity/RPE + run week/rounds | `Sport`+`Run`/date (≤3+3) |
+| `get_training_log(scope, days)` (mezo-xixu, merged from `get_recent_workouts`+`get_sport_sessions`) | scope=gym: `WorkoutSessionRepository.findDoneInstancesBetween` + per-instance sets → date, dayLabel, set count, Σ volume kg; scope=sport/run: sport + run since-date finders → sport/duration/intensity/RPE or run week/rounds | `Workout`/date (≤5) or `Sport`/date (≤3) or `Run`/date (≤3) |
 | `get_training_plan(scope, date)` (mezo-xixu) | FORWARD plan: `WorkoutService.findPlannedTemplateForDate` + `ExerciseRepository` (gym day, read-only — never `getToday`) + `RunningService.listBlocks`/`RunningBlockStructure` (prescribed run) + `TrainService.listMesocycles` (`scope=meso` full cycle) | `TrainingPlan`/date or meso title |
 | `get_weight_trend(weeks)` | `WeightTrendService.computeTrend` → trend kg, weekly + 4w rate, one EWMA point per ISO week | `WeightTrend`/`{w}h` |
 | `get_recent_meals(days)` | `FuelDayService.getDay` looped per day → kcal/F vs targets, meal count + titles (≤3) | `FuelDay`/date (≤5) |
@@ -1254,7 +1254,8 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     deserialize `args = null`); the mapper renders `name(args)` — the mock-seed chip style; `type`
     is always `read` in V0.5. No migration (columns existed since V0.2; null-when-empty preserved).
 19. **Tool results are snapshot-idiom text**, windows clamped by `mezo.companion.tools.*` — token
-    budget by construction. `get_sport_sessions` covers sport + run; `get_protocol_adherence`
+    budget by construction. `get_training_log` scopes gym/sport/run into one tool (mezo-xixu,
+    merged from `get_recent_workouts`+`get_sport_sessions`); `get_protocol_adherence`
     measures against the CURRENT active protocol for the whole window (version time-travel is
     v1+ material); `get_goal_progress` is a pure read composition (the engine's `evaluate` is a
     write and stays out of the registry).
