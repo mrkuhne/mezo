@@ -575,7 +575,11 @@ message — `"Daniel: …"` for a user row, `"Mezo: …"` for an assistant row. 
 (`ChatService.java:32`) is the static Hungarian companion voice (IDENT-1 "társ, nem edző" + the
 clinical guard "Gyógyszer adagolására (pl. retatrutid) vonatkozó változtatást SOHA ne javasolj — az
 orvosi döntés." + "számot vagy adatot kitalálni tilos", spec §6, + the V0.5 tool-usage line
-"Múltbeli vagy összesítő kérdéshez … használd a kapott tool-okat"). The `CompanionLlm` port keeps
+"Múltbeli vagy összesítő kérdéshez … használd a kapott tool-okat" + (mezo-xixu) a terse
+`[Eszköz-útmutató]` block mapping question-type → tool name (PR → `get_exercise_records`, edzésterv
+→ `get_training_plan`, recept → `get_recipes`, … — one line per tool, kept in sync with the
+`@Tool` descriptions per
+[`companion_tool_conventions.md`](../references/companion_tool_conventions.md)). The `CompanionLlm` port keeps
 the two-string prompt shape and carries the tools alongside (`complete(system, user, tools,
 toolContext)`) — the message-list variant V0.2 Decision #4 predicted turned out unnecessary
 (Decision 16).

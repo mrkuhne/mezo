@@ -84,6 +84,9 @@ class ChatServiceIT extends AbstractIntegrationTest {
         MessageResponse resp = chatService.sendMessage(userId, conversation.getId(), request("szia"));
 
         assertThat(resp.getContent()).contains("használd a kapott tool-okat");
+        // mezo-xixu: terse question-type -> tool routing hint, present in EVERY system prompt.
+        assertThat(resp.getContent()).contains("[Eszköz-útmutató]");
+        assertThat(resp.getContent()).contains("get_exercise_records");
     }
 
     @Test
