@@ -15,6 +15,11 @@ test('renders nothing without a scored meal — no fabricated placeholder', () =
   expect(container).toBeEmptyDOMElement()
 })
 
+test('renders nothing for a meal with no score yet — no fabricated "0 · gyenge" verdict', () => {
+  const { container } = render(<MealScoreChip meal={meal(null)} onOpen={vi.fn()} />)
+  expect(container).toBeEmptyDOMElement()
+})
+
 test('a high score renders the sage tone with a one-word verdict', () => {
   const { container } = render(<MealScoreChip meal={meal(0.84)} onOpen={vi.fn()} />)
   const chip = screen.getByRole('button', { name: 'AI score' })

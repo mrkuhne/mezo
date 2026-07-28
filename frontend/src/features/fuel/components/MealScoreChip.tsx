@@ -23,8 +23,8 @@ export function MealScoreChip({
   coachPending?: boolean
   onOpen: (meal: FuelMeal) => void
 }) {
-  if (!meal) return null
-  const pct = Math.round((meal.score ?? 0) * 100)
+  if (!meal || meal.score == null) return null
+  const pct = Math.round(meal.score * 100)
   const tone = toneOf(pct)
   return (
     <button

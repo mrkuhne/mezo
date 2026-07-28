@@ -2344,10 +2344,10 @@ a.hab-link:hover { opacity: 0.85; }
 .daystrip .r1 .pc { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--sage-deep);
   background: var(--wash-sage); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
 .daystrip .wins { font-size: 10.5px; font-weight: 700; color: var(--faint); margin-top: 7px; }
-.seg { position: relative; height: 12px; border-radius: 999px; background: var(--warm); margin-top: 9px; overflow: hidden; display: flex; gap: 2px; }
-.seg i { display: block; height: 100%; }
-.seg .ghost { flex: 1; background: repeating-linear-gradient(90deg, rgba(43,33,24,.05) 0 4px, transparent 4px 9px); }
-.seg .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--coral); border-radius: 2px; }
+.dayseg { position: relative; height: 12px; border-radius: 999px; background: var(--warm); margin-top: 9px; overflow: hidden; display: flex; gap: 2px; }
+.dayseg i { display: block; height: 100%; }
+.dayseg .ghost { flex: 1; background: repeating-linear-gradient(90deg, rgba(43,33,24,.05) 0 4px, transparent 4px 9px); }
+.dayseg .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--coral); border-radius: 2px; }
 .brk { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
 .brk .cap2 { display: flex; align-items: center; gap: 8px; font-size: 9px; font-weight: 800; letter-spacing: .12em;
   text-transform: uppercase; color: var(--faint); }
@@ -2418,7 +2418,7 @@ a.hab-link:hover { opacity: 0.85; }
   .nowcard .lbl .dot { animation: np-hero-pulse 2.2s ease-out infinite; }
   .nowcard .primary { transition: transform .18s var(--np-ease-spring); }
   .nowcard .primary:active { transform: scale(.96); }
-  .seg i { animation: np-seg-grow 1.1s var(--np-ease-ios) both; }
+  .dayseg i { animation: np-seg-grow 1.1s var(--np-ease-ios) both; }
   .aiscore { animation: np-chip-pop .5s var(--np-ease-spring); }
   .coachline.sk { animation: np-sk-slide 1.4s linear infinite; }
 }
