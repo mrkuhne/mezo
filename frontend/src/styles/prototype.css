@@ -1237,6 +1237,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .typetag-gym { background: var(--wash-gym); color: var(--tag-gym); }
 .typetag-sport { background: var(--wash-sport); color: var(--tag-sport); }
 .typetag-run { background: var(--wash-run); color: var(--tag-run); }
+.typetag-cross { background: var(--wash-cross); color: var(--tag-cross); }
+.typetag-trx { background: var(--wash-trx); color: var(--tag-trx); }
 .np-hero-meta { font-size: 13.5px; color: var(--sub); margin-top: 4px; }
 .np-hero-meta b { color: var(--ink); font-weight: 700; }
 .warmstrip { display: flex; align-items: center; gap: 8px; background: rgba(255,179,71,.16); border-radius: 14px; padding: 10px 12px; font-size: 12px; color: #8F5514; margin-top: 12px; font-weight: 600; }
@@ -1283,15 +1285,22 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   --wash-gym: #FFEDE6;
   --wash-sport: #FBE9EC;
   --wash-run: #E7F0F8;
+  --wash-cross: #FBF0DD;          /* cross gets its own amber family (mezo-9bbc) */
+  --wash-trx: #F0EDF8;            /* TRX rides the lavender family (mezo-9bbc) */
   --tag-gym: #C4622F;
   --tag-sport: #B14B5E;
   --tag-run: #3E6E9E;
+  --tag-cross: #B07A2E;
+  --tag-trx: #7A6DA8;
 }
 :root[data-theme="dark"] {
   --wash-gym: rgba(255,107,74,.16);
   --wash-sport: rgba(226,122,139,.16);
   --wash-run: rgba(111,167,216,.16);
+  --wash-cross: rgba(224,164,88,.16);
+  --wash-trx: rgba(171,159,210,.16);
   --tag-gym: #F0966B; --tag-sport: #E9A3AE; --tag-run: #9CC0E4;
+  --tag-cross: #E0A458; --tag-trx: #B9ACD9;
 }
 
 /* ===== Napív page head (pgheadrow — Train sub-pages; Fuel/Me adopt later) ===== */
@@ -1305,6 +1314,8 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .stag-gym { background: var(--wash-gym); color: var(--tag-gym); }
 .stag-sport { background: var(--wash-sport); color: var(--tag-sport); }
 .stag-run { background: var(--wash-run); color: var(--tag-run); }
+.stag-cross { background: var(--wash-cross); color: var(--tag-cross); }
+.stag-trx { background: var(--wash-trx); color: var(--tag-trx); }
 
 /* ===== Napív weekly load tiles (Mai, spec §4.3) ===== */
 .loadrow { display: flex; gap: 9px; margin: 14px 24px 0; }
