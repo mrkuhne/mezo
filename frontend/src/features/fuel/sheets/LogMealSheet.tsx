@@ -12,6 +12,7 @@ import { useState } from 'react'
 import type { Ingredient, MealInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
+import { nowOffsetIso } from '@/shared/lib/dates'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
@@ -131,7 +132,10 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
     if (!canSave) return
     const input: MealInput = {
       slot,
-      loggedAt: new Date().toISOString(),
+      // OFFSET-BEARING local now, not `.toISOString()` (UTC `Z`): the backend classifies the
+      // meal's training role + timing from loggedAt.toLocalTime(), so a UTC wall-clock 1-2h off
+      // local dropped a pre-workout meal out of its pre-window (mezo-g8qm; LogDoseSheet's offsetIso rule).
+      loggedAt: nowOffsetIso(),
       title: shownName.trim() || null,
       items: lines.map(l => ({ source: l.source, refId: l.refId, amount: l.amount, unit: l.unit })),
     }
