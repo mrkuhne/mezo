@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fuel · Mai — 3 UX irány</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-font-smoothing:antialiased; }
+  button { font:inherit; color:inherit; background:none; border:none; appearance:none; cursor:pointer; text-align:left; }
+
+  /* ===== Napív tokens (1:1 a frontend/src/styles/prototype.css világos témájából) ===== */
+  :root {
+    --canvas:#FBF6EF; --surface:#FFFFFF; --warm:#F4EBDF; --line:#EFE5D8;
+    --ink:#2B2118; --sub:#8A7A6A; --faint:#A5978A;
+    --coral:#FF6B4A; --coral-deep:#C4622F;
+    --amber:#FFB347; --amber-deep:#9A6A12;
+    --sage:#7FA48A; --sage-deep:#5F7A52;
+    --lav:#9B8FC4;  --lav-deep:#7A6DA8;
+    --rose:#E27A8B; --sky:#6FA7D8;
+    --wash-sage:#EAF0E3; --wash-amber:#FFF3E4; --wash-lav:#EEEBF6;
+    --wash-gym:#FFEDE6; --wash-sport:#FBE9EC; --wash-run:#E7F0F8;
+    --tag-gym:#C4622F; --tag-sport:#B14B5E; --tag-run:#3E6E9E;
+    --cta-g1:#FF8B5E; --cta-g2:#FF6B4A;
+    --np-shadow-card:0 2px 4px rgba(43,33,24,.04), 0 12px 30px rgba(43,33,24,.08);
+    --np-shadow-row:0 8px 20px rgba(43,33,24,.05);
+    --np-ease-ios:cubic-bezier(.32,.72,0,1);
+    --np-ease-spring:cubic-bezier(.34,1.4,.44,1);
+    --ff-display:"Bricolage Grotesque",sans-serif;
+    --ff-body:"Plus Jakarta Sans",system-ui,sans-serif;
+    --ff-mono:"JetBrains Mono",monospace;
+  }
+
+  html,body { background:#EFE7DB; color:var(--ink); font-family:var(--ff-body); line-height:1.5;
+    padding:36px 24px 90px; background-image:radial-gradient(1400px 700px at 50% -240px,#FBF6EF,#EFE7DB 72%); }
+
+  /* ===== page chrome ===== */
+  .pagehead { max-width:1080px; margin:0 auto 26px; text-align:center; }
+  .pagehead .kicker { font-family:var(--ff-mono); font-size:10.5px; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--coral-deep); }
+  .pagehead h1 { font-family:var(--ff-display); font-size:36px; font-weight:800; letter-spacing:-.6px; margin:10px 0 12px; }
+  .pagehead p { font-size:14px; color:var(--sub); max-width:820px; margin:0 auto; }
+  .pagehead p b { color:var(--ink); font-weight:700; }
+
+  .legend { max-width:1080px; margin:22px auto 4px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .legend .lg { display:inline-flex; align-items:center; gap:7px; background:var(--surface); border:1px solid var(--line);
+    border-radius:999px; padding:7px 13px; font-size:11.5px; font-weight:700; color:var(--sub); box-shadow:var(--np-shadow-row); }
+  .legend .lg i { width:9px; height:9px; border-radius:50%; }
+
+  .stage { display:flex; gap:26px; justify-content:center; align-items:flex-start; flex-wrap:wrap; margin-top:30px; }
+  .stage-dirs { margin-top:14px; }
+  .dirsplit { display:flex; align-items:center; gap:14px; max-width:1100px; margin:44px auto 0; }
+  .dirsplit span { font-family:var(--ff-mono); font-size:10px; font-weight:600; letter-spacing:.24em; text-transform:uppercase; color:var(--coral-deep); white-space:nowrap; }
+  .dirsplit::before, .dirsplit::after { content:''; flex:1; height:1px; background:rgba(43,33,24,.12); }
+  .col { width:340px; }
+  .col .cap { text-align:center; margin-bottom:12px; min-height:104px; }
+  .col .cap .tag { display:inline-block; font-family:var(--ff-mono); font-size:9px; letter-spacing:.18em; text-transform:uppercase;
+    padding:4px 9px; border-radius:999px; background:var(--warm); color:var(--coral-deep); font-weight:600; }
+  .col .cap h2 { font-family:var(--ff-display); font-size:20px; font-weight:800; margin:8px 0 5px; letter-spacing:-.2px; }
+  .col .cap p { font-size:11.5px; color:var(--sub); line-height:1.5; }
+  .col.now .cap .tag { background:#E9E2D8; color:var(--sub); }
+  .col.now .cap h2 { color:var(--sub); }
+
+  .scrollmeter { display:flex; align-items:center; gap:8px; justify-content:center; margin:10px 0 0;
+    font-family:var(--ff-mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); }
+  .scrollmeter b { color:var(--coral-deep); font-size:12px; letter-spacing:0; }
+  .scrollmeter .mtr { width:74px; height:6px; border-radius:999px; background:var(--warm); overflow:hidden; }
+  .scrollmeter .mtr i { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--sage),var(--coral)); }
+
+  .phone-box { width:340px; height:734px; position:relative; }
+  .iphone { width:406px; height:876px; border-radius:56px; background:linear-gradient(180deg,#3A342E,#241F1B); padding:11px;
+    position:absolute; inset:0; transform:scale(.8374); transform-origin:top left;
+    box-shadow:0 0 0 1.5px #6B6158 inset, 0 34px 90px -26px rgba(43,33,24,.42); }
+  .iphone::after { content:""; position:absolute; top:22px; left:50%; transform:translateX(-50%); width:108px; height:31px; background:#000; border-radius:19px; z-index:30; }
+  .screen { width:100%; height:100%; border-radius:46px; overflow:hidden; position:relative; background:var(--canvas); }
+  .statusbar { height:52px; padding:18px 30px 0; display:flex; justify-content:space-between; font-family:var(--ff-mono); font-size:13px; font-weight:600; position:relative; z-index:20; }
+  .content { height:calc(100% - 52px); overflow-y:auto; scrollbar-width:none; padding-bottom:104px; }
+  .content::-webkit-scrollbar { display:none; }
+  .homeind { position:absolute; bottom:9px; left:50%; transform:translateX(-50%); width:120px; height:5px; background:rgba(43,33,24,.3); border-radius:3px; z-index:40; }
+
+  /* fake tab bar so the vertical budget is honest */
+  .tabbar { position:absolute; left:14px; right:14px; bottom:24px; height:60px; border-radius:30px; background:rgba(255,255,255,.9);
+    backdrop-filter:blur(14px); box-shadow:var(--np-shadow-card); display:flex; align-items:center; justify-content:space-around; z-index:25; }
+  .tabbar .ti { font-size:17px; opacity:.4; }
+  .tabbar .ti.on { opacity:1; }
+  .tabbar .fab { width:48px; height:48px; border-radius:50%; background:linear-gradient(135deg,var(--cta-g1),var(--cta-g2)); color:#fff;
+    display:grid; place-items:center; font-size:22px; font-weight:800; box-shadow:0 8px 20px rgba(255,107,74,.42); }
+
+  /* ===== shared Napív component vocabulary ===== */
+  .apphero { display:flex; align-items:center; gap:10px; padding:6px 20px 10px; }
+  .apphero .av { width:38px; height:38px; border-radius:50%; background:var(--warm); color:var(--coral-deep);
+    font-family:var(--ff-display); font-weight:800; font-size:14px; display:grid; place-items:center; box-shadow:0 0 0 2.5px var(--surface),0 0 0 4px var(--coral); }
+  .apphero .idc .n1 { font-size:12.5px; font-weight:800; }
+  .apphero .idc .n2 { font-size:9.5px; color:var(--faint); font-weight:700; }
+  .apphero .cnts { margin-left:auto; display:flex; gap:5px; }
+  .apphero .cnt { background:var(--surface); border-radius:999px; padding:5px 8px; font-size:10px; font-weight:800; color:var(--sub); box-shadow:var(--np-shadow-row); white-space:nowrap; }
+  .apphero .sub { background:var(--wash-sage); color:var(--sage-deep); border-radius:999px; padding:5px 9px; font-size:10px; font-weight:800; }
+
+  .pghead { display:flex; justify-content:space-between; align-items:flex-end; padding:8px 20px 0; margin-bottom:12px; }
+  .pghead .over { font-size:10.5px; font-weight:800; letter-spacing:1.1px; text-transform:uppercase; color:var(--sage-deep); }
+  .pghead h1 { font-family:var(--ff-display); font-size:25px; font-weight:800; letter-spacing:-.4px; }
+  .pgact { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:8px 13px; font-size:11.5px; font-weight:800; white-space:nowrap; }
+  .pgact.ai { background:var(--wash-lav); color:var(--lav-deep); }
+  .pgact.log { background:var(--wash-sage); color:var(--sage-deep); }
+
+  .card { background:var(--surface); border-radius:22px; box-shadow:var(--np-shadow-card); }
+  .px { margin:0 20px; }
+  .chx { border-radius:999px; padding:6px 12px; font-size:11px; font-weight:700; display:inline-flex; align-items:center; gap:5px; }
+  .chx.sage { background:var(--wash-sage); color:var(--sage-deep); }
+  .chx.amber { background:var(--wash-amber); color:var(--amber-deep); }
+  .chx.lav { background:var(--wash-lav); color:var(--lav-deep); }
+  .chx.warm { background:var(--warm); color:var(--coral-deep); }
+  .chx.ghost { border:1.5px solid var(--line); color:var(--sub); }
+
+  .secthead { display:flex; justify-content:space-between; align-items:baseline; margin:16px 26px 9px; }
+  .secthead h3 { font-size:14px; font-weight:800; }
+  .secthead span { font-size:11.5px; color:var(--faint); font-weight:700; }
+  .zonediv { display:flex; align-items:center; gap:9px; margin:18px 26px 8px; }
+  .zonediv span { font-size:10px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); white-space:nowrap; }
+  .zonediv b { font-size:10.5px; font-weight:800; color:var(--sub); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .zonediv::after { content:''; flex:1; height:1px; background:var(--warm); order:1; }
+  .zonediv b { order:2; }
+
+  /* slot row (mai vokabulár) */
+  .slot { display:flex; gap:11px; background:var(--surface); border-radius:19px; padding:12px 14px; box-shadow:var(--np-shadow-row); margin:0 20px 8px; align-items:center; }
+  .slot .fav { width:39px; height:39px; border-radius:14px; display:grid; place-items:center; font-size:18px; flex-shrink:0; }
+  .slot .tx { flex:1; min-width:0; }
+  .slot .t1 { font-size:13.5px; font-weight:800; }
+  .slot .mrow { display:flex; align-items:center; gap:8px; font-size:10px; color:var(--faint); font-weight:700; margin-top:3px; flex-wrap:wrap; }
+  .slot .mrow b { color:var(--ink); font-weight:800; font-size:11px; }
+  .slot .mm { display:inline-flex; align-items:center; gap:3px; font-size:10px; font-weight:800; color:var(--sub); }
+  .slot .mm i { width:5px; height:5px; border-radius:50%; }
+  .slot .st { width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:12px; flex-shrink:0; }
+  .slot.done { opacity:.8; } .slot.done .st { background:var(--wash-sage); color:var(--sage-deep); }
+  .slot.next { box-shadow:0 0 0 2px var(--sage), 0 10px 24px rgba(127,164,138,.2); }
+  .slot.missed { opacity:.7; } .slot.missed .fav { filter:grayscale(1); opacity:.6; }
+  .cta-row { display:flex; gap:6px; margin-top:7px; flex-wrap:wrap; }
+
+  /* gauge */
+  .gauge { position:relative; display:flex; flex-direction:column; align-items:center; }
+  .gauge .big { position:absolute; top:50px; text-align:center; }
+  .gauge .big .n { font-family:var(--ff-display); font-size:35px; font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.5px; }
+  .gauge .big .u { font-size:11px; color:var(--faint); font-weight:700; }
+  .gauge-p { transition:stroke-dasharray .9s ease; }
+
+  /* macro bars */
+  .macror { margin-top:13px; }
+  .mac { display:flex; align-items:center; gap:9px; margin-bottom:9px; }
+  .mac:last-child { margin-bottom:0; }
+  .mac .k { width:62px; font-size:11px; font-weight:700; color:var(--sub); }
+  .mac .bar { flex:1; height:10px; border-radius:999px; background:var(--warm); overflow:hidden; }
+  .mac .bar i { display:block; height:100%; border-radius:999px; animation:grow 1s var(--np-ease-ios) both; }
+  .mac .v { width:74px; text-align:right; font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; }
+  @keyframes grow { from { width:0 !important; } }
+
+  .aistrip { display:flex; gap:9px; background:rgba(255,179,71,.16); border-radius:19px; padding:12px 14px; margin:12px 20px 0; }
+  .aistrip p { font-size:12px; line-height:1.5; color:#7A4A18; font-weight:500; }
+
+  /* ===== NEW: AI score chip with scale + computing state ===== */
+  .aiscore { display:inline-flex; align-items:center; gap:5px; border-radius:999px; padding:5px 9px 5px 6px; font-size:10.5px; font-weight:800; }
+  .aiscore .rg { width:17px; height:17px; flex-shrink:0; }
+  .aiscore.s-hi { background:var(--wash-sage); color:var(--sage-deep); }
+  .aiscore.s-md { background:var(--wash-amber); color:var(--amber-deep); }
+  .aiscore.s-lo { background:var(--wash-gym); color:var(--tag-gym); }
+  .aiscore.calc { background:var(--wash-lav); color:var(--lav-deep); position:relative; overflow:hidden; }
+  .aiscore.calc::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg,transparent,rgba(255,255,255,.85),transparent);
+    transform:translateX(-100%); animation:shim 1.5s ease-in-out infinite; }
+  @keyframes shim { to { transform:translateX(100%); } }
+  .aiscore .tw { animation:tw 2.6s ease-in-out infinite; }
+  @keyframes tw { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:.45; transform:scale(.86); } }
+  .coachline { font-size:11px; line-height:1.35; color:var(--sub); margin-top:3px; }
+  .coachline.sk { height:11px; border-radius:6px; background:linear-gradient(90deg,var(--warm),#FBF6EF,var(--warm));
+    background-size:220% 100%; animation:skm 1.4s linear infinite; width:82%; margin-top:6px; }
+  @keyframes skm { to { background-position:-120% 0; } }
+
+  /* ===== A · MOST-kártya ===== */
+  .nowcard { position:relative; margin:0 20px 12px; border-radius:26px; padding:17px;
+    background:linear-gradient(152deg,#FFF3EC,#FFFDFB 62%); box-shadow:0 0 0 2px var(--coral), 0 16px 34px -10px rgba(255,107,74,.32); overflow:hidden; }
+  .nowcard::after { content:''; position:absolute; top:-52px; right:-52px; width:168px; height:168px; border-radius:50%;
+    background:radial-gradient(circle,rgba(255,107,74,.15),transparent 68%); }
+  .nowcard .top { display:flex; align-items:center; gap:8px; position:relative; z-index:1; }
+  .nowcard .lbl { display:inline-flex; align-items:center; gap:6px; font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--coral-deep); }
+  .nowcard .lbl .dot { width:8px; height:8px; border-radius:50%; background:var(--coral); box-shadow:0 0 0 0 rgba(255,107,74,.5); animation:pls 2.2s ease-out infinite; }
+  @keyframes pls { 0% { box-shadow:0 0 0 0 rgba(255,107,74,.5); } 70% { box-shadow:0 0 0 9px rgba(255,107,74,0); } 100% { box-shadow:0 0 0 0 rgba(255,107,74,0); } }
+  .nowcard .clock { margin-left:auto; font-family:var(--ff-mono); font-size:10.5px; font-weight:600; color:var(--sub); background:rgba(255,255,255,.8); border-radius:999px; padding:4px 9px; }
+  .nowcard h2 { font-family:var(--ff-display); font-size:25px; font-weight:800; letter-spacing:-.4px; line-height:1.1; margin-top:10px; position:relative; z-index:1; }
+  .nowcard .why { font-size:11.5px; color:var(--sub); margin-top:5px; font-weight:600; position:relative; z-index:1; }
+  .nowcard .budget { display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap; position:relative; z-index:1; }
+  .nowcard .bignum { font-family:var(--ff-display); font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .nowcard .bignum small { font-size:11px; color:var(--faint); font-weight:800; }
+  .nowcard .ctas { display:flex; gap:8px; margin-top:14px; position:relative; z-index:1; }
+  .nowcard .primary { flex:1; border-radius:999px; padding:14px 0; text-align:center; font-size:14.5px; font-weight:800; color:#fff;
+    background:linear-gradient(135deg,var(--cta-g1),var(--cta-g2)); box-shadow:0 10px 22px rgba(255,107,74,.34), inset 0 1px 0 rgba(255,255,255,.25);
+    transition:transform .18s var(--np-ease-spring); }
+  .nowcard .primary:active { transform:scale(.96); }
+  .nowcard .alt { width:52px; border-radius:999px; background:rgba(255,255,255,.86); box-shadow:var(--np-shadow-row); display:grid; place-items:center; font-size:17px; }
+  .nowcard .swap { margin-top:10px; font-size:11px; font-weight:700; color:var(--coral-deep); position:relative; z-index:1; }
+
+  /* A · day strip (kompakt napi állás) */
+  .daystrip { margin:0 20px 10px; background:var(--surface); border-radius:20px; padding:13px 15px; box-shadow:var(--np-shadow-row); }
+  .daystrip .r1 { display:flex; align-items:baseline; gap:7px; }
+  .daystrip .r1 .n { font-family:var(--ff-display); font-size:22px; font-weight:800; font-variant-numeric:tabular-nums; }
+  .daystrip .r1 .of { font-size:11px; color:var(--faint); font-weight:800; }
+  .daystrip .r1 .pc { margin-left:auto; font-size:11.5px; font-weight:800; color:var(--sage-deep); }
+  .seg { position:relative; height:12px; border-radius:999px; background:var(--warm); margin-top:10px; overflow:hidden; display:flex; gap:2px; }
+  .seg i { display:block; height:100%; }
+  .seg i.d1 { background:var(--sage); } .seg i.d2 { background:#93B49C; }
+  .seg .ghost { flex:1; background:repeating-linear-gradient(90deg,rgba(43,33,24,.05) 0 4px,transparent 4px 9px); }
+  .daystrip .r3 { display:flex; align-items:center; gap:8px; margin-top:11px; flex-wrap:wrap; }
+  .minimac { display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800; color:var(--sub); }
+  .minimac .mb { width:30px; height:6px; border-radius:999px; background:var(--warm); overflow:hidden; }
+  .minimac .mb i { display:block; height:100%; border-radius:999px; }
+
+  .accord { margin:0 20px 10px; background:var(--surface); border-radius:20px; box-shadow:var(--np-shadow-row); }
+  .accord .hd { display:flex; align-items:center; gap:9px; padding:13px 15px; }
+  .accord .hd .ic { font-size:14px; color:var(--coral-deep); }
+  .accord .hd .t { font-size:12.5px; font-weight:800; }
+  .accord .hd .m { margin-left:auto; font-size:10.5px; font-weight:800; color:var(--faint); }
+  .accord .pips { display:flex; gap:4px; padding:0 15px 13px; }
+  .accord .pips i { flex:1; height:5px; border-radius:999px; background:var(--warm); }
+  .accord .pips i.on { background:var(--sage); }
+  .accord .pips i.now { background:var(--coral); }
+
+  /* ===== C · nap-ív ===== */
+  .dayarc { margin:2px 12px -6px; }
+  .arc-base { stroke:var(--line); stroke-width:5; stroke-linecap:round; fill:none; }
+  .arc-prog { stroke:url(#arcg); stroke-width:5; stroke-linecap:round; fill:none; animation:draw 1.4s var(--np-ease-ios) both; }
+  @keyframes draw { from { stroke-dashoffset:var(--len); } }
+  .arclbl { display:flex; justify-content:space-between; font-size:10px; color:var(--faint); font-weight:800; padding:0 22px; margin-top:-2px; }
+  .arclbl b { color:var(--coral-deep); }
+  .sun { fill:var(--coral); filter:drop-shadow(0 0 7px rgba(255,150,60,.75)); animation:tw 3s ease-in-out infinite; }
+
+  /* C · zóna kártya */
+  .zcard { margin:0 20px 9px; background:var(--surface); border-radius:20px; box-shadow:var(--np-shadow-row); overflow:hidden; }
+  .zcard .zh { display:flex; align-items:center; gap:9px; padding:11px 14px; background:var(--warm); }
+  .zcard .zh .zn { font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--sub); }
+  .zcard .zh .zk { margin-left:auto; font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--ink); }
+  .zcard .zh .stackpips { display:flex; gap:3px; }
+  .zcard .zh .stackpips i { width:6px; height:6px; border-radius:50%; background:var(--lav); opacity:.35; }
+  .zcard .zh .stackpips i.on { opacity:1; }
+  .zrow { display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid var(--line); }
+  .zrow:first-of-type { border-top:0; }
+  .zrow .zf { width:30px; height:30px; border-radius:11px; display:grid; place-items:center; font-size:14px; flex-shrink:0; }
+  .zrow .zt { flex:1; min-width:0; }
+  .zrow .zt .a { font-size:12.5px; font-weight:800; }
+  .zrow .zt .b { font-size:10px; color:var(--faint); font-weight:700; margin-top:2px; }
+  .zrow .zv { font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--sub); flex-shrink:0; }
+
+  /* activity slot: hol keletkezik a +kcal */
+  .actslot { margin:0 20px 8px; border-radius:19px; padding:12px 14px; display:flex; align-items:center; gap:11px;
+    background:linear-gradient(120deg,var(--wash-gym),#FFFDFB 78%); box-shadow:var(--np-shadow-row); border:1px solid rgba(196,98,47,.14); }
+  .actslot.sport { background:linear-gradient(120deg,var(--wash-sport),#FFFDFB 78%); border-color:rgba(177,75,94,.14); }
+  .actslot .af { width:39px; height:39px; border-radius:14px; display:grid; place-items:center; font-size:18px; background:rgba(255,255,255,.75); flex-shrink:0; }
+  .actslot .at { flex:1; min-width:0; }
+  .actslot .at .a1 { font-size:13.5px; font-weight:800; }
+  .actslot .at .a2 { font-size:10px; font-weight:700; color:var(--sub); margin-top:3px; }
+  .actslot .burn { text-align:right; flex-shrink:0; }
+  .actslot .burn .bn { font-family:var(--ff-display); font-size:16px; font-weight:800; color:var(--tag-gym); font-variant-numeric:tabular-nums; }
+  .actslot.sport .burn .bn { color:var(--tag-sport); }
+  .actslot .burn .bl { font-size:8px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); }
+
+  /* collapsed stack row */
+  .stackrow { margin:0 20px 8px; border-radius:19px; padding:11px 14px; display:flex; align-items:center; gap:11px;
+    background:var(--surface); box-shadow:var(--np-shadow-row); }
+  .stackrow .sf { width:34px; height:34px; border-radius:12px; background:var(--wash-lav); display:grid; place-items:center; font-size:15px; flex-shrink:0; }
+  .stackrow .st1 { font-size:12.5px; font-weight:800; }
+  .stackrow .st2 { font-size:10px; color:var(--faint); font-weight:700; margin-top:2px; }
+  .stackrow .caps { margin-left:auto; display:flex; gap:4px; flex-shrink:0; }
+  .stackrow .caps i { width:8px; height:8px; border-radius:50%; border:1.5px solid var(--lav); box-sizing:border-box; }
+  .stackrow .caps i.on { background:var(--lav); }
+
+  .waterrow { margin:0 20px 8px; }
+  .drops { display:flex; gap:5px; }
+  .drops i { flex:1; height:22px; border-radius:8px; background:var(--warm); position:relative; overflow:hidden; }
+  .drops i.on { background:var(--wash-run); box-shadow:inset 0 0 0 1.5px rgba(62,110,158,.25); }
+
+  .ghostnote { margin:12px 20px 0; border:1.5px dashed var(--line); border-radius:18px; padding:12px 14px; }
+  .ghostnote .g1 { font-size:11px; font-weight:800; color:var(--faint); letter-spacing:.06em; text-transform:uppercase; }
+  .ghostnote .g2 { font-size:11.5px; color:var(--sub); margin-top:5px; line-height:1.45; }
+
+  .retabar { display:flex; gap:4px; margin:0 20px 10px; }
+  .retabar i { flex:1; height:6px; border-radius:999px; background:var(--warm); }
+  .retabar i.pk { background:var(--coral); } .retabar i.stb { background:var(--sage); } .retabar i.tr { background:var(--amber); }
+  .retabar i.cur { box-shadow:0 0 0 2px var(--ink); }
+  .retameta { display:flex; justify-content:space-between; margin:0 22px 12px; font-size:10px; font-weight:800; color:var(--faint); }
+  .retameta b { color:var(--coral-deep); }
+
+  .flag { display:inline-flex; align-items:center; gap:5px; font-family:var(--ff-mono); font-size:8.5px; font-weight:600;
+    letter-spacing:.1em; text-transform:uppercase; padding:3px 7px; border-radius:6px; background:#FDEBE7; color:#B3391F; }
+  .anno { margin:10px 20px 0; font-size:10.5px; line-height:1.5; color:var(--sub); }
+  .anno b { color:var(--ink); }
+
+  .notes { max-width:1080px; margin:44px auto 0; }
+  .notes h3 { font-family:var(--ff-display); font-size:19px; font-weight:800; margin-bottom:12px; text-align:center; }
+  .ncards { display:flex; gap:16px; flex-wrap:wrap; justify-content:center; }
+  .ncard { width:340px; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; box-shadow:var(--np-shadow-row); }
+  .ncard h4 { font-family:var(--ff-display); font-size:14px; font-weight:800; margin-bottom:9px; }
+  .ncard ul { list-style:none; display:flex; flex-direction:column; gap:7px; }
+  .ncard li { font-size:11.5px; color:var(--sub); line-height:1.45; padding-left:14px; position:relative; }
+  .ncard li::before { content:'▸'; position:absolute; left:0; color:var(--coral); }
+  .ncard li b { color:var(--ink); }
+</style>
+</head>
+<body>
+
+<div class="pagehead">
+  <div class="kicker">mezo · fuel · mai — ux irányok v1</div>
+  <h1>Mit lát a hüvelykujj először?</h1>
+  <p>Ugyanaz a nap (13:30, Reta D3, dupla edzés), négy elrendezésben. Balra a <b>mai állapot</b> referenciaként.
+  Mindhárom irány ugyanazt a <b>15 funkciót</b> hordozza — csak más a sorrend, a sűrűség és az, hogy mi kerül első fejtörés nélküli látótérbe.
+  A számok a mock seedből valók; a görgetés-mérő a tartalom valódi magasságát mutatja.</p>
+</div>
+
+<div class="legend">
+  <span class="lg"><i style="background:var(--sage)"></i> logolt / kész</span>
+  <span class="lg"><i style="background:var(--coral)"></i> most — egyetlen döntés</span>
+  <span class="lg"><i style="background:var(--lav)"></i> supplement / AI</span>
+  <span class="lg"><i style="background:var(--tag-gym)"></i> aktivitás &amp; burn</span>
+  <span class="lg"><i style="background:var(--amber)"></i> ablak nyitva / hátralévő</span>
+</div>
+
+<div class="stage stage-ref">
+
+  <!-- ============================================================ MA -->
+  <div class="col now">
+    <div class="cap">
+      <span class="tag">referencia</span>
+      <h2>MA</h2>
+      <p>Két hero-szám ugyanarra a célra, 10 egyforma sor, a „most" egy 2px-es ring. A pacing-próza és a mikrók statikus seed.</p>
+    </div>
+    <div class="phone-box"><div class="iphone"><div class="screen">
+      <div class="statusbar"><span>13:30</span><span>▮▮▮</span></div>
+      <div class="content" id="c0">
+        <div class="apphero">
+          <div class="av">DK</div>
+          <div class="idc"><div class="n1">Daniel Kuhne</div><div class="n2">Vasfegyelmű</div></div>
+          <div class="cnts"><span class="cnt">🔥 12</span><span class="cnt">⚡ 2/5</span><span class="sub">Mai ▾</span></div>
+        </div>
+        <div class="pghead">
+          <div><div class="over">Fuel · Reta D3</div><h1>Mai pacing</h1></div>
+          <div style="display:flex;gap:5px;flex-shrink:0"><span class="pgact ai">✨ AI</span><span class="pgact log">＋ Log</span></div>
+        </div>
+        <div class="retabar"><i class="pk"></i><i class="pk"></i><i class="pk cur"></i><i class="stb"></i><i class="stb"></i><i class="tr"></i><i class="tr"></i></div>
+        <div class="retameta"><span>Reta-ciklus</span><span><b>D3 · csúcs</b></span></div>
+
+        <!-- hero szám #1 -->
+        <div class="card px" style="padding:15px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--sage-deep)">Mai cél</span>
+            <span style="font-variant-numeric:tabular-nums;font-weight:800;font-size:21px">3 010 kcal</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:9px">
+            <span class="chx sage">Alaphő 2380</span><span class="chx amber">Mozgás +930</span><span class="chx warm">Deficit 300</span>
+          </div>
+        </div>
+
+        <!-- hero szám #2 — ugyanaz a 3010 -->
+        <div class="card px" style="padding:16px;margin-top:14px">
+          <div class="gauge">
+            <svg width="216" height="118" viewBox="0 0 220 120" aria-hidden="true">
+              <defs><linearGradient id="g0" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7FA48A"/><stop offset="1" stop-color="#FFB347"/></linearGradient></defs>
+              <path d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="var(--warm)" stroke-width="13" stroke-linecap="round"/>
+              <path class="gauge-p" d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="url(#g0)" stroke-width="13" stroke-linecap="round" stroke-dasharray="74 283"/>
+            </svg>
+            <div class="big"><div class="n">790</div><div class="u">/ 3 010 kcal · 26%</div></div>
+          </div>
+          <div style="display:flex;gap:6px;justify-content:center;margin-top:9px;flex-wrap:wrap">
+            <span class="chx sage">kávé cutoff 14:00</span><span class="chx lav">konyha zár 21:30</span><span class="chx ghost">szerkeszt</span>
+          </div>
+          <div class="macror">
+            <div class="mac"><span class="k">Fehérje</span><span class="bar"><i style="width:31%;background:var(--sage)"></i></span><span class="v">58 / 185 g</span></div>
+            <div class="mac"><span class="k">Szénhidrát</span><span class="bar"><i style="width:35%;background:var(--amber)"></i></span><span class="v">92 / 265 g</span></div>
+            <div class="mac"><span class="k">Zsír</span><span class="bar"><i style="width:26%;background:var(--lav)"></i></span><span class="v">22 / 86 g</span></div>
+          </div>
+        </div>
+
+        <div class="aistrip"><span>✨</span><p>59%-on vagyunk a napi kcal célból, és a tegnapi átlag ebben az időben 53% volt. Reta D3 miatt az étvágy ma még felül van…</p></div>
+        <div class="anno"><span class="flag">statikus seed</span> <b>26%-ot mutat a gauge, 59%-ot a próza.</b></div>
+
+        <div class="secthead"><h3>Mai timeline</h3><span>3/10 slot</span></div>
+        <div class="slot done"><span class="fav" style="background:var(--wash-run)">💧</span><div class="tx"><div class="t1">Ébresztő</div><div class="mrow"><span>06:45</span></div></div><span class="st">✓</span></div>
+        <div class="slot done"><span class="fav" style="background:var(--wash-sage)">🥣</span><div class="tx"><div class="t1">Túrós zabkása</div><div class="mrow"><span>09:15</span> · <b>580 kcal</b><span class="mm"><i style="background:var(--sage)"></i>F 42</span><span class="mm"><i style="background:var(--amber)"></i>Sz 78</span><span class="mm"><i style="background:var(--lav)"></i>Zs 12</span></div><span class="chx lav" style="margin-top:6px">AI 74</span></div><span class="st">✓</span></div>
+        <div class="slot done"><span class="fav" style="background:var(--wash-amber)">🍎</span><div class="tx"><div class="t1">Görög joghurt · mandula</div><div class="mrow"><span>11:30</span> · <b>210 kcal</b></div></div><span class="st">✓</span></div>
+        <div class="slot next"><span class="fav" style="background:var(--wash-sage)">🥣</span><div class="tx"><div class="t1">Csirkés rizs bowl</div><div class="mrow"><span>13:00</span> · <b>900 kcal</b><span class="mm"><i style="background:var(--sage)"></i>F 68</span> · <span>ajánlott</span> · <span>következő</span></div><div class="cta-row"><span class="chx amber">Logolás</span><span class="chx lav">AI</span></div></div><span class="st"></span></div>
+        <div class="slot"><span class="fav" style="background:var(--wash-lav)">💊</span><div class="tx"><div class="t1">Pre-workout stack</div><div class="mrow"><span>16:00</span> · <span>Pull Day előtt</span></div><div style="margin-top:8px;font-size:10.5px;color:var(--sub)">Koffein 200mg · Citrullin 6g</div></div><span class="st">🌙</span></div>
+        <div class="slot"><span class="fav" style="background:var(--wash-amber)">🍎</span><div class="tx"><div class="t1">Pre-workout snack</div><div class="mrow"><span>16:40</span> · <b>300 kcal</b></div><div class="cta-row"><span class="chx sage">Logolás</span><span class="chx lav">AI</span></div></div><span class="st"></span></div>
+        <div class="slot"><span class="fav" style="background:var(--wash-gym)">🏋️</span><div class="tx"><div class="t1">Pull Day · 90 perc</div><div class="mrow"><span>17:00</span></div></div><span class="st"></span></div>
+        <div class="slot"><span class="fav" style="background:var(--wash-sage)">🥣</span><div class="tx"><div class="t1">Vacsora</div><div class="mrow"><span>19:00</span> · <b>1 020 kcal</b></div><div class="cta-row"><span class="chx sage">Logolás</span><span class="chx lav">AI</span></div></div><span class="st"></span></div>
+        <div class="slot"><span class="fav" style="background:var(--wash-sport)">🏐</span><div class="tx"><div class="t1">Röplabda · 90 perc</div><div class="mrow"><span>20:00</span></div></div><span class="st"></span></div>
+        <div class="slot"><span class="fav" style="background:var(--wash-lav)">💊</span><div class="tx"><div class="t1">Esti stack</div><div class="mrow"><span>21:30</span></div><div style="margin-top:8px;font-size:10.5px;color:var(--sub)">Magnézium 300mg · Omega-3 2g</div></div><span class="st">🌙</span></div>
+
+        <div class="slot"><span class="fav" style="background:var(--wash-run)">💧</span><div class="tx"><div class="t1">Víz · 1 850 / 4 000 ml</div><div class="mrow"><span>46% · cél</span></div></div><div style="display:flex;gap:5px"><span class="chx" style="background:var(--wash-run);color:var(--tag-run)">+250</span><span class="chx" style="background:var(--wash-run);color:var(--tag-run)">+500</span></div></div>
+
+        <div style="margin:16px 20px 0">
+          <div style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:9px">Mikrotápanyagok · heti</div>
+          <div class="card" style="padding:13px">
+            <div class="mac"><span class="k" style="width:32px">Mg</span><span class="bar"><i style="width:64%;background:var(--amber)"></i></span><span class="v" style="width:56px">64% · 400mg</span></div>
+            <div class="mac"><span class="k" style="width:32px">Zn</span><span class="bar"><i style="width:78%;background:var(--coral)"></i></span><span class="v" style="width:56px">78% · 11mg</span></div>
+            <div class="mac"><span class="k" style="width:32px">B6</span><span class="bar"><i style="width:92%;background:var(--coral)"></i></span><span class="v" style="width:56px">92% · 1.7mg</span></div>
+            <div class="mac"><span class="k" style="width:32px">D</span><span class="bar"><i style="width:100%;background:var(--coral)"></i></span><span class="v" style="width:56px">110% · 2000IU</span></div>
+            <div class="mac"><span class="k" style="width:32px">Ω3</span><span class="bar"><i style="width:71%;background:var(--coral)"></i></span><span class="v" style="width:56px">71% · 2.5g</span></div>
+          </div>
+          <div class="anno"><span class="flag">statikus seed</span></div>
+        </div>
+      </div>
+      <div class="tabbar"><span class="ti">🏠</span><span class="ti on">🍎</span><span class="fab">＋</span><span class="ti">🏋️</span><span class="ti">👤</span></div>
+      <div class="homeind"></div>
+    </div></div></div>
+    <div class="scrollmeter"><span>görgetés</span><span class="mtr"><i id="m0"></i></span><b id="v0">—</b></div>
+  </div>
+</div>
+
+<div class="dirsplit"><span>három irány</span></div>
+
+<div class="stage stage-dirs">
+
+  <!-- ============================================================ A -->
+  <div class="col">
+    <div class="cap">
+      <span class="tag">A irány</span>
+      <h2>„Mit egyek MOST"</h2>
+      <p>Egy döntés a képernyőn: a nyitott ablak akció-kártyája. A napi állás egy sávra fogy, a teljes nap egy koppintásra nyílik.</p>
+    </div>
+    <div class="phone-box"><div class="iphone"><div class="screen">
+      <div class="statusbar"><span>13:30</span><span>▮▮▮</span></div>
+      <div class="content" id="c1">
+        <div class="apphero">
+          <div class="av">DK</div>
+          <div class="idc"><div class="n1">Daniel Kuhne</div><div class="n2">Vasfegyelmű</div></div>
+          <div class="cnts"><span class="cnt">🔥 12</span><span class="sub">Mai ▾</span></div>
+        </div>
+
+        <!-- 1 sor kontextus, nem 4 -->
+        <div style="display:flex;align-items:center;gap:7px;padding:0 20px 12px">
+          <span class="chx warm" style="font-size:10px">Reta D3 · csúcs</span>
+          <span style="font-size:10.5px;color:var(--faint);font-weight:700">étvágy magas</span>
+          <span style="margin-left:auto;display:flex;gap:5px"><span class="pgact ai">✨</span><span class="pgact log">＋</span></span>
+        </div>
+
+        <!-- A HERO: az egyetlen döntés -->
+        <div class="nowcard">
+          <div class="top">
+            <span class="lbl"><span class="dot"></span> most nyitva · ebéd</span>
+            <span class="clock">30 perc</span>
+          </div>
+          <h2>Csirkés rizs bowl</h2>
+          <div class="why">Pull Day 17:00 — ez az ablak viszi a napi szénhidrát felét.</div>
+          <div class="budget">
+            <span class="bignum">900 <small>kcal</small></span>
+            <span class="chx sage" style="background:rgba(255,255,255,.8)">F 68</span>
+            <span class="chx amber" style="background:rgba(255,255,255,.8)">Sz 105</span>
+            <span class="chx lav" style="background:rgba(255,255,255,.8)">Zs 24</span>
+          </div>
+          <div class="ctas">
+            <button class="primary">Logolás</button>
+            <span class="alt">✨</span>
+            <span class="alt">⌕</span>
+          </div>
+          <div class="swap">⟳ Másik javaslat · Üres ablak logolása</div>
+        </div>
+
+        <!-- napi állás: EGY hero-szám, szegmentált sáv -->
+        <div class="daystrip">
+          <div class="r1"><span class="n">2 220</span><span class="of">kcal van még hátra · 3 010-ből</span><span class="pc">26%</span></div>
+          <div class="seg"><i class="d1" style="width:19%"></i><i class="d2" style="width:7%"></i><span class="ghost"></span></div>
+          <div class="r3">
+            <span class="minimac">F<span class="mb"><i style="width:31%;background:var(--sage)"></i></span>58/185</span>
+            <span class="minimac">Sz<span class="mb"><i style="width:35%;background:var(--amber)"></i></span>92/265</span>
+            <span class="minimac">Zs<span class="mb"><i style="width:26%;background:var(--lav)"></i></span>22/86</span>
+            <span class="chx ghost" style="margin-left:auto;font-size:10px">Bontás ▸</span>
+          </div>
+        </div>
+
+        <!-- víz: tap-célok, nem sor a lista alján -->
+        <div class="waterrow">
+          <div style="display:flex;align-items:baseline;gap:7px;margin-bottom:7px">
+            <span style="font-size:11.5px;font-weight:800">💧 1 850 <span style="color:var(--faint)">/ 4 000 ml</span></span>
+            <span style="margin-left:auto;display:flex;gap:5px"><span class="chx" style="background:var(--wash-run);color:var(--tag-run)">+250</span><span class="chx" style="background:var(--wash-run);color:var(--tag-run)">+500</span></span>
+          </div>
+          <div class="drops"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div>
+        </div>
+
+        <!-- minden más: egy koppintás -->
+        <div class="accord" style="margin-top:12px">
+          <div class="hd"><span class="ic">▸</span><span class="t">A nap íve</span><span class="m">3/10 · 2 edzés</span></div>
+          <div class="pips"><i class="on"></i><i class="on"></i><i class="on"></i><i class="now"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+        <div class="accord">
+          <div class="hd"><span class="ic">▸</span><span class="t">Stack · 4 kapszula ma</span><span class="m">1/3 ablak</span></div>
+        </div>
+        <div class="accord">
+          <div class="hd"><span class="ic">▸</span><span class="t">Mikrók · heti</span><span class="m">Mg 64% figyelj</span></div>
+        </div>
+
+        <div class="anno"><b>Ami eltűnt a látótérből:</b> semmi — a timeline, a stack és a mikrók egy koppintásra nyílnak.
+          <b>Ami megjelent:</b> a „miért" indoklás a javaslat alatt, és a <b>hátralévő</b> kcal (nem a fogyasztott).</div>
+
+        <div class="ghostnote">
+          <div class="g1">Mezo olvasata</div>
+          <div class="coachline sk"></div>
+          <div class="g2" style="margin-top:8px">A pacing-próza csak akkor jelenik meg, ha valóban van mit mondani — addig egy csík, nem kitalált szöveg.</div>
+        </div>
+      </div>
+      <div class="tabbar"><span class="ti">🏠</span><span class="ti on">🍎</span><span class="fab">＋</span><span class="ti">🏋️</span><span class="ti">👤</span></div>
+      <div class="homeind"></div>
+    </div></div></div>
+    <div class="scrollmeter"><span>görgetés</span><span class="mtr"><i id="m1"></i></span><b id="v1">—</b></div>
+  </div>
+
+  <!-- ============================================================ B -->
+  <div class="col">
+    <div class="cap">
+      <span class="tag">B irány</span>
+      <h2>„Hol állok ma"</h2>
+      <p>A mai szerkezet megtisztítva: egy hero-szám (a duplikáció eltűnik), a timeline zónákra bontva, a most-slot kiemelve, a burn ott, ahol keletkezik.</p>
+    </div>
+    <div class="phone-box"><div class="iphone"><div class="screen">
+      <div class="statusbar"><span>13:30</span><span>▮▮▮</span></div>
+      <div class="content" id="c2">
+        <div class="apphero">
+          <div class="av">DK</div>
+          <div class="idc"><div class="n1">Daniel Kuhne</div><div class="n2">Vasfegyelmű</div></div>
+          <div class="cnts"><span class="cnt">🔥 12</span><span class="sub">Mai ▾</span></div>
+        </div>
+        <div class="pghead">
+          <div><div class="over">Fuel · Reta D3 · csúcs</div><h1>Mai pacing</h1></div>
+          <div style="display:flex;gap:5px;flex-shrink:0"><span class="pgact ai">✨</span><span class="pgact log">＋</span></div>
+        </div>
+
+        <!-- EGY kártya: gauge + bontás-chipek + makrók + meta -->
+        <div class="card px" style="padding:16px 16px 15px">
+          <div class="gauge">
+            <svg width="216" height="118" viewBox="0 0 220 120" aria-hidden="true">
+              <defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7FA48A"/><stop offset="1" stop-color="#FFB347"/></linearGradient></defs>
+              <path d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="var(--warm)" stroke-width="13" stroke-linecap="round"/>
+              <path class="gauge-p" d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="url(#g2)" stroke-width="13" stroke-linecap="round" stroke-dasharray="74 283"/>
+              <circle cx="20" cy="110" r="3" fill="var(--sage)"/>
+            </svg>
+            <div class="big">
+              <div class="n">2 220</div>
+              <div class="u">kcal hátra · 790 / 3 010</div>
+            </div>
+          </div>
+          <!-- a „Mai cél" kártya ide olvad be -->
+          <div style="display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap">
+            <span class="chx sage">Alaphő 2 380</span><span class="chx amber">Mozgás +930</span><span class="chx warm">Deficit 300</span>
+          </div>
+          <div class="macror">
+            <div class="mac"><span class="k">Fehérje</span><span class="bar"><i style="width:31%;background:var(--sage)"></i></span><span class="v">58 / 185 g</span></div>
+            <div class="mac"><span class="k">Szénhidrát</span><span class="bar"><i style="width:35%;background:var(--amber)"></i></span><span class="v">92 / 265 g</span></div>
+            <div class="mac"><span class="k">Zsír</span><span class="bar"><i style="width:26%;background:var(--lav)"></i></span><span class="v">22 / 86 g</span></div>
+            <div class="mac"><span class="k">Víz</span><span class="bar"><i style="width:46%;background:var(--sky)"></i></span><span class="v">1.85 / 4 l</span></div>
+          </div>
+          <div style="display:flex;gap:6px;justify-content:center;margin-top:12px;padding-top:11px;border-top:1px solid var(--line);flex-wrap:wrap">
+            <span style="font-size:10px;font-weight:700;color:var(--faint)">☕ cutoff 14:00 · 🍽 zár 21:30 · 5 étkezés</span>
+            <span class="chx ghost" style="font-size:9.5px;padding:3px 8px">szerkeszt</span>
+          </div>
+        </div>
+
+        <div class="secthead"><h3>Mai timeline</h3><span>3/10 · 2 edzés</span></div>
+
+        <div class="zonediv"><span>Reggel</span><b>790 kcal ✓</b></div>
+        <div class="stackrow"><span class="sf">💧</span><div><div class="st1">Ébresztő stack</div><div class="st2">06:45 · kreatin, D3+K2</div></div><span class="caps"><i class="on"></i><i class="on"></i></span></div>
+        <div class="slot done"><span class="fav" style="background:var(--wash-sage)">🥣</span><div class="tx"><div class="t1">Túrós zabkása</div><div class="mrow"><span>09:15</span> · <b>580 kcal</b><span class="mm"><i style="background:var(--sage)"></i>42</span><span class="mm"><i style="background:var(--amber)"></i>78</span><span class="mm"><i style="background:var(--lav)"></i>12</span></div>
+          <div class="coachline">Lassú felszabadulás — délig stabil marad.</div>
+          <span class="aiscore s-md" style="margin-top:6px">
+            <svg class="rg" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="none" stroke="rgba(154,106,18,.2)" stroke-width="3"/><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="37 50" stroke-linecap="round" transform="rotate(-90 10 10)"/></svg>
+            74 · jó
+          </span></div><span class="st">✓</span></div>
+        <div class="slot done"><span class="fav" style="background:var(--wash-amber)">🍎</span><div class="tx"><div class="t1">Görög joghurt · mandula</div><div class="mrow"><span>11:30</span> · <b>210 kcal</b></div>
+          <span class="aiscore calc" style="margin-top:6px"><span class="tw">✨</span> Mezo értékeli…</span></div><span class="st">✓</span></div>
+
+        <div class="zonediv"><span>Most</span><b>900 kcal nyitva</b></div>
+        <div class="slot next" style="padding:14px">
+          <span class="fav" style="background:var(--wash-sage);width:44px;height:44px;font-size:20px">🥣</span>
+          <div class="tx">
+            <div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--coral-deep)">Ebéd-ablak · 30 perce nyitva</div>
+            <div class="t1" style="font-size:16px;margin-top:3px">Csirkés rizs bowl</div>
+            <div class="mrow"><b>900 kcal</b><span class="mm"><i style="background:var(--sage)"></i>F 68</span><span class="mm"><i style="background:var(--amber)"></i>Sz 105</span><span class="mm"><i style="background:var(--lav)"></i>Zs 24</span></div>
+            <div class="cta-row">
+              <span class="chx" style="background:linear-gradient(135deg,var(--cta-g1),var(--cta-g2));color:#fff;padding:9px 18px;font-size:12.5px;box-shadow:0 6px 14px rgba(255,107,74,.3)">Logolás</span>
+              <span class="chx lav" style="padding:9px 13px">✨ AI</span>
+              <span class="chx ghost" style="padding:9px 11px">⟳</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="zonediv"><span>Délután · edzés</span><b>300 + 930 kcal</b></div>
+        <div class="stackrow"><span class="sf">💊</span><div><div class="st1">Pre-workout stack</div><div class="st2">16:00 · koffein 200, citrullin 6g</div></div><span class="caps"><i></i><i></i></span></div>
+        <div class="slot"><span class="fav" style="background:var(--wash-amber)">🍎</span><div class="tx"><div class="t1">Pre-workout snack</div><div class="mrow"><span>16:40</span> · <b>300 kcal</b> · <span>gyors szénhidrát</span></div><div class="cta-row"><span class="chx sage">Logolás</span><span class="chx lav">✨</span></div></div><span class="st"></span></div>
+        <div class="actslot">
+          <span class="af">🏋️</span>
+          <div class="at"><div class="a1">Pull Day</div><div class="a2">17:00–18:30 · 90 perc · Train ▸</div></div>
+          <div class="burn"><div class="bn">+510</div><div class="bl">kcal a célban</div></div>
+        </div>
+        <div class="actslot sport">
+          <span class="af">🏐</span>
+          <div class="at"><div class="a1">Röplabda</div><div class="a2">20:00–21:30 · 90 perc</div></div>
+          <div class="burn"><div class="bn">+420</div><div class="bl">kcal a célban</div></div>
+        </div>
+
+        <div class="zonediv"><span>Este</span><b>1 020 kcal</b></div>
+        <div class="slot"><span class="fav" style="background:var(--wash-sage)">🥣</span><div class="tx"><div class="t1">Vacsora</div><div class="mrow"><span>19:00</span> · <b>1 020 kcal</b> · <span>post-workout</span></div><div class="cta-row"><span class="chx sage">Logolás</span><span class="chx lav">✨</span></div></div><span class="st"></span></div>
+        <div class="stackrow"><span class="sf">💊</span><div><div class="st1">Esti stack</div><div class="st2">21:30 · magnézium, omega-3</div></div><span class="caps"><i></i><i></i></span></div>
+
+        <div class="ghostnote">
+          <div class="g1">Mikrók · heti</div>
+          <div class="g2">Mg 64% · Ω3 71% — a heti mikró-nézet a <b>Terv</b> lapra kerül, ahol heti adat van. Itt csak az figyelmeztet, ami ma orvosolható.</div>
+        </div>
+      </div>
+      <div class="tabbar"><span class="ti">🏠</span><span class="ti on">🍎</span><span class="fab">＋</span><span class="ti">🏋️</span><span class="ti">👤</span></div>
+      <div class="homeind"></div>
+    </div></div></div>
+    <div class="scrollmeter"><span>görgetés</span><span class="mtr"><i id="m2"></i></span><b id="v2">—</b></div>
+  </div>
+
+  <!-- ============================================================ C -->
+  <div class="col">
+    <div class="cap">
+      <span class="tag">C irány</span>
+      <h2>„A nap ritmusa"</h2>
+      <p>Nap-ív a hero (ébredés→alvás, nap = most), alatta napszak-zónák saját kcal-mérleggel. A most-zóna kinyitva, a többi összecsukva.</p>
+    </div>
+    <div class="phone-box"><div class="iphone"><div class="screen">
+      <div class="statusbar"><span>13:30</span><span>▮▮▮</span></div>
+      <div class="content" id="c3">
+        <div class="apphero">
+          <div class="av">DK</div>
+          <div class="idc"><div class="n1">Daniel Kuhne</div><div class="n2">Vasfegyelmű</div></div>
+          <div class="cnts"><span class="cnt">🔥 12</span><span class="sub">Mai ▾</span></div>
+        </div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:0 20px 2px">
+          <div><div class="over" style="font-size:10px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--sage-deep)">Fuel · Reta D3 · csúcs</div>
+          <h1 style="font-family:var(--ff-display);font-size:23px;font-weight:800;letter-spacing:-.4px">A mai nap</h1></div>
+          <div style="display:flex;gap:5px"><span class="pgact ai">✨</span><span class="pgact log">＋</span></div>
+        </div>
+
+        <!-- NAP-ÍV -->
+        <div class="dayarc">
+          <svg id="arc" width="316" height="158" viewBox="0 0 340 168" aria-hidden="true">
+            <defs><linearGradient id="arcg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFB347"/><stop offset=".55" stop-color="#FF6B4A"/><stop offset="1" stop-color="#9B8FC4"/></linearGradient></defs>
+            <path class="arc-base" d="M 40 150 A 130 130 0 0 1 300 150"/>
+            <path class="arc-prog" id="arcp" d="M 40 150 A 130 130 0 0 1 300 150"/>
+          </svg>
+          <div class="arclbl"><span>06:45 ébredés</span><span><b>13:30 most</b></span><span>23:00 alvás</span></div>
+        </div>
+
+        <!-- egy sor szám, nem egy kártya -->
+        <div style="display:flex;gap:7px;margin:12px 20px 4px">
+          <div style="flex:1;background:var(--surface);border-radius:16px;padding:10px 11px;box-shadow:var(--np-shadow-row)">
+            <div style="font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">hátra</div>
+            <div style="font-family:var(--ff-display);font-size:17px;font-weight:800;font-variant-numeric:tabular-nums">2 220 <span style="font-size:9px;color:var(--faint)">kcal</span></div>
+          </div>
+          <div style="flex:1;background:var(--surface);border-radius:16px;padding:10px 11px;box-shadow:var(--np-shadow-row)">
+            <div style="font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">fehérje</div>
+            <div style="font-family:var(--ff-display);font-size:17px;font-weight:800;font-variant-numeric:tabular-nums">58<span style="font-size:9px;color:var(--faint)">/185</span></div>
+          </div>
+          <div style="flex:1;background:var(--surface);border-radius:16px;padding:10px 11px;box-shadow:var(--np-shadow-row)">
+            <div style="font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">víz</div>
+            <div style="font-family:var(--ff-display);font-size:17px;font-weight:800;font-variant-numeric:tabular-nums">1.85<span style="font-size:9px;color:var(--faint)">/4l</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin:9px 20px 0;flex-wrap:wrap">
+          <span class="chx sage" style="font-size:10px">Alaphő 2 380</span><span class="chx amber" style="font-size:10px">Mozgás +930</span><span class="chx warm" style="font-size:10px">Deficit 300</span>
+        </div>
+
+        <!-- ZÓNÁK -->
+        <div class="zcard" style="margin-top:14px">
+          <div class="zh"><span class="zn">Reggel</span><span class="stackpips"><i class="on"></i><i class="on"></i></span><span class="zk">790 kcal ✓</span></div>
+          <div class="zrow"><span class="zf" style="background:var(--wash-sage)">🥣</span><div class="zt"><div class="a">Túrós zabkása</div><div class="b">09:15 · F42 Sz78 Zs12</div></div>
+            <span class="aiscore s-md" style="font-size:9.5px;padding:4px 8px">74</span></div>
+          <div class="zrow"><span class="zf" style="background:var(--wash-amber)">🍎</span><div class="zt"><div class="a">Görög joghurt</div><div class="b">11:30 · 210 kcal</div></div>
+            <span class="aiscore calc" style="font-size:9.5px;padding:4px 8px"><span class="tw">✨</span></span></div>
+        </div>
+
+        <!-- MOST zóna: kinyitva -->
+        <div class="zcard" style="box-shadow:0 0 0 2px var(--coral), 0 14px 30px -8px rgba(255,107,74,.28)">
+          <div class="zh" style="background:linear-gradient(120deg,#FFEDE6,#FFF7F2)">
+            <span class="zn" style="color:var(--coral-deep);display:inline-flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:var(--coral);animation:pls 2.2s ease-out infinite;display:inline-block"></span> Most</span>
+            <span class="zk" style="color:var(--coral-deep)">900 kcal nyitva</span>
+          </div>
+          <div style="padding:14px">
+            <div style="font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)">ebéd-ablak · 13:00 óta</div>
+            <div style="font-family:var(--ff-display);font-size:21px;font-weight:800;letter-spacing:-.3px;margin-top:4px">Csirkés rizs bowl</div>
+            <div style="font-size:11px;color:var(--sub);font-weight:600;margin-top:4px">Pull Day 17:00 — innen jön a napi szénhidrát fele.</div>
+            <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+              <span class="chx warm" style="font-size:10.5px">900 kcal</span><span class="chx sage" style="font-size:10.5px">F 68</span><span class="chx amber" style="font-size:10.5px">Sz 105</span><span class="chx lav" style="font-size:10.5px">Zs 24</span>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:13px">
+              <button class="primary" style="flex:1;border-radius:999px;padding:13px 0;text-align:center;font-size:14px;font-weight:800;color:#fff;background:linear-gradient(135deg,var(--cta-g1),var(--cta-g2));box-shadow:0 9px 20px rgba(255,107,74,.32)">Logolás</button>
+              <span style="width:50px;border-radius:999px;background:var(--wash-lav);color:var(--lav-deep);display:grid;place-items:center;font-size:17px">✨</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="zcard">
+          <div class="zh"><span class="zn">Délután</span><span class="stackpips"><i></i><i></i></span><span class="zk">300 kcal · +930 burn</span></div>
+          <div class="zrow"><span class="zf" style="background:var(--wash-amber)">🍎</span><div class="zt"><div class="a">Pre-workout snack</div><div class="b">16:40 · 300 kcal · gyors szénhidrát</div></div><span class="chx sage" style="font-size:10px">Log</span></div>
+          <div class="zrow" style="background:linear-gradient(120deg,var(--wash-gym),transparent 78%)"><span class="zf" style="background:rgba(255,255,255,.8)">🏋️</span><div class="zt"><div class="a">Pull Day · 90 perc</div><div class="b">17:00 · Train ▸</div></div><span class="zv" style="color:var(--tag-gym);font-size:13px">+510</span></div>
+          <div class="zrow" style="background:linear-gradient(120deg,var(--wash-sport),transparent 78%)"><span class="zf" style="background:rgba(255,255,255,.8)">🏐</span><div class="zt"><div class="a">Röplabda · 90 perc</div><div class="b">20:00</div></div><span class="zv" style="color:var(--tag-sport);font-size:13px">+420</span></div>
+        </div>
+
+        <div class="zcard">
+          <div class="zh"><span class="zn">Este</span><span class="stackpips"><i></i><i></i></span><span class="zk">1 020 kcal</span></div>
+          <div class="zrow"><span class="zf" style="background:var(--wash-sage)">🥣</span><div class="zt"><div class="a">Vacsora · post-workout</div><div class="b">19:00 · 1 020 kcal</div></div><span class="chx sage" style="font-size:10px">Log</span></div>
+          <div class="zrow"><span class="zf" style="background:var(--wash-lav)">💊</span><div class="zt"><div class="a">Esti stack</div><div class="b">21:30 · magnézium, omega-3</div></div><span class="zv">🌙</span></div>
+          <div class="zrow"><span class="zf" style="background:var(--wash-run)">💧</span><div class="zt"><div class="a">Víz · 1 850 / 4 000</div><div class="b">2 150 ml van hátra alvásig</div></div>
+            <span style="display:flex;gap:4px"><span class="chx" style="background:var(--wash-run);color:var(--tag-run);font-size:10px">+250</span><span class="chx" style="background:var(--wash-run);color:var(--tag-run);font-size:10px">+500</span></span></div>
+        </div>
+
+        <div class="anno"><b>A zóna-mérleg a kulcs:</b> minden napszak megmutatja, mennyi kcal van benne — így a „hova tűnt a 3 000 kcal" kérdés a listából olvasható, nem számolni kell.</div>
+      </div>
+      <div class="tabbar"><span class="ti">🏠</span><span class="ti on">🍎</span><span class="fab">＋</span><span class="ti">🏋️</span><span class="ti">👤</span></div>
+      <div class="homeind"></div>
+    </div></div></div>
+    <div class="scrollmeter"><span>görgetés</span><span class="mtr"><i id="m3"></i></span><b id="v3">—</b></div>
+  </div>
+
+</div>
+
+<div class="notes">
+  <h3>Amit mindhárom irány közösen javít</h3>
+  <div class="ncards">
+    <div class="ncard">
+      <h4>1 · Az AI munkája látható lesz</h4>
+      <ul>
+        <li><b>Számol-állapot:</b> a score chip <b>shimmer + ✨ pulzálás</b> („Mezo értékeli…"), a coach-sor egy skeleton csík — a <code>useMealCoach().isPending</code> ma megvan, csak nincs használva.</li>
+        <li><b>Skálázott score:</b> az „AI 74" mini-ringgé + színné válik (sage ≥80 / amber 60–79 / coral &lt;60) + egy szó („jó"), így a szám önmagát magyarázza.</li>
+        <li><b>Nincs kitalált próza:</b> ha nincs verdict, nincs kártya — statikus seed helyett üres.</li>
+      </ul>
+    </div>
+    <div class="ncard">
+      <h4>2 · A duplikáció és a színház eltűnik</h4>
+      <ul>
+        <li>A „Mai cél" kártya <b>beolvad a gauge-be</b> — egy hero-szám, a 3 bontás-chip a gyűrű alatt.</li>
+        <li>A hero-szám <b>„hátralévő"</b>, nem „fogyasztott": ez az, amiből döntést hozol.</li>
+        <li>A <b>statikus pacing-próza</b> és a <b>heti mikrók</b> lekerülnek a napi lapról (a mikrók a heti Terv lapra, ahol heti adat van).</li>
+      </ul>
+    </div>
+    <div class="ncard">
+      <h4>3 · A sűrűség szerkezetet kap</h4>
+      <ul>
+        <li>3 supplement-slot → <b>1-1 kompakt stack-sor</b> kapszula-pipekkel (a logolás a Stack lapon marad).</li>
+        <li>Az edzés-blokk megmutatja a <b>+kcal-t, amit a célhoz adott</b> — ott, ahol keletkezik, Train-linkkel.</li>
+        <li>Napszak-zónák (Reggel/Most/Délután/Este) <b>saját kcal-mérleggel</b>, a most-zóna kiemelve.</li>
+        <li>A víz beköltözik a nap ritmusába (A: tap-célok fent, C: az esti zónában „mennyi van hátra alvásig").</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Görgetés-mérő: a tartalom valódi magassága vs. a viewport
+  const VIEW = 876 - 52;
+  const ids = ['c0','c1','c2','c3'];
+  window.addEventListener('load', () => {
+    let max = 0;
+    const hs = ids.map(id => document.getElementById(id).scrollHeight);
+    max = Math.max(...hs);
+    hs.forEach((h, i) => {
+      document.getElementById('v' + i).textContent = (h / VIEW).toFixed(1) + '× képernyő';
+      document.getElementById('m' + i).style.width = Math.round(h / max * 100) + '%';
+    });
+  });
+
+  // C · nap-ív: pontok kirakása a köríven (wake 06:45 → bed 23:00)
+  (function () {
+    const svg = document.getElementById('arc');
+    if (!svg) return;
+    const CX = 170, CY = 150, R = 130;
+    const WAKE = 6 * 60 + 45, BED = 23 * 60, SPAN = BED - WAKE;
+    const t = m => (m - WAKE) / SPAN;
+    const pos = m => { const a = Math.PI * (1 - t(m)); return [CX + R * Math.cos(a), CY - R * Math.sin(a)]; };
+    const NS = 'http://www.w3.org/2000/svg';
+    const add = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.appendChild(e); return e; };
+
+    // progresszív ív a `most`-ig
+    const path = document.getElementById('arcp');
+    const L = path.getTotalLength();
+    const done = L * t(13 * 60 + 30);
+    path.setAttribute('stroke-dasharray', done + ' ' + L);
+    path.style.setProperty('--len', L);
+
+    // stack pipek
+    [6 * 60 + 45, 16 * 60, 21 * 60 + 30].forEach(m => { const [x, y] = pos(m); add('circle', { cx: x, cy: y, r: 3, fill: '#9B8FC4', opacity: .8 }); });
+    // edzés jelek
+    [[17 * 60, '#C4622F'], [20 * 60, '#B14B5E']].forEach(([m, c]) => {
+      const [x, y] = pos(m);
+      add('rect', { x: x - 3.5, y: y - 3.5, width: 7, height: 7, rx: 2, fill: '#fff', stroke: c, 'stroke-width': 2.2, transform: 'rotate(45 ' + x + ' ' + y + ')' });
+    });
+    // étkezés pontok: done / now / pending
+    [[9 * 60 + 15, 'done'], [11 * 60 + 30, 'done'], [13 * 60, 'now'], [16 * 60 + 40, 'pend'], [19 * 60, 'pend']].forEach(([m, st]) => {
+      const [x, y] = pos(m);
+      if (st === 'done') add('circle', { cx: x, cy: y, r: 5.5, fill: '#7FA48A' });
+      else if (st === 'now') { add('circle', { cx: x, cy: y, r: 8, fill: '#fff', stroke: '#FF6B4A', 'stroke-width': 3 }); }
+      else add('circle', { cx: x, cy: y, r: 5.5, fill: '#fff', stroke: '#A5978A', 'stroke-width': 2.2 });
+    });
+    // nap = most
+    const [sx, sy] = pos(13 * 60 + 30);
+    add('circle', { cx: sx, cy: sy - 22, r: 7, class: 'sun' });
+  })();
+</script>
+</body>
+</html>
