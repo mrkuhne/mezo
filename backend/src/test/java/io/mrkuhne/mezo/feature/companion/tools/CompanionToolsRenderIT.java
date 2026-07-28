@@ -987,7 +987,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         assertThat(out).startsWith("Napi gyakorlat (" + today + "):")
                 .contains("Küldetések: 1/1 lezárva")
-                .contains("Szokások: reggeli 0, esti 0 tökéletes nap (30 nap); morning_pushups: 1/28")
+                .contains("Szokások (ma állapot szerint): reggeli 0, esti 0 tökéletes nap (30 nap); morning_pushups: 1/28")
                 .contains("Szándék: hitvallás — Mindig tartsd a szavad.; mai fókusz: Reggeli edzés befejezése")
                 .contains("Napzárás: zárva")
                 .contains("Tevékenységek: Olvastam 20 percet (15 XP)");
@@ -1004,7 +1004,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
 
         assertThat(out).isEqualTo("Napi gyakorlat (" + today + "):"
                 + "\nKüldetések: nincs adat"
-                + "\nSzokások: reggeli 0, esti 0 tökéletes nap (30 nap)"
+                + "\nSzokások (ma állapot szerint): reggeli 0, esti 0 tökéletes nap (30 nap)"
                 + "\nSzándék: hitvallás — nincs adat; mai fókusz: nincs adat"
                 + "\nNapzárás: nyitva"
                 + "\nTevékenységek: nincs adat");

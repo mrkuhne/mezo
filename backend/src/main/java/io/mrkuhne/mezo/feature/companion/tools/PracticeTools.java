@@ -106,7 +106,7 @@ public class PracticeTools {
         LocalDate d = parseDate(date);
         StringBuilder b = new StringBuilder("Napi gyakorlat (").append(d).append("):");
         b.append("\nKüldetések: ").append(renderQuest(userId, d));
-        b.append("\nSzokások: ").append(renderHabits(userId));
+        b.append("\nSzokások (ma állapot szerint): ").append(renderHabits(userId));
         b.append("\nSzándék: ").append(renderIntention(userId, d));
         b.append("\nNapzárás: ").append(renderRitual(userId, d));
         b.append("\nTevékenységek: ").append(renderActivities(userId, d));
