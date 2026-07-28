@@ -26,7 +26,7 @@ class CompanionToolRegistryIT extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrder(
                         "get_training_log", "get_training_plan", "get_exercise_records", "get_weight_trend",
                         "get_fuel_log", "get_recovery", "get_protocol", "get_goal",
-                        "get_reta_cycle", "find_similar_past_days", "get_recipes", "get_pantry", "get_growth",
+                        "get_medication", "find_similar_past_days", "get_recipes", "get_pantry", "get_growth",
                         "get_daily_practice");
     }
 

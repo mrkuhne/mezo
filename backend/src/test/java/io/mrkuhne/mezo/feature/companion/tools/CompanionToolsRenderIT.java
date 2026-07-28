@@ -766,12 +766,12 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetRetaCycle_shouldRenderCyclePhaseAndDoses_whenDoseAnchored() {
+    void testGetMedication_shouldRenderCyclePhaseAndDoses_whenScopeRetaAndDoseAnchored() {
         UUID owner = userPopulator.createUser().getId();
         MedicationEntity med = medicationPopulator.createReta(owner);
         medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
 
-        String out = medicationTools.getRetaCycle(ctx(owner));
+        String out = medicationTools.getMedication("reta", ctx(owner));
 
         assertThat(out).startsWith("Retatrutid ciklus: Retatrutide — 4. nap (Stabil)")
                 .contains("utolsó dózis: " + LocalDate.now().minusDays(3) + " (4 mg)")
@@ -781,11 +781,51 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testGetRetaCycle_shouldRenderHonestZero_whenNoDose() {
+    void testGetMedication_shouldRenderHonestZero_whenScopeRetaAndNoDose() {
         UUID owner = userPopulator.createUser().getId();
         medicationPopulator.createReta(owner);
-        assertThat(medicationTools.getRetaCycle(ctx(owner)))
+        assertThat(medicationTools.getMedication("reta", ctx(owner)))
                 .isEqualTo("Retatrutid ciklus: Retatrutide — nincs rögzített dózis");
+    }
+
+    @Test
+    void testGetMedication_shouldDefaultToReta_whenScopeOmitted() {
+        UUID owner = userPopulator.createUser().getId();
+        medicationPopulator.createReta(owner);
+        assertThat(medicationTools.getMedication(null, ctx(owner)))
+                .isEqualTo("Retatrutid ciklus: Retatrutide — nincs rögzített dózis");
+    }
+
+    @Test
+    void testGetMedication_shouldRenderGeneralOverview_whenScopeAll() {
+        UUID owner = userPopulator.createUser().getId();
+        MedicationEntity med = medicationPopulator.createReta(owner);
+        medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
+
+        String out = medicationTools.getMedication("all", ctx(owner));
+
+        assertThat(out).startsWith("Gyógyszer: Retatrutide (retatrutide) — weekly, 6 mg")
+                .contains("ciklus: 4. nap (Stabil)")
+                .contains("Utolsó dózisok: " + LocalDate.now().minusDays(3) + ": 4 mg");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("Medication", "Retatrutide"));
+    }
+
+    @Test
+    void testGetMedication_shouldRenderRegimenWithoutCycleLine_whenScopeAllAndNoDose() {
+        UUID owner = userPopulator.createUser().getId();
+        medicationPopulator.createReta(owner);
+
+        String out = medicationTools.getMedication("all", ctx(owner));
+
+        assertThat(out).isEqualTo("Gyógyszer: Retatrutide (retatrutide) — weekly, 6 mg");
+    }
+
+    @Test
+    void testGetMedication_shouldRenderNoData_whenScopeAllAndNoActiveMedication() {
+        UUID owner = userPopulator.createUser().getId();
+        assertThat(medicationTools.getMedication("all", ctx(owner)))
+                .isEqualTo("Gyógyszer: nincs adat");
     }
 
     @Test

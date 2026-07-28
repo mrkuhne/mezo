@@ -99,9 +99,9 @@ class CompanionLlmFakeIT extends AbstractIntegrationTest {
 
     @Test
     void testComplete_shouldEchoUnknown_whenSentinelNamesMissingTool() {
-        String out = companionLlm.complete("SYS", "[fake-tool:get_reta_cycle]", List.of(), Map.of());
+        String out = companionLlm.complete("SYS", "[fake-tool:get_medication]", List.of(), Map.of());
 
-        assertThat(out).contains("tool:get_reta_cycle=[UNKNOWN]");
+        assertThat(out).contains("tool:get_medication=[UNKNOWN]");
     }
 
     @Test
