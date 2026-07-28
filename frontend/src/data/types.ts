@@ -829,7 +829,7 @@ export interface LoggedWorkoutExercise {
   videoUrl?: string | null // demo video (catalog-resolved); absent in Phase-1 statics
 }
 export interface ChallengeRef { kind: string; label: string }
-export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo'
+export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo' | 'overload'
 export type ChallengeStatus = 'proposed' | 'accepted' | 'dismissed' | 'hit' | 'miss' | 'inconclusive'
 export interface Challenge {
   id: string
