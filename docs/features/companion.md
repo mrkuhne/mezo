@@ -91,6 +91,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `currentWeek`); `scope=meso` renders the full active mesocycle (`TrainService.listMesocycles`) —
   weeks/phases/day-templates. `nincs adat` only when there is neither an active mesocycle nor an
   active running block at all; a real rest day within an active plan renders `pihenőnap`.
+- **10th tool — `get_exercise_records` (PR/e1RM, mezo-xixu)**, also on `TrainTools`: the "would I
+  break a PR" basis, over the read-only `ExerciseRecordService.list` compute-on-read aggregation
+  (Epley e1RM = weight×(30+reps)/30). No/blank `exercise` → a top-5 summary ranked by best e1RM;
+  with `exercise` → case-insensitive name-contains match(es) rendering bestSet/bestE1rm/
+  repRecords/recentTopSets. Bodyweight-only lifts (no weighted sets) render the honest "nincs
+  súly-PR" line rather than a fabricated number.
 - **Registry + audit spine** — `CompanionToolRegistry` wraps every callback in
   `RecordingToolCallback` (audit + per-turn budget, structurally unbypassable); the per-turn
   `ToolCallAudit` rides in the Spring AI `ToolContext`, collects `{type:'read', name, args}`
@@ -654,7 +660,7 @@ rows), `MessageTool {type, name}` (`type` = `read` in V0.5; `name`
 carries the args baked in — `get_sleep(days=3)`), `MessageRef {kind, id}` (kinds: `Workout`,
 `Sport`, `Run`, `WeightTrend`, `Sleep`, `FuelDay`, `Protocol`, `Goal`, `Medication`, since
 V2.3 `Memory` — a recalled day's date, and since mezo-xixu `TrainingPlan` — the resolved date, or
-the mesocycle title for `scope=meso`),
+the mesocycle title for `scope=meso`, and `ExerciseRecord` — the exercise name),
 `SendMessageRequest {content}` (`minLength 1`, `maxLength 4000`),
 `StreamDelta {text}` + `StreamError {code}` (V0.4 — the SSE per-event `data:` payloads; every
 data line is JSON), `KnowledgeFactResponse {id, factText, category, source, reinforcementCount,
@@ -672,6 +678,7 @@ includeInPrompt, lastReinforcedAt?, createdAt}` (V1.1).
 | `get_protocol_adherence(days)` | `ProtocolService.getView().getActive()` + intake since-date finder (new) → per-day taken/expected + total % | `Protocol`/`v{n}` |
 | `get_goal_progress()` | active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept | `Goal`/title |
 | `get_reta_cycle()` | `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due | `Medication`/name |
+| `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `find_similar_past_days(description, k)` (V2.3) | `MemoryRecallService.recallSimilarDays` — query embed → ANN over daily-summary vectors → similarity × recency-decay re-rank | `Memory`/date (≤k) |
 
 ### Config keys (`mezo.companion.*` — `CompanionProperties`, `@Validated`)

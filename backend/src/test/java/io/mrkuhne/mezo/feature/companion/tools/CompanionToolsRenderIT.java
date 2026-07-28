@@ -295,6 +295,69 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetExerciseRecords_shouldRenderNincsAdat_whenNoLoggedSets() {
+        assertThat(trainTools.getExerciseRecords(null, ctx(userPopulator.createUser().getId())))
+                .isEqualTo("Egyéni csúcsok (PR): nincs adat");
+    }
+
+    @Test
+    void testGetExerciseRecords_shouldRenderTopRecordsWithComputedE1rm_whenNoExerciseArg() {
+        UUID owner = userPopulator.createUser().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), "Push A", "push", 0, "planned");
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(
+                owner, template, LocalDate.now().minusDays(1), "completed");
+        ExerciseEntity ex = trainPopulator.createExercise(owner, instance.getId(), "Fekvenyomás", 0);
+        trainPopulator.createLoggedSet(owner, ex.getId(), instance.getId(), 0, "100", 5, 1, Instant.now());
+        trainPopulator.createLoggedSet(owner, ex.getId(), instance.getId(), 1, "90", 8, 2, Instant.now());
+
+        String out = trainTools.getExerciseRecords(null, ctx(owner));
+
+        // Epley e1RM: 100×(30+5)/30 = 116.7, which beats 90×(30+8)/30 = 114.0 — pins the REAL
+        // computed record (ExerciseRecordService aggregation), not just the exercise name.
+        assertThat(out).startsWith("Egyéni csúcsok (PR), legjobb becsült 1RM szerint:")
+                .contains("Fekvenyomás: e1RM 116.7 kg (legjobb szett: 100 kg × 5 (" + LocalDate.now() + "))");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("ExerciseRecord", "Fekvenyomás"));
+    }
+
+    @Test
+    void testGetExerciseRecords_shouldRenderDetailWithE1rmAndBestSet_whenExerciseNameGivenCaseInsensitive() {
+        UUID owner = userPopulator.createUser().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), "Push A", "push", 0, "planned");
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(
+                owner, template, LocalDate.now().minusDays(1), "completed");
+        ExerciseEntity ex = trainPopulator.createExercise(owner, instance.getId(), "Fekvenyomás", 0);
+        trainPopulator.createLoggedSet(owner, ex.getId(), instance.getId(), 0, "100", 5, 1, Instant.now());
+
+        String out = trainTools.getExerciseRecords("FEKVENYOMÁS", ctx(owner)); // case-insensitive contains
+
+        assertThat(out).startsWith("Fekvenyomás — PR:")
+                .contains("legjobb szett: 100 kg × 5 (" + LocalDate.now() + ")")
+                .contains("e1RM: 116.7 kg (100 kg × 5 (" + LocalDate.now() + "))");
+        assertThat(audit.toRefsEnvelope().refs())
+                .containsExactly(new RefsEnvelope.Ref("ExerciseRecord", "Fekvenyomás"));
+    }
+
+    @Test
+    void testGetExerciseRecords_shouldRenderNincsAdat_whenNameGivenButNoMatch() {
+        UUID owner = userPopulator.createUser().getId();
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), "Push A", "push", 0, "planned");
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(
+                owner, template, LocalDate.now().minusDays(1), "completed");
+        ExerciseEntity ex = trainPopulator.createExercise(owner, instance.getId(), "Fekvenyomás", 0);
+        trainPopulator.createLoggedSet(owner, ex.getId(), instance.getId(), 0, "100", 5, 1, Instant.now());
+
+        assertThat(trainTools.getExerciseRecords("Guggolás", ctx(owner)))
+                .isEqualTo("Egyéni csúcsok (PR) — \"Guggolás\": nincs adat");
+    }
+
+    @Test
     void testGetRecentMeals_shouldRenderDayRollupsWithTitles_whenMealLogged() {
         UUID owner = userPopulator.createUser().getId();
         PantryItemEntity item = pantryItemPopulator.createFood(owner, "Csirkemell", LocalDate.now().plusDays(5));

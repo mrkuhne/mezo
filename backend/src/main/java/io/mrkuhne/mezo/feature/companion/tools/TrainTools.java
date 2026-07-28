@@ -1,7 +1,9 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
+import io.mrkuhne.mezo.api.dto.ExerciseRecordResponse;
 import io.mrkuhne.mezo.api.dto.MesoDay;
 import io.mrkuhne.mezo.api.dto.MesocycleResponse;
+import io.mrkuhne.mezo.api.dto.RecordSetRef;
 import io.mrkuhne.mezo.api.dto.RunPrescribedSession;
 import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -15,6 +17,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
@@ -30,6 +33,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,6 +64,9 @@ public class TrainTools {
     private final ExerciseRepository exerciseRepository;
     private final TrainService trainService;
     private final RunningService runningService;
+    // Read-only compute-on-read aggregation over working sets (ExerciseRecordService#list) —
+    // NEVER a write-transactional method; there is none on this service.
+    private final ExerciseRecordService exerciseRecordService;
 
     @Tool(name = "get_training_log", description = "Múltbeli edzésnapló megadott ablakra scope szerint: "
             + "scope=gym — gym-edzések (dátum, edzésnap, sorozatszám, összvolumen kg-ban); scope=sport — "
@@ -355,5 +362,101 @@ public class TrainTools {
                         .filter(sess -> sess.getDayOfWeek() != null && sess.getDayOfWeek() == dow)
                         .findFirst())
                 .map(RunPrescribedSession::getLabel);
+    }
+
+    @Tool(name = "get_exercise_records", description = "Egyéni csúcsok (PR) és becsült 1RM (e1RM, Epley) "
+            + "gyakorlatonként: legjobb szett, rep-rekordok, utóbbi top-szettek. Használd, amikor a user "
+            + "PR-ról, rekordról, 'meg tudom-e dönteni', vagy egy gyakorlat legjobbjairól kérdez.")
+    public String getExerciseRecords(
+            @ToolParam(required = false, description = "Gyakorlat neve (részleges egyezés is jó) — "
+                    + "üresen a legjobb e1RM-ek toplistáját adja.") String exercise,
+            ToolContext toolContext) {
+        UUID userId = ToolContexts.userId(toolContext);
+        List<ExerciseRecordResponse> records = exerciseRecordService.list(userId);
+        if (records.isEmpty()) {
+            return "Egyéni csúcsok (PR): " + ToolText.NO_DATA;
+        }
+        if (exercise == null || exercise.isBlank()) {
+            return renderTopRecords(records, toolContext);
+        }
+        String needle = exercise.trim().toLowerCase();
+        List<ExerciseRecordResponse> matches = records.stream()
+                .filter(r -> r.getName() != null && r.getName().toLowerCase().contains(needle))
+                .limit(5)
+                .toList();
+        if (matches.isEmpty()) {
+            return "Egyéni csúcsok (PR) — \"" + exercise + "\": " + ToolText.NO_DATA;
+        }
+        return renderRecordDetails(matches, toolContext);
+    }
+
+    /** No-arg summary: the strongest lifts ranked by estimated 1RM (bodyweight-only exercises have none). */
+    private String renderTopRecords(List<ExerciseRecordResponse> records, ToolContext toolContext) {
+        List<ExerciseRecordResponse> top = records.stream()
+                .filter(r -> r.getBestE1rm() != null)
+                .sorted(Comparator.comparing((ExerciseRecordResponse r) -> r.getBestE1rm().getValue()).reversed())
+                .limit(5)
+                .toList();
+        if (top.isEmpty()) {
+            return "Egyéni csúcsok (PR): " + ToolText.NO_DATA;
+        }
+        StringBuilder b = new StringBuilder("Egyéni csúcsok (PR), legjobb becsült 1RM szerint:");
+        for (ExerciseRecordResponse r : top) {
+            b.append('\n').append(r.getName()).append(": e1RM ")
+                    .append(ToolText.num(r.getBestE1rm().getValue())).append(" kg")
+                    .append(" (legjobb szett: ").append(renderSetRef(r.getBestSet())).append(')');
+            ToolContexts.audit(toolContext).addRef("ExerciseRecord", r.getName());
+        }
+        return b.toString();
+    }
+
+    /** With-name detail: full PR breakdown per matching exercise (bestSet/e1RM, rep records, recent top sets). */
+    private String renderRecordDetails(List<ExerciseRecordResponse> matches, ToolContext toolContext) {
+        StringBuilder b = new StringBuilder();
+        for (int i = 0; i < matches.size(); i++) {
+            ExerciseRecordResponse r = matches.get(i);
+            if (i > 0) {
+                b.append('\n');
+            }
+            b.append(r.getName()).append(" — PR:");
+            if (r.getBestSet() == null && r.getBestE1rm() == null) {
+                b.append(' ').append(ToolText.NO_DATA).append(" (testsúlyos gyakorlat, nincs súly-PR)");
+            } else {
+                if (r.getBestSet() != null) {
+                    b.append("\nlegjobb szett: ").append(renderSetRef(r.getBestSet()));
+                }
+                if (r.getBestE1rm() != null) {
+                    b.append("\ne1RM: ").append(ToolText.num(r.getBestE1rm().getValue())).append(" kg (")
+                            .append(renderSetRef(r.getBestE1rm().getSet())).append(')');
+                }
+            }
+            if (!r.getRepRecords().isEmpty()) {
+                b.append("\nrekordok ismétlésenként: ").append(r.getRepRecords().stream()
+                        .map(this::renderSetRef).collect(Collectors.joining(", ")));
+            }
+            if (!r.getRecentTopSets().isEmpty()) {
+                b.append("\nutóbbi top szettek: ").append(r.getRecentTopSets().stream()
+                        .map(this::renderSetRef).collect(Collectors.joining(", ")));
+            }
+            ToolContexts.audit(toolContext).addRef("ExerciseRecord", r.getName());
+        }
+        return b.toString();
+    }
+
+    /** "{weight} kg × {reps} ({date})", falling back to a rep-only line for bodyweight sets — never "null". */
+    private String renderSetRef(RecordSetRef ref) {
+        if (ref == null) {
+            return ToolText.NO_DATA;
+        }
+        StringBuilder s = new StringBuilder();
+        if (ref.getWeightKg() != null) {
+            s.append(ToolText.num(ref.getWeightKg())).append(" kg × ").append(ref.getReps());
+        } else {
+            s.append(ref.getReps()).append(" ismétlés (testsúly)");
+        }
+        if (ref.getDate() != null) {
+            s.append(" (").append(ref.getDate()).append(')');
+        }
+        return s.toString();
     }
 }
