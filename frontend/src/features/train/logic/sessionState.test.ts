@@ -26,4 +26,16 @@ describe('sessionState', () => {
   test('labels are the agreed four Hungarian words', () => {
     expect(SESSION_STATE_LABEL).toEqual({ now: 'MOST', today: 'MA', missed: 'ELMARADT', planned: 'TERVEZETT' })
   })
+
+  test('out-of-range times on today return "today"', () => {
+    expect(sessionState({ dayIso: '2026-05-19', todayIso: '2026-05-19', timeOfDay: '12:90', now })).toBe('today')
+    expect(sessionState({ dayIso: '2026-05-19', todayIso: '2026-05-19', timeOfDay: '25:00', now })).toBe('today')
+  })
+
+  test('window boundaries: exactly 60 min away is "now", 61 min away is "today"', () => {
+    expect(sessionState({ dayIso: '2026-05-19', todayIso: '2026-05-19', timeOfDay: '11:30', now })).toBe('now')
+    expect(sessionState({ dayIso: '2026-05-19', todayIso: '2026-05-19', timeOfDay: '13:30', now })).toBe('now')
+    expect(sessionState({ dayIso: '2026-05-19', todayIso: '2026-05-19', timeOfDay: '11:29', now })).toBe('today')
+    expect(sessionState({ dayIso: '2026-05-19', todayIso: '2026-05-19', timeOfDay: '13:31', now })).toBe('today')
+  })
 })
