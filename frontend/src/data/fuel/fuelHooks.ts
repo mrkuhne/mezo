@@ -8,11 +8,10 @@ import { localDateString } from '@/shared/lib/dates'
 import { useDualQuery } from '@/data/useDualQuery'
 import { fuelDay } from '@/data/fuel/fuel'
 import { ingredients, recipes as mockRecipes, MOCK_AI_MEAL_DRAFT } from '@/data/fuel/pantry'
+import { PANTRY_KEY, RECIPES_KEY } from '@/data/fuel/queryKeys'
 import type { MealInput, MealItemLine, FuelMeal, FuelDay, MacroSet, RecipeLog, MealAiDraft } from '@/data/types'
 
 const FUELDAY_KEY = 'fuelDay'
-const RECIPES_KEY = ['recipes'] as const
-const PANTRY_KEY = ['pantry'] as const
 
 const fuelDayKey = (date: string) => [FUELDAY_KEY, date] as const
 
@@ -64,6 +63,11 @@ export function useMealActions(date: string = localDateString()) {
     qc.invalidateQueries({ queryKey: [FUELDAY_KEY] })
     qc.invalidateQueries({ queryKey: RECIPES_KEY })
     qc.invalidateQueries({ queryKey: PANTRY_KEY })
+    // protein_breakfast / kitchen_close / caffeine habits + protein_target / own_recipe_meal
+    // quests are DERIVED server-side and re-evaluated only on the next read — nudge both so the
+    // ✓ appears without a remount (the water path already nudges the quest read).
+    qc.invalidateQueries({ queryKey: ['habitDay'] })
+    qc.invalidateQueries({ queryKey: ['dailyQuests', date] })
   }
 
   const logM = useMutation({

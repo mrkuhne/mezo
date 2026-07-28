@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import type { FuelSlot } from '@/data/types'
@@ -104,6 +104,39 @@ test('a done slot renders neither the Logolás nor the AI chip', () => {
   expect(screen.queryByRole('button', { name: /logolása/ })).not.toBeInTheDocument()
 })
 
+// ── Missed slot — faded, still-loggable retro-log (mezo-1oy5) ──────────────────
+test('a missed meal slot renders faded with a Pótlás (retro-log) action', () => {
+  const slot = { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed', kcal: 610, p: 46, c: 55, f: 20 } as FuelSlot
+  const onLogMeal = vi.fn()
+  render(<SlotCard slot={slot} meta={KIND_META.meal} scoredMeal={null} onLogMeal={onLogMeal} onOpenScore={() => {}} />)
+  expect(screen.getByText('kihagyott')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: /pótlás/i }))
+  expect(onLogMeal).toHaveBeenCalledWith(slot)
+})
+
+test('a missed slot that still carries suggestedRecipeId renders ONLY Pótlás, never a 2nd Logolás', () => {
+  // buildDayPlan's state pass can reclassify a pending recipe-suggestion window to `missed` WITHOUT
+  // clearing suggestedRecipeId; `missed` must win so the card shows one CTA (Pótlás), not two.
+  const slot = {
+    time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
+    mealName: 'Túrós tészta', suggestedRecipeId: 'r1', kcal: 610, p: 46, c: 55, f: 20,
+  } as FuelSlot
+  render(<SlotCard slot={slot} meta={KIND_META.meal} scoredMeal={null} onLogMeal={vi.fn()} onOpenScore={noop} />)
+  expect(screen.getByRole('button', { name: /pótlás/i })).toBeInTheDocument()
+  // The suggestion "Logolás" CTA is gated off — exactly one log button, no second /logolás/i.
+  expect(screen.queryByRole('button', { name: /logolás/i })).not.toBeInTheDocument()
+})
+
+// ── Empty mealName falls back to the slot label (mezo-u68c) ────────────────────
+test('falls back to the slot label when mealName is empty', () => {
+  const slot: FuelSlot = {
+    time: '08:40', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done',
+    mealName: '', kcal: 500, p: 30, c: 55, f: 12,
+  }
+  renderCard(slot)
+  expect(screen.getByText('Reggeli')).toBeInTheDocument()
+})
+
 // ── Workout / sport duration guard ─────────────────────────────────────────────
 test('a workout slot without a duration renders no "· perc" suffix', () => {
   renderCard({ time: '17:00', kind: 'workout', label: 'Push A', state: 'pending' })
@@ -149,4 +182,26 @@ test('the now slot renders .slot.next with "következő" inside its .mrow', () =
   )
   expect(container.querySelector('.slot.next')).toBeInTheDocument()
   expect(container.querySelector('.mrow')).toHaveTextContent('következő')
+})
+
+// ── Coach tagline (mezo-mr4n) ──────────────────────────────────────────────────
+const loggedSlot: FuelSlot = {
+  time: '06:15', kind: 'meal', label: 'Reggeli', state: 'done',
+  mealName: 'Zabkása', kcal: 520, p: 24, c: 70, f: 12,
+}
+
+it('renders the coach tagline under the title when a verdict exists', () => {
+  render(
+    <SlotCard slot={loggedSlot} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop}
+      tagline="Remek pre-workout üzemanyag" />,
+  )
+  expect(screen.getByTestId('coach-tagline')).toHaveTextContent('Remek pre-workout üzemanyag')
+})
+
+it('renders no tagline row without a verdict — an absent coach line costs no layout', () => {
+  render(
+    <SlotCard slot={loggedSlot} meta={KIND_META.meal} scoredMeal={null} onOpenScore={noop}
+      tagline={null} />,
+  )
+  expect(screen.queryByTestId('coach-tagline')).toBeNull()
 })

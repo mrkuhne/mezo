@@ -62,6 +62,10 @@ export function useWeight() {
         // A new weigh-in shifts the EWMA trend — refetch both the log and the trend.
         qc.invalidateQueries({ queryKey: ['weightLog'] })
         qc.invalidateQueries({ queryKey: ['weightTrend'] })
+        // The morning_weigh_in habit + weight_logged quest are DERIVED server-side and
+        // re-evaluated only on the next read — nudge both so the ✓ appears without a remount.
+        qc.invalidateQueries({ queryKey: ['habitDay'] })
+        qc.invalidateQueries({ queryKey: ['dailyQuests', entry.date] })
       }
     },
   })

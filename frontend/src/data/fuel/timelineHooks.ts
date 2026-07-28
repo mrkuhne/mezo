@@ -21,12 +21,16 @@ import { useRecipes } from '@/data/fuel/recipeHooks'
 import { useProtocol, useStack, useIntakes } from '@/data/fuel/stackHooks'
 import { useFuelSettings } from '@/data/fuel/fuelSettingsHooks'
 import { useGoal } from '@/data/me/goalHooks'
+import { useBiometricProfile } from '@/data/me/biometricHooks'
 import { useSleepGoal } from '@/data/me/sleepHooks'
 import { useTrain } from '@/data/train/trainHooks'
 import { useRunning } from '@/data/train/runningHooks'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { buildDayPlan, deriveDailyBudget, type PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
+import { sportOf, SPORT_TITLES } from '@/features/train/logic/sportKinds'
+import { buildEnergyBreakdown } from '@/features/fuel/logic/buildEnergyBreakdown'
 import { buildProtocol, type ProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
+import { ACTIVITY_SHORT, type ActivityLevel } from '@/features/me/logic/biometricFields'
 import type { GoalResponse } from '@/data/me/goalApi'
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
 import type { RunningBlockResponse } from '@/data/train/runningApi'
@@ -40,7 +44,7 @@ const PRE_WORKOUT_STACK_LEAD_MIN = 40
 
 /** Today's real training blocks (gym / sport / run), in derivation order. Each surface reuses the
  *  same today-derivation the Train views use so the planner and Train agree on "what's today". */
-function deriveBlocks(
+export function deriveBlocks(
   gymSchedule: GymSchedule | null,
   sport: { schedule: SportSchedule | null },
   activeRunningBlock: RunningBlockResponse | null,
@@ -49,9 +53,10 @@ function deriveBlocks(
   // Gym: the meso's today gym day joined with its standalone weekly slot (needs a time).
   const gym = gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)
   if (gym?.time) blocks.push({ kind: 'gym', time: gym.time, durationMin: gym.duration ?? null, label: gym.type ?? 'Gym' })
-  // Sport: today's volleyball session from the recurring weekly schedule.
+  // Sport: today's session from the recurring weekly schedule. The label carries the session's
+  // sport identity (volleyball|cross|trx) so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
   const vb = sport.schedule?.volleyball.sessions.find(s => s.today && s.time)
-  if (vb?.time) blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: 'Volleyball' })
+  if (vb?.time) blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] })
   // Run: today's prescribed session in the active block's current week (needs a plan time).
   // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping).
   const run = runSessionsForDay(activeRunningBlock, todayIdx())[0]
@@ -68,7 +73,7 @@ function deriveBlocks(
 function currentSegment(
   goalResponse: GoalResponse | null,
   timeline: GoalTimelineResponse | null,
-): { kcal: number; proteinG: number } | null {
+): { kcal: number; proteinG: number; dailyEnergyBalanceKcal: number } | null {
   const segments = goalResponse?.prescription?.segments
   if (!segments?.length) return null
   const totalWeeks = timeline?.weeks ?? segments[segments.length - 1].toWeek
@@ -83,7 +88,7 @@ function currentSegment(
 export function useFuelTimeline(date: string = localDateString()) {
   const { fuel } = useFuelDay(date)
   const { recipes } = useRecipes()
-  const { goalResponse, timeline } = useGoal()
+  const { goal, goalResponse, timeline } = useGoal()
   const { goal: sleepGoal } = useSleepGoal()
   const { selectedIds } = useProtocol()
   const { stash } = useStack()
@@ -91,6 +96,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { gymSchedule, sport } = useTrain()
   const { activeRunningBlock } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
+  const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
 
   // ── Composition (both modes) ─────────────────────────────────────────────────
   // The wake/bed day-anchor is owned by the sleep goal (mezo-dbsr, spec D3) — always set
@@ -102,7 +108,18 @@ export function useFuelTimeline(date: string = localDateString()) {
   const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
   const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null
 
-  const budget = deriveDailyBudget(currentSegment(goalResponse, timeline), fuel.targets)
+  // Dynamic energy inputs (mezo-1oy5 / mezo-eujg): current weigh-in drives the MET activity burn +
+  // the BMR floor; BMR×neat is the lifestyle maintenance and the segment's explicit
+  // dailyEnergyBalanceKcal is the goal deficit/surplus — both straight from the wire. When the
+  // biometric profile hasn't resolved (no BMR/neat), deriveDailyBudget falls back to the static path.
+  const weightKg = goal?.currentWeight ?? goalResponse?.startWeightKg ?? 0
+  const segment = currentSegment(goalResponse, timeline)
+  const budget = deriveDailyBudget(segment, fuel.targets, {
+    bmr: goalResponse?.tdeeBootstrap?.bmr ?? null,
+    neat: goalResponse?.tdeeBootstrap?.neat ?? null,
+    weightKg,
+    blocks,
+  })
 
   // Protocol slots (P2 selection-only): the goal's selection, else all non-medication stash items;
   // anchor the slot times to the real day (wake, first-block − 40min, bedtime).
@@ -122,9 +139,23 @@ export function useFuelTimeline(date: string = localDateString()) {
     : `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
   const plan = buildDayPlan({
-    wake, bed, mealsPerDay, blocks, budget,
+    wake, bed, mealsPerDay, blocks, budget, weightKg,
     meals: fuel.meals, recipes, protocolSlots, intakes,
     caffeineCutoff: settings.caffeineCutoff, nowHHmm,
   })
-  return { plan, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
+
+  // Dynamic-energy explanation (mezo-hobb): the shared EnergyBreakdownSheet's prop, built from the
+  // day's plan.energy + today's blocks + the current segment + the NEAT band. Null on the static path.
+  const tb = goalResponse?.tdeeBootstrap
+  const energyBreakdown = buildEnergyBreakdown({
+    energy: plan.energy,
+    blocks,
+    weightKg,
+    tdeeBootstrap: tb ? { bmr: tb.bmr, neat: tb.neat, formula: tb.formula } : null,
+    segment,
+    activityLabel: profile?.activityLevel ? ACTIVITY_SHORT[profile.activityLevel as ActivityLevel] : '',
+    goalLabel: goal?.title ?? 'Cél',
+  })
+
+  return { plan, budget, blocks, weightKg, energyBreakdown, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
 }

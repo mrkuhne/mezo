@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure.RunWeek;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
+import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.temporal.ChronoUnit;
@@ -31,24 +32,27 @@ import org.springframework.stereotype.Service;
  * segment computes the TDEE estimate, the daily kcal target, and the projected weekly rate for the
  * goal's trajectory — reconciled against the live EWMA weight trend.
  *
- * <h2>Block-boundary TDEE delta policy (anti-double-count, spec §6.3)</h2>
- * The PAL multiplier in the bootstrap TDEE already bakes in the athlete's <em>average</em> training
- * energy, so per-system kcal are applied <b>only as block-boundary transitions</b>, never as fresh
- * additions to the steady-state bootstrap:
+ * <h2>Segment maintenance policy (spec §6.3)</h2>
+ * A segment's maintenance TDEE is the athlete's NEAT baseline plus the weekly scheduled training
+ * energy (gym + sport, segment-independent) plus this segment's running EAT — every training term is
+ * MET×kg×óra based, sourced from {@link WeeklyScheduledActivityService}:
  * <ul>
- *   <li><b>Running on/off — the one TDEE delta.</b> When a {@code running_block} link is active in a
- *       segment, the segment's TDEE is the bootstrap <em>plus</em>
- *       {@code intervalRunKcal × sessionsPerWeek ÷ 7} (a daily feed-forward step relative to a no-run
- *       baseline). Turning the block off removes the step — the kcal "step down" the user sees at the
- *       block boundary. Running is the clearest, highest-confidence boundary.</li>
- *   <li><b>Meso phase — a segment boundary, but a <em>zero</em> TDEE delta.</b> A change of mesocycle
- *       phase class (MEV→MAV→MRV→deload, read from {@code phaseCurve[weekInMeso]}) splits a segment
- *       (spec §4 names it a boundary), but does NOT move the TDEE here: the lift's energy is already
- *       in the PAL baseline, and the phase's effect is on training <em>volume</em> (the muscle guard,
- *       Task 7), not on expenditure. So the meso phase changes the segment label/rationale and the
- *       downstream guard, not {@code tdeeEstimate}.</li>
- *   <li><b>Volleyball — ambient, never a boundary.</b> It is a constant background load (never a
- *       plan-link), so it cancels out of every block-boundary delta and never splits a segment.</li>
+ *   <li><b>Running — the per-segment EAT.</b> When a {@code running_block} link is active in a
+ *       segment, the segment's TDEE gains
+ *       {@code runWeeklyEatKcalPerDay(sessionsPerWeek, weightKg)} (MET_run × weight × runDefaultMin/60
+ *       × sessions ÷ 7). Turning the block off removes the step — the kcal "step down" the user sees at
+ *       the block boundary. Running is the clearest, highest-confidence boundary.</li>
+ *   <li><b>Meso phase — a segment boundary, but a <em>zero</em> energy delta.</b> A change of
+ *       mesocycle phase class (MEV→MAV→MRV→deload, read from {@code phaseCurve[weekInMeso]}) splits a
+ *       segment (spec §4 names it a boundary), but does NOT move the TDEE: the lift's energy is already
+ *       in the scheduled gym EAT, and the phase's effect is on training <em>volume</em> (the muscle
+ *       guard, Task 7), not on expenditure. So the meso phase changes the segment label/rationale and
+ *       the downstream guard, not {@code tdeeEstimate}.</li>
+ *   <li><b>Gym + volleyball — scheduled, segment-independent.</b> The owner's recurring weekly gym +
+ *       sport slots contribute a constant per-day EAT to every segment via
+ *       {@code scheduledWeeklyEatKcalPerDay}; they are not plan-links and never split a segment
+ *       (volleyball, formerly modelled as ambient, now counts explicitly through the weekly schedule).
+ *       </li>
  * </ul>
  *
  * <h2>Target + projected rate</h2>
@@ -74,7 +78,6 @@ public class GoalProjectionService {
 
     private static final String TRAJ_BULK = "bulk";
     private static final String TRAJ_MAINTAIN = "maintain";
-    private static final String SYSTEM_GYM = "gym";
     private static final String SYSTEM_RUN = "run";
     private static final String PLAN_MESOCYCLE = "mesocycle";
     private static final String PLAN_RUNNING_BLOCK = "running_block";
@@ -87,12 +90,14 @@ public class GoalProjectionService {
     private final GoalPlanLinkRepository linkRepository;
     private final MesocycleRepository mesocycleRepository;
     private final RunningBlockRepository runningBlockRepository;
+    private final WeeklyScheduledActivityService weeklyActivity;
     private final GoalEngineProperties props;
 
     /**
      * One contiguous run of identical active load → one recept block (spec §5). {@code activeSystems}
-     * is the human-facing list of what's training in this stretch ({@code gym}/{@code run}; volleyball
-     * is ambient and noted in the rationale, not as a system that moves the numbers).
+     * is the human-facing list of what moves this stretch's boundaries ({@code run}); gym + volleyball
+     * count via the constant weekly schedule (no longer ambient), so they never split a segment and are
+     * not listed here.
      */
     public record ProjectionSegment(
         int fromWeek,
@@ -101,6 +106,7 @@ public class GoalProjectionService {
         BigDecimal tdeeEstimate,
         BigDecimal targetKcal,
         BigDecimal projectedRateKgPerWk,
+        int dailyEnergyBalanceKcal,
         List<String> activeSystems,
         String rationale) {
     }
@@ -154,7 +160,8 @@ public class GoalProjectionService {
         for (int w = 1; w <= weeks; w++) {
             boolean last = w == weeks;
             if (last || !load[w].sameLoadAs(load[w + 1])) {
-                segments.add(buildSegment(start, w, load[start], bootstrap, balance, goal, trend));
+                segments.add(
+                    buildSegment(start, w, load[start], userId, weightKg, bootstrap, balance, goal, trend));
                 start = w + 1;
             }
         }
@@ -228,23 +235,21 @@ public class GoalProjectionService {
 
     // ── per-segment numbers ─────────────────────────────────────────────────────────────────────
 
-    private ProjectionSegment buildSegment(int from, int to, WeekLoad ld, TdeeBootstrapJson bootstrap,
-        BigDecimal balance, GoalEntity goal, WeightTrendResponse trend) {
+    private ProjectionSegment buildSegment(int from, int to, WeekLoad ld, UUID userId, BigDecimal weightKg,
+        TdeeBootstrapJson bootstrap, BigDecimal balance, GoalEntity goal, WeightTrendResponse trend) {
 
-        // Block-boundary TDEE delta: running on/off only (meso phase is a zero TDEE delta; see class doc).
-        BigDecimal runDelta = ld.runActive()
-            ? BigDecimal.valueOf((long) props.met().intervalRunKcal() * ld.runSessionsPerWeek())
-                .divide(BigDecimal.valueOf(DAYS_PER_WEEK), SCALE, RoundingMode.HALF_UP)
+        // Segment maintenance = neat baseline + scheduled gym+sport EAT + this segment's running EAT.
+        // (Gym+sport are weekly-recurring, segment-independent; running is goal-linked, per-segment.)
+        BigDecimal scheduled = weeklyActivity.scheduledWeeklyEatKcalPerDay(userId, weightKg);
+        BigDecimal runEat = ld.runActive()
+            ? weeklyActivity.runWeeklyEatKcalPerDay(ld.runSessionsPerWeek(), weightKg)
             : BigDecimal.ZERO;
-        BigDecimal tdee = bootstrap.tdee().add(runDelta);
+        BigDecimal tdee = bootstrap.neatBaselineKcal().add(scheduled).add(runEat);
         BigDecimal target = tdee.add(balance);
 
         BigDecimal projectedRate = projectedRate(goal, balance, trend);
 
         List<String> systems = new ArrayList<>();
-        if (ld.phaseClass() != null) {
-            systems.add(SYSTEM_GYM);
-        }
         if (ld.runActive()) {
             systems.add(SYSTEM_RUN);
         }
@@ -254,8 +259,9 @@ public class GoalProjectionService {
             label(from, to, ld),
             scaled(tdee), scaled(target),
             projectedRate.setScale(RATE_SCALE, RoundingMode.HALF_UP),
+            balance.setScale(0, RoundingMode.HALF_UP).intValueExact(),
             systems,
-            rationale(ld, runDelta));
+            rationale(ld, runEat));
     }
 
     /**
@@ -322,12 +328,12 @@ public class GoalProjectionService {
         return span + " · csak alapozó";
     }
 
-    private String rationale(WeekLoad ld, BigDecimal runDelta) {
+    private String rationale(WeekLoad ld, BigDecimal runEat) {
         if (ld.runActive()) {
-            return "Futóblokk aktív → +" + runDelta.stripTrailingZeros().toPlainString()
-                + " kcal/nap a TDEE-hez (röplabda ambiens, nem mozdítja a targetet).";
+            return "Futóblokk aktív → +" + runEat.stripTrailingZeros().toPlainString()
+                + " kcal/nap MET×kg×óra alapon (gym + röplabda a heti ütemtervből).";
         }
-        return "Nincs futóblokk → a TDEE az alap PAL-becslés (röplabda ambiens).";
+        return "Nincs futóblokk → a TDEE a NEAT-alap + a heti ütemterv (gym + röplabda) MET×kg×óra alapon.";
     }
 
     private static BigDecimal scaled(BigDecimal v) {

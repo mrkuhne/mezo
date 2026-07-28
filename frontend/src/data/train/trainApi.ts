@@ -34,6 +34,7 @@ export type WorkoutDetailResponse = components['schemas']['WorkoutDetailResponse
 export type WorkoutDetailExercise = components['schemas']['WorkoutDetailExercise']
 export type CustomWorkoutResponse = components['schemas']['CustomWorkoutResponse']
 export type CustomWorkoutUpsertRequest = components['schemas']['CustomWorkoutUpsertRequest']
+export type MesocycleVolumeArcResponse = components['schemas']['MesocycleVolumeArcResponse']
 
 export const trainApi = {
   mesocycles: (): Promise<MesocycleResponse[]> => apiFetch<MesocycleResponse[]>('/api/train/mesocycles'),
@@ -61,6 +62,8 @@ export const trainApi = {
     apiFetch<WorkoutSummaryResponse[]>(`/api/train/workouts?from=${from}&to=${to}`),
   getWorkout: (id: string): Promise<WorkoutDetailResponse> =>
     apiFetch<WorkoutDetailResponse>(`/api/train/workouts/${id}`),
+  mesocycleVolumeArc: (id: string): Promise<MesocycleVolumeArcResponse> =>
+    apiFetch<MesocycleVolumeArcResponse>(`/api/train/mesocycles/${id}/volume-arc`),
   startWorkout: (templateSessionId: string): Promise<WorkoutInstanceResponse> =>
     apiFetch<WorkoutInstanceResponse>('/api/train/workouts', {
       method: 'POST',

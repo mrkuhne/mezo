@@ -1,4 +1,6 @@
 import {
+  activityKcal,
+  blockKcal,
   buildDayPlan,
   deriveDailyBudget,
   mealSlotKey,
@@ -6,12 +8,13 @@ import {
   placeWindows,
   splitBudget,
   PROTOCOL_KIND,
+  type DayBudget,
   type DayPlanInput,
   type Macro4,
   type PlannedWindow,
   type PlannerBlock,
 } from '@/features/fuel/logic/buildDayPlan'
-import type { FuelMeal, MacroSet, ProtocolSlotData, Recipe } from '@/data/types'
+import type { FuelMeal, FuelPlanToday, MealItemLine, ProtocolSlotData, Recipe } from '@/data/types'
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 
 // ── fixture factories ────────────────────────────────────────────────────────
@@ -48,6 +51,7 @@ function recipe(over: Partial<Recipe> & { id: string; category: Recipe['category
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: [] },
     starred: false,
+    role: 'standard',
     ...over,
   }
 }
@@ -61,7 +65,8 @@ function proto(over: Partial<ProtocolSlotData> & { kind: string; time: string })
     ...over,
   }
 }
-const NO_BUDGET: Macro4 = { kcal: 2400, p: 180, c: 240, f: 73 }
+const NO_BUDGET: DayBudget = { kcal: 2400, p: 180, c: 240, f: 73, energy: { base: 2400, activity: 0, balance: 0, target: 2400 } }
+const FB = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
 function baseInput(over: Partial<DayPlanInput> = {}): DayPlanInput {
   return {
     wake: '06:00',
@@ -168,14 +173,35 @@ test('splitBudget rounds per macro and lands the drift on the dinner window', ()
 })
 
 // ── deriveDailyBudget ────────────────────────────────────────────────────────
-test('deriveDailyBudget derives carbs/fat from a prescription segment', () => {
-  const fallback: MacroSet = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  // f = round(2150×0.275/9) = 66 ; c = round((2150 − 163×4 − 66×9)/4) = 226
-  expect(deriveDailyBudget({ kcal: 2150, proteinG: 163 }, fallback)).toEqual({ kcal: 2150, p: 163, c: 226, f: 66 })
+test('deriveDailyBudget (no energy) keeps the static base kcal + derived carbs/fat', () => {
+  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
+  expect(deriveDailyBudget({ kcal: 2150, proteinG: 163 }, fallback)).toMatchObject({ kcal: 2150, p: 163, c: 226, f: 66 })
 })
-test('deriveDailyBudget passes the fallback MacroSet through (no water) when there is no segment', () => {
-  const fallback: MacroSet = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
-  expect(deriveDailyBudget(null, fallback)).toEqual({ kcal: 3100, p: 220, c: 380, f: 95 })
+test('deriveDailyBudget (no energy, no segment) passes the fallback MacroSet through', () => {
+  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
+  expect(deriveDailyBudget(null, fallback)).toMatchObject({ kcal: 3100, p: 220, c: 380, f: 95 })
+})
+
+const ENERGY = (blocks: PlannerBlock[]) => ({ bmr: 1720, neat: 1.2, weightKg: 78.6, blocks })
+test('dynamic budget — rest day floors at BMR (raw 2064−516=1548 < 1720)', () => {
+  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY([]))
+  expect(b.energy).toMatchObject({ base: 2064, activity: 0, balance: -516, target: 1720 })
+  expect(b.kcal).toBe(1720)
+  expect(b.p).toBe(163) // protein fixed
+  expect(b.f).toBe(66) // fat from the BASE segment, not the floored target
+  expect(b.c).toBe(Math.round((1720 - 163 * 4 - 66 * 9) / 4)) // 119 — carbs absorb
+})
+test('dynamic budget — big training day adds activity, carbs absorb the bonus', () => {
+  const blocks: PlannerBlock[] = [
+    { kind: 'gym', time: '18:00', durationMin: 60, label: 'Plyo Leg' },
+    { kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' },
+  ]
+  const b = deriveDailyBudget({ kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 }, FB, ENERGY(blocks))
+  expect(b.energy.activity).toBeGreaterThan(1800)
+  expect(b.energy.target).toBeGreaterThan(3300)
+  expect(b.kcal).toBe(b.energy.target)
+  expect(b.f).toBe(66) // fat stable (base-tied)
+  expect(b.c).toBeGreaterThan(500) // big carb day
 })
 
 // ── recipe fit ───────────────────────────────────────────────────────────────
@@ -201,9 +227,12 @@ test('pickRecipe tie-breaks equal |Δkcal| by starred then |Δprotein|', () => {
 // ── slot filling through buildDayPlan ────────────────────────────────────────
 test('a fitting recipe fills an un-logged window with the recipe per-serving macros + suggestedRecipeId', () => {
   const rec = recipe({ id: 'r1', name: 'Túrós zab', category: 'breakfast', macros: { kcal: 1160, p: 84, c: 140, f: 24 }, servings: 2 })
-  const plan = buildDayPlan(baseInput({ budget: { kcal: 2100, p: 168, c: 260, f: 64 }, recipes: [rec], nowHHmm: '05:00' }))
+  const plan = buildDayPlan(baseInput({ budget: { kcal: 2100, p: 168, c: 260, f: 64, energy: { base: 2100, activity: 0, balance: 0, target: 2100 } }, recipes: [rec], nowHHmm: '05:00' }))
   const breakfast = plan.slots.find(s => s.label === 'Reggeli')!
-  expect(breakfast.state).toBe('pending')
+  // At 05:00 nothing is logged and `now` precedes every meal → the earliest window is the current
+  // "now" one (fixed-plan state, mezo-1oy5). The recipe-fill itself (suggestion + macros below) is
+  // independent of that state; the missed/now/pending machine has its own tests.
+  expect(breakfast.state).toBe('now')
   expect(breakfast.suggestedRecipeId).toBe('r1')
   expect(breakfast.mealName).toBe('Túrós zab')
   expect({ kcal: breakfast.kcal, p: breakfast.p, c: breakfast.c, f: breakfast.f }).toEqual({ kcal: 580, p: 42, c: 70, f: 12 })
@@ -245,6 +274,30 @@ test('an offset-less (mock) loggedAt still renders its local wall-clock unchange
   const plan = buildDayPlan(baseInput({ meals: [logged], nowHHmm: '05:00' }))
   const done = plan.slots.find(s => s.state === 'done' && s.kind === 'meal')!
   expect(done.time).toBe('08:40')
+})
+
+// ── logged-meal display name: item-derived fallback when the title is blank (mezo-u68c) ───────────
+const line = (name: string): MealItemLine => ({
+  source: 'pantry', refId: `p-${name}`, amount: 1, unit: 'adag', name, contribution: { kcal: 0, p: 0, c: 0, f: 0 },
+})
+test('derives a slot name from meal items when the logged meal has no title', () => {
+  const logged = meal({ id: 'm1', slot: 'breakfast', title: '', loggedAt: '2026-07-02T08:40:00', mealItems: [line('Zabpehely')] })
+  const plan = buildDayPlan(baseInput({ meals: [logged] }))
+  const breakfast = plan.slots.find(s => s.mealId === 'm1')!
+  expect(breakfast.mealName).toBe('Zabpehely')
+})
+test('keeps the explicit title when the logged meal has one', () => {
+  const logged = meal({ id: 'm1', slot: 'breakfast', title: 'Reggelim', loggedAt: '2026-07-02T08:40:00', mealItems: [line('Zabpehely')] })
+  const plan = buildDayPlan(baseInput({ meals: [logged] }))
+  const breakfast = plan.slots.find(s => s.mealId === 'm1')!
+  expect(breakfast.mealName).toBe('Reggelim')
+})
+test('a title-less SURPLUS logged snack (no window) also derives its name from item names', () => {
+  // A snack on a 3-meal day has no window → it lands via the surplus-slot path (mealName: displayName(m)).
+  const s = meal({ id: 's1', slot: 'snack', title: '', loggedAt: '2026-07-02T15:00:00', mealItems: [line('Alma'), line('Mandula')] })
+  const plan = buildDayPlan(baseInput({ mealsPerDay: 3, meals: [s] }))
+  const snack = plan.slots.find(sl => sl.mealId === 's1')!
+  expect(snack.mealName).toBe('Alma, Mandula')
 })
 
 // ── nothing logged is ever dropped (surplus logged meals become extra done slots) ────────────────
@@ -309,23 +362,6 @@ test('blocks render as workout/sport slots (run → sport carrying Futás)', () 
   expect(runSlot.label).toContain('Futás')
 })
 
-// ── now-flag ─────────────────────────────────────────────────────────────────
-test('now-flag lands on the LAST non-done slot at or before nowHHmm', () => {
-  const logged = meal({ id: 'm1', slot: 'breakfast', loggedAt: '2026-07-02T08:40:00' })
-  const plan = buildDayPlan(baseInput({ meals: [logged], nowHHmm: '15:00' }))
-  const nowSlots = plan.slots.filter(s => s.state === 'now')
-  expect(nowSlots).toHaveLength(1)
-  const now = nowSlots[0]
-  const [h, m] = now.time.split(':').map(Number)
-  expect(h * 60 + m).toBeLessThanOrEqual(15 * 60)
-  // no later slot is also at/before now and non-done
-  for (const s of plan.slots) {
-    if (s === now) continue
-    const [hh, mm] = s.time.split(':').map(Number)
-    if (hh * 60 + mm <= 15 * 60 && s.state !== 'done') expect(hh * 60 + mm).toBeLessThanOrEqual(h * 60 + m)
-  }
-})
-
 // ── top context fields ───────────────────────────────────────────────────────
 test('top fields derive workout/volleyball/kitchenClose/caffeineCutoff from the blocks + rhythm', () => {
   const plan = buildDayPlan(
@@ -352,9 +388,10 @@ test('a gym block with unknown duration reports end "—" / duration 0 in the to
   expect(plan.workout).toEqual({ type: 'Edzés', start: '07:30', end: '—', duration: 0 })
 })
 
-// ── slot identity + now-aware re-flow (mezo-53su) ─────────────────────────────
-describe('slot identity + now-aware re-flow (mezo-53su)', () => {
-  const TODAY = '2026-07-02'
+// ── slot identity + determinism (mezo-53su) ──────────────────────────────────
+// (the now-aware re-flow cases were removed in mezo-1oy5 — the plan is now fixed; `now` only
+//  classifies each window's state, it never moves a window. See the fixed-plan state tests below.)
+describe('slot identity + determinism (mezo-53su)', () => {
   // Baseline inputs used across the cases: wake 06:00, bed 23:00 -> eatingStart 06:45, kitchenClose 21:30.
   const base = { wake: '06:00', bed: '23:00', mealsPerDay: 4, blocks: [], budget: NO_BUDGET, meals: [], recipes: [], protocolSlots: [], intakes: [], caffeineCutoff: '14:00' }
 
@@ -364,43 +401,6 @@ describe('slot identity + now-aware re-flow (mezo-53su)', () => {
     const block = plan.slots.find(s => s.kind === 'workout')!
     expect(mealSlot.slotKey).toBe('breakfast')
     expect(block.slotKey).toBeUndefined()
-  })
-
-  it('pending windows never render in the past (morning parity, midday drift)', () => {
-    const morning = buildDayPlan({ ...base, nowHHmm: '06:00' })
-    // floor = max(eatingStart 06:45, 06:00, 0) = 06:45 -> identical to the static placement
-    expect(morning.slots.find(s => s.label === 'Reggeli')!.time).toBe('06:45')
-    const midday = buildDayPlan({ ...base, nowHHmm: '13:30' })
-    // nothing logged by 13:30 -> ALL pending windows re-space evenly on [13:30, 21:30]
-    for (const s of midday.slots.filter(s => s.slotKey)) {
-      expect(toMin(s.time)).toBeGreaterThanOrEqual(toMin('13:30'))
-    }
-    expect(midday.slots.find(s => s.label === 'Reggeli')!.time).toBe('13:30') // first pending sits at the floor
-  })
-
-  it('late lunch pushes the rest: floor = lastLogged + 90', () => {
-    const lunch = meal({ slot: 'lunch', loggedAt: `${TODAY}T15:00:00`, title: 'Késői ebéd' })
-    const plan = buildDayPlan({ ...base, meals: [lunch], nowHHmm: '15:05' })
-    // floor = max(06:45, 15:05, 15:00+90 = 16:30) = 16:30; pending = Reggeli, Vacsora, Uzsonna
-    const pending = plan.slots.filter(s => s.slotKey && s.state !== 'done')
-    for (const s of pending) expect(toMin(s.time)).toBeGreaterThanOrEqual(toMin('16:30'))
-    const done = plan.slots.find(s => s.state === 'done')!
-    expect(done.time).toBe('15:00') // done slots keep their loggedAt
-  })
-
-  it('re-flow keeps the 90-min gap and clamps at kitchen close', () => {
-    const plan = buildDayPlan({ ...base, nowHHmm: '20:00' })
-    // floor 20:00, close 21:30 -> 4 pending windows squeeze into 90 min: spacing collapses toward the close
-    const pending = plan.slots.filter(s => s.slotKey)
-    expect(toMin(pending[pending.length - 1].time)).toBeLessThanOrEqual(toMin('21:30'))
-    for (const s of pending) expect(toMin(s.time)).toBeGreaterThanOrEqual(toMin('20:00'))
-  })
-
-  it('future-block snaps survive the re-flow; past blocks do not re-snap', () => {
-    const blocks = [{ kind: 'gym' as const, label: 'Pull', time: '18:00', durationMin: 60 }]
-    const plan = buildDayPlan({ ...base, blocks, nowHHmm: '13:30' })
-    // post-workout main snaps to 19:45 (blockEnd 19:00 + 45) even after re-flow
-    expect(plan.slots.some(s => s.slotKey && s.time === '19:45')).toBe(true)
   })
 
   it('is deterministic: same inputs, same plan', () => {
@@ -413,4 +413,79 @@ describe('slot identity + now-aware re-flow (mezo-53su)', () => {
     const plan = buildDayPlan({ ...base, caffeineCutoff: '12:30', nowHHmm: '06:00' })
     expect(plan.caffeineCutoff).toBe('12:30')
   })
+})
+
+// ── fixed-plan state + energy field (mezo-1oy5) ──────────────────────────────
+test('fixed plan: pending meal windows keep their anchored time regardless of now (no reflow)', () => {
+  const early = buildDayPlan(baseInput({ nowHHmm: '05:00', meals: [] }))
+  const late = buildDayPlan(baseInput({ nowHHmm: '23:19', meals: [] }))
+  const breakfastEarly = early.slots.find(s => s.slotKey === 'breakfast')!
+  const breakfastLate = late.slots.find(s => s.slotKey === 'breakfast')!
+  expect(breakfastLate.time).toBe(breakfastEarly.time) // breakfast never migrates to the evening
+})
+test('evening, nothing logged: past meal windows are "missed", the last open one is "now"', () => {
+  const plan = buildDayPlan(baseInput({ nowHHmm: '23:19', meals: [], bed: '23:59' }))
+  const meals = plan.slots.filter(s => s.slotKey && (s.kind === 'meal' || s.kind === 'snack'))
+  expect(meals.filter(s => s.state === 'missed').length).toBeGreaterThan(0)
+  expect(meals.filter(s => s.state === 'now').length).toBe(1) // exactly one current/last-open window
+  expect(meals.every(s => s.state !== 'pending')).toBe(true) // nothing is "upcoming" at 23:19
+})
+test('midday: the window you are currently in is "now", earlier unlogged is "missed", later is "pending"', () => {
+  const plan = buildDayPlan(baseInput({ nowHHmm: '14:30', meals: [] }))
+  const meals = plan.slots.filter(s => s.slotKey).sort((a, z) => toMin(a.time) - toMin(z.time))
+  const nowIdx = meals.findIndex(s => s.state === 'now')
+  expect(nowIdx).toBeGreaterThanOrEqual(0)
+  expect(meals.slice(0, nowIdx).every(s => s.state === 'missed')).toBe(true)
+  expect(meals.slice(nowIdx + 1).every(s => s.state === 'pending')).toBe(true)
+})
+test('no two meal slots share the same minute (collision-free) even with two blocks at 18:00', () => {
+  const blocks = [
+    { kind: 'gym' as const, time: '18:00', durationMin: 60, label: 'Plyo Leg' },
+    { kind: 'sport' as const, time: '18:00', durationMin: 240, label: 'Volleyball' },
+  ]
+  const plan = buildDayPlan(baseInput({ nowHHmm: '13:00', meals: [], blocks }))
+  const mealTimes = plan.slots.filter(s => s.slotKey).map(s => s.time)
+  expect(new Set(mealTimes).size).toBe(mealTimes.length)
+})
+test('plan carries the energy breakdown from the budget', () => {
+  const plan = buildDayPlan(baseInput({ nowHHmm: '13:00', meals: [] }))
+  expect(plan.energy).toEqual(expect.objectContaining({ base: expect.any(Number), activity: expect.any(Number), balance: expect.any(Number), target: expect.any(Number) }))
+})
+
+// ── peri-workout snack windows (mezo-1oy5) ───────────────────────────────────
+const snacks = (p: FuelPlanToday) => p.slots.filter(s => s.kind === 'snack').length
+test('a significant block (≥90min or ≥300kcal) adds a peri-workout snack window', () => {
+  // A 3-meal day carries no baseline snack near the pre-workout hour, so the peri-snack is
+  // unambiguously additive (the 4-meal day's 17:49 Uzsonna would otherwise dedupe it — asserted below).
+  const noBlock = buildDayPlan(baseInput({ mealsPerDay: 3, nowHHmm: '05:00', meals: [], blocks: [] }))
+  const bigBlock = buildDayPlan(baseInput({
+    mealsPerDay: 3, nowHHmm: '05:00', meals: [],
+    blocks: [{ kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' }],
+  }))
+  expect(snacks(bigBlock)).toBeGreaterThan(snacks(noBlock)) // one extra peri-snack around the session
+})
+test('the peri-snack is deduped when a meal/snack window already covers the pre-workout min-gap', () => {
+  // On a 4-meal day the Uzsonna (≈17:49) already sits within MIN_SLOT_GAP_MIN of the 17:00 peri
+  // window, so no redundant second snack is added — the snack count matches the no-block day.
+  const noBlock = buildDayPlan(baseInput({ mealsPerDay: 4, nowHHmm: '05:00', meals: [], blocks: [] }))
+  const bigBlock = buildDayPlan(baseInput({
+    mealsPerDay: 4, nowHHmm: '05:00', meals: [],
+    blocks: [{ kind: 'sport', time: '18:00', durationMin: 240, label: 'Volleyball' }],
+  }))
+  expect(snacks(bigBlock)).toBe(snacks(noBlock)) // deduped: the existing snack already covers pre-workout
+})
+
+// ── MET-based activity energy (mezo-1oy5) ────────────────────────────────────
+test('blockKcal = MET × kg × hours; null duration falls back per kind', () => {
+  expect(blockKcal('gym', 60, 78.6)).toBeCloseTo(6.0 * 78.6 * 1, 1) // ≈472
+  expect(blockKcal('sport', 240, 78.6)).toBeCloseTo(4.5 * 78.6 * 4, 1) // ≈1415
+  expect(blockKcal('run', null, 78.6)).toBeCloseTo(9.5 * 78.6 * (45 / 60), 1) // DEFAULT_RUN_MIN
+})
+test('activityKcal sums every scheduled block (gym + sport + run all count)', () => {
+  const blocks = [
+    { kind: 'gym' as const, time: '18:00', durationMin: 60, label: 'Plyo Leg' },
+    { kind: 'sport' as const, time: '18:00', durationMin: 240, label: 'Volleyball' },
+    { kind: 'run' as const, time: '07:00', durationMin: 40, label: 'Futás · 6km' },
+  ]
+  expect(activityKcal(blocks, 78.6)).toBeCloseTo(6.0 * 78.6 + 4.5 * 78.6 * 4 + blockKcal('run', 40, 78.6), 0) // ≈2384
 })

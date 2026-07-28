@@ -1316,17 +1316,35 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .loadtile .lk { font-size: 9.5px; font-weight: 800; color: var(--faint); letter-spacing: .3px; text-transform: uppercase; }
 .loadtile .lva { font-size: 13.5px; font-weight: 800; font-family: var(--ff-display); margin-top: 1px; color: var(--ink); white-space: nowrap; }
 
-/* ===== Napív weekly plan day cards (Mai, spec §4.3) ===== */
-.dayrow { display: flex; align-items: center; background: var(--surface); border-radius: 20px; padding: 12px 15px; box-shadow: var(--np-shadow-row); margin-bottom: 9px; }
-.dayrow .d { width: 48px; font-size: 11px; font-weight: 800; color: var(--faint); flex-shrink: 0; text-transform: uppercase; }
-.dayrow .d small { display: block; font-size: 9px; color: var(--coral-deep); }
-.dayrow .sess { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.dayrow .sess .s { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--ink); background: none; border: 0; padding: 0; text-align: left; font-family: inherit; width: 100%; cursor: inherit; }
+/* ===== Napív meta pill — one fact of a session (time, duration, role, RPE…).
+   Shared by the weekly day cards and Mai's today session cards (mezo-lruy). ===== */
+.metapill { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 10px; font-size: 11.5px; font-weight: 700; color: var(--sub); background: var(--warm); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ===== Napív weekly plan day cards (Mai, spec §4.3) =====
+   Stacked layout (mezo-lruy): a day header row (label + MA marker + chevron)
+   over one padded block per session — type tag + title + state chip on the top
+   line, the session's facts as meta pills below. The pre-mezo-lruy single-line
+   variant (tag · title · joined meta · chip) collided on long titles. */
+.dayrow { background: var(--surface); border-radius: 22px; padding: 12px 14px 13px; box-shadow: var(--np-shadow-row); margin-bottom: 10px; }
+.dayrow-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.dayrow .d { display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 800; color: var(--sub); text-transform: uppercase; letter-spacing: .08em; }
+.dayrow .d small { border-radius: 999px; padding: 2px 7px; font-size: 9px; font-weight: 800; color: var(--coral-deep); background: var(--wash-gym); letter-spacing: .1em; }
+.dayrow .sess { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.dayrow .sess .s { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 10px 11px; border-radius: 16px; background: var(--warm); border: 0; text-align: left; font-family: inherit; cursor: inherit; }
+.dayrow .sess .s-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.dayrow .sess .s-title { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.3; min-width: 0; }
+.dayrow .sess .s-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+/* On the wash-tinted session block the pills invert to the card surface. */
+.dayrow .sess .s .metapill { background: var(--surface); color: var(--sub); font-size: 11px; padding: 4px 9px; }
 .dayrow .sess .s .meta { color: var(--faint); font-weight: 600; font-size: 11.5px; }
-.dayrow .chev { color: var(--faint); }
+.dayrow .chev { color: var(--faint); font-size: 17px; line-height: 1; }
 .dayrow.today { box-shadow: 0 0 0 2px var(--coral), 0 10px 24px rgba(255,107,74,.16); cursor: pointer; }
 .dayrow.today .chev { color: var(--coral-deep); }
-.dayrow.rest { background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
+/* Rest day: nothing to lay out — the dashed card stays a single compact line. */
+.dayrow.rest { display: flex; align-items: center; gap: 12px; padding: 11px 14px; background: transparent; box-shadow: none; border: 1.5px dashed var(--line); }
+.dayrow.rest .dayrow-head { margin-bottom: 0; }
+.dayrow.rest .sess { flex: 1; }
+.dayrow.rest .sess .s { padding: 0; background: transparent; }
 .dayrow .done-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; background: var(--wash-sage); color: var(--sage-deep); }
 .dayrow .log-chip { border-radius: 8px; padding: 3px 7px; font-size: 9px; font-weight: 800; margin-left: auto; flex-shrink: 0; }
 
@@ -1342,6 +1360,20 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .trainhero .chip-np { background: rgba(255,255,255,.9); border-radius: 999px; padding: 7px 13px; font-size: 11.5px; font-weight: 800; color: var(--coral-deep); }
 :root[data-theme="dark"] .trainhero .chip-np { background: rgba(255,255,255,.1); }
 .trainhero .np-ctarow { margin-top: 14px; }
+
+/* ===== Napív today session card (Mai — sport/run, mezo-lruy) =====
+   The gym hero's lighter sibling: same tag → title → pills → CTA rhythm on a
+   plain surface card, accent-tinted per session kind via --tc-accent/--tc-wash. */
+.todaycard { --tc-accent: var(--tag-sport); --tc-wash: var(--wash-sport); background: var(--surface); border-radius: 24px; padding: 15px 16px 16px; margin: 0 24px 12px; box-shadow: var(--np-shadow-row); }
+.todaycard-run { --tc-accent: var(--tag-run); --tc-wash: var(--wash-run); }
+.todaycard-top { display: flex; align-items: center; gap: 9px; }
+.todaycard-time { font-size: 12.5px; font-weight: 800; color: var(--tc-accent); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.todaycard-state { display: inline-flex; align-items: center; gap: 4px; margin-left: auto; border-radius: 999px; padding: 4px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--tc-accent); background: var(--tc-wash); }
+.todaycard.logged .todaycard-state { color: var(--sage-deep); background: var(--wash-sage); }
+.todaycard-title { font-family: var(--ff-display); font-size: 21px; font-weight: 800; letter-spacing: -.3px; line-height: 1.15; color: var(--ink); margin-top: 11px; }
+.todaycard-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.todaycard-cta { width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px; margin-top: 14px; padding: 13px 14px; border-radius: 16px; font-family: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; color: var(--tc-accent); background: var(--tc-wash); border: 1px solid color-mix(in srgb, var(--tc-accent) 24%, transparent); }
+.todaycard.logged .todaycard-cta { color: var(--sage-deep); background: var(--wash-sage); border-color: color-mix(in srgb, var(--sage-deep) 26%, transparent); }
 
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
@@ -1485,6 +1517,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
 .slot { display: flex; gap: 12px; background: var(--surface); border-radius: 20px; padding: 13px 15px; box-shadow: var(--np-shadow-row); margin-bottom: 9px; align-items: center; }
 .slot.next { box-shadow: 0 0 0 2px var(--sage), 0 10px 24px color-mix(in srgb, var(--sage) 20%, transparent); }
 .slot.done { opacity: .78; }
+.slot.missed { opacity: .72; }
+.slot.missed .fav { filter: grayscale(1); opacity: .6; }
+.misstag { font-size: 9px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-quaternary); border: 1px solid var(--line); padding: 2px 6px; border-radius: 999px; margin-left: 6px; }
 .slot .fav { width: 42px; height: 42px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 19px; flex-shrink: 0; }
 .slot .tx { flex: 1; min-width: 0; }
 .slot .t1 { font-size: 14px; font-weight: 800; color: var(--ink); }
@@ -2174,3 +2209,69 @@ a.hab-link:hover { opacity: 0.85; }
 .mtr-cta { background: var(--sage-deep); color: var(--text-inverse); font: 700 12px/1 var(--ff-body);
            padding: 10px 16px; border-radius: 999px; }
 .mtr-quiet { font: 600 11.5px/1 var(--ff-body); color: var(--faint); padding: 10px 8px; }
+
+/* ── Energy-breakdown sheet (mezo-hobb) ────────────────────────────────── */
+.eqbar { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;
+  background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 16px; padding: 12px 14px; margin: 12px 0 14px; }
+.eqbar .t { text-align: center; }
+.eqbar .t .k { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: var(--faint); }
+.eqbar .t .v { font-family: var(--ff-display); font-weight: 800; font-size: 16px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.eqbar .t.base .v { color: var(--sage-deep); }
+.eqbar .t.move .v { color: var(--amber-deep); }
+.eqbar .t.def .v { color: var(--coral-deep); }
+.eqbar .t.res .v { color: var(--text-primary); font-size: 19px; }
+.eqbar .op { font-family: var(--ff-display); color: var(--faint); font-weight: 700; }
+
+.seg { background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 16px; margin-bottom: 10px; padding: 13px 15px; }
+.seg.hl { box-shadow: 0 0 0 2px var(--sage); }
+.seg .sh { display: flex; align-items: center; gap: 9px; }
+.seg .sdot { width: 10px; height: 10px; border-radius: 3px; }
+.seg .stit { font-weight: 800; font-size: 13.5px; }
+.seg .samt { margin-left: auto; font-family: var(--ff-display); font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; }
+.seg .why { font-size: 12.5px; color: var(--text-primary); line-height: 1.5; margin: 10px 0 0; }
+.dot-sage { background: var(--sage); }
+.dot-amber { background: var(--amber); }
+.dot-coral { background: var(--coral); }
+.txt-sage { color: var(--sage-deep); }
+.txt-amber { color: var(--amber-deep); }
+.txt-coral { color: var(--coral-deep); }
+
+.btiles { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; margin: 11px 0 4px; }
+.btile { flex: 1 1 96px; min-width: 96px; border-radius: 14px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; background: var(--warm); }
+.btile.sage { background: var(--wash-sage); }
+.btile.amber { background: var(--wash-amber); }
+.btile.coral { background: var(--warm); }
+.btile .thd { display: flex; align-items: center; gap: 6px; }
+.btile .emo { font-size: 14px; line-height: 1; }
+.btile .nm { font-size: 11px; font-weight: 800; }
+.btile.sage .nm { color: var(--sage-deep); }
+.btile.amber .nm { color: var(--amber-deep); }
+.btile.coral .nm { color: var(--coral-deep); }
+.btile .sub { font-size: 10px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--faint); }
+.btile .val { font-family: var(--ff-display); font-weight: 800; font-size: 19px; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.btile.sage .val { color: var(--sage-deep); }
+.btile.amber .val { color: var(--amber-deep); }
+.btile.coral .val { color: var(--coral-deep); }
+.btile .val .u { font-size: 10px; font-weight: 700; color: var(--sub); margin-left: 3px; }
+.btile.result { background: transparent; border: 1.5px dashed var(--line); justify-content: center; }
+.btile.result .val { color: var(--text-primary); font-size: 21px; }
+.btiles .op { align-self: center; font-family: var(--ff-display); font-size: 17px; font-weight: 700; color: var(--faint); }
+
+/* Alap-TDEE breakdown — Variant B stacked list + emphasized total (mezo-hobb).
+   Overrides the horizontal .tdee flex when both classes are present (kept for the .tdee test hook). */
+.tdee-split { display: block; width: 100%; text-align: left; cursor: pointer; background: none; }
+.tdee-split .row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; }
+.tdee-split .lab { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: var(--sub); }
+.tdee-split .dot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+.tdee-split .amt { font-family: var(--ff-display); font-size: 16px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tdee-split .total { border-top: 1px dashed var(--line); margin-top: 6px; padding-top: 10px; }
+.tdee-split .total .lab { color: var(--sage-deep); font-weight: 800; }
+.tdee-split .total .amt { font-size: 22px; color: var(--sage-deep); }
+.tdee-split .total .amt small { font-size: 12px; color: var(--sub); font-weight: 700; }
+.tdee-split .infochev { color: var(--lav-deep); font-size: 12px; font-weight: 800; }
+
+/* Tappable Fuel "Mai cél" chips — small ⓘ affordance (mezo-hobb) */
+.chip-tap { position: relative; padding-right: 24px; cursor: pointer; }
+.chip-tap::after { content: "i"; position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+  width: 14px; height: 14px; border-radius: 50%; font-size: 9px; font-weight: 800; font-style: italic;
+  display: flex; align-items: center; justify-content: center; background: var(--surface-glass); }

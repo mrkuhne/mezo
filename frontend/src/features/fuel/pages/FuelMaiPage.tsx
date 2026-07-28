@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
-import { useFuelDay, useFuelTimeline, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
+import { useFuelDay, useFuelTimeline, useMealCoach, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Icon } from '@/shared/ui/Icon'
 import { RetaPhaseBar } from '@/shared/ui/RetaPhaseBar'
@@ -14,6 +14,7 @@ import { ReplanSheet } from '@/features/fuel/sheets/ReplanSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { AiLogSheet } from '@/features/fuel/sheets/AiLogSheet'
 import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
+import { EnergyBreakdownSheet, type EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { localDateString } from '@/shared/lib/dates'
 
 // Napiv Mai recomposition (spec §4.4, mezo-8141): pghead-np sage header → RetaPhaseBar →
@@ -25,7 +26,14 @@ import { localDateString } from '@/shared/lib/dates'
 // once this page (its last consumer) dropped it.
 export function FuelMaiPage() {
   const { fuel } = useFuelDay()
-  const { plan, getScoredMeal } = useFuelTimeline()
+  const { plan, budget, energyBreakdown, getScoredMeal } = useFuelTimeline()
+  // Coach verdicts ride a SEPARATE request so the deterministic timeline never waits on
+  // an LLM roundtrip; the card lines simply appear once they land (mezo-mr4n).
+  const { verdicts } = useMealCoach(localDateString())
+  const getTagline = (slot: Parameters<typeof getScoredMeal>[0]) => {
+    const meal = getScoredMeal(slot)
+    return meal ? (verdicts[meal.id]?.tagline ?? null) : null
+  }
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
   const { logWater } = useWaterActions()
@@ -38,11 +46,16 @@ export function FuelMaiPage() {
   const [aiOpen, setAiOpen] = useState(false)
   const [aiSlot, setAiSlot] = useState<MealSlot | undefined>(undefined)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
 
   const doneCount = plan.slots.filter(s => s.state === 'done').length
   const waterPct = pct(fuel.consumed.water, fuel.targets.water)
+  // Static-fallback energy (real mode, no BMR → tdeeBootstrap null): plan.energy.base equals the FULL
+  // segment kcal and activity/balance are 0, so the Alaphő/Mozgás/Deficit chips are meaningless — the
+  // card then shows the target alone. The dynamic path (any activity burn or goal balance) keeps them.
+  const staticEnergy = plan.energy.activity === 0 && plan.energy.balance === 0
 
   // Tap-to-log a planner slot: a recipe suggestion prefills the sheet from that recipe; a budget-only
   // window opens the sheet on its mapped slot (label → MealSlot) so the user just picks items.
@@ -66,7 +79,7 @@ export function FuelMaiPage() {
       {/* Header */}
       <div className="pghead-np sage">
         <div>
-          <div className="over">Fuel · Reta D{retaDay} · kcal floor 2500</div>
+          <div className="over">Fuel · Reta D{retaDay}</div>
           <h1>Mai pacing</h1>
         </div>
         <div className="row gap-xs" style={{ flexShrink: 0 }}>
@@ -94,10 +107,33 @@ export function FuelMaiPage() {
       {/* Reta phase context */}
       <RetaPhaseBar day={retaDay} />
 
+      {/* Transparent dynamic target — base heat + activity burn + goal balance (mezo-1oy5) */}
+      <div style={{ padding: '8px 24px 0' }}>
+        <div className="card" style={{ padding: 16 }}>
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <span className="eyebrow" style={{ color: 'var(--sage-deep)' }}>Mai cél</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 800, fontSize: 22 }}>{plan.energy.target} kcal</span>
+          </div>
+          {!staticEnergy && (
+            <div className="row gap-xs" style={{ flexWrap: 'wrap', marginTop: 8 }}>
+              <button type="button" className="chx chip-tap" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('base')}>Alaphő {plan.energy.base}</button>
+              <button type="button" className="chx chip-tap" style={{ background: 'var(--wash-amber)', color: 'var(--amber-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('movement')}>Mozgás +{plan.energy.activity}</button>
+              <button type="button" className="chx chip-tap" style={{ background: 'var(--warm)', color: 'var(--coral-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('deficit')}>
+                {plan.energy.balance < 0
+                  ? `Deficit ${Math.abs(plan.energy.balance)}`
+                  : plan.energy.balance > 0
+                    ? `Felesleg +${plan.energy.balance}`
+                    : 'Egyensúly'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Gauge card — kcal gauge + coffee/kitchen chips + macro soft bars */}
       <div style={{ padding: '16px 24px 12px' }}>
         <div className="card" style={{ padding: 18 }}>
-          <KcalGauge consumed={fuel.consumed.kcal} target={fuel.targets.kcal} />
+          <KcalGauge consumed={fuel.consumed.kcal} target={budget.kcal} />
 
           <div className="fuelchips">
             <span className="chx" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)', cursor: 'default' }}>
@@ -112,18 +148,18 @@ export function FuelMaiPage() {
           <div className="macror">
             <div className="mac">
               <span className="k">Fehérje</span>
-              <span className="bar"><i style={{ width: pct(fuel.consumed.p, fuel.targets.p) + '%', background: 'var(--sage)' }} /></span>
-              <span className="v">{fuel.consumed.p} / {fuel.targets.p} g</span>
+              <span className="bar"><i style={{ width: pct(fuel.consumed.p, budget.p) + '%', background: 'var(--sage)' }} /></span>
+              <span className="v">{fuel.consumed.p} / {budget.p} g</span>
             </div>
             <div className="mac">
               <span className="k">Szénhidrát</span>
-              <span className="bar"><i style={{ width: pct(fuel.consumed.c, fuel.targets.c) + '%', background: 'var(--amber)' }} /></span>
-              <span className="v">{fuel.consumed.c} / {fuel.targets.c} g</span>
+              <span className="bar"><i style={{ width: pct(fuel.consumed.c, budget.c) + '%', background: 'var(--amber)' }} /></span>
+              <span className="v">{fuel.consumed.c} / {budget.c} g</span>
             </div>
             <div className="mac">
               <span className="k">Zsír</span>
-              <span className="bar"><i style={{ width: pct(fuel.consumed.f, fuel.targets.f) + '%', background: 'var(--lav)' }} /></span>
-              <span className="v">{fuel.consumed.f} / {fuel.targets.f} g</span>
+              <span className="bar"><i style={{ width: pct(fuel.consumed.f, budget.f) + '%', background: 'var(--lav)' }} /></span>
+              <span className="v">{fuel.consumed.f} / {budget.f} g</span>
             </div>
           </div>
         </div>
@@ -173,7 +209,7 @@ export function FuelMaiPage() {
             )}
           </div>
         )}
-        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} onAiLog={handleAiLog} />
+        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} getTagline={getTagline} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} onAiLog={handleAiLog} />
       </div>
 
       {/* Water — NEW dedicated slot (replaces MacroHero's water row) */}
@@ -228,6 +264,9 @@ export function FuelMaiPage() {
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}
       {logOpen && <LogMealSheet prefill={logPrefill} initialSlot={logInitialSlot} onClose={() => setLogOpen(false)} />}
       {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
+      {energyOpen && energyBreakdown && (
+        <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
+      )}
       {aiOpen && (
         <AiLogSheet
           date={localDateString()}

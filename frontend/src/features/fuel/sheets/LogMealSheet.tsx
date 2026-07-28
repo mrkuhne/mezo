@@ -12,12 +12,14 @@ import { useState } from 'react'
 import type { Ingredient, MealInput, MealSlot, Recipe } from '@/data/types'
 import { useFuelDay, useMealActions, useRecipes, usePantry } from '@/data/hooks'
 import { pct } from '@/shared/lib/pct'
+import { nowOffsetIso } from '@/shared/lib/dates'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { Display } from '@/shared/ui/Display'
 import { MacroCells } from '@/features/fuel/components/MacroCells'
 import { MealPickerSheet, type MealPickedItem } from '@/features/fuel/sheets/MealPickerSheet'
+import { deriveMealName } from '@/features/fuel/logic/deriveMealName'
 
 export type LogMealPrefill =
   | { source: 'recipe'; recipeId: string }
@@ -65,6 +67,9 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
   // `initialSlot` (planner tap-to-log) seeds the segmented control; without it, fall back to the
   // wall-clock default. Read once at mount — the user can still switch slots afterwards.
   const [slot, setSlot] = useState<Slot>(() => initialSlot ?? defaultSlot())
+  // Meal name: `null` = follow the derived default (re-derives as lines change); once the user types,
+  // their value sticks ("derived-until-touched"). See `shownName` below (mezo-u68c).
+  const [nameOverride, setNameOverride] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [lines, setLines] = useState<DraftLine[]>(() => {
     if (!prefill) return []
@@ -107,6 +112,11 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
   const resolved = lines.map(l => ({ l, meta: lineMeta(l) }))
   const total = resolved.reduce((a, { meta }) => ({ kcal: a.kcal + meta.contribution.kcal, p: a.p + meta.contribution.p, c: a.c + meta.contribution.c, f: a.f + meta.contribution.f }), { ...zero })
 
+  // Smart default name from the line display-names (recipe → recipe name, pantry → item names),
+  // overridden the moment the user types (mezo-u68c).
+  const derivedName = deriveMealName(resolved.map(({ meta }) => meta.name))
+  const shownName = nameOverride ?? derivedName
+
   const after = fuel.consumed.kcal + total.kcal
   // `pct` guards a zero target → 0 (real mode returns a zero FuelDay during cold load —
   // no static fallback in real mode); a raw 0/0 would render a "NaN%" bar width.
@@ -122,8 +132,11 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
     if (!canSave) return
     const input: MealInput = {
       slot,
-      loggedAt: new Date().toISOString(),
-      title: null,
+      // OFFSET-BEARING local now, not `.toISOString()` (UTC `Z`): the backend classifies the
+      // meal's training role + timing from loggedAt.toLocalTime(), so a UTC wall-clock 1-2h off
+      // local dropped a pre-workout meal out of its pre-window (mezo-g8qm; LogDoseSheet's offsetIso rule).
+      loggedAt: nowOffsetIso(),
+      title: shownName.trim() || null,
       items: lines.map(l => ({ source: l.source, refId: l.refId, amount: l.amount, unit: l.unit })),
     }
     logMeal(input)
@@ -160,6 +173,17 @@ export function LogMealSheet({ prefill, initialSlot, onClose }: { prefill?: LogM
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', marginBottom: 6, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}>
               <span className="label-mono" style={{ fontSize: 13, color: 'var(--text-primary)' }}>{nowLabel()}</span>
             </div>
+
+            {/* Név — szerkeszthető, okos default a tételekből (mezo-u68c) */}
+            <span className="label-mono" style={{ fontSize: 8.5, letterSpacing: '0.12em', color: 'var(--text-tertiary)' }}>NÉV</span>
+            <input
+              type="text"
+              value={shownName}
+              onChange={(e) => setNameOverride(e.target.value)}
+              placeholder="Étkezés neve"
+              aria-label="Étkezés neve"
+              style={{ width: '100%', margin: '7px 0 8px', padding: '9px 12px', fontSize: 13, color: 'var(--text-primary)', background: 'var(--surface-1)', border: '1px solid var(--border-subtle)' }}
+            />
 
             {/* Tételek */}
             <div className="row" style={{ alignItems: 'center', gap: 9, margin: '13px 2px 9px' }}>

@@ -42,7 +42,7 @@ async function completeExerciseSets(user: ReturnType<typeof userEvent.setup>) {
 test('prep screen shows the workout title, challenges carousel and the start CTA', () => {
   setup()
   expect(screen.getAllByText('Pull Day').length).toBeGreaterThan(0)
-  expect(screen.getByText('⚔️ A mai küldetések · 3')).toBeInTheDocument()
+  expect(screen.getByText('⚔️ A mai küldetések · 4')).toBeInTheDocument()
   expect(screen.getByText(/Kezdjük el/)).toBeInTheDocument()
 })
 

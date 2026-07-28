@@ -40,7 +40,7 @@ test('Train opens on Mai and the sub-nav switches between sub-tabs', async () =>
   // Open dropdown and click Gym
   await userEvent.click(screen.getByRole('button', { name: 'Mesociklusok' }))
   await userEvent.click(screen.getByRole('menuitem', { name: 'Gym' }))
-  expect(screen.getByText('W3 / 6')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mezociklus áttekintő/ })).toBeInTheDocument()
 })
 
 test('the active workout session is a full-screen flow without the sub-nav', () => {

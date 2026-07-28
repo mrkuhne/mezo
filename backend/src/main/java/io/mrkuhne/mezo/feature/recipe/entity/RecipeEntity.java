@@ -1,10 +1,13 @@
 package io.mrkuhne.mezo.feature.recipe.entity;
 
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
@@ -84,6 +87,11 @@ public class RecipeEntity extends OwnedEntity {
 
     @Column(nullable = false)
     private boolean starred = false;
+
+    /** Template meal role (mezo-uavr) — selects the scoring rubric overlay; never null. */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 16)
+    private MealRole role = MealRole.STANDARD;
 
     @Column(name = "nova_dominant")
     private Short novaDominant;

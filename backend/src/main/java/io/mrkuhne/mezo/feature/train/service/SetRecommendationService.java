@@ -28,7 +28,18 @@ public class SetRecommendationService {
     private final ExerciseHistoryResolver historyResolver;
     private final HypertrophyProperties props;
 
+    /** Plan-1 shape: prescribes against the exercise's own template {@code workingSets}. */
     public Prescription prescribe(UUID createdBy, ExerciseEntity ex, boolean deloadWeek) {
+        return prescribe(createdBy, ex, deloadWeek, ex.getWorkingSets());
+    }
+
+    /**
+     * Plan-2 shape (DA6): {@code effectiveWorkingSets} overrides the working-set COUNT (volume
+     * rollover's distributed set target) while every other decision — reference lookup, base
+     * weight/reps, warmup ramp — stays keyed off the exercise's own recipe fields.
+     */
+    public Prescription prescribe(
+            UUID createdBy, ExerciseEntity ex, boolean deloadWeek, int effectiveWorkingSets) {
         ExerciseSetEntity ref = referenceWorkingSet(createdBy, ex);
         BigDecimal base;
         int workingReps;
@@ -85,7 +96,7 @@ public class SetRecommendationService {
                 .targetRIR(null)
                 .build());
         }
-        for (int j = 0; j < ex.getWorkingSets(); j++) {
+        for (int j = 0; j < effectiveWorkingSets; j++) {
             sets.add(PrescribedSet.builder()
                 .kind(PrescribedSet.KindEnum.WORKING)
                 .targetWeightKg(base)

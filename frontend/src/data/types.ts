@@ -23,7 +23,7 @@ export interface FuelSlot {
   kind: FuelKind
   label: string
   slotKey?: MealSlot // meal/snack window identity (mezo-53su); absent on block/protocol slots
-  state: 'done' | 'now' | 'pending'
+  state: 'done' | 'now' | 'pending' | 'missed'
   mealName?: string
   mezoNote?: string
   windowTip?: string
@@ -37,6 +37,7 @@ export interface FuelPlanToday {
   workout: { type: string; start: string; end: string; duration: number }
   volleyball: { start: string; end: string; noneToday: boolean }
   bedtime: string; kitchenClose: string; caffeineCutoff: string
+  energy: { base: number; activity: number; balance: number; target: number } // dynamic-energy breakdown (mezo-1oy5)
   slots: FuelSlot[]
 }
 /** Fuel-owned planner settings (mezo-53su) — eating cadence + caffeine cutoff, per-user singleton. */
@@ -57,7 +58,8 @@ export interface RowsDimension extends MealDimensionBase { id: 'who' | 'fat_qual
 export type MealDimension = MacroDimension | MicroDimension | NovaDimension | ContextDimension | RowsDimension
 export interface MealBreakdown {
   confidence: number
-  summary: string | null // deterministic v0 ships null — the prose is P8 (mezo-yta)
+  summary: string | null // deterministic v0 ships null — filled by the coach (mezo-mr4n)
+  tagline: string | null // card-sized cut, same prose layer; null until the coach ran
   dimensions: MealDimension[]
   improve: { text: string; impact: string }[]
   tools: { type: ToolType; name: string }[]
@@ -252,6 +254,8 @@ export interface RecipeIngredientLine {
   name?: string // server-computed snapshot name (present on persisted/loaded recipes)
   contribution?: { kcal: number; p: number; c: number; f: number } // this line's macro share
 }
+/** Template meal role (mezo-uavr) — selects the scoring rubric overlay on the recipe surface. */
+export type RecipeRole = 'standard' | 'pre_workout' | 'post_workout'
 export interface Recipe {
   id: string; name: string; slot: string; category: RecipeCategory
   createdDate: string; timesLogged: number; avgScore: number; lastLogged: string
@@ -261,6 +265,7 @@ export interface Recipe {
   novaDominant: NovaGroup
   mezoFit: { score: number | null; fitsFor: string[] }
   starred: boolean
+  role: RecipeRole
   recentLogs?: RecipeLog[]
   templateBreakdown?: MealBreakdown
 }
@@ -274,6 +279,7 @@ export interface RecipeInput {
   cookMins?: number | null
   tags: string[]
   starred: boolean
+  role: RecipeRole
   ingredients: { pantryItemId: string; amount: number; unit: string; note?: string | null }[]
 }
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
@@ -746,6 +752,33 @@ export interface VolumeProfile {
 export interface VolumeChange { muscle: string; change: string; reason: string; warning?: boolean }
 export interface VolumeRecompute { lastRun: string; nextRun: string; trigger: string; changes: VolumeChange[] }
 
+// Whole-mesocycle volume arc (Phase B, Task B3): per-muscle planned scaffold (DA7) laid
+// alongside logged actuals, week-by-week — future weeks carry `actual: null`.
+export interface VolumeArcWeek {
+  week: number
+  phase: MesoPhase
+  planned: number
+  actual: number | null // null for future weeks with no logged data yet
+  isCurrent: boolean
+}
+export interface MuscleVolumeArc {
+  muscle: string  // coarse volume-group key (chest/back/shoulder/biceps/triceps/quad/ham/glute/calf/core)
+  region: string  // color-family region key (coral/sky/lav/rose/sage/amber)
+  mrv: number
+  weeks: VolumeArcWeek[]
+}
+export interface MesoVolumeArc {
+  mesocycleId: string
+  title: string
+  currentWeek: number
+  weeks: number
+  startDate: string
+  endDate: string
+  status: MesoStatus
+  phaseCurve: MesoPhase[]
+  muscles: MuscleVolumeArc[]
+}
+
 export interface Mesocycle {
   id: string
   status: MesoStatus
@@ -796,7 +829,7 @@ export interface LoggedWorkoutExercise {
   videoUrl?: string | null // demo video (catalog-resolved); absent in Phase-1 statics
 }
 export interface ChallengeRef { kind: string; label: string }
-export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo'
+export type ChallengeType = 'PR' | 'Depth' | 'Volume' | 'Tempo' | 'overload'
 export type ChallengeStatus = 'proposed' | 'accepted' | 'dismissed' | 'hit' | 'miss' | 'inconclusive'
 export interface Challenge {
   id: string

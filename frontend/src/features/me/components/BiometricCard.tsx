@@ -1,14 +1,17 @@
+import { useState } from 'react'
 import { Icon } from '@/shared/ui/Icon'
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
-import { ACTIVITY_LEVELS, ACTIVITY_SHORT, ageFromBirthDate, palLabel, type ActivityLevel } from '@/features/me/logic/biometricFields'
+import { ACTIVITY_LEVELS, ACTIVITY_SHORT, ageFromBirthDate, neatLabel, type ActivityLevel } from '@/features/me/logic/biometricFields'
+import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
+import { buildTdeeBreakdown } from '@/features/me/logic/buildTdeeBreakdown'
 
-const PAL_BY_ID = Object.fromEntries(ACTIVITY_LEVELS.map(a => [a.id, a.pal])) as Record<ActivityLevel, number>
+const NEAT_BY_ID = Object.fromEntries(ACTIVITY_LEVELS.map(a => [a.id, a.neat])) as Record<ActivityLevel, number>
 
-// Resolve the activityLevel enum to its compact card label + PAL multiplier.
-// Falls back to MODERATE when null/absent (the engine's default).
-function resolveActivity(level: ActivityLevel | null | undefined): { label: string; pal: number } {
-  const lvl = (level ?? 'MODERATE') as ActivityLevel
-  return { label: ACTIVITY_SHORT[lvl], pal: PAL_BY_ID[lvl] }
+// Resolve the activityLevel enum to its compact card label + NEAT multiplier.
+// Falls back to MIXED when null/absent (the engine's default).
+function resolveActivity(level: ActivityLevel | null | undefined): { label: string; neat: number } {
+  const lvl = (level ?? 'MIXED') as ActivityLevel
+  return { label: ACTIVITY_SHORT[lvl], neat: NEAT_BY_ID[lvl] }
 }
 
 // Biometria card on the Profile (G6, mezo-06n). Re-skinned to the Napiv .biocard
@@ -70,8 +73,11 @@ export function BiometricCard({
   const sexLabel = profile.sex === 'M' ? 'Férfi' : 'Nő'
   const activity = resolveActivity(profile.activityLevel)
   const tdee = profile.tdeeBootstrap
+  const [breakdownOpen, setBreakdownOpen] = useState(false)
+  const breakdown = buildTdeeBreakdown(profile)
 
   return (
+    <>
     <div className="card biocard" style={{ padding: '14px 15px 13px' }}>
       <div className="bhd">
         <h3>Biometria</h3>
@@ -98,18 +104,35 @@ export function BiometricCard({
           )}
         </Stat>
         <Stat k="Aktivitás" style={{ gridColumn: '1/3' }}>
-          {activity.label} <small>{palLabel(activity.pal)}</small>
+          {activity.label} <small>{neatLabel(activity.neat)}</small>
         </Stat>
       </div>
 
-      {tdee && (
-        <div className="tdee">
-          <span className="k">
-            Alap-TDEE · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'}
-          </span>
-          <span className="v">≈{Math.round(tdee.tdee)} kcal/nap</span>
-        </div>
+      {tdee && breakdown && (
+        <button
+          type="button"
+          className="tdee tdee-split"
+          onClick={() => setBreakdownOpen(true)}
+          aria-label="Energia-bontás magyarázata"
+        >
+          <div className="row">
+            <span className="lab"><span className="dot dot-sage" />Alaphő · NEAT</span>
+            <span className="amt">{Math.round(tdee.neatBaselineKcal)}</span>
+          </div>
+          <div className="row">
+            <span className="lab"><span className="dot dot-amber" />Betábl. mozgás</span>
+            <span className="amt">+{Math.round(tdee.weeklyEatKcalPerDay)}</span>
+          </div>
+          <div className="row total">
+            <span className="lab">Fenntartó · {tdee.formula === 'KATCH' ? 'Katch' : 'MSJ'} <span className="infochev">ⓘ</span></span>
+            <span className="amt">≈{Math.round(tdee.tdee)} <small>kcal/nap</small></span>
+          </div>
+        </button>
       )}
     </div>
+    {breakdownOpen && breakdown && (
+      <EnergyBreakdownSheet breakdown={breakdown} initial="base" onClose={() => setBreakdownOpen(false)} />
+    )}
+    </>
   )
 }

@@ -5,7 +5,12 @@ const TODAY = localDateString()
 
 export const fuelDay: FuelDay = {
   targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
-  consumed: { kcal: 1840, p: 142, c: 198, f: 58, water: 1850 },
+  // Partial day at MOCK_NOW_HHMM 13:30 (mezo-1oy5): only the two morning meals are logged
+  // (breakfast 09:15 + lunch 13:00), so consumed = their sum. The midday/evening windows are
+  // still open → the fixed-plan state pass marks the next one `now`, the later ones `pending`.
+  // (The pacing.msg "59%" narrative below is now stale vs this 42% — that consumed↔narrative
+  //  drift is the pre-existing mezo-bgk8; deliberately not chased here.)
+  consumed: { kcal: 1300, p: 100, c: 152, f: 30, water: 1850 },
   meals: [
     {
       id: 'm1',
@@ -26,6 +31,7 @@ export const fuelDay: FuelDay = {
       tags: ['pre-volleyball', 'kifli.hu'],
       breakdown: {
         confidence: 0.86,
+        tagline: null,
         summary:
           'Reggeli-as-engineering. Zab + túró slow-release glikémia délig, áfonya antocianin a Pull Day előtti gyulladás-modulációra. Csak a Mg jött ki rövidre — fél evőkanál tökmag megoldaná.',
         dimensions: [
@@ -174,6 +180,7 @@ export const fuelDay: FuelDay = {
       tags: ['pre-workout'],
       breakdown: {
         confidence: 0.81,
+        tagline: null,
         summary:
           'Whole-foods ebéd, T-3.5h-val a Pull Day előtt. A makró-arány protein-felé húz — Reta D3-on védő, mert biztosítjuk a 220g/nap protein-target tartását, ha a PM étvágy leesik.',
         dimensions: [
@@ -302,172 +309,6 @@ export const fuelDay: FuelDay = {
           { type: 'compute', name: 'predictGlycemicCurve()' },
         ],
       },
-    },
-    {
-      id: 'm3',
-      slot: 'Snack · 16:00',
-      title: 'Whey + banán',
-      score: null,
-      kcal: 340,
-      p: 42,
-      c: 36,
-      f: 4,
-      loggedAt: `${TODAY}T16:00:00`,
-      mealDate: TODAY,
-      mealItems: [
-        { source: 'recipe', refId: 'rec-4', amount: 1, unit: 'adag', name: 'Whey + banán',
-          contribution: { kcal: 340, p: 42, c: 36, f: 4 }, nova: 4 } satisfies MealItemLine,
-      ],
-      items: ['MyProtein Impact Whey 40g', 'Banán 1db', 'Mandulavaj 15g'],
-      tags: ['myprotein.hu'],
-      breakdown: {
-        confidence: 0.79,
-        summary:
-          'Funkcionális stack, nem teljes étkezés. A whey ultra-processed (NOVA 4) — ez itt fícsör nem bug: gyors emésztés a T-2h volleyball + T-1h Pull Day ablakra. Önmagában nem nyerne 84-et, kontextusban viszont igen.',
-        dimensions: [
-          {
-            id: 'macro',
-            label: 'Kcal & makró arány',
-            weight: 0.22,
-            score: 0.88,
-            color: 'var(--coral)',
-            detail:
-              'P/C/F 49/42/9%. Snack-re extrém protein-súlyos — pont ezt akarjuk a workout-window előtt. A 9% F szándékos (gyorsabb gyomor-ürülés).',
-            macroRatio: { p: 49, c: 42, f: 9 },
-            macroTargets: { p: '30–50% snack', c: '40–60% snack', f: '5–15% snack' },
-            kcalShareOfDay: 11.0,
-            notes: 'Snack-profil · nem teljes étkezés metrikán mérve.',
-          },
-          {
-            id: 'micro',
-            label: 'Rost & mikro',
-            weight: 0.1,
-            score: 0.66,
-            color: 'var(--cat-physiology)',
-            detail:
-              'Rost 3.1g — banán + mandulavaj, a napi rostcél 28%-a; a whey-isolate rostszegény. A K/Mg a WHO-dimenzió alá esik.',
-            micros: [
-              { name: 'Rost', value: '3.1g', pct: 28, status: 'low' },
-            ],
-          },
-          {
-            id: 'who',
-            label: 'Ajánlások · WHO',
-            weight: 0.14,
-            score: 0.78,
-            color: 'var(--sky)',
-            detail: 'Cukor az energia 9%-a (WHO ≤10%) — banán · só a keret harmadán, a whey nátriumtartalma.',
-            context: [
-              { label: 'Cukor', value: '9 E% / 10 E% limit' },
-              { label: 'Só', value: '0.5 g / 1.5 g keret' },
-            ],
-          },
-          {
-            id: 'fat_quality',
-            label: 'Zsírminőség',
-            weight: 0.1,
-            score: 0.9,
-            color: 'var(--amber-deep)',
-            detail: 'Telített zsír az energia 3%-a · az összzsír 20%-a — a mandulavaj telítetlen-dominált.',
-            context: [
-              { label: 'Telített E%', value: '3% / 10% limit' },
-              { label: 'Telített/összzsír', value: '20% (ref. 33%)' },
-            ],
-          },
-          {
-            id: 'nova',
-            label: 'Feldolgozottság · NOVA',
-            weight: 0.18,
-            score: 0.62,
-            color: 'var(--cat-tendency)',
-            detail:
-              'Whey isolate NOVA 4 (ipari fehérje-izolátum). Itt funkcionális ok van rá — de heti szinten max 4-5× érdemes előfordulnia, jelenleg 6× volt a múlt héten.',
-            nova: {
-              dominant: 4,
-              stack: [
-                { nova: 1, pct: 32, label: 'Banán' },
-                { nova: 2, pct: 10, label: 'Mandulavaj' },
-                { nova: 3, pct: 0, label: '—' },
-                { nova: 4, pct: 58, label: 'Whey protein' },
-              ],
-              items: [
-                { name: 'MyProtein Whey 40g', nova: 4, warning: true },
-                { name: 'Banán 1db', nova: 1 },
-                { name: 'Mandulavaj 15g', nova: 2 },
-              ],
-            },
-          },
-          {
-            id: 'plant_diversity',
-            label: 'Növényi diverzitás',
-            weight: 0.08,
-            score: 0.67,
-            color: 'var(--sage-deep)',
-            detail: '2 növényi kategória a 3-s célhoz — banán + mandulavaj; a whey nem növényi forrás.',
-            context: [
-              { label: 'Növényi kategóriák', value: 'fruits · nuts_seeds' },
-              { label: 'Összesen', value: '2 / 3 cél' },
-            ],
-          },
-          {
-            id: 'energy_density',
-            label: 'Energia-sűrűség',
-            weight: 0.06,
-            score: 0.82,
-            color: 'var(--lav)',
-            detail: '194 kcal/100g (150 alatt teljes pont, 400 felett nulla) — a mandulavaj emeli.',
-            context: [
-              { label: 'Sűrűség', value: '194 kcal/100g' },
-              { label: 'Lefedettség', value: '100% gramm-alapú' },
-            ],
-          },
-          {
-            id: 'context',
-            label: 'Időzítés & kontextus',
-            weight: 0.12,
-            score: 0.96,
-            color: 'var(--cat-preference)',
-            detail:
-              '16:00 · Pull Day T-1h · volleyball T-3.5h. A whey gyors emésztése pont az aminosav-rendelkezésre állást targetálja a 17:00-s start körül. Reta D3-on, mikor a PM étvágy leesik, ez a snack nem opcionális.',
-            context: [
-              { label: 'Időzítés', value: 'Pre-workout · T-1h' },
-              { label: 'Reta fázis', value: 'D3 délután · étvágy ↓' },
-              { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
-              { label: 'Sport-window', value: 'VB T-3.5h glikogén' },
-            ],
-          },
-        ],
-        improve: [
-          { text: 'Whey → kazein+whey blend ha nem közvetlen pre-workout — heti NOVA 4 csökken.', impact: '+0.05 score' },
-          { text: '+1 marék bogyós gyümölcs — antioxidáns + fiber 28% → 45%.', impact: '+0.03 score' },
-          { text: 'Heti whey-snack count: 6 → 4 célzott alkalom.', impact: 'hosszú táv' },
-        ],
-        tools: [
-          { type: 'read', name: 'lookupNutrients(items=3)' },
-          { type: 'compute', name: 'classifyNOVA(items=3)' },
-          { type: 'compute', name: 'evaluatePreWorkoutFit(meal, workout=17:00)' },
-          { type: 'read', name: 'get_weekly_nova4_count()' },
-          { type: 'compute', name: 'checkRetaAppetitePhase(D3)' },
-        ],
-      },
-    },
-    {
-      id: 'm4',
-      slot: 'Vacsora · 19:30 (tervezett)',
-      title: 'Lazac + barna rizs + brokkoli',
-      score: null,
-      kcal: 760,
-      p: 48,
-      c: 72,
-      f: 28,
-      loggedAt: `${TODAY}T19:30:00`,
-      mealDate: TODAY,
-      mealItems: [
-        { source: 'recipe', refId: 'rec-5', amount: 1, unit: 'adag', name: 'Lazac + barna rizs + brokkoli',
-          contribution: { kcal: 760, p: 48, c: 72, f: 28 }, nova: 1 } satisfies MealItemLine,
-      ],
-      items: ['Lazac filé 180g', 'Barna rizs 80g', 'Brokkoli 200g'],
-      tags: ['post-volleyball', 'tervezett'],
     },
   ],
   pacing: {

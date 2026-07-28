@@ -3,18 +3,23 @@ package io.mrkuhne.mezo.feature.meal.controller;
 import io.mrkuhne.mezo.api.controller.MealApi;
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
+import io.mrkuhne.mezo.api.dto.MealCoachResponse;
+import io.mrkuhne.mezo.api.dto.MealCoachVerdict;
 import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.RecipeLogListResponse;
 import io.mrkuhne.mezo.api.dto.WaterLogRequest;
 import io.mrkuhne.mezo.api.dto.WaterLogResponse;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
+import io.mrkuhne.mezo.feature.meal.service.MealCoachService;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.meal.service.WaterLogService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -30,10 +35,35 @@ public class MealController implements MealApi {
     private final MealService mealService;
     private final WaterLogService waterLogService;
     private final CurrentUserId currentUserId;
+    /** Absent bean when the coach feature is switched off — the endpoints then serve no verdicts. */
+    private final ObjectProvider<MealCoachService> coachService;
 
     @Override
     public FuelDayResponse getFuelDay(LocalDate date) {
         return fuelDayService.getDay(currentUserId.get(), date);
+    }
+
+    /**
+     * Coach verdicts for a day (mezo-mr4n). Generation is allowed for TODAY only — browsing back
+     * through history serves whatever is already cached and costs no LLM calls (spec §5). With the
+     * feature off there is no service bean and the answer is 200 + an empty list, never an error.
+     */
+    @Override
+    public MealCoachResponse getMealCoachForDay(LocalDate date) {
+        MealCoachService svc = coachService.getIfAvailable();
+        return response(svc == null ? List.of()
+            : svc.generateForDay(currentUserId.get(), date, date.equals(LocalDate.now())));
+    }
+
+    /** Coach verdict for one meal (mezo-mr4n) — an explicit open, so it generates on any date. */
+    @Override
+    public MealCoachResponse getMealCoach(UUID id) {
+        MealCoachService svc = coachService.getIfAvailable();
+        return response(svc == null ? List.of() : svc.generateForMeal(currentUserId.get(), id));
+    }
+
+    private static MealCoachResponse response(List<MealCoachVerdict> verdicts) {
+        return MealCoachResponse.builder().verdicts(verdicts).build();
     }
 
     @Override

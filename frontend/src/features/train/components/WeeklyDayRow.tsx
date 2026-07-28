@@ -1,6 +1,10 @@
 // ============================================================
 // Mezo · WeeklyDayRow — one day in the combined gym + sport
 // weekly timeline (Mai view). Napiv `.dayrow` day card (spec §4.3).
+// Layout (restructured mezo-lruy): a day header row (label + MA marker
+// + chevron) over one padded block per session — tag + title + state
+// chip on top, the session's facts as separate `.metapill`s below —
+// so a long title never collides with its own meta line.
 // ============================================================
 import { cn } from '@/shared/lib/cn'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
@@ -42,6 +46,19 @@ interface WeeklyDayRowProps {
   onReviewCustom?: (id: string) => void
 }
 
+/** One fact of a session (time, duration, role…) — the pill row under its title. */
+function MetaPills({ facts }: { facts: (string | null | undefined | false)[] }) {
+  const shown = facts.filter(Boolean) as string[]
+  if (shown.length === 0) return null
+  return (
+    <span className="s-meta">
+      {shown.map((f) => (
+        <span key={f} className="metapill">{f}</span>
+      ))}
+    </span>
+  )
+}
+
 export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gymInProgress, onStartGym, onReviewGym, onOpenGymDay, onLogSport, onLogRun, onReviewCustom }: WeeklyDayRowProps) {
   const { day, isToday } = agenda
   // Time-ordered flat session list — gym/volleyball/running interleave by
@@ -52,9 +69,12 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
 
   return (
     <div className={cn('dayrow', isToday && 'today', !hasContent && 'rest')}>
-      <div className="d">
-        {day}
-        {isToday && <small>MA</small>}
+      <div className="dayrow-head">
+        <span className="d">
+          {day}
+          {isToday && <small>MA</small>}
+        </span>
+        {hasContent && <span className="chev" aria-hidden="true">›</span>}
       </div>
 
       <div className="sess">
@@ -67,20 +87,20 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
         {sessions.map((item, i) => {
           if (item.kind === 'gym') {
             const gym = item.gym
-            // `type` doubles as the row title below (no separate workout-name field on
-            // GymScheduleDay) — repeating it here disambiguates same-time/duration gym
-            // days from each other AND from the TrainTodayPage hero's own `time · Xp` line.
-            const meta = [gym.time, gym.duration ? `${gym.duration}p` : null, gym.type].filter(Boolean).join(' · ')
+            // `type` IS the row title, so it never repeats among the pills — only the
+            // schedule facts (time, duration) do.
             // A completed (kész) gym day — today OR a past day — opens its review;
             // today's not-yet-logged row starts the session; any other day starts
             // it directly via onOpenGymDay (direct-start flow, mezo-j3x0 / mezo-bxpg).
             return (
               <button key="gym" type="button" className="s" onClick={gymLogged ? onReviewGym : isToday ? onStartGym : onOpenGymDay}>
-                <span className="stag stag-gym">GYM</span>
-                {isToday ? <b>{gym.type}</b> : gym.type}
-                <span className="meta">{meta}</span>
-                {gymLogged && <span className="done-chip">kész</span>}
-                {!gymLogged && gymInProgress && isToday && <span className="log-chip stag-gym">folyamatban</span>}
+                <span className="s-top">
+                  <span className="stag stag-gym">GYM</span>
+                  <span className="s-title">{gym.type}</span>
+                  {gymLogged && <span className="done-chip">kész</span>}
+                  {!gymLogged && gymInProgress && isToday && <span className="log-chip stag-gym">folyamatban</span>}
+                </span>
+                <MetaPills facts={[gym.time, gym.duration ? `${gym.duration} perc` : null]} />
               </button>
             )
           }
@@ -89,40 +109,42 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             const s = item.sport
             const k = sportOf(s)
             const logged = Boolean(isSportLogged?.(s))
-            const meta = [s.time, `${s.duration}p`, s.role, s.intensity].filter(Boolean).join(' · ')
             return (
               <button key={`sport-${k}-${s.time}-${i}`} type="button" className="s" onClick={isToday ? () => onLogSport?.(s) : undefined}>
-                <span className="stag stag-sport">{SPORT_TAGS[k]}</span>
-                {isToday ? <b>{SPORT_TITLES[k]}</b> : SPORT_TITLES[k]}
-                <span className="meta">{meta}</span>
-                {(logged || isToday) && (
-                  <span className={logged ? 'done-chip' : cn('log-chip', 'stag-sport')}>
-                    {logged ? 'kész' : 'log'}
-                  </span>
-                )}
+                <span className="s-top">
+                  <span className="stag stag-sport">{SPORT_TAGS[k]}</span>
+                  <span className="s-title">{SPORT_TITLES[k]}</span>
+                  {(logged || isToday) && (
+                    <span className={logged ? 'done-chip' : cn('log-chip', 'stag-sport')}>
+                      {logged ? 'kész' : 'log'}
+                    </span>
+                  )}
+                </span>
+                <MetaPills facts={[s.time, `${s.duration} perc`, s.role, s.intensity]} />
               </button>
             )
           }
 
           const run = item.running
-          const meta = [
-            run.timeOfDay,
-            `RPE ${run.rpeTarget.min}–${run.rpeTarget.max}`,
-            run.rounds ? `${run.rounds} kör` : null,
-          ]
-            .filter(Boolean)
-            .join(' · ')
           const runDone = Boolean(isRunLogged?.(run.key))
           return (
             <button key={run.key} type="button" className="s" onClick={isToday ? () => onLogRun?.(run) : undefined}>
-              <span className="stag stag-run">FUTÁS</span>
-              {isToday ? <b>{run.label}</b> : run.label}
-              <span className="meta">{meta}</span>
-              {(runDone || isToday) && (
-                <span className={runDone ? 'done-chip' : cn('log-chip', 'stag-run')}>
-                  {runDone ? 'kész' : 'log'}
-                </span>
-              )}
+              <span className="s-top">
+                <span className="stag stag-run">FUTÁS</span>
+                <span className="s-title">{run.label}</span>
+                {(runDone || isToday) && (
+                  <span className={runDone ? 'done-chip' : cn('log-chip', 'stag-run')}>
+                    {runDone ? 'kész' : 'log'}
+                  </span>
+                )}
+              </span>
+              <MetaPills
+                facts={[
+                  run.timeOfDay,
+                  `RPE ${run.rpeTarget.min}–${run.rpeTarget.max}`,
+                  run.rounds ? `${run.rounds} kör` : null,
+                ]}
+              />
             </button>
           )
         })}
@@ -134,14 +156,14 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             className="s"
             onClick={onReviewCustom ? () => onReviewCustom(c.id) : undefined}
           >
-            <span className="stag stag-gym">SAJÁT</span>
-            {c.title}
-            <span className="done-chip">kész</span>
+            <span className="s-top">
+              <span className="stag stag-gym">SAJÁT</span>
+              <span className="s-title">{c.title}</span>
+              <span className="done-chip">kész</span>
+            </span>
           </button>
         ))}
       </div>
-
-      {hasContent && <span className="chev" aria-hidden="true">›</span>}
     </div>
   )
 }

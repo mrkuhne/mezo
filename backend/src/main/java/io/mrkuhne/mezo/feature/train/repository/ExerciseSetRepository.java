@@ -51,4 +51,34 @@ public interface ExerciseSetRepository extends JpaRepository<ExerciseSetEntity, 
 
     /** Working sets only (record aggregation input — warmups excluded). */
     List<ExerciseSetEntity> findByCreatedByAndRepsNotNullAndKind(UUID createdBy, String kind);
+
+    /** One row per (21-zone muscle, instance date) — the volume-arc aggregation projection. */
+    interface MuscleWeekSetCount {
+        String getMuscle();
+        java.time.LocalDate getDate();
+        long getSets();
+    }
+
+    /**
+     * Working-set counts for one mesocycle's COMPLETED instances, grouped by the exercise's raw
+     * (21-token) muscle zone and the instance date — the volume-arc read (mezo-hi9m). The service
+     * collapses each zone to its coarse {@link io.mrkuhne.mezo.feature.train.service.MuscleGroup}
+     * and buckets the date into a meso-week; this query only counts + groups.
+     */
+    @org.springframework.data.jpa.repository.Query("""
+        SELECT e.muscle AS muscle, w.date AS date, COUNT(s) AS sets
+        FROM ExerciseSetEntity s, ExerciseEntity e, WorkoutSessionEntity w
+        WHERE s.createdBy = :createdBy
+          AND s.exerciseId = e.id
+          AND s.workoutSessionId = w.id
+          AND w.mesocycleId = :mesoId
+          AND w.status = 'completed'
+          AND s.kind = 'working'
+          AND s.skipped = false
+          AND s.reps IS NOT NULL
+        GROUP BY e.muscle, w.date
+        """)
+    List<MuscleWeekSetCount> aggregateWorkingSetsByMuscleAndDate(
+        @org.springframework.data.repository.query.Param("createdBy") UUID createdBy,
+        @org.springframework.data.repository.query.Param("mesoId") UUID mesoId);
 }

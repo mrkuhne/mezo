@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.WorkoutWindow;
 import java.math.BigDecimal;
 import java.time.LocalTime;
 import java.util.List;
@@ -36,7 +37,16 @@ class MealScoringServiceTest {
         new MealScoringProperties.PortionRefs(0.30),
         new MealScoringProperties.SlotShares(0.25, 0.35, 0.30, 0.10),
         new MealScoringProperties.SlotWindows(5, 10, 11, 15, 17, 22),
-        0.4);
+        0.4,
+        120,   // preLeadMin
+        90,    // postTrailMin
+        new MealScoringProperties.Roles(
+            new MealScoringProperties.RoleRubric(150, 550, 60,
+                new MealScoringProperties.WhoRefs(0.30, 5),
+                new MealScoringProperties.NovaGroupScores(1.0, 0.9, 0.8, 0.6)),
+            new MealScoringProperties.RoleRubric(300, 480, 70,
+                new MealScoringProperties.WhoRefs(0.20, 5),
+                new MealScoringProperties.NovaGroupScores(1.0, 0.88, 0.7, 0.45))));
 
     private final MealScoringService service = new MealScoringService(props, targets);
 
@@ -49,6 +59,16 @@ class MealScoringServiceTest {
             new ScoredLine("Whey shake", "1 adag",
                 bd(285), bd(14), bd(25), bd(6), (short) 4,
                 null, null, null, null, false, null, null));
+    }
+
+    // A carb-heavy, high-sugar, NOVA-4 line — the "PB Banana Toast" shape.
+    private List<ScoredLine> fuelLines() {
+        return List.of(new ScoredLine(
+            "PB Banana Toast", "1 adag",
+            new BigDecimal("237"), new BigDecimal("10"), new BigDecimal("42"), new BigDecimal("3"),
+            (short) 4,
+            new BigDecimal("8"), new BigDecimal("20"), new BigDecimal("1.0"), new BigDecimal("0.5"),
+            true, null, null));
     }
 
     @Test
@@ -71,6 +91,14 @@ class MealScoringServiceTest {
         assertThat(b.summary()).isNull();
         assertThat(b.improve()).isEmpty();
         assertThat(b.tools()).isNotEmpty();
+    }
+
+    @Test
+    void testScoreMeal_shouldLeaveTaglineNull_whenNoCoachRan() {
+        MealBreakdownJson b = service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0));
+
+        // the coach's card-sized socket (mezo-mr4n) — the scorer never fabricates prose
+        assertThat(b.tagline()).isNull();
     }
 
     @Test
@@ -110,7 +138,8 @@ class MealScoringServiceTest {
         MealScoringProperties symmetric = new MealScoringProperties(
             props.weights(), props.nova(), props.macroDeviationSlope(), 1.0, props.micro(),
             props.who(), props.fatQuality(), props.plantDiversity(), props.energyDensity(),
-            props.portion(), props.slotShares(), props.slotWindows(), props.slotShareTolerance());
+            props.portion(), props.slotShares(), props.slotWindows(), props.slotShareTolerance(),
+            props.preLeadMin(), props.postTrailMin(), props.roles());
         MealScoringService symmetricService = new MealScoringService(symmetric, targets);
 
         var lines = List.of(line("Csirkés tál", 620, 60, 40, 10, 1, 5.0, 8.0, 0.5, 3.0));
@@ -325,7 +354,193 @@ class MealScoringServiceTest {
         assertThat(fit).isNull(); // honest: nothing to score → pending, never a fabricated number
     }
 
+    @Test
+    void testClassifyRole_shouldBePreWorkout_whenInsideLeadWindow() {
+        var gym = new WorkoutWindow(LocalTime.of(14, 30), LocalTime.of(15, 30), false);
+        // 13:20 is 70 min before start, inside the 120-min pre-lead
+        MealRole role = MealScoringService.classifyRole(LocalTime.of(13, 20), List.of(gym), 120, 90);
+        assertThat(role).isEqualTo(MealRole.PRE_WORKOUT);
+    }
+
+    @Test
+    void testClassifyRole_shouldBeStandard_whenBeforeLeadWindow() {
+        var gym = new WorkoutWindow(LocalTime.of(14, 30), LocalTime.of(15, 30), false);
+        // 12:00 is 150 min before start, OUTSIDE the 120-min pre-lead
+        assertThat(MealScoringService.classifyRole(LocalTime.of(12, 0), List.of(gym), 120, 90))
+            .isEqualTo(MealRole.STANDARD);
+    }
+
+    @Test
+    void testClassifyRole_shouldBePostWorkout_whenInsideTrailAndDone() {
+        var gym = new WorkoutWindow(LocalTime.of(9, 0), LocalTime.of(10, 0), true);
+        // 10:45 is 45 min after end, inside the 90-min trail, workout DONE
+        assertThat(MealScoringService.classifyRole(LocalTime.of(10, 45), List.of(gym), 120, 90))
+            .isEqualTo(MealRole.POST_WORKOUT);
+    }
+
+    @Test
+    void testClassifyRole_shouldBeStandard_whenInTrailButNotDone() {
+        var gym = new WorkoutWindow(LocalTime.of(9, 0), LocalTime.of(10, 0), false);
+        // in the post window but the workout was NOT done → no recovery bonus
+        assertThat(MealScoringService.classifyRole(LocalTime.of(10, 45), List.of(gym), 120, 90))
+            .isEqualTo(MealRole.STANDARD);
+    }
+
+    @Test
+    void testClassifyRole_shouldBeStandard_whenNoWorkouts() {
+        assertThat(MealScoringService.classifyRole(LocalTime.of(13, 0), List.of(), 120, 90))
+            .isEqualTo(MealRole.STANDARD);
+    }
+
+    @Test
+    void testClassifyRole_shouldPreferPostDone_whenBetweenDonePriorAndUpcomingWorkout() {
+        var morningDone = new WorkoutWindow(LocalTime.of(9, 0), LocalTime.of(10, 0), true);
+        var eveningPlanned = new WorkoutWindow(LocalTime.of(11, 30), LocalTime.of(12, 30), false);
+        // 10:45: post-window of the DONE morning workout AND pre-window of the planned one → post wins
+        assertThat(MealScoringService.classifyRole(
+                LocalTime.of(10, 45), List.of(morningDone, eveningPlanned), 120, 90))
+            .isEqualTo(MealRole.POST_WORKOUT);
+    }
+
+    @Test
+    void testScoreMeal_shouldEqualStandardOverload_whenRoleStandard() {
+        var lines = fuelLines();
+        MealBreakdownJson viaOverload = service.scoreMeal("breakfast", lines, LocalTime.of(6, 13));
+        MealBreakdownJson viaRole =
+            service.scoreMeal("breakfast", lines, LocalTime.of(6, 13), MealRole.STANDARD);
+        assertThat(viaRole.value()).isEqualByComparingTo(viaOverload.value());
+    }
+
+    @Test
+    void testScoreMeal_shouldNotPenalizeFuel_whenPreWorkout() {
+        var lines = fuelLines();
+        MealBreakdownJson standard =
+            service.scoreMeal("breakfast", lines, LocalTime.of(6, 13), MealRole.STANDARD);
+        MealBreakdownJson pre =
+            service.scoreMeal("breakfast", lines, LocalTime.of(6, 13), MealRole.PRE_WORKOUT);
+
+        // whole score lifts, and the three role-sensitive dims each lift (or hold) vs standard
+        assertThat(pre.value().doubleValue()).isGreaterThan(standard.value().doubleValue());
+        assertThat(dimension(pre, "who").score().doubleValue())
+            .isGreaterThan(dimension(standard, "who").score().doubleValue());
+        assertThat(dimension(pre, "nova").score().doubleValue())
+            .isGreaterThan(dimension(standard, "nova").score().doubleValue());
+        assertThat(dimension(pre, "macro").score().doubleValue())
+            .isGreaterThanOrEqualTo(dimension(standard, "macro").score().doubleValue());
+    }
+
+    @Test
+    void testScoreMeal_shouldTagRole_whenNonStandard() {
+        MealBreakdownJson pre =
+            service.scoreMeal("breakfast", fuelLines(), LocalTime.of(6, 13), MealRole.PRE_WORKOUT);
+        assertThat(dimension(pre, "context").context())
+            .anySatisfy(row -> assertThat(row.label()).isEqualTo("Szerep"));
+    }
+
+    @Test
+    void testScoreMeal_shouldNotTagRole_whenStandard() {
+        MealBreakdownJson std =
+            service.scoreMeal("breakfast", fuelLines(), LocalTime.of(6, 13), MealRole.STANDARD);
+        assertThat(dimension(std, "context").context())
+            .noneSatisfy(row -> assertThat(row.label()).isEqualTo("Szerep"));
+    }
+
+    @Test
+    void testRecipeTemplateBreakdown_shouldEqualLegacyOutput_whenRoleIsStandard() {
+        MealBreakdownJson legacy = service.recipeTemplateBreakdown("breakfast", preWorkoutLines());
+        MealBreakdownJson explicit =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.STANDARD);
+
+        assertThat(explicit.value()).isEqualByComparingTo(legacy.value());
+        assertThat(explicit.confidence()).isEqualByComparingTo(legacy.confidence());
+        assertThat(explicit.dimensions()).usingRecursiveComparison().isEqualTo(legacy.dimensions());
+    }
+
+    @Test
+    void testRecipeTemplateBreakdown_shouldLiftRoleSensitiveDimensions_whenRolePreWorkout() {
+        MealBreakdownJson std =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.STANDARD);
+        MealBreakdownJson pre =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT);
+
+        assertThat(dimension(pre, "who").score()).isGreaterThan(dimension(std, "who").score());
+        assertThat(dimension(pre, "nova").score()).isGreaterThan(dimension(std, "nova").score());
+        assertThat(dimension(pre, "macro").score()).isGreaterThan(dimension(std, "macro").score());
+        assertThat(pre.value()).isGreaterThan(std.value());
+    }
+
+    @Test
+    void testRecipeTemplateBreakdown_shouldKeepRoleIndependentDimensions_whenRolePreWorkout() {
+        MealBreakdownJson std =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.STANDARD);
+        MealBreakdownJson pre =
+            service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT);
+
+        for (String id : List.of("micro", "fat_quality", "plant_diversity", "energy_density", "portion")) {
+            assertThat(dimension(pre, id).score())
+                .as("dimension %s must be role-independent", id)
+                .isEqualByComparingTo(dimension(std, id).score());
+        }
+    }
+
+    @Test
+    void testRecipeTemplateBreakdown_shouldLowerTheValue_whenRolePreWorkoutAndProfileIsProteinFatDominant() {
+        MealBreakdownJson std =
+            service.recipeTemplateBreakdown("breakfast", proteinFatLines(), MealRole.STANDARD);
+        MealBreakdownJson pre =
+            service.recipeTemplateBreakdown("breakfast", proteinFatLines(), MealRole.PRE_WORKOUT);
+
+        // The overlay is a RETARGET, not a bonus: pre-workout wants carbs (c 550 vs 380), so a
+        // protein/fat-dominant template deviates FURTHER from the pre target than from the base one.
+        assertThat(dimension(pre, "macro").score()).isLessThan(dimension(std, "macro").score());
+        // macro is the sole driver here — everything else is degraded or role-independent, so the
+        // whole envelope follows it down (no role-sensitive dimension is live to offset it).
+        for (String id : List.of("micro", "who", "fat_quality", "nova", "plant_diversity")) {
+            assertThat(dimension(pre, id).weight())
+                .as("dimension %s must be degraded for this fixture", id)
+                .isEqualByComparingTo(BigDecimal.ZERO);
+        }
+        assertThat(pre.value()).isLessThan(std.value());
+    }
+
+    @Test
+    void testRecipeFit_shouldMatchTemplateValue_whenRoleGiven() {
+        assertThat(service.recipeFit("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT))
+            .isEqualByComparingTo(
+                service.recipeTemplateBreakdown("breakfast", preWorkoutLines(), MealRole.PRE_WORKOUT).value());
+    }
+
     // --- line builders (mirror the file's ScoredLine constructor style) --------------------------
+
+    /** Carb/sugar-heavy pre-workout profile: white toast + honey + banana, one serving. */
+    private List<ScoredLine> preWorkoutLines() {
+        return List.of(
+            new ScoredLine("Fehér toast", "80g",
+                bd(210), bd(7), bd(40), bd(2), (short) 4,
+                bd(2), bd(4), bd(1), bd(0.5), true, "grains", bd(80)),
+            new ScoredLine("Méz", "30g",
+                bd(90), bd(0), bd(24), bd(0), (short) 3,
+                bd(0), bd(23), bd(0), bd(0), true, null, bd(30)),
+            new ScoredLine("Banán", "120g",
+                bd(107), bd(1), bd(27), bd(0), (short) 1,
+                bd(3), bd(14), bd(0), bd(0), true, "fruits", bd(120)));
+    }
+
+
+    /**
+     * Protein/fat-dominant PER-SERVING profile: one 125 g line of 375 kcal / p 16.25 / c 5 / f 5.625.
+     * The macro grams are the {@code RecipeBreakdownApiIT} food's per-100g p 13 / c 4 / f 4.5 scaled
+     * to a serving the way {@code RecipeService.fitLines} does (250 g over 2 servings ⇒ ×1.25, the
+     * label keeping the recipe-level amount); the energy is this fixture's own, higher than the IT's.
+     * Facts-less, NOVA-less and category-less ON PURPOSE (the API fixture carries none either), so
+     * every role-sensitive dimension except macro degrades to weight 0 and the macro retarget is the
+     * only thing moving the envelope value.
+     */
+    private List<ScoredLine> proteinFatLines() {
+        return List.of(new ScoredLine("Túró", "250g",
+            bd(375), bd(16.25), bd(5), bd(5.625), null,
+            null, null, null, null, false, null, bd(125)));
+    }
 
     /** Fully-covered line: nutrition facts + a plant-neutral category + a gram amount (who/fat/micro). */
     private ScoredLine line(String name, double kcal, double p, double c, double f, int nova,

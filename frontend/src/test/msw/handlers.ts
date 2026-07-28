@@ -17,6 +17,8 @@ const recipeFixture = {
   id: 'rc1f3a0e2-0000-4000-8000-000000000001',
   name: 'Túrós zabkása · áfonyával', slot: 'Reggeli', category: 'breakfast',
   servings: 1, prepMins: 5, cookMins: 3, tags: ['high-protein', 'pre-workout'], starred: true,
+  // Same template as the mock seed's rec-1 → same role (mezo-uavr), so both modes agree.
+  role: 'pre_workout',
   createdDate: 'Máj 14', novaDominant: 3, macros: { kcal: 580, p: 42, c: 78, f: 12 },
   mezoFit: { score: null, fitsFor: ['Reggel · Reta D3'] },
   timesLogged: 0, avgScore: 0, lastLogged: '—',
@@ -157,8 +159,8 @@ export const handlers = [
       heightCm: 180,
       birthDate: '1991-03-01',
       bodyFatPct: 15,
-      activityLevel: 'MODERATE',
-      tdeeBootstrap: { bmr: 1910, tdee: 2960, pal: 1.55, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
+      activityLevel: 'MIXED',
+      tdeeBootstrap: { bmr: 1910, neat: 1.35, neatBaselineKcal: 2579, weeklyEatKcalPerDay: 421, tdee: 3000, formula: 'KATCH', computedAt: '2026-05-22T06:00:00Z' },
     }),
   ),
   // Progression profile (P6). Tests can override to ghost with a 404 (switch off).

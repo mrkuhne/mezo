@@ -30,6 +30,7 @@ public final class BreakdownDtoMapper {
             .value(b.value())
             .confidence(b.confidence())
             .summary(b.summary())
+            .tagline(b.tagline())
             .dimensions(b.dimensions() == null ? List.of()
                 : b.dimensions().stream().map(BreakdownDtoMapper::toDimension).toList())
             .improve(b.improve() == null ? List.of()

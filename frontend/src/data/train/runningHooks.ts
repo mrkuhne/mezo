@@ -102,6 +102,9 @@ export function useRunning(): RunningData {
         qc.invalidateQueries({ queryKey: ['running', 'runSessions'] })
         // Run XP feeds the progression profile (P6 radar/muscle levels).
         qc.invalidateQueries({ queryKey: ['progressionProfile'] })
+        // A run before the wake-anchored cutoff satisfies the training_done_today habit,
+        // DERIVED server-side — nudge the habit read so the "Reggeli edzés" ✓ appears.
+        qc.invalidateQueries({ queryKey: ['habitDay'] })
       }
     },
   })

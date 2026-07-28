@@ -48,6 +48,11 @@ public class FeaturesConfiguration {
      *  needs COMPANION_SWITCH (the port adapter lives there). */
     public static final String RECIPE_AI_SCORE_SWITCH = "mezo.feature.recipe-ai-score.enabled";
 
+    /** Meal coach verdicts (mezo-mr4n): gates ONLY the LLM prose over a logged meal's score — the
+     *  deterministic score and its breakdown stay on regardless. Verdicts additionally need
+     *  COMPANION_SWITCH (the MealCoachLlm adapter lives there). */
+    public static final String MEAL_COACH_SWITCH = "mezo.feature.meal-coach.enabled";
+
     /** Proactive layer (mezo-h4wp) — generated briefing + weekly prose + heartbeat + predictions.
      *  Every proactive bean conditions on BOTH this AND COMPANION_SWITCH (the generators call the
      *  CompanionLlm port, whose beans only exist when the companion is on). */
@@ -76,6 +81,9 @@ public class FeaturesConfiguration {
 
     /** Hypertrophy Drive — pre-populated prescribed sets + dynamic weight/rep recommendation. */
     public static final String HYPERTROPHY_DRIVE_SWITCH = "mezo.feature.hypertrophy-drive.enabled";
+
+    /** Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume rollover + deload/grind logic. */
+    public static final String VOLUME_PROGRESSION_SWITCH = "mezo.feature.volume-progression.enabled";
 
     /** Fix zárás (closing block) — configured closing exercises (mezo.closing-block) lazily
      *  ensured at the END of every template gym day of the active meso on GET /workouts/today. */

@@ -271,4 +271,76 @@ class ChallengeOutcomeIT extends AbstractIntegrationTest {
 
         assertThat(resolved).isEqualTo(1);
     }
+
+    @Test
+    void testEvaluate_shouldHitOverload_whenLoggedSetMeetsWeightAndRepTarget() {
+        UUID user = userPopulator.createUser("chl-overload-hit@test.local").getId();
+        Plan plan = plantTemplate(user);
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(user, plan.template(), PAST, "completed");
+        // weight-lever overload: target 100kg × 5; a logged set clears both (100kg × 5).
+        ChallengeEntity c = challengePopulator.challengeOverload(
+            user, plan.templateSessionId(), PAST, plan.exerciseId(), ChallengeEntity.STATUS_ACCEPTED, "100.00", 5);
+        trainPopulator.createLoggedSet(user, plan.exerciseId(), instance.getId(), 0, "100.00", 5, 1);
+
+        boolean transitioned = evaluator.evaluate(c, TODAY);
+
+        assertThat(transitioned).isTrue();
+        ChallengeEntity r = reload(c);
+        assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_HIT);
+        assertThat(r.getOutcomeGood()).isTrue();
+    }
+
+    @Test
+    void testEvaluate_shouldMissOverload_whenLoggedSetBelowWeightTarget() {
+        UUID user = userPopulator.createUser("chl-overload-miss@test.local").getId();
+        Plan plan = plantTemplate(user);
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(user, plan.template(), PAST, "completed");
+        // weight-lever overload: target 100kg × 5; best logged set is only 95kg — weight target not met.
+        ChallengeEntity c = challengePopulator.challengeOverload(
+            user, plan.templateSessionId(), PAST, plan.exerciseId(), ChallengeEntity.STATUS_ACCEPTED, "100.00", 5);
+        trainPopulator.createLoggedSet(user, plan.exerciseId(), instance.getId(), 0, "95.00", 5, 1);
+
+        boolean transitioned = evaluator.evaluate(c, TODAY);
+
+        assertThat(transitioned).isTrue();
+        ChallengeEntity r = reload(c);
+        assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_MISS);
+        assertThat(r.getOutcomeGood()).isFalse();
+    }
+
+    @Test
+    void testEvaluate_shouldBeInconclusiveOverload_whenInstanceCompletedWithNoLoggedSets() {
+        UUID user = userPopulator.createUser("chl-overload-inconc@test.local").getId();
+        Plan plan = plantTemplate(user);
+        // Completion unlocks same-day resolution: today's instance is 'completed' but the target
+        // exercise carries NO logged sets → resolve inconclusive NOW.
+        trainPopulator.createWorkoutInstance(user, plan.template(), TODAY, "completed");
+        ChallengeEntity c = challengePopulator.challengeOverload(
+            user, plan.templateSessionId(), TODAY, plan.exerciseId(), ChallengeEntity.STATUS_ACCEPTED, "100.00", 5);
+
+        boolean transitioned = evaluator.evaluate(c, TODAY);
+
+        assertThat(transitioned).isTrue();
+        ChallengeEntity r = reload(c);
+        assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_INCONCLUSIVE);
+        assertThat(r.getOutcomeGood()).isNull();
+    }
+
+    @Test
+    void testEvaluate_shouldHitRepLeverOverload_whenRepsMet_regardlessOfWeight() {
+        UUID user = userPopulator.createUser("chl-overload-replever@test.local").getId();
+        Plan plan = plantTemplate(user);
+        WorkoutSessionEntity instance = trainPopulator.createWorkoutInstance(user, plan.template(), PAST, "completed");
+        // rep-lever overload: NO weight target (null), target 6 reps; any weight clearing 6 reps hits.
+        ChallengeEntity c = challengePopulator.challengeOverload(
+            user, plan.templateSessionId(), PAST, plan.exerciseId(), ChallengeEntity.STATUS_ACCEPTED, null, 6);
+        trainPopulator.createLoggedSet(user, plan.exerciseId(), instance.getId(), 0, "40.00", 6, 1);
+
+        boolean transitioned = evaluator.evaluate(c, TODAY);
+
+        assertThat(transitioned).isTrue();
+        ChallengeEntity r = reload(c);
+        assertThat(r.getStatus()).isEqualTo(ChallengeEntity.STATUS_HIT);
+        assertThat(r.getOutcomeGood()).isTrue();
+    }
 }

@@ -86,6 +86,7 @@ export function fromBreakdown(b: MealBreakdownResponse): MealBreakdown {
   return {
     confidence: b.confidence,
     summary: b.summary ?? null,
+    tagline: b.tagline ?? null,
     dimensions: b.dimensions
       .map(d => fromDimension(d))
       .filter((d): d is MealDimension => d !== null),

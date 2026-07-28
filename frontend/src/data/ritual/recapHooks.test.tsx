@@ -158,8 +158,9 @@ describe('useDayRecap (mock mode)', () => {
     const training = result.current.events.find((e) => e.icon === '🏋️')
     expect(training).toEqual({ icon: '🏋️', label: 'Pull Day', meta: '✓', done: false })
 
+    // Partial mock day (mezo-1oy5): breakfast + lunch logged → 2 meals, consumed protein 100 g.
     const fuelEvent = result.current.events.find((e) => e.icon === '🍽')
-    expect(fuelEvent).toEqual({ icon: '🍽', label: '4 étkezés', meta: '142 g fehérje', done: true })
+    expect(fuelEvent).toEqual({ icon: '🍽', label: '2 étkezés', meta: '100 g fehérje', done: true })
 
     const weightEvent = result.current.events.find((e) => e.icon === '⚖️')
     expect(weightEvent).toEqual({ icon: '⚖️', label: 'Súlymérés', meta: '78.6 kg', done: true })

@@ -2,13 +2,15 @@
 title: Habit — Morning & Evening Routine Engine
 type: feature-domain
 status: done
-updated: 2026-07-25
+updated: 2026-07-27
 tags: [today, me, growth, fuel, train, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
   - frontend/src/data/habit
   - frontend/src/features/today/components/RoutineCard.tsx
   - frontend/src/features/me/components/RoutinesTab.tsx
+  - frontend/src/shared/ui/DatePicker.tsx
+  - frontend/src/shared/ui/DayNavigator.tsx
   - api/feature/habit/habit.yml
 related: [today, growth, me, fuel, train, intention, _platform-data-layer, _platform-api-backend]
 ---
@@ -36,7 +38,12 @@ Status per layer: **backend** ✅ (`feature/habit` — catalog, `habit_day` tabl
 - **Level-ups** produced by the read (or a manual check) ride the shared `LevelUpProvider` overlay via `useLevelUp().showLevelUp`, with a new **HABIT** source meta (`A rutin épít.` / chip ☀️) in `features/progression/logic/levelUpMeta.ts`.
 - **Honest ghost:** renders `null` when there are no habits (switch off in real mode, or real mode before the day resolves) — no skeleton, no seed leak.
 
-**Growth — „Rutin" tab** (`features/me/components/RoutinesTab.tsx`): the **2nd** segment of the `/me/growth` segmented control — order **Skillek · Rutin · Napló · Kitüntetések** (`GrowthPage.tsx:77-80`). It is the overview/statistics surface (daily interaction stays on Today): the two **perfect-day counters** (`Tökéletes reggelek · 30 nap` / `Tökéletes esték · 30 nap`) over two chain cards (`Reggeli lánc` / `Esti lánc`), each habit rendered as a `.skl` row with its status mark, title, and a **28-day strength bar** (`{pct}%`, or `—` under the min-sample). Reads `useHabitDay(today)` (statuses) + `useHabitSummary()` (strengths + perfect days).
+**Growth — „Rutin" tab** (`features/me/components/RoutinesTab.tsx`): the **2nd** segment of the `/me/growth` segmented control — order **Skillek · Rutin · Napló · Kitüntetések** (`GrowthPage.tsx:77-80`). It is the overview/statistics surface (daily interaction stays on Today) and is now **date-navigable + read-only** (no check/log affordance here — see the deferred note below): a top **`DayNavigator`** (`shared/ui/DayNavigator.tsx`) steps the viewed day with `‹ prev | tappable date | next ›`, the centre label opening a themed calendar popover (`DatePicker`); it defaults to **today**, reads „Ma" on today, and disables `next` at today (no future). The view branches on the selected day:
+> - **Today** (unchanged): the two **perfect-day counters** (`Tökéletes reggelek · 30 nap` / `Tökéletes esték · 30 nap`) over two chain cards (`Reggeli lánc` / `Esti lánc`), each habit rendered with its status mark, title, and a **28-day strength bar** (`{pct}%`, or `—` under the min-sample).
+> - **Past day** (day-focused): a compact per-day **summary chip** (`Reggel {k}/{n} · Este {k}/{n}` + `+{XP} XP`) over the two chain cards rendered as **status-only rows** — no strength bars (strength is a rolling metric, not a per-day fact).
+> - **Empty past day:** a quiet ghost — „Nincs rutinadat erre a napra".
+>
+> Pure FE (no backend/API change — it just re-keys `useHabitDay(date)` on the picked day). Reads `useHabitDay(date)` (per-day statuses) + `useHabitSummary()` (strengths + perfect days, aggregate — today branch only). **Retroactive yesterday-logging from this tab is DEFERRED** (bd `mezo-x9c2`): the past view is read-only, daily check/log stays on Today's `RoutineCard`.
 
 ## 3. Architecture & data flow
 
@@ -64,7 +71,7 @@ RoutineCard / RoutinesTab
 - **`closePast`** (called by both the today-read and the cron) flips every stale `pending` row: END_OF_DAY/intraday metrics get one last honest evaluation, E4 gets the deadline logic, unknown/stale catalog keys close quietly `missed`.
 - **Completion** (`complete`) stamps `done_at`/`xp_awarded`/`source`, saves, then — when the `ProgressionGate` is available (`ObjectProvider`) — calls `ProgressionService.applyHabit` (idempotent per `habit_day.id`), passing the row's own `habit_date` as the award's business date (`HabitSignal.occurredOn`, `mezo-huzd` — the same row-borne-date convention QUEST/ACTIVITY signals use for the `level_up_event.occurred_on` column). Since checks are today-only (`requireManualToday`, below) this coincides with the grant instant in v1 — no observable behavior change, just plumbing consistency for whenever a source gains backdating. Award amounts are the catalog XP (deterministic, ADR 0010).
 - **Manual path:** `check` flips a MANUAL `pending → done` (today only) and awards; `uncheck` (same-day, MANUAL, `done`) reverts via `revertHabit` — it **soft-deletes** the `level_up_event` and **directly decrements** the skill row (the `moveActivityXp` precedent, no new event), so a re-check can cleanly re-award.
-- **Read-triggered heartbeat:** the FE day read runs `staleTime: 0` in real mode (`useHabitDay`) so the server re-evaluates derived completion on every mount/focus — the READ *is* the evaluation trigger, mirroring `useDailyQuests`.
+- **Read-triggered heartbeat:** the FE day read runs `staleTime: 0` in real mode (`useHabitDay`) so the server re-evaluates derived completion on every mount/focus — the READ *is* the evaluation trigger, mirroring `useDailyQuests`. Because the READ is the *only* trigger, **every write that can satisfy a DERIVED metric must invalidate `['habitDay']`** so the row re-derives without waiting for a remount. The weight/sleep/meal/gym/run log mutations do this (`mezo-pquo` — they previously did not, so a fresh log left the `✓` stale until the surface remounted), alongside the intention/ritual/sleep-goal/fuel-settings paths that already did; the same log mutations also nudge `['dailyQuests', date]` for the twin quest metrics (`weight_logged`, `sleep_target`, `protein_target`/`own_recipe_meal`, `gym_session_done`).
 
 ## 4. Data model & API
 
@@ -157,6 +164,6 @@ A whole new chain or custom/user-edited habits are **out of scope** in v1 (the d
 - **Migrations:** `…/202607192100_mezo-d1jb_create_habit_day.sql` (table + `level_up_event.source_type += HABIT`) · `…/202607192130_mezo-d1jb_level_up_event_partial_unique.sql` (soft-delete-aware idempotency).
 - **Contract:** `api/feature/habit/habit.yml` (tag `Habit`, 4 endpoints, `HabitResponse`/`HabitDayResponse`/`HabitWriteResponse`/`HabitSummaryResponse`/`HabitStrength`/`HabitCheckRequest`).
 - **FE data:** `frontend/src/data/habit/{habitApi,habitMock,habitHooks}.ts` (+ barrel line in `data/hooks.ts`; types in `data/types.ts`). `HABIT` XP source in `data/gamification/{gamificationTypes,xpValues}.ts`; source meta in `features/progression/logic/levelUpMeta.ts`.
-- **FE UI:** `frontend/src/features/today/components/RoutineCard.tsx` (mounted `TodayPage.tsx:64`) + `features/today/logic/habitAction.ts` (DERIVED-row CTA map) · `frontend/src/features/me/components/RoutinesTab.tsx` (Rutin tab, `GrowthPage.tsx:78/115`).
+- **FE UI:** `frontend/src/features/today/components/RoutineCard.tsx` (mounted `TodayPage.tsx:64`) + `features/today/logic/habitAction.ts` (DERIVED-row CTA map) · `frontend/src/features/me/components/RoutinesTab.tsx` (Rutin tab, `GrowthPage.tsx:78/115` — date-navigable read-only history) · `frontend/src/shared/ui/DayNavigator.tsx` + `frontend/src/shared/ui/DatePicker.tsx` (reusable domain-free date primitives consumed by `RoutinesTab` — day-stepper + themed calendar popover; see [_platform-design-system.md §10](_platform-design-system.md)).
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/habit/{HabitCatalogIT,HabitDayEntityIT,HabitEvaluatorIT,HabitServiceIT,HabitApiIT,HabitJobIT}.java` + `feature/habit/service/HabitTargetsSleepIT.java` (`mezo-dbsr` — anchors re-centre on the sleep goal via `SleepAnchorPort`) + `feature/progression/ProgressionHabitIT.java` + `support/populator/HabitPopulator.java` · `frontend/src/data/habit/habitHooks.test.tsx`.
 - **Docs:** spec [`docs/superpowers/specs/2026-07-19-morning-evening-routine-habit-engine-design.md`](../superpowers/specs/2026-07-19-morning-evening-routine-habit-engine-design.md) · ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md).

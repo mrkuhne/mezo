@@ -8,6 +8,7 @@ import type { ExerciseCatalogItem, WorkoutTodayResponse } from '@/data/train/tra
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { localDateString } from '@/shared/lib/dates'
 
 // Real-mode block — mirrors sleepHooks.test.tsx (stubEnv, not vi.mock, so the
 // same file is exercised in both `pnpm test` and `VITE_USE_MOCK=false pnpm test`).
@@ -354,6 +355,22 @@ test('useTrain (real mode) finishWorkout + logSportSession invalidate the progre
   spy.mockClear()
   result.current.logSportSession({ sport: 'volleyball', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6 })
   await waitFor(() => expect(spy).toHaveBeenCalledWith({ queryKey: ['progressionProfile'] }))
+  spy.mockRestore()
+})
+
+test('useTrain (real mode) finishWorkout invalidates ["habitDay"] and the day quest read (training_done_today + gym_session_done re-derive)', async () => {
+  const spy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
+  server.use(
+    http.post(`${API_BASE}/api/train/workouts/:id/finish`, ({ params }) =>
+      HttpResponse.json({ id: String(params.id), templateSessionId: 't', date: '2026-06-12', status: 'completed', sets: [] })),
+  )
+  const { result } = renderHook(() => useTrain(), { wrapper: makeHookWrapper() })
+  result.current.finishWorkout('w-1')
+  await waitFor(() => {
+    const keys = spy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
+    expect(keys).toContain(JSON.stringify(['habitDay']))
+    expect(keys).toContain(JSON.stringify(['dailyQuests', localDateString()]))
+  })
   spy.mockRestore()
 })
 

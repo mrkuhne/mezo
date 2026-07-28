@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealItemRepository;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
@@ -65,6 +66,8 @@ public class MealService {
     private final MealMapper mapper;
     private final FuelDayService fuelDayService;
     private final MealScoringService scoringService;
+    private final io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService workoutWindowQueryService;
+    private final io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties scoringProperties;
 
     @Transactional
     public MealResponse create(UUID userId, MealRequest req) {
@@ -162,8 +165,14 @@ public class MealService {
         List<ScoredLine> lines = meal.getItems().stream()
             .map(item -> toScoredLine(userId, item))
             .toList();
+        List<MealScoringService.WorkoutWindow> windows = workoutWindowQueryService
+            .windowsFor(userId, meal.getMealDate()).stream()
+            .map(w -> new MealScoringService.WorkoutWindow(w.start(), w.end(), w.done()))
+            .toList();
+        MealRole role = MealScoringService.classifyRole(loggedAt.toLocalTime(), windows,
+            scoringProperties.preLeadMin(), scoringProperties.postTrailMin());
         MealBreakdownJson breakdown =
-            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime());
+            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role);
         meal.setBreakdown(breakdown);
         meal.setScore(breakdown.value());
     }

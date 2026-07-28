@@ -82,6 +82,10 @@ public class ChallengeOutcomeEvaluator {
                 yield last.getRir() != null && c.getTargetRir() != null && last.getRir() <= c.getTargetRir();
             }
             case ChallengeEntity.TYPE_VOLUME -> c.getTargetSets() != null && logged.size() >= c.getTargetSets();
+            case ChallengeEntity.TYPE_OVERLOAD -> logged.stream().anyMatch(s ->
+                s.getReps() != null && c.getTargetReps() != null && s.getReps() >= c.getTargetReps()
+                    && (c.getTargetWeightKg() == null
+                        || (s.getWeightKg() != null && s.getWeightKg().compareTo(c.getTargetWeightKg()) >= 0)));
             default -> false;
         };
         c.setStatus(hit ? ChallengeEntity.STATUS_HIT : ChallengeEntity.STATUS_MISS);
@@ -100,6 +104,14 @@ public class ChallengeOutcomeEvaluator {
             }
             case ChallengeEntity.TYPE_DEPTH -> "utolsó szet RIR " + logged.get(logged.size() - 1).getRir();
             case ChallengeEntity.TYPE_VOLUME -> logged.size() + " logolt szett";
+            case ChallengeEntity.TYPE_OVERLOAD -> {
+                if (c.getTargetWeightKg() == null) {
+                    yield logged.get(logged.size() - 1).getReps() + " ismétlés";
+                }
+                BigDecimal best = logged.stream().map(ExerciseSetEntity::getWeightKg)
+                    .filter(w -> w != null).reduce(BigDecimal.ZERO, (a, b) -> a.compareTo(b) >= 0 ? a : b);
+                yield "legjobb szett " + best.stripTrailingZeros().toPlainString() + " kg";
+            }
             default -> "";
         };
     }

@@ -27,4 +27,14 @@ describe('evaluateChallenge (FE mirror of ChallengeOutcomeEvaluator)', () => {
     expect(evaluateChallenge(vol, [s, s, s])).toBe('hit')
     expect(evaluateChallenge(vol, [s, s])).toBe('miss')
   })
+  it('overload (weight lever): any set at/above target reps AND weight hits', () => {
+    const overload: Challenge = { ...base, type: 'overload', targetWeightKg: 60, targetReps: 8 }
+    expect(evaluateChallenge(overload, [{ weight: 60, reps: 8, rir: 1 }])).toBe('hit')
+    expect(evaluateChallenge(overload, [{ weight: 55, reps: 8, rir: 1 }])).toBe('miss')
+  })
+  it('overload (rep lever, no weight target): any set at/above target reps hits', () => {
+    const overload: Challenge = { ...base, type: 'overload', targetWeightKg: null, targetReps: 12 }
+    expect(evaluateChallenge(overload, [{ weight: 40, reps: 12, rir: 1 }])).toBe('hit')
+    expect(evaluateChallenge(overload, [{ weight: 40, reps: 10, rir: 1 }])).toBe('miss')
+  })
 })

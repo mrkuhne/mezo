@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,9 @@ class MealApiIT extends ApiIntegrationTest {
     private static final OffsetDateTime LOGGED_AT =
         OffsetDateTime.of(2026, 6, 24, 13, 20, 0, 0, ZoneOffset.UTC);
     private static final LocalDate MEAL_DATE = LocalDate.of(2026, 6, 24);
+
+    @Autowired private io.mrkuhne.mezo.support.populator.TrainPopulator train;
+    @Autowired private io.mrkuhne.mezo.feature.auth.OwnerProperties ownerProperties;
 
     /** Creates a per-100g food via POST /api/pantry (owned by the authed owner) and returns its id. */
     private UUID createFood(HttpHeaders auth, String name, String kcal, String p, String c, String f) {
@@ -109,6 +113,62 @@ class MealApiIT extends ApiIntegrationTest {
         r.setTitle("Reggeli");
         r.setItems(List.of(items));
         return r;
+    }
+
+    @Test
+    void testCreate_shouldScoreAsPreWorkoutFuel_whenGymSlotAfterMeal() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID owner = databasePopulator.populateUser(ownerProperties.ownerEmail());
+        // NOVA-4, high-sugar, carb-heavy food (fuel shape)
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.FOOD);
+        r.setName("Mézes banán toast");
+        r.setPer(new BigDecimal("100"));
+        r.setUnit("g");
+        r.setKcal(new BigDecimal("250"));
+        r.setProteinG(new BigDecimal("6"));
+        r.setCarbsG(new BigDecimal("48"));
+        r.setFatG(new BigDecimal("3"));
+        r.setNova(4);
+        r.setFiberG(new BigDecimal("4"));
+        r.setSugarG(new BigDecimal("22"));
+        r.setSaltG(new BigDecimal("0.4"));
+        r.setSaturatedFatG(new BigDecimal("0.6"));
+        UUID food = postForBody("/api/pantry", r, auth, HttpStatus.CREATED, PantryItemResponse.class)
+            .getId();
+
+        // no gym slot yet → standard score
+        MealResponse standard = postForBody(
+            "/api/meal", mealReq(pantryItem(food, "100")), auth, HttpStatus.CREATED, MealResponse.class);
+        BigDecimal standardScore = standard.getScore().getValue();
+
+        // seed a gym slot at 14:30 on Wednesday (meal date 2026-06-24), re-log → pre-workout
+        train.createGymSlot(owner, 2, "14:30");
+        MealResponse pre = postForBody(
+            "/api/meal", mealReq(pantryItem(food, "100")), auth, HttpStatus.CREATED, MealResponse.class);
+
+        assertThat(pre.getScore().getValue().doubleValue())
+            .isGreaterThan(standardScore.doubleValue());
+        assertThat(pre.getScore().getBreakdown().getDimensions())
+            .filteredOn(d -> "context".equals(d.getId()))
+            .flatExtracting(d -> d.getContext())
+            .anySatisfy(row -> assertThat(row.getLabel()).isEqualTo("Szerep"));
+    }
+
+    @Test
+    void testCreate_shouldScoreStandard_whenNoWorkoutThatDay() {
+        HttpHeaders auth = ownerAuthHeaders();
+        databasePopulator.populateUser(ownerProperties.ownerEmail());   // owner exists, no slots
+        UUID food = createFood(auth, "Zabpehely", "370", "13", "59", "7");   // NOVA-less plain food
+
+        MealResponse res = postForBody(
+            "/api/meal", mealReq(pantryItem(food, "100")), auth, HttpStatus.CREATED, MealResponse.class);
+
+        // no workout day → no Szerep row (standard rubric)
+        assertThat(res.getScore().getBreakdown().getDimensions())
+            .filteredOn(d -> "context".equals(d.getId()))
+            .flatExtracting(d -> d.getContext())
+            .noneSatisfy(row -> assertThat(row.getLabel()).isEqualTo("Szerep"));
     }
 
     @Test

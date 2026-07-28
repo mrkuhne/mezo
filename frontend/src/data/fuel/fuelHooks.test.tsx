@@ -168,6 +168,21 @@ describe('useFuelDay (real mode)', () => {
       expect(keys).toContain(JSON.stringify(['pantry']))
     })
   })
+
+  it('logMeal invalidates ["habitDay"] and the day quest read (derived habit + quest re-derive)', async () => {
+    // protein_breakfast / kitchen_close habits + protein_target / own_recipe_meal quests are
+    // re-derived server-side on the next read — a meal log must nudge both, or the ✓ never appears.
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    server.use(http.post(`${API_BASE}/api/meal`, async () => HttpResponse.json({ id: 'new' }, { status: 201 })))
+    const { result } = renderHook(() => useMealActions('2026-07-02'), { wrapper: Wrapper })
+    act(() => result.current.logMeal(newMeal))
+    await waitFor(() => {
+      const keys = spy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey: unknown }).queryKey))
+      expect(keys).toContain(JSON.stringify(['habitDay']))
+      expect(keys).toContain(JSON.stringify(['dailyQuests', '2026-07-02']))
+    })
+  })
 })
 
 describe('useWaterActions (mock mode)', () => {

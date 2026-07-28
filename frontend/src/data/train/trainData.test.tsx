@@ -14,13 +14,13 @@ test('mesocycles: one active, two planned, one archived', () => {
   expect(activeMeso.phaseCurve).toEqual(['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'])
 })
 
-test('active workout: 5 exercises, niggle warning, 3 pre-workout challenges', () => {
+test('active workout: 5 exercises, niggle warning, 4 pre-workout challenges', () => {
   expect(workout.title).toBe('Pull Day')
   expect(workout.exercises).toHaveLength(5)
   expect(workout.exercises[0].name).toBe('Chest Supported Row')
   expect(workout.exercises[0].lastWeek).toEqual({ weight: 102.5, reps: 9, rir: 2 })
   expect(workout.niggleWarning?.muscleLabel).toBe('Jobb váll')
-  expect(workout.challenges).toHaveLength(3)
+  expect(workout.challenges).toHaveLength(4)
   expect(workout.challenges[0].type).toBe('PR')
 })
 

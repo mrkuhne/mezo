@@ -8,17 +8,19 @@ test('renders the profile values + the derived base-TDEE line', () => {
   render(<BiometricCard profile={mockProfile} onEdit={() => {}} />)
   expect(screen.getByText('Férfi')).toBeInTheDocument()
   expect(screen.getByText('180')).toBeInTheDocument() // height
-  // Activity short label + PAL multiplier (HU decimal comma).
-  expect(screen.getByText(/Mérsékelt/)).toBeInTheDocument()
-  expect(screen.getByText(/×1,55/)).toBeInTheDocument()
-  // Derived base-TDEE line from tdeeBootstrap (rounded, ≈ prefix).
-  expect(screen.getByText(/≈2960/)).toBeInTheDocument()
+  // Activity short label + NEAT multiplier (HU decimal comma).
+  expect(screen.getByText(/Vegyes/)).toBeInTheDocument()
+  expect(screen.getByText(/×1,35/)).toBeInTheDocument()
+  // Split base-TDEE lines from tdeeBootstrap (rounded): Alaphő·NEAT, Betábl. mozgás, Fenntartó total.
+  expect(screen.getByText('2579')).toBeInTheDocument()
+  expect(screen.getByText('+421')).toBeInTheDocument()
+  expect(screen.getByText(/≈3000/)).toBeInTheDocument()
   expect(screen.getByText(/Katch/)).toBeInTheDocument()
 })
 
 test('omits the base-TDEE line when tdeeBootstrap is null', () => {
   render(<BiometricCard profile={{ ...mockProfile, tdeeBootstrap: null }} onEdit={() => {}} />)
-  expect(screen.queryByText(/Alap-TDEE/)).not.toBeInTheDocument()
+  expect(screen.queryByText(/Fenntartó/)).not.toBeInTheDocument()
 })
 
 test('szerkesztés › opens the sheet (calls onEdit)', async () => {
@@ -41,4 +43,11 @@ test('renders the Napiv .biocard grid + tdee row', () => {
   expect(container.querySelector('.biocard')).toBeInTheDocument()
   expect(container.querySelector('.biogrid')).toBeInTheDocument()
   expect(container.querySelector('.tdee')).toBeInTheDocument()
+})
+
+test('opens the energy-breakdown sheet when the Alap-TDEE block is tapped', async () => {
+  const user = userEvent.setup()
+  render(<BiometricCard profile={mockProfile} onEdit={() => {}} />)
+  await user.click(screen.getByLabelText('Energia-bontás magyarázata'))
+  expect(screen.getByText(/Honnan jön/)).toBeInTheDocument()
 })

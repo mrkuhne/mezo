@@ -7,7 +7,7 @@ import org.mapstruct.Mapping;
 
 /**
  * Entity -> {@link BiometricProfileResponse}. The entity stores {@code sex} and
- * {@code activityLevel} as plain {@code String} (M|F and SEDENTARY|..|EXTRA); the generated DTO uses
+ * {@code activityLevel} as plain {@code String} (M|F and DESK|MIXED|PHYSICAL); the generated DTO uses
  * inner enums, so each is converted explicitly via the enum's {@code fromValue(String)}.
  * {@code heightCm}, {@code birthDate} and {@code bodyFatPct} map 1:1 (matching
  * {@code BigDecimal}/{@code LocalDate}). {@code activityLevel} is nullable until captured.

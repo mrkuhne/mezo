@@ -21,8 +21,8 @@ import org.springframework.validation.annotation.Validated;
 @ConfigurationProperties(prefix = "mezo.goal")
 public record GoalEngineProperties(
 
-    /** Physical-activity-level multipliers (BMR → TDEE), looked up by activity level in Task 5. */
-    @NotNull @Valid Pal pal,
+    /** NEAT lifestyle multipliers (BMR → TDEE baseline), looked up by activity level in Task 5. */
+    @NotNull @Valid Neat neat,
 
     /** Energy density of body mass (kcal per kg). Default 7700; research band 6000–7700. */
     @NotNull @Min(6000) @Max(7700) Integer kcalPerKg,
@@ -42,9 +42,6 @@ public record GoalEngineProperties(
     /** EWMA smoothing tunables for the weight-trend engine. */
     @NotNull @Valid Ewma ewma,
 
-    /** Per-session activity energy deltas (84 kg basis), used by the projection model. */
-    @NotNull @Valid Met met,
-
     /**
      * Adaptive-thermogenesis haircut applied to the daily target (kcal/day). Default 0 (off);
      * optional research band 100–200 once metabolic adaptation is observed.
@@ -56,35 +53,25 @@ public record GoalEngineProperties(
 ) {
 
     /**
-     * PAL multipliers per activity level. Five named bands rather than a Map so the lookup is
-     * type-safe; the TDEE service (Task 5) maps the profile's activity-level value to one of these.
-     * {@code moderate} is the engine default when activity level is unknown.
+     * NEAT (non-exercise activity thermogenesis) multipliers per lifestyle band. The lifestyle band
+     * is the NON-exercise daily life; training energy is added explicitly (weekly scheduled EAT), never
+     * baked into this multiplier. {@code mixed} is the engine default when the band is unknown.
      */
-    public record Pal(
-        @NotNull @Positive Double sedentary, // 1.2
-        @NotNull @Positive Double light,     // 1.375
-        @NotNull @Positive Double moderate,  // 1.55 — DEFAULT
-        @NotNull @Positive Double very,      // 1.725
-        @NotNull @Positive Double extra      // 1.9
+    public record Neat(
+        @NotNull @Positive Double desk,      // 1.20 — desk job, few steps
+        @NotNull @Positive Double mixed,     // 1.35 — on feet a fair bit — DEFAULT
+        @NotNull @Positive Double physical   // 1.50 — physical job, on feet all day
     ) {
-
-        /**
-         * Maps a {@code BiometricProfile.activityLevel} value (SEDENTARY | LIGHT | MODERATE |
-         * VERY | EXTRA, case-insensitive) to its PAL multiplier. Falls back to {@link #moderate}
-         * (1.55) for {@code null} or any unknown value — {@code activity_level} is nullable until
-         * captured, and the engine's documented default is MODERATE.
-         */
+        /** Maps a {@code BiometricProfile.activityLevel} (DESK|MIXED|PHYSICAL, case-insensitive) to its
+         *  NEAT multiplier; {@code mixed} (1.35) for null/unknown. */
         public Double forLevel(String activityLevel) {
             if (activityLevel == null) {
-                return moderate;
+                return mixed;
             }
             return switch (activityLevel.trim().toUpperCase()) {
-                case "SEDENTARY" -> sedentary;
-                case "LIGHT" -> light;
-                case "MODERATE" -> moderate;
-                case "VERY" -> very;
-                case "EXTRA" -> extra;
-                default -> moderate;
+                case "DESK" -> desk;
+                case "PHYSICAL" -> physical;
+                default -> mixed; // MIXED + any legacy/unknown value
             };
         }
     }
@@ -126,15 +113,6 @@ public record GoalEngineProperties(
     /** EWMA smoothing tunables for the weight-trend engine. */
     public record Ewma(
         @NotNull @Min(10) @Max(14) Integer halfLifeDays // 10 — research band 10–14
-    ) {
-    }
-
-    /** Per-session activity energy deltas (kcal), calibrated to an 84 kg athlete. */
-    public record Met(
-        @NotNull @Positive Integer hypertrophyKcal,   // 325 — hypertrophy lifting session
-        @NotNull @Positive Integer intervalRunKcal,   // 500 — interval run
-        @NotNull @Positive Integer volleyballRecKcal, // 500 — recreational volleyball
-        @NotNull @Positive Integer volleyballCompKcal // 1150 — competitive volleyball
     ) {
     }
 }

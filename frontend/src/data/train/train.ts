@@ -1,6 +1,6 @@
 import type {
   Mesocycle, WorkoutPlan, GymSchedule, GymScheduleSlot, Sport, ExerciseLibraryItem,
-  GoalPreset, SplitOption, MesoPhase, CustomWorkout,
+  GoalPreset, SplitOption, MesoPhase, CustomWorkout, MesoVolumeArc, MuscleVolumeArc, VolumeArcWeek,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
 
@@ -282,6 +282,65 @@ export const mesocycles: Mesocycle[] = [
 
 export const activeMeso: Mesocycle = mesocycles.find((m) => m.status === 'active')!
 
+// --- volume arc mock derivation (Phase B, Task B3) ---
+// Same planned-scaffold algorithm as the backend (VolumeArcService, spec DA7): week 1 starts
+// at MEV, deload weeks drop to round(mrv * MOCK_DELOAD_FRACTION) (ramp untouched), every other
+// week ramps by MOCK_STEP up to a ceiling of MRV.
+const MOCK_STEP = 2
+const MOCK_DELOAD_FRACTION = 0.5
+
+// Coarse volume-group -> color-family region key. Mirrors features/train/logic/muscleColors'
+// REGION_BY_GROUP, inlined here rather than imported: data/ must not import from features/
+// (docs/references/frontend_conventions.md — the four-layer boundary runs one way only).
+const MOCK_REGION_BY_MUSCLE: Record<string, string> = {
+  chest: 'coral', back: 'sky', shoulder: 'lav', biceps: 'rose', triceps: 'rose',
+  quad: 'sage', ham: 'sage', glute: 'sage', calf: 'sage', core: 'amber',
+}
+
+// Derives a whole-mesocycle volume arc from the `mesocycles` fixture's `volumePerMuscle`
+// landmarks — a planned scaffold for every week, plus a realistic `actual`: past weeks hit
+// the planned target, the current week shows `vp.current`, future weeks are null (undrawn).
+// A mesocycle with no `volumePerMuscle` (planned/archived fixtures carry none) yields null,
+// matching the backend's "absent muscle -> absent from response" rule (DA5).
+export function mesoVolumeArcMock(id: string | null): MesoVolumeArc | null {
+  const meso = mesocycles.find((m) => m.id === id)
+  if (!meso || !meso.volumePerMuscle) return null
+  const { volumePerMuscle, phaseCurve, currentWeek, weeks } = meso
+
+  const muscles: MuscleVolumeArc[] = Object.entries(volumePerMuscle).map(([muscle, vp]) => {
+    const weekList: VolumeArcWeek[] = []
+    let ramp = vp.mev
+    for (let w = 1; w <= weeks; w++) {
+      const phase = phaseCurve[w - 1] ?? 'MEV'
+      let planned: number
+      if (w === 1) {
+        planned = vp.mev
+        ramp = vp.mev
+      } else if (phase === 'Deload') {
+        planned = Math.round(vp.mrv * MOCK_DELOAD_FRACTION)
+      } else {
+        ramp = Math.min(ramp + MOCK_STEP, vp.mrv)
+        planned = ramp
+      }
+      const actual = w < currentWeek ? planned : w === currentWeek ? vp.current : null
+      weekList.push({ week: w, phase, planned, actual, isCurrent: w === currentWeek })
+    }
+    return { muscle, region: MOCK_REGION_BY_MUSCLE[muscle] ?? 'neutral', mrv: vp.mrv, weeks: weekList }
+  })
+
+  return {
+    mesocycleId: meso.id,
+    title: meso.title,
+    currentWeek,
+    weeks,
+    startDate: meso.startDate,
+    endDate: meso.endDate,
+    status: meso.status,
+    phaseCurve: meso.phaseCurve,
+    muscles,
+  }
+}
+
 // --- active workout (data.js:626-701; challenges 642-700) ---
 export const workout: WorkoutPlan = {
   title: 'Pull Day',
@@ -385,6 +444,21 @@ export const workout: WorkoutPlan = {
         { type: 'compute', name: 'predictPRWindow()' },
       ],
       glory: 'Új csúcs · 8 hét óta első PR',
+    },
+    {
+      id: 'ch-overload',
+      type: 'overload',
+      typeLabel: '⚡ Túlterhelés',
+      exerciseId: 'ex1',
+      exercise: 'Chest Supported Row',
+      target: '107.5 kg × 8',
+      confidence: null, // deterministic — renders "tanulom" (DC8)
+      risk: 'low',
+      why: 'A mai ajánlott terhelés: +2.5 kg a múlt heti 105-höz képest (RIR 2 stabil).',
+      refs: [],
+      glory: 'Teljesítsd a mai ajánlott terhelést.',
+      targetWeightKg: 107.5,
+      targetReps: 8,
     },
     {
       id: 'ch2',

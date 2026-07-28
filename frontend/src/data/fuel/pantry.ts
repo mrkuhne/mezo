@@ -225,6 +225,9 @@ const recipesBase: Recipe[] = [
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: ['Pre Pull Day · T-10h', 'Reggel · Reta D3'] },
     starred: true,
+    // The one non-standard seed (mezo-uavr): carb-dominant breakfast, so mock mode exercises
+    // the pre-workout rubric overlay and its chip.
+    role: 'pre_workout',
   },
   {
     id: 'rec-2', name: 'Csirke + édesburgonya + spenót',
@@ -243,6 +246,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: ['Pre-workout · T-3.5h', 'Magas mikro-density'] },
     starred: true,
+    role: 'standard',
   },
   {
     id: 'rec-3', name: 'Lazac + barna rizs + brokkoli',
@@ -261,6 +265,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: ['Post-workout · este', 'Omega-3 hét'] },
     starred: true,
+    role: 'standard',
   },
   {
     id: 'rec-4', name: 'Whey + banán + mandulavaj',
@@ -278,6 +283,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 4,
     mezoFit: { score: null, fitsFor: ['Pre-workout · T-1h', 'Reta-aware snack'] },
     starred: false,
+    role: 'standard',
   },
   {
     id: 'rec-5', name: 'Tojásrántotta · spenóttal',
@@ -295,6 +301,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 1,
     mezoFit: { score: null, fitsFor: ['Alacsony-C reggel', 'Rest day'] },
     starred: false,
+    role: 'standard',
   },
   {
     id: 'rec-6', name: 'Túró · áfonya · méz quick',
@@ -312,6 +319,7 @@ const recipesBase: Recipe[] = [
     novaDominant: 3,
     mezoFit: { score: null, fitsFor: ['Casein · esti', 'Magas protein density'] },
     starred: false,
+    role: 'standard',
   },
 ]
 
@@ -381,6 +389,7 @@ export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
 const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
   'rec-3': {
     confidence: 0.86,
+    tagline: null,
     summary:
       'Esti omega-3 sztori. Lazac D3 + EPA/DHA, barna rizs slow-release, brokkoli sulforaphane — három szövet-szintű hatás egy tálban. Heti 2× kötelező a post-workout vacsorához.',
     dimensions: [
@@ -439,6 +448,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
   },
   'rec-5': {
     confidence: 0.82,
+    tagline: null,
     summary:
       'Egyszerű, fehérje-súlyos, alacsony-carb reggeli. Rest-day vagy alacsony-volumen napra ideális — alacsony-C reggel + spenót K1 + tojás kolin együtt jó cognitive-load napra.',
     dimensions: [
@@ -496,6 +506,7 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
   },
   'rec-6': {
     confidence: 0.88,
+    tagline: null,
     summary:
       'Esti casein-bomba. 37g protein, slow-digest, alacsony-fat — pont az amit a 21:00 esti étkezésre vársz Reta-cycle alatt. Áfonya antocianin + méz minimális glikémia-bump.',
     dimensions: [
@@ -554,20 +565,21 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
 
 // ============================================================
 // Runtime links — replicate pantry-data.js:301–332 + 532–536.
-// Recipe ↔ meal mapping: m1↔rec-1, m2↔rec-2, m3↔rec-4.
+// Recipe ↔ meal mapping: m1↔rec-1, m2↔rec-2. (The m3↔rec-4 snack link was dropped with the
+// partial-day seed, mezo-1oy5 — the 16:00 snack is a future/unlogged window now, so rec-4 carries
+// no recentLog today.)
 // The fuelDay object is NOT mutated; recipeId/loggedAt are derived locally.
 // ============================================================
 const recipeLinks: { mealId: string; recipeId: string }[] = [
   { mealId: 'm1', recipeId: 'rec-1' }, // Túrós zabkása reggel
   { mealId: 'm2', recipeId: 'rec-2' }, // Csirke + édesburgonya
-  { mealId: 'm3', recipeId: 'rec-4' }, // Whey + banán snack
 ]
 
 // Historical per-log scores. The live fuelDay.meals[].score now ships NULL behind the
 // pending-sparkle placeholder (meal scoring is Phase-3), but a recipe's PAST recentLogs
 // retain the score they earned when logged — these feed RecipeLogsList. Decoupled from the
 // (nulled) display score so nulling the day view does not erase the recipe log history.
-const recentLogScore: Record<string, number> = { m1: 0.92, m2: 0.88, m3: 0.84 }
+const recentLogScore: Record<string, number> = { m1: 0.92, m2: 0.88 }
 
 // pantry-data.js:310 — loggedAt = "ma · " + (meal.slot.split("· ")[1] || meal.slot)
 function deriveLoggedAt(slot: string): string {

@@ -5,12 +5,15 @@ import { SlotCard } from '@/features/fuel/components/SlotCard'
 export function FuelTimeline({
   slots,
   getScoredMeal,
+  getTagline,
   onOpenScore,
   onLogMeal,
   onAiLog,
 }: {
   slots: FuelSlot[]
   getScoredMeal: (s: FuelSlot) => FuelMeal | null
+  /** The coach's card line for a slot's logged meal (mezo-mr4n); null while absent/pending. */
+  getTagline?: (s: FuelSlot) => string | null
   onOpenScore: (m: FuelMeal) => void
   onLogMeal?: (slot: FuelSlot) => void
   onAiLog?: (slot: FuelSlot) => void
@@ -23,6 +26,7 @@ export function FuelTimeline({
           slot={slot}
           meta={KIND_META[slot.kind] ?? KIND_META.meal}
           scoredMeal={getScoredMeal(slot)}
+          tagline={getTagline?.(slot) ?? null}
           onOpenScore={onOpenScore}
           onLogMeal={onLogMeal}
           onAiLog={onAiLog}

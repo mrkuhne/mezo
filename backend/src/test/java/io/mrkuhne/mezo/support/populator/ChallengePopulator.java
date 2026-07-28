@@ -44,4 +44,16 @@ public class ChallengePopulator {
         entity.setTargetReps(targetReps);
         return challengeRepository.saveAndFlush(entity);
     }
+
+    /** An overload challenge with a rep target and an OPTIONAL (nullable) weight target. */
+    public ChallengeEntity challengeOverload(UUID createdBy, UUID templateSessionId, LocalDate workoutDate,
+                                             UUID exerciseId, String status, String targetWeightKg, int targetReps) {
+        ChallengeEntity entity = challenge(createdBy, templateSessionId, workoutDate, exerciseId,
+            ChallengeEntity.TYPE_OVERLOAD, status);
+        if (targetWeightKg != null) {
+            entity.setTargetWeightKg(new BigDecimal(targetWeightKg));
+        }
+        entity.setTargetReps(targetReps);
+        return challengeRepository.saveAndFlush(entity);
+    }
 }

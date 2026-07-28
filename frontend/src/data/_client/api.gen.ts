@@ -144,6 +144,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/mesocycles/{id}/volume-arc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read-only per-muscle volume arc (planned scaffold + actual logged working sets) for a mesocycle */
+        get: operations["getMesocycleVolumeArc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/mesocycles/{id}/days/{dayId}/exercises": {
         parameters: {
             query?: never;
@@ -968,6 +985,40 @@ export interface paths {
         };
         /** Recent meal logs that included this owned recipe (recipe detail RecipeLogsList; data lives in meal_item, so the op is Meal-owned — resolves the meal↔recipe slice cycle, mezo-ah18.16) */
         get: operations["recipeLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal/coach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Day-batch coach verdicts; generates only for today, older days return what is cached (mezo-mr4n) */
+        get: operations["getMealCoachForDay"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/meal/{id}/coach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Coach verdict for one logged meal — generates on demand for any date (mezo-mr4n) */
+        get: operations["getMealCoach"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2276,6 +2327,38 @@ export interface components {
             /** Format: date-time */
             at: string;
         };
+        MesocycleVolumeArcResponse: {
+            /** Format: uuid */
+            mesocycleId: string;
+            title: string;
+            currentWeek: number;
+            weeks: number;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate: string;
+            /** @enum {string} */
+            status: "active" | "planned" | "archived";
+            phaseCurve: ("MEV" | "MAV" | "MRV" | "Deload")[];
+            muscles: components["schemas"]["MuscleVolumeArc"][];
+        };
+        MuscleVolumeArc: {
+            /** @description Coarse volume-group key (chest/back/shoulder/biceps/triceps/quad/ham/glute/calf/core) */
+            muscle: string;
+            /** @description Color-family region key (coral/sky/lav/rose/sage/amber) */
+            region: string;
+            mrv: number;
+            weeks: components["schemas"]["VolumeArcWeek"][];
+        };
+        VolumeArcWeek: {
+            week: number;
+            /** @enum {string} */
+            phase: "MEV" | "MAV" | "MRV" | "Deload";
+            planned: number;
+            /** @description Null for future weeks with no logged data yet */
+            actual?: number | null;
+            isCurrent: boolean;
+        };
         MesoDay: {
             /**
              * Format: uuid
@@ -2866,14 +2949,18 @@ export interface components {
             tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
             prescription?: components["schemas"]["GoalPrescription"] | null;
         };
-        /** @description Formula-TDEE bootstrap snapshot computed at first evaluation. */
+        /** @description Formula-TDEE bootstrap snapshot computed at first evaluation. tdee = neatBaselineKcal + weeklyEatKcalPerDay. */
         TdeeBootstrap: {
             /** @description Basal metabolic rate (kcal/day) */
             bmr: number;
-            /** @description Total daily energy expenditure (kcal/day) */
+            /** @description Non-exercise activity multiplier (lifestyle band DESK/MIXED/PHYSICAL) */
+            neat: number;
+            /** @description bmr × neat — the non-exercise lifestyle maintenance (kcal/day) */
+            neatBaselineKcal: number;
+            /** @description Scheduled training energy (gym+sport+run), weekly total ÷ 7 (kcal/day) */
+            weeklyEatKcalPerDay: number;
+            /** @description Total maintenance = neatBaselineKcal + weeklyEatKcalPerDay (kcal/day) */
             tdee: number;
-            /** @description Physical-activity-level multiplier */
-            pal: number;
             /**
              * @description MSJ = Mifflin-St Jeor, KATCH = Katch-McArdle
              * @enum {string}
@@ -2901,6 +2988,8 @@ export interface components {
             sleepTargetH: number;
             restDays: number[];
             projectedRateKgPerWk: number;
+            /** @description Goal deficit(−)/surplus(+) per day (kcal); sign×rate%/100×kg×kcalPerKg÷7 */
+            dailyEnergyBalanceKcal: number;
             rationale: string;
         };
         GoalGuardStatus: {
@@ -3014,7 +3103,7 @@ export interface components {
             birthDate: string;
             bodyFatPct?: number | null;
             /** @enum {string|null} */
-            activityLevel?: "SEDENTARY" | "LIGHT" | "MODERATE" | "VERY" | "EXTRA" | null;
+            activityLevel?: "DESK" | "MIXED" | "PHYSICAL" | null;
             tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
         };
         BiometricProfileUpsertRequest: {
@@ -3024,7 +3113,7 @@ export interface components {
             birthDate: string;
             bodyFatPct?: number | null;
             /** @enum {string|null} */
-            activityLevel?: "SEDENTARY" | "LIGHT" | "MODERATE" | "VERY" | "EXTRA" | null;
+            activityLevel?: "DESK" | "MIXED" | "PHYSICAL" | null;
         };
         PantryResponse: {
             ingredients: components["schemas"]["IngredientResponse"][];
@@ -3284,6 +3373,11 @@ export interface components {
             tags: string[];
             /** @default false */
             starred: boolean;
+            /**
+             * @description Template meal role — selects the scoring rubric overlay (mezo-uavr). Absent ⇒ standard.
+             * @default standard
+             */
+            role: string;
             ingredients: components["schemas"]["RecipeIngredientRequest"][];
         };
         RecipeResponse: {
@@ -3297,6 +3391,8 @@ export interface components {
             cookMins?: number | null;
             tags: string[];
             starred: boolean;
+            /** @description Template meal role: standard|pre_workout|post_workout (mezo-uavr) */
+            role: string;
             createdDate: string;
             /** @description NOVA class 1..4 (converged with meal_item.nova — mezo-2dy) */
             novaDominant: number;
@@ -3334,6 +3430,8 @@ export interface components {
             /** @description Coverage-weighted numeric confidence 0..1 */
             confidence: number;
             summary?: string | null;
+            /** @description Card-sized LLM cut (max 60 chars) — null until the coach ran (mezo-mr4n) */
+            tagline?: string | null;
             dimensions: components["schemas"]["MealScoreDimension"][];
             improve: components["schemas"]["MealImproveRow"][];
             tools: components["schemas"]["MealToolRow"][];
@@ -3394,6 +3492,18 @@ export interface components {
         MealContextRow: {
             label: string;
             value: string;
+        };
+        /** @description Coach verdicts (mezo-mr4n). An empty list means nothing generated/cached — never an error. */
+        MealCoachResponse: {
+            verdicts: components["schemas"]["MealCoachVerdict"][];
+        };
+        /** @description One meal's qualitative verdict. Numbers are never LLM-authored — this carries prose only. */
+        MealCoachVerdict: {
+            /** Format: uuid */
+            mealId: string;
+            tagline?: string | null;
+            summary?: string | null;
+            improve: components["schemas"]["MealImproveRow"][];
         };
         MealImproveRow: {
             text: string;
@@ -4072,7 +4182,7 @@ export interface components {
             exerciseId: string;
             /** @description The target exercise's name */
             exercise: string;
-            /** @description PR | Depth | Volume */
+            /** @description PR | Depth | Volume | overload */
             type: string;
             /** @description HU display label derived from type */
             typeLabel: string;
@@ -4816,6 +4926,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MesocycleResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mesocycle not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMesocycleVolumeArc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mesocycle volume arc */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesocycleVolumeArcResponse"];
                 };
             };
             /** @description Missing/invalid token */
@@ -7704,6 +7854,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecipeLogListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMealCoachForDay: {
+        parameters: {
+            query: {
+                date: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Verdicts for that day's meals (empty when the coach is off/unavailable) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealCoachResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMealCoach: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 0..1 verdicts (empty when the coach is off/unavailable) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MealCoachResponse"];
                 };
             };
             /** @description Missing/invalid token */

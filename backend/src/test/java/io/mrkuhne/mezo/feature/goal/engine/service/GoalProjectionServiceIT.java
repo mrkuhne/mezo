@@ -27,7 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Verifies the segmented projection (spec §4 — hybrid projection D7): the timeline walk in
- * goal-week space, block-boundary TDEE deltas (running on/off; volleyball ambient → no boundary),
+ * goal-week space, the per-segment maintenance (NEAT baseline + scheduled gym/sport EAT + this
+ * segment's running EAT, MET×kg×óra based; running on/off is the only boundary the fixtures move),
  * the energy-balance target for all three trajectories, and the trend-reconciled projected rate.
  *
  * <p>The goal window is 8 weeks ({@link GoalPopulator}: 2026-06-01..2026-07-27). The bootstrap +
@@ -37,8 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class GoalProjectionServiceIT extends AbstractIntegrationTest {
 
-    /** Fixed bootstrap TDEE for the worked numbers (84 kg male, MODERATE PAL — TdeeBootstrap §6.1). */
-    private static final BigDecimal TDEE = new BigDecimal("2782.25");
+    /** Energy-balance weight basis for the worked numbers (84 kg male — TdeeBootstrap §6.1). */
     private static final BigDecimal WEIGHT = new BigDecimal("84.00");
 
     @Autowired private GoalProjectionService service;
@@ -49,19 +49,26 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
+    /** Bootstrap as a NEAT baseline (bmr × neat) with zero scheduled EAT — the projection adds the
+     *  scheduled + running EAT itself (MET×kg×óra), so the baseline is the only bootstrap input it uses. */
     private TdeeBootstrapJson bootstrap() {
+        BigDecimal bmr = new BigDecimal("1795.00");
+        BigDecimal neat = new BigDecimal("1.35");
+        BigDecimal baseline = bmr.multiply(neat).setScale(2, java.math.RoundingMode.HALF_UP); // 2423.25
         return new TdeeBootstrapJson(
-            new BigDecimal("1795.00"), TDEE, new BigDecimal("1.55"), "MSJ", OffsetDateTime.now());
+            bmr, neat, baseline, BigDecimal.ZERO, baseline, "MSJ", OffsetDateTime.now());
     }
 
-    /** A trend with the given sufficiency + observed trailing-4w rate; series/percent irrelevant here. */
+    /** A trend with the given sufficiency + observed trailing-4w rate; series/percent irrelevant here.
+     *  A null rate models "no observed rate yet" (sufficiency NONE → the formula projection drives). */
     private WeightTrendResponse trend(DataSufficiencyEnum suff, String last4wKgPerWeek) {
+        BigDecimal rate = last4wKgPerWeek == null ? null : new BigDecimal(last4wKgPerWeek);
         return WeightTrendResponse.builder()
             .ewmaSeries(List.of())
             .latestTrendKg(WEIGHT)
-            .weeklyRateKgPerWeek(new BigDecimal(last4wKgPerWeek))
+            .weeklyRateKgPerWeek(rate)
             .weeklyRatePctPerWeek(BigDecimal.ZERO)
-            .last4wRateKgPerWeek(new BigDecimal(last4wKgPerWeek))
+            .last4wRateKgPerWeek(rate)
             .dataSufficiency(suff)
             .build();
     }
@@ -83,11 +90,13 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         linkPopulator.createLink(user, goal.getId(), "mesocycle", meso.getId(), 1, 8);
         linkPopulator.createLink(user, goal.getId(), "running_block", run.getId(), 1, 4);
 
+        // With no gym/sport schedule seeded, scheduledWeeklyEat = 0; the only delta between the run-on and
+        // run-off segments is the running EAT (MET run × weight × runDefaultMin/60 × sessions ÷ 7).
         List<ProjectionSegment> segments =
-            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, "0"));
+            service.project(goal, user, bootstrap(), trend(DataSufficiencyEnum.NONE, null));
 
-        // at least two segments: W1–4 (run active) and W5–8 (run off).
-        assertThat(segments).hasSizeGreaterThanOrEqualTo(2);
+        // exactly two segments: W1–4 (run active) and W5–8 (run off) — the meso is a single phase class.
+        assertThat(segments).hasSize(2);
         ProjectionSegment runOn = segments.get(0);
         ProjectionSegment runOff = segments.get(1);
 
@@ -96,15 +105,10 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         assertThat(runOff.fromWeek()).isEqualTo(5);
         assertThat(runOff.toWeek()).isEqualTo(8);
 
-        // running delta = intervalRunKcal × sessions/week ÷ 7 = 500 × 4 / 7 ≈ 285.71 kcal/day.
-        double expectedRunDelta = props.met().intervalRunKcal() * 4 / 7.0;
-        double step = runOn.tdeeEstimate().doubleValue() - runOff.tdeeEstimate().doubleValue();
-        assertThat(step).isCloseTo(expectedRunDelta, within(0.5));
-
-        // run-on TDEE = bootstrap + delta; run-off TDEE = bootstrap (no run, meso is PAL baseline).
-        assertThat(runOn.tdeeEstimate().doubleValue())
-            .isCloseTo(TDEE.doubleValue() + expectedRunDelta, within(0.5));
-        assertThat(runOff.tdeeEstimate().doubleValue()).isCloseTo(TDEE.doubleValue(), within(0.5));
+        // run-on TDEE steps down to run-off; run-off == the bootstrap's neat baseline (no schedule, no run).
+        assertThat(runOn.tdeeEstimate().doubleValue()).isGreaterThan(runOff.tdeeEstimate().doubleValue());
+        assertThat(runOff.tdeeEstimate().doubleValue())
+            .isCloseTo(bootstrap().neatBaselineKcal().doubleValue(), within(1.0));
 
         // cut → deficit: every segment's target sits below its own TDEE, projected rate negative.
         for (ProjectionSegment s : segments) {
@@ -115,7 +119,9 @@ class GoalProjectionServiceIT extends AbstractIntegrationTest {
         double balance = expectedDailyBalanceMagnitude();
         assertThat(runOn.tdeeEstimate().doubleValue() - runOn.targetKcal().doubleValue())
             .isCloseTo(balance, within(0.5));
-        // run-on segment lists run as an active system.
+        // the daily energy balance is surfaced onto the segment (whole kcal, cut → negative), and run
+        // is the only system.
+        assertThat(segments.get(0).dailyEnergyBalanceKcal()).isNegative();
         assertThat(runOn.activeSystems()).contains("run");
         assertThat(runOff.activeSystems()).doesNotContain("run");
     }

@@ -241,6 +241,50 @@ test('the ingredient amount input keeps a typed decimal value', async () => {
   expect(amount.value).toBe('12.5')
 })
 
+// --- mezo-uavr: the SZEREP control ---
+
+test('create mode: the picked SZEREP role lands in the saved recipe', async () => {
+  const qc = newQc()
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  const { result } = renderHook(() => useRecipes(), { wrapper })
+  await waitFor(() => expect(result.current.recipes.length).toBeGreaterThan(0))
+
+  renderNew(qc)
+  await userEvent.type(screen.getByPlaceholderText(/Tonhalsaláta/), 'Szerep teszt')
+  await userEvent.click(screen.getByRole('button', { name: /Kamrából/ }))
+  const adds = await screen.findAllByRole('button', { name: /hozzáadása/ })
+  await userEvent.click(adds[0])
+  await closePicker()
+  await userEvent.click(screen.getByRole('button', { name: 'Edzés előtt' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+
+  await waitFor(() => expect(result.current.recipes.find(r => r.name === 'Szerep teszt')?.role).toBe('pre_workout'))
+})
+
+test('edit mode: the SZEREP control is seeded from the edited recipe', async () => {
+  const qc = newQc()
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+  )
+  const { result } = renderHook(() => useRecipes(), { wrapper })
+  await waitFor(() => expect(result.current.recipes.length).toBeGreaterThan(0))
+  // rec-1 is the seed's pre_workout template
+  const r = result.current.recipes.find(x => x.role === 'pre_workout') ?? result.current.recipes[0]
+
+  renderEdit(r.id, qc)
+  await screen.findByPlaceholderText(/Tonhalsaláta/)
+  expect(screen.getByRole('button', { name: 'Edzés előtt' }).className).toContain('brand')
+  expect(screen.getByRole('button', { name: 'Általános' }).className).not.toContain('brand')
+})
+
+test('the SZEREP helper text frames the role as a different rubric, not a bonus', async () => {
+  renderNew(newQc())
+  expect(screen.getByText('SZEREP')).toBeInTheDocument()
+  expect(screen.getByText(/milyen mérce szerint pontozzuk/)).toBeInTheDocument()
+})
+
 test('real mode: a picked supplement resolves to its name + macro contribution', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const SUPP_ID = 'b7c1f0a2-1111-4222-8333-444455556666'

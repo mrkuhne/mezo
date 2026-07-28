@@ -56,13 +56,11 @@ mezo:
   goal:
     # G5 goal-engine tunables (grounded research). Binds onto GoalEngineProperties; the engine
     # services (Tasks 5–8) read these so no magic numbers / @Value live downstream.
-    # PAL multipliers (BMR -> TDEE); moderate is the engine default when activity level is unknown.
-    pal:
-      sedentary: 1.2
-      light: 1.375
-      moderate: 1.55
-      very: 1.725
-      extra: 1.9
+    # NEAT lifestyle multipliers (BMR -> TDEE baseline); mixed is the engine default when the band is unknown.
+    neat:                          # NEAT lifestyle multipliers (non-exercise); training added via mezo.train.met
+      desk: 1.20
+      mixed: 1.35                  # DEFAULT
+      physical: 1.50
     kcal-per-kg: 7700               # band 6000–7700
     protein:
       g-per-kg-bw-default: 2.0
@@ -83,11 +81,6 @@ mezo:
       e1rm-breach-pct: -5.0
     ewma:
       half-life-days: 10           # band 10–14
-    met:                           # per-session kcal deltas, 84 kg basis
-      hypertrophy-kcal: 325
-      interval-run-kcal: 500
-      volleyball-rec-kcal: 500
-      volleyball-comp-kcal: 1150
     thermogenesis-haircut-kcal-per-day: 0   # default off; optional band 100–200
     bootstrap-uncertainty-kcal: 300
   nutrition:
@@ -147,6 +140,9 @@ mezo:
     # Hypertrophy Drive — pre-populated prescribed sets + dynamic recommendation on GET /workouts/today.
     hypertrophy-drive:
       enabled: true
+    # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume rollover + deload/grind logic.
+    volume-progression:
+      enabled: true
     # Fix zárás (closing block) — dead hang + back extension lazily ensured at the end of every
     # template gym day of the active meso on GET /workouts/today (idempotent; mezo.closing-block).
     closing-block:
@@ -169,6 +165,11 @@ mezo:
     # Recipe AI template breakdown prose (mezo-bw3y) — off: GET /api/recipe/{id}/breakdown still
     # serves the deterministic envelope, only summary/detail-prose/improve/fitsFor stay empty.
     recipe-ai-score:
+      enabled: true
+    # Meal coach verdicts (mezo-mr4n) — LLM prose (tagline/summary/improve) over the deterministic
+    # meal score; needs the companion switch too (the MealCoachLlm adapter bean). Off: the coach
+    # endpoints answer 200 with an empty verdict list, the score itself is unaffected.
+    meal-coach:
       enabled: true
     # Phase-3 companion (LLM chat + AI memory, ADR 0008). Gates every CompanionLlm bean;
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
@@ -508,6 +509,36 @@ mezo:
         dinner-to: 22
       # Relative tolerance around the slot share within which the kcal-fit is perfect
       slot-share-tolerance: 0.4
+      # Training-aware role windows (mezo-ta8p): a meal is pre-workout fuel within pre-lead-min
+      # before a workout start, post-workout recovery within post-trail-min after its end.
+      pre-lead-min: 120
+      post-trail-min: 90
+      # Per-role rubric overlays. STANDARD uses the base targets/who/nova above (zero regression).
+      roles:
+        pre:                       # pre-workout: fast carbs are FUEL — carb target up, sugar/NOVA relaxed
+          p: 150
+          c: 550
+          f: 60
+          who:
+            sugar-energy-share-limit: 0.30   # fueling: free sugar tolerated far higher than WHO 10%
+            salt-limit-g: 5
+          nova:
+            group1: 1.0
+            group2: 0.9
+            group3: 0.8
+            group4: 0.6                       # a gel/toast is processed and FINE pre-workout
+        post:                      # post-workout: protein + carb recovery (glycogen)
+          p: 300
+          c: 480
+          f: 70
+          who:
+            sugar-energy-share-limit: 0.20
+            salt-limit-g: 5
+          nova:
+            group1: 1.0
+            group2: 0.88
+            group3: 0.7
+            group4: 0.45
   progression:
     # Level threshold curve: xpThreshold(n) = round(base * (n-1)^exp); Lv2=100, Lv3≈303, Lv5≈919.
     curve:
@@ -628,6 +659,19 @@ mezo:
     warmup-ramp:
       - { pct: 0.50, reps-factor: 1.0 }   # 50% × repMax
       - { pct: 0.75, reps-factor: 0.5 }   # 75% × ⌈repMax/2⌉
+  # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
+  volume:
+    step: 2                 # sets added per productive week
+    deload-fraction: 0.5    # deload target = round(prevSets * this)
+    grind-rir-gap: 2        # RIR-below-target gap that counts as a grind
+  train:
+    gym-default-minutes: 60        # gym schedule slots carry no duration
+    run-default-minutes: 45        # interval runs have no single continuous duration
+    met:                           # MET by kind — MIRROR of FE fuelConfig.MET_BY_KIND (drift-guard test)
+      gym: 6.0
+      sport: 4.5
+      run: 9.5
+      default-kind: 5.0
   # Fix zárás — closing exercises ensured on every gym day of the active meso; slug references
   # master exercise-catalog rows (content/exercise-catalog.json). Dead-hang reps are SECONDS
   # (plyo type -> weightless, reps-only logging on the FE).

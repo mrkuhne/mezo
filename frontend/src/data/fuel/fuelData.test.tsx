@@ -9,12 +9,14 @@ import { QueryWrapper } from '@/test/queryWrapper'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('useFuelDay returns macros, 4 meals, micronutrients', () => {
+test('useFuelDay returns macros, 2 logged meals, micronutrients', () => {
+  // The mock is a PARTIAL day at 13:30 (mezo-1oy5): only breakfast + lunch are logged; the
+  // midday/evening windows are still open (they become now/pending in the computed plan).
   const { result } = renderHook(() => useFuelDay(), { wrapper: QueryWrapper })
   expect(result.current.fuel.targets.kcal).toBe(3100)
-  expect(result.current.fuel.meals).toHaveLength(4)
+  expect(result.current.fuel.meals).toHaveLength(2)
   expect(result.current.fuel.meals[0].breakdown?.dimensions).toHaveLength(8)
-  expect(result.current.fuel.meals[3].score).toBeNull()
+  expect(result.current.fuel.meals[1].score).toBeNull() // logged-but-unscored (score computed on demand)
   expect(result.current.fuel.micronutrients).toHaveLength(5)
 })
 test('useFuelTimeline returns a computed plan with one now-slot + getScoredMeal works', () => {
@@ -24,7 +26,11 @@ test('useFuelTimeline returns a computed plan with one now-slot + getScoredMeal 
   // varies with the real weekday's blocks, so assert the contract, not a pinned count.
   const { result } = renderHook(() => useFuelTimeline(), { wrapper: QueryWrapper })
   expect(result.current.plan.slots.length).toBeGreaterThan(0)
-  expect(result.current.plan.slots.filter(s => s.state === 'now')).toHaveLength(1)
+  // Fixed-plan state (mezo-1oy5): the partial mock day at 13:30 has exactly one `now` MEAL window
+  // (the next open meal/snack), never a supplement/block slot.
+  const nowSlots = result.current.plan.slots.filter(s => s.state === 'now')
+  expect(nowSlots).toHaveLength(1)
+  expect(nowSlots[0].slotKey).toBeDefined() // the now-slot is a meal window, not a protocol/block slot
   // NOTE: in the prototype data only kind==='meal' done slots map to a scored meal
   // (e.g. the 06:20 'snack' done slot has a mealName but no matching scored meal).
   const mealSlot = result.current.plan.slots.find(s => s.kind === 'meal' && s.mealName && s.state === 'done')!

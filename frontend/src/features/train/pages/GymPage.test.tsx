@@ -30,7 +30,13 @@ test('own page-header: pghead-np over + h1 + week badge', () => {
   renderView()
   expect(screen.getByText('Edzés · Gym')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: 'Hypertrophy 04' })).toBeInTheDocument()
-  expect(screen.getByText('W3 / 6')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mezociklus áttekintő/ })).toBeInTheDocument()
+})
+
+test('the Mezociklus chip navigates to the overview (mezo-hi9m)', () => {
+  renderView()
+  fireEvent.click(screen.getByRole('button', { name: /Mezociklus áttekintő/ }))
+  expect(mockNavigate).toHaveBeenCalledWith('/train/mesocycles/meso-hyp-04/overview')
 })
 
 test('meso meta card shows the phase stat', () => {

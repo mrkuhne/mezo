@@ -454,3 +454,24 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607251400_mezo-wu1s_muscle_taxonomy_expansion.sql
+  - changeSet:
+      id: "1.0.0:202607261200_mezo-eujg_activity_level_desk_mixed_physical"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607261200_mezo-eujg_activity_level_desk_mixed_physical.sql
+  - changeSet:
+      id: "1.0.0:202607271200_mezo-uavr_recipe_role"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607271200_mezo-uavr_recipe_role.sql
+  - changeSet:
+      id: "1.0.0:202607280641_mezo-gj42_challenge_overload_type"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607280641_mezo-gj42_challenge_overload_type.sql

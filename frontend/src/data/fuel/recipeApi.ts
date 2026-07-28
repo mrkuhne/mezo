@@ -26,6 +26,9 @@ export function toRequest(input: RecipeInput): RecipeRequest {
     cookMins: input.cookMins ?? null,
     tags: input.tags,
     starred: input.starred,
+    // The role RETARGETS the scoring rubric server-side (it is not a bonus) — a pre-workout
+    // role can legitimately LOWER a protein/fat-dominant template's fit.
+    role: input.role,
     ingredients: input.ingredients.map(i => ({
       pantryItemId: i.pantryItemId,
       amount: i.amount,
@@ -67,6 +70,8 @@ export function fromResponse(r: RecipeResponse): Recipe {
     novaDominant: r.novaDominant as Recipe['novaDominant'],
     mezoFit: { score: r.mezoFit.score ?? null, fitsFor: r.mezoFit.fitsFor },
     starred: r.starred,
+    // `standard` fallback keeps a pre-role backend response (or a hand-written fixture) valid.
+    role: (r.role as Recipe['role']) ?? 'standard',
   }
 }
 

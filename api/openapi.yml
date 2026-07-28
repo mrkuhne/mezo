@@ -413,6 +413,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/mesocycles/{id}/volume-arc':
+    get:
+      tags:
+        - Train
+      operationId: getMesocycleVolumeArc
+      summary: >-
+        Read-only per-muscle volume arc (planned scaffold + actual logged
+        working sets) for a mesocycle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The mesocycle volume arc
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesocycleVolumeArcResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/train/mesocycles/{id}/days/{dayId}/exercises':
     put:
       tags:
@@ -2696,6 +2730,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RecipeLogListResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/meal/coach:
+    get:
+      tags:
+        - Meal
+      operationId: getMealCoachForDay
+      summary: >-
+        Day-batch coach verdicts; generates only for today, older days return
+        what is cached (mezo-mr4n)
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: >-
+            Verdicts for that day's meals (empty when the coach is
+            off/unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealCoachResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/meal/{id}/coach':
+    get:
+      tags:
+        - Meal
+      operationId: getMealCoach
+      summary: >-
+        Coach verdict for one logged meal — generates on demand for any date
+        (mezo-mr4n)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 0..1 verdicts (empty when the coach is off/unavailable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealCoachResponse'
         '401':
           description: Missing/invalid token
           content:
@@ -5370,6 +5468,100 @@ components:
         at:
           type: string
           format: date-time
+    MesocycleVolumeArcResponse:
+      type: object
+      required:
+        - mesocycleId
+        - title
+        - currentWeek
+        - weeks
+        - startDate
+        - endDate
+        - status
+        - phaseCurve
+        - muscles
+      properties:
+        mesocycleId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        currentWeek:
+          type: integer
+        weeks:
+          type: integer
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        status:
+          type: string
+          enum:
+            - active
+            - planned
+            - archived
+        phaseCurve:
+          type: array
+          items:
+            type: string
+            enum:
+              - MEV
+              - MAV
+              - MRV
+              - Deload
+        muscles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MuscleVolumeArc'
+    MuscleVolumeArc:
+      type: object
+      required:
+        - muscle
+        - region
+        - mrv
+        - weeks
+      properties:
+        muscle:
+          type: string
+          description: >-
+            Coarse volume-group key
+            (chest/back/shoulder/biceps/triceps/quad/ham/glute/calf/core)
+        region:
+          type: string
+          description: Color-family region key (coral/sky/lav/rose/sage/amber)
+        mrv:
+          type: integer
+        weeks:
+          type: array
+          items:
+            $ref: '#/components/schemas/VolumeArcWeek'
+    VolumeArcWeek:
+      type: object
+      required:
+        - week
+        - phase
+        - planned
+        - isCurrent
+      properties:
+        week:
+          type: integer
+        phase:
+          type: string
+          enum:
+            - MEV
+            - MAV
+            - MRV
+            - Deload
+        planned:
+          type: integer
+        actual:
+          type: integer
+          nullable: true
+          description: Null for future weeks with no logged data yet
+        isCurrent:
+          type: boolean
     MesoDay:
       type: object
       required:
@@ -6914,23 +7106,39 @@ components:
           nullable: true
     TdeeBootstrap:
       type: object
-      description: Formula-TDEE bootstrap snapshot computed at first evaluation.
+      description: >-
+        Formula-TDEE bootstrap snapshot computed at first evaluation. tdee =
+        neatBaselineKcal + weeklyEatKcalPerDay.
       required:
         - bmr
+        - neat
+        - neatBaselineKcal
+        - weeklyEatKcalPerDay
         - tdee
-        - pal
         - formula
         - computedAt
       properties:
         bmr:
           type: number
           description: Basal metabolic rate (kcal/day)
+        neat:
+          type: number
+          description: >-
+            Non-exercise activity multiplier (lifestyle band
+            DESK/MIXED/PHYSICAL)
+        neatBaselineKcal:
+          type: number
+          description: bmr × neat — the non-exercise lifestyle maintenance (kcal/day)
+        weeklyEatKcalPerDay:
+          type: number
+          description: >-
+            Scheduled training energy (gym+sport+run), weekly total ÷ 7
+            (kcal/day)
         tdee:
           type: number
-          description: Total daily energy expenditure (kcal/day)
-        pal:
-          type: number
-          description: Physical-activity-level multiplier
+          description: >-
+            Total maintenance = neatBaselineKcal + weeklyEatKcalPerDay
+            (kcal/day)
         formula:
           type: string
           enum:
@@ -6979,6 +7187,7 @@ components:
         - sleepTargetH
         - restDays
         - projectedRateKgPerWk
+        - dailyEnergyBalanceKcal
         - rationale
       properties:
         fromWeek:
@@ -6999,6 +7208,11 @@ components:
             type: integer
         projectedRateKgPerWk:
           type: number
+        dailyEnergyBalanceKcal:
+          type: integer
+          description: >-
+            Goal deficit(−)/surplus(+) per day (kcal);
+            sign×rate%/100×kg×kcalPerKg÷7
         rationale:
           type: string
     GoalGuardStatus:
@@ -7300,11 +7514,9 @@ components:
         activityLevel:
           type: string
           enum:
-            - SEDENTARY
-            - LIGHT
-            - MODERATE
-            - VERY
-            - EXTRA
+            - DESK
+            - MIXED
+            - PHYSICAL
           nullable: true
         tdeeBootstrap:
           allOf:
@@ -7335,11 +7547,9 @@ components:
         activityLevel:
           type: string
           enum:
-            - SEDENTARY
-            - LIGHT
-            - MODERATE
-            - VERY
-            - EXTRA
+            - DESK
+            - MIXED
+            - PHYSICAL
           nullable: true
     PantryResponse:
       type: object
@@ -8174,6 +8384,13 @@ components:
         starred:
           type: boolean
           default: false
+        role:
+          type: string
+          pattern: ^(standard|pre_workout|post_workout)$
+          default: standard
+          description: >-
+            Template meal role — selects the scoring rubric overlay (mezo-uavr).
+            Absent ⇒ standard.
         ingredients:
           type: array
           minItems: 1
@@ -8188,6 +8405,7 @@ components:
         - servings
         - tags
         - starred
+        - role
         - createdDate
         - novaDominant
         - macros
@@ -8221,6 +8439,9 @@ components:
             type: string
         starred:
           type: boolean
+        role:
+          type: string
+          description: 'Template meal role: standard|pre_workout|post_workout (mezo-uavr)'
         createdDate:
           type: string
         novaDominant:
@@ -8316,6 +8537,12 @@ components:
         summary:
           type: string
           nullable: true
+        tagline:
+          type: string
+          nullable: true
+          description: >-
+            Card-sized LLM cut (max 60 chars) — null until the coach ran
+            (mezo-mr4n)
         dimensions:
           type: array
           items:
@@ -8484,6 +8711,40 @@ components:
           type: string
         value:
           type: string
+    MealCoachResponse:
+      type: object
+      description: >-
+        Coach verdicts (mezo-mr4n). An empty list means nothing generated/cached
+        — never an error.
+      required:
+        - verdicts
+      properties:
+        verdicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealCoachVerdict'
+    MealCoachVerdict:
+      type: object
+      description: >-
+        One meal's qualitative verdict. Numbers are never LLM-authored — this
+        carries prose only.
+      required:
+        - mealId
+        - improve
+      properties:
+        mealId:
+          type: string
+          format: uuid
+        tagline:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        improve:
+          type: array
+          items:
+            $ref: '#/components/schemas/MealImproveRow'
     MealImproveRow:
       type: object
       required:
@@ -10119,7 +10380,7 @@ components:
           description: The target exercise's name
         type:
           type: string
-          description: PR | Depth | Volume
+          description: PR | Depth | Volume | overload
         typeLabel:
           type: string
           description: HU display label derived from type

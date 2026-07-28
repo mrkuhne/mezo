@@ -2,7 +2,10 @@ package io.mrkuhne.mezo.feature.recipe;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
+import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeIngredientEntity;
 import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
@@ -47,6 +50,20 @@ class RecipeMapperTest {
         e.getLines().add(line("Zabpehely", new BigDecimal("50"), new BigDecimal("100"),
             "100", "10", "20", "5", 1));
         return e;
+    }
+
+    /** A minimal valid scalar request — the fields {@code applyScalars} copies. */
+    private RecipeRequest baseRequest() {
+        RecipeRequest r = new RecipeRequest();
+        r.setName("Túrós tál");
+        r.setCategory("breakfast");
+        r.setServings(2);
+        RecipeIngredientRequest l = new RecipeIngredientRequest();
+        l.setPantryItemId(UUID.randomUUID());
+        l.setAmount(new BigDecimal("200"));
+        l.setUnit("g");
+        r.setIngredients(List.of(l));
+        return r;
     }
 
     @Test
@@ -96,5 +113,39 @@ class RecipeMapperTest {
             .containsExactly("Csirkemell", "Zabpehely");
         assertThat(r.getIngredients()).extracting(i -> i.getLineOrder())
             .containsExactly(0, 1);
+    }
+
+    @Test
+    void testApplyScalars_shouldDefaultRoleToStandard_whenRequestRoleIsNull() {
+        RecipeEntity e = new RecipeEntity();
+        e.setRole(MealRole.POST_WORKOUT); // seed a DIFFERENT role: the assertion must prove the mapper WROTE standard
+        RecipeRequest r = baseRequest();
+        r.setRole(null);
+
+        mapper.applyScalars(e, r);
+
+        assertThat(e.getRole()).isEqualTo(MealRole.STANDARD);
+    }
+
+    @Test
+    void testApplyScalars_shouldMapWireRole_whenRequestCarriesPreWorkout() {
+        RecipeEntity e = new RecipeEntity();
+        RecipeRequest r = baseRequest();
+        r.setRole("pre_workout");
+
+        mapper.applyScalars(e, r);
+
+        assertThat(e.getRole()).isEqualTo(MealRole.PRE_WORKOUT);
+    }
+
+    @Test
+    void testToResponse_shouldEmitSnakeCaseWireRole_whenEntityIsPostWorkout() {
+        RecipeEntity e = new RecipeEntity();
+        e.setRole(MealRole.POST_WORKOUT);
+        e.setName("X");
+        e.setCategory("lunch");
+        e.setServings(1);
+
+        assertThat(mapper.toResponse(e).getRole()).isEqualTo("post_workout");
     }
 }

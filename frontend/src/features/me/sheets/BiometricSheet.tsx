@@ -10,7 +10,7 @@ import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 // (both the populated card and the empty-state prompt). Edits the single
 // first-class biometric profile the engine computes the base-TDEE from. The
 // field markup (Nem segmented M/F · Magasság · Születési dátum · Testzsír%
-// optional · Aktivitási szint × PAL) is lifted from the deleted GoalPlannerPage
+// optional · Aktivitási szint / NEAT-sáv) is lifted from the deleted GoalPlannerPage
 // Step2. Prefills from the current profile when present. Mentés calls the upsert
 // mutation (which invalidates ['biometricProfile'] + ['goals'] so the active
 // goal recomputes server-side — Task 3) then closes on success — the EditGoalSheet
@@ -28,7 +28,7 @@ export function BiometricSheet({
   const [birthDateIso, setBirthDateIso] = useState<string>(profile?.birthDate ?? '1991-03-01')
   const [bodyFat, setBodyFat] = useState<number | ''>(profile?.bodyFatPct ?? '')
   const [activityLevel, setActivityLevel] = useState<ActivityLevel>(
-    (profile?.activityLevel as ActivityLevel | null | undefined) ?? 'MODERATE',
+    (profile?.activityLevel as ActivityLevel | null | undefined) ?? 'MIXED',
   )
 
   const save = (close: () => void) => {
@@ -131,7 +131,7 @@ export function BiometricSheet({
               />,
             )}
 
-            {/* Aktivitási szint → PAL: a TDEE = BMR × PAL szorzó. Default MODERATE. */}
+            {/* NEAT életmód-sáv (a betáblázott edzés külön adódik hozzá). Default MIXED. */}
             <div className="col gap-sm">
               <span style={SECTION_LABEL}>Aktivitási szint</span>
               <div className="col gap-xs">

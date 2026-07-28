@@ -98,6 +98,19 @@ class GoalEvaluationServiceIT extends AbstractIntegrationTest {
         assertThat(runOn.sleepTargetH()).isNotNull();
     }
 
+    // ── Cut: the first segment carries an explicit negative daily energy balance (deficit) ────────
+
+    @Test
+    void testEvaluate_shouldExposeDailyEnergyBalance_whenCut() {
+        UUID user = databasePopulator.populateUser("eval-balance@test.local");
+        profilePopulator.create(user);
+        seedWeight(user, "84.00");
+        GoalEntity g = goal(user, "cut", "0.70", List.of());
+        GoalPrescriptionJson rx = engine.evaluate(user, g.getId());
+        assertThat(rx.segments()).isNotEmpty();
+        assertThat(rx.segments().get(0).dailyEnergyBalanceKcal()).isNotNull().isLessThan(0); // cut → deficit
+    }
+
     // ── Aggressive cut: 1.5 %/wk is over the 1.0 cap → aggressive verdict + a note ────────────────
 
     @Test
