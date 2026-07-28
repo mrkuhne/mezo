@@ -77,8 +77,10 @@ export function TrainTodayPage() {
   // `params.get('day')` is `null` when absent — NOT coerced through `Number()` first
   // (`Number(null) === 0`, which would silently pin every plain `/train` visit to
   // Monday instead of today).
+  // `''` coerces the same way (`Number('') === 0`) when the param key is present but
+  // empty (e.g. a stray `?day=`), so both absence and blankness must skip `Number()`.
   const rawDay = params.get('day')
-  const dayIdx = rawDay === null ? NaN : Number(rawDay)
+  const dayIdx = rawDay === null || rawDay === '' ? NaN : Number(rawDay)
   const paramDay = Number.isInteger(dayIdx) && dayIdx >= 0 && dayIdx <= 6 ? DAY_ORDER[dayIdx] : null
   const [selectedDay, setSelectedDay] = useState<string | null>(paramDay)
 
@@ -171,16 +173,21 @@ export function TrainTodayPage() {
   const currentPhase = activeMeso.phaseCurve[activeMeso.currentWeek - 1]
   const openSession = () => navigate('/train/session')
 
-  // "Logged today" signals drive the hero/weekly done-state. Volleyball has no
-  // schedule↔log link, so we match the logged SportSession by today's date (the
-  // mapped session carries the HU display date). Running carries the prescribed
-  // tuple back, so we match on block + week + sessionKey.
+  // "Logged" signals drive the hero/weekly done-state. Volleyball has no
+  // schedule↔log link, so we match the logged SportSession by date (the mapped
+  // session carries the HU display date). Running carries the prescribed tuple
+  // back, so we match on block + week + sessionKey (already day-scoped by
+  // construction — a prescribed session's key is unique to its own weekday).
   const todayIso = localDateString()
-  const todayHu = huMonthDayDow(todayIso)
+  // The shown day's ISO date — sport done-state and state-labels must match THIS
+  // day, not always today, now that these cards render for any selected day
+  // (mezo-9bbc review fix). Falls back to todayIso when the shown day carries no
+  // date (defensive only; every real agenda day has one).
+  const shownIso = shownDay?.date ?? todayIso
   // A slot's done-state matches a logged session by DATE **and** SPORT — a mixed day
   // (TRX noon + volleyball evening) must flip each slot independently.
-  const loggedSportToday = (k: SportKind) =>
-    sport.sessions.find((s) => s.sport === k && s.date === todayHu) ?? null
+  const loggedSportOn = (iso: string, k: SportKind) =>
+    sport.sessions.find((s) => s.sport === k && s.date === huMonthDayDow(iso)) ?? null
   const sportDoneOn = (iso: string | undefined, k: SportKind) =>
     Boolean(iso) && sport.sessions.some((s) => s.sport === k && s.date === huMonthDayDow(iso!))
   const runLoggedFor = (key: string) =>
@@ -214,7 +221,11 @@ export function TrainTodayPage() {
           if (item.kind === 'sport') return sportDoneOn(d.date, sportOf(item.sport))
           return Boolean(runLoggedFor(item.running.key))
         })}
-        selected={shownDay?.day ?? ''}
+        // A real-mode rest day (no gym/sport slot matches today at all) leaves
+        // `shownDay` undefined even while today is shown (§ isTodayShown above) —
+        // fall back to the real weekday label so the strip still highlights a chip
+        // instead of selecting none (review fix, mezo-9bbc).
+        selected={shownDay?.day ?? (isTodayShown ? DAY_ORDER[todayIdx()] : '')}
         onSelect={(day) => setSelectedDay(day)}
       />
 
@@ -327,7 +338,7 @@ export function TrainTodayPage() {
         if (item.kind === 'sport') {
           const vb = item.sport
           const k = sportOf(vb)
-          const logged = loggedSportToday(k)
+          const logged = loggedSportOn(shownIso, k)
           return (
             <TodaySessionCard
               key={`hero-sport-${k}-${vb.time}-${i}`}
@@ -346,9 +357,12 @@ export function TrainTodayPage() {
                   : undefined
               }
               loggedDetail={logged?.time ? `${logged.time}-kor logolva` : null}
-              stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: todayIso, todayIso, timeOfDay: vb.time })]}
-              ctaLabel="Logold a session-t"
-              onLog={() => setSportLogSport(k)}
+              stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: shownIso, todayIso, timeOfDay: vb.time })]}
+              // Logging always writes "now" server-side (SportLogSheet has no date
+              // field) — read-only on any non-today day until Task 9 adds a `date`
+              // prop + a `Pótold` past-day CTA (mezo-9bbc review fix).
+              ctaLabel={isTodayShown ? 'Logold a session-t' : undefined}
+              onLog={isTodayShown ? () => setSportLogSport(k) : undefined}
             />
           )
         }
@@ -375,9 +389,12 @@ export function TrainTodayPage() {
             logged={Boolean(rl)}
             loggedSummary={rl ? `RPE ${rl.rpeActual ?? '–'}${rl.completedRounds != null ? ` · ${rl.completedRounds} kör` : ''}` : undefined}
             loggedDetail={null}
-            stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: todayIso, todayIso, timeOfDay: s.timeOfDay })]}
-            ctaLabel="Naplózd a futást"
-            onLog={openRunLog}
+            stateLabel={SESSION_STATE_LABEL[sessionState({ dayIso: shownIso, todayIso, timeOfDay: s.timeOfDay })]}
+            // Same read-only-on-non-today rule as sport (RunLogSheet also has no date
+            // field); `rl` itself is already day-scoped by session key, so `logged`
+            // needs no change — mezo-9bbc review fix.
+            ctaLabel={isTodayShown ? 'Naplózd a futást' : undefined}
+            onLog={isTodayShown ? openRunLog : undefined}
           />
         )
       })}

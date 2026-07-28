@@ -7,7 +7,7 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import { DAY_ORDER } from '@/data/train/train'
+import { DAY_LABELS, DAY_ORDER } from '@/data/train/train'
 import { SNOOZE_KEY } from '@/features/train/logic/morningWindow'
 import { localDateString } from '@/shared/lib/dates'
 
@@ -179,6 +179,23 @@ test('real mode shows the rest-day note when /today is empty but a meso is activ
   expect(screen.queryByRole('button', { name: /Indítsuk/ })).not.toBeInTheDocument()
 })
 
+// Review fix (mezo-9bbc): a genuine rest day flags NO agenda row `isToday` at all
+// (no gym/sport slot matches today), so `shownDay` is undefined even though today
+// is shown by default — the DayStrip must still fall back to highlighting today's
+// own chip instead of selecting none.
+test('real mode: a rest day still highlights today\'s own DayStrip chip', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+  )
+  renderView()
+  await screen.findByText(/Ma pihenőnap/)
+  expect(screen.getByRole('tab', { name: DAY_LABELS[todayLabel()] })).toHaveAttribute('aria-selected', 'true')
+})
+
 // An open custom (saját) instance on a rest day (no gym slot today) has no gym-hero
 // home, so it needs its own resume affordance instead of just "Ma pihenőnap" with
 // nothing to resume it (final-review fix, mezo-ws2x — Finding 4).
@@ -334,6 +351,44 @@ test('real mode: volleyball logged today ⇒ hero flips to the done summary, not
   // done state: muted summary present, the "log it" CTA gone, the eyebrow reads "MEGVAN"
   expect(screen.getByText(/RPE 7 · 90p/)).toBeInTheDocument()
   expect(screen.getByText(/MEGVAN/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
+})
+
+// Review fix (mezo-9bbc): today's logged session must not leak onto another day's
+// card once that day is selected — a mixed-scheduling bug would have shown Tuesday's
+// volleyball card as already done (and hidden its CTA) just because TODAY's own
+// session happened to be logged.
+test('real mode: a volleyball session logged today does not leak into another day\'s card', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const dow = (new Date().getDay() + 6) % 7
+  const otherDow = (dow + 1) % 7
+  const otherDay = DAY_ORDER[otherDow]
+  server.use(
+    http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('NEMNAP')])),
+    http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
+    // volleyball is scheduled on BOTH today and another day this week
+    http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+      HttpResponse.json([
+        { id: 'sl-today', dayOfWeek: dow, time: '18:15', durationMin: 90, kind: 'training', location: 'BVSC csarnok' },
+        { id: 'sl-other', dayOfWeek: otherDow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC csarnok' },
+      ]),
+    ),
+    // a session logged for TODAY only
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'ss-today', sport: 'volleyball', date: localDateString(), time: '18:15', duration: 90, setsPlayed: 5, intensity: 7, rpe: 7, shoulderStrain: 6, jumpCount: null, notes: null },
+      ]),
+    ),
+  )
+  renderView()
+  // sanity check: today's own card IS logged (contrast for the assertion below)
+  expect(await screen.findByText(/MEGVAN/)).toBeInTheDocument()
+  // switch to the other day — its volleyball card must NOT read as logged and must
+  // offer no log CTA (logging always writes "now" server-side, so it stays
+  // read-only on a non-today day until Task 9's retroactive-logging follow-up)
+  fireEvent.click(screen.getByRole('tab', { name: new RegExp(DAY_LABELS[otherDay]) }))
+  expect(await screen.findByText('Volleyball', { selector: '.todaycard-title' })).toBeInTheDocument()
+  expect(screen.queryByText(/MEGVAN/)).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /Logold a session-t/ })).not.toBeInTheDocument()
 })
 
