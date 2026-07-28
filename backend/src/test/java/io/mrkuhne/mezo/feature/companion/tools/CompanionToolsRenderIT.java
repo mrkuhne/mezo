@@ -629,7 +629,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
                 List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", 2100, 160,
-                        new BigDecimal("7.5"), List.of(5, 6), new BigDecimal("-0.5"),
+                        new BigDecimal("7.5"), List.of(5, 6), new BigDecimal("-0.5"), -500,
                         "kalóriahiány a cut elején")),
                 null, null);
         goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
@@ -662,7 +662,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, null,
                 List.of(new GoalPrescriptionJson.Segment(1, 6, "vágás", 2100, 160,
-                        new BigDecimal("7.5"), List.of(5, 6), null, null)),
+                        new BigDecimal("7.5"), List.of(5, 6), null, null, null)),
                 null, null);
         goalPopulator.createGoalFull(owner, LocalDate.now().minusWeeks(1), LocalDate.now().plusWeeks(10),
                 prescription, null, null, null);
