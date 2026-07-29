@@ -1,9 +1,11 @@
 package io.mrkuhne.mezo.support.populator;
 
 import io.mrkuhne.mezo.feature.notification.entity.NotificationPrefEntity;
+import io.mrkuhne.mezo.feature.notification.entity.NotificationScheduleEntity;
 import io.mrkuhne.mezo.feature.notification.entity.PushLogEntity;
 import io.mrkuhne.mezo.feature.notification.entity.PushSubscriptionEntity;
 import io.mrkuhne.mezo.feature.notification.repository.NotificationPrefRepository;
+import io.mrkuhne.mezo.feature.notification.repository.NotificationScheduleRepository;
 import io.mrkuhne.mezo.feature.notification.repository.PushLogRepository;
 import io.mrkuhne.mezo.feature.notification.repository.PushSubscriptionRepository;
 import java.time.LocalDate;
@@ -35,6 +37,7 @@ public class NotificationPopulator {
     private final PushSubscriptionRepository pushSubscriptionRepository;
     private final NotificationPrefRepository notificationPrefRepository;
     private final PushLogRepository pushLogRepository;
+    private final NotificationScheduleRepository notificationScheduleRepository;
 
     /** A live subscription whose key material is real enough to reach the encrypt+sign path. */
     public PushSubscriptionEntity subscription(UUID owner, String endpoint) {
@@ -70,5 +73,20 @@ public class NotificationPopulator {
         e.setDedupKey(dedupKey);
         e.setCategory(category);
         return pushLogRepository.saveAndFlush(e);
+    }
+
+    /** A FE-written recurring schedule row. {@code weekday} null means every day. */
+    public NotificationScheduleEntity schedule(UUID owner, Integer weekday, String time, String category,
+            String title, String body, String deeplink, String source) {
+        NotificationScheduleEntity e = new NotificationScheduleEntity();
+        e.setCreatedBy(owner);
+        e.setWeekday(weekday);
+        e.setTime(time);
+        e.setCategory(category);
+        e.setTitle(title);
+        e.setBody(body);
+        e.setDeeplink(deeplink);
+        e.setSource(source);
+        return notificationScheduleRepository.saveAndFlush(e);
     }
 }
