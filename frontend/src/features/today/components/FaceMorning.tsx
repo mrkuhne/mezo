@@ -26,8 +26,10 @@ export function FaceMorning({
   briefing: Briefing
   briefingDemo?: boolean
   briefingFacts: string[]
-  /** Items belonging to the later faces, previewed as compact rows. */
-  later: TodayItem[]
+  /** Items belonging to the later faces, previewed as compact rows. Day-wide (`face: 'all'`)
+   *  items are excluded by the caller's narrowing filter, so every row here has a real face
+   *  to jump to — the `'all' ? 'nap'` fallback this used to carry was unreachable. */
+  later: (TodayItem & { face: DayFace })[]
   /** Quest summary + the route into quest management (TodoCard's header). */
   growth?: GrowthTodaySummary | null
   /** The fuel plan's companion line — only shown when this face has fuel rows. */
@@ -63,7 +65,7 @@ export function FaceMorning({
             <ItemRow
               key={it.id} tone={it.tone} emoji={it.emoji} title={it.title}
               subtitle={it.subtitle} time={it.time}
-              onAction={() => onFace(it.face === 'all' ? 'nap' : it.face)}
+              onAction={() => onFace(it.face)}
               ariaLabel={`${it.title} — ugrás a napszakára`}
             />
           ))}

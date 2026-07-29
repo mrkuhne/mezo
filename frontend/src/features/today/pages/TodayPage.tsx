@@ -51,7 +51,10 @@ import { questAction } from '@/features/today/logic/questAction'
 import { habitAction, habitHint } from '@/features/today/logic/habitAction'
 import { growthTodaySummary } from '@/features/today/logic/growthToday'
 import { DAY_FACES, dayFace, type DayFace as Face } from '@/features/today/logic/dayFace'
-import { buildTodayItems, itemsForFace, openCountByFace, type TodayItem } from '@/features/today/logic/todayItems'
+import {
+  buildTodayItems, isFillableSlot, itemsForFace, openCountByFace,
+  type SessionItemInput, type TodayItem,
+} from '@/features/today/logic/todayItems'
 import { sportOf, SPORT_EMOJI, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/features/train/logic/sportKinds'
 import { localDateString } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
@@ -73,18 +76,34 @@ const dirOf = (from: Face, to: Face): 'fwd' | 'back' =>
  *  • quest → `questAction` is `null`: a metric with no Today surface. This is live production
  *    data, not a hypothetical — the quest catalogue ships `growth_intention`
  *    (`metric: intention_focus_set`, `dayTypes: ["ANY"]`), which questAction.ts does not map.
- *  • quest → a `checkin` CTA on a day where every slot is already done or skipped, so
- *    `act()` has no index to open (the retired TodayQuestsCard guarded exactly this with
- *    `showCta = action !== null && (kind !== 'checkin' || onCheckIn !== undefined)`).
+ *  • quest → a `checkin` CTA on a day where every slot is already recorded, so `act()` has no
+ *    index to open (the retired TodayQuestsCard guarded exactly this with
+ *    `showCta = action !== null && (kind !== 'checkin' || onCheckIn !== undefined)`). A
+ *    `skipped` slot does NOT close this: it is still fillable (`isFillableSlot`), so the CTA
+ *    survives as long as any slot is unrecorded.
  */
-function servableAction(item: TodayItem, hasOpenCheckin: boolean): boolean {
+function servableAction(item: TodayItem, hasFillableCheckin: boolean): boolean {
   const a = item.action
   if (!a) return false
   if (a.kind === 'habit') return habitAction(a.habit).kind !== 'none'
   if (a.kind !== 'quest') return true
   const qa = questAction(a.quest)
   if (!qa) return false
-  return qa.kind !== 'checkin' || hasOpenCheckin
+  return qa.kind !== 'checkin' || hasFillableCheckin
+}
+
+/**
+ * One session of the day, shaped so a SINGLE object serves both of its roles: the normalizer's
+ * `SessionItemInput` (the row) and `FaceDay`'s `DayHero` (the card), keyed by the id the item
+ * carries. Authored once (`sessions` below) and never re-derived — that duplication is what let
+ * the hero and the row disagree about tag, facts and CTA.
+ */
+type DaySession = SessionItemInput & { ctaLabel: string }
+
+/** A session's hero card: the same object, minus the item identity, plus the CTA's handler. */
+const heroCardOf = (s: DaySession, onLog: () => void): DayHero => {
+  const { id: _itemId, ...card } = s
+  return { ...card, onLog }
 }
 
 export function TodayPage() {
@@ -141,23 +160,37 @@ export function TodayPage() {
   }, [habitLevelUps, showLevelUp, consumeHabitLevelUps])
 
   const sportToday = volleyballSessions.find((s) => s.today)
+  // The day's sessions, authored EXACTLY ONCE (mezo-mvb4.1). Before this, the row (here) and the
+  // Nap face's hero (below) were two independent computations over the same data built from
+  // near-duplicate literals — so they could disagree, and did: a real early gym slot (07:30)
+  // bucketed onto `reggel` as an inert `GYM` row while the SAME session was also the Nap hero
+  // with a `GYM · {tag}` eyebrow and an `Indítsuk` CTA. Now the hero is a reference to the very
+  // object the item is built from, so drift is structurally impossible.
+  // Array order IS hero precedence: the gym session wins, a sport session heroes on a rest day.
+  const sessions = useMemo<DaySession[]>(() => [
+    ...(workout ? [{
+      id: 'gym', tone: 'gym' as const, emoji: '🏋️',
+      tag: `GYM${workout.tag ? ` · ${workout.tag}` : ''}`, title: workout.title,
+      time: workoutTime ?? null,
+      facts: [`${workout.exercises.length} gyakorlat`, `~${workout.durationEst} perc`, prediction?.label],
+      logged: false, ctaLabel: 'Indítsuk',
+    }] : []),
+    ...(sportToday ? [{
+      id: 'sport', tone: SPORT_TONE[sportOf(sportToday)], emoji: SPORT_EMOJI[sportOf(sportToday)],
+      tag: SPORT_TAGS[sportOf(sportToday)], title: SPORT_TITLES[sportOf(sportToday)],
+      time: sportToday.time, facts: [`${sportToday.duration} perc`, sportToday.court, sportToday.role],
+      logged: false, ctaLabel: 'Logold',
+    }] : []),
+  ], [workout, workoutTime, prediction, sportToday])
+  // The one session the Nap face promotes to its hero, and the id of its item. Everything
+  // downstream keys off THIS id — never off `source === 'session'`, which also swept away the
+  // sessions that are NOT the hero (a 17:00 sport session next to a gym day rendered nowhere).
+  const heroSession = sessions[0] ?? null
+  const heroItemId = heroSession ? `session:${heroSession.id}` : null
+
   const items = useMemo(() => {
     const built = buildTodayItems({
-      quests, habits, checkins, fuelSlots, ritual: ritualDay, goal: sleepGoal,
-      sessions: [
-        ...(workout ? [{
-          id: 'gym', tone: 'gym' as const, emoji: '🏋️', tag: 'GYM', title: workout.title,
-          time: workoutTime ?? null,
-          facts: [`${workout.exercises.length} gyakorlat`, `~${workout.durationEst} perc`, prediction?.label],
-          logged: false,
-        }] : []),
-        ...(sportToday ? [{
-          id: 'sport', tone: SPORT_TONE[sportOf(sportToday)], emoji: SPORT_EMOJI[sportOf(sportToday)],
-          tag: SPORT_TAGS[sportOf(sportToday)], title: SPORT_TITLES[sportOf(sportToday)],
-          time: sportToday.time, facts: [`${sportToday.duration} perc`, sportToday.court, sportToday.role],
-          logged: false,
-        }] : []),
-      ],
+      quests, habits, checkins, fuelSlots, ritual: ritualDay, goal: sleepGoal, sessions,
     })
     // The ItemRow doctrine, enforced for EVERY source in one place: a row keeps its action
     // only when this screen can serve it (`servableAction`), otherwise the row survives and
@@ -166,13 +199,18 @@ export function TodayPage() {
     // than as broken (the retired RoutineCard's quiet hint line).
     // Done HERE, not in todayItems.ts — the normalizer's action data is right; it is this
     // screen that decides what it can serve.
-    const hasOpenCheckin = checkins.some((c) => c.state === 'now' || c.state === 'pending')
+    const hasFillableCheckin = checkins.some(isFillableSlot)
     return built.map((i) => {
-      if (servableAction(i, hasOpenCheckin)) return i
-      const hint = i.action?.kind === 'habit' ? habitHint(i.action.habit) : null
-      return { ...i, action: null, subtitle: hint ?? i.subtitle }
+      // The promoted session's face follows its HERO, not its clock time: FaceDay is where the
+      // hero renders, so the item belongs to `nap` whatever the session's start. Without this an
+      // early gym slot would bucket onto `reggel`, be filtered off that face as the hero, and
+      // vanish — instead it is previewed there as a „Ma még vár rád" row that jumps to Nap.
+      const faced = i.id === heroItemId ? { ...i, face: 'nap' as const } : i
+      if (servableAction(faced, hasFillableCheckin)) return faced
+      const hint = faced.action?.kind === 'habit' ? habitHint(faced.action.habit) : null
+      return { ...faced, action: null, subtitle: hint ?? faced.subtitle }
     })
-  }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, workout, workoutTime, prediction, sportToday])
+  }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, sessions, heroItemId])
 
   // The current face comes from the clock; `?dp=` overrides it. Absent (`null`) and
   // blank (`''`) both mean "current" — neither may fall through to a parsed value.
@@ -195,13 +233,34 @@ export function TodayPage() {
   // branch has no such ordering choice to make: it IS gated by the same async data as its
   // pending check, so pending-first there is forced, not merely conventional — the two
   // situations only look alike.)
+  // The identity header is rendered ONCE, above both the pending gate and the faces
+  // (mezo-mvb4.1). `.apphero` is a 65 px `position: sticky` row, so returning the skeleton
+  // *instead of* it made a cold real-mode load paint headerless and then shove the whole page
+  // down 65 px the moment the anchor resolved — the exact reflow the skeleton exists to
+  // prevent, and larger than the ~150–160 px content shrink the team measured and accepted.
+  // (`TrainSection` gets this for free by rendering `AppHero` above its `<Outlet>`; TodayPage
+  // is a leaf page with no such shell, so it must do it itself.) Because it is the same element
+  // in the same position in both trees, React keeps the DOM node across the transition.
+  const appHero = (
+    <AppHero
+      utilities={<Link to="/insights" aria-label="Insights" className="icon-btn"><Icon name="sparkle" size={18} /></Link>}
+    />
+  )
+
   if (scenario.anchorMode) return <AnchorModeView />
   // The face selection depends on the sleep anchor; rendering before it resolves would
   // flash the wrong face in real mode. The skeleton is layout-matched (TrainTodaySkeleton
   // precedent) so the swap does not shift the page.
-  if (sleepGoalPending) return <TodaySkeleton />
+  if (sleepGoalPending) return <>{appHero}<TodaySkeleton /></>
 
-  const { open, done } = itemsForFace(items, selected)
+  // A face never renders the hero twice: the promoted session leaves the row lists by ID
+  // (mezo-mvb4.1). This replaced `FaceDay`'s `source !== 'session'` filter, which threw out
+  // EVERY session — so on a stacked day the non-hero one (a 17:00 sport session inside the nap
+  // window) had no surface at all. The pill counters still count it on its face: it IS an open
+  // item there, just rendered as a hero rather than as a row.
+  const faceItems = itemsForFace(items, selected)
+  const open = faceItems.open.filter((i) => i.id !== heroItemId)
+  const done = faceItems.done.filter((i) => i.id !== heroItemId)
   const doneXp = done.reduce((s, i) => s + (i.xp ?? 0), 0)
   const dayXp = items.filter((i) => i.status === 'done').reduce((s, i) => s + (i.xp ?? 0), 0)
     + (activities ?? []).reduce((s, e) => s + e.xpAwarded, 0)
@@ -223,7 +282,10 @@ export function TodayPage() {
       if (!qa) return
       if (qa.kind === 'water') return logWater(qa.amountMl)
       if (qa.kind === 'checkin') {
-        const idx = checkins.findIndex((c) => c.state === 'now' || c.state === 'pending')
+        // The first slot that is still fillable — the same predicate `servableAction` gated the
+        // pill on, so the CTA can never appear without an index to open (and a `skipped` morning
+        // slot is a legitimate target: the sheet backfills it).
+        const idx = checkins.findIndex(isFillableSlot)
         return idx >= 0 ? setCheckInIdx(idx) : undefined
       }
       if (qa.kind === 'activity') return setActivityQuest(a.quest)
@@ -256,7 +318,11 @@ export function TodayPage() {
     ...chainProgress('MORNING'),
     next: open.find((i) => i.source === 'habit' && i.face === 'reggel') ?? null,
   }
-  const later = items.filter((i) => i.face !== selected && i.face !== 'all' && i.status === 'open')
+  // The preview rows of the OTHER faces. The predicate narrows the type, so `face` is a real
+  // `DayFace` by the time `FaceMorning` jumps to it — the `'all' ? 'nap'` fallback that used to
+  // sit there was unreachable, and now it is unrepresentable.
+  const later = items.filter((i): i is TodayItem & { face: Face } =>
+    i.face !== selected && i.face !== 'all' && i.status === 'open')
 
   // The retired TodayQuestsCard header's job: the quest+activity summary AND the only route
   // from Today into quest management (reroll + the why-lines live on /me/growth).
@@ -266,28 +332,14 @@ export function TodayPage() {
     ? { time: nextStack.time, text: `${nextStack.mezoNote.split('.')[0]}.` }
     : null
 
-  const dayHero: DayHero | null = workout
-    ? {
-        tone: 'gym', emoji: '🏋️', tag: `GYM${workout.tag ? ` · ${workout.tag}` : ''}`, time: workoutTime ?? null,
-        title: workout.title,
-        facts: [`${workout.exercises.length} gyakorlat`, `~${workout.durationEst} perc`, prediction?.label],
-        logged: false, ctaLabel: 'Indítsuk', onLog: () => navigate('/train'),
-      }
-    : sportToday
-      ? {
-          tone: SPORT_TONE[sportOf(sportToday)], emoji: SPORT_EMOJI[sportOf(sportToday)],
-          tag: SPORT_TAGS[sportOf(sportToday)], time: sportToday.time,
-          title: SPORT_TITLES[sportOf(sportToday)],
-          facts: [`${sportToday.duration} perc`, sportToday.court, sportToday.role],
-          logged: false, ctaLabel: 'Logold', onLog: () => navigate('/train'),
-        }
-      : null
+  // The hero is a REFERENCE to the promoted session, not a second rendering of `workout` —
+  // its card content is that object verbatim. Only `id` (the item's identity, not card content)
+  // stays behind, and only the CTA's handler is hero-only.
+  const dayHero: DayHero | null = heroSession ? heroCardOf(heroSession, () => navigate('/train')) : null
 
   return (
     <>
-      <AppHero
-        utilities={<Link to="/insights" aria-label="Insights" className="icon-btn"><Icon name="sparkle" size={18} /></Link>}
-      />
+      {appHero}
       <GreetingHeader today={today} user={user} retaDay={scenario.retaDay} />
       <DayFaceStrip
         selected={selected}

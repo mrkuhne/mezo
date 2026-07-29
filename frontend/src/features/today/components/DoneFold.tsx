@@ -14,7 +14,12 @@ export function DoneFold({ items, xp }: { items: TodayItem[]; xp: number }) {
   return (
     <div className="donefold">
       <button type="button" className="donefold-hd np-press" onClick={() => setOpen(!open)} aria-expanded={open}>
-        <span className="donefold-t">✓ Kész ma</span>
+        {/* No class on the label on purpose: `.donefold-hd` already carries the header's
+            typography and the label needs no geometry of its own (the counter is what pushes
+            right, via `.donefold-c`'s `margin-left: auto`). It used to emit `donefold-t`, a
+            class with no rule anywhere in the stylesheet — an orphan EMITTER, the mirror image
+            of the orphan rules this redesign swept out (mezo-mvb4.1). */}
+        <span>✓ Kész ma</span>
         <span className="donefold-c">{items.length} tétel · +{xp} XP</span>
         <span className="donefold-ch" aria-hidden="true">{open ? '⌃' : '⌄'}</span>
       </button>

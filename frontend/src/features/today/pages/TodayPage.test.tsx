@@ -254,6 +254,56 @@ describe('TodayPage — composition', () => {
   })
 })
 
+/**
+ * I2 — the `wind_down` habit used to be offered TWICE on the Este face inside the winddown
+ * window: once as the `WindDownBanner`'s own row (title + anchor cue + XP + `Pipa`) and once as
+ * an „Esti rutin" row in the `TodoCard`, because `OWNED_BY_RITUAL_HERO` filtered only
+ * `evening_ritual`. The two controls came from two `useHabitActions` instances with INDEPENDENT
+ * `pending` state, so tapping one left the other live and a second `check('wind_down')` could
+ * fire. With the mock anchor (wake 06:45 / bed 23:15) the winddown phase is 22:15–23:15.
+ */
+describe('TodayPage — the wind-down habit is offered exactly once', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
+
+  const windDownRows = () =>
+    screen.getAllByText('Wind-down, képernyő le').map((n) => n.closest('.itemrow') as HTMLElement)
+
+  test('inside the winddown phase the banner owns it — one row, one Pipa', () => {
+    clockAt('22:30')
+    renderToday()
+    // Two before the fix: the banner's row AND the „Esti rutin" TodoCard row.
+    const rows = windDownRows()
+    expect(rows).toHaveLength(1)
+    // …and the surviving one is the BANNER's (inside the wind-down `.todaycard`, where the
+    // advice lines explain it), not the weaker `.tdc` row.
+    expect(rows[0].closest('.tdc')).toBeNull()
+    expect(rows[0].closest('.todaycard')).toBeTruthy()
+    expect(within(rows[0]).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
+  })
+
+  test('in the dim phase the banner shows no row, so the TodoCard keeps the only affordance', () => {
+    // 22:00 = dim (bed−90 … bed−60): the habit's anchor („napzárás után") has not come due, the
+    // banner deliberately renders no row — so filtering the TodoCard row here would leave the
+    // habit unreachable on this face, which is a loss, not a de-duplication.
+    clockAt('22:00')
+    const { container } = renderToday()
+    const rows = windDownRows()
+    expect(rows).toHaveLength(1)
+    expect(rows[0].closest('.tdc')).toBeTruthy()
+    expect(within(rows[0]).getByRole('button', { name: 'Pipa' })).toBeInTheDocument()
+    expect(container.querySelector('.todaycard-rows')).toBeNull()
+  })
+
+  test('outside the wind-down windows the TodoCard row is still there', () => {
+    clockAt('21:05') // phase 'none' — the banner renders nothing at all
+    renderToday()
+    const rows = windDownRows()
+    expect(rows).toHaveLength(1)
+    expect(rows[0].closest('.tdc')).toBeTruthy()
+  })
+})
+
 describe('TodayPage — no face renders a control that does nothing', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })

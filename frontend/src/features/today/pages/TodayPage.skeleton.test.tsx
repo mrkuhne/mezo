@@ -70,6 +70,37 @@ describe('TodayPage — sleep-anchor pending gate', () => {
     expect(container.querySelector('[aria-busy="true"]')).toBeNull()
   })
 
+  // Fix-round correction (mezo-mvb4.1): the pending branch used to return `<TodaySkeleton/>`
+  // INSTEAD of the tree that renders `AppHero`, so a cold real-mode load painted a headerless
+  // skeleton and then shoved the whole page down by the header's height the moment the anchor
+  // resolved — the exact reflow the skeleton exists to prevent, and larger than the accepted
+  // ~150-160 px content shrink. `.apphero` is a 65 px `position: sticky` row
+  // (`prototype.css`: 48 px avatar + 8 px×2 padding + 1 px border). The TrainTodaySkeleton
+  // precedent does not transfer: `TrainSection` renders `AppHero` above its `<Outlet>`, so
+  // Train's skeleton never had a header to lose.
+  test('the pending skeleton keeps the sticky identity header', () => {
+    mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: true })
+    const { container } = renderToday()
+    expect(container.querySelector('[aria-busy="true"]')).toBeTruthy()
+    expect(container.querySelector('.apphero')).toBeTruthy()
+    // it is the real header, with Today's own ✨ utility — not a placeholder shaped like one
+    expect(screen.getByRole('link', { name: 'Insights' })).toBeInTheDocument()
+  })
+
+  test('the header SURVIVES the resolve as the same DOM node — nothing is inserted above', () => {
+    // The strongest form of the guarantee: same element, same position in both trees, so React
+    // reconciles rather than remounts and the sticky row cannot shift the content below it.
+    mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: true })
+    const { rerender, container } = render(tree())
+    const pendingHero = container.querySelector('.apphero')
+    expect(pendingHero).toBeTruthy()
+
+    mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: false })
+    rerender(tree())
+    expect(container.querySelector('.apphero')).toBe(pendingHero)
+    expect(container.querySelector('.apphero')?.previousElementSibling).toBeNull()
+  })
+
   // Fix-round correction: `anchorMode` (`?day=rough`) is derived SYNCHRONOUSLY from the URL
   // (useTodayScenario), never from `useSleepGoal` — so it must win even while the anchor is
   // still pending, or a real-mode `/today?day=rough` visit flashes the generic skeleton

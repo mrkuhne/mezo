@@ -1,5 +1,7 @@
 import { describe, expect, test } from 'vitest'
-import { buildTodayItems, itemsForFace, openCountByFace } from '@/features/today/logic/todayItems'
+import {
+  buildTodayItems, isFillableSlot, itemsForFace, openCountByFace,
+} from '@/features/today/logic/todayItems'
 import type { CheckinSlot, DailyQuest, FuelSlot, HabitItem, RitualDay } from '@/data/types'
 
 const GOAL = { wakeTime: '06:30', bedTime: '22:30' }
@@ -24,6 +26,27 @@ describe('buildTodayItems — quests', () => {
     expect(items[0]).toMatchObject({ source: 'quest', face: 'all', status: 'open', group: 'Napi küldetések' })
     expect(itemsForFace(items, 'reggel').open).toHaveLength(1)
     expect(itemsForFace(items, 'este').open).toHaveLength(1)
+  })
+
+  test('a quest row carries questAction\'s OWN label, not a flat „Naplózz"', () => {
+    // The I4 regression: every pill read „Naplózz" — a word that everywhere else on this screen
+    // means „open a log surface". On `water_target` that made a silent, immediate 250 ml write
+    // indistinguishable from a navigation.
+    const items = buildTodayItems({
+      ...EMPTY,
+      quests: [
+        quest({ id: 'w', metric: 'water_target' }),
+        quest({ id: 's', metric: 'sleep_target' }),
+        quest({ id: 'c', metric: 'checkin_full' }),
+        quest({ id: 'a', metric: 'reading_minutes', completionMode: 'ACTIVITY' }),
+      ],
+    })
+    expect(items.map(i => i.action?.label)).toEqual(['+250 ml', 'Alvás', 'Check-in', 'Naplózz'])
+  })
+
+  test('an unmapped metric still gets a label — TodayPage strips the whole action anyway', () => {
+    const items = buildTodayItems({ ...EMPTY, quests: [quest({ metric: 'intention_focus_set' })] })
+    expect(items[0].action?.label).toBe('Naplózz')
   })
 
   test('a completed quest is done, an expired quest is missed', () => {
@@ -141,9 +164,30 @@ describe('buildTodayItems — check-ins', () => {
     expect(nap?.action).toEqual({ kind: 'checkin', slotIdx: 1, label: 'Koppints' })
   })
 
-  test('a done slot is done and a skipped slot is missed', () => {
+  test('a done slot is done — and a SKIPPED slot stays OPEN so it can still be filled', () => {
+    // The C1 regression: `skipped → missed` made the row invisible everywhere (nothing on the
+    // screen renders a `missed` item), so from 10:00 onward an unfilled morning slot could not
+    // be reached from any surface — while `CheckInSheet` posts `state: 'done'` and would have
+    // backfilled it happily. Mock's `initialCheckins` never yields `skipped`, which is why
+    // 1981 tests and six goldens missed it; this fixture is the one that does.
     const items = buildTodayItems({ ...EMPTY, checkins: [slot('06:30', 'done'), slot('10:00', 'skipped')] })
-    expect(items.map(i => i.status)).toEqual(['done', 'missed'])
+    expect(items.map(i => i.status)).toEqual(['done', 'open'])
+    expect(itemsForFace(items, 'reggel').open.map(i => i.id)).toContain('checkin:10:00')
+  })
+
+  test('a skipped slot never pretends it was on time — past tense, „elmaradt", a Pótold pill', () => {
+    const items = buildTodayItems({ ...EMPTY, checkins: [slot('06:30', 'done'), slot('10:00', 'skipped')] })
+    const late = items[1]
+    expect(late.title).toBe('Hogy voltál?')
+    expect(late.subtitle).toBe('10:00 · elmaradt')
+    expect(late.action).toEqual({ kind: 'checkin', slotIdx: 1, label: 'Pótold' })
+    // …while a slot whose window is still open keeps the present-tense invitation
+    expect(items[0].title).toBe('Hogy vagy?')
+  })
+
+  test('isFillableSlot — everything but an already recorded slot', () => {
+    expect([slot('06:30', 'done'), slot('10:00', 'skipped'), slot('14:00', 'now'), slot('20:00', 'pending')]
+      .map(isFillableSlot)).toEqual([false, true, true, true])
   })
 })
 

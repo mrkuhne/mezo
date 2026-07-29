@@ -16,6 +16,7 @@ import type { CompanionNote } from '@/data/types'
 import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
+import { useWindDownPhase } from '@/features/today/logic/useWindDownPhase'
 
 /** The two rows the `RitualCard` hero above the list already owns — showing either of
  *  them again is the exact duplication this redesign exists to remove. The `evening_ritual`
@@ -23,6 +24,15 @@ import { useChainCelebration } from '@/features/today/logic/useChainCelebration'
  *  pill vs. the hero's window-aware CTA), so the hero wins. Filtered HERE rather than in
  *  `todayItems.ts`: other surfaces (Growth's chain view) legitimately want those rows. */
 const OWNED_BY_RITUAL_HERO = new Set(['habit:evening_ritual'])
+
+/** The same rule, one card up and phase-dependent (mezo-mvb4.1): inside the **winddown** phase
+ *  the `WindDownBanner` renders this habit's own row — title, anchor cue, `+N XP` and a `Pipa` —
+ *  so a second `Pipa` in the `TodoCard` would offer one act twice, from two `useHabitActions`
+ *  instances with independent `pending` state. It is filtered ONLY while the banner shows it:
+ *  in `dim` (and outside the windows entirely) the banner draws no row, so the `TodoCard`'s is
+ *  the only affordance and must stay — the habit's anchor („napzárás után") has not come due
+ *  yet, exactly as before the re-dress. Once the habit is `done` it is not in `open` at all. */
+const OWNED_BY_WIND_DOWN_BANNER = 'habit:wind_down'
 
 export function FaceEvening({
   open, done, doneXp, dayXp, chain, note, growth, fuelNote, habitPending, onAct,
@@ -45,7 +55,14 @@ export function FaceEvening({
   habitPending?: boolean
   onAct: (item: TodayItem) => void
 }) {
-  const todo = open.filter((i) => i.source !== 'ritual' && !OWNED_BY_RITUAL_HERO.has(i.id))
+  // The same 30 s-ticking derivation the banner renders from, so „is the banner showing the
+  // wind-down row right now?" is answered by ONE clock and one formula.
+  const { phase } = useWindDownPhase()
+  const bannerOwnsWindDown = phase === 'winddown'
+  const todo = open.filter((i) =>
+    i.source !== 'ritual'
+    && !OWNED_BY_RITUAL_HERO.has(i.id)
+    && !(bannerOwnsWindDown && i.id === OWNED_BY_WIND_DOWN_BANNER))
   useChainCelebration(chain.total > 0 && chain.done === chain.total, '🌙 Tökéletes este')
   return (
     <>

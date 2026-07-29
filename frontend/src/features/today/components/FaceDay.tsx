@@ -46,7 +46,10 @@ export function FaceDay({
   onFace: (face: DayFace) => void
   onCustom: () => void
 }) {
-  const todo = open.filter((i) => i.source !== 'session')
+  // `open` already excludes the item this face's hero renders (TodayPage filters it by id), so
+  // there is nothing to strip here. Filtering `source !== 'session'` — as this line used to —
+  // also removed the sessions that are NOT the hero: on a stacked day the second session
+  // (a 17:00 sport session next to the gym) had no surface anywhere on its own face.
   return (
     <>
       {hero ? (
@@ -63,8 +66,8 @@ export function FaceDay({
       )}
       <IntentionBanner variant="chip" />
       <TodoCard
-        items={todo} doneCount={done.length} xp={doneXp} growth={growth}
-        note={todo.some((i) => i.source === 'fuel') ? fuelNote : null}
+        items={open} doneCount={done.length} xp={doneXp} growth={growth}
+        note={open.some((i) => i.source === 'fuel') ? fuelNote : null}
         habitPending={habitPending} onAct={onAct}
       />
       {note && <CompanionNoteCard note={note} />}

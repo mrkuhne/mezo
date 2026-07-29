@@ -8,12 +8,16 @@
 // Pure: no React, no hooks, no `@/data/hooks`, no side effects. Quest and habit
 // actions deliberately carry the raw domain object, so `TodayPage` can dispatch
 // them through the existing questAction/habitAction mappings without this
-// module knowing about sheets. Sources with no domain-level action of their own
+// module knowing about sheets. It reads `questAction` for ONE thing — the CTA's
+// **label**, which is that mapping's own copy and must not be re-invented here
+// (a flat „Naplózz" turned the water quest's instant 250 ml write into a pill
+// that read like a navigation). Sources with no domain-level action of their own
 // (fuel, ritual) carry a plain route string on a `nav` action instead — the
 // same convention `questAction.ts` already uses — the one place a route
 // legitimately appears here.
 // ============================================================
 import { faceOf, type DayFace, DAY_FACES } from '@/features/today/logic/dayFace'
+import { questAction } from '@/features/today/logic/questAction'
 import type { AnchorTimes } from '@/features/today/logic/windDown'
 import type { CheckinSlot, DailyQuest, FuelSlot, HabitItem, RitualDay } from '@/data/types'
 import type { ItemTone } from '@/shared/ui/ItemCard'
@@ -88,7 +92,18 @@ const DEDUP_PAIRS: Record<string, string> = {
 
 const QUEST_STATUS: Record<string, ItemStatus> = { offered: 'open', completed: 'done', expired: 'missed' }
 const HABIT_STATUS: Record<string, ItemStatus> = { pending: 'open', done: 'done', missed: 'missed' }
-const CHECKIN_STATUS: Record<string, ItemStatus> = { done: 'done', skipped: 'missed', now: 'open', pending: 'open' }
+/**
+ * `skipped` is OPEN, not `missed` (mezo-mvb4.1). A check-in slot whose window has passed with
+ * nothing recorded is the ONE passed state the user can still act on: `CheckInSheet` posts
+ * `state: 'done'`, so backfilling works end to end — exactly what the retired `CheckInStrip`
+ * allowed by making all four slots tappable unconditionally. Mapping it to `missed` made it
+ * invisible: nothing renders a `missed` item (not the open list, not `DoneFold`, not the
+ * „Ahogy a nap telt" retrospective), so from 10:00 onward every unfilled morning slot became
+ * unreachable and the `bio_checkin_full` quest (threshold 4) unwinnable for the rest of the day.
+ * The honesty the `missed` mapping was reaching for is carried by the row's COPY instead (past
+ * tense + „elmaradt" + a `Pótold` pill), never by hiding the action.
+ */
+const CHECKIN_STATUS: Record<string, ItemStatus> = { done: 'done', skipped: 'open', now: 'open', pending: 'open' }
 const FUEL_STATUS: Record<string, ItemStatus> = { done: 'done', missed: 'missed', now: 'open', pending: 'open' }
 
 const CHAIN_GROUP = { MORNING: 'Reggeli rutin', EVENING: 'Esti rutin' } as const
@@ -152,25 +167,36 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
       time: null,
       xp: q.xp,
       group: 'Napi küldetések',
-      action: { kind: 'quest', quest: q, label: 'Naplózz' }, linkUrl: null,
+      // The CTA says what it will DO — `questAction`'s own per-metric label (`+250 ml`,
+      // `Check-in`, `Mérés`, `Alvás`, `Fuel`, `Főzés`, `Edzés`), the labels the retired
+      // TodayQuestsCard rendered. A flat „Naplózz" made the `water_target` pill a mutation
+      // disguised as a navigation: it commits an immediate 250 ml write with no sheet, while
+      // „Naplózz" everywhere else on this screen means „open a log surface". The `??` is the
+      // unmapped case, which `servableAction` strips of its action anyway.
+      action: { kind: 'quest', quest: q, label: questAction(q)?.label ?? 'Naplózz' }, linkUrl: null,
     })
   }
 
   // ── check-ins: one row per canonical slot, bucketed by its own clock time. The
   //    array index is carried onto the action — CheckInSheet is opened by index.
   input.checkins.forEach((c, slotIdx) => {
+    // A passed, unrecorded slot stays actionable (see CHECKIN_STATUS) but its copy never
+    // pretends it was on time: past tense, an „elmaradt" subtitle, and a pill that offers to
+    // make it up rather than to tap now. This is the `—` the retired strip drew on a skipped
+    // slot, said in words on a row that still opens the sheet.
+    const late = c.state === 'skipped'
     items.push({
       id: `checkin:${c.time}`,
       source: 'checkin',
       face: faceOf(c.time, input.goal),
       status: CHECKIN_STATUS[c.state] ?? 'open',
       tone: 'mind', emoji: '💗', tag: 'CHECK-IN',
-      title: 'Hogy vagy?',
-      subtitle: c.time,
+      title: late ? 'Hogy voltál?' : 'Hogy vagy?',
+      subtitle: late ? `${c.time} · elmaradt` : c.time,
       time: c.time,
       xp: null,
       group: 'Check-in',
-      action: { kind: 'checkin', slotIdx, label: 'Koppints' }, linkUrl: null,
+      action: { kind: 'checkin', slotIdx, label: late ? 'Pótold' : 'Koppints' }, linkUrl: null,
     })
   })
 
@@ -215,6 +241,12 @@ export function buildTodayItems(input: TodayItemsInput): TodayItem[] {
 
   return items
 }
+
+/** A check-in slot the user can still fill — anything not already recorded. `skipped` counts:
+ *  its window has passed, but `CheckInSheet` posts `state: 'done'`, so a backfill lands. The one
+ *  predicate behind both the quest CTA's servability and the index `act()` opens for it, so the
+ *  two can never disagree about what „a slot is available" means (mezo-mvb4.1). */
+export const isFillableSlot = (c: CheckinSlot): boolean => c.state !== 'done'
 
 export function itemsForFace(items: TodayItem[], face: DayFace): { open: TodayItem[]; done: TodayItem[] } {
   const mine = items.filter((i) => i.face === face || i.face === 'all')

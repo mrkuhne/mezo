@@ -1,15 +1,11 @@
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useHabitActions, useHabitDay, useSleepGoal } from '@/data/hooks'
+import { useHabitActions, useHabitDay } from '@/data/hooks'
 import { useLevelUp } from '@/features/progression/LevelUpProvider'
-import {
-  fmtMinsToBed, minsToBed, windDownPhase,
-} from '@/features/today/logic/windDown'
+import { fmtMinsToBed, minsToBed } from '@/features/today/logic/windDown'
+import { useWindDownPhase } from '@/features/today/logic/useWindDownPhase'
 import { ItemCard } from '@/shared/ui/ItemCard'
 import { ItemRow } from '@/shared/ui/ItemRow'
 import { localDateString } from '@/shared/lib/dates'
-
-const TICK_MS = 30_000
 
 /**
  * The Today evening/night band (slice C-éj, spec D2/D3): dim -> winddown -> night entry,
@@ -22,22 +18,19 @@ const TICK_MS = 30_000
  * **night** row keeps its own `.wdb-night` markup on purpose — it is a literal-dark
  * night-layer surface (NightPage's palette, also worn by SleepPage), not part of the light
  * card language.
+ *
+ * The phase (and its 30 s tick) comes from `useWindDownPhase` — the SAME hook `FaceEvening`
+ * uses to know when this card owns the `wind_down` habit's row, so the habit can never be
+ * offered here AND as a TodoCard row at once (mezo-mvb4.1).
  */
 export function WindDownBanner() {
   const date = localDateString()
-  const { goal, isPending } = useSleepGoal()
+  const { phase, now, goal } = useWindDownPhase()
   const { habits } = useHabitDay(date)
   const { check, pending } = useHabitActions(date)
   const { showLevelUp } = useLevelUp()
-  const [now, setNow] = useState(() => new Date())
 
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), TICK_MS)
-    return () => clearInterval(id)
-  }, [])
-
-  if (isPending) return null // real mode before the goal resolves — no flash
-  const phase = windDownPhase(now, goal)
+  if (phase === null) return null // real mode before the goal resolves — no flash
   if (phase === 'none') return null
 
   if (phase === 'night') {
