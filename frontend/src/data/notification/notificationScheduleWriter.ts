@@ -15,8 +15,24 @@ type NotificationScheduleEntry = components['schemas']['NotificationScheduleEntr
 const MAX_TITLE_CHARS = 120
 const MAX_BODY_CHARS = 300
 const CHECKIN_BODY = 'Hogy vagy most? Energia, stressz, test, fej — 20 másodperc.'
-const CHECKIN_DEEPLINK = '/today' // the real check-in sheet mounts on /today (CheckInSheet)
 const FUEL_DEEPLINK = '/fuel/stack'
+
+/**
+ * The real check-in sheet mounts on `/today` (CheckInSheet) — but the deeplink carries the slot's
+ * own time as a query param so the FOUR daily slots get four DISTINCT urls. `push-sw.js` uses
+ * `data.url` as the notification `tag`, and iOS/Chrome REPLACE a shown notification that shares a
+ * tag: with a bare `/today` on every slot, the 10:00 check-in silently wiped an undismissed 06:30
+ * one (and collided with `briefing`/`wind_down`/`midday`, which also deeplink to `/today`).
+ * Distinct urls is the smaller, safer fix than changing the worker's tag strategy.
+ *
+ * `useTodayScenario` reads only its own named params (`day`/`retaDay`/`niggle`/`vulnerable`/
+ * `ritual`) and React Router matches on the path, so `?checkin=` is harmlessly IGNORED today —
+ * it is a tag discriminator, not a feature. Opening the check-in sheet from it would be genuinely
+ * useful and is deliberately NOT built here.
+ */
+function checkinDeeplink(time: string): string {
+  return `/today?checkin=${time}`
+}
 
 /** Human label per `buildProtocol` slot window — mirrors the mockup's "Stack · reggeli slot"
  *  style titles without re-deriving the slot's meaning; falls back to the raw window key for
@@ -40,7 +56,7 @@ function checkinEntry(slot: Pick<CheckinSlot, 'time'>): NotificationScheduleEntr
     category: 'checkin',
     title: truncate(`Check-in · ${slot.time}`, MAX_TITLE_CHARS),
     body: truncate(CHECKIN_BODY, MAX_BODY_CHARS),
-    deeplink: CHECKIN_DEEPLINK,
+    deeplink: checkinDeeplink(slot.time),
     source: 'checkinSlots',
   }
 }

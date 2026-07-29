@@ -29,10 +29,21 @@ describe('buildScheduleEntries (pure)', () => {
     expect(checkinEntries.map((e) => e.time)).toEqual(['06:30', '10:00', '14:00', '20:00'])
     for (const e of checkinEntries) {
       expect(e.weekday).toBeNull()
-      expect(e.deeplink).toBe('/today')
+      expect(e.deeplink).toBe(`/today?checkin=${e.time}`)
       expect(e.source).toBe('checkinSlots')
       expect(e.time).toMatch(/^\d{2}:\d{2}$/)
     }
+  })
+
+  // push-sw.js uses `data.url` as the notification `tag`, and a shared tag REPLACES an already
+  // shown notification — with a bare '/today' on all four slots, the 10:00 check-in silently
+  // wiped an undismissed 06:30 one (and collided with briefing/wind_down/midday too).
+  it('gives every check-in slot a DISTINCT deeplink, so the service-worker tag cannot collapse them', () => {
+    const entries = buildScheduleEntries(CHECKINS, [])
+    const deeplinks = entries.filter((e) => e.category === 'checkin').map((e) => e.deeplink)
+    expect(new Set(deeplinks).size).toBe(CHECKINS.length)
+    expect(deeplinks).toEqual(['/today?checkin=06:30', '/today?checkin=10:00', '/today?checkin=14:00', '/today?checkin=20:00'])
+    for (const link of deeplinks) expect(link.startsWith('/today')).toBe(true) // still the same route
   })
 
   it('emits one fuel_slot entry per buildProtocol slot, deeplinking to /fuel/stack', () => {
