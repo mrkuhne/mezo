@@ -166,7 +166,7 @@ Replacement is **per category**: soft-delete the category's live rows + insert t
 
 | # | Category key | Anchor | Source of truth | v1 default |
 |---|---|---|---|---|
-| 1 | `briefing` | `goal.wake_time` | `briefing` row exists | **ON** |
+| 1 | `briefing` | `SleepAnchorPort.resolve(user).wake()` | `briefing` row exists | **ON** |
 | 2 | `gym` | slot − lead (**30 min**) | `gym_schedule_slot.time` / `sport_schedule.time` | **ON** |
 | 3 | `medication` | `mezo.notification.medication-time` (**08:00**) on a cycle day | `medication.cadence` + jsonb cycle envelope | **ON** |
 | 4 | `ritual` | ritual `opensAt` | `RitualService` (`RitualService.java:72`) | **ON** |
@@ -178,7 +178,11 @@ Replacement is **per category**: soft-delete the category's live rows + insert t
 | 10 | `checkin` | 4× daily | FE snapshot (`data/today/checkins.ts`) | OFF |
 | 11 | `fuel_slot` | 6 slots/day | FE snapshot (`buildProtocol`) | OFF |
 
-**Missing-anchor fallbacks.** Every anchor that comes from user data can be absent, and an absent anchor must never mean "send at midnight". `goal.wake_time` null ⇒ `mezo.notification.default-wake` (**07:00**); `sleep_goal` absent ⇒ the `lights_out` / `ritual` / `wind_down` categories produce **no due item at all** (honest absence — `RitualService` has no window to derive from); `medication` has no time column at all, hence the config'd time above. A category whose anchor is missing is skipped silently by `DueEvaluator`, never defaulted into a wrong minute.
+**Missing-anchor fallbacks — corrected against the code (2026-07-29).** The wake/bed anchor is **owned by `SleepAnchorPort.resolve(userId)`** (`feature/biometrics/sleep`), returning `SleepAnchor(LocalTime wake, LocalTime bed)`. It **never returns empty**: an absent `sleep_goal` row falls back to `SleepGoalProperties` (`mezo.sleep.default-*`). So `mezo.notification.default-wake` is unnecessary and must NOT be introduced — it would be a third source of truth for a value that already has an authoritative resolver with its own default.
+
+> ⚠️ **`goal.wake_time` / `goal.bed_time` are retired columns.** `GoalService` still writes them, but every live consumer (`RitualService`, `HabitTargets`, `BiometricsTools`, `ContextSnapshotAssembler`) reads `SleepAnchorPort` — see the explicit note at `ContextSnapshotAssembler.java:194`. An earlier draft of this spec named `goal.wake_time` as the briefing anchor; that was wrong. The dispatcher uses `SleepAnchorPort`.
+
+What genuinely can be absent: `RitualService` is gated on `RITUAL_SWITCH` and **the whole bean disappears when the switch is off**, so the `ritual` / `wind_down` categories must inject it optionally (`ObjectProvider`) and yield **no due item** when it is missing — never a fabricated window. `medication` has no time column, hence the config'd `medication-time`; `MedicationCycleService.derive(...)` answers which cycle day it is, and `retaDay == 0` is its honest "no dose logged yet" state, which must not be treated as a dose day. A category whose anchor is unavailable is skipped silently by `DueEvaluator`, never defaulted into a wrong minute.
 
 **Copy rules** (the mockup is the reference; the notification text is part of the contract):
 
@@ -216,7 +220,7 @@ Following the proactive three-switch idiom (`configuration_conventions.md`):
 - `mezo.feature.notification.enabled` — the whole feature; off ⇒ no beans ⇒ `/api/notification/*` 404s.
 - `mezo.techcore.cron.notification-dispatch-job.enabled` — the dispatcher bean alone (so the API can live without sending, which is exactly what the N1 spike needs).
 
-Values live under the `mezo:` root in `application.yml`: `mezo.notification.dispatch-cron` (`0 * * * * *`), `catch-up-minutes` (2), `default-gym-lead-min` (30), `medication-time` (`08:00`), `default-wake` (`07:00`), `body-max-chars` (300), `prose-excerpt-chars` (160). No hardcoded tunables.
+Values live under the `mezo:` root in `application.yml`: `mezo.notification.dispatch-cron` (`0 * * * * *`), `catch-up-minutes` (2), `default-gym-lead-min` (30), `medication-time` (`08:00`), `body-max-chars` (300), `prose-excerpt-chars` (160). No hardcoded tunables. **No `default-wake`** — the wake anchor has an authoritative resolver with its own default (§6).
 
 The `ritual` / `wind_down` / `lights_out` anchors carry **no notification-side lead** — their offsets already live in `mezo.ritual.lead-min` (75) / `prep-lead-min` (45) and are read through `RitualService`. Duplicating them under `mezo.notification` would create a second source of truth for the same minute.
 
@@ -263,7 +267,7 @@ Per `api_contract_conventions.md`, the fragment `api/feature/notification/notifi
 |---|---|
 | **iOS does not guarantee delivery.** Apple throttles and delays Web Push, and only for home-screen PWAs. | The in-app surface stays the source of truth (IDENT-3). Push is a channel; nothing is push-only. Documented in the feature doc, not hidden. |
 | **`aes128gcm` implemented wrong** → the push service answers 400 and nothing arrives. | RFC 8291 test vector in a unit test — caught at build time, not in production. The N1 spike then proves the platform path. |
-| **A per-minute job joins 18 existing crons**, and push sending is HTTP I/O. | Audit `SchedulingConfiguration`'s pool size; the dispatcher must not starve the other crons. Bound total send time; a slow push service must not hold the scheduler thread. |
+| **A per-minute job joins 18 existing crons**, and push sending is HTTP I/O. **Audited 2026-07-29 — the risk is real, not hypothetical:** `SchedulingConfiguration` defines *no* `TaskScheduler` bean and `application.yml` sets no `spring.task.scheduling.pool.size`, so all **18 `@Scheduled` methods share a single thread** (Spring Boot's default pool size of 1). A dispatcher doing per-user outbound HTTP inline would starve every other cron. | The scheduled method does **DB-only due-computation** on the scheduler thread and hands the actual sending to the existing async executor (`techcore/configuration/AsyncConfiguration`), so it returns in milliseconds. **The scheduler pool is deliberately left at 1** — the 18 existing jobs have always run serialized and may implicitly depend on it; widening it to fix a new job's problem would change their concurrency semantics as a side effect. `WebPushClient` already bounds each send with `mezo.webpush.timeout-ms`. |
 | **FE snapshot staleness** (N3) — weeks without opening the app leave categories 10-11 on an old pattern. | It degrades gracefully (a recurring weekly pattern, not per-day rows); the settings page shows the last-updated date. |
 | **Permission revoked on device** | The subscription dies with 410 → soft-deleted → the settings page honestly falls back to "request permission". |
 | **VAPID private key leak** | SealedSecret in git (encrypted), never in the FE bundle. A leak allows spoofed pushes **to Daniel's own devices only**; rotation = new keypair + re-subscribe. |
