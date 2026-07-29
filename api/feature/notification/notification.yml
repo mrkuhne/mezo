@@ -29,7 +29,7 @@ paths:
       operationId: unregisterPushSubscription
       summary: Remove this device's subscription (Notification)
       parameters:
-        - { name: endpoint, in: query, required: true, schema: { type: string } }
+        - { name: endpoint, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 1000 } }
       responses:
         '204':
           description: Removed; unknown endpoint is also 204 (idempotent)
@@ -60,9 +60,9 @@ components:
       type: object
       required: [endpoint, p256dh, auth]
       properties:
-        endpoint: { type: string, maxLength: 1000, example: "https://web.push.apple.com/QF..." }
-        p256dh: { type: string, maxLength: 120, description: "subscription public key, base64url" }
-        auth: { type: string, maxLength: 40, description: "subscription auth secret, base64url" }
+        endpoint: { type: string, minLength: 1, maxLength: 1000, example: "https://web.push.apple.com/QF..." }
+        p256dh: { type: string, minLength: 1, maxLength: 120, description: "subscription public key, base64url" }
+        auth: { type: string, minLength: 1, maxLength: 40, description: "subscription auth secret, base64url" }
         userAgent: { type: string, maxLength: 300, nullable: true }
     PushTestResponse:
       type: object
