@@ -56,6 +56,7 @@ Status legend: ✅ done · 🔶 mock-only (Phase-1 FE, no real backend yet) · �
 | [`_platform-api-backend.md`](_platform-api-backend.md) | API Contract & Backend Architecture | ✅ done (auth · biometrics · Train) | The contract-first OpenAPI pipeline (`api/`) + the Spring Boot 4 backend spine (`techcore/` + `feature/<x>/…`) + the FE consumption seam. Drift = compile error. |
 | [`_platform-auth-security.md`](_platform-auth-security.md) | Auth & Security | ✅ backend done; FE bootstrap real, 🔶 stubbed in mock | Single-owner auth: login → 30-day HS256 JWT → resource-server filter → server-side `created_by` ownership. No login UI. |
 | [`_platform-design-system.md`](_platform-design-system.md) | Design System & UI Primitives ("Deep Current v2") | ✅ done (Phase-1, FE-only) | The CSS-token vocabulary, ~25 React primitives, and the iPhone-frame app shell every screen renders on. No backend. |
+| [`_platform-notifications.md`](_platform-notifications.md) | Push Notifications (Web Push delivery) | mixed — N1 delivery spine ✅; N2 dispatcher/prefs + N3 FE-schedule 🔴 not built | `techcore/webpush` (in-house VAPID ES256 + RFC 8291 `aes128gcm`, [ADR 0014](../decisions/0014-own-webpush-implementation.md)) + `feature/notification` (subscribe/unsubscribe/test-push) + the Me → `Értesítés` opt-in page. No dispatcher, no categories, no push ever delivered to a real device yet. |
 
 ---
 
@@ -90,6 +91,7 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Weight goal + log ("Cél") | `/me/goals` | [`me.md`](me.md) §2–§4 (weight ✅ backed) |
 | Sleep log ("Alvás") | `/me/sleep` | [`me.md`](me.md) §2–§4 (sleep ✅ backed) |
 | People / "Mizu Velünk" 1:1 ritual ("Emberek") | `/me/people` | [`me.md`](me.md) §2 (mock-only) |
+| Push-notification opt-in ("Értesítés") — install-gate, subscribe toggle, test push | `/me/ertesitesek` | [`me.md`](me.md) §2, §5.8 · protocol/data-model/categories: [`_platform-notifications.md`](_platform-notifications.md) |
 | The `useX()` hooks / mock-vs-real / ghost-guard rule | — | [`_platform-data-layer.md`](_platform-data-layer.md) §2, §4 |
 | OpenAPI contract / `api/feature/<x>.yml` / codegen | — | [`_platform-api-backend.md`](_platform-api-backend.md) §3–§4 |
 | `OwnedEntity` / `CurrentUserId` / soft delete / typed jsonb | — | [`_platform-api-backend.md`](_platform-api-backend.md) §4b · [`_platform-auth-security.md`](_platform-auth-security.md) §4 |

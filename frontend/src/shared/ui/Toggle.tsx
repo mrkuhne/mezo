@@ -2,10 +2,12 @@ export function Toggle({
   on,
   onToggle,
   ariaLabel,
+  disabled = false,
 }: {
   on: boolean
   onToggle: () => void
   ariaLabel: string
+  disabled?: boolean
 }) {
   return (
     <button
@@ -13,13 +15,15 @@ export function Toggle({
       role="switch"
       aria-checked={on}
       aria-label={ariaLabel}
+      disabled={disabled}
       onClick={onToggle}
       style={{
         position: 'relative',
         width: 44,
         height: 24,
         border: 'none',
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.45 : 1,
         borderRadius: 999,
         background: on ? 'var(--sage)' : 'var(--surface-3)',
         transition: 'background 0.2s ease',

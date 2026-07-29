@@ -44,6 +44,7 @@ import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
 import { KnowledgePage } from '@/features/me/pages/KnowledgePage'
+import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 
 export const routes: RouteObject[] = [
@@ -117,6 +118,7 @@ export const routes: RouteObject[] = [
           { path: 'sleep', element: <SleepPage /> },
           { path: 'people', element: <PeoplePage /> },
           { path: 'knowledge', element: <KnowledgePage /> },
+          { path: 'ertesitesek', element: <NotificationsPage /> },
         ],
       },
       { path: 'me/goals/new', element: <GoalPlannerPage /> },

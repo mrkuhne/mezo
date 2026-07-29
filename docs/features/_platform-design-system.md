@@ -12,7 +12,7 @@ key_files:
   - frontend/src/shared/lib/theme.ts
   - frontend/src/shared/lib/daypart.ts
   - frontend/src/shared/lib/cn.ts
-related: [_platform-data-layer, today, train, me, fuel, growth, ritual]
+related: [_platform-data-layer, _platform-notifications, today, train, me, fuel, growth, ritual]
 ---
 
 # Design System & UI Primitives ("Napív") — Feature Documentation
@@ -369,6 +369,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - **Accent-via-`color-mix` is a convention, not a primitive.** With the `NotchCard` primitive deleted (`mezo-x3x0`), accent theming is done **entirely with inline `color-mix` on a raw `.card`** (Sport/Running are the reference). A reusable accent-hero primitive is an obvious-but-deferred refactor.
 - **Mock-only AI motifs:** `ToolChip`, the `--cat-*` pattern palette, and the tool-transparency rows render mock data; they become real in **Phase 3** (Spring AI / pgvector / RAG).
 - **Browser zoom is disabled app-wide** via the viewport meta (`maximum-scale=1, user-scalable=no`, `index.html:5`). The driving reason is the compact UI: form fields render at 12–13px, so iOS Safari would auto-zoom on focus (it zooms any sub-16px input). This is an accessibility trade-off (WCAG 1.4.4) accepted for the native-app feel; the alternative — forcing every input to ≥16px — would break the dense visual language. Pinch-zoom: fully blocked on Android; iOS ignores `user-scalable=no` for pinch but honors `maximum-scale=1`, which is what suppresses the focus auto-zoom.
+- **`Toggle` gained an optional `disabled?: boolean` prop (default `false`) for the push-notification opt-in page** (`Értesítés`, `mezo-h4wp.6.1`) — the first documented primitive-API change since this doc's original ~25-primitive inventory. When `true`: sets the real `disabled` attribute on the underlying `<button>`, `cursor: not-allowed`, `opacity: 0.45`; `role="switch"`/`aria-checked` are unchanged. Every prior consumer (`KnowledgeListPage.tsx`, the only other `<Toggle>` call site) omits the prop and is byte-for-byte unaffected. The fix-round rationale: a denied/busy push toggle must be genuinely inert, not merely visually so — gating only the click handler (the first draft) left a control that *looked* interactive while doing nothing. See [`_platform-notifications.md`](_platform-notifications.md) and [`me.md`](me.md) §2.
 - **Deferred:** heavier visual-regression coverage was explicitly deferred in phase 1.
 
 ---
@@ -393,7 +394,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - **`NotchCard.tsx` and `LabelMono.tsx` were deleted** in the Napív vocabulary sweep (`mezo-x3x0`): cards are now raw `<div className="card">` (+ an optional `.rad-*` utility + inline `color-mix` accent), and the section-label idiom is the `.label-mono` CSS class + the `SECTION_LABEL` const (`sectionLabel.ts`).
 - `Eyebrow.tsx` / `PageTitle.tsx` / `Display.tsx` — typography.
 - `Cta.tsx` / `Chip.tsx` / `ToolChip.tsx` / `ToolChipRow.tsx` — buttons & chips.
-- `ProgressBar.tsx` / `ScoreRing.tsx` / `RetaPhaseBar.tsx` / `Toggle.tsx` — indicators/controls.
+- `ProgressBar.tsx` / `ScoreRing.tsx` / `RetaPhaseBar.tsx` / `Toggle.tsx` — indicators/controls. `Toggle` gained an optional `disabled?: boolean` (default `false`) for the push-notification page's denied/busy switch (`mezo-h4wp.6.1`, §9) — every other call site unaffected.
 - `QuickStat.tsx` / `StatCell.tsx` / `RefTag.tsx` — domain-flavored badges/stats kept shared (multi-feature or domain-free). `NovaDot`/`SourceBadge` were relocated to `frontend/src/features/fuel/components/` — they import `@/data/{nova,pantrySources}` and are used only by Fuel, so they are feature-coupled, not shared primitives.
 - `sectionLabel.ts` — `SECTION_LABEL`, the Napiv section-label caption style const (11px / 800 / `.1em` / uppercase / `--faint`); a pure `CSSProperties` object (no JSX) hoisted out of 8 identical me-sheet locals in `mezo-mifi` S8. Domain-free, so it lives here rather than in a feature.
 - `CountUp.tsx` — shared rAF ease-out count-up primitive (`mezo-ilsj`, generalized out of `LevelUpScreen`'s inline count-up hook for the ritual Harvest act's XP total); skips to the final value under reduced motion or jsdom. See [ritual.md](ritual.md).
@@ -402,7 +403,7 @@ pnpm test            # vitest (design-system tests are mode-agnostic)
 - `PhoneFrame.tsx` / `StatusBar.tsx` / `ScreenContent.tsx` — iPhone mockup shell.
 - `TabBar.tsx` / `AppLayout.tsx` — 4-tab nav + center quick-log FAB + layout (anchor-mode wiring). `TabBar` owns the `quickOpen` state and conditionally mounts `QuickInputSheet` (Napív, `mezo-8141`). `AppLayout` also mounts **`CircadianTheme`** (`mezo-d71m`) and hides `TabBar` on `/train/session`, **`/me/sleep/night`** (the night page's light would defeat the sub-30-lux point, `mezo-d71m`), **and `/ritual`** (the full-screen Napzárás flow, `mezo-ilsj` — see [ritual.md](ritual.md)) via `hideTabBar`; its `LiveActivityProvider` mount was deleted in `mezo-xt65` — the rest timer is Train-local now.
 - `CircadianTheme.tsx` — the circadian auto-theme resolver (`mezo-d71m`): while `useTheme().mode === 'auto'`, a 60 s tick flips `setAutoTheme` to dark exactly inside `isDarkWindow(now, useSleepGoal().goal)` (`features/today/logic/windDown.ts` — the WindDownBanner window), light otherwise. Renders `null`; mounted once in `AppLayout` under the data providers.
-- `router.tsx` — route tree (section/subnav/page structure) plus full-screen builder/wizard siblings registered outside the tab tree (e.g. `train/mesocycles/new`, `me/goals/new` → `GoalPlannerPage`).
+- `router.tsx` — route tree (section/subnav/page structure) plus full-screen builder/wizard siblings registered outside the tab tree (e.g. `train/mesocycles/new`, `me/goals/new` → `GoalPlannerPage`). **`me/ertesitesek` → `NotificationsPage`** (push-notification opt-in, `mezo-h4wp.6.1`) joined the `MeSection` children array as an ordinary `<Outlet>` leaf — not a full-screen sibling like the two above. See [`me.md`](me.md) §2/§10.
 - `ThemeProvider.tsx` — `useTheme()` context. Mode-based since `mezo-d71m`: holds `mode` (persisted) + `autoTheme`, exposes `{ theme, mode, setMode, setAutoTheme }` (the binary `toggle` is gone); `theme = mode === 'auto' ? autoTheme : mode` (§3).
 
 **Lib helpers**

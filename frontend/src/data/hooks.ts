@@ -43,3 +43,4 @@ export { useActivities, useActivityActions, useActivityHistory } from '@/data/ac
 export { useGamification, useTitles, useGamificationActions, useGamificationDay } from '@/data/gamification/gamificationHooks'
 export { useRitualDay, useRitualActions } from '@/data/ritual/ritualHooks'
 export { useDayRecap } from '@/data/ritual/recapHooks'
+export { usePushSubscription } from '@/data/notification/notificationHooks'

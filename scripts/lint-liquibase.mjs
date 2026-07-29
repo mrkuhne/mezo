@@ -41,7 +41,14 @@ const GRANDFATHERED = {
   '202606101200_mezo-v67_create_auth.sql': new Set(['inline-primary-key']),
 };
 
-const FILENAME_RE = /^\d{12}_mezo-[a-z0-9]+(?:\.\d+)?_[a-z0-9_]+\.sql$/;
+// `(?:\.\d+)*` (zero or more), not `?` (at most one): CLAUDE.md mandates the
+// filename's bd-id segment be the *driving* beads issue, and beads ids nest
+// arbitrarily deep (mezo-h4wp -> mezo-h4wp.6 -> mezo-h4wp.6.1 -> ...). Capping
+// it at one dot would force a shallower, non-driving id into the filename for
+// any grandchild+ issue, contradicting that convention — so the regex was the
+// thing that was incomplete, not the filename. Segments stay digits-only, so
+// this loosens nothing about what's a *valid* segment, only how many nest.
+const FILENAME_RE = /^\d{12}_mezo-[a-z0-9]+(?:\.\d+)*_[a-z0-9_]+\.sql$/;
 const ALLOW_INSERT_MARKER = /--\s*lint-liquibase:\s*allow-insert/;
 
 // ── Findings collector ────────────────────────────────────────────────────────

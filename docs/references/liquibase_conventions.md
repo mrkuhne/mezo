@@ -38,7 +38,7 @@ src/main/resources/db/changelog/
 Every script filename (and matching changeSet `id` suffix) **MUST** start with `{YYYYMMDDHHMM}_{bd-id}_` where:
 
 - `{YYYYMMDDHHMM}` — the UTC minute the changeset was first authored (exactly 12 digits).
-- `{bd-id}` — the **driving beads issue ID** exactly as issued (e.g. `mezo-v67`, `mezo-n5q`). `bd show <id>` must resolve to the work that motivated the migration.
+- `{bd-id}` — the **driving beads issue ID** exactly as issued (e.g. `mezo-v67`, `mezo-n5q`). `bd show <id>` must resolve to the work that motivated the migration. Beads issues nest arbitrarily deep (`mezo-h4wp` → `mezo-h4wp.6` → `mezo-h4wp.6.1` → …) — the id keeps every `.N` segment of the driving (sub-)issue verbatim; do not flatten it to a shallower ancestor. Pattern: `mezo-[a-z0-9]+(\.\d+)*` (see `scripts/lint-liquibase.mjs`, which enforces this filename shape mechanically).
 
 Rationale:
 

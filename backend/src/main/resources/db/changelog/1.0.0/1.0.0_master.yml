@@ -475,3 +475,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202607280641_mezo-gj42_challenge_overload_type.sql
+  - changeSet:
+      id: "1.0.0:202607291000_mezo-h4wp.6.1_create_push_subscription"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202607291000_mezo-h4wp.6.1_create_push_subscription.sql
