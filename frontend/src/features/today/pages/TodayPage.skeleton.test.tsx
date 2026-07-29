@@ -21,11 +21,11 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   return { ...orig, useSleepGoal: mocks.useSleepGoal }
 })
 
-function tree() {
+function tree(path = '/today') {
   return (
     <QueryWrapper>
       <LevelUpProvider>
-        <MemoryRouter initialEntries={['/today']}>
+        <MemoryRouter initialEntries={[path]}>
           <TodayPage />
         </MemoryRouter>
       </LevelUpProvider>
@@ -33,8 +33,8 @@ function tree() {
   )
 }
 
-function renderToday() {
-  return render(tree())
+function renderToday(path?: string) {
+  return render(tree(path))
 }
 
 afterEach(() => vi.clearAllMocks())
@@ -68,5 +68,19 @@ describe('TodayPage — sleep-anchor pending gate', () => {
     rerender(tree())
     expect(screen.getByRole('tablist', { name: 'Napszakok' })).toBeTruthy()
     expect(container.querySelector('[aria-busy="true"]')).toBeNull()
+  })
+
+  // Fix-round correction: `anchorMode` (`?day=rough`) is derived SYNCHRONOUSLY from the URL
+  // (useTodayScenario), never from `useSleepGoal` — so it must win even while the anchor is
+  // still pending, or a real-mode `/today?day=rough` visit flashes the generic skeleton
+  // before the calm AnchorModeView. TodayPage.test.tsx:158 covers anchorMode too, but only
+  // in mock mode, where `isPending` is never true — this is the only test that exercises
+  // the actual combination the ordering bug lived in.
+  test('anchorMode wins over a pending sleep anchor — no skeleton flash into AnchorModeView', () => {
+    mocks.useSleepGoal.mockReturnValue({ goal: SLEEP_GOAL_GHOST, isPending: true })
+    const { container } = renderToday('/today?day=rough')
+    expect(screen.getByText('Anchor mode · csendben')).toBeTruthy()
+    expect(container.querySelector('[aria-busy="true"]')).toBeNull()
+    expect(container.querySelectorAll('.dfs-pill')).toHaveLength(0)
   })
 })

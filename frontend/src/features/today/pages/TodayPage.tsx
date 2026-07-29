@@ -187,13 +187,19 @@ export function TodayPage() {
     setSearchParams(next, { replace: true })
   }
 
+  // `anchorMode` is derived SYNCHRONOUSLY from the `?day=` URL param (useTodayScenario →
+  // todayHooks.ts) — it never waits on `useSleepGoal`, so it is checked FIRST. Checking the
+  // pending gate first would flash the generic TodaySkeleton before swapping to
+  // AnchorModeView on a real-mode `/today?day=rough` visit — a jarring detour into a screen
+  // whose entire purpose is a calm, low-demand recovery moment. (Train's own `!activeMeso`
+  // branch has no such ordering choice to make: it IS gated by the same async data as its
+  // pending check, so pending-first there is forced, not merely conventional — the two
+  // situations only look alike.)
+  if (scenario.anchorMode) return <AnchorModeView />
   // The face selection depends on the sleep anchor; rendering before it resolves would
   // flash the wrong face in real mode. The skeleton is layout-matched (TrainTodaySkeleton
-  // precedent) so the swap does not shift the page. Checked BEFORE `anchorMode` — the
-  // Train precedent's pending gate also sits ahead of its own scenario branch
-  // (`!activeMeso`), so a generic loading state always wins over a data-driven one.
+  // precedent) so the swap does not shift the page.
   if (sleepGoalPending) return <TodaySkeleton />
-  if (scenario.anchorMode) return <AnchorModeView />
 
   const { open, done } = itemsForFace(items, selected)
   const doneXp = done.reduce((s, i) => s + (i.xp ?? 0), 0)

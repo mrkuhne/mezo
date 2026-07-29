@@ -2,15 +2,37 @@
 // which daypart face renders (dayFace.ts), and in real mode it resolves after the
 // first paint — rendering a face derived from the placeholder anchor would flash
 // the wrong one. This mirrors the real shape — greeting → the three face pills
-// (`.dfs`) → the hero card (`.todaycard`) → the todo card (`.tdc`) — so the swap
+// (`.dfs`) → TWO hero cards (`.todaycard`) → the todo card (`.tdc`) — so the swap
 // to the resolved face does not reflow. TrainTodaySkeleton precedent (mezo-f2z).
 // The three pills are plain divs, NOT the real `.dfs` tablist/`role="tab"` buttons:
 // a skeleton must not offer a screen-reader user tabs that do not exist yet.
+//
+// TWO hero cards, not one — a fix-round correction (review of mezo-1khu): FaceMorning
+// ALWAYS stacks two `.todaycard`s (FaceHeroCard, the chain hero, then BriefingCard —
+// both unconditional), and FaceEvening stacks two (WindDownBanner + RitualCard)
+// whenever `windDownPhase` is not `'none'` — which, given `EVENING_LEAD_MIN` (240) vs.
+// `DIM_LEAD_MIN` (90), is true for most of the evening face's span (only its first
+// ~150 minutes, before the dim window opens, show RitualCard alone). Only FaceDay
+// always renders exactly one. Two cards is the honest majority match, chosen over a
+// perfect match for every face (impossible with one fixed skeleton): it costs the
+// day face — and the early slice of the evening face — one hero card's worth of
+// height (~150-160px) that shrinks out on swap. See task-12-report.md for the
+// worst-case delta per face.
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
+
+function HeroCardSkeleton() {
+  return (
+    <SkeletonCard className="todaycard" style={{ padding: 18 }}>
+      <Skeleton width="40%" height={10} />
+      <div style={{ marginTop: 10 }}><Skeleton width="62%" height={22} /></div>
+      <Skeleton className="mt-md" width="100%" height={44} radius={4} />
+    </SkeletonCard>
+  )
+}
 
 export default function TodaySkeleton() {
   return (
-    <div aria-busy="true" aria-label="Betöltés">
+    <div role="status" aria-busy="true" aria-label="Betöltés">
       <div className="greet">
         <Skeleton width={140} height={11} />
         <div style={{ marginTop: 6 }}><Skeleton width="70%" height={22} /></div>
@@ -22,14 +44,12 @@ export default function TodaySkeleton() {
           <Skeleton key={i} className="dfs-pill" height={60} radius={16} />
         ))}
       </div>
-      {/* Hero card — the day's session/ritual card shape. `.todaycard` carries its OWN
+      {/* Two hero cards — the FaceMorning shape (chain hero + briefing) and the common
+          FaceEvening shape (wind-down + ritual). `.todaycard` carries its OWN
           `margin: 0 24px 12px` (ItemCard precedent), so no wrapping padding div here —
           one would double the horizontal inset against the viewport edge. */}
-      <SkeletonCard className="todaycard" style={{ padding: 18 }}>
-        <Skeleton width="40%" height={10} />
-        <div style={{ marginTop: 10 }}><Skeleton width="62%" height={22} /></div>
-        <Skeleton className="mt-md" width="100%" height={44} radius={4} />
-      </SkeletonCard>
+      <HeroCardSkeleton />
+      <HeroCardSkeleton />
       {/* Todo card — header ratio + bar + three row-height bars. `.tdc` likewise carries
           its own margin, so `SkeletonCard`'s default padding is enough. */}
       <SkeletonCard className="tdc">
