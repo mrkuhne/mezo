@@ -1526,6 +1526,47 @@ button.itemrow { cursor: pointer; }
   font-size: 12px; font-weight: 700; color: var(--sub); text-align: center; }
 .dayxp b { color: var(--sage-deep); font-variant-numeric: tabular-nums; }
 
+/* ===== Today face-swap motion (mezo-1khu) ===== */
+/* The incoming face rebuilds with the np-rise family's rhythm; direction is carried by a
+   data attribute on the wrapper so forward/backward reads spatially (Reggel → Nap → Este
+   enters from the left, backward from the right). The stagger is nth-child-driven, NOT
+   `--i`-driven (task-11-brief.md's original `.faceswap > *` used `calc(var(--i, 0) * 70ms)`,
+   but no face component sets `--i`, so every child would resolve to a 0ms delay and there
+   would be no stagger at all — the brief's `.progress-mrow`/`.np-anim` precedent DOES thread
+   `--i` from inline styles; the Today faces never adopted that, so nth-child fills the gap). */
+.faceswap > * { opacity: 0; animation-duration: .5s; animation-timing-function: var(--np-ease-ios);
+  animation-fill-mode: forwards; }
+.faceswap[data-dir="fwd"] > * { animation-name: face-in-fwd; }
+.faceswap[data-dir="back"] > * { animation-name: face-in-back; }
+@keyframes face-in-fwd  { from { opacity: 0; transform: translate(-14px, 10px); } to { opacity: 1; transform: none; } }
+@keyframes face-in-back { from { opacity: 0; transform: translate( 14px, 10px); } to { opacity: 1; transform: none; } }
+.faceswap > *:nth-child(1) { animation-delay: 0ms; }
+.faceswap > *:nth-child(2) { animation-delay: 70ms; }
+.faceswap > *:nth-child(3) { animation-delay: 140ms; }
+.faceswap > *:nth-child(4) { animation-delay: 210ms; }
+.faceswap > *:nth-child(5) { animation-delay: 280ms; }
+.faceswap > *:nth-child(6) { animation-delay: 350ms; }
+.faceswap > *:nth-child(7) { animation-delay: 420ms; }
+.faceswap > *:nth-child(8) { animation-delay: 490ms; }
+
+/* TodoCard's / FaceHeroCard's progress bars — a dedicated transform keyframe, NOT the shared
+   `progress-mbar-grow` the brief named: that keyframe animates `width` toward a `--w` custom
+   property, but neither `.tdc-bar i` nor `.fhc-bar i` ever sets `--w` (they set an inline
+   `width` percentage instead), so `var(--w)` would be guaranteed-invalid there. `scaleX`
+   needs no custom property and runs on the compositor. */
+.tdc-bar i, .fhc-bar i { transform-origin: left center; animation: bar-grow 1.1s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+@keyframes bar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* A quiet pulse on the current pill — only while it still has open items. */
+.dfs-pill.now.has-open .dfs-e { animation: dfs-pulse 2.4s ease-in-out infinite; }
+@keyframes dfs-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .faceswap > * { animation: none; opacity: 1; }
+  .tdc-bar i, .fhc-bar i { animation: none; }
+  .dfs-pill.now.has-open .dfs-e { animation: none; }
+}
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {

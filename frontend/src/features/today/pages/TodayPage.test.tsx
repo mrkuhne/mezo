@@ -95,6 +95,41 @@ describe('TodayPage — face selection', () => {
   })
 })
 
+describe('TodayPage — face-swap direction (mezo-1khu)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })
+
+  test('moving forward (Reggel → Nap) stamps data-dir="fwd"', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    const { container } = renderToday()
+    fireEvent.click(screen.getByRole('tab', { name: /^Nap/ }))
+    expect(container.querySelector('.faceswap')).toHaveAttribute('data-dir', 'fwd')
+  })
+
+  test('moving backward (Este → Reggel) stamps data-dir="back"', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    const { container } = renderToday('/today?dp=este')
+    fireEvent.click(screen.getByRole('tab', { name: /^Reggel/ }))
+    expect(container.querySelector('.faceswap')).toHaveAttribute('data-dir', 'back')
+  })
+
+  test('skipping forward past a face (Reggel → Este) still reads as forward', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    const { container } = renderToday()
+    fireEvent.click(screen.getByRole('tab', { name: /^Este/ }))
+    expect(container.querySelector('.faceswap')).toHaveAttribute('data-dir', 'fwd')
+  })
+
+  test('the face-swap wrapper remounts (a fresh key) on every face change', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    const { container } = renderToday()
+    const before = container.querySelector('.faceswap')
+    fireEvent.click(screen.getByRole('tab', { name: /^Nap/ }))
+    const after = container.querySelector('.faceswap')
+    expect(after).not.toBe(before)
+  })
+})
+
 describe('TodayPage — composition', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => { vi.unstubAllEnvs(); vi.useRealTimers() })

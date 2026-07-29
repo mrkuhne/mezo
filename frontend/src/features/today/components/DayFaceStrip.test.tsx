@@ -52,4 +52,17 @@ describe('DayFaceStrip', () => {
     expect(buttons[1]).toHaveClass('now')
     expect(buttons[1]).not.toHaveClass('sel')
   })
+
+  // mezo-1khu: `.dfs-pill.now.has-open .dfs-e` is the only thing that pulses — the class
+  // must track THIS face's own open count, independent of `now`/`sel`.
+  test('has-open tracks the open count, not now/selected', () => {
+    const { container } = render(
+      <DayFaceStrip selected="reggel" current="reggel" counts={{ reggel: 0, nap: 2, este: 0 }}
+        doneCounts={{ reggel: 5, nap: 0, este: 3 }} onSelect={() => {}} />,
+    )
+    const buttons = container.querySelectorAll('.dfs-pill')
+    expect(buttons[0]).not.toHaveClass('has-open') // reggel: now + selected, but 0 open
+    expect(buttons[1]).toHaveClass('has-open') // nap: open > 0, neither now nor selected
+    expect(buttons[2]).not.toHaveClass('has-open') // este: done only, 0 open
+  })
 })

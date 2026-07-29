@@ -36,7 +36,7 @@ export function DayFaceStrip({
             type="button"
             role="tab"
             aria-selected={face === selected}
-            className={cn('dfs-pill', 'np-press', isNow && 'now', face === selected && 'sel')}
+            className={cn('dfs-pill', 'np-press', isNow && 'now', face === selected && 'sel', open > 0 && 'has-open')}
             onClick={() => onSelect(face)}
             // The label REPLACES the pill's content as its accessible name, so the
             // counter has to be spoken here; the emoji stays decorative.

@@ -58,6 +58,11 @@ import type { DailyQuest, MealSlot } from '@/data/types'
 
 const isFace = (v: string | null): v is Face => v !== null && (DAY_FACES as readonly string[]).includes(v)
 
+/** Which way the face-swap should read spatially: forward through Reggel → Nap → Este
+ *  enters from the left, backward from the right (mezo-1khu, `.faceswap[data-dir]`). */
+const dirOf = (from: Face, to: Face): 'fwd' | 'back' =>
+  DAY_FACES.indexOf(to) >= DAY_FACES.indexOf(from) ? 'fwd' : 'back'
+
 /**
  * Can THIS screen actually serve the item's action? The ItemRow doctrine's enforcement point:
  * `buildTodayItems` labels every habit and every offered quest, but three families have no
@@ -113,6 +118,9 @@ export function TodayPage() {
   const [sleepOpen, setSleepOpen] = useState(false)
   const [focusOpen, setFocusOpen] = useState(false)
   const [reflectOpen, setReflectOpen] = useState(false)
+  // The face-swap's spatial direction (mezo-1khu) — read by `.faceswap[data-dir]`. Set
+  // alongside the `?dp=` write in `selectFace`, from the OUTGOING face to the incoming one.
+  const [dir, setDir] = useState<'fwd' | 'back'>('fwd')
 
   // Consume-once level-ups. Quest and habit completions are evaluated SERVER-side on a day
   // read, so their celebration arrives on the cached day rather than from a mutation's
@@ -171,6 +179,7 @@ export function TodayPage() {
   const raw = params.get('dp')
   const selected: Face = isFace(raw) ? raw : current
   const selectFace = (face: Face) => {
+    setDir(dirOf(selected, face))
     const next = new URLSearchParams(params)
     if (face === current) next.delete('dp')
     else next.set('dp', face)
@@ -276,31 +285,35 @@ export function TodayPage() {
       />
       {scenario.vulnerable && <VulnerabilityCard />}
 
-      {selected === 'reggel' && (
-        <FaceMorning
-          open={open} done={done} doneXp={doneXp} chain={chain}
-          briefing={briefing ?? resolveBriefing(scenario.dayState)}
-          briefingDemo={briefingDemo}
-          briefingFacts={stats.map((s) => `${s.label} ${s.value}${s.unit ?? ''}`)}
-          later={later} growth={growth} fuelNote={fuelNote} habitPending={habitPending}
-          onAct={act} onFace={selectFace}
-        />
-      )}
-      {selected === 'nap' && (
-        <FaceDay
-          open={open} done={done} doneXp={doneXp} hero={dayHero} note={companionNote}
-          heroWarn={scenario.niggle ? workout?.niggleWarning?.detail ?? null : null}
-          heroNote={sportToday ? volleyballNote : null}
-          later={later.filter((i) => i.face === 'este')} growth={growth} fuelNote={fuelNote}
-          habitPending={habitPending} onAct={act} onFace={selectFace} onCustom={() => setCustomOpen(true)}
-        />
-      )}
-      {selected === 'este' && (
-        <FaceEvening
-          open={open} done={done} doneXp={doneXp} dayXp={dayXp} chain={chainProgress('EVENING')}
-          note={companionNote} growth={growth} fuelNote={fuelNote} habitPending={habitPending} onAct={act}
-        />
-      )}
+      {/* `key={selected}` remounts this div on every face change, so the np-* motion
+          re-runs each time; `data-dir` (from `selectFace`) carries which way it reads. */}
+      <div className="faceswap" data-dir={dir} key={selected}>
+        {selected === 'reggel' && (
+          <FaceMorning
+            open={open} done={done} doneXp={doneXp} chain={chain}
+            briefing={briefing ?? resolveBriefing(scenario.dayState)}
+            briefingDemo={briefingDemo}
+            briefingFacts={stats.map((s) => `${s.label} ${s.value}${s.unit ?? ''}`)}
+            later={later} growth={growth} fuelNote={fuelNote} habitPending={habitPending}
+            onAct={act} onFace={selectFace}
+          />
+        )}
+        {selected === 'nap' && (
+          <FaceDay
+            open={open} done={done} doneXp={doneXp} hero={dayHero} note={companionNote}
+            heroWarn={scenario.niggle ? workout?.niggleWarning?.detail ?? null : null}
+            heroNote={sportToday ? volleyballNote : null}
+            later={later.filter((i) => i.face === 'este')} growth={growth} fuelNote={fuelNote}
+            habitPending={habitPending} onAct={act} onFace={selectFace} onCustom={() => setCustomOpen(true)}
+          />
+        )}
+        {selected === 'este' && (
+          <FaceEvening
+            open={open} done={done} doneXp={doneXp} dayXp={dayXp} chain={chainProgress('EVENING')}
+            note={companionNote} growth={growth} fuelNote={fuelNote} habitPending={habitPending} onAct={act}
+          />
+        )}
+      </div>
 
       {checkInIdx !== null && (
         <CheckInSheet
