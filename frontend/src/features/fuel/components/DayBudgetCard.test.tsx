@@ -1,5 +1,5 @@
 import type { ComponentProps } from 'react'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { vi } from 'vitest'
 import { DayBudgetCard } from '@/features/fuel/components/DayBudgetCard'
@@ -61,8 +61,12 @@ test('explains where the target comes from with three tappable chips', async () 
 })
 
 test('a surplus balance reads Felesleg, a zero balance Egyensúly', () => {
-  renderCard({ energy: { ...base.energy, balance: 250 } })
-  expect(screen.getByRole('button', { name: /Felesleg \+250/ })).toBeInTheDocument()
+  const surplus = renderCard({ energy: { ...base.energy, balance: 250 } })
+  expect(within(surplus.container).getByRole('button', { name: /Felesleg \+250/ })).toBeInTheDocument()
+  surplus.unmount()
+
+  const zero = renderCard({ energy: { ...base.energy, balance: 0 } })
+  expect(within(zero.container).getByRole('button', { name: 'Egyensúly' })).toBeInTheDocument()
 })
 
 test('hides the breakdown chips on the static-energy fallback path', () => {

@@ -88,3 +88,15 @@ test('with a past-midnight bedtime a 00:30 slot lands in the evening zone', () =
   })
   expect(result.map(z => z.key)).toEqual(['morning', 'evening'])
 })
+
+// ── bedMin===1440 regression (mezo-rrtj fix wave item 8) ──────────────────────
+// bed === '00:00' unwraps to EXACTLY 1440 (toMin('00:00') is 0) — a stale `bedMin > 1440`
+// midnight-crossing check misses this exact value, so a 00:15 slot used to clamp into the
+// morning zone instead of unwrapping into the evening one. Detect the crossing off
+// `toMin(bed) <= toMin(wake)` (daySpan/unwrapDayMinute) instead of re-deriving from bedMin.
+test('a midnight-EXACT bedtime (00:00) still unwraps a 00:15 slot into the evening zone', () => {
+  const result = buildDayZones({
+    slots: [meal('09:00'), meal('00:15')], wake: '06:45', bed: '00:00', blocks: [], weightKg: 80,
+  })
+  expect(result.map(z => z.key)).toEqual(['morning', 'evening'])
+})

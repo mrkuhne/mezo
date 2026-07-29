@@ -132,13 +132,15 @@ export function ZoneSlotRow({
         {tagline && !coachPending && (
           <div data-testid="coach-tagline" className="coachline">{tagline}</div>
         )}
-        {coachPending && !tagline && <div className="coachline sk" data-testid="coach-skeleton" />}
+        {coachPending && !tagline && <div className="coachline cskel" data-testid="coach-skeleton" />}
         {slot.mezoNote && (
           <div className="coachline"><SafeMarkdown text={slot.mezoNote} /></div>
         )}
       </div>
       <MealScoreChip meal={scoredMeal} coachPending={coachPending} onOpen={onOpenScore} />
-      {isDone && !scoredMeal && <span className="zv" aria-hidden="true">✓</span>}
+      {/* Mirrors MealScoreChip's OWN guard exactly (meal.score == null) — a truthy FuelMeal with a
+          still-null score must fall through to the ✓, not render neither marker (fix wave item 11). */}
+      {isDone && scoredMeal?.score == null && <span className="zv" aria-hidden="true">✓</span>}
       {loggable && (
         <div className="zacts">
           <button

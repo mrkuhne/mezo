@@ -54,7 +54,7 @@ export function DayBudgetCard({
       <div className="wins">{doneCount}/{totalCount} ablak logolva</div>
       <div className="dayseg">
         {loggedKcals.map((kcal, i) => (
-          <i key={i} style={{ width: segWidth(kcal), background: i % 2 === 0 ? 'var(--sage)' : '#93B49C' }} />
+          <i key={i} style={{ width: segWidth(kcal), background: i % 2 === 0 ? 'var(--sage)' : 'var(--sage-deep)' }} />
         ))}
         <span className="ghost" />
         {nowFrac != null && <span className="mark" style={{ left: `${Math.min(100, Math.max(0, nowFrac * 100))}%` }} />}

@@ -2,7 +2,7 @@
 // four napszak buckets, each with its own kcal / burn / stack-pip balance. No ambient time: the
 // wake/bed anchor is injected exactly like buildDayPlan's nowHHmm.
 
-import { ZONE_FRACTIONS, ZONE_KEYS, ZONE_LABELS, toMin, type ZoneKeyName } from '@/data/fuel/fuelConfig'
+import { ZONE_FRACTIONS, ZONE_KEYS, ZONE_LABELS, daySpan, unwrapDayMinute, type ZoneKeyName } from '@/data/fuel/fuelConfig'
 import { blockKcal, type PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelSlot } from '@/data/types'
 
@@ -48,16 +48,10 @@ export function buildDayZones(input: {
   weightKg: number
 }): DayZone[] {
   const { slots, wake, bed, blocks, weightKg } = input
-  const wakeMin = toMin(wake)
-  // A bedtime at/before wake crosses midnight — unwrap it so the span stays positive.
-  const bedMin = toMin(bed) <= wakeMin ? toMin(bed) + 1440 : toMin(bed)
-  const span = Math.max(1, bedMin - wakeMin)
+  const { wakeMin, span, crossesMidnight } = daySpan(wake, bed)
 
   const zoneOf = (slot: FuelSlot): ZoneKey => {
-    const raw = toMin(slot.time)
-    // Only unwrap a past-midnight slot when the DAY itself crosses midnight; otherwise an
-    // early-morning log (before wake) must clamp forward into the first zone, not jump a day.
-    const t = bedMin > 1440 && raw < wakeMin ? raw + 1440 : raw
+    const t = unwrapDayMinute(slot.time, wakeMin, crossesMidnight)
     const frac = Math.min(1, Math.max(0, (t - wakeMin) / span))
     let key: ZoneKey = ZONE_KEYS[0]
     for (const k of ZONE_KEYS) if (frac >= ZONE_FRACTIONS[k]) key = k

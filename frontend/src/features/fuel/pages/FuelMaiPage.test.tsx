@@ -5,6 +5,7 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
+import { medicationSeed } from '@/data/fuel/medication'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
@@ -14,6 +15,8 @@ import { API_BASE } from '@/test/msw/handlers'
 // deterministically we still inject one known open meal/snack slot (slotKey set) into the composed
 // timeline; default off, so every other test sees the unmodified real timeline. Idiom mirrors
 // AiLogSheet.test's hoisted single-hook override.
+// (The seed's two logged meals now carry a real weighted score off their own breakdown — mezo-rrtj
+// fix-wave item 10 — so the score-backfill test seam this mock used to carry is gone.)
 const hoisted = vi.hoisted(() => ({ injectOpenSlot: false }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -21,22 +24,12 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     ...actual,
     useFuelTimeline: (date?: string) => {
       const real = actual.useFuelTimeline(date)
-      // The mock seed's two logged meals (fuel.ts m1/m2) carry a full breakdown but a null
-      // top-level `score` (deterministic scoring pending, pre-existing seed gap — same family as
-      // the file's other documented staleness, mezo-bgk8). The honest MealScoreChip (mezo-rrtj)
-      // correctly renders no chip for a null score — no fabricated "0 · gyenge" — so backfill a
-      // plausible score ONLY here, at the test seam, to exercise the page's open/close wiring
-      // deterministically without touching the shared fixture.
-      const getScoredMeal: typeof real.getScoredMeal = (slot) => {
-        const meal = real.getScoredMeal(slot)
-        return meal && meal.score == null ? { ...meal, score: 0.86 } : meal
-      }
-      if (!hoisted.injectOpenSlot) return { ...real, getScoredMeal }
+      if (!hoisted.injectOpenSlot) return real
       const openSlot: FuelSlot = {
         time: '20:00', kind: 'snack', label: 'Esti snack', slotKey: 'snack',
         state: 'pending', kcal: 300, p: 20, c: 30, f: 8,
       }
-      return { ...real, getScoredMeal, plan: { ...real.plan, slots: [...real.plan.slots, openSlot] } }
+      return { ...real, plan: { ...real.plan, slots: [...real.plan.slots, openSlot] } }
     },
   }
 })
@@ -71,6 +64,41 @@ test('renders the one-line header, the hero, the day-status card and the zones',
   // Kitchen close / coffee cutoff kept their real data, now at the end of the day.
   expect(screen.getByText(/Konyha zár/)).toBeInTheDocument()
   expect(screen.getByText(/kávé cutoff/)).toBeInTheDocument()
+})
+
+// ── Reta phase strip derived from the medication cycle (fix wave item 1) ─────────────────────
+test('the Reta phase strip derives its cells + current marker from the medication cycle', () => {
+  const { container } = renderView()
+  const cells = Array.from(container.querySelectorAll('.retamicro i'))
+  const phaseCls: Record<string, string> = { peak: 'pk', stable: 'stb', trough: 'tr' }
+  // mock cycle.week (medication.ts): D1-2 peak, D3-5 stable (D3 current), D6-7 trough — this must
+  // read the medication cycle's OWN phaseKey/current, never a page-local re-hardcoded phase model.
+  expect(cells).toHaveLength(medicationSeed.cycle.week.length)
+  expect(cells.map(c => c.className)).toEqual(
+    medicationSeed.cycle.week.map(cell => {
+      const cls = phaseCls[cell.phaseKey] ?? ''
+      return cell.current ? `${cls} cur` : cls
+    }),
+  )
+})
+
+test('renders no Reta phase strip when there is no medication cycle yet (real-mode ghost)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/medication`, () =>
+      HttpResponse.json({
+        medication: {
+          id: '', name: '', activeIngredient: '', route: '', cadence: '',
+          defaultDose: 0, doseUnit: '', active: false, cycle: { cycleLengthDays: 0, phases: [] },
+        },
+        cycle: { retaDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: [] },
+        recentDoses: [],
+      }),
+    ),
+  )
+  const { container } = renderView()
+  await screen.findByRole('heading', { name: 'A mai nap' })
+  expect(container.querySelector('.retamicro')).toBeNull()
 })
 
 test('the two static-seed surfaces are gone — no fabricated prose, no fake weekly micros', () => {
@@ -170,10 +198,10 @@ test('opening a meal score sheet then closing it', async () => {
 test('clicking a slot AI chip opens the AI log sheet on that slot (mezo-53su)', async () => {
   hoisted.injectOpenSlot = true // inject a KNOWN open meal/snack slot (deterministic across weekdays)
   renderView()
-  // An open meal/snack slot with a slotKey carries a per-slot "AI" chip beside Logolás.
-  const aiChips = screen.getAllByRole('button', { name: /AI-logolása/ })
-  expect(aiChips.length).toBeGreaterThan(0)
-  await userEvent.click(aiChips[0])
+  // Query the injected slot's OWN aria-label — the hero's ✨ button ALSO matches /AI-logolása/ and
+  // renders first, so `getAllByRole(...)[0]` silently tests the hero instead of the slot-level chip
+  // this test exists to protect (fix wave item 2).
+  await userEvent.click(screen.getByRole('button', { name: 'Esti snack AI-logolása' }))
   expect(await screen.findByRole('dialog', { name: 'AI ételnapló' })).toBeInTheDocument()
 })
 

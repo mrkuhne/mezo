@@ -2347,6 +2347,7 @@ a.hab-link:hover { opacity: 0.85; }
 .dayseg { position: relative; height: 12px; border-radius: 999px; background: var(--warm); margin-top: 9px; overflow: hidden; display: flex; gap: 2px; }
 .dayseg i { display: block; height: 100%; }
 .dayseg .ghost { flex: 1; background: repeating-linear-gradient(90deg, rgba(43,33,24,.05) 0 4px, transparent 4px 9px); }
+:root[data-theme="dark"] .dayseg .ghost { background: repeating-linear-gradient(90deg, rgba(255,255,255,.14) 0 4px, transparent 4px 9px); }
 .dayseg .mark { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--coral); border-radius: 2px; }
 .brk { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--line); }
 .brk .cap2 { display: flex; align-items: center; gap: 8px; font-size: 9px; font-weight: 800; letter-spacing: .12em;
@@ -2379,8 +2380,12 @@ a.hab-link:hover { opacity: 0.85; }
 .zcard.openz { box-shadow: 0 0 0 2px var(--coral), 0 12px 28px -8px rgba(255,107,74,.24); }
 .zcard.openz .zh { background: var(--wash-gym); }
 .zcard.openz .zh .zn, .zcard.openz .zh .zk { color: var(--coral-deep); }
-.zrow { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid var(--line); }
-.zrow:first-of-type { border-top: 0; }
+.zrow { display: flex; align-items: center; gap: 10px; padding: 11px 14px; }
+/* Scoped to zone rows only — `:first-of-type` counted `div` siblings (never matched, since `.zh` is
+   always the first div inside `.zcard`), and drew a stray hairline on the two standalone `.zrow`
+   cards (kitchen-close, protocol footer) that sit among unrelated page-level siblings. */
+.zcard .zrow { border-top: 1px solid var(--line); }
+.zcard .zh + .zrow { border-top: 0; }
 .zrow .zf { width: 31px; height: 31px; border-radius: 11px; display: grid; place-items: center; font-size: 14px; flex-shrink: 0; }
 .zrow .zt { flex: 1; min-width: 0; }
 .zrow .zt .a { font-size: 12.5px; font-weight: 800; color: var(--ink); }
@@ -2414,7 +2419,10 @@ a.hab-link:hover { opacity: 0.85; }
 .aiscore.s-md { background: var(--wash-amber); color: var(--amber-deep); }
 .aiscore.s-lo { background: var(--wash-gym); color: var(--tag-gym); }
 .coachline { font-size: 10.5px; line-height: 1.35; color: var(--sub); margin-top: 3px; }
-.coachline.sk { height: 10px; border-radius: 5px; width: 78%; margin-top: 5px;
+/* NOT `.sk` — that class is the app-wide skeleton primitive (Skeleton.tsx, prototype.css:608) and
+   carries its own `.sk::after` shimmer overlay; reusing it here stacked a second shimmer layer on
+   top of this rule's own `np-sk-slide` sweep. `.cskel` is scoped to this coach-line placeholder only. */
+.coachline.cskel { height: 10px; border-radius: 5px; width: 78%; margin-top: 5px;
   background: linear-gradient(90deg, var(--warm), var(--canvas), var(--warm)); background-size: 220% 100%; }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -2423,7 +2431,7 @@ a.hab-link:hover { opacity: 0.85; }
   .nowcard .primary:active { transform: scale(.96); }
   .dayseg i { animation: np-seg-grow 1.1s var(--np-ease-ios) both; }
   .aiscore { animation: np-chip-pop .5s var(--np-ease-spring); }
-  .coachline.sk { animation: np-sk-slide 1.4s linear infinite; }
+  .coachline.cskel { animation: np-sk-slide 1.4s linear infinite; }
 }
 @keyframes np-hero-pulse {
   0% { box-shadow: 0 0 0 0 rgba(255,107,74,.5); }

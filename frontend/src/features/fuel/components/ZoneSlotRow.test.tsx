@@ -199,7 +199,7 @@ test('renders the coach tagline when a verdict exists', () => {
 
 test('renders a skeleton line while the coach verdict is in flight — the expensive call is visible', () => {
   const { container } = render(<ZoneSlotRow slot={loggedSlot} {...defaults} coachPending scoredMeal={scored} />)
-  expect(container.querySelector('.coachline.sk')).toBeInTheDocument()
+  expect(container.querySelector('.coachline.cskel')).toBeInTheDocument()
   expect(screen.queryByTestId('coach-tagline')).toBeNull()
 })
 
@@ -227,6 +227,16 @@ test('a done row WITH a score renders the score chip and no ✓ marker', () => {
   const { container } = render(<ZoneSlotRow slot={loggedSlot} {...defaults} scoredMeal={scored} />)
   expect(screen.getByRole('button', { name: 'AI score' })).toBeInTheDocument()
   expect(container.querySelector('.zv')).toBeNull()
+})
+
+// ── Exclusivity hole: a truthy FuelMeal with a still-null score (fix wave item 11) ────────────
+// MealScoreChip's OWN guard is `meal.score == null` — the ✓ condition must mirror it exactly, or
+// a scored-object-but-null-score meal renders NEITHER marker (the chip bails, and the OLD
+// `!scoredMeal` check saw a truthy object and skipped the ✓ too).
+test('a done row with a scored OBJECT whose score is still null renders the ✓, not neither marker', () => {
+  const { container } = render(<ZoneSlotRow slot={loggedSlot} {...defaults} scoredMeal={{ ...scored, score: null }} />)
+  expect(screen.queryByRole('button', { name: 'AI score' })).toBeNull()
+  expect(container.querySelector('.zv')).toHaveTextContent('✓')
 })
 
 // ── Anchored row: the hero owns this window's CTA (new) ───────────────────────

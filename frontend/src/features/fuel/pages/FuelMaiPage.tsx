@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
 import {
-  useFuelDay, useFuelTimeline, useMealCoach, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions,
+  useFuelDay, useFuelTimeline, useMealCoach, useMedication, useProtocol, useReplanScenarios, useTodayScenario,
+  useWaterActions,
 } from '@/data/hooks'
-import { toMin } from '@/data/fuel/fuelConfig'
+import { daySpan, unwrapDayMinute } from '@/data/fuel/fuelConfig'
 import { buildDayZones, isMealSlot } from '@/features/fuel/logic/dayZones'
 import { pickHeroWindow } from '@/features/fuel/logic/heroWindow'
 import { NowWindowCard } from '@/features/fuel/components/NowWindowCard'
@@ -28,7 +29,9 @@ import { localDateString } from '@/shared/lib/dates'
 // Retired here: the "Mai cél" card + KcalGauge (they printed the SAME number twice), the static-seed
 // PacingCard prose and the static-seed weekly micronutrients, and the flat FuelTimeline/SlotCard
 // chain (its behaviour lives in ZoneSlotRow). Nothing that had a real source was dropped.
-const RETA_PHASE_CLS = ['pk', 'pk', 'pk', 'stb', 'stb', 'tr', 'tr'] as const
+// Phase class per cycle.week cell's OWN phaseKey (fix wave item 1) — never re-hardcoded, so this
+// can never disagree with the medication cycle FuelMedicationPage renders for the SAME day.
+const RETA_PHASE_CLS: Record<string, string> = { peak: 'pk', stable: 'stb', trough: 'tr' }
 
 export function FuelMaiPage() {
   const navigate = useNavigate()
@@ -39,6 +42,7 @@ export function FuelMaiPage() {
   const { verdicts, isPending: coachPending } = useMealCoach(localDateString())
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
+  const { cycle: medicationCycle } = useMedication()
   const { logWater } = useWaterActions()
   // Honest-empty in real mode (replan engine is P8) — no scenarios, no Replan CTA (mezo-t16y.4).
   const { scenarios: replanScenarios } = useReplanScenarios()
@@ -62,8 +66,8 @@ export function FuelMaiPage() {
   // Static-fallback energy (real mode, no BMR): base equals the FULL segment kcal and
   // activity/balance are 0, so the breakdown chips would be meaningless — hide them.
   const staticEnergy = plan.energy.activity === 0 && plan.energy.balance === 0
-  const daySpan = Math.max(1, (toMin(bed) <= toMin(wake) ? toMin(bed) + 1440 : toMin(bed)) - toMin(wake))
-  const nowFrac = Math.min(1, Math.max(0, (toMin(nowHHmm) - toMin(wake)) / daySpan))
+  const { wakeMin: dayWakeMin, span: dayspanMin, crossesMidnight } = daySpan(wake, bed)
+  const nowFrac = Math.min(1, Math.max(0, (unwrapDayMinute(nowHHmm, dayWakeMin, crossesMidnight) - dayWakeMin) / dayspanMin))
 
   const getTagline = (slot: FuelSlot) => {
     const meal = getScoredMeal(slot)
@@ -123,11 +127,18 @@ export function FuelMaiPage() {
         </div>
       </div>
 
-      <div className="retamicro" role="img" aria-label={`Reta ciklus — ${retaDay}. nap`}>
-        {RETA_PHASE_CLS.map((cls, i) => (
-          <i key={i} className={`${cls}${i + 1 === retaDay ? ' cur' : ''}`} />
-        ))}
-      </div>
+      {/* Honest empty: no cycle yet (real-mode ghost — no medication/doses) renders no strip at all,
+          rather than a fabricated or empty one. */}
+      {medicationCycle.week.length > 0 && (
+        <div className="retamicro" role="img" aria-label={`Reta ciklus — ${retaDay}. nap`}>
+          {medicationCycle.week.map((cell) => (
+            <i
+              key={cell.day}
+              className={`${RETA_PHASE_CLS[cell.phaseKey] ?? ''}${cell.current ? ' cur' : ''}`}
+            />
+          ))}
+        </div>
+      )}
 
       <NowWindowCard
         hero={hero}
