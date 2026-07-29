@@ -6,6 +6,22 @@ name: deploy
 on:
   push:
     branches: [main]
+  # Manual escape hatch for the one case path-change detection structurally cannot see:
+  # a build-time-baked value changing outside the tree. Every VITE_* is inlined into the
+  # frontend bundle at build time, so editing the VITE_VAPID_PUBLIC repo variable (or
+  # rotating the VAPID keypair) changes what the bundle MUST contain while leaving
+  # frontend/ byte-identical — the push-triggered run then skips build-frontend and the
+  # stale bundle stays live, silently. Discovered wiring the VAPID key (mezo-7kr3).
+  workflow_dispatch:
+    inputs:
+      force_frontend:
+        description: 'Rebuild the frontend even if frontend/ is unchanged (after changing a VITE_* repo variable)'
+        type: boolean
+        default: false
+      force_backend:
+        description: 'Rebuild the backend even if backend/ and api/ are unchanged'
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-main
@@ -22,14 +38,30 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.calc.outputs.version }}
-      frontend_changed: ${{ steps.calc.outputs.frontend_changed }}
-      backend_changed: ${{ steps.calc.outputs.backend_changed }}
+      frontend_changed: ${{ steps.eff.outputs.frontend_changed }}
+      backend_changed: ${{ steps.eff.outputs.backend_changed }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0        # full history + tags for semver + diff
       - id: calc
         run: bash .github/scripts/compute-release.sh
+      # OR the manual force flags into the computed flags HERE, so every downstream
+      # condition (build-frontend, build-backend, release's tag-bump choice) keeps
+      # reading one pair of outputs and needs no knowledge of the dispatch inputs.
+      - id: eff
+        env:
+          FE: ${{ steps.calc.outputs.frontend_changed }}
+          BE: ${{ steps.calc.outputs.backend_changed }}
+          FORCE_FE: ${{ inputs.force_frontend }}
+          FORCE_BE: ${{ inputs.force_backend }}
+        run: |
+          fe="$FE"; be="$BE"
+          [ "$FORCE_FE" = "true" ] && fe=true
+          [ "$FORCE_BE" = "true" ] && be=true
+          echo "frontend_changed=${fe}" >> "$GITHUB_OUTPUT"
+          echo "backend_changed=${be}" >> "$GITHUB_OUTPUT"
+          echo "effective: fe=${fe} be=${be} (computed ${FE}/${BE}, forced ${FORCE_FE:-false}/${FORCE_BE:-false})" >&2
 
   build-frontend:
     needs: version
