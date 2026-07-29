@@ -1524,6 +1524,15 @@ button.itemrow { cursor: pointer; }
 .donefold-ch { color: var(--faint); }
 .donefold .itemrow { margin: 6px 0 0; }
 
+/* ===== Face section line + day XP (mezo-j7u4) ===== */
+.zoneline { display: flex; align-items: center; gap: 9px; padding: 16px 24px 8px; }
+.zoneline span { font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--faint); white-space: nowrap; }
+.zoneline i { flex: 1; height: 1px; background: var(--line); }
+.dayxp { margin: 8px 24px 20px; padding: 12px 14px; border-radius: 16px; background: var(--warm);
+  font-size: 12px; font-weight: 700; color: var(--sub); text-align: center; }
+.dayxp b { color: var(--sage-deep); font-variant-numeric: tabular-nums; }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
