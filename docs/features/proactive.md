@@ -2,7 +2,7 @@
 title: Proactive layer (briefing, weekly prose, heartbeat, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-07-28
+updated: 2026-07-29
 tags: [proactive, briefing, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -15,7 +15,7 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/OverloadChallengeGenerator.java
   - backend/src/main/resources/db/changelog/1.0.0/script/202607280641_mezo-gj42_challenge_overload_type.sql
-related: [companion, today, insights, train, _platform-api-backend]
+related: [companion, today, insights, train, _platform-api-backend, _platform-notifications]
 ---
 
 # Proactive layer (briefing, weekly prose, heartbeat, predictions) — Feature Documentation
@@ -55,8 +55,11 @@ related: [companion, today, insights, train, _platform-api-backend]
 > a **write path** (`POST /api/proactive/experiment/{id}/decision` L2 accept/dismiss + `POST …/propose`),
 > a deterministic `ExperimentOutcomeService` (reusing the shared `MetricWindowEvaluator`), and a
 > two-cron `ExperimentJob` — the Insights **Experiments tab un-ghosts** (the LAST `PHASE3_TAB_IDS`
-> ghost). **The proactive epic (`mezo-h4wp`, all 8 slices B1.1→B1.2→W1→W2→H1→P1→P2, plus H2 Web Push
-> deferred) is COMPLETE** — every prose/forecast Insights surface is honest and real.
+> ghost). **The proactive epic (`mezo-h4wp`, all 8 slices B1.1→B1.2→W1→W2→H1→P1→P2) is COMPLETE, and
+> so is `mezo-h4wp.6` (H2 Web Push)** — N1 delivery spine + N2 dispatcher + N3 FE-schedule snapshot
+> all shipped 2026-07-29, and a real push reached Daniel's iPhone from the k3s backend that same day
+> (confirmed). Every prose/forecast Insights surface is honest and real, and it now reaches Daniel's
+> lock screen too — see [`_platform-notifications.md`](_platform-notifications.md).
 
 ## 1. Summary
 
@@ -441,7 +444,7 @@ evaluator**. Design of record:
 | Frontend (Insights Experiments tab un-ghost) | 🟢 P2 | `useExperiments()` + `useExperimentActions()` (mutation accept/dismiss/propose); `experiments` left `PHASE3_TAB_IDS` (now EMPTY — all 7 tabs real); `ExperimentsPage` renders proposed (Elfogadom/Elvetem) / active (progress) / completed (outcome) rows + a real propose CTA, else the honest null-state. |
 | Workout challenges (table + generator + set-level evaluator + write path + outcome cron) | 🟢 HBWI | `challenge` table (proposed→accepted/dismissed→hit/miss/inconclusive, nullable confidence, structured targets); lazy-on-prep `ChallengeGenerator`; deterministic set-level `ChallengeOutcomeEvaluator` (NEW, not `MetricWindowEvaluator`); `GET …/challenge?templateSessionId=&date=` (lazy generate + lazy resolve, `[]` = honest) + `POST …/challenge/{id}/decision`; `ChallengeJob` outcome-cron backstop (three-switch). |
 | Frontend (ActiveWorkoutPage challenge surface) | 🟢 HBWI | `useChallenges()`/`useChallengeActions()` (`data/train/challengeHooks.ts`); `ActiveWorkoutPage` prep feeds the live list into `ChallengesCarousel`, accepted map + `decide()` from server status in live (local toggle in mock, byte-parity); `ChallengeCard` honest states — „tanulom" on null confidence, tools hidden in live, `hit/miss/inconclusive` outcome chip + line with the accept/skip row hidden. |
-| **Epic status** | ✅ COMPLETE | All 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push deferred** (pure delivery infra — see the roadmap). Every prose/forecast Insights + Today surface is honest and real. |
+| **Epic status** | ✅ COMPLETE | All 8 slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2); **H2 Web Push is also shipped** (N1+N2+N3, `mezo-h4wp.6`, 2026-07-29 — a real push reached Daniel's iPhone; full detail in [`_platform-notifications.md`](_platform-notifications.md)). Every prose/forecast Insights + Today surface is honest and real — and now reaches the lock screen too. |
 
 **Driver:** `mezo-h4wp.4` (W2, on `mezo-h4wp.1`'s spine; W1 = `mezo-h4wp.3`, B1.2 = `mezo-h4wp.2`). **Design of record:**
 [`docs/superpowers/specs/2026-07-06-proactive-layer-design.md`](../superpowers/specs/2026-07-06-proactive-layer-design.md)
@@ -1314,9 +1317,13 @@ Insights Memoir tab (W2, both [insights.md](insights.md)) all read these endpoin
   **write path** (`ProactiveExperimentService.decide` — fetch-owned-or-404 → state-guard 409 →
   mutate, the companion `PatternService` idiom) is the template for any future proactive L2 surface.
   **The `PHASE3_TAB_IDS` set is now empty** — every Insights tab is real.
-- **The proactive epic is COMPLETE (all 8 slices).** The only deferred item is **H2 Web Push** (pure
-  delivery infra — VAPID SealedSecret on k3s + `push_subscription` + the SW push handler; the content
-  it would deliver, the heartbeat/briefing, already exists). New proactive surfaces belong to the
+- **The proactive epic is COMPLETE (all 8 slices), and so is `mezo-h4wp.6` (H2 Web Push).** N1
+  (delivery spine — VAPID + `push_subscription` + the SW push handler), N2 (the per-minute
+  `NotificationDispatchJob` + `notification_pref`/`push_log` + categories 1-9), and N3
+  (`notification_schedule` + the FE preview header + categories 10-11) all shipped 2026-07-29 — the
+  heartbeat/briefing/weekly/memoir prose this epic generates now reaches Daniel's iPhone with the app
+  closed, not only the in-app surfaces. Full design + data model + gotchas:
+  [`_platform-notifications.md`](_platform-notifications.md). New proactive surfaces belong to the
   deferred-signals epic (spec §1: vulnerable/niggle sources, crisis/drift, opportunity scanner,
   anniversaries) — map it companion-style when picked up. Any new surface: add a sibling `*Generator`
   + table + `*.yml` fragment in `feature/proactive/`, gated on the same dual switch; smart-tier
@@ -1696,10 +1703,12 @@ TRUNCATE list. Full backend + FE gates green at P2 close (BE clean-test green, F
   an implicit converter for EVERY String property and corrupt the sibling responses — hence the helpers
   are a separate class.
 
-- **Epic complete — only H2 Web Push deferred.** All eight slices shipped
-  (B1.1→B1.2→W1→W2→H1→P1→P2). **H2 (Web Push)** stays deferred — pure delivery infra (VAPID
-  SealedSecret on k3s, `push_subscription`, the SW push handler); the content it would push (heartbeat,
-  briefing-ready) already exists, so it can slide indefinitely. `PHASE3_TAB_IDS` is now empty. The
+- **Epic complete, and H2 Web Push with it.** All eight slices shipped
+  (B1.1→B1.2→W1→W2→H1→P1→P2), and **H2 (`mezo-h4wp.6`) is no longer deferred** — N1 (delivery spine)
+  + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3 (`notification_schedule` +
+  preview header + categories 10-11) all shipped 2026-07-29, and a real push reached Daniel's iPhone
+  from the k3s backend that same day (confirmed). Full detail:
+  [`_platform-notifications.md`](_platform-notifications.md). `PHASE3_TAB_IDS` is now empty. The
   D′ score constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to
   backend config (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
 
