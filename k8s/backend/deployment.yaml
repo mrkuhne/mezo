@@ -86,6 +86,24 @@ spec:
             # precedent) rather than relying on the application.yml default.
             - name: MEZO_FEATURE_PROACTIVE_ENABLED
               value: "true"
+            # H2 Web Push N1 (mezo-h4wp.6.1): the VAPID keypair backing every push we
+            # sign. Both halves live in the mezo-app SealedSecret — the private one is
+            # secret, the public one is not, but it is kept beside it so the pair can
+            # never drift apart (a mismatched pair fails as a GENERIC push-service error,
+            # not a loud one — see docs/features/_platform-notifications.md).
+            # The frontend gets the same public half from the VITE_VAPID_PUBLIC repo
+            # variable at build time (.github/workflows/deploy.yml) — sealing alone is
+            # not enough, the browser needs it baked into the bundle.
+            - name: VAPID_PUBLIC
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: VAPID_PUBLIC
+            - name: VAPID_PRIVATE
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: VAPID_PRIVATE
           # startupProbe gives Spring Boot + Liquibase time to come up before
           # liveness/readiness start judging it. /actuator/health is exposed.
           startupProbe:
