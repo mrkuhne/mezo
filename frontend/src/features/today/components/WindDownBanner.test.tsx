@@ -1,9 +1,23 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { WindDownBanner } from '@/features/today/components/WindDownBanner'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { gymLevelUpMock } from '@/data/progression/progressionMock'
+
+// `useHabitActions` is a spy that DELEGATES to the real hook by default (so the Pipa flow keeps
+// exercising the shared ['habitDay', date] cache write), and is overridden in the level-up test
+// to hand back a LevelUpResult the mock XP curve would not reach on its own.
+const hooks = vi.hoisted(() => ({
+  useHabitActions: vi.fn(),
+  real: { fn: null as unknown as (typeof import('@/data/hooks'))['useHabitActions'] },
+}))
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('@/data/hooks')>()
+  hooks.real.fn = orig.useHabitActions
+  return { ...orig, useHabitActions: hooks.useHabitActions }
+})
 
 // Mock goal: bed 23:15 / wake 06:45 (data/me/sleepGoal.ts) ->
 // dim 21:45-22:15 · winddown 22:15-23:15 · night 23:15-06:15.
@@ -26,10 +40,14 @@ const setClock = (iso: string) => {
 const pipa = () => screen.queryByRole('button', { name: /Pipa/ })
 
 describe('WindDownBanner', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    hooks.useHabitActions.mockImplementation((d: string) => hooks.real.fn(d))
+  })
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
   })
 
   test('renders nothing during the day', () => {
@@ -67,6 +85,32 @@ describe('WindDownBanner', () => {
     fireEvent.click(pipa()!)
     expect(await screen.findByText(/Leállás megvolt/)).toBeInTheDocument()
     expect(pipa()).toBeNull()
+  })
+
+  test('a level-up from the wind_down check reaches the LevelUp overlay', async () => {
+    // reduced motion, so the overlay settles without animation timers under fake timers
+    vi.stubGlobal('matchMedia', (q: string) => ({
+      matches: true, media: q, onchange: null,
+      addEventListener: vi.fn(), removeEventListener: vi.fn(),
+      addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
+    }))
+    setClock('2026-07-24T22:30:00')
+    hooks.useHabitActions.mockReturnValue({
+      check: vi.fn().mockResolvedValue([gymLevelUpMock]), uncheck: vi.fn(),
+      pending: false, consumeLevelUps: vi.fn(),
+    })
+    renderBanner()
+    fireEvent.click(pipa()!)
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
+  })
+
+  test('the 30 s self-tick re-derives the phase in place (no remount)', async () => {
+    setClock('2026-07-24T22:14:50') // dim, 10 s short of the winddown boundary
+    renderBanner()
+    expect(screen.getByRole('heading', { name: 'Tompítsd a fényeket' })).toBeInTheDocument()
+    await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+    expect(screen.getByRole('heading', { name: 'Kapcsolj le' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Tompítsd a fényeket' })).toBeNull()
   })
 
   test('night phase renders the dark entry row linking to /me/sleep/night', () => {
