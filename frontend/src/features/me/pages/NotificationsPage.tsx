@@ -38,9 +38,6 @@ export function NotificationsPage() {
         : 'Nincs engedélyezve'
 
   const onToggle = async () => {
-    // A denied permission can't be flipped back on from here (iOS won't re-prompt), and a
-    // busy in-flight request must not be re-entered — guard both rather than fire again.
-    if (push.busy || push.permission === 'denied') return
     if (push.enabled) await push.unsubscribe()
     else await push.subscribe()
   }
@@ -67,7 +64,16 @@ export function NotificationsPage() {
                 {statusLine}
               </span>
             </div>
-            <Toggle on={push.enabled} onToggle={onToggle} ariaLabel="Push értesítések" />
+            {/* Visible-but-inert when denied — the status line already tells the user it's
+                recoverable in iOS settings, so the switch stays present and honestly marked
+                dead rather than hidden (unlike an unrecoverable dead control, which would be
+                hidden instead). Also disabled mid-flight to prevent re-entrant taps. */}
+            <Toggle
+              on={push.enabled}
+              onToggle={onToggle}
+              ariaLabel="Push értesítések"
+              disabled={push.busy || push.permission === 'denied'}
+            />
           </div>
         </div>
 

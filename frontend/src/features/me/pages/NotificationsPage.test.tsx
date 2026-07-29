@@ -68,7 +68,7 @@ describe('NotificationsPage', () => {
     expect(screen.getByText('Nincs engedélyezve')).toBeInTheDocument()
   })
 
-  it('a denied permission shows the denied status line and an unchecked toggle, not an enabled-looking control', () => {
+  it('a denied permission shows the denied status line and a disabled, unchecked toggle — not an enabled-looking control', () => {
     const p = push({ permission: 'denied', enabled: false })
     hooks.usePushSubscription.mockReturnValue(p)
     renderPage()
@@ -77,6 +77,10 @@ describe('NotificationsPage', () => {
     ).toBeInTheDocument()
     const toggle = screen.getByRole('switch', { name: 'Push értesítések' })
     expect(toggle).toHaveAttribute('aria-checked', 'false')
+    // Visible-but-inert (mezo-h4wp.6.1 review fix): denied is user-recoverable via iOS
+    // settings, so the switch stays present but is honestly marked dead via `disabled`,
+    // never a fully-interactive-looking no-op.
+    expect(toggle).toBeDisabled()
   })
 
   it('clicking the toggle while permission is denied does not attempt to (re-)subscribe', async () => {
@@ -85,6 +89,17 @@ describe('NotificationsPage', () => {
     renderPage()
     await userEvent.click(screen.getByRole('switch', { name: 'Push értesítések' }))
     expect(p.subscribe).not.toHaveBeenCalled()
+  })
+
+  it('clicking the toggle while busy does not attempt to subscribe/unsubscribe again', async () => {
+    const p = push({ busy: true, enabled: false })
+    hooks.usePushSubscription.mockReturnValue(p)
+    renderPage()
+    const toggle = screen.getByRole('switch', { name: 'Push értesítések' })
+    expect(toggle).toBeDisabled()
+    await userEvent.click(toggle)
+    expect(p.subscribe).not.toHaveBeenCalled()
+    expect(p.unsubscribe).not.toHaveBeenCalled()
   })
 
   it('the test-push button is absent before subscribing (enabled: false)', () => {
