@@ -623,6 +623,15 @@ mezo:
   ritual:
     lead-min: 75        # the window opens bed − 75'
     prep-lead-min: 45   # sleep-prep display anchor: bed − 45'
+  # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
+  # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.
+  # The dummy default keeps the context bootable with the notification feature switched off.
+  # Binds onto WebPushProperties.
+  webpush:
+    subject: mailto:daniel.kuhne@intuitech.studio
+    public-key: ${VAPID_PUBLIC:dummy-vapid-public}
+    private-key: ${VAPID_PRIVATE:dummy-vapid-private}
+    default-ttl-seconds: 3600
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
   # AccountProgressPort adapter fires. Binds onto GamificationProperties.
   gamification:
