@@ -50,7 +50,7 @@ export function TodayPage() {
         }
       />
       <GreetingHeader today={today} user={user} retaDay={scenario.retaDay} />
-      <IntentionBanner />
+      <IntentionBanner variant="chip" />
       <WindDownBanner />
       <DayArc checkins={checkins} workoutTime={workoutTime} />
       {workout ? (

@@ -5,14 +5,23 @@ import { useLevelUp } from '@/features/progression/LevelUpProvider'
 import {
   fmtMinsToBed, minsToBed, windDownPhase,
 } from '@/features/today/logic/windDown'
+import { ItemCard } from '@/shared/ui/ItemCard'
 import { localDateString } from '@/shared/lib/dates'
 
 const TICK_MS = 30_000
+
+/** The phase tips, flattened to plain `.metapill` strings (mezo-j7u4). */
+const DIM_TIPS = ['💡 30 lux alá', '🔶 Meleg, sárga fény', '❄️ Hűtsd a szobát ~18 °C']
+const WINDDOWN_TIPS = ['📵 Képernyők le', '🕯️ Fények tompítva']
 
 /**
  * The Today evening/night band (slice C-éj, spec D2/D3): dim -> winddown -> night entry,
  * all derived from the sleep anchor. Carries the wind_down MANUAL habit's check in the
  * winddown phase — same ['habitDay', date] cache as RoutineCard, so the two stay in sync.
+ *
+ * dim/winddown wear the shared `ItemCard` (mezo-j7u4); the **night** row keeps its own
+ * `.wdb-night` markup on purpose — it is a literal-dark night-layer surface (NightPage's
+ * palette), not part of the light card language.
  */
 export function WindDownBanner() {
   const date = localDateString()
@@ -46,63 +55,30 @@ export function WindDownBanner() {
 
   const pill = `🛏️ még ${fmtMinsToBed(minsToBed(now, goal.bedTime))}`
   const windDownHabit = habits.find((h) => h.key === 'wind_down')
-
-  if (phase === 'dim') {
-    return (
-      <section className="wdb" aria-label="Esti ráhangolódás">
-        <div className="wdb-hd">
-          <span aria-hidden="true">🕯️</span>
-          <span className="wdb-eye">Esti ráhangolódás</span>
-          <span className="wdb-pill">{pill}</span>
-        </div>
-        <div className="wdb-title">Tompítsd a fényeket</div>
-        <div className="wdb-list">
-          <div className="wdb-tip"><span className="wdb-tip-ic" aria-hidden="true">💡</span><span><b>30 lux alá</b> — félhomály, nem sötét</span></div>
-          <div className="wdb-tip"><span className="wdb-tip-ic" aria-hidden="true">🔶</span><span><b>Meleg, sárga fény</b> — hideg-fehér le</span></div>
-          <div className="wdb-tip"><span className="wdb-tip-ic" aria-hidden="true">❄️</span><span><b>Hűtsd a szobát</b> — 18 °C felé</span></div>
-        </div>
-        <div className="wdb-foot">
-          <div className="wdb-stat">A tompított, meleg este <b>+18% REM</b>-et ad — Walker mérése.</div>
-        </div>
-      </section>
-    )
-  }
-
-  // winddown phase
   const doCheck = () => {
     check('wind_down').then((lu) => lu?.[0] && showLevelUp(lu[0]))
   }
+
+  // The wind_down habit affordance belongs to the WINDDOWN phase only — in `dim` the habit's
+  // own anchor ("screens off") has not come due yet, exactly as before the re-dress.
+  const dim = phase === 'dim'
+  const done = !dim && windDownHabit?.status === 'done'
+  // `!pending` replaces the old `disabled={pending}` guard: ItemCard's CTA has no disabled
+  // state, so an in-flight check withdraws the CTA instead of dimming it (no double submit).
+  const checkable = !dim && !!windDownHabit && windDownHabit.status !== 'done' && !pending
+
   return (
-    <section className="wdb" aria-label="Esti leállás">
-      <div className="wdb-hd">
-        <span aria-hidden="true">🌙</span>
-        <span className="wdb-eye">Esti leállás</span>
-        <span className="wdb-pill">{pill}</span>
-      </div>
-      <div className="wdb-title">Kapcsolj le</div>
-      <div className="wdb-list">
-        <div className="wdb-tip"><span className="wdb-tip-ic" aria-hidden="true">📵</span><span><b>Képernyők le</b> — az agy hadd unatkozzon</span></div>
-        <div className="wdb-tip"><span className="wdb-tip-ic" aria-hidden="true">🕯️</span><span><b>Fények tompítva</b> maradnak</span></div>
-      </div>
-      {windDownHabit && (
-        <div className="wdb-foot">
-          {windDownHabit.status === 'done' ? (
-            <div className="wdb-done">✓ Leállás megvolt — már csak az ágy van hátra.</div>
-          ) : (
-            <div className="wdb-hab">
-              <div className="wdb-hab-tx">
-                <div className="wdb-hab-t1">{windDownHabit.title}</div>
-                <div className="wdb-hab-t2">{windDownHabit.anchorCopy}</div>
-              </div>
-              <span className="wdb-hab-xp">+{windDownHabit.xp} XP</span>
-              <button className="wdb-pipa" disabled={pending}
-                aria-label={`${windDownHabit.title} pipálása`} onClick={doCheck}>
-                Pipa
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-    </section>
+    <ItemCard
+      tone="mind"
+      emoji={dim ? '🕯️' : '🌙'}
+      tag="ESTI LEÁLLÁS"
+      title={dim ? 'Tompítsd a fényeket' : 'Kapcsolj le'}
+      stateLabel={pill}
+      facts={dim ? DIM_TIPS : WINDDOWN_TIPS}
+      logged={done}
+      loggedSummary="Leállás megvolt"
+      ctaLabel={checkable ? 'Pipa' : undefined}
+      onLog={checkable ? doCheck : undefined}
+    />
   )
 }

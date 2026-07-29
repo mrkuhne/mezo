@@ -26,6 +26,8 @@ export interface ItemCardProps {
   tag: string
   /** Item time; omitted from the eyebrow when absent. */
   time?: string | null
+  /** Display title. `''` renders NO heading — for cards whose prose IS the body
+   *  (the Today briefing), so screen readers don't meet an empty `<h3>`. */
   title: string
   /** One `.metapill` per fact; falsy entries drop out. */
   facts: readonly (string | null | undefined | false)[]
@@ -61,7 +63,7 @@ export function ItemCard({
             {tag}{logged ? ' · MEGVAN' : null}
           </span>
           {!logged && time ? <span className="todaycard-time">{time}</span> : null}
-          <h3 className="todaycard-title">{title}</h3>
+          {title ? <h3 className="todaycard-title">{title}</h3> : null}
         </div>
         {!logged && stateLabel ? <span className="todaycard-state">{stateLabel}</span> : null}
       </div>

@@ -1981,89 +1981,23 @@ a.hab-link:hover { opacity: 0.85; }
   .quests-progress > i, .quest-cta { transition: none; }
 }
 
-/* ===== Napzárás entry card — Today "Teendők ma" zone (R3, mezo-ilsj) =====
-   RitualCard's waiting/open states (evening-timing.html mockup phones 1-2, adapted to the
-   light Today surface / theme tokens rather than the dark /ritual screen's literal colours).
-   "open" reuses --wash-lav for its glow — the SAME token that lights up `.hab-row.now`
-   (RoutineCard's first-pending idiom); "waiting" stays a quiet, muted card. */
-.ritcard {
-  display: block; margin: 8px 24px; padding: 14px 16px; border-radius: 18px;
-  background: var(--wash-lav);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lav) 40%, transparent);
-  text-decoration: none; font-family: var(--ff-body);
-}
-.ritcard.waiting {
-  background: var(--surface-1);
-  box-shadow: inset 0 0 0 1px var(--card-border);
-}
-.ritcard-ttl {
-  display: flex; align-items: center; gap: 8px;
-  font: 700 14px var(--ff-display); color: var(--ink);
-}
-.ritcard-moon { font-size: 20px; display: inline-block; }
-@media (prefers-reduced-motion: no-preference) {
-  .ritcard:not(.waiting) .ritcard-moon { animation: ritcard-breath 4s ease-in-out infinite; }
-}
-@keyframes ritcard-breath { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
-.ritcard-sub { font: 500 11.5px/1.5 var(--ff-body); color: var(--sub); margin-top: 5px; }
-.ritcard-cta {
-  display: block; margin-top: 12px; padding: 10px; border-radius: 999px; text-align: center;
-  font: 700 12.5px var(--ff-body); color: var(--text-inverse);
-  background: linear-gradient(120deg, var(--lav), var(--lav-deep));
-}
-.ritcard.waiting .ritcard-cta { background: var(--warm); color: var(--text-quaternary); }
-.ritcard-done {
-  display: flex; align-items: center; gap: 6px; margin: 8px 24px; padding: 11px 16px;
-  font: 600 13px var(--ff-body); color: var(--text-tertiary);
-}
-
-/* ===== Daily intention banner (mezo-a686) ===== */
-.intent {
-  background: var(--surface-1); border: 1px solid var(--card-border); border-radius: 20px;
-  filter: var(--card-elevation); padding: 15px 16px; position: relative; overflow: hidden;
-  margin: 8px 24px; /* card inset — never edge-to-edge (mezo-nhra) */
-}
-/* faint north-star wash in the corner — the signature */
-.intent::after {
-  content: ""; position: absolute; right: -30px; top: -30px; width: 130px; height: 130px; border-radius: 50%;
-  background: radial-gradient(circle at center, color-mix(in srgb, var(--lav) 20%, transparent), transparent 70%);
-  pointer-events: none;
-}
-.intent-head { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
-.intent-star {
-  width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto; display: grid; place-items: center;
-  background: var(--wash-lav); color: var(--lav-deep); font-size: 15px;
-}
-.intent-eye { font: 800 10px/1.2 var(--ff-body); letter-spacing: .09em; text-transform: uppercase; color: var(--lav-deep); }
+/* ===== Daily intention (mezo-a686) =====
+   The full-card `.intent*` banner retired with the daypart faces (mezo-j7u4): the creed became
+   the one-line `.creedchip` below and the foci moved into the face's TodoCard/hero rows.
+   `.intent-creed` survives because `IntentionSheet` still quotes the creed with it. */
 .intent-creed { font: 500 13.5px/1.45 var(--ff-body); color: var(--sub); font-style: italic; }
-.intent-edit { margin-left: auto; font: 700 10.5px/1 var(--ff-body); color: var(--faint); padding: 5px 9px; border-radius: 999px; }
-.intent-edit:active { background: var(--surface-glass, rgba(0, 0, 0, .04)); }
 
-.intent-div { height: 1px; background: var(--border-subtle); margin: 13px 0 12px; }
-
-.intent-focus-eye { font: 800 9.5px/1 var(--ff-body); letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-.intent-focus-eye .cnt { color: var(--text-quaternary); font-size: 9px; letter-spacing: .04em; }
-.intent-focus { font: 600 16px/1.35 var(--ff-display); color: var(--ink); letter-spacing: -.01em; }
-.intent-foci { display: flex; flex-direction: column; gap: 10px; }
-.intent .fx { display: flex; gap: 9px; align-items: flex-start; }
-.intent .fx-mark { color: var(--lav-deep); font-size: 11px; line-height: 1; margin-top: 6px; flex: 0 0 auto; }
-.intent .fx-text { font: 600 15px/1.35 var(--ff-display); color: var(--ink); letter-spacing: -.01em; }
-.intent-add { margin-top: 11px; display: inline-flex; align-items: center; gap: 5px; font: 700 11.5px/1 var(--ff-body);
-  color: var(--lav-deep); padding: 7px 11px; border-radius: 999px; border: 1.5px solid color-mix(in srgb, var(--lav) 40%, transparent); }
-.intent-add svg { width: 12px; height: 12px; }
-.intent-cap { margin-top: 11px; font: 600 10.5px/1.3 var(--ff-body); color: var(--text-quaternary); }
-
-.intent-cta {
-  display: inline-flex; align-items: center; gap: 6px; padding: 9px 15px; border-radius: 999px;
-  font: 700 12.5px/1 var(--ff-body); color: #fff;
-  background: linear-gradient(135deg, var(--lav), var(--lav-deep));
-  box-shadow: 0 2px 7px color-mix(in srgb, var(--lav-deep) 42%, transparent);
-}
-.intent-cta.ghost { background: none; color: var(--lav-deep); border: 1.5px solid color-mix(in srgb, var(--lav) 45%, transparent); box-shadow: none; }
-.intent-cta svg { width: 14px; height: 14px; }
-
-.intent-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.intent-prompt { font: 600 13.5px/1.3 var(--ff-body); color: var(--ink); flex: 1; min-width: 120px; }
+/* ===== Intention creed chip (mezo-j7u4) ===== */
+.creedchip { margin: 0 24px 12px; padding: 10px 13px; border-radius: 16px; display: flex; gap: 9px;
+  align-items: center; background: color-mix(in srgb, var(--lav) 11%, transparent); }
+.creedchip-st { color: var(--lav-deep); font-size: 13px; }
+.creedchip-tx { flex: 1; min-width: 0; text-align: left; font-size: 11.5px; font-style: italic;
+  color: var(--lav-deep); line-height: 1.4; font-family: inherit; }
+/* the creed text doubles as the CreedSheet opener — a button, stripped back to plain text */
+button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; }
+.creedchip-go { flex: none; font-size: 10px; font-weight: 800; color: var(--lav-deep); border: 0;
+  border-radius: 999px; padding: 5px 9px; font-family: inherit; cursor: pointer;
+  background: color-mix(in srgb, var(--surface) 70%, transparent); }
 
 /* evening reflect */
 .reflect { margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--border-subtle); }
@@ -2078,36 +2012,10 @@ a.hab-link:hover { opacity: 0.85; }
   background: var(--wash-sage); padding: 8px 12px; border-radius: 12px; margin-top: 12px; }
 .reflect-done svg { width: 14px; height: 14px; }
 
-/* ===== WindDownBanner — the Today evening/night band (mezo-d71m, spec D2/D3) ===== */
-.wdb { border-radius: 22px; padding: 20px 18px; margin: 8px 24px;
-       background: linear-gradient(150deg, var(--wash-lav) 0%, var(--surface) 70%);
-       box-shadow: 0 1px 3px rgba(43,33,24,.06), 0 8px 22px rgba(122,109,168,.14); }
-.wdb-hd { display: flex; align-items: center; gap: 8px; }
-.wdb-eye { font: 700 10.5px/1 var(--ff-body); letter-spacing: .11em; color: var(--lav-deep); text-transform: uppercase; }
-.wdb-pill { margin-left: auto; background: var(--wash-lav); color: var(--lav-deep);
-            font: 700 11.5px/1 var(--ff-body); padding: 7px 12px; border-radius: 999px; white-space: nowrap; }
-.wdb-title { font: 600 20px/1.3 var(--ff-display); color: var(--ink); margin-top: 14px; }
-.wdb-list { margin-top: 14px; display: flex; flex-direction: column; gap: 10px; }
-.wdb-tip { display: flex; align-items: center; gap: 11px; font: 500 13px/1.45 var(--ff-body); color: var(--sub); }
-.wdb-tip b { color: var(--ink); font-weight: 600; }
-.wdb-tip-ic { width: 32px; height: 32px; border-radius: 10px; background: var(--warm);
-              display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
-.wdb-foot { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
-.wdb-stat { font: 500 12px/1.6 var(--ff-body); color: var(--faint); }
-.wdb-stat b { color: var(--sage-deep); font-weight: 700; }
-.wdb-hab { display: flex; align-items: center; gap: 12px; background: var(--surface);
-           border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
-.wdb-hab-tx { flex: 1; }
-.wdb-hab-t1 { font: 600 13.5px/1.3 var(--ff-body); color: var(--ink); }
-.wdb-hab-t2 { font: 500 10.5px/1.5 var(--ff-body); color: var(--faint); }
-.wdb-hab-xp { font: 700 10.5px/1 var(--ff-body); color: var(--amber-deep); background: var(--wash-amber);
-              padding: 5px 8px; border-radius: 999px; }
-.wdb-pipa { background: var(--lav-deep); color: var(--text-inverse); font: 700 12.5px/1 var(--ff-body);
-            padding: 11px 18px; border-radius: 999px; box-shadow: 0 2px 8px rgba(122,109,168,.32); }
-.wdb-pipa:disabled { opacity: .6; }
-.wdb-done { display: flex; align-items: center; gap: 9px; background: var(--wash-sage);
-            border-radius: 16px; padding: 12px 14px; font: 600 13px/1.4 var(--ff-body); color: var(--sage-deep); }
-/* night entry row — literal dark (theme-independent, like NightPage) */
+/* ===== WindDownBanner — the Today evening/night band (mezo-d71m, spec D2/D3) =====
+   The dim/winddown phases wear the shared `ItemCard` since mezo-j7u4, so the light-surface
+   `.wdb*` rules are gone; only the night entry row keeps its own surface. */
+/* night entry row — literal dark (theme-independent, like NightPage; also used by SleepPage) */
 .wdb-night { display: flex; align-items: center; gap: 14px; margin: 8px 24px; padding: 20px 18px;
              border-radius: 22px; text-decoration: none;
              background: linear-gradient(140deg, #1A1622 0%, #221E1B 82%);

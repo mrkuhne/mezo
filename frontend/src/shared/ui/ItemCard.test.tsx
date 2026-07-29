@@ -15,6 +15,18 @@ describe('ItemCard', () => {
     expect(container.querySelector('.todaycard-gym')).toBeTruthy()
   })
 
+  test('an empty title renders no heading at all (the briefing prose is the body)', () => {
+    const { container } = render(
+      <ItemCard tone="mind" emoji="✨" tag="MEZO · REGGELI BRIEFING" title="" facts={[]} logged={false}>
+        <p>a prose body</p>
+      </ItemCard>,
+    )
+    expect(container.querySelector('.todaycard-title')).toBeNull()
+    expect(screen.queryByRole('heading')).toBeNull()
+    expect(screen.getByText('MEZO · REGGELI BRIEFING')).toBeInTheDocument()
+    expect(screen.getByText('a prose body')).toBeInTheDocument()
+  })
+
   test('without ctaLabel the card is read-only — no button', () => {
     render(<ItemCard tone="run" emoji="🏃" tag="FUTÁS" title="6 km" facts={[]} logged={false} />)
     expect(screen.queryByRole('button')).toBeNull()
