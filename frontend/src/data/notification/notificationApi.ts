@@ -6,6 +6,7 @@ type TestResponse = components['schemas']['PushTestResponse']
 type NotificationPref = components['schemas']['NotificationPref']
 type NotificationPrefListResponse = components['schemas']['NotificationPrefListResponse']
 type NotificationPrefListRequest = components['schemas']['NotificationPrefListRequest']
+type NotificationScheduleRequest = components['schemas']['NotificationScheduleRequest']
 
 export const notificationApi = {
   register: (body: SubscriptionRequest) =>
@@ -25,5 +26,12 @@ export const notificationApi = {
     apiFetch<void>('/api/notification/pref', {
       method: 'PUT',
       body: JSON.stringify({ prefs } satisfies NotificationPrefListRequest),
+    }),
+  /** Replaces the FE-owned recurring schedule for every category listed in `body.categories`
+   *  (`checkin` / `fuel_slot` only — the backend 400s on anything else). */
+  putSchedule: (body: NotificationScheduleRequest) =>
+    apiFetch<void>('/api/notification/schedule', {
+      method: 'PUT',
+      body: JSON.stringify(body satisfies NotificationScheduleRequest),
     }),
 }
