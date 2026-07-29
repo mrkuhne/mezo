@@ -1,7 +1,252 @@
-import type { FuelDay, SupplementStashItem, Protocol, FuelMeal, FuelSlot, MealItemLine } from '@/data/types'
+import type {
+  FuelDay, SupplementStashItem, Protocol, FuelMeal, FuelSlot, MealItemLine, MealDimension,
+} from '@/data/types'
 import { localDateString } from '@/shared/lib/dates'
 
 const TODAY = localDateString()
+
+// Each meal's top-level `score` is Σ(weight × dimension.score) off its OWN breakdown dimensions,
+// rounded to 2 decimals — never a fabricated flat number (fix wave item 10). Dimensions are declared
+// once below and referenced from BOTH `score` and `breakdown.dimensions`, so the seed can never
+// drift out of sync with the score sheet it renders.
+function weightedScore(dims: MealDimension[]): number {
+  return Math.round(dims.reduce((sum, d) => sum + d.weight * d.score, 0) * 100) / 100
+}
+
+// m1 (Túrós zabkása · áfonyával, breakfast) dimensions — weights: Macro .22 · Rost .10 · WHO .14 ·
+// Zsírminőség .10 · NOVA .18 · Növényi diverzitás .08 · Energia-sűrűség .06 · Context .12 (matches
+// the real MealScoringService rubric, §1). Σ weight×score = .9196 → round(2) = 0.92.
+const m1Dimensions: MealDimension[] = [
+  {
+    id: 'macro',
+    label: 'Kcal & makró arány',
+    weight: 0.22,
+    score: 0.94,
+    color: 'var(--coral)',
+    detail:
+      'P/C/F arány 29/54/19% — pre-Pull Day ablakra textbook. Kcal a napi 18.7%-a, ez egy 4-étkezéses napon ideális reggeli-súly.',
+    macroRatio: { p: 29, c: 54, f: 19 },
+    macroTargets: { p: '25–30%', c: '50–60%', f: '15–25%' },
+    kcalShareOfDay: 18.7,
+  },
+  {
+    id: 'micro',
+    label: 'Rost & mikro',
+    weight: 0.1,
+    score: 0.84,
+    color: 'var(--cat-physiology)',
+    detail:
+      'Rost 9.5g egy adagban — zab + túró kombó, a napi rostcél 78%-a. A Ca/Mg/B12 a WHO-dimenzió alá esik; a heti 64% Mg-status miatt fél evőkanál tökmag itt sokat dobna.',
+    micros: [
+      { name: 'Rost', value: '9.5g', pct: 78, status: 'good' },
+    ],
+  },
+  {
+    id: 'who',
+    label: 'Ajánlások · WHO',
+    weight: 0.14,
+    score: 0.88,
+    color: 'var(--sky)',
+    detail: 'Cukor az energia 8%-a (WHO ≤10%) — a méz adja · só elhanyagolható.',
+    context: [
+      { label: 'Cukor', value: '8 E% / 10 E% limit' },
+      { label: 'Só', value: '0.3 g / 1.5 g keret' },
+    ],
+  },
+  {
+    id: 'fat_quality',
+    label: 'Zsírminőség',
+    weight: 0.1,
+    score: 0.86,
+    color: 'var(--amber-deep)',
+    detail: 'Telített zsír az energia 4%-a · az összzsír 28%-a — a mandula és a túró egyensúlyt tart.',
+    context: [
+      { label: 'Telített E%', value: '4% / 10% limit' },
+      { label: 'Telített/összzsír', value: '28% (ref. 33%)' },
+    ],
+  },
+  {
+    id: 'nova',
+    label: 'Feldolgozottság · NOVA',
+    weight: 0.18,
+    score: 0.92,
+    color: 'var(--cat-tendency)',
+    detail:
+      "5/5 összetevő NOVA 1–3. Túró az egyetlen NOVA 3 (kulturált tejtermék) — élelmiszerként ez nem 'ultra-processed'. Zéró additívum, zéró ipari rekonstrukció.",
+    nova: {
+      dominant: 1,
+      stack: [
+        { nova: 1, pct: 78, label: 'Zab · áfonya · mandula' },
+        { nova: 2, pct: 6, label: 'Méz' },
+        { nova: 3, pct: 16, label: 'Túró' },
+        { nova: 4, pct: 0, label: '—' },
+      ],
+      items: [
+        { name: 'Zabpehely 70g', nova: 1 },
+        { name: 'Túró 200g', nova: 3 },
+        { name: 'Áfonya 80g', nova: 1 },
+        { name: 'Méz 12g', nova: 2 },
+        { name: 'Mandula 15g', nova: 1 },
+      ],
+    },
+  },
+  {
+    id: 'plant_diversity',
+    label: 'Növényi diverzitás',
+    weight: 0.08,
+    score: 1.0,
+    color: 'var(--sage-deep)',
+    detail: '3 különböző növényi kategória a 3-s célhoz — zab, áfonya, mandula.',
+    context: [
+      { label: 'Növényi kategóriák', value: 'grains · fruits · nuts_seeds' },
+      { label: 'Összesen', value: '3 / 3 cél' },
+    ],
+  },
+  {
+    id: 'energy_density',
+    label: 'Energia-sűrűség',
+    weight: 0.06,
+    score: 0.98,
+    color: 'var(--lav)',
+    detail: '154 kcal/100g (150 alatt teljes pont, 400 felett nulla) — a túró és az áfonya víztartalma húzza le.',
+    context: [
+      { label: 'Sűrűség', value: '154 kcal/100g' },
+      { label: 'Lefedettség', value: '100% gramm-alapú' },
+    ],
+  },
+  {
+    id: 'context',
+    label: 'Időzítés & kontextus',
+    weight: 0.12,
+    score: 0.96,
+    color: 'var(--cat-preference)',
+    detail:
+      '07:15 reggeli · Pull Day T-10h · Reta D3 reggel az étvágy még magas. Lassú szénhidrát + komplett protein együtt délig stabilan tart — a 11:00-s pacing-alert így csendben marad.',
+    context: [
+      { label: 'Időzítés', value: 'Pre-Pull Day · T-10h' },
+      { label: 'Reta fázis', value: 'D3 reggel · étvágy ↑' },
+      { label: 'Sport', value: 'Csü volleyball T-12h' },
+      { label: 'Glikémia', value: 'Slow-release' },
+    ],
+  },
+]
+
+// m2 (Csirke + édesburgonya + spenót, lunch) dimensions — same weight rubric as m1.
+// Σ weight×score = .9112 → round(2) = 0.91.
+const m2Dimensions: MealDimension[] = [
+  {
+    id: 'macro',
+    label: 'Kcal & makró arány',
+    weight: 0.22,
+    score: 0.86,
+    color: 'var(--coral)',
+    detail:
+      'P/C/F 32/41/23%. Pre-workout ablakra a C kicsit alacsony — 80g körüli szénhidrát ideálisabb lenne PR-attempt-re. De a kombó biztonságos.',
+    macroRatio: { p: 32, c: 41, f: 23 },
+    macroTargets: { p: '25–30%', c: '50–60%', f: '15–25%' },
+    kcalShareOfDay: 23.2,
+    notes: 'C kicsit alacsony pre-workout ablakra.',
+  },
+  {
+    id: 'micro',
+    label: 'Rost & mikro',
+    weight: 0.1,
+    score: 0.92,
+    color: 'var(--cat-physiology)',
+    detail:
+      'Rost 9.6g — édesburgonya + spenót, a napi rostcél 80%-a. A K/Fe/Vit A/folát/B6 a WHO-dimenzió alá esik — a hét egyik legjobb mikro-profilja.',
+    micros: [
+      { name: 'Rost', value: '9.6g', pct: 80, status: 'good' },
+    ],
+  },
+  {
+    id: 'who',
+    label: 'Ajánlások · WHO',
+    weight: 0.14,
+    score: 0.94,
+    color: 'var(--sky)',
+    detail: 'Cukor az energia 3%-a (WHO ≤10%) · só a keret negyedén — tiszta whole-foods profil.',
+    context: [
+      { label: 'Cukor', value: '3 E% / 10 E% limit' },
+      { label: 'Só', value: '0.4 g / 1.5 g keret' },
+    ],
+  },
+  {
+    id: 'fat_quality',
+    label: 'Zsírminőség',
+    weight: 0.1,
+    score: 0.92,
+    color: 'var(--amber-deep)',
+    detail: 'Telített zsír az energia 4%-a · az összzsír 18%-a — olívaolaj-dominált, kedvező profil.',
+    context: [
+      { label: 'Telített E%', value: '4% / 10% limit' },
+      { label: 'Telített/összzsír', value: '18% (ref. 33%)' },
+    ],
+  },
+  {
+    id: 'nova',
+    label: 'Feldolgozottság · NOVA',
+    weight: 0.18,
+    score: 0.96,
+    color: 'var(--cat-tendency)',
+    detail:
+      '100% whole foods. Olívaolaj az egyetlen NOVA 2 (kulináris feldolgozott alapanyag) — ez kívánatos, nem aggályos.',
+    nova: {
+      dominant: 1,
+      stack: [
+        { nova: 1, pct: 94, label: 'Csirke · burgonya · spenót' },
+        { nova: 2, pct: 6, label: 'Olívaolaj' },
+        { nova: 3, pct: 0, label: '—' },
+        { nova: 4, pct: 0, label: '—' },
+      ],
+      items: [
+        { name: 'Csirkemell 200g', nova: 1 },
+        { name: 'Édesburgonya 250g', nova: 1 },
+        { name: 'Spenót 100g', nova: 1 },
+        { name: 'Olívaolaj 8g', nova: 2 },
+      ],
+    },
+  },
+  {
+    id: 'plant_diversity',
+    label: 'Növényi diverzitás',
+    weight: 0.08,
+    score: 1.0,
+    color: 'var(--sage-deep)',
+    detail: '3 különböző növényi kategória a 3-s célhoz — édesburgonya, spenót, olíva.',
+    context: [
+      { label: 'Növényi kategóriák', value: 'roots_tubers · leafy_greens · fruits' },
+      { label: 'Összesen', value: '3 / 3 cél' },
+    ],
+  },
+  {
+    id: 'energy_density',
+    label: 'Energia-sűrűség',
+    weight: 0.06,
+    score: 1.0,
+    color: 'var(--lav)',
+    detail: '129 kcal/100g (150 alatt teljes pont) — magas víztartalmú, tápanyag-sűrű whole-foods tál.',
+    context: [
+      { label: 'Sűrűség', value: '129 kcal/100g' },
+      { label: 'Lefedettség', value: '100% gramm-alapú' },
+    ],
+  },
+  {
+    id: 'context',
+    label: 'Időzítés & kontextus',
+    weight: 0.12,
+    score: 0.78,
+    color: 'var(--cat-preference)',
+    detail:
+      '13:30 · pre-workout T-3.5h — ablakon belül van, de a határán. Sweet spot 2–3h, és a Pull Day PR-attempt-en egy gyorsabb-emésztésű C-snack 16:00 körül így kötelező (whey+banán már be van időzítve).',
+    context: [
+      { label: 'Időzítés', value: 'Pre-workout · T-3.5h' },
+      { label: 'Reta fázis', value: 'D3 nappal · étvágy magas' },
+      { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
+      { label: 'Glikémia', value: 'Mixed-release' },
+    ],
+  },
+]
 
 export const fuelDay: FuelDay = {
   targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
@@ -16,7 +261,7 @@ export const fuelDay: FuelDay = {
       id: 'm1',
       slot: 'Reggeli · 09:15 · post-workout',
       title: 'Túrós zabkása · áfonyával',
-      score: null,
+      score: weightedScore(m1Dimensions),
       kcal: 580,
       p: 42,
       c: 78,
@@ -34,120 +279,7 @@ export const fuelDay: FuelDay = {
         tagline: null,
         summary:
           'Reggeli-as-engineering. Zab + túró slow-release glikémia délig, áfonya antocianin a Pull Day előtti gyulladás-modulációra. Csak a Mg jött ki rövidre — fél evőkanál tökmag megoldaná.',
-        dimensions: [
-          {
-            id: 'macro',
-            label: 'Kcal & makró arány',
-            weight: 0.22,
-            score: 0.94,
-            color: 'var(--coral)',
-            detail:
-              'P/C/F arány 29/54/19% — pre-Pull Day ablakra textbook. Kcal a napi 18.7%-a, ez egy 4-étkezéses napon ideális reggeli-súly.',
-            macroRatio: { p: 29, c: 54, f: 19 },
-            macroTargets: { p: '25–30%', c: '50–60%', f: '15–25%' },
-            kcalShareOfDay: 18.7,
-          },
-          {
-            id: 'micro',
-            label: 'Rost & mikro',
-            weight: 0.1,
-            score: 0.84,
-            color: 'var(--cat-physiology)',
-            detail:
-              'Rost 9.5g egy adagban — zab + túró kombó, a napi rostcél 78%-a. A Ca/Mg/B12 a WHO-dimenzió alá esik; a heti 64% Mg-status miatt fél evőkanál tökmag itt sokat dobna.',
-            micros: [
-              { name: 'Rost', value: '9.5g', pct: 78, status: 'good' },
-            ],
-          },
-          {
-            id: 'who',
-            label: 'Ajánlások · WHO',
-            weight: 0.14,
-            score: 0.88,
-            color: 'var(--sky)',
-            detail: 'Cukor az energia 8%-a (WHO ≤10%) — a méz adja · só elhanyagolható.',
-            context: [
-              { label: 'Cukor', value: '8 E% / 10 E% limit' },
-              { label: 'Só', value: '0.3 g / 1.5 g keret' },
-            ],
-          },
-          {
-            id: 'fat_quality',
-            label: 'Zsírminőség',
-            weight: 0.1,
-            score: 0.86,
-            color: 'var(--amber-deep)',
-            detail: 'Telített zsír az energia 4%-a · az összzsír 28%-a — a mandula és a túró egyensúlyt tart.',
-            context: [
-              { label: 'Telített E%', value: '4% / 10% limit' },
-              { label: 'Telített/összzsír', value: '28% (ref. 33%)' },
-            ],
-          },
-          {
-            id: 'nova',
-            label: 'Feldolgozottság · NOVA',
-            weight: 0.18,
-            score: 0.92,
-            color: 'var(--cat-tendency)',
-            detail:
-              "5/5 összetevő NOVA 1–3. Túró az egyetlen NOVA 3 (kulturált tejtermék) — élelmiszerként ez nem 'ultra-processed'. Zéró additívum, zéró ipari rekonstrukció.",
-            nova: {
-              dominant: 1,
-              stack: [
-                { nova: 1, pct: 78, label: 'Zab · áfonya · mandula' },
-                { nova: 2, pct: 6, label: 'Méz' },
-                { nova: 3, pct: 16, label: 'Túró' },
-                { nova: 4, pct: 0, label: '—' },
-              ],
-              items: [
-                { name: 'Zabpehely 70g', nova: 1 },
-                { name: 'Túró 200g', nova: 3 },
-                { name: 'Áfonya 80g', nova: 1 },
-                { name: 'Méz 12g', nova: 2 },
-                { name: 'Mandula 15g', nova: 1 },
-              ],
-            },
-          },
-          {
-            id: 'plant_diversity',
-            label: 'Növényi diverzitás',
-            weight: 0.08,
-            score: 1.0,
-            color: 'var(--sage-deep)',
-            detail: '3 különböző növényi kategória a 3-s célhoz — zab, áfonya, mandula.',
-            context: [
-              { label: 'Növényi kategóriák', value: 'grains · fruits · nuts_seeds' },
-              { label: 'Összesen', value: '3 / 3 cél' },
-            ],
-          },
-          {
-            id: 'energy_density',
-            label: 'Energia-sűrűség',
-            weight: 0.06,
-            score: 0.98,
-            color: 'var(--lav)',
-            detail: '154 kcal/100g (150 alatt teljes pont, 400 felett nulla) — a túró és az áfonya víztartalma húzza le.',
-            context: [
-              { label: 'Sűrűség', value: '154 kcal/100g' },
-              { label: 'Lefedettség', value: '100% gramm-alapú' },
-            ],
-          },
-          {
-            id: 'context',
-            label: 'Időzítés & kontextus',
-            weight: 0.12,
-            score: 0.96,
-            color: 'var(--cat-preference)',
-            detail:
-              '07:15 reggeli · Pull Day T-10h · Reta D3 reggel az étvágy még magas. Lassú szénhidrát + komplett protein együtt délig stabilan tart — a 11:00-s pacing-alert így csendben marad.',
-            context: [
-              { label: 'Időzítés', value: 'Pre-Pull Day · T-10h' },
-              { label: 'Reta fázis', value: 'D3 reggel · étvágy ↑' },
-              { label: 'Sport', value: 'Csü volleyball T-12h' },
-              { label: 'Glikémia', value: 'Slow-release' },
-            ],
-          },
-        ],
+        dimensions: m1Dimensions,
         improve: [
           { text: '+½ ek tökmag (~85mg Mg) — heti Mg-status 32% → 48%.', impact: '+0.04 score' },
           { text: '1g fahéj — postprandialis glükóz-válasz simább.', impact: '+0.01 score' },
@@ -165,7 +297,7 @@ export const fuelDay: FuelDay = {
       id: 'm2',
       slot: 'Ebéd · 13:00',
       title: 'Csirke + édesburgonya + spenót',
-      score: null,
+      score: weightedScore(m2Dimensions),
       kcal: 720,
       p: 58,
       c: 74,
@@ -183,120 +315,7 @@ export const fuelDay: FuelDay = {
         tagline: null,
         summary:
           'Whole-foods ebéd, T-3.5h-val a Pull Day előtt. A makró-arány protein-felé húz — Reta D3-on védő, mert biztosítjuk a 220g/nap protein-target tartását, ha a PM étvágy leesik.',
-        dimensions: [
-          {
-            id: 'macro',
-            label: 'Kcal & makró arány',
-            weight: 0.22,
-            score: 0.86,
-            color: 'var(--coral)',
-            detail:
-              'P/C/F 32/41/23%. Pre-workout ablakra a C kicsit alacsony — 80g körüli szénhidrát ideálisabb lenne PR-attempt-re. De a kombó biztonságos.',
-            macroRatio: { p: 32, c: 41, f: 23 },
-            macroTargets: { p: '25–30%', c: '50–60%', f: '15–25%' },
-            kcalShareOfDay: 23.2,
-            notes: 'C kicsit alacsony pre-workout ablakra.',
-          },
-          {
-            id: 'micro',
-            label: 'Rost & mikro',
-            weight: 0.1,
-            score: 0.92,
-            color: 'var(--cat-physiology)',
-            detail:
-              'Rost 9.6g — édesburgonya + spenót, a napi rostcél 80%-a. A K/Fe/Vit A/folát/B6 a WHO-dimenzió alá esik — a hét egyik legjobb mikro-profilja.',
-            micros: [
-              { name: 'Rost', value: '9.6g', pct: 80, status: 'good' },
-            ],
-          },
-          {
-            id: 'who',
-            label: 'Ajánlások · WHO',
-            weight: 0.14,
-            score: 0.94,
-            color: 'var(--sky)',
-            detail: 'Cukor az energia 3%-a (WHO ≤10%) · só a keret negyedén — tiszta whole-foods profil.',
-            context: [
-              { label: 'Cukor', value: '3 E% / 10 E% limit' },
-              { label: 'Só', value: '0.4 g / 1.5 g keret' },
-            ],
-          },
-          {
-            id: 'fat_quality',
-            label: 'Zsírminőség',
-            weight: 0.1,
-            score: 0.92,
-            color: 'var(--amber-deep)',
-            detail: 'Telített zsír az energia 4%-a · az összzsír 18%-a — olívaolaj-dominált, kedvező profil.',
-            context: [
-              { label: 'Telített E%', value: '4% / 10% limit' },
-              { label: 'Telített/összzsír', value: '18% (ref. 33%)' },
-            ],
-          },
-          {
-            id: 'nova',
-            label: 'Feldolgozottság · NOVA',
-            weight: 0.18,
-            score: 0.96,
-            color: 'var(--cat-tendency)',
-            detail:
-              '100% whole foods. Olívaolaj az egyetlen NOVA 2 (kulináris feldolgozott alapanyag) — ez kívánatos, nem aggályos.',
-            nova: {
-              dominant: 1,
-              stack: [
-                { nova: 1, pct: 94, label: 'Csirke · burgonya · spenót' },
-                { nova: 2, pct: 6, label: 'Olívaolaj' },
-                { nova: 3, pct: 0, label: '—' },
-                { nova: 4, pct: 0, label: '—' },
-              ],
-              items: [
-                { name: 'Csirkemell 200g', nova: 1 },
-                { name: 'Édesburgonya 250g', nova: 1 },
-                { name: 'Spenót 100g', nova: 1 },
-                { name: 'Olívaolaj 8g', nova: 2 },
-              ],
-            },
-          },
-          {
-            id: 'plant_diversity',
-            label: 'Növényi diverzitás',
-            weight: 0.08,
-            score: 1.0,
-            color: 'var(--sage-deep)',
-            detail: '3 különböző növényi kategória a 3-s célhoz — édesburgonya, spenót, olíva.',
-            context: [
-              { label: 'Növényi kategóriák', value: 'roots_tubers · leafy_greens · fruits' },
-              { label: 'Összesen', value: '3 / 3 cél' },
-            ],
-          },
-          {
-            id: 'energy_density',
-            label: 'Energia-sűrűség',
-            weight: 0.06,
-            score: 1.0,
-            color: 'var(--lav)',
-            detail: '129 kcal/100g (150 alatt teljes pont) — magas víztartalmú, tápanyag-sűrű whole-foods tál.',
-            context: [
-              { label: 'Sűrűség', value: '129 kcal/100g' },
-              { label: 'Lefedettség', value: '100% gramm-alapú' },
-            ],
-          },
-          {
-            id: 'context',
-            label: 'Időzítés & kontextus',
-            weight: 0.12,
-            score: 0.78,
-            color: 'var(--cat-preference)',
-            detail:
-              '13:30 · pre-workout T-3.5h — ablakon belül van, de a határán. Sweet spot 2–3h, és a Pull Day PR-attempt-en egy gyorsabb-emésztésű C-snack 16:00 körül így kötelező (whey+banán már be van időzítve).',
-            context: [
-              { label: 'Időzítés', value: 'Pre-workout · T-3.5h' },
-              { label: 'Reta fázis', value: 'D3 nappal · étvágy magas' },
-              { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
-              { label: 'Glikémia', value: 'Mixed-release' },
-            ],
-          },
-        ],
+        dimensions: m2Dimensions,
         improve: [
           { text: '+30–40g rizs vagy +1 banán → C 41% → 50% pre-workout ablakra.', impact: '+0.04 score' },
           { text: '+1 ek hummus vagy avokádó — F arány stabil + extra K.', impact: '+0.01 score' },

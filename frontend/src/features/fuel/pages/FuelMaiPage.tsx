@@ -1,14 +1,20 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
-import { useFuelDay, useFuelTimeline, useMealCoach, useProtocol, useReplanScenarios, useTodayScenario, useWaterActions } from '@/data/hooks'
+import {
+  useFuelDay, useFuelTimeline, useMealCoach, useMedication, useProtocol, useReplanScenarios, useTodayScenario,
+  useWaterActions,
+} from '@/data/hooks'
+import { daySpan, unwrapDayMinute } from '@/data/fuel/fuelConfig'
+import { buildDayZones, isMealSlot } from '@/features/fuel/logic/dayZones'
+import { pickHeroWindow } from '@/features/fuel/logic/heroWindow'
+import { NowWindowCard } from '@/features/fuel/components/NowWindowCard'
+import { MissedStrip } from '@/features/fuel/components/MissedStrip'
+import { DayBudgetCard } from '@/features/fuel/components/DayBudgetCard'
+import { DayZoneCard } from '@/features/fuel/components/DayZoneCard'
+import { ZoneSlotRow } from '@/features/fuel/components/ZoneSlotRow'
 import type { LogMealPrefill } from '@/features/fuel/sheets/LogMealSheet'
 import { Icon } from '@/shared/ui/Icon'
-import { RetaPhaseBar } from '@/shared/ui/RetaPhaseBar'
-import { ProgressBar } from '@/shared/ui/ProgressBar'
-import { pct } from '@/shared/lib/pct'
-import { KcalGauge } from '@/features/fuel/components/KcalGauge'
-import { FuelTimeline } from '@/features/fuel/components/FuelTimeline'
-import { PacingCard } from '@/features/fuel/components/PacingCard'
 import { MealScoreSheet } from '@/features/fuel/sheets/MealScoreSheet'
 import { ReplanSheet } from '@/features/fuel/sheets/ReplanSheet'
 import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
@@ -17,25 +23,26 @@ import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
 import { EnergyBreakdownSheet, type EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { localDateString } from '@/shared/lib/dates'
 
-// Napiv Mai recomposition (spec §4.4, mezo-8141): pghead-np sage header → RetaPhaseBar →
-// gauge card (KcalGauge + fuelchips + macro soft bars) → aistrip (PacingCard) → timeline
-// (secthead-np + protocol meta + FuelTimeline, unchanged mount) → NEW water .slot →
-// micronutrients. The retired context-strip card's gym/vb data lives on in the timeline's
-// workout/sport blocks; its coffee/kitchen cells moved into .fuelchips. The old MacroHero card
-// is gone (kcal → gauge, macro cells → .macror, water → the water slot); it was deleted in S8
-// once this page (its last consumer) dropped it.
+// Guided recomposition (spec 2026-07-28, mezo-rrtj): one-line header + Reta micro-strip → the
+// NowWindowCard hero (the day's single open decision) → MissedStrip → DayBudgetCard (remaining kcal,
+// "honnan a napi cél" chips, named macro rows incl. water) → napszak DayZoneCards → protocol footer.
+// Retired here: the "Mai cél" card + KcalGauge (they printed the SAME number twice), the static-seed
+// PacingCard prose and the static-seed weekly micronutrients, and the flat FuelTimeline/SlotCard
+// chain (its behaviour lives in ZoneSlotRow). Nothing that had a real source was dropped.
+// Phase class per cycle.week cell's OWN phaseKey (fix wave item 1) — never re-hardcoded, so this
+// can never disagree with the medication cycle FuelMedicationPage renders for the SAME day.
+const RETA_PHASE_CLS: Record<string, string> = { peak: 'pk', stable: 'stb', trough: 'tr' }
+
 export function FuelMaiPage() {
+  const navigate = useNavigate()
   const { fuel } = useFuelDay()
-  const { plan, budget, energyBreakdown, getScoredMeal } = useFuelTimeline()
-  // Coach verdicts ride a SEPARATE request so the deterministic timeline never waits on
-  // an LLM roundtrip; the card lines simply appear once they land (mezo-mr4n).
-  const { verdicts } = useMealCoach(localDateString())
-  const getTagline = (slot: Parameters<typeof getScoredMeal>[0]) => {
-    const meal = getScoredMeal(slot)
-    return meal ? (verdicts[meal.id]?.tagline ?? null) : null
-  }
+  const { plan, budget, blocks, weightKg, energyBreakdown, wake, bed, nowHHmm, getScoredMeal } = useFuelTimeline()
+  // Coach verdicts ride a SEPARATE request so the deterministic day never waits on an LLM
+  // roundtrip; `isPending` is what makes that expensive call visible (mezo-rrtj).
+  const { verdicts, isPending: coachPending } = useMealCoach(localDateString())
   const { protocol } = useProtocol()
   const { retaDay } = useTodayScenario()
+  const { cycle: medicationCycle } = useMedication()
   const { logWater } = useWaterActions()
   // Honest-empty in real mode (replan engine is P8) — no scenarios, no Replan CTA (mezo-t16y.4).
   const { scenarios: replanScenarios } = useReplanScenarios()
@@ -50,15 +57,23 @@ export function FuelMaiPage() {
   const [logPrefill, setLogPrefill] = useState<LogMealPrefill>(null)
   const [logInitialSlot, setLogInitialSlot] = useState<MealSlot | undefined>(undefined)
 
-  const doneCount = plan.slots.filter(s => s.state === 'done').length
-  const waterPct = pct(fuel.consumed.water, fuel.targets.water)
-  // Static-fallback energy (real mode, no BMR → tdeeBootstrap null): plan.energy.base equals the FULL
-  // segment kcal and activity/balance are 0, so the Alaphő/Mozgás/Deficit chips are meaningless — the
-  // card then shows the target alone. The dynamic path (any activity burn or goal balance) keeps them.
+  const zones = buildDayZones({ slots: plan.slots, wake, bed, blocks, weightKg })
+  const { hero, missed } = pickHeroWindow({
+    slots: plan.slots, blocks, budget, consumed: { kcal: fuel.consumed.kcal, p: fuel.consumed.p }, nowHHmm,
+  })
+  const windows = plan.slots.filter(isMealSlot)
+  const doneWindows = windows.filter(s => s.state === 'done')
+  // Static-fallback energy (real mode, no BMR): base equals the FULL segment kcal and
+  // activity/balance are 0, so the breakdown chips would be meaningless — hide them.
   const staticEnergy = plan.energy.activity === 0 && plan.energy.balance === 0
+  const { wakeMin: dayWakeMin, span: dayspanMin, crossesMidnight } = daySpan(wake, bed)
+  const nowFrac = Math.min(1, Math.max(0, (unwrapDayMinute(nowHHmm, dayWakeMin, crossesMidnight) - dayWakeMin) / dayspanMin))
 
-  // Tap-to-log a planner slot: a recipe suggestion prefills the sheet from that recipe; a budget-only
-  // window opens the sheet on its mapped slot (label → MealSlot) so the user just picks items.
+  const getTagline = (slot: FuelSlot) => {
+    const meal = getScoredMeal(slot)
+    return meal ? (verdicts[meal.id]?.tagline ?? null) : null
+  }
+
   const openLog = (prefill: LogMealPrefill = null, slot?: MealSlot) => {
     setLogPrefill(prefill)
     setLogInitialSlot(slot)
@@ -68,7 +83,7 @@ export function FuelMaiPage() {
     if (slot.suggestedRecipeId) openLog({ source: 'recipe', recipeId: slot.suggestedRecipeId })
     else openLog(null, slot.slotKey ?? 'snack')
   }
-  // Slot-level AI logging (mezo-53su): launch AiLogSheet locked to the tapped slot's slotKey.
+  const handleLogOther = (slot: FuelSlot) => openLog(null, slot.slotKey ?? 'snack')
   const handleAiLog = (slot: FuelSlot) => {
     setAiSlot(slot.slotKey)
     setAiOpen(true)
@@ -76,11 +91,19 @@ export function FuelMaiPage() {
 
   return (
     <>
-      {/* Header */}
+      {/* Header — one row; the Reta phase is the link to the medication page */}
       <div className="pghead-np sage">
         <div>
-          <div className="over">Fuel · Reta D{retaDay}</div>
-          <h1>Mai pacing</h1>
+          <button
+            type="button"
+            className="over"
+            aria-label="Reta ciklus megnyitása"
+            onClick={() => navigate('/fuel/gyogyszer')}
+            style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer' }}
+          >
+            Fuel · Reta D{retaDay} ›
+          </button>
+          <h1>A mai nap</h1>
         </div>
         <div className="row gap-xs" style={{ flexShrink: 0 }}>
           <button
@@ -104,161 +127,104 @@ export function FuelMaiPage() {
         </div>
       </div>
 
-      {/* Reta phase context */}
-      <RetaPhaseBar day={retaDay} />
-
-      {/* Transparent dynamic target — base heat + activity burn + goal balance (mezo-1oy5) */}
-      <div style={{ padding: '8px 24px 0' }}>
-        <div className="card" style={{ padding: 16 }}>
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span className="eyebrow" style={{ color: 'var(--sage-deep)' }}>Mai cél</span>
-            <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 800, fontSize: 22 }}>{plan.energy.target} kcal</span>
-          </div>
-          {!staticEnergy && (
-            <div className="row gap-xs" style={{ flexWrap: 'wrap', marginTop: 8 }}>
-              <button type="button" className="chx chip-tap" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('base')}>Alaphő {plan.energy.base}</button>
-              <button type="button" className="chx chip-tap" style={{ background: 'var(--wash-amber)', color: 'var(--amber-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('movement')}>Mozgás +{plan.energy.activity}</button>
-              <button type="button" className="chx chip-tap" style={{ background: 'var(--warm)', color: 'var(--coral-deep)' }} onClick={() => energyBreakdown && setEnergyOpen('deficit')}>
-                {plan.energy.balance < 0
-                  ? `Deficit ${Math.abs(plan.energy.balance)}`
-                  : plan.energy.balance > 0
-                    ? `Felesleg +${plan.energy.balance}`
-                    : 'Egyensúly'}
-              </button>
-            </div>
-          )}
+      {/* Honest empty: no cycle yet (real-mode ghost — no medication/doses) renders no strip at all,
+          rather than a fabricated or empty one. */}
+      {medicationCycle.week.length > 0 && (
+        <div className="retamicro" role="img" aria-label={`Reta ciklus — ${retaDay}. nap`}>
+          {medicationCycle.week.map((cell) => (
+            <i
+              key={cell.day}
+              className={`${RETA_PHASE_CLS[cell.phaseKey] ?? ''}${cell.current ? ' cur' : ''}`}
+            />
+          ))}
         </div>
+      )}
+
+      <NowWindowCard
+        hero={hero}
+        onLogMeal={handleLogMeal}
+        onAiLog={handleAiLog}
+        onLogOther={handleLogOther}
+        onLogEmpty={() => openLog()}
+      />
+
+      <MissedStrip slots={missed} onLogMeal={handleLogMeal} />
+
+      <DayBudgetCard
+        consumed={fuel.consumed}
+        budget={budget}
+        waterTarget={fuel.targets.water}
+        energy={plan.energy}
+        staticEnergy={staticEnergy}
+        loggedKcals={doneWindows.map(s => s.kcal ?? 0)}
+        doneCount={doneWindows.length}
+        totalCount={windows.length}
+        nowFrac={hero.kind === 'open' ? nowFrac : null}
+        onOpenEnergy={(section) => energyBreakdown && setEnergyOpen(section)}
+        onLogWater={logWater}
+      />
+
+      {zones.map((zone, zi) => (
+        <DayZoneCard key={zone.key} zone={zone} index={zi}>
+          {zone.slots.map((slot, si) => (
+            <ZoneSlotRow
+              key={`${zone.key}-${si}`}
+              slot={slot}
+              scoredMeal={getScoredMeal(slot)}
+              tagline={getTagline(slot)}
+              coachPending={coachPending}
+              burnKcal={zone.burnKcal}
+              anchored={hero.kind === 'open' && slot === hero.slot}
+              onOpenScore={setScoreMeal}
+              onLogMeal={handleLogMeal}
+              onAiLog={handleAiLog}
+              onOpenStack={() => navigate('/fuel/stack')}
+            />
+          ))}
+        </DayZoneCard>
+      ))}
+
+      {/* Kitchen close / caffeine cutoff — reference data, at the end of the day it belongs to */}
+      <div className="zrow" style={{ margin: '0 24px 9px', background: 'var(--surface)', borderRadius: 20, boxShadow: 'var(--np-shadow-row)' }}>
+        <span className="zf" role="img" aria-label="Konyha" style={{ background: 'var(--warm)' }}>🍽</span>
+        <div className="zt">
+          <div className="a">Konyha zár · {plan.kitchenClose}</div>
+          <div className="b"><span>kávé cutoff {plan.caffeineCutoff}</span></div>
+        </div>
+        <button
+          type="button" className="chip" aria-label="Fuel beállítások"
+          onClick={() => setSettingsOpen(true)} style={{ fontSize: 9, padding: '3px 8px' }}
+        >
+          szerkeszt
+        </button>
       </div>
 
-      {/* Gauge card — kcal gauge + coffee/kitchen chips + macro soft bars */}
-      <div style={{ padding: '16px 24px 12px' }}>
-        <div className="card" style={{ padding: 18 }}>
-          <KcalGauge consumed={fuel.consumed.kcal} target={budget.kcal} />
-
-          <div className="fuelchips">
-            <span className="chx" style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)', cursor: 'default' }}>
-              kávé cutoff {plan.caffeineCutoff}
-            </span>
-            <span className="chx" style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)', cursor: 'default' }}>
-              konyha zár {plan.kitchenClose}
-            </span>
-            <button type="button" className="chip" aria-label="Fuel beállítások" onClick={() => setSettingsOpen(true)} style={{ fontSize: 9, padding: '3px 8px' }}>szerkeszt</button>
-          </div>
-
-          <div className="macror">
-            <div className="mac">
-              <span className="k">Fehérje</span>
-              <span className="bar"><i style={{ width: pct(fuel.consumed.p, budget.p) + '%', background: 'var(--sage)' }} /></span>
-              <span className="v">{fuel.consumed.p} / {budget.p} g</span>
+      {/* Protocol meta — hidden when there is no active protocol yet (real-mode ghost, v0) */}
+      {protocol.version > 0 && (
+        <div className="zrow" style={{ margin: '0 24px 16px', background: 'var(--warm)', borderRadius: 20 }}>
+          <Icon name="sparkle" size={11} color="var(--sage-deep)" />
+          <div className="zt">
+            <div className="a" style={{ fontSize: 11, color: 'var(--sage-deep)' }}>
+              Stack · v{protocol.version} · {protocol.builtAt}
             </div>
-            <div className="mac">
-              <span className="k">Szénhidrát</span>
-              <span className="bar"><i style={{ width: pct(fuel.consumed.c, budget.c) + '%', background: 'var(--amber)' }} /></span>
-              <span className="v">{fuel.consumed.c} / {budget.c} g</span>
-            </div>
-            <div className="mac">
-              <span className="k">Zsír</span>
-              <span className="bar"><i style={{ width: pct(fuel.consumed.f, budget.f) + '%', background: 'var(--lav)' }} /></span>
-              <span className="v">{fuel.consumed.f} / {budget.f} g</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Pacing insight */}
-      <PacingCard pacing={fuel.pacing} />
-
-      {/* Timeline — meals + supplements + workout/sport blocks (gym/vb context now lives here) */}
-      <div style={{ padding: '16px 24px 8px' }}>
-        <div className="secthead-np">
-          <h3>Mai timeline</h3>
-          <span>{doneCount}/{plan.slots.length} slot</span>
-        </div>
-        {/* Protocol meta row — hidden when there is no active protocol yet (real-mode ghost, v0) */}
-        {protocol.version > 0 && (
-          <div
-            className="row gap-sm"
-            style={{
-              padding: '8px 10px',
-              marginBottom: 12,
-              borderRadius: 14,
-              background: 'var(--warm)',
-              alignItems: 'center',
-            }}
-          >
-            <Icon name="sparkle" size={11} color="var(--sage-deep)" />
-            <div className="col flex-1" style={{ minWidth: 0 }}>
-              <span className="label-mono" style={{ fontSize: 9, color: 'var(--sage-deep)' }}>
-                Stack · v{protocol.version} · {protocol.builtAt}
-              </span>
-              <span className="label-mono text-tertiary" style={{ fontSize: 8, marginTop: 1 }}>
+            <div className="b">
+              <span>
                 {protocol.lastReplanReason
                   ? '↳ ' + protocol.lastReplanReason
                   : protocol.itemCount + ' item · conf ' + (protocol.confidence * 100).toFixed(0) + '%'}
               </span>
             </div>
-            {replanScenarios.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setReplanOpen(true)}
-                className="chx"
-                style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
-              >
-                <Icon name="tool" size={10} /> Replan
-              </button>
-            )}
           </div>
-        )}
-        <FuelTimeline slots={plan.slots} getScoredMeal={getScoredMeal} getTagline={getTagline} onOpenScore={setScoreMeal} onLogMeal={handleLogMeal} onAiLog={handleAiLog} />
-      </div>
-
-      {/* Water — NEW dedicated slot (replaces MacroHero's water row) */}
-      <div style={{ padding: '0 24px 8px' }}>
-        <div className="slot">
-          <span className="fav" role="img" aria-label="Víz" style={{ background: 'var(--wash-run)' }}>💧</span>
-          <div className="tx">
-            <div className="t1">Víz · {fuel.consumed.water} / {fuel.targets.water} ml</div>
-            <div className="mrow">{waterPct.toFixed(0)}% · cél</div>
-          </div>
-          <div className="row gap-xs" style={{ flexShrink: 0 }}>
-            {[250, 500].map(ml => (
-              <button
-                key={ml}
-                type="button"
-                className="chx"
-                aria-label={`Víz +${ml} ml`}
-                style={{ background: 'var(--wash-run)', color: 'var(--tag-run)' }}
-                onClick={() => logWater(ml)}
-              >
-                +{ml}
-              </button>
-            ))}
-          </div>
+          {replanScenarios.length > 0 && (
+            <button
+              type="button" onClick={() => setReplanOpen(true)} className="chx"
+              style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
+            >
+              <Icon name="tool" size={10} /> Replan
+            </button>
+          )}
         </div>
-      </div>
-
-      {/* Micronutrients */}
-      <div style={{ padding: '16px 24px 24px' }}>
-        <div className="eyebrow" style={{ marginBottom: 12 }}>Mikrotápanyagok · heti</div>
-        <div className="card" style={{ padding: 14 }}>
-          <div className="col gap-md">
-            {fuel.micronutrients.map((n, i) => (
-              <div key={i} className="row gap-md">
-                <span
-                  className="label-mono"
-                  style={{ width: 36, color: n.pct < 70 ? 'var(--warning)' : 'var(--text-primary)' }}
-                >
-                  {n.name}
-                </span>
-                <ProgressBar className="flex-1" value={n.pct} tone={n.pct < 70 ? 'warning' : 'glow'} />
-                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)', width: 56, textAlign: 'right' }}>
-                  {n.pct}% · {n.target}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      )}
 
       {scoreMeal && <MealScoreSheet meal={scoreMeal} onClose={() => setScoreMeal(null)} />}
       {replanOpen && <ReplanSheet onClose={() => setReplanOpen(false)} />}

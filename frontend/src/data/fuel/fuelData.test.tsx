@@ -16,7 +16,9 @@ test('useFuelDay returns macros, 2 logged meals, micronutrients', () => {
   expect(result.current.fuel.targets.kcal).toBe(3100)
   expect(result.current.fuel.meals).toHaveLength(2)
   expect(result.current.fuel.meals[0].breakdown?.dimensions).toHaveLength(8)
-  expect(result.current.fuel.meals[1].score).toBeNull() // logged-but-unscored (score computed on demand)
+  // Both seed meals now carry a real score — Σ(weight × dimension.score) off their OWN breakdown
+  // (fix wave item 10), never a null placeholder or a fabricated flat number.
+  expect(result.current.fuel.meals[1].score).toBeCloseTo(0.91, 2)
   expect(result.current.fuel.micronutrients).toHaveLength(5)
 })
 test('useFuelTimeline returns a computed plan with one now-slot + getScoredMeal works', () => {
@@ -44,7 +46,7 @@ test('useStack returns 9 stash items, useProtocol returns v3', () => {
   expect(renderHook(() => useProtocol(), { wrapper: QueryWrapper }).result.current.protocol.version).toBe(3)
 })
 
-test('every seed meal carries structured mealItems + mealDate and a null pending score', async () => {
+test('every seed meal carries structured mealItems + mealDate and a score matching its own breakdown', async () => {
   const { fuelDay } = await import('@/data/fuel/fuel')
   for (const m of fuelDay.meals) {
     expect(Array.isArray(m.mealItems)).toBe(true)
@@ -53,7 +55,11 @@ test('every seed meal carries structured mealItems + mealDate and a null pending
     expect(m.mealItems[0]).toHaveProperty('contribution')
     expect(typeof m.mealDate).toBe('string')
     expect(typeof m.loggedAt).toBe('string')
-    expect(m.score).toBeNull()
+    // score is Σ(weight × dimension.score) off the meal's OWN breakdown (fix wave item 10) —
+    // never null/fabricated; recompute it here so the seed can never silently drift from its
+    // own dimensions.
+    const expected = m.breakdown!.dimensions.reduce((sum, d) => sum + d.weight * d.score, 0)
+    expect(m.score).toBeCloseTo(Math.round(expected * 100) / 100, 2)
   }
 })
 

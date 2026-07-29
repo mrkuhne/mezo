@@ -157,5 +157,7 @@ export function useFuelTimeline(date: string = localDateString()) {
     goalLabel: goal?.title ?? 'Cél',
   })
 
-  return { plan, budget, blocks, weightKg, energyBreakdown, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
+  // wake/bed/nowHHmm are returned so view-side zone math never re-derives the day anchor and never
+  // reads the wall clock itself (mock mode must stay deterministic — MOCK_NOW_HHMM). Additive.
+  return { plan, budget, blocks, weightKg, energyBreakdown, wake, bed, nowHHmm, getScoredMeal: (s: FuelSlot) => getScoredMeal(s, fuel.meals) }
 }

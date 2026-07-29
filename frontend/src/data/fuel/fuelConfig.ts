@@ -37,3 +37,47 @@ export function toHHmm(min: number): string {
   const m = clamped % 60
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
+
+// ── Wake→bed day span (mezo-rrtj fix wave item 8) ───────────────────────────────────────────────
+// ONE shared midnight-crossing predicate, used everywhere a wall-clock time needs to be placed on
+// the day's continuous minute axis (dayZones' zone buckets, FuelMaiPage's now-position pin). The
+// previous `bedMin > 1440` re-derivation disagreed with this predicate exactly when bed === '00:00'
+// (toMin('00:00') = 0 ⇒ unwrapped bedMin lands at EXACTLY 1440, so `> 1440` misses it) — always
+// detect the crossing from `toMin(bed) <= toMin(wake)` instead, and unwrap through this helper.
+export interface DaySpan {
+  wakeMin: number
+  /** Unwrapped bed minute — may exceed 1440 on a midnight-crossing day. */
+  bedMin: number
+  span: number
+  crossesMidnight: boolean
+}
+
+/** The wake→bed span in minutes, unwrapping bed past midnight when it is at/before wake. */
+export function daySpan(wake: string, bed: string): DaySpan {
+  const wakeMin = toMin(wake)
+  const crossesMidnight = toMin(bed) <= wakeMin
+  const bedMin = crossesMidnight ? toMin(bed) + 1440 : toMin(bed)
+  return { wakeMin, bedMin, span: Math.max(1, bedMin - wakeMin), crossesMidnight }
+}
+
+/** Unwrap an 'HH:mm' onto the same continuous minute axis as `daySpan`'s wakeMin — only past
+ *  midnight when the DAY itself crosses midnight; otherwise an early-morning time (before wake)
+ *  clamps forward into the first zone instead of jumping a day. */
+export function unwrapDayMinute(hhmm: string, wakeMin: number, crossesMidnight: boolean): number {
+  const raw = toMin(hhmm)
+  return crossesMidnight && raw < wakeMin ? raw + 1440 : raw
+}
+
+// ── Time-of-day zones (mezo-rrtj) ────────────────────────────────────────────
+// The Mai page groups the day's slots into four napszak zones. Boundaries are FRACTIONS of the
+// user's wake→bed span (never wall-clock constants): wake/bed are owned by the sleep goal, so an
+// early riser and a night owl must both get sensible buckets. Tuned on the reference day
+// (06:45→23:00) so 13:00 lunch lands in `Dél`, a 17:00 gym in `Délután` and a 19:00 dinner in `Este`.
+export const ZONE_KEYS = ['morning', 'midday', 'afternoon', 'evening'] as const
+export type ZoneKeyName = (typeof ZONE_KEYS)[number]
+export const ZONE_FRACTIONS: Record<ZoneKeyName, number> = {
+  morning: 0, midday: 0.30, afternoon: 0.52, evening: 0.72,
+}
+export const ZONE_LABELS: Record<ZoneKeyName, string> = {
+  morning: 'Reggel', midday: 'Dél', afternoon: 'Délután', evening: 'Este',
+}
