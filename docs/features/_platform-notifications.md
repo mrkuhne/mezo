@@ -91,8 +91,15 @@ settings list beside it that cannot work.
 **Honest limits, stated plainly:** the mockup's single "Heti terv + memoir" settings row is actually
 **two independent rows/categories** (`weekly`, `memoir`) in the real 11-key catalog — the mockup
 compressed them for space, the catalog does not. `midday` and `memoir` keep the mockup's **fixed
-static sub-lines** (their anchors are backend CONSTANTS — 12:30, Sunday 19:00 — not per-day data, so
-there is nothing to derive). Several mockup copy specifics were **deliberately dropped** because
+static sub-lines** (their anchors are not per-day data, so there is nothing to derive). **Known
+15-minute drift in that FE copy:** since the prose-generation grace (§9 trap #6) moved the real
+anchors to 12:45 / 19:15, `memoir`'s `NOTIFICATION_CATEGORY_META.description` (`"Vasárnap este
+19:00"`) and `notificationForecast.ts`'s `MIDDAY_HHMM`/`MEMOIR_HHMM` preview constants now name a
+minute 15 minutes before the push actually arrives. `midday`/`weekly`/`briefing` copy is vague
+enough ("Dél körül", "Hétfő reggel, ébredéskor") to stay true, and the preview's sparkline buckets by
+hour so it is unaffected — only `memoir`'s literal `19:00` and the dense-window minutes are off.
+Left deliberately unchanged in the fix wave (backend-config-derived minutes should not be
+re-hardcoded on the FE); the honest fix is to serve the resolved anchor rather than mirror it. Several mockup copy specifics were **deliberately dropped** because
 supplying them would mean inventing a number the spec's §6 copy rules forbid — e.g. the napzárás
 notification's XP total is tracked as a separate follow-up bd issue, not fabricated here.
 
@@ -116,11 +123,14 @@ notification's XP total is tracked as a separate follow-up bd issue, not fabrica
          a) backend-native   gym_schedule_slot/sport_schedule_slot · medication cycle ·
                               RitualService (opensAt/prepStartsAt/bedTime), optional via ObjectProvider
          b) prose readiness  briefing/heartbeat_note(midday)/weekly_suggestion/memoir row EXISTS
-                              for the day → excerpted (never a new LLM call)
-         c) FE snapshot       today's live notification_schedule rows (weekday match or NULL=every day)
+                              for the day → excerpted (never a new LLM call); the anchor is pushed
+                              PAST its own generator's cron minute when the two collide (§9 trap #6)
+         c) FE snapshot       today's live notification_schedule rows (weekday match or NULL=every day),
+                              each row's category + time individually guarded (§9 trap #7)
     2. NotificationPrefService.effectiveFor(owner)  → all 11 categories, stored row or code default
     3. DueEvaluator.due(nowMinute, prefs, anchors, catchUpMinutes)   — PURE, no collaborators
-         fires when (anchorMinute − leadMinutes) − nowMinute ∈ [0, catchUpMinutes)
+         fires when nowMinute − (anchorMinute − leadMinutes) ∈ [0, catchUpMinutes)
+         — a BACKWARD window: on time, plus (catchUpMinutes − 1) recovered LATE minutes
     4. push_log dedup on (created_by, log_date, dedup_key)  → already sent today: skip
     5. writeLog(...) THEN pushDispatchExecutor.dispatch(...)   — log BEFORE the async send, always
     6. [PushDispatchExecutor, @Async, separate bean]  → PushSender.sendToAllDevices(...) → WebPushClient
@@ -203,10 +213,10 @@ FE-written — pinned by `NotificationCategoryTest` against spec §6:
 | 3 | `medication` | ON | 0 | no | `mezo.notification.medication-time` (08:00) on a cycle day |
 | 4 | `ritual` | ON | 0 | no | `RitualService` `opensAt` |
 | 5 | `lights_out` | ON | 0 | no | `RitualService` `bedTime` |
-| 6 | `weekly` | ON | 0 | no | Monday, wake anchor |
-| 7 | `memoir` | ON | 0 | no | Sunday 19:00 |
+| 6 | `weekly` | ON | 0 | no | Monday, wake anchor — **or `weekly.cron` + grace when wake lands at/before it** (→ 06:15 for a default 06:00 waker; §9 trap #6) |
+| 7 | `memoir` | ON | 0 | no | Sunday, **`memoir.cron` + grace = 19:15** (preferred slot 19:00) |
 | 8 | `wind_down` | OFF | 0 | no | `RitualService` `prepStartsAt` |
-| 9 | `midday` | OFF | 0 | no | 12:30 |
+| 9 | `midday` | OFF | 0 | no | **`heartbeat.midday-cron` + grace = 12:45** (preferred slot 12:30) |
 | 10 | `checkin` | OFF | 0 | **yes** | FE snapshot (`data/today/checkins.ts`) |
 | 11 | `fuel_slot` | OFF | 0 | **yes** | FE snapshot (`buildProtocol`) |
 
@@ -220,8 +230,8 @@ a second source of truth for the same minute (class javadoc, `NotificationCatego
 | Class | Responsibility |
 |---|---|
 | `NotificationCategory` | the 11-key catalog enum (above) |
-| `DueEvaluator` | **pure**, no collaborators — `(anchorMinute − lead) − nowMinute ∈ [0, catchUpMinutes)`. Deliberately does not normalize a negative fire minute into the previous evening — the honest answer for such a combination is that it never fires (`DueEvaluator.java:28-32`) |
-| `AnchorResolver` | the impure half — resolves all 11 categories' anchors for one owner+day into an `AnchorSet`; see §9 for its five documented traps |
+| `DueEvaluator` | **pure**, no collaborators — a **backward** window: `nowMinute − (anchorMinute − lead) ∈ [0, catchUpMinutes)`, i.e. on time plus one recovered late minute at the default width 2 (§9). Deliberately does not normalize a negative fire minute into the previous evening — the honest answer for such a combination is that it never fires |
+| `AnchorResolver` | the impure half — resolves all 11 categories' anchors for one owner+day into an `AnchorSet`; see §9 for its seven documented traps |
 | `NotificationDispatchJob` | the per-minute `@Scheduled` cron — DB-only on the scheduler thread, hands the send to `PushDispatchExecutor` |
 | `PushDispatchExecutor` | the `@Async` send handoff — a **separate bean** (§9) |
 | `NotificationPrefService` | `effectiveFor` (all 11, code-default fallback) + `upsert` (per-category, blind-insert-safe) |
@@ -332,12 +342,25 @@ via `onMutate`/`onError` rollback.
 ## 8. Testing
 
 **Backend (integration-first, Postgres) — the N1 webpush-protocol suite is unchanged; N2/N3 add:**
-- `DueEvaluatorTest` (pure, no Spring) — exact minute, catch-up window, outside window, disabled
-  category, lead applied, empty day, weekday match, `weekday=null` every-day rows.
+- `DueEvaluatorTest` (pure, no Spring) — the **backward** catch-up window as a table (exact minute
+  fires; one minute **late** fires; `now == fireMinute + catchUpMinutes`, the far edge, does not;
+  one minute **early** does not), plus two named regression tests for the two halves of the
+  forward-window bug (`testDue_shouldStillFire_whenTheTickWasMissedAndNowIsOneMinutePastTheFireMinute`,
+  `testDue_shouldNotFire_whenNowIsOneMinuteBeforeTheFireMinute`), disabled category, lead applied,
+  empty day, the negative-fire-minute non-wraparound.
 - `NotificationCategoryTest` — pins the 11-key catalog (keys, defaults, leads, `feWritten`) against
   spec §6.
 - `AnchorResolverIT` + `AnchorResolverRitualSwitchOffIT` — per-category anchor resolution against a
-  real Postgres, including the ritual-family absence when `RITUAL_SWITCH` is off.
+  real Postgres, including the ritual-family absence when `RITUAL_SWITCH` is off. Trap #6 is covered
+  from all four sides: `...shouldPushTheWeeklyAnchorPastTheGenerator_whenTheWakeTimeLandsOnTheWeeklyCronMinute`,
+  `...shouldLeaveTheWeeklyAnchorOnWake_whenTheWakeTimeIsWellAfterTheWeeklyCronMinute`,
+  `...shouldAnchorMemoirAfterItsGenerator_whenTheMemoirRowExistsForTheWeek`,
+  `...shouldAnchorMiddayAfterItsGenerator_whenTheMiddayHeartbeatNoteExists`, plus
+  `...shouldLeaveTheBriefingAnchorOnWake_whenItsGeneratorAlreadyRunsBeforeWake` pinning the safe
+  pattern as a deliberate no-op. Trap #7 by
+  `...shouldSkipOnlyTheBadRow_whenAScheduleRowCarriesAnUnparseableTime` (asserts the *other*
+  categories still resolve for that user) and
+  `...shouldSkipTheRow_whenAScheduleRowNamesABackendNativeCategory`.
 - `service/AnchorResolverExcerptTest` — the word-boundary + surrogate-safe prose-excerpt cut, as a
   plain unit test (package-private `excerptProse(text, maxChars)` needs no Spring context).
 - `NotificationDispatchJobIT` — driven directly through `runOnce(date, minute)`, never a real cron
@@ -364,7 +387,9 @@ via `onMutate`/`onError` rollback.
   the code-default seed as the pre-resolve ghost.
 - `data/notification/notificationScheduleWriter.test.ts` — `buildScheduleEntries` (checkin + fuel_slot
   entries), the write-once-per-mount guard, `categories` derived from the entries (never a
-  separately-maintained list), mock mode never reaching the network.
+  separately-maintained list), mock mode never reaching the network, and the **distinct per-slot
+  `/today?checkin=HH:mm` deeplinks** that stop the service worker's `tag` from collapsing the four
+  daily check-ins into one.
 - `features/me/logic/notificationForecast.test.ts` — table-driven, deterministic (no `new Date()`
   inside): per-category anchor resolution, weekday gating (`weekly`=Monday only, `memoir`=Sunday
   only), the dense-window grouping.
@@ -407,7 +432,18 @@ via `onMutate`/`onError` rollback.
   built from the **anchor's** time (`"{category}:{anchorHHmm}"`), never the computed fire minute — so
   changing a category's `leadMinutes` mid-day can never cause something already sent today to
   re-fire under a "new" key.
-- **`AnchorResolver`'s five documented traps** (each one a real, verified bug class, not a
+- **`DueEvaluator`'s catch-up window looks BACKWARD, never forward.** It fires when
+  `nowMinute − (anchorMinute − leadMinutes) ∈ [0, catchUpMinutes)` — the fire minute itself, plus
+  the `catchUpMinutes − 1` minutes **after** it (default width 2 = "on time, or one minute late").
+  The window exists because this job shares a **size-1 scheduler thread** with 18 other crons, so a
+  slow LLM job straddling two ticks is a realistic way to lose a minute. A forward window
+  (`fireMinute − now ∈ [0, catchUp)`) — which is what shipped in N2 and was caught in the final
+  whole-branch review — gets **both** halves wrong: every push goes out **one minute early** (and
+  the `push_log` dedup then suppresses the on-time minute, so the early send is the only send), and
+  the genuinely-missed case `now == fireMinute + 1` **never fires at all**, dropping that anchor for
+  the whole day. **Do not "fix" a perceived double-send by narrowing this window** — the half-open
+  `[0, catchUpMinutes)` shape is deliberate and `push_log` is what prevents a double-send.
+- **`AnchorResolver`'s seven documented traps** (each one a real, verified bug class, not a
   hypothetical):
   1. **Two weekday schemes, converted explicitly, never "harmonised".**
      `gym_schedule_slot`/`sport_schedule_slot.dayOfWeek` is legacy **0=Mon..6=Sun**; the FE-written
@@ -426,11 +462,54 @@ via `onMutate`/`onError` rollback.
      consumer, including this one, reads `SleepAnchorPort`.
   5. **`medication`'s `retaDay == 0` is `MedicationCycleService`'s honest "no dose logged yet" state**
      and is treated as "no anchor today", never as cycle day zero.
+  6. **A prose anchor must never land on (or before) the minute its own content generator runs.**
+     Because a prose anchor exists *only* when the content row exists, and both jobs queue on the
+     **same size-1 scheduler thread** with an LLM call inside each generator, an anchor on the
+     generator's own minute provably finds no row — so the category **never fires, silently, with
+     nothing in the log to explain it**. As shipped in N2 this hit two **default-ON** categories:
+     `memoir` (19:00 anchor vs `mezo.proactive.memoir.cron` `0 0 19 * * SUN`) and `weekly` (wake
+     anchor, config-default **06:00**, vs `mezo.proactive.weekly.cron` `0 0 6 * * MON`), plus
+     default-OFF `midday` (12:30 vs `heartbeat.midday-cron`). `briefing` was the one safe category
+     (generates 05:45, anchors at wake ≈06:00) — and it is the pattern the others now copy.
+     **The fix:** every prose anchor goes through `AnchorResolver.anchorAfterGeneration(...)`, which
+     pushes the anchor to `generatorMinute + mezo.notification.prose-generation-grace-min`
+     (**15**) whenever the preferred anchor lands at or before the generator's minute; otherwise the
+     preferred anchor is left untouched. Two rules make this maintainable: the offset is **config,
+     never a magic number** (do not "tidy" it away), and the generator's minute is read from the
+     generator's **own cron** (`mezo.proactive.*`) via `CronExpression` — the
+     `ProactiveHeartbeatService` precedent — so 06:00/12:30/19:00 are never hardcoded in a second
+     place. For `weekly` this matters especially: the wake anchor is user-configurable, so the grace
+     is relative to the **cron minute**, never blindly added to wake (an 08:20 waker keeps 08:20).
+  7. **One malformed `notification_schedule` row must never silence the whole user.** `resolve()`
+     used to call `LocalTime.parse(row.time)` unguarded, so a single bad `time` threw **before any
+     anchor was returned** — the dispatcher's per-user catch then logged a stack trace **1440×/day**
+     and that user received **nothing at all, from any category, forever**. The contract permits it
+     (`notification.yml` constrains `time` only to `minLength/maxLength: 5`, so `"aa:bb"` validates)
+     and there is no DB CHECK. Each row's `time` parse is now wrapped per-row (`warn` + `continue`),
+     the same defense the `category` lookup already had. The `category` guard additionally rejects a
+     **recognized-but-backend-native** key as defense-in-depth — `NotificationScheduleService`'s
+     `requireFeWritten` is still the real boundary; this only covers a row that arrived some other
+     way (e.g. a manual DB fix).
 - **Prose anchors excerpt, never regenerate.** `briefing`/`midday`/`weekly`/`memoir` exist only when
   their content row already exists for the day (honest absence, not a placeholder); their push body
   is a word-boundary, surrogate-safe cut of the already-generated text
   (`AnchorResolver.excerptProse`, reusing `PushSender.truncateBody`) — no LLM call happens on the
   push path at all (spec §6).
+- **Every check-in slot carries a DISTINCT deeplink, because `push-sw.js` uses `data.url` as the
+  notification `tag`.** A shared tag makes the browser **replace** an already-shown notification, so
+  with a bare `/today` on all four slots the 10:00 check-in silently wiped an undismissed 06:30 one
+  (and collided with `briefing`/`wind_down`/`midday`, which also deeplink to `/today`). The writer
+  therefore emits `/today?checkin=HH:mm` (`notificationScheduleWriter.ts`). **The param is a tag
+  discriminator, not a feature** — `useTodayScenario` reads only its own named params
+  (`day`/`retaDay`/`niggle`/`vulnerable`/`ritual`) and React Router matches on the path, so
+  `?checkin=` is harmlessly ignored; having it open the check-in sheet would be genuinely useful and
+  is a deliberate non-goal here. Fixing this by changing the worker's tag strategy was rejected as
+  the larger, riskier change.
+- **The per-minute dispatch summary logs only when something was dispatched** — at 1440 runs/day an
+  unconditional `info` line adds 1440 lines/day forever and buries the lines that matter
+  (`NotificationDispatchJob.runOnce`, gated on `dispatched > 0`). And `run()` takes **one**
+  `LocalDateTime.now()` and derives both the date and the minute from it: two separate `now()` calls
+  could tear across midnight and log a `00:00` anchor under the previous `log_date`.
 - **This is the app's first per-minute cron, and it has a test-side consequence worth knowing.**
   Leaving the dispatch-job switch on for the whole test context lets the **real** scheduler thread
   tick mid-suite and race an unrelated test class's `ResetDatabase` TRUNCATE — verified as a genuine
@@ -507,7 +586,7 @@ These rules are enforced by convention + this doc, not by a runtime check — a 
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/entity/{PushSubscriptionEntity,NotificationPrefEntity,PushLogEntity,NotificationScheduleEntity}.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/repository/{PushSubscriptionRepository,NotificationPrefRepository,PushLogRepository,NotificationScheduleRepository}.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/notification/controller/NotificationController.java`
-- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/config/NotificationProperties.java` — `mezo.notification.{body-max-chars,medication-time,prose-excerpt-chars,dispatch-cron,catch-up-minutes}`
+- `backend/src/main/java/io/mrkuhne/mezo/feature/notification/config/NotificationProperties.java` — `mezo.notification.{body-max-chars,medication-time,prose-excerpt-chars,dispatch-cron,catch-up-minutes,prose-generation-grace-min}` (the last one reads the generator crons from `mezo.proactive.*` — see §9 trap #6)
 - Migrations: `202607291000_mezo-h4wp.6.1_create_push_subscription.sql`, `202607291400_mezo-h4wp.6.2_create_notification_pref_and_push_log.sql`, `202607291500_mezo-h4wp.6.3_create_notification_schedule.sql` (all under `db/changelog/1.0.0/script/`, registered in `1.0.0/1.0.0_master.yml`)
 - `backend/src/main/resources/messages.properties` — `WEBPUSH_KEY_INVALID`/`WEBPUSH_SIGN_FAILED`/`WEBPUSH_ENCRYPT_FAILED`/`NOTIFICATION_UNKNOWN_CATEGORY`
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `NOTIFICATION_SWITCH`, `NOTIFICATION_DISPATCH_JOB_SWITCH`
