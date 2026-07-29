@@ -40,6 +40,24 @@ class PushSubscriptionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRegister_shouldReviveTheDevice_whenTheSameEndpointIsReRegisteredAfterSoftDelete() {
+        UUID owner = owner();
+        service.register(owner, "https://p.example/svc-revive", "key-1", "auth-1", "iPhone");
+        service.unregister(owner, "https://p.example/svc-revive");
+        assertThat(repository.findByCreatedBy(owner)).isEmpty();
+
+        // THE lockout invariant. The unique index is partial — (created_by, endpoint) WHERE
+        // is_deleted = false — precisely so the soft-deleted row above cannot block this insert.
+        // If that ever regresses, anyone who turns push off can never turn it back on, and the
+        // failure surfaces only as a 500 on the one action a locked-out user would try.
+        service.register(owner, "https://p.example/svc-revive", "key-2", "auth-2", "iPhone");
+
+        var rows = repository.findByCreatedBy(owner);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst().getP256dh()).isEqualTo("key-2");
+    }
+
+    @Test
     void testMarkGone_shouldSoftDeleteRow_whenDeviceReportsGone() {
         UUID owner = owner();
         PushSubscriptionEntity saved = notificationPopulator.subscription(owner, "https://p.example/gone");

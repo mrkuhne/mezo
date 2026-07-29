@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.techcore.webpush;
 
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -23,8 +24,8 @@ import org.springframework.web.client.RestClient;
  * service, an oversized payload — must not abort the rest. Every failure path, including the
  * crypto exceptions {@link VapidSigner} and {@link Aes128GcmEncryptor} raise, is caught here and
  * turned into a {@link WebPushResult}; none of their {@code HttpStatus} metadata reaches a client
- * on this outbound path, so it is not consulted — only the {@code SystemMessage} code would be,
- * and only if a cause needed distinguishing (none currently do).
+ * on this outbound path, so it is not consulted — the {@code SystemMessage} <b>code</b> is, and
+ * exactly one code is distinguished ({@link #resultFor}).
  */
 @Slf4j
 @Component
@@ -32,6 +33,14 @@ public class WebPushClient {
 
     /** How much of a push endpoint (a capability URL) is safe to put in a log line. */
     private static final int ENDPOINT_LOG_PREFIX_LEN = 40;
+
+    /**
+     * The one {@code SystemMessage} code on this path that means <i>this device is permanently
+     * undeliverable</i> — see {@link #resultFor}. Kept as a literal rather than shared with the
+     * crypto classes on purpose: those raise it as a validation outcome, this reads it as a
+     * pruning decision, and the two must not drift into one constant that looks safe to reuse.
+     */
+    private static final String KEY_INVALID_CODE = "WEBPUSH_KEY_INVALID";
 
     /**
      * {@link Aes128GcmEncryptor#encrypt} emits {@code 86 (RFC 8188 header) + plaintext.length + 1
@@ -77,7 +86,9 @@ public class WebPushClient {
     /**
      * Encrypts {@code payloadJson} for one subscription and POSTs it to the subscription's
      * endpoint. Never throws — every failure, including a thrown crypto or transport exception,
-     * is mapped to {@link WebPushResult#FAILED}.
+     * is mapped to a {@link WebPushResult} ({@link WebPushResult#FAILED}, or
+     * {@link WebPushResult#GONE} for the one permanently-undeliverable cause, see
+     * {@link #resultFor}).
      */
     public WebPushResult send(WebPushSubscriptionKeys keys, String payloadJson) {
         byte[] plaintext = payloadJson.getBytes(StandardCharsets.UTF_8);
@@ -110,8 +121,39 @@ public class WebPushClient {
             // message only.
             log.warn("Push send failed for endpoint {}... ({}): {}",
                 logPrefix(keys.endpoint()), e.getClass().getSimpleName(), scrub(e.getMessage()));
-            return WebPushResult.FAILED;
+            return resultFor(e);
         }
+    }
+
+    /**
+     * Classifies a thrown failure as prunable or merely failed.
+     *
+     * <p>{@code WEBPUSH_KEY_INVALID} is the only code here that is <b>both</b> permanent and
+     * attributable to the subscription's own key material: nothing but a fresh subscription can
+     * ever fix a malformed {@code p256dh}/{@code auth}, and register-time validation is only
+     * {@code minLength:1}, so such a row would otherwise fail on every send forever — a device
+     * that can never deliver and can never be pruned (N2's per-minute job would warn-log it until
+     * someone edits the database). It therefore becomes {@link WebPushResult#GONE}, which
+     * {@code PushSender} soft-deletes.
+     *
+     * <p><b>Everything else stays {@link WebPushResult#FAILED}, and that boundary is load-bearing.</b>
+     * {@code WEBPUSH_SIGN_FAILED} / {@code WEBPUSH_ENCRYPT_FAILED} are <i>our</i> misconfiguration,
+     * not the device's: the {@code dummy-vapid-private} default raises {@code WEBPUSH_SIGN_FAILED}
+     * for <i>every</i> device, so pruning on it would wipe the entire subscription table on the
+     * first push after a bad deploy. Pinned by
+     * {@code WebPushClientIT.testSend_shouldReturnFailed_whenOurOwnVapidKeyIsMisconfigured}.
+     *
+     * <p>Switched on the {@code SystemMessage} code, never on {@link
+     * SystemRuntimeErrorException#getStatus()}: on this outbound path no status ever reaches
+     * {@code GlobalExceptionHandler}, so the 400/500 split carries no meaning here.
+     */
+    private static WebPushResult resultFor(Exception e) {
+        if (e instanceof SystemRuntimeErrorException systemError
+            && systemError.getMessages().stream()
+                .anyMatch(message -> KEY_INVALID_CODE.equals(message.getCode()))) {
+            return WebPushResult.GONE;
+        }
+        return WebPushResult.FAILED;
     }
 
     private WebPushResult mapStatus(int status, String endpoint) {

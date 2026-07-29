@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.notification.repository.PushSubscriptionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +28,14 @@ class NotificationApiIT extends ApiIntegrationTest {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
     }
 
+    /** Real (RFC 8291 §5) key material, not merely valid-looking: a wrong-width {@code p256dh}
+     *  raises {@code WEBPUSH_KEY_INVALID}, which the client maps to {@code GONE}, so a fake key
+     *  would silently turn the send test below into a device-pruning test. */
     private PushSubscriptionRequest request(String endpoint) {
         PushSubscriptionRequest r = new PushSubscriptionRequest();
         r.setEndpoint(endpoint);
-        r.setP256dh("BOr1a2b3");
-        r.setAuth("c3VwZXJzZWNyZXQ");
+        r.setP256dh(NotificationPopulator.VALID_P256DH);
+        r.setAuth(NotificationPopulator.VALID_AUTH);
         r.setUserAgent("iPhone");
         return r;
     }
@@ -96,16 +100,19 @@ class NotificationApiIT extends ApiIntegrationTest {
     @Test
     void testSendTestPush_shouldReturn200WithHonestCounts_whenNoRealPushServiceReachable() {
         UUID owner = ownerId();
-        postForBody("/api/notification/subscription", request("https://p.example/test-1"),
+        // http://localhost:1 rather than a fake DNS name: nothing listens on port 1, so a send is
+        // refused instantly, whereas a CI resolver that blackholes an unresolvable host instead of
+        // returning NXDOMAIN would make each send burn the client's full 5 s connect timeout.
+        postForBody("/api/notification/subscription", request("http://localhost:1/push/test-1"),
                 ownerAuthHeaders(), HttpStatus.NO_CONTENT, Void.class);
-        postForBody("/api/notification/subscription", request("https://p.example/test-2"),
+        postForBody("/api/notification/subscription", request("http://localhost:1/push/test-2"),
                 ownerAuthHeaders(), HttpStatus.NO_CONTENT, Void.class);
 
         PushTestResponse response = postForBody("/api/notification/test", null,
                 ownerAuthHeaders(), HttpStatus.OK, PushTestResponse.class);
 
-        // Fake endpoints never resolve to a real push service — the honest answer is sent: 0,
-        // but the endpoint itself must still be 200, never a 500, and BOTH devices are attempted.
+        // Nothing here can deliver — the honest answer is sent: 0, but the endpoint itself must
+        // still be 200, never a 500, and BOTH devices are attempted.
         assertThat(response.getAttempted()).isEqualTo(2);
         assertThat(response.getSent()).isEqualTo(0);
         assertThat(repository.findByCreatedBy(owner)).hasSize(2); // FAILED prunes nothing

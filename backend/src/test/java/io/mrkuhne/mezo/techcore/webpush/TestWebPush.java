@@ -63,6 +63,23 @@ final class TestWebPush {
         return new WebPushClient(signer, encryptor, properties, RestClient.builder());
     }
 
+    /**
+     * A client carrying the {@code dummy-vapid-*} placeholders {@code application.yml} defaults to
+     * — i.e. a deploy where {@code VAPID_PRIVATE} was never supplied (or supplied empty). Every
+     * signature attempt raises {@code WEBPUSH_SIGN_FAILED}, which is the disaster case for
+     * {@link WebPushClient}'s prune mapping: it fails for EVERY device at once.
+     */
+    static WebPushClient clientWithMisconfiguredVapidKeys() {
+        WebPushProperties properties = new WebPushProperties(
+            "mailto:test@example.com",
+            WebPushProperties.ABSENT_PUBLIC_KEY,
+            WebPushProperties.ABSENT_PRIVATE_KEY,
+            3600,
+            5000);
+        return new WebPushClient(
+            new VapidSigner(properties), new Aes128GcmEncryptor(), properties, RestClient.builder());
+    }
+
     private static KeyPair generateKeyPair() {
         try {
             KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");

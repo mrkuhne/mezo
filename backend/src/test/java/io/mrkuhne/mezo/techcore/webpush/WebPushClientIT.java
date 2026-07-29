@@ -114,13 +114,27 @@ class WebPushClientIT {
     }
 
     @Test
-    void testSend_shouldReturnFailed_whenSubscriptionKeyMaterialIsMalformed() {
+    void testSend_shouldReturnGone_whenSubscriptionKeyMaterialIsMalformed() {
         // Not valid base64url -> Aes128GcmEncryptor throws SystemRuntimeErrorException
-        // (WEBPUSH_KEY_INVALID) -> must be caught here too, not just the VapidSigner exceptions.
+        // (WEBPUSH_KEY_INVALID) -> must be caught here, not just the VapidSigner exceptions, AND
+        // classified as GONE: nothing but a fresh subscription can ever fix this row, and
+        // register-time validation is only minLength:1, so FAILED would leave a device that can
+        // never deliver and can never be pruned (N2's job would warn-log it forever).
         WebPushSubscriptionKeys badKeys = new WebPushSubscriptionKeys(
             server.baseUrl() + "/push/abc", "not-valid-base64url!!", TestWebPush.AUTH);
-        assertThat(client.send(badKeys, "{\"title\":\"t\"}")).isEqualTo(WebPushResult.FAILED);
+        assertThat(client.send(badKeys, "{\"title\":\"t\"}")).isEqualTo(WebPushResult.GONE);
         assertThat(server.getAllServeEvents()).isEmpty(); // never even reached the wire
+    }
+
+    @Test
+    void testSend_shouldReturnFailed_whenOurOwnVapidKeyIsMisconfigured() {
+        // The other side of the boundary above, and the one that must never be got wrong: the
+        // dummy-vapid-private default raises WEBPUSH_SIGN_FAILED for EVERY device, so classifying
+        // it as GONE would soft-delete the entire subscription table on the first push after a
+        // deploy that forgot the secret. Our own misconfiguration is never the device's fault.
+        WebPushClient misconfigured = TestWebPush.clientWithMisconfiguredVapidKeys();
+        assertThat(misconfigured.send(keys(), "{\"title\":\"t\"}")).isEqualTo(WebPushResult.FAILED);
+        assertThat(server.getAllServeEvents()).isEmpty(); // signing fails before the POST
     }
 
     @Test
