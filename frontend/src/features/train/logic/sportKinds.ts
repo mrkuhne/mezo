@@ -16,3 +16,8 @@ export const SPORT_TITLES: Record<SportKind, string> = { volleyball: 'Volleyball
 export const SPORT_EMOJI: Record<SportKind, string> = { volleyball: '🏐', cross: '⚡', trx: '🪢' }
 
 export const sportOf = (s: { sport?: SportKind }): SportKind => s.sport ?? 'volleyball'
+
+/** The five modality tones a session card / type tag can carry (mezo-9bbc). */
+export type SessionTone = 'gym' | 'sport' | 'cross' | 'trx' | 'run'
+/** One home for "which tone does this sport wear" — consumed by cards, tags and rows. */
+export const SPORT_TONE: Record<SportKind, SessionTone> = { volleyball: 'sport', cross: 'cross', trx: 'trx' }

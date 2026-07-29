@@ -9,8 +9,8 @@
 import { cn } from '@/shared/lib/cn'
 import type { GymScheduleDay, VolleyballSession } from '@/data/types'
 import type { RunPrescribedSession } from '@/data/train/runningApi'
-import { daySessions } from '@/features/train/logic/agenda'
-import { sportOf, SPORT_TAGS, SPORT_TITLES } from '@/features/train/logic/sportKinds'
+import { daySessions, type AgendaItem } from '@/features/train/logic/agenda'
+import { sportOf, SPORT_TAGS, SPORT_TITLES, SPORT_TONE } from '@/features/train/logic/sportKinds'
 
 export interface WeeklyAgendaDay {
   day: string
@@ -63,7 +63,12 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
   const { day, isToday } = agenda
   // Time-ordered flat session list — gym/volleyball/running interleave by
   // time-of-day so a morning run renders above an evening gym (untimed last).
-  const sessions = daySessions(agenda)
+  // `custom` items are filtered back out: this row renders completed saját
+  // instances in its own trailing block below (Mai consumes them from the same
+  // union instead — mezo-9bbc).
+  const sessions = daySessions(agenda).filter(
+    (s): s is Exclude<AgendaItem, { kind: 'custom' }> => s.kind !== 'custom',
+  )
   const customItems = agenda.custom ?? []
   const hasContent = sessions.length > 0 || customItems.length > 0
 
@@ -110,12 +115,15 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             const k = sportOf(s)
             const logged = Boolean(isSportLogged?.(s))
             return (
-              <button key={`sport-${k}-${s.time}-${i}`} type="button" className="s" onClick={isToday ? () => onLogSport?.(s) : undefined}>
+              <button key={`sport-${k}-${s.time}-${i}`} type="button" className="s" onClick={onLogSport ? () => onLogSport(s) : undefined}>
                 <span className="s-top">
-                  <span className="stag stag-sport">{SPORT_TAGS[k]}</span>
+                  {/* Tone follows SPORT_TONE, like every other surface — a hardcoded
+                      `stag-sport` painted cross/TRX rows in the volleyball red while
+                      their DayStrip dot was amber/lavender (mezo-9bbc final review). */}
+                  <span className={cn('stag', `stag-${SPORT_TONE[k]}`)}>{SPORT_TAGS[k]}</span>
                   <span className="s-title">{SPORT_TITLES[k]}</span>
                   {(logged || isToday) && (
-                    <span className={logged ? 'done-chip' : cn('log-chip', 'stag-sport')}>
+                    <span className={logged ? 'done-chip' : cn('log-chip', `stag-${SPORT_TONE[k]}`)}>
                       {logged ? 'kész' : 'log'}
                     </span>
                   )}
@@ -128,7 +136,7 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
           const run = item.running
           const runDone = Boolean(isRunLogged?.(run.key))
           return (
-            <button key={run.key} type="button" className="s" onClick={isToday ? () => onLogRun?.(run) : undefined}>
+            <button key={run.key} type="button" className="s" onClick={onLogRun ? () => onLogRun(run) : undefined}>
               <span className="s-top">
                 <span className="stag stag-run">FUTÁS</span>
                 <span className="s-title">{run.label}</span>

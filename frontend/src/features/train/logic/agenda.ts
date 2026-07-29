@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · agenda — pure time-ordering for a day's training sessions.
-// Flattens a WeeklyAgendaDay's gym/sport/running into typed
+// Flattens a WeeklyAgendaDay's gym/sport/running/custom into typed
 // AgendaItems carrying a `timeOfDay`, sorted ascending; untimed
 // (null/'') sort last, then stable by original modality order.
 // Consumed by WeeklyDayRow (weekly rows) and TrainTodayPage (heroes)
@@ -14,6 +14,8 @@ export type AgendaItem =
   | { kind: 'gym'; timeOfDay: string | null; gym: GymScheduleDay }
   | { kind: 'sport'; timeOfDay: string | null; sport: VolleyballSession }
   | { kind: 'running'; timeOfDay: string | null; running: RunPrescribedSession }
+  /** A COMPLETED saját (custom) instance trained on this day — untimed, so it sorts last. */
+  | { kind: 'custom'; timeOfDay: null; custom: { id: string; title: string } }
 
 /** A day's sessions, ordered by time-of-day; untimed (null/'') sort last, then by modality. */
 export function daySessions(day: WeeklyAgendaDay): AgendaItem[] {
@@ -21,6 +23,9 @@ export function daySessions(day: WeeklyAgendaDay): AgendaItem[] {
   if (day.gym) items.push({ kind: 'gym', timeOfDay: day.gym.time ?? null, gym: day.gym })
   for (const s of day.sport) items.push({ kind: 'sport', timeOfDay: s.time ?? null, sport: s })
   for (const r of day.running) items.push({ kind: 'running', timeOfDay: r.timeOfDay ?? null, running: r })
+  // Custom instances carry no schedule time — pushed last so the stable sort keeps
+  // them after any other untimed session of the same day.
+  for (const c of day.custom ?? []) items.push({ kind: 'custom', timeOfDay: null, custom: c })
   const key = (t: string | null) => (t && t.length ? t : '99:99')
   return items.map((it, i) => ({ it, i }))
     .sort((a, b) => key(a.it.timeOfDay).localeCompare(key(b.it.timeOfDay)) || a.i - b.i)

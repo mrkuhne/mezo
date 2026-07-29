@@ -427,12 +427,17 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       ? async (req: SportSessionCreateRequest): Promise<SportSessionResponse> => {
           const now = new Date()
           const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+          // Retroactive logging (mezo-9bbc) sends the LOGGED day's ISO date; only an
+          // absent `date` means "now". Hardcoding today here dropped a Pótold log onto
+          // today's card instead of the past day it was written for (mock-mode parity
+          // with the real backend, whose server-side default is the same rule).
+          const iso = req.date ?? localDateString()
           qc.setQueryData<{ sessions: SportSession[]; week: SportWeek | null }>(
             ['train', 'sportSessions'],
             (prev) => {
               const logged: SportSession = {
                 id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball',
-                date: huMonthDayDow(localDateString()), time: hhmm,
+                date: huMonthDayDow(iso), time: hhmm,
                 duration: req.duration, setsPlayed: req.setsPlayed ?? null, intensity: null,
                 rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: null,
               }
@@ -443,7 +448,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
           // Only levelUp is read downstream; provide the required fields + the
           // captured effort, omitting the optional nullables.
           return {
-            id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball', date: localDateString(), time: hhmm,
+            id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball', date: iso, time: hhmm,
             duration: req.duration, rpe: req.rpe, setsPlayed: req.setsPlayed, shoulderStrain: req.shoulderStrain,
             rounds: req.rounds, levelUp: sportLevelUpMock,
           } as SportSessionResponse

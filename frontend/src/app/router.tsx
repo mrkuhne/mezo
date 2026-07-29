@@ -3,6 +3,7 @@ import { AppLayout } from '@/app/AppLayout'
 import { TodayPage } from '@/features/today/pages/TodayPage'
 import { TrainSection } from '@/features/train/pages/TrainSection'
 import { TrainTodayPage } from '@/features/train/pages/TrainTodayPage'
+import { TrainWeekPage } from '@/features/train/pages/TrainWeekPage'
 import { GymPage } from '@/features/train/pages/GymPage'
 import { SportPage } from '@/features/train/pages/SportPage'
 import { RunningPage } from '@/features/train/pages/RunningPage'
@@ -57,6 +58,7 @@ export const routes: RouteObject[] = [
         element: <TrainSection />,
         children: [
           { index: true, element: <TrainTodayPage /> },
+          { path: 'week', element: <TrainWeekPage /> },
           { path: 'gym', element: <GymPage /> },
           { path: 'sport', element: <SportPage /> },
           { path: 'futas', element: <RunningPage /> },

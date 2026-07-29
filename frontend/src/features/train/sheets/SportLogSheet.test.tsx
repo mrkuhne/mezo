@@ -123,3 +123,19 @@ test('initialSport preselects the kind', () => {
   expect(screen.getByText('Sport log · TRX')).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'TRX' })).toHaveAttribute('aria-pressed', 'true')
 })
+
+// mezo-9bbc (Task 9): a `date` prop is a retroactive ("Pótold") log — the body
+// must carry that ISO date instead of leaving it for the server's "now" default.
+test('a date prop is included in the saved body (retroactive log)', async () => {
+  const onSave = vi.fn()
+  render(<SportLogSheet date="2026-07-14" onClose={vi.fn()} onSave={onSave} />)
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave.mock.calls[0][0]).toEqual({ sport: 'volleyball', duration: 90, setsPlayed: 5, rpe: 7, shoulderStrain: 6, date: '2026-07-14' })
+})
+
+test('no date prop omits date from the body (today logs server-side default)', async () => {
+  const onSave = vi.fn()
+  render(<SportLogSheet onClose={vi.fn()} onSave={onSave} />)
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave.mock.calls[0][0]).not.toHaveProperty('date')
+})
