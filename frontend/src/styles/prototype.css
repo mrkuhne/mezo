@@ -2391,13 +2391,13 @@ a.hab-link:hover { opacity: 0.85; }
   font-size: 10.5px; font-weight: 800; background: var(--surface); color: var(--amber-deep); flex-shrink: 0; }
 
 /* Day-status card */
-.daystrip { margin: 0 24px 12px; background: var(--surface); border-radius: 20px; padding: 14px 15px; box-shadow: var(--np-shadow-row); }
-.daystrip .r1 { display: flex; align-items: baseline; gap: 7px; }
-.daystrip .r1 .n { font-family: var(--ff-display); font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
-.daystrip .r1 .of { font-size: 11px; color: var(--faint); font-weight: 800; }
-.daystrip .r1 .pc { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--sage-deep);
+.daybudget { margin: 0 24px 12px; background: var(--surface); border-radius: 20px; padding: 14px 15px; box-shadow: var(--np-shadow-row); }
+.daybudget .r1 { display: flex; align-items: baseline; gap: 7px; }
+.daybudget .r1 .n { font-family: var(--ff-display); font-size: 23px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.3px; }
+.daybudget .r1 .of { font-size: 11px; color: var(--faint); font-weight: 800; }
+.daybudget .r1 .pc { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--sage-deep);
   background: var(--wash-sage); border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
-.daystrip .wins { font-size: 10.5px; font-weight: 700; color: var(--faint); margin-top: 7px; }
+.daybudget .wins { font-size: 10.5px; font-weight: 700; color: var(--faint); margin-top: 7px; }
 .dayseg { position: relative; height: 12px; border-radius: 999px; background: var(--warm); margin-top: 9px; overflow: hidden; display: flex; gap: 2px; }
 .dayseg i { display: block; height: 100%; }
 .dayseg .ghost { flex: 1; background: repeating-linear-gradient(90deg, rgba(43,33,24,.05) 0 4px, transparent 4px 9px); }

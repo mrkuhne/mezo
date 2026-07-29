@@ -53,7 +53,7 @@ test('renders the one-line header, the hero, the day-status card and the zones',
   // Hero — the mock day (fixed now 13:30) has an open window.
   expect(container.querySelector('.nowcard')).toBeInTheDocument()
   // Day status — remaining kcal + the four named macro rows (water is the 4th).
-  expect(container.querySelector('.daystrip')).toBeInTheDocument()
+  expect(container.querySelector('.daybudget')).toBeInTheDocument()
   expect(container.querySelectorAll('.mac')).toHaveLength(4)
   expect(screen.getByText('Fehérje')).toBeInTheDocument()
   expect(screen.getByText('Szénhidrát')).toBeInTheDocument()

@@ -45,7 +45,7 @@ export function DayBudgetCard({
   const segWidth = (kcal: number) => `${Math.min(100, pct(kcal, budget.kcal))}%`
 
   return (
-    <div className="daystrip">
+    <div className="daybudget">
       <div className="r1">
         <span className="n">{remaining}</span>
         <span className="of">kcal hátra · {consumed.kcal} / {budget.kcal}</span>
