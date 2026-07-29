@@ -1,7 +1,12 @@
 package io.mrkuhne.mezo.support.populator;
 
+import io.mrkuhne.mezo.feature.notification.entity.NotificationPrefEntity;
+import io.mrkuhne.mezo.feature.notification.entity.PushLogEntity;
 import io.mrkuhne.mezo.feature.notification.entity.PushSubscriptionEntity;
+import io.mrkuhne.mezo.feature.notification.repository.NotificationPrefRepository;
+import io.mrkuhne.mezo.feature.notification.repository.PushLogRepository;
 import io.mrkuhne.mezo.feature.notification.repository.PushSubscriptionRepository;
+import java.time.LocalDate;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
@@ -28,6 +33,8 @@ public class NotificationPopulator {
     public static final String MALFORMED_P256DH = "BOr1a2b3";
 
     private final PushSubscriptionRepository pushSubscriptionRepository;
+    private final NotificationPrefRepository notificationPrefRepository;
+    private final PushLogRepository pushLogRepository;
 
     /** A live subscription whose key material is real enough to reach the encrypt+sign path. */
     public PushSubscriptionEntity subscription(UUID owner, String endpoint) {
@@ -43,5 +50,25 @@ public class NotificationPopulator {
         e.setAuth(VALID_AUTH);
         e.setUserAgent("iPhone");
         return pushSubscriptionRepository.saveAndFlush(e);
+    }
+
+    /** A per-category notification preference row. */
+    public NotificationPrefEntity pref(UUID owner, String category, boolean enabled, int leadMinutes) {
+        NotificationPrefEntity e = new NotificationPrefEntity();
+        e.setCreatedBy(owner);
+        e.setCategory(category);
+        e.setEnabled(enabled);
+        e.setLeadMinutes(leadMinutes);
+        return notificationPrefRepository.saveAndFlush(e);
+    }
+
+    /** A dedup-ledger row: one send record for (owner, date, dedupKey). */
+    public PushLogEntity pushLog(UUID owner, LocalDate date, String dedupKey, String category) {
+        PushLogEntity e = new PushLogEntity();
+        e.setCreatedBy(owner);
+        e.setLogDate(date);
+        e.setDedupKey(dedupKey);
+        e.setCategory(category);
+        return pushLogRepository.saveAndFlush(e);
     }
 }
