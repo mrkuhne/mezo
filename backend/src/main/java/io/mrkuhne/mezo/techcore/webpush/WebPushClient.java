@@ -4,6 +4,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.HttpClientSettings;
@@ -41,6 +42,17 @@ public class WebPushClient {
      * Task 6 truncates bodies before they get here; this is the backstop, not the primary control.
      */
     private static final int MAX_PLAINTEXT_BYTES = 4079;
+
+    /**
+     * {@code RestClient}'s {@code ResourceAccessException} (connect/read timeout, refused
+     * connection, DNS failure — precisely the cases {@code timeoutMs} exists to bound) formats its
+     * message as {@code "I/O error on POST request for \"<uri>\": ..."}, embedding the
+     * <b>complete</b> endpoint — only the query string is stripped upstream. Any exception message
+     * logged from {@link #send} is therefore run through this scrub first: a push endpoint is a
+     * capability URL, so it must never reach a log line whole, exception message or not.
+     */
+    private static final Pattern URL_PATTERN = Pattern.compile("https?://\\S+");
+    private static final String REDACTED_URL = "[redacted-url]";
 
     private final VapidSigner vapidSigner;
     private final Aes128GcmEncryptor encryptor;
@@ -93,7 +105,11 @@ public class WebPushClient {
 
             return mapStatus(response.getStatusCode().value(), keys.endpoint());
         } catch (Exception e) {
-            log.warn("Push send failed for endpoint {}...: {}", logPrefix(keys.endpoint()), e.getMessage());
+            // Never the raw message (may embed the full endpoint) and never the throwable itself
+            // (its stack-trace header repeats the same unredacted message) — type + scrubbed
+            // message only.
+            log.warn("Push send failed for endpoint {}... ({}): {}",
+                logPrefix(keys.endpoint()), e.getClass().getSimpleName(), scrub(e.getMessage()));
             return WebPushResult.FAILED;
         }
     }
@@ -121,5 +137,10 @@ public class WebPushClient {
     /** First {@value #ENDPOINT_LOG_PREFIX_LEN} chars only — an endpoint is a capability URL. */
     private static String logPrefix(String endpoint) {
         return endpoint.length() <= ENDPOINT_LOG_PREFIX_LEN ? endpoint : endpoint.substring(0, ENDPOINT_LOG_PREFIX_LEN);
+    }
+
+    /** Replaces any {@code http(s)://...} substring with a placeholder — see {@link #URL_PATTERN}. */
+    private static String scrub(String message) {
+        return message == null ? null : URL_PATTERN.matcher(message).replaceAll(REDACTED_URL);
     }
 }

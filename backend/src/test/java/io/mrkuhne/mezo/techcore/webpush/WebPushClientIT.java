@@ -6,11 +6,17 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import java.time.Duration;
 import java.util.Base64;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 class WebPushClientIT {
 
@@ -84,7 +90,7 @@ class WebPushClientIT {
     }
 
     @Test
-    void testSend_shouldSignTheDerivedOrigin_notTheFullEndpointWithPath() {
+    void testSend_shouldSignTheDerivedOrigin_whenEndpointHasAPath() {
         server.stubFor(post(urlPathMatching("/push/.*")).willReturn(aResponse().withStatus(201)));
 
         client.send(keys(), "{\"title\":\"t\"}");
@@ -129,6 +135,18 @@ class WebPushClientIT {
     }
 
     @Test
+    void testSend_shouldReturnSent_whenPlaintextIsExactlyAtRecordCeiling() {
+        server.stubFor(post(urlPathMatching("/push/.*")).willReturn(aResponse().withStatus(201)));
+        // The accepted side of the same boundary as the test above: exactly 4079 bytes must be
+        // encrypted and actually reach the wire, so a future off-by-one in either direction fails
+        // a test instead of silently dropping (or silently accepting one byte too many).
+        String atCeiling = "x".repeat(4079);
+
+        assertThat(client.send(keys(), atCeiling)).isEqualTo(WebPushResult.SENT);
+        assertThat(server.getAllServeEvents()).hasSize(1);
+    }
+
+    @Test
     void testSend_shouldReturnTooLarge_whenPushServiceResponds413() {
         server.stubFor(post(urlPathMatching("/push/.*")).willReturn(aResponse().withStatus(413)));
         assertThat(client.send(keys(), "{\"title\":\"t\"}")).isEqualTo(WebPushResult.TOO_LARGE);
@@ -138,5 +156,48 @@ class WebPushClientIT {
     void testSend_shouldReturnThrottled_when429() {
         server.stubFor(post(urlPathMatching("/push/.*")).willReturn(aResponse().withStatus(429)));
         assertThat(client.send(keys(), "{\"title\":\"t\"}")).isEqualTo(WebPushResult.THROTTLED);
+    }
+
+    @Test
+    void testSend_shouldReturnFailedPromptly_whenPushServiceHangsPastTimeout() {
+        // Fixed delay far above the client's timeout; N2 runs `send` on a scheduler thread, so an
+        // unenforced timeout would hang that thread for the full delay instead of failing fast.
+        server.stubFor(post(urlPathMatching("/push/.*"))
+            .willReturn(aResponse().withStatus(201).withFixedDelay(3000)));
+        WebPushClient shortTimeoutClient = TestWebPush.clientWithGeneratedKeys(200); // ms
+
+        long start = System.nanoTime();
+        WebPushResult result = shortTimeoutClient.send(keys(), "{\"title\":\"t\"}");
+        Duration elapsed = Duration.ofNanos(System.nanoTime() - start);
+
+        assertThat(result).isEqualTo(WebPushResult.FAILED);
+        assertThat(elapsed).isLessThan(Duration.ofMillis(2000));
+    }
+
+    @Test
+    void testSend_shouldNotLeakTheEndpointInLogs_whenTransportFails() {
+        Logger logger = (Logger) LoggerFactory.getLogger(WebPushClient.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+
+        try {
+            // A path segment distinctive enough that any leak (raw exception message or the
+            // throwable's own stack-trace header) is unmissable in the assertion below.
+            String secretPath = "/push/super-secret-capability-token-abc123";
+            WebPushSubscriptionKeys unreachable = new WebPushSubscriptionKeys(
+                "http://localhost:1" + secretPath, TestWebPush.UA_PUBLIC, TestWebPush.AUTH);
+
+            assertThat(client.send(unreachable, "{\"title\":\"t\"}")).isEqualTo(WebPushResult.FAILED);
+
+            List<ILoggingEvent> events = appender.list;
+            assertThat(events).isNotEmpty();
+            for (ILoggingEvent event : events) {
+                assertThat(event.getFormattedMessage()).doesNotContain(secretPath);
+                assertThat(event.getThrowableProxy()).isNull(); // never the throwable itself
+            }
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 }

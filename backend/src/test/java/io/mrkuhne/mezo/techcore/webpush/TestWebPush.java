@@ -39,8 +39,16 @@ final class TestWebPush {
     private TestWebPush() {
     }
 
-    /** Builds a real {@link WebPushClient} over a freshly generated VAPID keypair. */
+    /** Builds a real {@link WebPushClient} over a freshly generated VAPID keypair, 5s timeout. */
     static WebPushClient clientWithGeneratedKeys() {
+        return clientWithGeneratedKeys(5000);
+    }
+
+    /**
+     * Same as {@link #clientWithGeneratedKeys()} but with a caller-chosen {@code timeoutMs} — used
+     * to prove the timeout actually fires without touching the production default.
+     */
+    static WebPushClient clientWithGeneratedKeys(int timeoutMs) {
         KeyPair vapidKeyPair = generateKeyPair();
         String vapidPublic =
             B64URL.encodeToString(VapidSigner.encodePublicKey((ECPublicKey) vapidKeyPair.getPublic()));
@@ -48,7 +56,7 @@ final class TestWebPush {
             B64URL.encodeToString(VapidSigner.encodePrivateKey((ECPrivateKey) vapidKeyPair.getPrivate()));
 
         WebPushProperties properties =
-            new WebPushProperties("mailto:test@example.com", vapidPublic, vapidPrivate, 3600, 5000);
+            new WebPushProperties("mailto:test@example.com", vapidPublic, vapidPrivate, 3600, timeoutMs);
         VapidSigner signer = new VapidSigner(properties);
         Aes128GcmEncryptor encryptor = new Aes128GcmEncryptor();
 
