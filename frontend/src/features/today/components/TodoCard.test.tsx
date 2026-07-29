@@ -13,13 +13,23 @@ describe('TodoCard', () => {
   test('groups rows under their group heading, in first-appearance order', () => {
     const { container } = render(
       <TodoCard doneCount={2} xp={48} onAct={() => {}} items={[
-        item({ id: 'a', group: 'Reggeli rutin' }),
+        item({ id: 'a', group: 'Reggeli rutin', title: 'Ébredés időben' }),
         item({ id: 'b', group: 'Napi küldetések', source: 'quest' }),
-        item({ id: 'c', group: 'Reggeli rutin' }),
+        item({ id: 'c', group: 'Reggeli rutin', title: 'Gombakávé' }),
       ]} />,
     )
     const groups = [...container.querySelectorAll('.tdc-grp')].map(g => g.textContent)
     expect(groups).toEqual(['Reggeli rutin · 2', 'Napi küldetések · 1'])
+
+    // Distinct titles on the two same-group fixtures let us pin row order too,
+    // not just the group label/count above.
+    const reggeliHeading = [...container.querySelectorAll('.tdc-grp')].find(
+      (g) => g.textContent === 'Reggeli rutin · 2',
+    )!
+    const reggeliTitles = [...reggeliHeading.parentElement!.querySelectorAll('.itemrow-t1')].map(
+      (t) => t.textContent,
+    )
+    expect(reggeliTitles).toEqual(['Ébredés időben', 'Gombakávé'])
   })
 
   test('the header shows done/total and the XP total', () => {
@@ -48,6 +58,11 @@ describe('TodoCard', () => {
 
   test('renders nothing when there are no items', () => {
     const { container } = render(<TodoCard doneCount={0} xp={0} onAct={() => {}} items={[]} />)
+    expect(container.firstChild).toBeNull()
+  })
+
+  test('renders nothing on an all-done face — the done rows live in the fold, not here', () => {
+    const { container } = render(<TodoCard doneCount={5} xp={40} onAct={() => {}} items={[]} />)
     expect(container.firstChild).toBeNull()
   })
 })
