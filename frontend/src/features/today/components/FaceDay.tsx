@@ -11,8 +11,10 @@ import { ItemCard, type ItemTone } from '@/shared/ui/ItemCard'
 import { ItemRow } from '@/shared/ui/ItemRow'
 import type { CompanionNote } from '@/data/types'
 import type { DayFace } from '@/features/today/logic/dayFace'
+import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
+/** Exactly `ItemCard`'s prop bag, so the hero is spread straight onto it. */
 export interface DayHero {
   tone: ItemTone; emoji: string; tag: string; time: string | null; title: string
   facts: (string | null | undefined | false)[]
@@ -20,15 +22,24 @@ export interface DayHero {
 }
 
 export function FaceDay({
-  open, done, doneXp, hero, note, later, onAct, onFace, onCustom,
+  open, done, doneXp, hero, heroWarn, heroNote, note, later, growth, fuelNote,
+  onAct, onFace, onCustom,
 }: {
   open: TodayItem[]
   done: TodayItem[]
   doneXp: number
   /** null on a rest day. */
   hero: DayHero | null
+  /** The session's niggle warning — kept OUT of `hero` so the bag stays ItemCard-shaped. */
+  heroWarn?: string | null
+  /** Companion note about the day's load (a workout + a sport session stacked). */
+  heroNote?: string | null
   note: CompanionNote | null
   later: TodayItem[]
+  /** Quest summary + the route into quest management (TodoCard's header). */
+  growth?: GrowthTodaySummary | null
+  /** The fuel plan's companion line — only shown when this face has fuel rows. */
+  fuelNote?: { time: string; text: string } | null
   onAct: (item: TodayItem) => void
   onFace: (face: DayFace) => void
   onCustom: () => void
@@ -37,7 +48,10 @@ export function FaceDay({
   return (
     <>
       {hero ? (
-        <ItemCard {...hero} />
+        <ItemCard {...hero}>
+          {heroWarn && <div className="warmstrip">⚠️ {heroWarn}</div>}
+          {heroNote && <div className="todaycard-note">{heroNote}</div>}
+        </ItemCard>
       ) : (
         <ItemCard
           tone="gym" emoji="🌤️" tag="PIHENŐ" title="Ma pihenőnap"
@@ -46,7 +60,11 @@ export function FaceDay({
         />
       )}
       <IntentionBanner variant="chip" />
-      <TodoCard items={todo} doneCount={done.length} xp={doneXp} onAct={onAct} />
+      <TodoCard
+        items={todo} doneCount={done.length} xp={doneXp} growth={growth}
+        note={todo.some((i) => i.source === 'fuel') ? fuelNote : null}
+        onAct={onAct}
+      />
       {note && <CompanionNoteCard note={note} />}
       {later.length > 0 && (
         <>

@@ -1471,8 +1471,14 @@ button.itemrow { cursor: pointer; }
 .tdc-bar { height: 5px; border-radius: 999px; background: var(--warm); overflow: hidden; margin: 0 10px 12px; }
 .tdc-bar i { display: block; height: 100%; border-radius: 999px;
   background: linear-gradient(90deg, var(--coral), var(--amber)); }
+/* The header's right cell as a link into quest management (mezo-j7u4 fix round 1). */
+.tdc-hd-go { text-decoration: none; display: inline-flex; align-items: center; gap: 3px; }
 .tdc-grp { font-size: 9.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
   color: var(--faint); margin: 10px 10px 6px; }
+/* Companion line for the plan the rows belong to — the retired fuel preview's sparkle row. */
+.tdc-note { display: flex; gap: 8px; margin: 10px 10px 4px; padding-top: 9px;
+  border-top: 1px solid var(--line); font: 500 11.5px/1.5 var(--ff-body); color: var(--sub); }
+.tdc-note b { color: var(--coral-deep); font-weight: 800; font-variant-numeric: tabular-nums; }
 /* Inside the card the rows lose the standalone row's outer margin + shadow. */
 .tdc .itemrow { margin: 0 4px 4px; box-shadow: none; background: transparent; padding: 9px; }
 .tdc .itemrow.is-done { background: transparent; }

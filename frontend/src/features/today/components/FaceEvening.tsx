@@ -13,10 +13,18 @@ import { TodoCard } from '@/features/today/components/TodoCard'
 import { WindDownBanner } from '@/features/today/components/WindDownBanner'
 import { ItemRow } from '@/shared/ui/ItemRow'
 import type { CompanionNote } from '@/data/types'
+import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
+/** The two rows the `RitualCard` hero above the list already owns — showing either of
+ *  them again is the exact duplication this redesign exists to remove. The `evening_ritual`
+ *  habit and the `ritual:day` item describe the same act with a weaker affordance (a row
+ *  pill vs. the hero's window-aware CTA), so the hero wins. Filtered HERE rather than in
+ *  `todayItems.ts`: other surfaces (Growth's chain view) legitimately want those rows. */
+const OWNED_BY_RITUAL_HERO = new Set(['habit:evening_ritual'])
+
 export function FaceEvening({
-  open, done, doneXp, dayXp, note, onAct,
+  open, done, doneXp, dayXp, note, growth, fuelNote, onAct,
 }: {
   open: TodayItem[]
   done: TodayItem[]
@@ -24,14 +32,22 @@ export function FaceEvening({
   /** Total XP earned today across every source — the retrospective's headline. */
   dayXp: number
   note: CompanionNote | null
+  /** Quest summary + the route into quest management (TodoCard's header). */
+  growth?: GrowthTodaySummary | null
+  /** The fuel plan's companion line — only shown when this face has fuel rows. */
+  fuelNote?: { time: string; text: string } | null
   onAct: (item: TodayItem) => void
 }) {
-  const todo = open.filter((i) => i.source !== 'ritual')
+  const todo = open.filter((i) => i.source !== 'ritual' && !OWNED_BY_RITUAL_HERO.has(i.id))
   return (
     <>
       <WindDownBanner />
       <RitualCard />
-      <TodoCard items={todo} doneCount={done.length} xp={doneXp} onAct={onAct} />
+      <TodoCard
+        items={todo} doneCount={done.length} xp={doneXp} growth={growth}
+        note={todo.some((i) => i.source === 'fuel') ? fuelNote : null}
+        onAct={onAct}
+      />
       <IntentionBanner variant="reflect" />
       {note && <CompanionNoteCard note={note} />}
       {done.length > 0 && (

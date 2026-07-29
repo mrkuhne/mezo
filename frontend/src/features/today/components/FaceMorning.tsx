@@ -11,10 +11,12 @@ import { TodoCard } from '@/features/today/components/TodoCard'
 import { ItemRow } from '@/shared/ui/ItemRow'
 import type { Briefing } from '@/data/types'
 import type { DayFace } from '@/features/today/logic/dayFace'
+import type { GrowthTodaySummary } from '@/features/today/logic/growthToday'
 import type { TodayItem } from '@/features/today/logic/todayItems'
 
 export function FaceMorning({
-  open, done, doneXp, chain, briefing, briefingDemo, briefingFacts, later, onAct, onFace,
+  open, done, doneXp, chain, briefing, briefingDemo, briefingFacts, later, growth, fuelNote,
+  onAct, onFace,
 }: {
   open: TodayItem[]
   done: TodayItem[]
@@ -25,6 +27,10 @@ export function FaceMorning({
   briefingFacts: string[]
   /** Items belonging to the later faces, previewed as compact rows. */
   later: TodayItem[]
+  /** Quest summary + the route into quest management (TodoCard's header). */
+  growth?: GrowthTodaySummary | null
+  /** The fuel plan's companion line — only shown when this face has fuel rows. */
+  fuelNote?: { time: string; text: string } | null
   onAct: (item: TodayItem) => void
   onFace: (face: DayFace) => void
 }) {
@@ -38,7 +44,11 @@ export function FaceMorning({
       />
       <BriefingCard briefing={briefing} demo={briefingDemo} facts={briefingFacts} />
       <IntentionBanner variant="chip" />
-      <TodoCard items={todo} doneCount={done.length} xp={doneXp} onAct={onAct} />
+      <TodoCard
+        items={todo} doneCount={done.length} xp={doneXp} growth={growth}
+        note={todo.some((i) => i.source === 'fuel') ? fuelNote : null}
+        onAct={onAct}
+      />
       {later.length > 0 && (
         <>
           <div className="zoneline"><span>Ma még vár rád</span><i /></div>

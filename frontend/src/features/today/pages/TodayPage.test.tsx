@@ -134,6 +134,40 @@ describe('TodayPage — composition', () => {
     expect(screen.getByText('Ma még vár rád')).toBeInTheDocument()
   })
 
+  test('the evening face names Napzárás exactly once — the hero owns it, the row is gone', () => {
+    clockAt('21:05')
+    renderToday()
+    // The hero's eyebrow is the ONE naming. The `evening_ritual` habit row and the
+    // `ritual:day` item both described the same act with a weaker affordance.
+    expect(screen.getAllByText('NAPZÁRÁS')).toHaveLength(1)
+    expect(screen.queryByText('Napzárás')).toBeNull()
+    // …and the hero still offers the route (its CTA inside the window, the card otherwise).
+    expect(screen.getByRole('heading', { name: 'Zárjuk le a napot' })).toBeInTheDocument()
+  })
+
+  test('the day face keeps the workout niggle warning, and ?niggle=off suppresses it', () => {
+    clockAt('13:42')
+    const { container, unmount } = renderToday()
+    expect(container.querySelector('.warmstrip')?.textContent).toContain('niggle')
+    unmount()
+    const off = renderToday('/today?niggle=off')
+    expect(off.container.querySelector('.warmstrip')).toBeNull()
+  })
+
+  test('a face with fuel rows carries the fuel plan companion line', () => {
+    clockAt('13:42')
+    const { container } = renderToday()
+    expect(container.querySelector('.tdc-note')).toBeTruthy()
+  })
+
+  test('the TodoCard header links into quest management', () => {
+    clockAt('09:12')
+    renderToday()
+    const link = screen.getByRole('link', { name: 'Küldetések kezelése a Növekedésben' })
+    expect(link).toHaveAttribute('href', '/me/growth')
+    expect(link.textContent).toMatch(/^\d+\/\d+ · \+\d+ XP/)
+  })
+
   test('the evening face closes with the retrospective and the day XP once something is done', async () => {
     clockAt('21:05')
     renderToday()
@@ -167,12 +201,14 @@ describe('TodayPage — the act() dispatcher (ADR 0010)', () => {
       expect(container.querySelector('.fhc-next-tx b')?.textContent).toBe('Reggeli videó'))
   })
 
-  test('a DERIVED habit routes to its log surface instead of self-completing', () => {
-    vi.useFakeTimers().setSystemTime(at('21:05'))
-    renderToday()
-    const row = screen.getByText('Napzárás').closest('.itemrow') as HTMLElement
-    fireEvent.click(within(row).getByRole('button', { name: 'Logolás' }))
-    expect(screen.getByTestId('loc').textContent).toBe('/ritual')
+  test('a fuel row logs IN PLACE instead of navigating to /fuel', () => {
+    vi.useFakeTimers().setSystemTime(at('13:42'))
+    const { container } = renderToday()
+    const fuelRow = [...container.querySelectorAll('.tdc .itemrow')]
+      .find((r) => within(r as HTMLElement).queryByRole('button', { name: 'Logold' })) as HTMLElement
+    fireEvent.click(within(fuelRow).getByRole('button', { name: 'Logold' }))
+    expect(screen.getByRole('dialog')).toHaveAccessibleName('Mit ettél?')
+    expect(screen.getByTestId('loc').textContent).toBe('/today') // it did NOT navigate away
   })
 
   test('a check-in row opens the check-in sheet for its own slot', () => {
