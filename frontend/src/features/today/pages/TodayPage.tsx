@@ -39,6 +39,7 @@ import { FaceDay, type DayHero } from '@/features/today/components/FaceDay'
 import { FaceEvening } from '@/features/today/components/FaceEvening'
 import { VulnerabilityCard } from '@/features/today/components/VulnerabilityCard'
 import { AnchorModeView } from '@/features/today/pages/AnchorModeView'
+import TodaySkeleton from '@/features/today/pages/TodaySkeleton'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { ActivityLogSheet } from '@/features/today/sheets/ActivityLogSheet'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
@@ -94,7 +95,7 @@ export function TodayPage() {
     briefing, briefingDemo, volleyballNote,
   } = useToday()
   const { checkins, saveCheckIn } = useCheckins()
-  const { goal: sleepGoal } = useSleepGoal()
+  const { goal: sleepGoal, isPending: sleepGoalPending } = useSleepGoal()
   const { quests, levelUps: questLevelUps } = useDailyQuests(date)
   const { consumeLevelUps: consumeQuestLevelUps } = useQuestActions(date)
   const { data: activities } = useActivities(date)
@@ -186,6 +187,12 @@ export function TodayPage() {
     setSearchParams(next, { replace: true })
   }
 
+  // The face selection depends on the sleep anchor; rendering before it resolves would
+  // flash the wrong face in real mode. The skeleton is layout-matched (TrainTodaySkeleton
+  // precedent) so the swap does not shift the page. Checked BEFORE `anchorMode` — the
+  // Train precedent's pending gate also sits ahead of its own scenario branch
+  // (`!activeMeso`), so a generic loading state always wins over a data-driven one.
+  if (sleepGoalPending) return <TodaySkeleton />
   if (scenario.anchorMode) return <AnchorModeView />
 
   const { open, done } = itemsForFace(items, selected)
