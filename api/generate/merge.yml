@@ -28,4 +28,5 @@ inputs:
   - inputFile: ../feature/fuel-settings/fuel-settings.yml
   - inputFile: ../feature/ritual/ritual.yml
   - inputFile: ../feature/gamification/gamification.yml
+  - inputFile: ../feature/notification/notification.yml
 output: ../openapi.yml

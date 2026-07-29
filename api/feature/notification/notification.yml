@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info: { title: mezo notification fragment, version: 1.0.0 }
+paths:
+  /api/notification/subscription:
+    post:
+      tags: [Notification]
+      operationId: registerPushSubscription
+      summary: Register (idempotent) this device's Web Push subscription (Notification)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PushSubscriptionRequest' }
+      responses:
+        '204':
+          description: Registered; repeating the same endpoint is a no-op
+        '400':
+          description: VALIDATION_ERROR
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    delete:
+      tags: [Notification]
+      operationId: unregisterPushSubscription
+      summary: Remove this device's subscription (Notification)
+      parameters:
+        - { name: endpoint, in: query, required: true, schema: { type: string } }
+      responses:
+        '204':
+          description: Removed; unknown endpoint is also 204 (idempotent)
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/notification/test:
+    post:
+      tags: [Notification]
+      operationId: sendTestPush
+      summary: Send a fixed test notification to every registered device (Notification)
+      responses:
+        '200':
+          description: How many devices were attempted and how many accepted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PushTestResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    PushSubscriptionRequest:
+      type: object
+      required: [endpoint, p256dh, auth]
+      properties:
+        endpoint: { type: string, maxLength: 1000, example: "https://web.push.apple.com/QF..." }
+        p256dh: { type: string, maxLength: 120, description: "subscription public key, base64url" }
+        auth: { type: string, maxLength: 40, description: "subscription auth secret, base64url" }
+        userAgent: { type: string, maxLength: 300, nullable: true }
+    PushTestResponse:
+      type: object
+      required: [attempted, sent]
+      properties:
+        attempted: { type: integer, example: 1 }
+        sent: { type: integer, example: 1 }
