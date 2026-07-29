@@ -128,8 +128,10 @@ describe('TodayPage — no habitAction kind is a dead control', () => {
       const row = rowOf(f.title)
       const btn = within(row).queryByRole('button')
       if (f.pill === null) {
-        // `none`: no log surface exists, so the row must not invite a tap at all.
+        // `none`: no log surface exists, so the row must not invite a tap at all —
+        // and it explains itself instead of reading as broken.
         expect(btn, `${f.kind} must render NO button`).toBeNull()
+        expect(row).toHaveTextContent('holnap reggel, az alvásnaplódból derül ki')
       } else {
         expect(btn, `${f.kind} must render a ${f.pill} pill`).toHaveTextContent(f.pill)
       }

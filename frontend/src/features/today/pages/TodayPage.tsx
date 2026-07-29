@@ -38,7 +38,7 @@ import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import { CustomWorkoutSheet } from '@/features/train/sheets/CustomWorkoutSheet'
 import { questAction } from '@/features/today/logic/questAction'
-import { habitAction } from '@/features/today/logic/habitAction'
+import { habitAction, habitHint } from '@/features/today/logic/habitAction'
 import { growthTodaySummary } from '@/features/today/logic/growthToday'
 import { DAY_FACES, dayFace, type DayFace as Face } from '@/features/today/logic/dayFace'
 import { buildTodayItems, itemsForFace, openCountByFace, type TodayItem } from '@/features/today/logic/todayItems'
@@ -121,12 +121,15 @@ export function TodayPage() {
     // The ItemRow doctrine: a row carries a control ONLY when `act` can serve it. A pending
     // DERIVED habit with no log surface of its own (habitAction → 'none', e.g. `bed_on_time`,
     // which TOMORROW's sleep log decides) keeps its row and loses its pill instead of inviting
-    // a tap that does nothing. Done HERE, not in todayItems.ts — the normalizer's action data
-    // is right; it is this screen's dispatcher that decides what it can serve.
-    return built.map((i) =>
-      i.action?.kind === 'habit' && habitAction(i.action.habit).kind === 'none'
-        ? { ...i, action: null }
-        : i)
+    // a tap that does nothing — and picks up `habitHint`'s explainer so a button-less row
+    // reads as "this ticks by itself", not as broken (the retired RoutineCard's `.hab-note`).
+    // Done HERE, not in todayItems.ts — the normalizer's action data is right; it is this
+    // screen's dispatcher that decides what it can serve.
+    return built.map((i) => {
+      if (i.action?.kind !== 'habit' || habitAction(i.action.habit).kind !== 'none') return i
+      const hint = habitHint(i.action.habit)
+      return { ...i, action: null, subtitle: hint ?? i.subtitle }
+    })
   }, [quests, habits, checkins, fuelSlots, ritualDay, sleepGoal, workout, workoutTime, prediction, sportToday])
 
   // The current face comes from the clock; `?dp=` overrides it. Absent (`null`) and
