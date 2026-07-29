@@ -2,8 +2,10 @@
  * Napzárás act 5 — Elengedés (mezo-ilsj, spec §4). The closing circle (np-draw reuse),
  * the fixed release line, an optional companion closingNote, then the evening handoff
  * panel that reads straight from the ritual window (Task 1) — no new data, just the
- * two remaining stops (prep + bed). `onFinish` navigates to /today, where the
- * WindDownBanner + evening RoutineCard own the sleep-prep phase from there on
+ * two remaining stops (prep + bed). `onFinish` navigates to /today, where the Este face
+ * owns the sleep-prep phase from there on — the `WindDownBanner` card plus the evening
+ * habit chain, which since the daypart-faces re-composition (mezo-j7u4) renders as
+ * `TodoCard` rows on `FaceEvening` rather than in the retired `RoutineCard`
  * (integration, not duplication — this component never renders prep-step UI itself).
  */
 export function ReleaseStep({ prepStartsAt, bedTime, closingNote, onFinish }: {

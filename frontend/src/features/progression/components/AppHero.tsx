@@ -10,7 +10,8 @@ const RING_C = 2 * Math.PI * RING_R
 
 /** The unified identity header on all 5 sections — one sticky avatar-height row
  *  (compact-header spec §3). Per-section content arrives via `utilities`
- *  (SubNavDropdown on Train/Fuel/Me/Insights; search + Insights link on Today). */
+ *  (SubNavDropdown on Train/Fuel/Me/Insights; the ✨ Insights link on Today — the 🔍 search
+ *  chip that once sat beside it was removed in 03d4e425, 2026-07-25). */
 export function AppHero({ utilities }: { utilities?: ReactNode }) {
   const { user } = useProfile()
   const { profile } = useGamification()

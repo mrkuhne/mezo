@@ -1,17 +1,26 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * Self-baselined visual goldens: 17 goto screens + the /ritual Harvest click-through
- * = 18 screens × 2 themes = 36 snapshots per platform (mezo-mzbz added the two /ritual
+ * Self-baselined visual goldens: 19 goto screens + the /ritual Harvest click-through
+ * = 20 screens × 2 themes = 40 snapshots per platform (mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 4 via the click-through test;
- * mezo-9bbc added train-heti for the new /train/week page).
+ * mezo-9bbc added train-heti for the new /train/week page; mezo-1khu replaced the single
+ * `today` shot with one per daypart face — reggel/nap/este).
  *
  * Determinism levers (all must hold or the shots flake):
- *  - clock frozen to 2026-05-21T13:42 (délután) BEFORE goto → the daypart-derived
- *    sky tint (PhoneFrame) + greeting (GreetingHeader) stay fixed even as the 60s
- *    re-derive interval keeps firing (setFixedTime keeps timers running but pins
- *    `new Date()`), and it matches the StatusBar's hardcoded 13:42. The /ritual flow is
- *    reachable any time (ADR 0010 D2 — the window nudges, never locks), so it renders at 13:42.
+ *  - clock frozen BEFORE goto → the daypart-derived sky tint (PhoneFrame) + greeting
+ *    (GreetingHeader) stay fixed even as the 60s re-derive interval keeps firing
+ *    (setFixedTime keeps timers running but pins `new Date()`). The default is
+ *    2026-05-21T13:42 (délután), which matches the StatusBar's hardcoded 13:42; a screen
+ *    may override it via the third `SCREENS` tuple slot. The /ritual flow is reachable any
+ *    time (ADR 0010 D2 — the window nudges, never locks), so it renders at 13:42.
+ *  - the three `/today` shots pin BOTH levers, and both are load-bearing (mezo-1khu):
+ *    `?dp=` fixes WHICH face renders (TodayPage derives the selection from the URL), while
+ *    the frozen clock fixes which face is *current* — the pill DayFaceStrip marks as `now`,
+ *    the greeting headline, and every time-derived row state. Freezing only the clock would
+ *    still be deterministic, but pinning `?dp=` too makes each shot independent of the
+ *    mock sleep anchor (wake 06:45 / bed 23:15 → reggel 06:15, nap 11:45, este 19:15), so a
+ *    later seed tweak cannot silently re-point a golden at a different face.
  *  - theme via localStorage `mezo-theme` set in an init script BEFORE goto → the
  *    pre-paint script in index.html sees it and stamps data-theme.
  *  - reducedMotion 'reduce' (config) + toHaveScreenshot's default animations
@@ -19,11 +28,16 @@ import { test, expect } from '@playwright/test'
  *    neutralized under reduced-motion (asserted by reducedMotionGuard.test.ts), so both
  *    /ritual shots settle to a deterministic end state — confetti is display:none, the
  *    Harvest CountUp renders its final value immediately, np-anim/rz-pop settle visible.
+ *    Today's own `.faceswap` family is neutralized the same way, asserted by
+ *    features/today/todayReducedMotion.test.ts.
  *  - wait for `document.fonts.ready` → the self-hosted fonts (Bricolage + Jakarta) are in
  *    before the pixel compare, else the first paint uses fallback metrics.
  */
-const SCREENS: Array<[string, string]> = [
-  ['today', '/today'],
+/** `[name, path, frozenTime?]` — the third slot overrides the default frozen clock. */
+const SCREENS: Array<[string, string, string?]> = [
+  ['today-reggel', '/today?dp=reggel', '2026-05-21T09:12:00'],
+  ['today-nap', '/today?dp=nap', '2026-05-21T13:42:00'],
+  ['today-este', '/today?dp=este', '2026-05-21T21:05:00'],
   ['train', '/train'],
   ['train-heti', '/train/week'],
   ['train-gym', '/train/gym'],
@@ -44,12 +58,15 @@ const SCREENS: Array<[string, string]> = [
   ['ritual-arrival', '/ritual'],
 ]
 
+/** The clock every screen freezes to unless its `SCREENS` tuple overrides it. */
+const DEFAULT_FROZEN = '2026-05-21T13:42:00'
+
 for (const theme of ['light', 'dark'] as const) {
   test.describe(theme, () => {
     test.use({ colorScheme: theme })
-    for (const [name, path] of SCREENS) {
+    for (const [name, path, frozen] of SCREENS) {
       test(name, async ({ page }) => {
-        await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+        await page.clock.setFixedTime(new Date(frozen ?? DEFAULT_FROZEN))
         await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
         await page.goto(path)
         await page.waitForLoadState('networkidle')
@@ -65,7 +82,7 @@ for (const theme of ['light', 'dark'] as const) {
     // hurkok → Termés. The Harvest read is a fixed mock day seed and CountUp renders its final
     // value immediately under reduced motion, so the end state is deterministic.
     test('ritual-harvest', async ({ page }) => {
-      await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
       await page.addInitScript((t) => localStorage.setItem('mezo-theme', t), theme)
       await page.goto('/ritual')
       await page.waitForLoadState('networkidle')
