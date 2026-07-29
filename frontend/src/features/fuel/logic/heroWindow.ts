@@ -14,6 +14,13 @@ export interface HeroOpen {
   suggestion: boolean
   /** Derived, plain-text rationale. NEVER LLM prose (the coach layer owns prose). */
   why: string
+  /**
+   * True when the slot's own time is at/before `nowHHmm` — the window is actually open.
+   * False when buildDayPlan promoted the EARLIEST unlogged window to `'now'` because the
+   * clock precedes every window (the day hasn't reached its first meal yet): `'now'` there
+   * means "the window in focus", not "already open" — the hero copy must say so (mezo-rrtj).
+   */
+  started: boolean
 }
 export interface HeroClosed {
   kind: 'closed'
@@ -48,8 +55,9 @@ export function pickHeroWindow(input: {
   blocks: PlannerBlock[]
   budget: { kcal: number; p: number; c: number }
   consumed: { kcal: number; p: number }
+  nowHHmm: string
 }): HeroResult {
-  const { slots, blocks, budget, consumed } = input
+  const { slots, blocks, budget, consumed, nowHHmm } = input
   const missed = slots
     .filter(s => s.state === 'missed' && isMealSlot(s))
     .sort((a, z) => toMin(a.time) - toMin(z.time))
@@ -57,7 +65,13 @@ export function pickHeroWindow(input: {
 
   if (now) {
     return {
-      hero: { kind: 'open', slot: now, suggestion: !!now.suggestedRecipeId, why: deriveWhy(now, blocks, budget) },
+      hero: {
+        kind: 'open',
+        slot: now,
+        suggestion: !!now.suggestedRecipeId,
+        why: deriveWhy(now, blocks, budget),
+        started: toMin(now.time) <= toMin(nowHHmm),
+      },
       missed,
     }
   }

@@ -9,7 +9,7 @@ const slot: FuelSlot = {
   time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now',
   mealName: 'Csirkés rizs bowl', suggestedRecipeId: 'r1', kcal: 900, p: 68, c: 105, f: 24,
 }
-const openHero: HeroWindow = { kind: 'open', slot, suggestion: true, why: 'Pull Day 17:00 — fuel' }
+const openHero: HeroWindow = { kind: 'open', slot, suggestion: true, why: 'Pull Day 17:00 — fuel', started: true }
 
 const renderCard = (hero: HeroWindow, handlers: Partial<Parameters<typeof NowWindowCard>[0]> = {}) => {
   const props = {
@@ -53,9 +53,17 @@ test('the foot link logs something else into the same window', async () => {
 
 test('a suggestion-less open window asks what was eaten instead of naming a recipe', () => {
   const bare: FuelSlot = { ...slot, mealName: undefined, suggestedRecipeId: undefined }
-  renderCard({ kind: 'open', slot: bare, suggestion: false, why: '900 kcal ebben az ablakban' })
+  renderCard({ kind: 'open', slot: bare, suggestion: false, why: '900 kcal ebben az ablakban', started: true })
   expect(screen.getByRole('heading', { name: 'Ebéd-ablak' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Ebéd logolása' })).toHaveTextContent('Mit ettél?')
+})
+
+test('a not-yet-started window is labelled "következő", not "most nyitva"', () => {
+  renderCard({ ...openHero, started: false })
+  expect(screen.getByText(`következő · ${slot.label}`)).toBeInTheDocument()
+  expect(screen.getByText(`${slot.time}-kor`)).toBeInTheDocument()
+  expect(screen.queryByText(`most nyitva · ${slot.label}`)).toBeNull()
+  expect(screen.queryByText(`${slot.time} óta`)).toBeNull()
 })
 
 test('the closed-day hero summarises and offers only a real affordance', async () => {

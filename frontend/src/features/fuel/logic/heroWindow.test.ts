@@ -11,8 +11,8 @@ const slot = (over: Partial<FuelSlot> = {}): FuelSlot => ({
   kcal: 900, p: 68, c: 105, f: 24, ...over,
 })
 
-const pick = (slots: FuelSlot[], blocks: PlannerBlock[] = []) =>
-  pickHeroWindow({ slots, blocks, budget: BUDGET, consumed: CONSUMED })
+const pick = (slots: FuelSlot[], blocks: PlannerBlock[] = [], nowHHmm = '13:30') =>
+  pickHeroWindow({ slots, blocks, budget: BUDGET, consumed: CONSUMED, nowHHmm })
 
 test('the now window with a recipe suggestion becomes an open hero', () => {
   const now = slot({ mealName: 'Csirkés rizs bowl', suggestedRecipeId: 'r1' })
@@ -78,4 +78,16 @@ test('missed windows are returned separately, in chronological order', () => {
   const { hero, missed } = pick([a, b, slot()])
   expect(hero.kind).toBe('open')
   expect(missed.map(s => s.time)).toEqual(['09:15', '11:30'])
+})
+
+test('a now window at/before the clock has already started', () => {
+  const { hero } = pick([slot({ time: '13:00' })], [], '13:30')
+  if (hero.kind !== 'open') throw new Error('unreachable')
+  expect(hero.started).toBe(true)
+})
+
+test('a now window after the clock has not started — buildDayPlan promoted the earliest unlogged window to focus, not because it opened', () => {
+  const { hero } = pick([slot({ time: '18:00' })], [], '13:30')
+  if (hero.kind !== 'open') throw new Error('unreachable')
+  expect(hero.started).toBe(false)
 })

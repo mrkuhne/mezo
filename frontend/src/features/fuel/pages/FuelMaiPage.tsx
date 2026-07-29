@@ -59,7 +59,7 @@ export function FuelMaiPage() {
 
   const zones = buildDayZones({ slots: plan.slots, wake, bed, blocks, weightKg })
   const { hero, missed } = pickHeroWindow({
-    slots: plan.slots, blocks, budget, consumed: { kcal: fuel.consumed.kcal, p: fuel.consumed.p },
+    slots: plan.slots, blocks, budget, consumed: { kcal: fuel.consumed.kcal, p: fuel.consumed.p }, nowHHmm,
   })
   const windows = plan.slots.filter(isMealSlot)
   const doneWindows = windows.filter(s => s.state === 'done')

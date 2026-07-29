@@ -35,13 +35,13 @@ export function NowWindowCard({
     )
   }
 
-  const { slot, suggestion, why } = hero
+  const { slot, suggestion, why, started } = hero
   const title = suggestion && slot.mealName ? slot.mealName : `${slot.label}-ablak`
   return (
     <div className="nowcard">
       <div className="top">
-        <span className="lbl"><span className="dot" /> most nyitva · {slot.label}</span>
-        <span className="clock">{slot.time} óta</span>
+        <span className="lbl"><span className="dot" /> {started ? 'most nyitva' : 'következő'} · {slot.label}</span>
+        <span className="clock">{started ? `${slot.time} óta` : `${slot.time}-kor`}</span>
       </div>
       <h2>{title}</h2>
       {why && <div className="why">{why}</div>}
