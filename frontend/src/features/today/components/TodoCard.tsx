@@ -35,7 +35,7 @@ export function TodoCard({
   return (
     <div className="tdc">
       <div className="tdc-hd">
-        <span className="tdc-hd-l">{doneCount} / {total} kész</span>
+        <span className="tdc-hd-l">⚡ {doneCount} / {total} kész</span>
         <span className="tdc-hd-r">+{xp} XP</span>
       </div>
       <div className="tdc-bar" aria-hidden="true"><i style={{ width: `${pct}%` }} /></div>

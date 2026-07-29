@@ -24,7 +24,7 @@ describe('TodoCard', () => {
 
   test('the header shows done/total and the XP total', () => {
     render(<TodoCard doneCount={6} xp={48} onAct={() => {}} items={[item(), item({ id: 'b' })]} />)
-    expect(screen.getByText('6 / 8 kész')).toBeInTheDocument()
+    expect(screen.getByText(/6 \/ 8 kész/)).toBeInTheDocument()
     expect(screen.getByText('+48 XP')).toBeInTheDocument()
   })
 
