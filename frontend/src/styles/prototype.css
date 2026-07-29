@@ -1463,6 +1463,23 @@ button.donebar { cursor: pointer; }
 .itemrow.is-done .itemrow-ic { background: var(--sage-deep); color: var(--surface); }
 button.itemrow { cursor: pointer; }
 
+/* ===== DayFaceStrip — Today's daypart navigator (mezo-j7u4) ===== */
+.dfs { display: flex; gap: 8px; padding: 6px 24px 12px; }
+.dfs-pill { flex: 1; border-radius: 16px; padding: 10px 6px 9px; text-align: center;
+  background: var(--surface); box-shadow: var(--np-shadow-row); border: 1.5px solid transparent;
+  font-family: inherit; cursor: pointer; transition: background .26s var(--np-ease-ios), border-color .26s var(--np-ease-ios); }
+.dfs-e { display: block; font-size: 15px; }
+.dfs-l { display: block; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--faint); margin-top: 3px; }
+.dfs-c { display: block; font-size: 9.5px; font-weight: 800; color: var(--sage-deep); margin-top: 2px;
+  font-variant-numeric: tabular-nums; }
+.dfs-pill.now { border-color: var(--coral); }
+.dfs-pill.now .dfs-l { color: var(--coral-deep); }
+.dfs-pill.sel { background: var(--ink); border-color: var(--ink); }
+.dfs-pill.sel .dfs-l { color: color-mix(in srgb, var(--surface) 72%, transparent); }
+.dfs-pill.sel .dfs-c { color: color-mix(in srgb, var(--surface) 82%, transparent); }
+.dfs-pill.sel.now { box-shadow: 0 0 0 2px var(--coral); }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
