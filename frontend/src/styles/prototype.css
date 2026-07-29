@@ -1435,6 +1435,34 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
    log sheet) — the inherited cursor left it without a pointer (mezo-9bbc review). */
 button.donebar { cursor: pointer; }
 
+/* ===== ItemRow — the compact ItemCard sibling (mezo-jyua) ===== */
+.itemrow { --ir-a: var(--coral-deep); display: flex; align-items: center; gap: 11px; width: 100%;
+  padding: 11px 13px; border-radius: 18px; background: var(--surface); box-shadow: var(--np-shadow-row);
+  margin: 0 24px 8px; border: 0; font-family: inherit; text-align: left; }
+.itemrow-gym   { --ir-a: var(--tag-gym); }
+.itemrow-sport { --ir-a: var(--tag-sport); }
+.itemrow-cross { --ir-a: var(--tag-cross); }
+.itemrow-trx   { --ir-a: var(--tag-trx); }
+.itemrow-run   { --ir-a: var(--tag-run); }
+.itemrow-body  { --ir-a: var(--sage-deep); }
+.itemrow-mind  { --ir-a: var(--lav-deep); }
+.itemrow-fuel  { --ir-a: var(--amber-deep); }
+.itemrow-ic { flex: none; width: 34px; height: 34px; border-radius: 12px; display: inline-flex;
+  align-items: center; justify-content: center; font-size: 15px;
+  background: color-mix(in srgb, var(--ir-a) 13%, var(--surface)); }
+.itemrow-tx { flex: 1; min-width: 0; display: block; }
+.itemrow-t1 { display: block; font-size: 13.5px; font-weight: 800; color: var(--ink); line-height: 1.25; }
+.itemrow-t2 { display: block; font-size: 10.5px; font-weight: 700; color: var(--sub); margin-top: 2px; }
+.itemrow-tm { flex: none; font-size: 11.5px; font-weight: 800; color: var(--ir-a); font-variant-numeric: tabular-nums; }
+.itemrow-act { flex: none; border-radius: 11px; padding: 8px 12px; font-size: 11px; font-weight: 800;
+  font-family: inherit; cursor: pointer; color: var(--ir-a); border: 0;
+  background: color-mix(in srgb, var(--ir-a) 11%, var(--surface)); }
+.itemrow-act.is-inert { cursor: default; color: var(--faint); background: var(--warm); }
+.itemrow.is-done { background: transparent; box-shadow: none; }
+.itemrow.is-done .itemrow-t1 { color: var(--sub); }
+.itemrow.is-done .itemrow-ic { background: var(--sage-deep); color: var(--surface); }
+button.itemrow { cursor: pointer; }
+
 /* Floating capsule on real devices/PWA: lift the whole bar above the home indicator
    and keep scroll clearance (replaces the old docked-bar safe-area padding). */
 @media (max-width: 519px), (display-mode: standalone), (display-mode: fullscreen), (display-mode: minimal-ui) {
