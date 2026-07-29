@@ -14,6 +14,30 @@
 
 **bd:** `mezo-h4wp.6.2` (N2, tasks 1-8) and `mezo-h4wp.6.3` (N3, tasks 9-12). Claim `mezo-h4wp.6.2` before Task 1. **One branch for both** (`feat/push-notifications-n2-n3`): the settings screen spans the two issues and splitting it would mean shipping a half-built screen. Each commit carries the bd id of the task it belongs to.
 
+## ⚠️ PLAN CORRECTION (2026-07-29, discovered executing Task 2) — read before Task 3
+
+Two defects in this plan's original shape, found the moment Task 1's contract landed:
+
+**1. There is ONE generated interface, so there is ONE controller.** `openapi-generator` emits one interface per **tag**, and all six operations carry the tag `Notification` — so `NotificationApi` declares all six (`getNotificationPrefs`, `putNotificationPrefs`, `putNotificationSchedule`, `registerPushSubscription`, `sendTestPush`, `unregisterPushSubscription`). A Java class implementing an interface must implement all of it, so the File Structure's `NotificationPrefController` **and** `NotificationScheduleController` cannot exist as written. **Correction: extend the existing `feature/notification/controller/NotificationController` with the three new methods**, delegating to the new services — the thin-delegation shape `RitualController` already uses. Ignore those two rows in the File Structure table.
+
+**2. The task order left the branch non-compiling.** Task 1 added three interface methods with no implementation, so `backend` does not compile until they exist — every later backend task hits it, and CI would fail. Task 2's implementer worked around it with a temporary local stub (reverted before committing, commit verified clean), which is the right call once but must not become the norm.
+
+**Corrected execution order** (task *texts* keep their original numbers; only the sequence changes):
+
+| Order | Task | Why here |
+|---|---|---|
+| 1 ✅ | 1 — contract | done |
+| 2 ✅ | 2 — `notification_pref` + `push_log` | done |
+| 3 | **3** — category catalog | pure enum, no dependencies |
+| 4 | **9 (step 1 only)** — the `notification_schedule` migration + entity + repository | the schedule service needs its table before compilation can be restored |
+| 5 | **6 + 9 (rest)** — pref service, schedule service, and **all three controller methods together** | this is the step that **restores compilation**; do it as one task, not two |
+| 6 | **4** — `DueEvaluator` | |
+| 7 | **5** — `AnchorResolver` | |
+| 8 | **7** — `NotificationDispatchJob` | |
+| 9-13 | **8, 10, 11, 12, 13** | frontend, docs, ship — unchanged |
+
+**Until order-step 5 lands, `./mvnw` will not compile the main sources.** A task before it that needs a green test run may stub the three controller methods locally, but must revert the stub before staging and prove the commit is clean with `git show --name-only HEAD`.
+
 ## Global Constraints
 
 - **Zero new Maven dependencies.**

@@ -1,9 +1,13 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { HttpResponse, http } from 'msw'
 import { describe, expect, it, vi } from 'vitest'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { API_BASE } from '@/data/_client/api'
+import { notificationPrefSeed } from '@/data/notification/notificationMock'
+import { server } from '@/test/msw/server'
 import type { PushSubscriptionState } from '@/data/types'
 
 // usePushSubscription's `supported`/`standalone` come straight off the real browser
@@ -173,5 +177,70 @@ describe('NotificationsPage', () => {
     renderPage()
     await userEvent.click(screen.getByRole('button', { name: 'Teszt értesítés küldése' }))
     expect(await screen.findByText('Elküldve 1/2 eszközre.')).toBeInTheDocument()
+  })
+
+  // ── N2/N3: settings category list + preview header (mezo-h4wp.6.2/.3) ──────────────────────
+  it('renders all 11 categories grouped into the two mockup sections, plus the master toggle', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    expect(await screen.findByText('Mezo megszólal')).toBeInTheDocument()
+    expect(screen.getByText('Emlékeztetők')).toBeInTheDocument()
+    // 1 master toggle + 11 category rows (4 prose + 7 reminder).
+    await waitFor(() => expect(screen.getAllByRole('switch')).toHaveLength(12))
+  })
+
+  it('toggling a category row calls setPref, flipping just that row', async () => {
+    // A STATEFUL fake backend for the pref endpoints: real mode's onSettled invalidates and
+    // refetches after the write, so a stateless GET (always the pristine seed) would silently
+    // revert the optimistic flip — harmless to register in mock mode too (never reached).
+    let state = notificationPrefSeed.map((p) => ({ ...p }))
+    server.use(
+      http.get(`${API_BASE}/api/notification/pref`, () => HttpResponse.json({ prefs: state })),
+      http.put(`${API_BASE}/api/notification/pref`, async ({ request }) => {
+        const body = (await request.json()) as { prefs: typeof state }
+        state = state.map((p) => body.prefs.find((x) => x.category === p.category) ?? p)
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    // "Déli jegyzet" (midday) defaults OFF — an honest, unambiguous OFF→ON assertion.
+    const row = await screen.findByRole('switch', { name: 'Déli jegyzet' })
+    expect(row).toHaveAttribute('aria-checked', 'false')
+    await userEvent.click(row)
+    await waitFor(() => expect(row).toHaveAttribute('aria-checked', 'true'))
+    // A different, untouched row must not have flipped along with it.
+    expect(screen.getByRole('switch', { name: 'Reggeli briefing' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('the install gate replaces the WHOLE screen — no category rows, no preview header', () => {
+    hooks.usePushSubscription.mockReturnValue(push({ supported: false, standalone: false }))
+    renderPage()
+    expect(screen.queryByText('Mezo megszólal')).not.toBeInTheDocument()
+    expect(screen.queryByText('Emlékeztetők')).not.toBeInTheDocument()
+    expect(screen.queryByText('Napi terhelés')).not.toBeInTheDocument()
+    expect(screen.queryByRole('switch')).not.toBeInTheDocument()
+  })
+
+  it('renders the live volume-preview header with a daily count, above the master toggle', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: false, permission: 'default' }))
+    renderPage()
+    expect(await screen.findByText('Napi terhelés')).toBeInTheDocument()
+    // Anchored to digits-then-"/ nap" so it never also matches the fuel_slot row's derived
+    // sub-line ("{count} slot / nap"), which lands on the SAME "/ nap" substring.
+    expect(screen.getByText(/^\d+ \/ nap$/)).toBeInTheDocument()
+  })
+
+  // Fix round 1 (mezo-h4wp.6.3 review): the category rows show LIVE per-day sub-lines derived
+  // from the same anchors the preview header uses, not just the static meta description.
+  it('derives live sub-lines for rows backed by data the page already has', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    await screen.findByText('Mezo megszólal')
+    // ritual's opensAt / lights_out's bedTime come straight from the mock ritual day + sleep goal
+    // (see test/msw + mock seeds) — asserting the STATIC fallback text is absent proves the row
+    // is showing something derived, not the generic copy.
+    expect(screen.queryByText('A napzárás-ablak nyílásakor')).not.toBeInTheDocument()
+    expect(screen.queryByText('Az esti alvás-horgonynál')).not.toBeInTheDocument()
   })
 })

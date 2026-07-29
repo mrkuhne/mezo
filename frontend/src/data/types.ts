@@ -1022,3 +1022,90 @@ export interface PushSubscriptionState {
   unsubscribe: () => Promise<void>
   sendTest: () => Promise<{ attempted: number; sent: number }>
 }
+
+// ── Push notification categories (N2/N3 settings list, mezo-h4wp.6.2/.3) ─────
+// The 11 keys/sections/defaults mirror the backend's authoritative enum
+// (backend/src/main/java/io/mrkuhne/mezo/feature/notification/domain/NotificationCategory.java)
+// and design spec §6 (docs/superpowers/specs/2026-07-29-push-notifications-design.md) —
+// keep both in sync if a category is ever added/renamed.
+export type NotificationCategoryKey =
+  | 'briefing' | 'gym' | 'medication' | 'ritual' | 'lights_out'
+  | 'weekly' | 'memoir' | 'wind_down' | 'midday' | 'checkin' | 'fuel_slot'
+
+/** Stable render order — NotificationCategory enum order (backend declaration order). */
+export const NOTIFICATION_CATEGORIES: NotificationCategoryKey[] = [
+  'briefing', 'gym', 'medication', 'ritual', 'lights_out',
+  'weekly', 'memoir', 'wind_down', 'midday', 'checkin', 'fuel_slot',
+]
+
+export interface NotificationPrefView {
+  category: NotificationCategoryKey
+  enabled: boolean
+  leadMinutes: number
+}
+
+export type NotificationSection = 'prose' | 'reminder'
+
+export interface NotificationCategoryMeta {
+  label: string
+  emoji: string
+  section: NotificationSection
+  /** A static, honest description of WHEN the category fires — never a live clock time (the
+   *  row is presentational and takes no @/data/* hook, so it cannot read anchors itself). */
+  description: string
+  /** Only `gym`'s leadMinutes actually shifts the fire time (design spec §6/§9): the ritual
+   *  family (ritual/lights_out/wind_down) resolves its offset through RitualService instead, so
+   *  a lead chip there would expose a number the backend ignores — dishonest control. */
+  showLeadChip: boolean
+  /** CSS var name (without `var()`) for the row icon's wash background. */
+  iconBg: string
+}
+
+/** Hungarian settings-list copy for all 11 categories (mockup direction C, §2 "A · Kategória-lista"
+ *  section 1 for per-category copy) — the UI must never hardcode this inline. */
+export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, NotificationCategoryMeta> = {
+  briefing: {
+    label: 'Reggeli briefing', emoji: '☀️', section: 'prose',
+    description: 'Ébredéskor, a napi tervvel', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  midday: {
+    label: 'Déli jegyzet', emoji: '✨', section: 'prose',
+    description: 'Dél körül, egy rövid állapotfrissítés', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  weekly: {
+    label: 'Heti terv', emoji: '📖', section: 'prose',
+    description: 'Hétfő reggel, ébredéskor', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  memoir: {
+    label: 'Heti összefoglaló', emoji: '📔', section: 'prose',
+    description: 'Vasárnap este 19:00', showLeadChip: false, iconBg: '--wash-sport',
+  },
+  gym: {
+    label: 'Edzés előtt', emoji: '🏋️', section: 'reminder',
+    description: 'A mai edzés kezdete előtt', showLeadChip: true, iconBg: '--wash-gym',
+  },
+  medication: {
+    label: 'Reta injekció', emoji: '💉', section: 'reminder',
+    description: 'Injekciós napon, reggel', showLeadChip: false, iconBg: '--wash-amber',
+  },
+  ritual: {
+    label: 'Napzárás', emoji: '✨', section: 'reminder',
+    description: 'A napzárás-ablak nyílásakor', showLeadChip: false, iconBg: '--wash-lav',
+  },
+  lights_out: {
+    label: 'Villanyoltás', emoji: '🌙', section: 'reminder',
+    description: 'Az esti alvás-horgonynál', showLeadChip: false, iconBg: '--wash-lav',
+  },
+  wind_down: {
+    label: 'Lecsendesítés', emoji: '🫖', section: 'reminder',
+    description: 'A napzárás-ablak előtti csendes szakasz kezdetén', showLeadChip: false, iconBg: '--wash-lav',
+  },
+  checkin: {
+    label: 'Check-in', emoji: '🫀', section: 'reminder',
+    description: '06:30 · 10:00 · 14:00 · 20:00', showLeadChip: false, iconBg: '--wash-run',
+  },
+  fuel_slot: {
+    label: 'Fuel & stack', emoji: '💊', section: 'reminder',
+    description: 'Minden fuel/stack slotnál', showLeadChip: false, iconBg: '--wash-sage',
+  },
+}

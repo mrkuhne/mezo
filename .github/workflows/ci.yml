@@ -65,7 +65,11 @@ jobs:
 
   test-frontend:
     # The CLAUDE.md gate, machine-enforced: vitest must be green in BOTH modes
-    # (real-mode default + VITE_USE_MOCK=true). Includes the dualMode.guard test.
+    # (VITE_USE_MOCK=false + VITE_USE_MOCK=true). Includes the dualMode.guard test.
+    # BOTH steps set the var EXPLICITLY: `isMockMode()` is `VITE_USE_MOCK !== 'false'`,
+    # so an UNSET var means MOCK — and `frontend/.env` (which is what makes a local
+    # `pnpm test` real-mode) is gitignored, hence absent on a CI checkout. Leaving the
+    # first step bare therefore ran mock mode twice and the real-mode gate was vacuous.
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -82,6 +86,8 @@ jobs:
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - name: Tests (real mode)
+        env:
+          VITE_USE_MOCK: "false"
         run: pnpm test
       - name: Tests (mock mode)
         env:

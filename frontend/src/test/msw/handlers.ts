@@ -3,6 +3,7 @@ import { API_BASE } from '@/data/_client/api'
 import { initialChat, cannedReply } from '@/data/insights/chat'
 import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge'
 import { patterns as patternSeed } from '@/data/insights/insights'
+import { notificationPrefSeed } from '@/data/notification/notificationMock'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -215,6 +216,12 @@ export const handlers = [
       coins: 45, streakDays: 4, streakAlive: true, streakSavers: 2,
       equippedTitleKey: 'kovetkezetes', ownedTitleKeys: [],
     })),
+  // Notification prefs (N2/N3, mezo-h4wp.6.2/.3) — default: all 11 categories, code defaults
+  // (mirrors notificationPrefSeed). NotificationsPage's settings list + preview header need
+  // this in real mode; tests override with server.use() for write/rollback assertions.
+  http.get(`${API_BASE}/api/notification/pref`, () => HttpResponse.json({ prefs: notificationPrefSeed })),
+  http.put(`${API_BASE}/api/notification/pref`, () => new HttpResponse(null, { status: 204 })),
+
   // Ritual day (R3, mezo-ilsj) — open window, not yet closed. Tests override with
   // server.use() for the closed-day / custom-window assertions.
   http.get(`${API_BASE}/api/ritual/day/:date`, ({ params }) =>

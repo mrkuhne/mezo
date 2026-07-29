@@ -265,10 +265,11 @@ mezo:
       # quietly marks the rest missed; off = the HabitJob bean does not exist (reads still close lazily)
       habit-job:
         enabled: true
-      # N2 per-minute push dispatch job (schedule: mezo.notification.dispatch-cron); N1 adds no
-      # @Scheduled bean at all — this switch only exists so N2 can gate it. Must stay false here.
+      # N2 per-minute push dispatch job (schedule: mezo.notification.dispatch-cron) — resolves
+      # every user's due notifications and sends them; off = the NotificationDispatchJob bean
+      # does not exist.
       notification-dispatch-job:
-        enabled: false
+        enabled: true
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
     llm:
@@ -648,6 +649,28 @@ mezo:
   notification:
     # Notification body is truncated to this many chars before it is encrypted + sent.
     body-max-chars: 300
+    # Medication has no per-day time column (MedicationCycleService only derives which cycle
+    # day it is) — the reminder anchors on this fixed HH:mm instead (spec §6).
+    medication-time: "08:00"
+    # How much of an already-generated prose row (briefing/heartbeat/weekly/memoir) AnchorResolver
+    # excerpts for a push body — cut at a word boundary, never a new LLM call (spec §6).
+    prose-excerpt-chars: 160
+    # N2 per-minute dispatch job (NotificationDispatchJob) schedule — every minute, on the minute.
+    dispatch-cron: "0 * * * * *"
+    # DueEvaluator's BACKWARD firing window width in minutes — a half-open [0, catch-up-minutes)
+    # on (now - fireMinute), i.e. on time plus (width - 1) recovered LATE minutes, so a genuinely
+    # missed cron minute still delivers on the next tick; the push_log dedup (not this) prevents a
+    # double-send. Looking forward instead would fire a minute EARLY and never recover a miss.
+    catch-up-minutes: 2
+    # Grace (minutes) applied to a prose category's anchor when it would otherwise land AT or
+    # BEFORE the minute its own content generator cron runs: memoir (mezo.proactive.memoir.cron,
+    # 19:00), midday (proactive.heartbeat.midday-cron, 12:30) and weekly whenever the user's wake
+    # time is <= proactive.weekly.cron (06:00). Both jobs queue on the SAME size-1 scheduler thread
+    # and each generator makes an LLM call, so at the anchor minute the row provably does not exist
+    # yet and the (default-ON) category would never fire at all. AnchorResolver reads the generator
+    # crons themselves via CronExpression — those minutes are NOT duplicated here. briefing needs
+    # no grace by construction (generates 05:45, anchors at wake ~06:00) — that is the pattern.
+    prose-generation-grace-min: 15
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
   # AccountProgressPort adapter fires. Binds onto GamificationProperties.
   gamification:

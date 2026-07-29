@@ -1,11 +1,79 @@
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
-import type { BuiltProtocol, ProtocolSlotData, ProtocolSlotItem, Reasoning, SupplementStashItem } from '@/data/types'
+import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
+import { sportOf, SPORT_TITLES } from '@/features/train/logic/sportKinds'
+import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
+import type { RunningBlockResponse } from '@/data/train/runningApi'
+import type {
+  BuiltProtocol,
+  GymSchedule,
+  ProtocolSlotData,
+  ProtocolSlotItem,
+  Reasoning,
+  SportSchedule,
+  SupplementStashItem,
+} from '@/data/types'
 
 /** The user's real day anchors that drive slot times when provided. */
 export interface ProtocolAnchors {
   wake: string
   preWorkout?: string
   bedtime: string
+}
+
+/** The pre-workout stack slot lands this many minutes before the day's first training block
+ *  (spec §5) — the single canonical offset; `deriveProtocolAnchors` is the only place it is
+ *  applied, so the Fuel/Stack page, the notification schedule writer, and the settings-screen
+ *  preview can never quietly disagree on when that slot fires. */
+const PRE_WORKOUT_STACK_LEAD_MIN = 40
+
+/** Today's real training blocks (gym / sport / run), in derivation order. Moved here (out of
+ *  `data/fuel/timelineHooks.ts`, which re-exports it for backward compatibility) so it can be
+ *  called from anywhere that needs "today's blocks" without pulling in the whole fuel-timeline
+ *  hook composition — notably `deriveProtocolAnchors` below and the notification writer/preview,
+ *  which only need the block TIMES, not the full day plan. */
+export function deriveBlocks(
+  gymSchedule: GymSchedule | null,
+  sport: { schedule: SportSchedule | null },
+  activeRunningBlock: RunningBlockResponse | null,
+): PlannerBlock[] {
+  const blocks: PlannerBlock[] = []
+  // Gym: the meso's today gym day joined with its standalone weekly slot (needs a time).
+  const gym = gymSchedule?.weeklyTimes.find(d => d.today && d.active && d.time)
+  if (gym?.time) blocks.push({ kind: 'gym', time: gym.time, durationMin: gym.duration ?? null, label: gym.type ?? 'Gym' })
+  // Sport: today's session from the recurring weekly schedule. The label carries the session's
+  // sport identity (volleyball|cross|trx) so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
+  const vb = sport.schedule?.volleyball.sessions.find(s => s.today && s.time)
+  if (vb?.time) blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] })
+  // Run: today's prescribed session in the active block's current week (needs a plan time).
+  // Interval sessions have no single continuous duration → null (DEFAULT_BLOCK_MIN drives snapping).
+  const run = runSessionsForDay(activeRunningBlock, todayIdx())[0]
+  if (run?.timeOfDay) blocks.push({ kind: 'run', time: run.timeOfDay, durationMin: null, label: run.label })
+  return blocks
+}
+
+/**
+ * The CANONICAL `ProtocolAnchors` derivation — `wake`/`bedtime` straight through, `preWorkout`
+ * anchored to the day's first training block minus `PRE_WORKOUT_STACK_LEAD_MIN`. Every caller
+ * that needs anchor-aware `buildProtocol()` slot times (the Fuel/Stack timeline, the
+ * notification schedule writer, the settings-screen preview) MUST go through this function
+ * rather than re-deriving `preWorkout` itself — a second derivation of the same minute is
+ * exactly the drift this design exists to avoid (the backend has no fuel-slot times of its
+ * own precisely because the FE is the single source of truth for them).
+ */
+export function deriveProtocolAnchors(
+  gymSchedule: GymSchedule | null,
+  sport: { schedule: SportSchedule | null },
+  activeRunningBlock: RunningBlockResponse | null,
+  wake: string,
+  bedtime: string,
+): ProtocolAnchors {
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
+  const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null
+  return {
+    wake,
+    preWorkout: firstBlock ? toHHmm(toMin(firstBlock.time) - PRE_WORKOUT_STACK_LEAD_MIN) : undefined,
+    bedtime,
+  }
 }
 
 // ============================================================
