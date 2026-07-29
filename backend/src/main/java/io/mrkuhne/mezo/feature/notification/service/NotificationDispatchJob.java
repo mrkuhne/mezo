@@ -10,7 +10,7 @@ import io.mrkuhne.mezo.feature.notification.entity.PushLogEntity;
 import io.mrkuhne.mezo.feature.notification.repository.PushLogRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -66,9 +66,11 @@ public class NotificationDispatchJob {
 
     @Scheduled(cron = "${mezo.notification.dispatch-cron}")
     public void run() {
-        LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
-        runOnce(today, now.getHour() * 60 + now.getMinute());
+        // ONE clock read, both values derived from it: two separate now() calls could tear across
+        // midnight (date from before, minute from after), logging a 00:00 anchor under the previous
+        // log_date — the only theoretical way this job double-sends an anchor.
+        LocalDateTime now = LocalDateTime.now();
+        runOnce(now.toLocalDate(), now.getHour() * 60 + now.getMinute());
     }
 
     /**
@@ -90,9 +92,13 @@ public class NotificationDispatchJob {
                 log.warn("Notification dispatch failed for user {} on {}", user.getId(), date, e);
             }
         }
-        // Counts only — never a push endpoint (a capability URL) or key material in this line.
-        log.info("Notification dispatch run {} min={}: {} user(s), {} dispatched", date, nowMinuteOfDay,
-                users, dispatched);
+        // Only when something actually went out: this runs 1440x/day, so an unconditional summary
+        // would add 1440 lines/day forever and bury the lines that matter. Counts only — never a
+        // push endpoint (a capability URL) or key material in this line.
+        if (dispatched > 0) {
+            log.info("Notification dispatch run {} min={}: {} user(s), {} dispatched", date, nowMinuteOfDay,
+                    users, dispatched);
+        }
         return dispatched;
     }
 

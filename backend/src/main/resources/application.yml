@@ -657,9 +657,20 @@ mezo:
     prose-excerpt-chars: 160
     # N2 per-minute dispatch job (NotificationDispatchJob) schedule — every minute, on the minute.
     dispatch-cron: "0 * * * * *"
-    # DueEvaluator's firing window width in minutes — a half-open [0, catch-up-minutes) so one
-    # missed cron minute still delivers; the push_log dedup (not this) prevents a double-send.
+    # DueEvaluator's BACKWARD firing window width in minutes — a half-open [0, catch-up-minutes)
+    # on (now - fireMinute), i.e. on time plus (width - 1) recovered LATE minutes, so a genuinely
+    # missed cron minute still delivers on the next tick; the push_log dedup (not this) prevents a
+    # double-send. Looking forward instead would fire a minute EARLY and never recover a miss.
     catch-up-minutes: 2
+    # Grace (minutes) applied to a prose category's anchor when it would otherwise land AT or
+    # BEFORE the minute its own content generator cron runs: memoir (mezo.proactive.memoir.cron,
+    # 19:00), midday (proactive.heartbeat.midday-cron, 12:30) and weekly whenever the user's wake
+    # time is <= proactive.weekly.cron (06:00). Both jobs queue on the SAME size-1 scheduler thread
+    # and each generator makes an LLM call, so at the anchor minute the row provably does not exist
+    # yet and the (default-ON) category would never fire at all. AnchorResolver reads the generator
+    # crons themselves via CronExpression — those minutes are NOT duplicated here. briefing needs
+    # no grace by construction (generates 05:45, anchors at wake ~06:00) — that is the pattern.
+    prose-generation-grace-min: 15
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
   # AccountProgressPort adapter fires. Binds onto GamificationProperties.
   gamification:

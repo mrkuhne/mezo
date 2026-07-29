@@ -9,12 +9,17 @@ import io.mrkuhne.mezo.feature.notification.domain.AnchorSet;
 import io.mrkuhne.mezo.feature.notification.domain.AnchorSet.AnchoredEvent;
 import io.mrkuhne.mezo.feature.notification.domain.NotificationCategory;
 import io.mrkuhne.mezo.feature.notification.service.AnchorResolver;
+import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.BriefingPopulator;
+import io.mrkuhne.mezo.support.populator.HeartbeatNotePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
+import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.WeeklySuggestionPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -26,12 +31,28 @@ import org.springframework.beans.factory.annotation.Autowired;
  * Anchor resolution across the 11 categories (bd mezo-h4wp.6.2), focused on the traps that would
  * silently misfire a notification: the gym/sport weekday's 0-based-vs-ISO conversion, prose
  * anchors existing only when their content row exists, medication's honest {@code retaDay == 0},
- * and the FE-written schedule's {@code weekday = null} "every day" semantics.
+ * the FE-written schedule's {@code weekday = null} "every day" semantics, the prose-generation
+ * grace (trap #6 — an anchor on its own generator's minute never fires), and the guarantee that
+ * ONE malformed {@code notification_schedule} row cannot silence every category for that user.
  */
 class AnchorResolverIT extends AbstractIntegrationTest {
 
     /** A known Wednesday (matches the current-date convention used elsewhere in this suite). */
     private static final LocalDate WEDNESDAY = LocalDate.of(2026, 7, 29);
+    /** The ISO Monday of WEDNESDAY's own week — `weekly` only anchors on a Monday. */
+    private static final LocalDate MONDAY = LocalDate.of(2026, 7, 27);
+    /** The Sunday that ends WEDNESDAY's week — `memoir` only anchors on a Sunday. */
+    private static final LocalDate SUNDAY = LocalDate.of(2026, 8, 2);
+
+    /** mezo.proactive.weekly.cron is `0 0 6 * * MON` and mezo.notification.prose-generation-grace-min
+     *  is 15 -> a wake anchor at or before 06:00 must be pushed to 06:15. */
+    private static final int WEEKLY_GRACED_MINUTE = 6 * 60 + 15;
+    /** mezo.proactive.memoir.cron `0 0 19 * * SUN` + 15. */
+    private static final int MEMOIR_GRACED_MINUTE = 19 * 60 + 15;
+    /** mezo.proactive.heartbeat.midday-cron `0 30 12 * * *` + 15. */
+    private static final int MIDDAY_GRACED_MINUTE = 12 * 60 + 45;
+    /** Comfortably after the weekly generator's 06:00 — no grace applies. */
+    private static final String LATE_WAKE = "08:20";
 
     @Autowired private AnchorResolver anchorResolver;
     @Autowired private AppUserRepository appUserRepository;
@@ -41,6 +62,10 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     @Autowired private MedicationPopulator medicationPopulator;
     @Autowired private MedicationDosePopulator medicationDosePopulator;
     @Autowired private NotificationPopulator notificationPopulator;
+    @Autowired private WeeklySuggestionPopulator weeklySuggestionPopulator;
+    @Autowired private MemoirPopulator memoirPopulator;
+    @Autowired private HeartbeatNotePopulator heartbeatNotePopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -142,5 +167,118 @@ class AnchorResolverIT extends AbstractIntegrationTest {
                 .as("fires on its named weekday").anyMatch(e -> e.category() == NotificationCategory.FUEL_SLOT);
         assertThat(thursdayAnchors.scheduleAnchors())
                 .as("does not fire on any other weekday").noneMatch(e -> e.category() == NotificationCategory.FUEL_SLOT);
+    }
+
+    // ---- trap #6: a prose anchor must never land on its own generator's minute -------------------
+
+    @Test
+    void testResolve_shouldPushTheWeeklyAnchorPastTheGenerator_whenTheWakeTimeLandsOnTheWeeklyCronMinute() {
+        UUID owner = ownerId();
+        // No sleep_goal row -> SleepAnchorPort's config ghost wake, mezo.sleep.default-wake 06:00,
+        // which is EXACTLY mezo.proactive.weekly.cron's minute: WeeklySuggestionJob has not written
+        // the row yet at that minute (same size-1 scheduler thread, plus an LLM call), so an
+        // ungraced anchor means this default-ON category never fires at all.
+        weeklySuggestionPopulator.suggestion(owner, MONDAY);
+
+        AnchorSet anchors = anchorResolver.resolve(owner, MONDAY);
+
+        assertThat(weeklyEvent(anchors).minuteOfDay()).isEqualTo(WEEKLY_GRACED_MINUTE);
+        assertThat(weeklyEvent(anchors).dedupSuffix()).isEqualTo("06:15");
+    }
+
+    @Test
+    void testResolve_shouldLeaveTheWeeklyAnchorOnWake_whenTheWakeTimeIsWellAfterTheWeeklyCronMinute() {
+        UUID owner = ownerId();
+        sleepGoalPopulator.goal(owner, 450, "WAKE", LATE_WAKE, 15);
+        weeklySuggestionPopulator.suggestion(owner, MONDAY);
+
+        AnchorSet anchors = anchorResolver.resolve(owner, MONDAY);
+
+        assertThat(weeklyEvent(anchors).minuteOfDay())
+                .as("the grace is relative to the generator's cron minute, never blindly added to wake")
+                .isEqualTo(8 * 60 + 20);
+        assertThat(weeklyEvent(anchors).dedupSuffix()).isEqualTo(LATE_WAKE);
+    }
+
+    @Test
+    void testResolve_shouldAnchorMemoirAfterItsGenerator_whenTheMemoirRowExistsForTheWeek() {
+        UUID owner = ownerId();
+        memoirPopulator.memoir(owner, MONDAY); // the ISO Monday of the week SUNDAY closes
+
+        AnchorSet anchors = anchorResolver.resolve(owner, SUNDAY);
+
+        AnchoredEvent memoir = proseEvent(anchors, NotificationCategory.MEMOIR);
+        assertThat(memoir.minuteOfDay()).as("19:00 memoir cron + the 15-minute generation grace")
+                .isEqualTo(MEMOIR_GRACED_MINUTE);
+        assertThat(memoir.dedupSuffix()).isEqualTo("19:15");
+    }
+
+    @Test
+    void testResolve_shouldAnchorMiddayAfterItsGenerator_whenTheMiddayHeartbeatNoteExists() {
+        UUID owner = ownerId();
+        heartbeatNotePopulator.note(owner, WEDNESDAY, HeartbeatNoteEntity.WINDOW_MIDDAY);
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        AnchoredEvent midday = proseEvent(anchors, NotificationCategory.MIDDAY);
+        assertThat(midday.minuteOfDay()).as("12:30 midday cron + the 15-minute generation grace")
+                .isEqualTo(MIDDAY_GRACED_MINUTE);
+        assertThat(midday.dedupSuffix()).isEqualTo("12:45");
+    }
+
+    @Test
+    void testResolve_shouldLeaveTheBriefingAnchorOnWake_whenItsGeneratorAlreadyRunsBeforeWake() {
+        UUID owner = ownerId();
+        briefingPopulator.briefing(owner, WEDNESDAY);
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        // briefing is the SAFE pattern the other three now copy: generated 05:45, anchored at the
+        // 06:00 ghost wake, so the same guard is a deliberate no-op here.
+        assertThat(proseEvent(anchors, NotificationCategory.BRIEFING).minuteOfDay()).isEqualTo(6 * 60);
+    }
+
+    // ---- one malformed schedule row must never silence the whole user ----------------------------
+
+    @Test
+    void testResolve_shouldSkipOnlyTheBadRow_whenAScheduleRowCarriesAnUnparseableTime() {
+        UUID owner = ownerId();
+        // The contract only constrains `time` to 5 chars (minLength/maxLength) and there is no DB
+        // CHECK, so "aa:bb" can genuinely reach the resolver. Unguarded it threw out of resolve()
+        // BEFORE any anchor was returned -> that user received nothing at all, from any category.
+        notificationPopulator.schedule(owner, null, "aa:bb", "checkin", "Bad", null, "/today", "test");
+        notificationPopulator.schedule(owner, null, "14:00", "checkin", "Good", null, "/today?checkin=14:00", "test");
+        trainPopulator.createGymSlot(owner, WEDNESDAY.getDayOfWeek().getValue() - 1, "17:30");
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        assertThat(anchors.scheduleAnchors()).as("only the healthy schedule row survives")
+                .extracting(AnchoredEvent::dedupSuffix).containsExactly("14:00");
+        assertThat(anchors.backendAnchors()).as("every OTHER category still resolves for this user")
+                .anyMatch(e -> e.category() == NotificationCategory.GYM);
+    }
+
+    @Test
+    void testResolve_shouldSkipTheRow_whenAScheduleRowNamesABackendNativeCategory() {
+        UUID owner = ownerId();
+        // Defense-in-depth: NotificationScheduleService.replace already rejects a non-feWritten
+        // category, so today this row can only arrive some other way (e.g. a manual DB fix) — but
+        // honouring it would give a client a second source of truth for a minute the backend owns.
+        notificationPopulator.schedule(owner, null, "07:00", "briefing", "Nope", null, "/today", "test");
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        assertThat(anchors.scheduleAnchors()).isEmpty();
+    }
+
+    private static AnchoredEvent weeklyEvent(AnchorSet anchors) {
+        return proseEvent(anchors, NotificationCategory.WEEKLY);
+    }
+
+    private static AnchoredEvent proseEvent(AnchorSet anchors, NotificationCategory category) {
+        return anchors.proseAnchors().stream()
+                .filter(e -> e.category() == category)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no " + category + " prose anchor was resolved"));
     }
 }

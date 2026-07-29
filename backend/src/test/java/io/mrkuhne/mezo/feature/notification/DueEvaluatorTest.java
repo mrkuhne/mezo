@@ -19,10 +19,11 @@ import org.junit.jupiter.params.provider.MethodSource;
  * Table test for {@link DueEvaluator#due} (bd mezo-h4wp.6.2). Pure function, so it is
  * exhaustively testable without Spring, a database, or a clock — construct with {@code new}.
  *
- * <p>Sign convention (mirrors {@code weekly-planner}'s {@code dueBlocks} table exactly):
- * {@code delta = fireMinute - nowMinuteOfDay}. A scenario with a larger {@code now} (closer to, or
- * past, the fire minute) is what the brief calls "later" in the catch-up window; {@code now}
- * further before the fire minute is "future" and never due.
+ * <p>Sign convention — the window looks <b>BACKWARD</b>:
+ * {@code elapsed = nowMinuteOfDay - fireMinute}, due when {@code elapsed ∈ [0, catchUpMinutes)}.
+ * So "late" means {@code now} is PAST the fire minute (a missed tick being recovered) and "early"
+ * means {@code now} is still before it (never due). The previous version of this table had those
+ * two labels inverted, which is exactly how the forward-window bug survived review.
  */
 class DueEvaluatorTest {
 
@@ -31,13 +32,18 @@ class DueEvaluatorTest {
 
     private final DueEvaluator evaluator = new DueEvaluator();
 
-    /** anchor 10:00 (600), lead 0 -> fireMinute = 600. delta = 600 - now. */
+    /** anchor 10:00 (600), lead 0 -> fireMinute = 600. elapsed = now - 600. */
     private static Stream<Arguments> windowScenarios() {
         return Stream.of(
-            Arguments.of("exact minute fires", TEN_AM, true),           // delta = 600-600 = 0
-            Arguments.of("one minute late still fires (catch-up 2)", TEN_AM - 1, true),  // delta = 1
-            Arguments.of("two minutes late does not fire", TEN_AM - 2, false),           // delta = 2, not < 2
-            Arguments.of("a future minute does not fire", TEN_AM - 100, false)           // delta = 100
+            Arguments.of("exact minute fires", TEN_AM, true),                              // elapsed = 0
+            Arguments.of("one minute LATE still fires — the missed-tick catch-up (width 2)",
+                    TEN_AM + 1, true),                                                     // elapsed = 1
+            Arguments.of("the far edge, now == fireMinute + catchUpMinutes, does not fire",
+                    TEN_AM + 2, false),                                                    // elapsed = 2, not < 2
+            Arguments.of("well past the window does not fire", TEN_AM + 100, false),       // elapsed = 100
+            Arguments.of("one minute EARLY does not fire — the window never looks forward",
+                    TEN_AM - 1, false),                                                    // elapsed = -1
+            Arguments.of("a future minute does not fire", TEN_AM - 100, false)             // elapsed = -100
         );
     }
 
@@ -51,6 +57,37 @@ class DueEvaluatorTest {
         List<DueItem> due = evaluator.due(nowMinuteOfDay, prefs, anchors, CATCH_UP_MINUTES);
 
         assertThat(due).as(scenario).hasSize(expectDue ? 1 : 0);
+    }
+
+    /**
+     * The reason the catch-up window exists at all, as its own named test rather than a table row:
+     * this job shares a size-1 scheduler thread with 18 other crons, so a slow LLM job straddling
+     * two ticks genuinely loses a minute. The forward window this replaced returned nothing here
+     * (delta = -1), dropping the anchor for the whole day.
+     */
+    @Test
+    void testDue_shouldStillFire_whenTheTickWasMissedAndNowIsOneMinutePastTheFireMinute() {
+        AnchorSet anchors = anchorSet(event(NotificationCategory.MEDICATION, TEN_AM, "10:00"));
+        List<CategoryPref> prefs = List.of(pref(NotificationCategory.MEDICATION, true, 0));
+
+        List<DueItem> due = evaluator.due(TEN_AM + 1, prefs, anchors, CATCH_UP_MINUTES);
+
+        assertThat(due).as("a missed 10:00 tick must still deliver at 10:01").hasSize(1);
+    }
+
+    /**
+     * The other half of the same bug: firing at {@code fireMinute - 1} sent every notification a
+     * minute early, and the {@code push_log} dedup then suppressed the on-time minute — so the
+     * early send was the ONLY send. The window must never look forward.
+     */
+    @Test
+    void testDue_shouldNotFire_whenNowIsOneMinuteBeforeTheFireMinute() {
+        AnchorSet anchors = anchorSet(event(NotificationCategory.MEDICATION, TEN_AM, "10:00"));
+        List<CategoryPref> prefs = List.of(pref(NotificationCategory.MEDICATION, true, 0));
+
+        List<DueItem> due = evaluator.due(TEN_AM - 1, prefs, anchors, CATCH_UP_MINUTES);
+
+        assertThat(due).as("09:59 is not a 10:00 notification").isEmpty();
     }
 
     @Test
@@ -113,8 +150,8 @@ class DueEvaluatorTest {
     void testDue_shouldNotFireThePreviousEvening_whenAnAnchorNearMidnightWithLeadGoesNegative() {
         // Anchor 00:10 (minute 10), lead 30 -> raw fireMinute = -20. A wraparound "fix" would
         // reinterpret this as 23:40 the previous evening and fire then. The honest answer: it
-        // never fires, because a negative fireMinute can never land in [0, catchUp) for any valid
-        // nowMinuteOfDay in [0, 1439].
+        // never fires, because no nowMinuteOfDay in [0, 1439] is within catchUpMinutes AFTER a
+        // negative fire minute.
         AnchorSet anchors = anchorSet(event(NotificationCategory.MEDICATION, 10, "00:10"));
         List<CategoryPref> prefs = List.of(pref(NotificationCategory.MEDICATION, true, 30));
 
@@ -122,7 +159,8 @@ class DueEvaluatorTest {
         List<DueItem> dueAtMidnight = evaluator.due(0, prefs, anchors, CATCH_UP_MINUTES);
 
         assertThat(dueAtTwentyThreeForty).as("must not wrap around to 23:40 the previous evening").isEmpty();
-        assertThat(dueAtMidnight).as("negative fireMinute never lands in [0, catchUp)").isEmpty();
+        assertThat(dueAtMidnight).as("no minute of the day is within catchUp AFTER a negative fire minute")
+                .isEmpty();
     }
 
     private static AnchorSet anchorSet(AnchoredEvent event) {

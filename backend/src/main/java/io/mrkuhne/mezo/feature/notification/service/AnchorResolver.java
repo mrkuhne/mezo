@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.notification.domain.AnchorSet;
 import io.mrkuhne.mezo.feature.notification.domain.AnchorSet.AnchoredEvent;
 import io.mrkuhne.mezo.feature.notification.domain.NotificationCategory;
 import io.mrkuhne.mezo.feature.notification.domain.ScheduleEntry;
+import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
 import io.mrkuhne.mezo.feature.proactive.entity.HeartbeatNoteEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.BriefingRepository;
@@ -28,14 +29,18 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,7 +79,12 @@ import org.springframework.transaction.annotation.Transactional;
  * cut at a word boundary via {@link #excerptProse(String)}, which reuses {@link
  * PushSender#truncateBody(String, int)}'s surrogate-safe cut (same package) rather than a second
  * raw {@code substring}.
+ *
+ * <p><b>Trap #6 — a prose anchor must never land on its own generator's minute</b>
+ * (see {@link #anchorAfterGeneration}): every prose anchor goes through that method, which pushes
+ * it past the generator's cron minute by {@code mezo.notification.prose-generation-grace-min}.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.NOTIFICATION_SWITCH, havingValue = "true")
@@ -89,10 +99,13 @@ public class AnchorResolver {
     private static final String URL_INSIGHTS_WEEKLY = "/insights/weekly";
     private static final String URL_INSIGHTS_MEMOIR = "/insights/memoir";
 
-    private static final int MIDDAY_MINUTE = 12 * 60 + 30;
-    private static final String MIDDAY_HHMM = "12:30";
-    private static final LocalTime MEMOIR_TIME = LocalTime.of(19, 0);
-    private static final String MEMOIR_HHMM = "19:00";
+    /** The intended (pre-grace) in-day slots for the two constant-anchored prose categories. Both
+     *  go through {@link #anchorAfterGeneration}, so the minute actually used is derived from the
+     *  generator cron + the grace — these are the "not earlier than" preference, not the answer. */
+    private static final int MIDDAY_PREFERRED_MINUTE = 12 * 60 + 30;
+    private static final int MEMOIR_PREFERRED_MINUTE = 19 * 60;
+
+    private static final int LAST_MINUTE_OF_DAY = 23 * 60 + 59;
 
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
@@ -107,6 +120,7 @@ public class AnchorResolver {
     private final MemoirRepository memoirRepository;
     private final NotificationScheduleService notificationScheduleService;
     private final NotificationProperties notificationProperties;
+    private final ProactiveProperties proactiveProperties;
 
     @Transactional(readOnly = true)
     public AnchorSet resolve(UUID owner, LocalDate date) {
@@ -245,10 +259,13 @@ public class AnchorResolver {
 
     private Optional<AnchoredEvent> briefingAnchor(UUID owner, LocalDate date) {
         return briefingRepository.findByCreatedByAndBriefingDate(owner, date).map(briefing -> {
-            LocalTime wake = sleepAnchorPort.resolve(owner).wake();
-            String wakeHhmm = hhmm(wake);
+            // No-op in practice (generates 05:45, anchors at wake ~06:00) — briefing IS the safe
+            // pattern the other three now copy. Routed through the same guard anyway so a future
+            // change to briefing.cron can never silently starve it either.
+            int minute = anchorAfterGeneration(minuteOfDay(sleepAnchorPort.resolve(owner).wake()),
+                    proactiveProperties.briefing().cron(), date);
             String body = excerptProse(String.join(" ", briefing.getContent().body()));
-            return new AnchoredEvent(NotificationCategory.BRIEFING, minuteOfDay(wake), wakeHhmm,
+            return new AnchoredEvent(NotificationCategory.BRIEFING, minute, hhmm(minute),
                     "Mezo · reggeli briefing", body, URL_TODAY);
         });
     }
@@ -256,8 +273,12 @@ public class AnchorResolver {
     private Optional<AnchoredEvent> middayAnchor(UUID owner, LocalDate date) {
         return heartbeatNoteRepository
                 .findByCreatedByAndNoteDateAndWindowKey(owner, date, HeartbeatNoteEntity.WINDOW_MIDDAY)
-                .map(note -> new AnchoredEvent(NotificationCategory.MIDDAY, MIDDAY_MINUTE, MIDDAY_HHMM,
-                        "Mezo", excerptProse(note.getContent()), URL_TODAY));
+                .map(note -> {
+                    int minute = anchorAfterGeneration(MIDDAY_PREFERRED_MINUTE,
+                            proactiveProperties.heartbeat().middayCron(), date);
+                    return new AnchoredEvent(NotificationCategory.MIDDAY, minute, hhmm(minute),
+                            "Mezo", excerptProse(note.getContent()), URL_TODAY);
+                });
     }
 
     private Optional<AnchoredEvent> weeklyAnchor(UUID owner, LocalDate date) {
@@ -265,9 +286,13 @@ public class AnchorResolver {
             return Optional.empty();
         }
         return weeklySuggestionRepository.findByCreatedByAndWeekStart(owner, date).map(suggestion -> {
-            LocalTime wake = sleepAnchorPort.resolve(owner).wake();
-            String wakeHhmm = hhmm(wake);
-            return new AnchoredEvent(NotificationCategory.WEEKLY, minuteOfDay(wake), wakeHhmm,
+            // The wake anchor is user-configurable and could be ANY minute, so the grace is applied
+            // relative to the generator's own cron minute, never blindly added to wake: a 08:00
+            // waker keeps 08:00, a 06:00 waker (the config default, == the generator minute) is
+            // pushed past the WeeklySuggestionJob.
+            int minute = anchorAfterGeneration(minuteOfDay(sleepAnchorPort.resolve(owner).wake()),
+                    proactiveProperties.weekly().cron(), date);
+            return new AnchoredEvent(NotificationCategory.WEEKLY, minute, hhmm(minute),
                     "Mezo · heti terv", excerptProse(suggestion.getProse()), URL_INSIGHTS_WEEKLY);
         });
     }
@@ -277,9 +302,49 @@ public class AnchorResolver {
             return Optional.empty();
         }
         LocalDate weekStart = date.minusDays(date.getDayOfWeek().getValue() - 1L); // this week's ISO Monday
-        return memoirRepository.findByCreatedByAndWeekStart(owner, weekStart)
-                .map(memoir -> new AnchoredEvent(NotificationCategory.MEMOIR, minuteOfDay(MEMOIR_TIME), MEMOIR_HHMM,
-                        "Mezo · a heted története", excerptProse(memoir.getBody()), URL_INSIGHTS_MEMOIR));
+        return memoirRepository.findByCreatedByAndWeekStart(owner, weekStart).map(memoir -> {
+            int minute = anchorAfterGeneration(MEMOIR_PREFERRED_MINUTE,
+                    proactiveProperties.memoir().cron(), date);
+            return new AnchoredEvent(NotificationCategory.MEMOIR, minute, hhmm(minute),
+                    "Mezo · a heted története", excerptProse(memoir.getBody()), URL_INSIGHTS_MEMOIR);
+        });
+    }
+
+    /**
+     * <b>Trap #6 — a prose anchor must never land on (or before) the minute its own content
+     * generator runs.</b> Both jobs queue on the SAME size-1 scheduler thread and every generator
+     * makes an LLM call, so at such a minute the content row provably does not exist yet; the prose
+     * anchor only exists when the row exists, so the category would simply never fire — silently,
+     * with nothing in the log to explain it. That was the shipped state of {@code memoir} (19:00
+     * anchor vs {@code 0 0 19 * * SUN}) and {@code weekly} (wake anchor, default 06:00, vs
+     * {@code 0 0 6 * * MON}), both {@code defaultEnabled = true}.
+     *
+     * <p>So: when {@code preferredMinute} lands at or before the generator's own fire minute on
+     * {@code date}, the anchor moves to {@code generatorMinute + prose-generation-grace-min}
+     * instead. The offset is <b>config</b> ({@code mezo.notification.prose-generation-grace-min}),
+     * never a magic number — <b>do not "tidy" it away</b>, and do not hardcode 06:00/12:30/19:00
+     * here: the generator's minute is read from the generator's OWN cron
+     * ({@code mezo.proactive.*}) via {@link CronExpression}, the {@code ProactiveHeartbeatService}
+     * precedent, so the schedule keeps living in exactly one place.
+     *
+     * @param preferredMinute the anchor this category would use if there were no collision
+     * @param generatorCron   the content generator's cron expression (from {@code mezo.proactive})
+     * @return {@code preferredMinute}, or the graced post-generation minute when they collide
+     */
+    private int anchorAfterGeneration(int preferredMinute, String generatorCron, LocalDate date) {
+        Integer generatorMinute = cronMinuteOfDay(generatorCron, date);
+        if (generatorMinute == null || preferredMinute > generatorMinute) {
+            return preferredMinute; // no same-day generation, or the anchor is already after it
+        }
+        return Math.min(generatorMinute + notificationProperties.proseGenerationGraceMin(), LAST_MINUTE_OF_DAY);
+    }
+
+    /** The generator's own fire minute on {@code date}, or {@code null} when its cron does not fire
+     *  that day at all (e.g. a Sunday-only memoir cron asked about a Monday) — an honest "no
+     *  collision is knowable", never a fabricated minute. */
+    private static Integer cronMinuteOfDay(String generatorCron, LocalDate date) {
+        LocalDateTime next = CronExpression.parse(generatorCron).next(date.atStartOfDay().minusNanos(1));
+        return next == null || !next.toLocalDate().equals(date) ? null : minuteOfDay(next.toLocalTime());
     }
 
     private String excerptProse(String text) {
@@ -318,10 +383,29 @@ public class AnchorResolver {
                 continue;
             }
             NotificationCategory category = NotificationCategory.fromKey(entry.category()).orElse(null);
-            if (category == null) {
-                continue; // an unrecognised category must never abort resolution for the rest
+            if (category == null || !category.feWritten()) {
+                // An unrecognised — or a recognised-but-backend-native — category must never abort
+                // resolution for the rest. The feWritten() half is defense-in-depth: today the only
+                // way a row gets in is NotificationScheduleService.replace, which already rejects a
+                // backend-native category (that endpoint is the security boundary, this is belt and
+                // braces for a row that arrived some other way, e.g. a manual DB fix).
+                log.warn("Skipping notification_schedule row with a non-FE-written category '{}'", entry.category());
+                continue;
             }
-            events.add(new AnchoredEvent(category, minuteOfDay(entry.time()), entry.time(),
+            int minuteOfDay;
+            try {
+                minuteOfDay = minuteOfDay(entry.time());
+            } catch (DateTimeParseException e) {
+                // The SAME defense the category above gets, and for the same reason: one malformed
+                // `time` used to throw out of resolve() BEFORE any anchor was returned, so the
+                // dispatcher's per-user catch logged a stack trace 1440x/day and that user received
+                // NOTHING at all, from any category, forever. The contract only constrains this to
+                // 5 chars (so "aa:bb" validates) and there is no DB CHECK — so guard it here.
+                log.warn("Skipping notification_schedule row with unparseable time '{}' (category '{}')",
+                        entry.time(), entry.category());
+                continue;
+            }
+            events.add(new AnchoredEvent(category, minuteOfDay, entry.time(),
                     entry.title(), entry.body() == null ? "" : entry.body(), entry.deeplink()));
         }
         return events;
@@ -337,7 +421,7 @@ public class AnchorResolver {
         return time.getHour() * 60 + time.getMinute();
     }
 
-    private static String hhmm(LocalTime time) {
-        return String.format("%02d:%02d", time.getHour(), time.getMinute());
+    private static String hhmm(int minuteOfDay) {
+        return String.format("%02d:%02d", minuteOfDay / 60, minuteOfDay % 60);
     }
 }
