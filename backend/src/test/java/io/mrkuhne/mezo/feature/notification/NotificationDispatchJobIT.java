@@ -37,15 +37,28 @@ import org.springframework.test.context.TestPropertySource;
  * bed time {@code 23:00}) so those two default-enabled categories — present for every user,
  * including a freshly created one with no data — never interfere with the counts asserted here.
  *
- * <p>{@code src/test/resources/application.properties} turns the dispatch-job switch OFF for the
- * whole test context by default — unlike every other cron in this app, this one fires every
- * minute, so leaving it on globally lets the real scheduler thread tick mid-suite and race another
- * test class's {@code ResetDatabase} TRUNCATE (verified: a real Postgres deadlock). This class
- * re-enables it via its own {@code @TestPropertySource}, so only its own short-lived, dedicated
- * Spring context carries that (much smaller) residual risk — the same bounded exposure every
- * other {@code *Job} already has against its own rare fixed-time schedule.
+ * <p>This job fires every minute ({@code mezo.notification.dispatch-cron: "0 * * * * *"}) — unlike
+ * every other cron in this app, which anchors on a rare fixed time (nightly, weekly, "06:25
+ * daily"). {@code src/test/resources/application.properties} therefore turns the dispatch-job
+ * switch OFF for the whole test context by default: leaving it on globally lets the real scheduler
+ * thread genuinely tick mid-suite and race another test class's {@code ResetDatabase} TRUNCATE
+ * (verified: a real Postgres deadlock, {@code [scheduling-1]} firing at the real wall-clock
+ * minute). This class still needs the bean to exist (to call {@link
+ * NotificationDispatchJob#runOnce}), so it re-enables the switch via its own
+ * {@code @TestPropertySource} — but ALSO pins {@code dispatch-cron} to a date that can never
+ * occur ({@code 0 0 5 31 2 ?}, February 31st), so the {@code @Scheduled} method can never actually
+ * fire in this class's own context either. Every test here drives {@code runOnce(date, minute)}
+ * directly; none of them needs (or should depend on) the real tick — a per-minute schedule left
+ * reachable, even confined to one test class, was empirically observed to fire inside this class's
+ * own isolated run in several separate {@code clean test} invocations, so shrinking the window was
+ * not enough; only an unreachable cron removes the race.
  */
-@TestPropertySource(properties = "mezo.techcore.cron.notification-dispatch-job.enabled=true")
+@TestPropertySource(properties = {
+        "mezo.techcore.cron.notification-dispatch-job.enabled=true",
+        // February 31st never occurs — CronExpression accepts it as legal-but-unmatchable, so the
+        // @Scheduled method is wired but can never fire. See the class javadoc above.
+        "mezo.notification.dispatch-cron=0 0 5 31 2 ?"
+})
 class NotificationDispatchJobIT extends AbstractIntegrationTest {
 
     private static final LocalDate WEDNESDAY = LocalDate.of(2026, 7, 29);
