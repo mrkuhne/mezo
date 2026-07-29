@@ -2,8 +2,6 @@ package io.mrkuhne.mezo.feature.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.auth.OwnerProperties;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.notification.domain.AnchorSet;
 import io.mrkuhne.mezo.feature.notification.domain.AnchorSet.AnchoredEvent;
@@ -19,6 +17,7 @@ import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WeeklySuggestionPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -55,8 +54,7 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     private static final String LATE_WAKE = "08:20";
 
     @Autowired private AnchorResolver anchorResolver;
-    @Autowired private AppUserRepository appUserRepository;
-    @Autowired private OwnerProperties ownerProperties;
+    @Autowired private UserPopulator userPopulator;
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private BriefingPopulator briefingPopulator;
     @Autowired private MedicationPopulator medicationPopulator;
@@ -67,8 +65,18 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     @Autowired private HeartbeatNotePopulator heartbeatNotePopulator;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
 
+    /**
+     * A fresh, self-created owner per test rather than the demodata-seeded one: this class's
+     * plain {@code AbstractIntegrationTest} context has no {@code @TestPropertySource}/
+     * {@code @ActiveProfiles} of its own, so it happens to share a Testcontainers Postgres with
+     * many other test classes in the suite — some of which find-or-create the demodata owner
+     * before this class runs, which is how it passed in CI despite never seeding the owner
+     * itself. That made it order-dependent (fails if run alone, as {@code
+     * AnchorResolverRitualSwitchOffIT} did in its OWN dedicated context — see bd mezo-h4wp.6.2).
+     * Self-sufficiency removes the dependency entirely.
+     */
     private UUID ownerId() {
-        return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+        return userPopulator.createUser().getId();
     }
 
     @Test
