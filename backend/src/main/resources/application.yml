@@ -648,6 +648,12 @@ mezo:
   notification:
     # Notification body is truncated to this many chars before it is encrypted + sent.
     body-max-chars: 300
+    # Medication has no per-day time column (MedicationCycleService only derives which cycle
+    # day it is) — the reminder anchors on this fixed HH:mm instead (spec §6).
+    medication-time: "08:00"
+    # How much of an already-generated prose row (briefing/heartbeat/weekly/memoir) AnchorResolver
+    # excerpts for a push body — cut at a word boundary, never a new LLM call (spec §6).
+    prose-excerpt-chars: 160
   # Account gamification ledger (bd mezo-huzd): title-shop saver price/cap + the coin awards the
   # AccountProgressPort adapter fires. Binds onto GamificationProperties.
   gamification:
