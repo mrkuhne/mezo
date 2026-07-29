@@ -20,10 +20,10 @@ const at = (hhmm: string) => {
  */
 const clockAt = (hhmm: string) => vi.useFakeTimers({ toFake: ['Date'] }).setSystemTime(at(hhmm))
 
-/** Reports the live URL so a dispatched `nav` action is observable. */
+/** Reports the live URL so a dispatched `nav` action and the `?dp=` writes are observable. */
 function LocationProbe() {
   const loc = useLocation()
-  return <div data-testid="loc">{loc.pathname}</div>
+  return <div data-testid="loc">{loc.pathname}{loc.search}</div>
 }
 
 function renderToday(path = '/today') {
@@ -55,10 +55,13 @@ describe('TodayPage — face selection', () => {
     expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Este/)
   })
 
-  test('?dp= overrides the clock', () => {
+  test('?dp= overrides the clock — but the clock still marks the CURRENT pill', () => {
     vi.useFakeTimers().setSystemTime(at('09:12'))
     renderToday('/today?dp=este')
     expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Este/)
+    // „hol tartok" (the clock) and „mit nézek" (the selection) must not blur together.
+    expect(screen.getByRole('tab', { name: /^Reggel/ })).toHaveAccessibleName(/· most/)
+    expect(screen.getByRole('tab', { selected: true })).not.toHaveAccessibleName(/· most/)
   })
 
   test.each(['', 'holnap', '4'])('a blank or unknown ?dp=%s falls back to the clock face', (v) => {
@@ -81,6 +84,14 @@ describe('TodayPage — face selection', () => {
     renderToday('/today?dp=este')
     fireEvent.click(screen.getByRole('tab', { name: /^Reggel/ }))
     expect(screen.getByRole('tab', { selected: true })).toHaveAccessibleName(/^Reggel/)
+    expect(screen.getByTestId('loc').textContent).toBe('/today')
+  })
+
+  test('selecting another face writes ?dp and keeps the other params', () => {
+    vi.useFakeTimers().setSystemTime(at('09:12'))
+    renderToday('/today?vulnerable=on')
+    fireEvent.click(screen.getByRole('tab', { name: /^Nap/ }))
+    expect(screen.getByTestId('loc').textContent).toBe('/today?vulnerable=on&dp=nap')
   })
 })
 
