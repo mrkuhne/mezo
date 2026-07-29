@@ -5,9 +5,13 @@
 // by daypart face, deduplicated and partitioned into open/done. This is what
 // kills the duplication the old screen had — the morning weigh-in was a quest
 // AND a habit row, the workout was a hero AND a quest AND a habit row.
-// Pure: no hooks, no navigation. The action union carries the raw domain object
-// so `TodayPage` can dispatch it through the existing questAction/habitAction
-// mappings without this module knowing about routes or sheets.
+// Pure: no React, no hooks, no `@/data/hooks`, no side effects. Quest and habit
+// actions deliberately carry the raw domain object, so `TodayPage` can dispatch
+// them through the existing questAction/habitAction mappings without this
+// module knowing about sheets. Sources with no domain-level action of their own
+// (fuel, ritual) carry a plain route string on a `nav` action instead — the
+// same convention `questAction.ts` already uses — the one place a route
+// legitimately appears here.
 // ============================================================
 import { faceOf, type DayFace, DAY_FACES } from '@/features/today/logic/dayFace'
 import type { AnchorTimes } from '@/features/today/logic/windDown'
